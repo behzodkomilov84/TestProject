@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/test_project
+    username: root
+    password: root
+    hikari:
+      auto-commit: false
+      maximum-pool-size: 5
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        default_batch_fetch_size: 50 #n+1 xatoliklarni oldini oladi
+    open-in-view: false #Har bir proyektni boshlaganda shuni qo'shish kerak
+  liquibase:
+    change-log: classpath:db/changelog/master.xml
+#  jackson:
+#    deserialization:
+#      accept-float-as-int: false #2-usuli ObjectMapperConfig.java da keltirilgan. POST-Zaprosda int'ni o'rniga float kirgizilsa 400-Bad request qaytaradi.
+logging:
+  level:
+    root: INFO

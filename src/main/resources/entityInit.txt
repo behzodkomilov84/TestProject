@@ -1,0 +1,22 @@
+Scince:
+	id
+	name
+	List<Topic>	@OneToMany
+
+Topic:
+	id
+	name
+	List<Question>	@OneToMany
+	science	@ManyToOne
+
+Question:
+	id
+	questionText
+	List<Answer>	@OneToMany
+	topic	@ManyToOne
+
+Answer:
+	id
+	text
+	isTrue
+	question	@ManyToOne
