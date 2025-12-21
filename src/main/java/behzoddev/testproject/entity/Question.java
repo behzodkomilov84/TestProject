@@ -13,6 +13,12 @@ import java.util.List;
 @Setter
 @Builder
 @ToString
+@NamedEntityGraph(
+        name = "questionWithAnswers",
+        attributeNodes = {
+                @NamedAttributeNode("answers")
+        }
+)
 public class Question {
 
     @Id
@@ -22,7 +28,10 @@ public class Question {
     @Column(nullable = false)
     private String questionText;
 
-    @OneToMany(mappedBy = "question", cascade = CascadeType.PERSIST)
+    @OneToMany(mappedBy = "question",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
     @ToString.Exclude
     private List<Answer> answers;
 

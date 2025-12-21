@@ -13,6 +13,7 @@ import java.util.Set;
 @Setter
 @Builder
 @ToString
+
 @NamedEntityGraph(
         name = "scienceWithTopics",
         attributeNodes = {
@@ -22,11 +23,18 @@ import java.util.Set;
                 @NamedSubgraph(
                         name = "topicsWithQuestions",
                         attributeNodes = {
-                                @NamedAttributeNode("questions")
+                                @NamedAttributeNode(value = "questions", subgraph = "questionWithAnswers")
+                        }
+                ),
+                @NamedSubgraph(
+                        name = "questionWithAnswers",
+                        attributeNodes = {
+                                @NamedAttributeNode("answers")
                         }
                 )
         }
 )
+
 public class Science {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
