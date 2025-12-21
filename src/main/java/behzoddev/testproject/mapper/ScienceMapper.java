@@ -5,23 +5,11 @@ import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
 import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
 
 import java.util.Set;
 
 @Mapper(componentModel = "spring")
 public interface ScienceMapper {
-
-//    @Mapping(target = "topics", ignore = true)
-//    default Science map(ScienceDto scienceDto) {
-//        Science science = mapScienceDtoToScience(scienceDto);
-//
-//        for (TopicDto topicDto : scienceDto.topics()) {
-//            Topic topic = mapTopicDtoToTopic(topicDto);
-//            topic.setScience(science);
-//        }
-//        return science;
-//    }
 
     Science mapScienceDtoToScience(ScienceDto scienceDto);
 
@@ -33,4 +21,5 @@ public interface ScienceMapper {
 
     Set<QuestionDto> toQuestionDtoSet(Set<Question> questions);
 
+    Science mapScienceNameDtoToScience(ScienceNameDto scienceNameDto);
 }

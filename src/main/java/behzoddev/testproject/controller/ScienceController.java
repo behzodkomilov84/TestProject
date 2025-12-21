@@ -1,15 +1,16 @@
 package behzoddev.testproject.controller;
 
 import behzoddev.testproject.dto.*;
+import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.service.ScienceService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @RestController
@@ -20,8 +21,8 @@ public class ScienceController {
     private final ScienceService scienceService;
 
     @GetMapping
-    public ResponseEntity<Set<ScienceNameDto>> getSciences() {
-        Set<ScienceNameDto> scienceNameDtos = scienceService.getAllScienceNameDto();
+    public ResponseEntity<Set<ScienceIdAndNameDto>> getSciences() {
+        Set<ScienceIdAndNameDto> scienceNameDtos = scienceService.getAllScienceNameDto();
 
         return ResponseEntity.ok(scienceNameDtos);
     }
@@ -34,8 +35,8 @@ public class ScienceController {
     }
 
     @GetMapping("/{scienceId}")
-    public ResponseEntity<ScienceNameDto> getScienceNameById(@PathVariable Long scienceId) {
-        ScienceNameDto scienceNameDto = scienceService.getScienceNameById(scienceId).orElseThrow();
+    public ResponseEntity<ScienceIdAndNameDto> getScienceNameById(@PathVariable Long scienceId) {
+        ScienceIdAndNameDto scienceNameDto = scienceService.getScienceNameById(scienceId).orElseThrow();
         return ResponseEntity.ok(scienceNameDto);
     }
 
@@ -64,5 +65,23 @@ public class ScienceController {
         List<QuestionDto> questionDto = scienceService.getQuestionsByIds(scienceId, topicId);
 
         return ResponseEntity.ok(questionDto);
+    }
+
+    @PostMapping
+    public ResponseEntity<?> createScience(@RequestBody ScienceNameDto scienceNameDto) {
+
+        Optional<Science> existing = scienceService.getByName(scienceNameDto.name());
+        if (existing.isPresent()) {
+            ErrorResponse error = new ErrorResponse(
+                    "Science with name '" + scienceNameDto.name() + "' already exists",
+                    HttpStatus.CONFLICT.value()
+            );
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+        }
+
+        Science science = scienceService.saveScience(scienceNameDto);
+        return ResponseEntity
+                .created(URI.create("sciences/" + science.getId())
+                ).body("Science with name '" + scienceNameDto.name() + "' was created");
     }
 }
