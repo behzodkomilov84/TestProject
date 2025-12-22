@@ -5,6 +5,7 @@ import behzoddev.testproject.entity.Science;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 import java.util.Set;
@@ -24,8 +25,9 @@ public interface ScienceRepository extends JpaRepository<Science, Long> {
     Set<ScienceIdAndNameDto> findAllScienceNames();
 
     @Query("select new behzoddev.testproject.dto.ScienceIdAndNameDto(s.id, s.name) from Science s where s.id = :id")
-    Optional<ScienceIdAndNameDto> findScienceNameById(Long id);
+    Optional<ScienceIdAndNameDto> findScienceNameById(@Param("id") Long id);
 
-    Optional<Science> findByName(String name);
+    @Query("select s from Science s where s.name = :name")
+    Optional<Science> findByName(@Param("name") String name);
 
 }

@@ -38,7 +38,7 @@ public class ScienceService {
     }
 
     @Transactional(readOnly = true)
-    public Set<ScienceIdAndNameDto> getAllScienceNameDto() {
+    public Set<ScienceIdAndNameDto> getAllScienceIdAndNameDto() {
         return scienceRepository.findAllScienceNames();
     }
 
@@ -97,8 +97,13 @@ public class ScienceService {
         return scienceRepository.save(science);
     }
 
-    public Optional<Science> getByName(String name) {
-        return scienceRepository.findByName(name);
+    @Transactional
+    public Science saveScience(Science science) {
+        return scienceRepository.save(science);
+    }
+
+    public Optional<Science> getByName(String scienceName) {
+        return scienceRepository.findByName(scienceName);
     }
 
     @Transactional
@@ -159,5 +164,21 @@ public class ScienceService {
 
     public Long getScienceIdByTopicId(Long topicId) {
         return topicRepository.getScienceIdByTopicId(topicId);
+    }
+
+    @Transactional(readOnly = true)
+    public QuestionDto getQuestionById(Long questionId) {
+        Question question = questionRepository.getQuestionById(questionId);
+        return questionMapper.mapQuestiontoQuestionDto(question);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isScienceIdExist(Long scienceId) {
+        return scienceRepository.existsById(scienceId);
+    }
+
+    public boolean isScienceNameExist(String scienceName) {
+        Optional<Science> science = getByName(scienceName);
+        return science.isPresent();
     }
 }

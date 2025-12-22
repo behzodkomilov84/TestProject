@@ -24,7 +24,7 @@ public class ScienceController {
 
     @GetMapping
     public ResponseEntity<Set<ScienceIdAndNameDto>> getSciences() {
-        Set<ScienceIdAndNameDto> scienceNameDtos = scienceService.getAllScienceNameDto();
+        Set<ScienceIdAndNameDto> scienceNameDtos = scienceService.getAllScienceIdAndNameDto();
 
         return ResponseEntity.ok(scienceNameDtos);
     }
@@ -65,6 +65,13 @@ public class ScienceController {
     @GetMapping("/{scienceId}/topic/{topicId}/questions")
     public ResponseEntity<List<QuestionDto>> getQuestionsByIds(@PathVariable Long scienceId, @PathVariable Long topicId) {
         List<QuestionDto> questionDto = scienceService.getQuestionsByIds(scienceId, topicId);
+
+        return ResponseEntity.ok(questionDto);
+    }
+
+    @GetMapping("/{scienceId}/topic/{topicId}/questions/{questionId}")
+    public ResponseEntity<QuestionDto> getQuestionById(@PathVariable Long questionId) {
+        QuestionDto questionDto = scienceService.getQuestionById(questionId);
 
         return ResponseEntity.ok(questionDto);
     }
@@ -136,5 +143,49 @@ public class ScienceController {
         ).build();
     }
 
+    @PutMapping
+    public ResponseEntity<?> updateScience(@RequestBody Science science) {
 
+        boolean scienceNameExist = scienceService.isScienceNameExist(science.getName());
+        boolean scienceIdExist = scienceService.isScienceIdExist(science.getId());
+
+        if (scienceIdExist && !scienceNameExist) {
+            scienceService.saveScience(science);
+            return ResponseEntity.noContent().build();
+        }
+
+        if (!scienceIdExist) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse(
+                            "Science with id '" + science.getId() + "' is not exists",
+                            HttpStatus.CONFLICT.value()
+                    ));
+        }
+
+        if (scienceNameExist) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse(
+                            "Science with name '" + science.getName() + "' is already exists",
+                            HttpStatus.CONFLICT.value()
+                    ));
+        }else {
+            return ResponseEntity.noContent().build();
+        }
+    }
+
+
+
+/*
+*  @PutMapping
+
+    @GetMapping("/{scienceId}/full")
+    @GetMapping("/{scienceId}/topic")
+    @GetMapping("/{scienceId}/topic/{topicId}")
+    @GetMapping("/{scienceId}/topic/{topicId}/questions")
+    @GetMapping("/{scienceId}/topic/{topicId}/questions/{questionId}")
+    @PostMapping
+    @PostMapping("/{scienceId}/topic")
+    @PostMapping("/{scienceId}/topic/{topicId}")
+
+* */
 }

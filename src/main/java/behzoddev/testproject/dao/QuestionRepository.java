@@ -27,4 +27,10 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             """)
     List<Question> getQuestionsByTopicId(
             @Param("topicId") Long topicId);
+
+    @Query("""
+            select q from Question q where q.id = :questionId
+            """)
+    Question getQuestionById(
+            @Param("questionId") Long questionId);
 }
