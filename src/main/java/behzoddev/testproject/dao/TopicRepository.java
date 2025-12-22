@@ -1,17 +1,21 @@
 package behzoddev.testproject.dao;
 
-import behzoddev.testproject.dto.TopicNameDto;
+import behzoddev.testproject.dto.TopicIdAndNameDto;
 import behzoddev.testproject.entity.Topic;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.Set;
 
 public interface TopicRepository extends JpaRepository<Topic, Long> {
 
-    @Query("select new behzoddev.testproject.dto.TopicNameDto(t.id, t.name) from Topic t where t.science.id = :id")
-    Set<TopicNameDto> findTopicsByScienceId(Long id);
+    @Query("select new behzoddev.testproject.dto.TopicIdAndNameDto(t.id, t.name) from Topic t where t.science.id = :id")
+    Set<TopicIdAndNameDto> findTopicsByScienceId(@Param("id") Long id);
 
-    @Query("select new behzoddev.testproject.dto.TopicNameDto(t.id, t.name) from Topic t where t.science.id = :scinceId and t.id = :topicId")
-    TopicNameDto findTopicByIds(Long scinceId, Long topicId);
+    @Query("select new behzoddev.testproject.dto.TopicIdAndNameDto(t.id, t.name) from Topic t where t.science.id = :scienceId and t.id = :topicId")
+    TopicIdAndNameDto findTopicByIds(@Param("scienceId") Long scienceId, @Param("topicId") Long topicId);
+
+    @Query("select t.science.id from Topic t where t.id = :topicId")
+    Long getScienceIdByTopicId(@Param("topicId") Long topicId);
 }

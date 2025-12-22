@@ -5,6 +5,7 @@ import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
 import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 
 import java.util.Set;
 
@@ -22,4 +23,6 @@ public interface ScienceMapper {
     Set<QuestionDto> toQuestionDtoSet(Set<Question> questions);
 
     Science mapScienceNameDtoToScience(ScienceNameDto scienceNameDto);
+
+
 }

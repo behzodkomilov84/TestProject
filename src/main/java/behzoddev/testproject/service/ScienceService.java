@@ -4,10 +4,13 @@ import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dto.*;
+import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
+import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.mapper.QuestionMapper;
 import behzoddev.testproject.mapper.ScienceMapper;
+import behzoddev.testproject.mapper.TopicMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +27,7 @@ public class ScienceService {
     private final TopicRepository topicRepository;
     private final QuestionRepository questionRepository;
     private final ScienceMapper scienceMapper;
+    private final TopicMapper topicMapper;
     private final QuestionMapper questionMapper;
 
     @Transactional(readOnly = true)
@@ -47,11 +51,11 @@ public class ScienceService {
         return scienceRepository.findScienceNameById(id);
     }
 
-    public Set<TopicNameDto> getTopicsByScienceId(Long id) {
-        return topicRepository.findTopicsByScienceId(id);
+    public Set<TopicIdAndNameDto> getTopicsByScienceId(Long scienceId) {
+        return topicRepository.findTopicsByScienceId(scienceId);
     }
 
-    public TopicNameDto getTopicByIds(Long scienceId, Long topicId) {
+    public TopicIdAndNameDto getTopicByIds(Long scienceId, Long topicId) {
         return topicRepository.findTopicByIds(scienceId, topicId);
     }
 
@@ -61,13 +65,99 @@ public class ScienceService {
         return questionMapper.mapQuestionListToQuestionDtoList(questions);
     }
 
+    @Transactional(readOnly = true)
+    public List<QuestionShortDto> getQuestionsByTopicId(Long topicId) {
+        List<Question> questions = questionRepository.getQuestionsByTopicId(topicId);
+        return questionMapper.mapQuestionListToQuestionShortDtoList(questions);
+    }
+
     @Transactional
     public Science saveScience(ScienceNameDto scienceNameDto) {
         Science science = scienceMapper.mapScienceNameDtoToScience(scienceNameDto);
+
+        // === УСТАНОВКА СВЯЗЕЙ (ВАЖНО) ===
+        if (science.getTopics() != null) {
+            for (Topic topic : science.getTopics()) {
+                topic.setScience(science);
+
+                if (topic.getQuestions() != null) {
+                    for (Question question : topic.getQuestions()) {
+                        question.setTopic(topic);
+
+                        if (question.getAnswers() != null) {
+                            for (Answer answer : question.getAnswers()) {
+                                answer.setQuestion(question);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         return scienceRepository.save(science);
     }
 
     public Optional<Science> getByName(String name) {
         return scienceRepository.findByName(name);
+    }
+
+    @Transactional
+    public Topic saveTopic(Long scienceId, TopicNameDto topicNameDto) {
+        Topic topic = topicMapper.mapTopicNameDtoToTopic(topicNameDto);
+
+        if (topic.getQuestions() != null) {
+            for (Question question : topic.getQuestions()) {
+                question.setTopic(topic);
+
+                if (question.getAnswers() != null) {
+                    for (Answer answer : question.getAnswers()) {
+                        answer.setQuestion(question);
+                    }
+                }
+            }
+        }
+        topic.setScience(scienceRepository.findById(scienceId).orElse(null));
+        return topicRepository.save(topic);
+    }
+
+    public boolean isQuestionWithAnswersExists(
+            List<QuestionShortDto> existingQuestions,
+            QuestionShortDto newQuestion
+    ) {
+        return existingQuestions.stream()
+                .filter(q -> q.questionText().equalsIgnoreCase(newQuestion.questionText()))
+                .anyMatch(q -> {
+                    List<AnswerShortDto> existingAnswers = q.answers();
+                    List<AnswerShortDto> newAnswers = newQuestion.answers();
+
+                    if (existingAnswers.size() != newAnswers.size()) {
+                        return false; // количество ответов не совпадает
+                    }
+
+                    // проверяем, что каждый ответ newQuestion есть в existingAnswers
+                    return newAnswers.stream()
+                            .allMatch(newAns -> existingAnswers.stream()
+                                    .anyMatch(existingAns -> existingAns.answerText().equalsIgnoreCase(newAns.answerText())
+                                            && existingAns.isTrue() == newAns.isTrue()
+                                    )
+                            );
+                });
+    }
+
+    public Question saveQuestion(Long topicId, QuestionShortDto newQuestion) {
+
+        Question question = questionMapper.mapQuestionShortDtoToQuestion(newQuestion);
+
+        if (question.getAnswers() != null) {
+            for (Answer answer : question.getAnswers()) {
+                answer.setQuestion(question);
+            }
+        }
+        question.setTopic(topicRepository.findById(topicId).orElse(null));
+        return questionRepository.save(question);
+    }
+
+    public Long getScienceIdByTopicId(Long topicId) {
+        return topicRepository.getScienceIdByTopicId(topicId);
     }
 }

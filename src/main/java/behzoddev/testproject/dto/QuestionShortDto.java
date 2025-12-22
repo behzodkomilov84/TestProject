@@ -1,4 +1,6 @@
 package behzoddev.testproject.dto;
 
-public record QuestionShortDto(Long id, String questionText) {
+import java.util.List;
+
+public record QuestionShortDto(String questionText, List<AnswerShortDto> answers) {
 }
