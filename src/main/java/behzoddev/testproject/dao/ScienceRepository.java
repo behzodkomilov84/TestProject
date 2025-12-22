@@ -4,6 +4,7 @@ import behzoddev.testproject.dto.ScienceIdAndNameDto;
 import behzoddev.testproject.entity.Science;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -30,4 +31,7 @@ public interface ScienceRepository extends JpaRepository<Science, Long> {
     @Query("select s from Science s where s.name = :name")
     Optional<Science> findByName(@Param("name") String name);
 
+    @Query("UPDATE Science s set s.name=:name where s.id=:id")
+    @Modifying
+    void updateScienceName(@Param("id") Long id, @Param("name") String name);
 }

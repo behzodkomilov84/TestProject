@@ -149,6 +149,7 @@ public class ScienceService {
                 });
     }
 
+    @Transactional
     public Question saveQuestion(Long topicId, QuestionShortDto newQuestion) {
 
         Question question = questionMapper.mapQuestionShortDtoToQuestion(newQuestion);
@@ -177,8 +178,28 @@ public class ScienceService {
         return scienceRepository.existsById(scienceId);
     }
 
+    @Transactional(readOnly = true)
     public boolean isScienceNameExist(String scienceName) {
         Optional<Science> science = getByName(scienceName);
         return science.isPresent();
+    }
+
+    @Transactional
+    public void removeScience(Long scienceId) {
+        scienceRepository.deleteById(scienceId);
+    }
+
+    @Transactional
+    public void removeTopic(Long topicId) {
+        topicRepository.deleteById(topicId);
+    }
+
+    @Transactional
+    public void removeQuestion(Long questionId) {
+        questionRepository.deleteById(questionId);
+    }
+
+    public void updateScienceName(Long id, String name) {
+        scienceRepository.updateScienceName(id, name);
     }
 }

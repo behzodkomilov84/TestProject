@@ -17,66 +17,66 @@ import java.util.Set;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/sciences")
+//@RequestMapping("/sciences")
 public class ScienceController {
 
     private final ScienceService scienceService;
 
-    @GetMapping
+    @GetMapping("/sciences")
     public ResponseEntity<Set<ScienceIdAndNameDto>> getSciences() {
         Set<ScienceIdAndNameDto> scienceNameDtos = scienceService.getAllScienceIdAndNameDto();
 
         return ResponseEntity.ok(scienceNameDtos);
     }
 
-    @GetMapping("/full")
+    @GetMapping("/sciences/full")
     public ResponseEntity<Set<ScienceDto>> getSciencesFull() {
         Set<ScienceDto> sciences = scienceService.getAllSciencesDto();
 
         return ResponseEntity.ok(sciences);
     }
 
-    @GetMapping("/{scienceId}")
+    @GetMapping("/sciences/{scienceId}")
     public ResponseEntity<ScienceIdAndNameDto> getScienceNameById(@PathVariable Long scienceId) {
         ScienceIdAndNameDto scienceNameDto = scienceService.getScienceNameById(scienceId).orElseThrow();
         return ResponseEntity.ok(scienceNameDto);
     }
 
-    @GetMapping("/{scienceId}/full")
+    @GetMapping("/sciences/{scienceId}/full")
     public ResponseEntity<ScienceDto> getScience(@PathVariable Long scienceId) {
         ScienceDto scienceDto = scienceService.getScienceById(scienceId).orElseThrow();
         return ResponseEntity.ok(scienceDto);
     }
 
-    @GetMapping("/{scienceId}/topic")
+    @GetMapping("/sciences/{scienceId}/topic")
     public ResponseEntity<Set<TopicIdAndNameDto>> getTopicsOfScience(@PathVariable Long scienceId) {
         Set<TopicIdAndNameDto> topicIdAndNameDtos = scienceService.getTopicsByScienceId(scienceId);
 
         return ResponseEntity.ok(topicIdAndNameDtos);
     }
 
-    @GetMapping("/{scienceId}/topic/{topicId}")
+    @GetMapping("/sciences/{scienceId}/topic/{topicId}")
     public ResponseEntity<TopicIdAndNameDto> getTopicByIds(@PathVariable Long scienceId, @PathVariable Long topicId) {
         TopicIdAndNameDto topicIdAndNameDto = scienceService.getTopicByIds(scienceId, topicId);
 
         return ResponseEntity.ok(topicIdAndNameDto);
     }
 
-    @GetMapping("/{scienceId}/topic/{topicId}/questions")
+    @GetMapping("/sciences/{scienceId}/topic/{topicId}/questions")
     public ResponseEntity<List<QuestionDto>> getQuestionsByIds(@PathVariable Long scienceId, @PathVariable Long topicId) {
         List<QuestionDto> questionDto = scienceService.getQuestionsByIds(scienceId, topicId);
 
         return ResponseEntity.ok(questionDto);
     }
 
-    @GetMapping("/{scienceId}/topic/{topicId}/questions/{questionId}")
+    @GetMapping("/questions/{questionId}")
     public ResponseEntity<QuestionDto> getQuestionById(@PathVariable Long questionId) {
         QuestionDto questionDto = scienceService.getQuestionById(questionId);
 
         return ResponseEntity.ok(questionDto);
     }
 
-    @PostMapping
+    @PostMapping("/sciences")
     public ResponseEntity<?> createScience(@RequestBody ScienceNameDto scienceNameDto) {
 
         Optional<Science> existing = scienceService.getByName(scienceNameDto.name());
@@ -94,7 +94,7 @@ public class ScienceController {
                 ).body("Science with name '" + scienceNameDto.name() + "' was created");
     }
 
-    @PostMapping("/{scienceId}/topic")
+    @PostMapping("/sciences/{scienceId}/topic")
     public ResponseEntity<?> createTopic(
             @PathVariable Long scienceId,
             @RequestBody TopicNameDto topicNameDto
@@ -120,7 +120,7 @@ public class ScienceController {
         ).build();
     }
 
-    @PostMapping("/{scienceId}/topic/{topicId}")
+    @PostMapping("topic/{topicId}")
     public ResponseEntity<?> createQuestion(@PathVariable Long topicId,
                                             @RequestBody QuestionShortDto newQuestion) {
 
@@ -143,7 +143,7 @@ public class ScienceController {
         ).build();
     }
 
-    @PutMapping
+    @PutMapping("/sciences")
     public ResponseEntity<?> updateScience(@RequestBody Science science) {
 
         boolean scienceNameExist = scienceService.isScienceNameExist(science.getName());
@@ -168,24 +168,31 @@ public class ScienceController {
                             "Science with name '" + science.getName() + "' is already exists",
                             HttpStatus.CONFLICT.value()
                     ));
-        }else {
-            return ResponseEntity.noContent().build();
         }
+        return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping("/sciences")
+    public ResponseEntity<Void> updateScienceName(@RequestParam Long id, @RequestParam String name) {
+        scienceService.updateScienceName(id, name);
+        return ResponseEntity.ok().build();
+    }
 
+    @DeleteMapping("/sciences/{scienceId}")
+    public ResponseEntity<Void> deleteScience(@PathVariable Long scienceId) {
+        scienceService.removeScience(scienceId);
+        return ResponseEntity.noContent().build();
+    }
 
-/*
-*  @PutMapping
+    @DeleteMapping("/topic/{topicId}")
+    public ResponseEntity<Void> deleteTopic(@PathVariable Long topicId) {
+        scienceService.removeTopic(topicId);
+        return ResponseEntity.noContent().build();
+    }
 
-    @GetMapping("/{scienceId}/full")
-    @GetMapping("/{scienceId}/topic")
-    @GetMapping("/{scienceId}/topic/{topicId}")
-    @GetMapping("/{scienceId}/topic/{topicId}/questions")
-    @GetMapping("/{scienceId}/topic/{topicId}/questions/{questionId}")
-    @PostMapping
-    @PostMapping("/{scienceId}/topic")
-    @PostMapping("/{scienceId}/topic/{topicId}")
-
-* */
+    @DeleteMapping("/questions/{questionId}")
+    public ResponseEntity<Void> deleteQuestion(@PathVariable Long questionId) {
+        scienceService.removeQuestion(questionId);
+        return ResponseEntity.noContent().build();
+    }
 }
