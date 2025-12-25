@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Основные метатеги -->
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO и описание страницы -->
+    <meta name="description" content="Описание страницы">
+    <meta name="author" content="Автор">
+
+    <!-- Заголовок страницы -->
+    <title>registration</title>
+
+    <!-- Подключение CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- Подключение шрифтов Google -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+
+</head>
+<body>
+<div class="container">
+    <div class="registration form">
+        <header>Sign up</header>
+        <form action="/registration" method="post">
+            <input type="text" name="username" placeholder="Enter your name" required>
+            <input type="password" name="password" placeholder="Create a password" required>
+            <input type="password" name="confirmPassword" placeholder="Confirm your password" required>
+
+            <input type="submit" class="button" value="Sign up">
+        </form>
+        <div class="signup">
+            <span class="signup">Already have an account?
+            <label><a href="/templates/login.html">Login</a> </label></span>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

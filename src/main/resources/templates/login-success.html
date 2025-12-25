@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <!-- Основные метатеги -->
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO и описание страницы -->
+    <meta name="description" content="Описание страницы">
+    <meta name="author" content="Автор">
+
+    <!-- Заголовок страницы -->
+    <title>login-success</title>
+
+    <!-- Подключение CSS -->
+    <link rel="stylesheet" href="/../css/style.css">
+    <!-- Подключение шрифтов Google -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+
+</head>
+<body>
+<div th:if="${successMessage}"
+     style="
+        text-align: center;
+        font-size: 32px;
+        font-weight: bold;
+        color: wheat;
+        margin-top: 40px;
+     ">
+    <b th:text="${successMessage}"></b>
+</div>
+<div class="container">
+    <div class="login form">
+        <header>Login</header>
+        <form action="/login" method="post">
+            <input type="text" name="username" placeholder="Enter your name" required>
+            <input type="password" name="password" placeholder="Enter your password" required>
+            <a href="#">Forgot password?</a>
+            <input type="submit" class="button" value="Login">
+        </form>
+        <div class="signup">
+            <span class="signup">Don't have an account?
+            <label><a href="/registration.html">Sign up</a></label></span>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

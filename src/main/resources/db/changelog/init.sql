@@ -1,6 +1,27 @@
 --liquibase formatted sql
 
 --changeset behzod:1
+create table roles
+(
+    id          bigint not null auto_increment,
+    role_name varchar(255),
+    primary key (id)
+);
+
+INSERT INTO roles (role_name) VALUES ('ROLE_ADMIN');
+
+INSERT INTO roles (role_name) VALUES ('ROLE_USER');
+
+create table users
+(
+    id          bigint not null auto_increment,
+    username varchar(255),
+    password varchar(255),
+    role_id bigint,
+    primary key (id),
+    foreign key (role_id) references roles(id)
+);
+
 create table answers
 (
     is_true     bit,

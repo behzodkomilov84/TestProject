@@ -4,6 +4,7 @@ import behzoddev.testproject.dto.*;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
+import behzoddev.testproject.exception.ErrorResponse;
 import behzoddev.testproject.service.ScienceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
