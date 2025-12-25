@@ -1,5 +1,6 @@
 package behzoddev.testproject.controller;
 
+import behzoddev.testproject.dto.LoginDto;
 import behzoddev.testproject.dto.RegisterDto;
 import behzoddev.testproject.service.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,17 @@ public class UserMvcController {
     @GetMapping("/login")
     public String login() {
         return "login";
+    }
+
+    @PostMapping("/signin")
+    public String login(@ModelAttribute LoginDto dto) {
+        userService.checkCredentials(dto);
+        return "redirect:/login-success";
+    }
+
+    @GetMapping("/login-success")
+    public String login_cuccess() {
+        return "login-success";
     }
 }
 

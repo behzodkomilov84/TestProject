@@ -1,5 +1,6 @@
 package behzoddev.testproject.exception;
 
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -16,7 +17,7 @@ public class MvcExceptionHandler {
                 "errorMessage",
                 ex.getMessage()
         );
-        return "registration-error";
+        return "app-error";
     }
 
 
@@ -29,6 +30,18 @@ public class MvcExceptionHandler {
                 "errorMessage",
                 ex.getMessage()
         );
-        return "registration-error";
+        return "app-error";
+    }
+
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public String handleUsernameNotFoundException(
+            UsernameNotFoundException ex,
+            Model model
+    ) {
+        model.addAttribute(
+                "errorMessage",
+                ex.getMessage()
+        );
+        return "app-error";
     }
 }

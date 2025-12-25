@@ -19,13 +19,15 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/login",
+                                "/signin",
                                 "/registration",
                                 "/registration.html",
                                 "/error",
                                 "/favicon.ico",
                                 "/css/**",
                                 "/js/**",
-                                "/images/**"
+                                "/images/**",
+                                "/login-success"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

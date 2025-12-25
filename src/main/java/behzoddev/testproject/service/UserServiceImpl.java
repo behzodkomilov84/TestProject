@@ -2,6 +2,7 @@ package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.RoleRepository;
 import behzoddev.testproject.dao.UserRepository;
+import behzoddev.testproject.dto.LoginDto;
 import behzoddev.testproject.dto.RegisterDto;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.User;
@@ -60,5 +61,21 @@ public class UserServiceImpl implements UserDetailsService, UserService {
         userRepository.save(user);
     }
 
+    @Override
+    @Transactional
+    public void checkCredentials(LoginDto dto) {
 
+        System.out.println("checkCredentials методни ичига кирди");
+
+        // 1. Проверка существования пользователя
+        UserDetails user = loadUserByUsername(dto.username());
+
+        // 2. Проверка паролей
+        if (!passwordEncoder.matches(dto.password(), user.getPassword())) {
+            System.out.println("\n\n\n\nPasswords do not match\n\n\n\n\n");
+            throw new PasswordsDoNotMatchException("Passwords do not match");
+        }
+
+        System.out.println("Checking credentials successfully");
+    }
 }
