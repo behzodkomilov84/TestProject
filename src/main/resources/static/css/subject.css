@@ -1,0 +1,159 @@
+    /* СТИЛИ ДЛЯ СТРАНИЦЫ УПРАВЛЕНИЯ ПРЕДМЕТАМИ */
+
+    /* Основные стили страницы */
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    background: #1e1e2f;
+
+
+    color: white;
+    font-family: Arial, sans-serif;
+}
+
+/* Заголовок страницы */
+h1 {
+    text-align: center;
+}
+
+/* Основной контейнер */
+.wrapper {
+    width: 650px;
+    margin: auto;
+}
+
+/* Контейнер списка предметов */
+.list {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid #444;
+    padding: 10px;
+    max-height: 80vh;
+    height: 100%;
+
+
+}
+
+    /* Строка с предметом */
+    .row {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 6px;
+        align-items: center;
+    }
+
+    /* Поле ввода */
+    input {
+        flex: 1;
+        padding: 6px;
+    }
+
+    /* Стиль для поля в режиме просмотра */
+    input.view {
+        background: transparent;
+        border: none;
+        color: #9cf;
+        font-size: 25px;
+        border: 1px solid #444;
+    }
+
+    /* Эффект при наведении на поле в режиме просмотра */
+    input.view:hover {
+        background: #9cf;;
+        border: 1px solid #444;
+        color: #fff;
+        font-size: 25px;
+        cursor: pointer;
+    }
+
+    /* Дополнительный стиль для полей-ссылок */
+    input.view.link:hover {
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    /* Кнопки */
+    button {
+        padding: 6px 10px;
+        cursor: pointer;
+    }
+
+    /* Блок для отображения ошибок (оставляем, но скрываем) */
+    .error {
+        display: none; /* Скрываем блок ошибок, так как используем alert */
+        color: red;
+        margin-bottom: 10px;
+        min-height: 20px;
+    }
+
+    /* Нижняя панель с кнопками */
+    .fixed-bar {
+        margin-top: 12px;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    /* Стили для Toast-уведомлений (добавлено) */
+    .toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 8px;
+        color: white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        animation: slideIn 0.3s, fadeOut 0.3s 2.7s;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        max-width: 350px;
+    }
+
+    .toast.success {
+        background: #4CAF50;
+        border-left: 4px solid #2E7D32;
+    }
+
+    .toast.error {
+        background: #F44336;
+        border-left: 4px solid #C62828;
+    }
+
+    .toast.warning {
+        background: #FF9800;
+        border-left: 4px solid #EF6C00;
+    }
+
+    .toast.info {
+        background: #2196F3;
+        border-left: 4px solid #1565C0;
+    }
+
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+
+    .toast-close {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+        margin-left: auto;
+        padding: 0 5px;
+    }
+
+    /* Скрытие стандартного блока ошибок */
+    .error {
+        display: none;
+    }

@@ -28,7 +28,7 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException(username));
+                .orElseThrow(() -> new UsernameNotFoundException("Username '" + username + "' not found"));
     }
 
 
@@ -65,17 +65,12 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     @Transactional
     public void checkCredentials(LoginDto dto) {
 
-        System.out.println("checkCredentials методни ичига кирди");
-
         // 1. Проверка существования пользователя
         UserDetails user = loadUserByUsername(dto.username());
 
         // 2. Проверка паролей
         if (!passwordEncoder.matches(dto.password(), user.getPassword())) {
-            System.out.println("\n\n\n\nPasswords do not match\n\n\n\n\n");
             throw new PasswordsDoNotMatchException("Passwords do not match");
         }
-
-        System.out.println("Checking credentials successfully");
     }
 }

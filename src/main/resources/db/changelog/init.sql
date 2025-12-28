@@ -34,7 +34,7 @@ create table answers
 create table science
 (
     id   bigint not null auto_increment,
-    name varchar(255),
+    name varchar(255) NOT NULL UNIQUE,
     primary key (id)
 );
 

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
 @RequiredArgsConstructor
@@ -16,8 +17,15 @@ public class UserMvcController {
     private final UserServiceImpl userService;
 
     @PostMapping("/registration")
-    public String register(@ModelAttribute RegisterDto dto) {
+    public String register(@ModelAttribute RegisterDto dto,
+                           RedirectAttributes redirectAttributes) {
         userService.register(dto);
+
+        redirectAttributes.addFlashAttribute(
+                "successMessage",
+                "User registered successfully"
+        );
+
         return "redirect:/login";
     }
 
@@ -29,12 +37,12 @@ public class UserMvcController {
     @PostMapping("/signin")
     public String login(@ModelAttribute LoginDto dto) {
         userService.checkCredentials(dto);
-        return "redirect:/login-success";
+        return "redirect:/subjects";
     }
 
-    @GetMapping("/login-success")
+    @GetMapping("/subjects")
     public String login_cuccess() {
-        return "login-success";
+        return "subjects";
     }
 }
 

@@ -22,4 +22,4 @@ spring:
 logging:
   level:
     root: INFO
-    org.springframework.security: TRACE
+    org.springframework.security: INFO #Keyinchalik INFO yoki DEBUG ga o'tkazish kk. TRACE otladka uchun faqat. Log juda ko'payib ketadi.

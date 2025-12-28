@@ -14,7 +14,7 @@
     <title>login</title>
 
     <!-- Подключение CSS -->
-    <link rel="stylesheet" href="/../css/style.css">
+    <link rel="stylesheet" href="/css/style.css">
     <!-- Подключение шрифтов Google -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,16 +25,13 @@
 
 </head>
 <body>
-<div th:if="${successMessage}"
-     style="
-        text-align: center;
-        font-size: 32px;
-        font-weight: bold;
-        color: wheat;
-        margin-top: 40px;
-     ">
-    <b th:text="${successMessage}"></b>
+
+<div id="success-alert"
+     th:if="${successMessage}"
+     th:text="${successMessage}"
+     class="success-alert">
 </div>
+
 <div class="container">
     <div class="login form">
         <header>Login</header>
@@ -52,5 +49,13 @@
 
 </div>
 
+<script>
+    setTimeout(() => {
+        const alert = document.getElementById("success-alert");
+        if (alert) {
+            alert.style.display = "none";
+        }
+    }, 5000);
+</script>
 </body>
 </html>

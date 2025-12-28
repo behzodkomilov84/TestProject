@@ -1,6 +1,9 @@
 package behzoddev.testproject.controller;
 
 import behzoddev.testproject.dto.*;
+import behzoddev.testproject.dto.batch.ScienceBatchDto;
+import behzoddev.testproject.dto.batch.ScienceCreateDto;
+import behzoddev.testproject.dto.batch.ScienceUpdateDto;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
@@ -12,9 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -23,12 +24,85 @@ public class ScienceController {
 
     private final ScienceService scienceService;
 
-    @GetMapping("/sciences")
+    @GetMapping("/api/science")
+    @ResponseBody
     public ResponseEntity<Set<ScienceIdAndNameDto>> getSciences() {
-        Set<ScienceIdAndNameDto> scienceNameDtos = scienceService.getAllScienceIdAndNameDto();
+        Set<ScienceIdAndNameDto> scienceIdsAndNames = scienceService.getAllScienceIdAndNameDto();
 
-        return ResponseEntity.ok(scienceNameDtos);
+        return ResponseEntity.ok(scienceIdsAndNames);
     }
+
+    @PostMapping("/api/science/save")
+    @ResponseBody
+    public ResponseEntity<?> saveScience(@RequestBody Map<String,Object> payload) {
+
+        var newSubjects = (List<String>) payload.get("new");
+        var needToUpdateSubjects = (List<Map<String, Object>>) payload.get("updated");
+
+        List<Long> deletedScienceIds = new ArrayList<>();
+        for (Object obj : (List<Object>) payload.get("deletedIds")) {
+            deletedScienceIds.add(((Number) obj).longValue());
+        }
+
+        // Добавляем новые
+        for (String name : newSubjects) {
+            scienceService.saveScience(new ScienceNameDto(name));
+        }
+
+        // Обновляем существующие
+        for (Map<String, Object> item : needToUpdateSubjects) {
+            Long id = ((Number) item.get("id")).longValue();
+            String name = (String) item.get("name");
+            scienceService.updateScienceName(id, name);
+        }
+
+        // Удаление
+        for (Long id : deletedScienceIds) {
+            scienceService.removeScience(id);
+        }
+
+        return ResponseEntity.ok(Map.of("message", "✅ Ma'lumotlar bazaga saqlandi!"));
+    }
+ /*List<ScienceCreateDto> listOfScienceCreateDto =
+                scienceService.toListOfScienceCreateDto(newSubjects);
+
+        List<ScienceUpdateDto> listOfScienceUpdateDto =
+                scienceService.toListOfScienceUpdateDto(needToUpdateSubjects);
+
+        List<Long> listOfDeletedScienceId =
+                deletedScienceIds.stream().map(Long::valueOf).toList();
+
+        ScienceBatchDto scienceBatchDto =
+                ScienceBatchDto.builder()
+                        .newItems(listOfScienceCreateDto)
+                        .updated(listOfScienceUpdateDto)
+                        .deletedIds(listOfDeletedScienceId)
+                        .build();
+
+        return ResponseEntity.ok(scienceService.batchSave(scienceBatchDto));*/
+
+   /* @PostMapping("/api/science/save")
+    @ResponseBody
+    public Map<String, String> saveScience(@RequestBody Map<String, Object> payload) {
+
+        List<String> newSubjects = (List<String>) payload.get("new");
+        List<Map<String, Object>> updatedSubjects = (List<Map<String, Object>>) payload.get("updated");
+
+        // Добавляем новые
+        for (String name : newSubjects) {
+            scienceService.saveScience(new ScienceNameDto(name));
+        }
+
+        // Обновляем существующие
+        for (Map<String, Object> item : updatedSubjects) {
+            Long id = ((Number) item.get("id")).longValue();
+            String name = (String) item.get("name");
+            scienceService.updateScienceName(id, name);
+        }
+
+        return Map.of("message", "✅ Ma'lumotlar bazaga saqlandi!");
+    }
+*/
 
     @GetMapping("/sciences/full")
     public ResponseEntity<Set<ScienceDto>> getSciencesFull() {

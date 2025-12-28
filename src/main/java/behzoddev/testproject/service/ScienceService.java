@@ -73,6 +73,11 @@ public class ScienceService {
 
     @Transactional
     public Science saveScience(ScienceNameDto scienceNameDto) {
+
+        if (scienceRepository.existsByName(scienceNameDto.name())) {
+            throw new IllegalArgumentException("Science with this name already exists");
+        }
+
         Science science = scienceMapper.mapScienceNameDtoToScience(scienceNameDto);
 
         // === УСТАНОВКА СВЯЗЕЙ (ВАЖНО) ===
@@ -199,7 +204,9 @@ public class ScienceService {
         questionRepository.deleteById(questionId);
     }
 
+    @Transactional
     public void updateScienceName(Long id, String name) {
         scienceRepository.updateScienceName(id, name);
     }
+
 }

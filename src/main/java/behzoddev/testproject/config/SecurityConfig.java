@@ -27,8 +27,11 @@ public class SecurityConfig {
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
-                                "/login-success"
+                                "/login-success",
+                                "/subjects",
+                                "/.well-known/**"
                         ).permitAll()
+                        .requestMatchers("/api/**").permitAll() // или authenticated()
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form

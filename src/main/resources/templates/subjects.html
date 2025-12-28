@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <!-- Основные метатеги -->
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO и описание страницы -->
+    <meta name="description" content="Описание страницы">
+    <meta name="author" content="Автор">
+
+    <!-- Заголовок страницы -->
+    <title>Subjects</title>
+
+    <!-- Подключение CSS -->
+    <link rel="stylesheet" href="/css/subject.css">
+    <script src="/js/subjects.js" defer></script>
+    <!-- Подключение шрифтов Google -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+
+    <!-- Favicon -->
+    <link rel="icon" href="favicon.ico" type="image/x-icon">
+
+
+    <style>
+
+    </style>
+</head>
+
+<body>
+
+<h1>Fanlar</h1>
+
+<!-- ОСНОВНОЙ КОНТЕЙНЕР -->
+<div class="wrapper">
+
+    <!--
+        БЛОК ДЛЯ ОТОБРАЖЕНИЯ СООБЩЕНИЙ ОБ ОШИБКАХ
+        Скрыт, так как используем Toast-уведомления
+    -->
+    <div class="error" id="error"></div>
+
+    <!-- КОНТЕЙНЕР СПИСКА ПРЕДМЕТОВ -->
+    <div class="list" id="list"></div>
+
+    <!-- НИЖНЯЯ ПАНЕЛЬ С КНОПКАМИ УПРАВЛЕНИЯ -->
+    <div class="fixed-bar">
+        <div>
+            <!-- КНОПКА ДОБАВЛЕНИЯ НОВОГО ПРЕДМЕТА -->
+            <button onclick="add()">➕ Add</button>
+            <button onclick="undoAll()">🔃 Reload</button>
+
+        </div>
+
+            <!-- КНОПКА СОХРАНЕНИЯ В БАЗУ ДАННЫХ -->
+            <button onclick="saveToDb()">💾 Save to DB</button>
+    </div>
+</div>
+
+<!-- Контейнер для Toast-уведомлений (добавлено) -->
+<div id="toast-container"></div>
+
+<script>
+
+</script>
+
+</body>
+</html>

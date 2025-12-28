@@ -90,3 +90,17 @@ body {
 .signup label:hover {
     text-decoration: underline;
 }
+
+.success-alert {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ffdddd;
+    color: #a10000;
+    padding: 12px 24px;
+    border: 1px solid #ff5c5c;
+    border-radius: 6px;
+    font-weight: 500;
+    z-index: 1000;
+}

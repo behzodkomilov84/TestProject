@@ -44,4 +44,5 @@ public class MvcExceptionHandler {
         );
         return "app-error";
     }
+
 }
