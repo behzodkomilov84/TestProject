@@ -1,33 +1,32 @@
-let subjects = []; // сюда будут загружены данные из БД
+// ========================================================================
+//                     Global fields
+// ========================================================================
+
+let itemBlock = []; // сюда будут загружены данные из БД
 let deletedSubjectIds = []; // FRONTEND da o'chirilganlarni id'si (Agar u DB da ham bo'lsa)
 let focusIndex = null;//для курсора
 
-// ========================================================================
-//                     for EDIT proccessing
-// ========================================================================
-let oldName = "";
-let newName = "";
+let oldName = ""; //for EDIT uses
+let newName = ""; //for EDIT uses
 // ========================================================================
 
 afterStartPage("/api/science");
 
 
 // ========================================================================
-//                      ФУНКЦИИ
+//                      Functions
 // ========================================================================
 
 function afterStartPage(mapping) {
 
     const messageName =
-        mapping === "/api/science" ? "Fan"
-            : mapping === "/api/topic" ? "Mavzu"
-                : mapping === "/api/question" ? "Savol" : '';
+        mapping === "/api/science" ? "Fanlar"
+            : mapping === "/api/topic" ? "Mavzular"
+                : mapping === "/api/question" ? "Savollar" : '';
 
     document.addEventListener("DOMContentLoaded", () => {
         reloadFromDb(mapping).then(r => render());
     });
-
-
 }
 
 async function reloadFromDb(mapping) {
@@ -44,7 +43,7 @@ async function reloadFromDb(mapping) {
 
     const data = await response.json();
 
-    subjects = data.map(s => ({
+    itemBlock = data.map(s => ({
         id: s.id,
         name: s.name,
         original: s.name,
@@ -57,7 +56,7 @@ function render() {
     const list = document.getElementById("list");
     list.innerHTML = "";
 
-    subjects.forEach((s, i) => {
+    itemBlock.forEach((s, i) => {
         const row = document.createElement("div");
         row.className = "row";
 
@@ -78,7 +77,7 @@ function render() {
                        class="${inputClass}" ${isView ? 'readonly' : ''}
                        value="${s.name}"
                        ${placeholder}
-                       oninput="subjects[${i}].name=this.value"
+                       oninput="itemBlock[${i}].name=this.value"
                        onkeydown="onClickKey(event, ${i})"
                        id="input-${i}"
                    >
@@ -91,7 +90,7 @@ function render() {
         const input = document.getElementById(`input-${focusIndex}`);
         if (input) {
             input.focus();
-            if (subjects[focusIndex].mode !== "VIEW") input.select();
+            if (itemBlock[focusIndex].mode !== "VIEW") input.select();
             input.scrollIntoView({behavior: 'smooth', block: 'nearest'});
         }
         focusIndex = null;
@@ -100,27 +99,31 @@ function render() {
 
 function hasDuplicate(currentIndex, name) {
 
-    return subjects.some((subject, index) =>
+    return itemBlock.some((subject, index) =>
         index !== currentIndex &&
         subject.name.toLowerCase().trim() === name.toLowerCase().trim()
     );
 }
 
 function onClickKey(event, i) {
-    if (event.key === "Enter" && subjects[i].mode !== "VIEW") {
+    if (event.key === "Enter" && itemBlock[i].mode !== "VIEW") {
         saveOnClientSide(i);
     }
 
-    if (event.key === "Escape" && subjects[i].mode !== "VIEW") {
+    if (event.key === "Escape" && itemBlock[i].mode !== "VIEW") {
         cancel(i);
+    }
+
+    if (event.key === "Delete" && itemBlock[i].mode !== "VIEW") {
+        removeFromUi(i);
     }
 } //DONE
 
 function cancel(i) {
-    const s = subjects[i];
+    const s = itemBlock[i];
     if (s.mode !== "VIEW") {
         if (s.mode === "NEW") {
-            subjects.splice(i, 1);
+            itemBlock.splice(i, 1);
         }
         s.name = s.original;
         s.mode = "VIEW";
@@ -135,21 +138,21 @@ function undoAll(){
 }
 
 function removeFromUi(i) {
-    if (subjects[i].mode === "NEW") {
-        subjects.splice(i, 1);
+    if (itemBlock[i].mode === "NEW") {
+        itemBlock.splice(i, 1);
         render();
         return;
     }
-    const subjectName = subjects[i].name || "Bu fan";
+    const subjectName = itemBlock[i].name || "Bu fan";
     const confirmDelete = confirm(`⚠️ "${subjectName}"ni o'chirishni tasdiqlaysizmi?\n\nBu amalni bekor qilib bo'lmaydi.`);
     if (confirmDelete) {
-        const removedSubject = subjects[i];
+        const removedSubject = itemBlock[i];
 
         if (removedSubject.id > 0) {
             deletedSubjectIds.push(removedSubject.id);
         }
 
-        subjects.splice(i, 1);
+        itemBlock.splice(i, 1);
         showToast('success', `"${removedSubject.name || 'Fan'}" o'chirildi`, 2000);
         render();
     } else {
@@ -169,16 +172,16 @@ function buttons(s, i) {
 } //DONE
 
 function edit(i) {
-    if (subjects.some(s => s.mode === "EDIT")) {
+    if (itemBlock.some(s => s.mode === "EDIT")) {
         showToast('warning', 'Avval tahrirlashni yakuniga yetkazing!');
-        focusIndex = subjects.findIndex(s => s.mode !== "VIEW");
+        focusIndex = itemBlock.findIndex(s => s.mode !== "VIEW");
         render();
         return;
     }
-    subjects[i].mode = "EDIT";
+    itemBlock[i].mode = "EDIT";
     focusIndex = i;
 
-    oldName = subjects[i].name;
+    oldName = itemBlock[i].name;
 
     render();
 } //DONE
@@ -215,9 +218,9 @@ function showToast(type, message, duration = 4000) {
 } //TODO
 
 function add() {
-    if (subjects.some(s => s.mode === "NEW" || s.mode === "EDIT")) {
+    if (itemBlock.some(s => s.mode === "NEW" || s.mode === "EDIT")) {
         showToast('warning', 'Avval saqlash tugmasini bosing!');
-        focusIndex = subjects.findIndex(s => s.mode !== "VIEW");
+        focusIndex = itemBlock.findIndex(s => s.mode !== "VIEW");
         render();
         return;
     }
@@ -225,19 +228,19 @@ function add() {
     // ИЗМЕНЕНИЕ: Увеличиваем временный ID
     const tempId = Date.now() * -1; // Отрицательный ID для временных записей
 
-    subjects.push({
+    itemBlock.push({
         id: tempId, // Временный ID
         name: "",
         original: "",
         mode: "NEW"
     });
 
-    focusIndex = subjects.length - 1;
+    focusIndex = itemBlock.length - 1;
     render();
 }
 
 function saveOnClientSide(i) {
-    const s = subjects[i];
+    const s = itemBlock[i];
     newName = s.name.trim();
 
 
@@ -258,7 +261,7 @@ function saveOnClientSide(i) {
     }
 
     s.name = newName;
-    subjects[i].mode = "VIEW";
+    itemBlock[i].mode = "VIEW";
 
     render();
 
@@ -293,20 +296,20 @@ function saveOnClientSide(i) {
 async function saveToDb() {
 
     // Запрет: есть незавершённые записи
-    if (subjects.some(s => s.mode === "EDIT")) {
+    if (itemBlock.some(s => s.mode !== "VIEW")) {
         alert('❌ Avval tahrirlashni yakuniga yetkazing!');
-        focusIndex = subjects.findIndex(s => s.mode !== "VIEW");
+        focusIndex = itemBlock.findIndex(s => s.mode !== "VIEW");
         render();
         return;
     }
 
     // Формируем payload
     const payload = {
-        new: subjects
+        new: itemBlock
             .filter(s => s.id < 0)
             .map(s => s.name),
 
-        updated: subjects
+        updated: itemBlock
             .filter(s => s.id > 0 && s.name !== s.original)
             .map(s => (
                 { id: s.id, name: s.name }

@@ -1,4 +1,7 @@
 package behzoddev.testproject.dto;
 
-public record LoginDto(String username, String password) {
+import jakarta.validation.constraints.NotBlank;
+
+public record LoginDto(@NotBlank(message = "Username must not be blank") String username,
+                       @NotBlank(message = "Password must not be blank") String password) {
 }

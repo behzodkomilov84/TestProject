@@ -1,3 +1,7 @@
 package behzoddev.testproject.dto.batch;
 
-public record ScienceUpdateDto(Long id, String name) {}
+import jakarta.validation.constraints.NotBlank;
+
+public record ScienceUpdateDto(Long id,
+                               @NotBlank(message = "Science name must not be blank") String name) {
+}

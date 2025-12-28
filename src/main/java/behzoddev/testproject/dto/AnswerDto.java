@@ -1,4 +1,8 @@
 package behzoddev.testproject.dto;
 
-public record AnswerDto(Long id, String answerText, Boolean isTrue) {
+import jakarta.validation.constraints.NotBlank;
+
+public record AnswerDto(Long id,
+                        @NotBlank(message = "AnswerText must not be blank")  String answerText,
+                        Boolean isTrue) {
 }

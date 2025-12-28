@@ -1,5 +1,7 @@
 package behzoddev.testproject.dto;
 
-public record ScienceIdAndNameDto(Long id, String name) {
+import jakarta.validation.constraints.NotBlank;
 
-}
+public record ScienceIdAndNameDto(
+        Long id,
+        @NotBlank(message = "Science name must not be blank") String name) {}

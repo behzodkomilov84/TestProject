@@ -29,6 +29,7 @@ public class SecurityConfig {
                                 "/images/**",
                                 "/login-success",
                                 "/subjects",
+                                "/topics",
                                 "/.well-known/**"
                         ).permitAll()
                         .requestMatchers("/api/**").permitAll() // или authenticated()

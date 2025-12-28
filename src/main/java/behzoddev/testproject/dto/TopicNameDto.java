@@ -1,3 +1,5 @@
 package behzoddev.testproject.dto;
 
-public record TopicNameDto(String name) {}
+import jakarta.validation.constraints.NotBlank;
+
+public record TopicNameDto(@NotBlank(message = "Topic name must not be blank") String name) {}

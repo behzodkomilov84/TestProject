@@ -8,7 +8,10 @@ import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.exception.ErrorResponse;
+import behzoddev.testproject.service.QuestionService;
 import behzoddev.testproject.service.ScienceService;
+import behzoddev.testproject.service.TopicService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,10 +22,11 @@ import java.util.*;
 
 @RestController
 @RequiredArgsConstructor
-//@RequestMapping("/sciences")
 public class ScienceController {
 
     private final ScienceService scienceService;
+    private final TopicService topicService;
+    private final QuestionService questionService;
 
     @GetMapping("/api/science")
     @ResponseBody
@@ -34,7 +38,7 @@ public class ScienceController {
 
     @PostMapping("/api/science/save")
     @ResponseBody
-    public ResponseEntity<?> saveScience(@RequestBody Map<String,Object> payload) {
+    public ResponseEntity<?> saveScience(@Valid @RequestBody Map<String,Object> payload) {
 
         var newSubjects = (List<String>) payload.get("new");
         var needToUpdateSubjects = (List<Map<String, Object>>) payload.get("updated");
@@ -63,46 +67,6 @@ public class ScienceController {
 
         return ResponseEntity.ok(Map.of("message", "✅ Ma'lumotlar bazaga saqlandi!"));
     }
- /*List<ScienceCreateDto> listOfScienceCreateDto =
-                scienceService.toListOfScienceCreateDto(newSubjects);
-
-        List<ScienceUpdateDto> listOfScienceUpdateDto =
-                scienceService.toListOfScienceUpdateDto(needToUpdateSubjects);
-
-        List<Long> listOfDeletedScienceId =
-                deletedScienceIds.stream().map(Long::valueOf).toList();
-
-        ScienceBatchDto scienceBatchDto =
-                ScienceBatchDto.builder()
-                        .newItems(listOfScienceCreateDto)
-                        .updated(listOfScienceUpdateDto)
-                        .deletedIds(listOfDeletedScienceId)
-                        .build();
-
-        return ResponseEntity.ok(scienceService.batchSave(scienceBatchDto));*/
-
-   /* @PostMapping("/api/science/save")
-    @ResponseBody
-    public Map<String, String> saveScience(@RequestBody Map<String, Object> payload) {
-
-        List<String> newSubjects = (List<String>) payload.get("new");
-        List<Map<String, Object>> updatedSubjects = (List<Map<String, Object>>) payload.get("updated");
-
-        // Добавляем новые
-        for (String name : newSubjects) {
-            scienceService.saveScience(new ScienceNameDto(name));
-        }
-
-        // Обновляем существующие
-        for (Map<String, Object> item : updatedSubjects) {
-            Long id = ((Number) item.get("id")).longValue();
-            String name = (String) item.get("name");
-            scienceService.updateScienceName(id, name);
-        }
-
-        return Map.of("message", "✅ Ma'lumotlar bazaga saqlandi!");
-    }
-*/
 
     @GetMapping("/sciences/full")
     public ResponseEntity<Set<ScienceDto>> getSciencesFull() {
@@ -125,34 +89,34 @@ public class ScienceController {
 
     @GetMapping("/sciences/{scienceId}/topic")
     public ResponseEntity<Set<TopicIdAndNameDto>> getTopicsOfScience(@PathVariable Long scienceId) {
-        Set<TopicIdAndNameDto> topicIdAndNameDtos = scienceService.getTopicsByScienceId(scienceId);
+        Set<TopicIdAndNameDto> topicIdAndNameDtos = topicService.getTopicsByScienceId(scienceId);
 
         return ResponseEntity.ok(topicIdAndNameDtos);
     }
 
     @GetMapping("/sciences/{scienceId}/topic/{topicId}")
     public ResponseEntity<TopicIdAndNameDto> getTopicByIds(@PathVariable Long scienceId, @PathVariable Long topicId) {
-        TopicIdAndNameDto topicIdAndNameDto = scienceService.getTopicByIds(scienceId, topicId);
+        TopicIdAndNameDto topicIdAndNameDto = topicService.getTopicByIds(scienceId, topicId);
 
         return ResponseEntity.ok(topicIdAndNameDto);
     }
 
     @GetMapping("/sciences/{scienceId}/topic/{topicId}/questions")
     public ResponseEntity<List<QuestionDto>> getQuestionsByIds(@PathVariable Long scienceId, @PathVariable Long topicId) {
-        List<QuestionDto> questionDto = scienceService.getQuestionsByIds(scienceId, topicId);
+        List<QuestionDto> questionDto = questionService.getQuestionsByIds(scienceId, topicId);
 
         return ResponseEntity.ok(questionDto);
     }
 
     @GetMapping("/questions/{questionId}")
     public ResponseEntity<QuestionDto> getQuestionById(@PathVariable Long questionId) {
-        QuestionDto questionDto = scienceService.getQuestionById(questionId);
+        QuestionDto questionDto = questionService.getQuestionById(questionId);
 
         return ResponseEntity.ok(questionDto);
     }
 
     @PostMapping("/sciences")
-    public ResponseEntity<?> createScience(@RequestBody ScienceNameDto scienceNameDto) {
+    public ResponseEntity<?> createScience(@Valid @RequestBody ScienceNameDto scienceNameDto) {
 
         Optional<Science> existing = scienceService.getByName(scienceNameDto.name());
         if (existing.isPresent()) {
@@ -172,10 +136,10 @@ public class ScienceController {
     @PostMapping("/sciences/{scienceId}/topic")
     public ResponseEntity<?> createTopic(
             @PathVariable Long scienceId,
-            @RequestBody TopicNameDto topicNameDto
+            @Valid @RequestBody TopicNameDto topicNameDto
     ) {
         Set<TopicIdAndNameDto> existingTopics =
-                scienceService.getTopicsByScienceId(scienceId);
+                topicService.getTopicsByScienceId(scienceId);
 
         boolean exists = existingTopics.stream()
                 .anyMatch(t -> t.name().equalsIgnoreCase(topicNameDto.name()));
@@ -188,7 +152,7 @@ public class ScienceController {
                     ));
         }
 
-        Topic topic = scienceService.saveTopic(scienceId, topicNameDto);
+        Topic topic = topicService.saveTopic(scienceId, topicNameDto);
 
         return ResponseEntity.created(
                 URI.create("sciences/" + scienceId + "/topic/" + topic.getId())
@@ -197,12 +161,12 @@ public class ScienceController {
 
     @PostMapping("topic/{topicId}")
     public ResponseEntity<?> createQuestion(@PathVariable Long topicId,
-                                            @RequestBody QuestionShortDto newQuestion) {
+                                            @Valid @RequestBody QuestionShortDto newQuestion) {
 
         List<QuestionShortDto> existingQuestions =
-                scienceService.getQuestionsByTopicId(topicId);
+                questionService.getQuestionsByTopicId(topicId);
 
-        if (scienceService.isQuestionWithAnswersExists(existingQuestions, newQuestion)) {
+        if (questionService.isQuestionWithAnswersExists(existingQuestions, newQuestion)) {
             return ResponseEntity.status(HttpStatus.CONFLICT)
                     .body(new ErrorResponse(
                             "A question with such answers already exists.",
@@ -210,7 +174,7 @@ public class ScienceController {
                     ));
         }
 
-        Question question = scienceService.saveQuestion(topicId, newQuestion);
+        Question question = questionService.saveQuestion(topicId, newQuestion);
 
         return ResponseEntity.created(
                 URI.create("sciences/" + scienceService.getScienceIdByTopicId(topicId)
@@ -219,7 +183,7 @@ public class ScienceController {
     }
 
     @PutMapping("/sciences")
-    public ResponseEntity<?> updateScience(@RequestBody Science science) {
+    public ResponseEntity<?> updateScience(@Valid @RequestBody Science science) {
 
         boolean scienceNameExist = scienceService.isScienceNameExist(science.getName());
         boolean scienceIdExist = scienceService.isScienceIdExist(science.getId());
@@ -248,7 +212,7 @@ public class ScienceController {
     }
 
     @PatchMapping("/sciences")
-    public ResponseEntity<Void> updateScienceName(@RequestParam Long id, @RequestParam String name) {
+    public ResponseEntity<Void> updateScienceName(@RequestParam Long id,@Valid @RequestParam String name) {
         scienceService.updateScienceName(id, name);
         return ResponseEntity.ok().build();
     }
@@ -261,13 +225,13 @@ public class ScienceController {
 
     @DeleteMapping("/topic/{topicId}")
     public ResponseEntity<Void> deleteTopic(@PathVariable Long topicId) {
-        scienceService.removeTopic(topicId);
+        topicService.removeTopic(topicId);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/questions/{questionId}")
     public ResponseEntity<Void> deleteQuestion(@PathVariable Long questionId) {
-        scienceService.removeQuestion(questionId);
+        questionService.removeQuestion(questionId);
         return ResponseEntity.noContent().build();
     }
 }
