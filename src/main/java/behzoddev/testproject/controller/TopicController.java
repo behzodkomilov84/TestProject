@@ -5,6 +5,7 @@ import behzoddev.testproject.dto.TopicNameDto;
 import behzoddev.testproject.service.TopicService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -12,7 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-@RestController
+@Controller
 @RequiredArgsConstructor
 
 public class TopicController {
@@ -28,9 +29,9 @@ public class TopicController {
 
     @PostMapping("/api/topic/save")
 //    @ResponseBody
-    public ResponseEntity<Object> saveTopic(@RequestBody Map<Object , Object> payload) {
+    public ResponseEntity<Object> saveTopic(@RequestBody Map<Object, Object> payload) {
 
-        var newTopics = (List<Map<Object , Object>>) payload.get("new");
+        var newTopics = (List<Map<Object, Object>>) payload.get("new");
 
 
         var needToUpdateTopics = (List<Map<Object, Object>>) payload.get("updated");
@@ -41,7 +42,7 @@ public class TopicController {
         }
 
         // Добавляем новые
-        for (Map<Object , Object> item : newTopics) {
+        for (Map<Object, Object> item : newTopics) {
 
             Long scienceId = Long.parseLong(item.get("science_id").toString());
 
@@ -64,7 +65,7 @@ public class TopicController {
         return ResponseEntity.ok(Map.of("message", "✅ Ma'lumotlar bazaga saqlandi!"));
     }
 
-    @GetMapping("/sciences/{scienceId}/topic/{topicId}")
+    @GetMapping("/science/{scienceId}/topic/{topicId}")
     public ResponseEntity<TopicIdAndNameDto> getTopicByIds(@PathVariable Long scienceId, @PathVariable Long topicId) {
         TopicIdAndNameDto topicIdAndNameDto = topicService.getTopicByIds(scienceId, topicId);
 

@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 import java.net.URI;
 import java.util.*;
 
-@RestController
+@Controller
 @RequiredArgsConstructor
 public class ScienceController {
 
@@ -36,7 +36,7 @@ public class ScienceController {
 
     @PostMapping("/api/science/save")
     @ResponseBody
-    public ResponseEntity<?> saveScience(@RequestBody Map<String,Object> payload) {
+    public ResponseEntity<?> saveScience(@RequestBody Map<String, Object> payload) {
 
         var newSubjects = (List<String>) payload.get("new");
         var needToUpdateSubjects = (List<Map<String, Object>>) payload.get("updated");
@@ -66,26 +66,26 @@ public class ScienceController {
         return ResponseEntity.ok(Map.of("message", "✅ Ma'lumotlar bazaga saqlandi!"));
     }
 
-    @GetMapping("/sciences/full")
+    @GetMapping("/science/full")
     public ResponseEntity<Set<ScienceDto>> getSciencesFull() {
         Set<ScienceDto> sciences = scienceService.getAllSciencesDto();
 
         return ResponseEntity.ok(sciences);
     }
 
-    @GetMapping("/sciences/{scienceId}")
+    @GetMapping("/science/{scienceId}")
     public ResponseEntity<ScienceIdAndNameDto> getScienceNameById(@PathVariable Long scienceId) {
         ScienceIdAndNameDto scienceNameDto = scienceService.getScienceNameById(scienceId).orElseThrow();
         return ResponseEntity.ok(scienceNameDto);
     }
 
-    @GetMapping("/sciences/{scienceId}/full")
+    @GetMapping("/science/{scienceId}/full")
     public ResponseEntity<ScienceDto> getScience(@PathVariable Long scienceId) {
         ScienceDto scienceDto = scienceService.getScienceById(scienceId).orElseThrow();
         return ResponseEntity.ok(scienceDto);
     }
 
-    @PostMapping("/sciences")
+    @PostMapping("/science")
     public ResponseEntity<?> createScience(@Valid @RequestBody ScienceNameDto scienceNameDto) {
 
         Optional<Science> existing = scienceService.getByName(scienceNameDto.name());
@@ -103,7 +103,7 @@ public class ScienceController {
                 ).body("Science with name '" + scienceNameDto.name() + "' was created");
     }
 
-    @PostMapping("/sciences/{scienceId}/topic")
+    @PostMapping("/science/{scienceId}/topic")
     public ResponseEntity<?> createTopic(
             @PathVariable Long scienceId,
             @Valid @RequestBody TopicNameDto topicNameDto
@@ -125,7 +125,7 @@ public class ScienceController {
         Topic topic = topicService.saveTopic(scienceId, topicNameDto);
 
         return ResponseEntity.created(
-                URI.create("sciences/" + scienceId + "/topic/" + topic.getId())
+                URI.create("science/" + scienceId + "/topic/" + topic.getId())
         ).build();
     }
 
@@ -147,12 +147,12 @@ public class ScienceController {
         Question question = questionService.saveQuestion(topicId, newQuestion);
 
         return ResponseEntity.created(
-                URI.create("sciences/" + scienceService.getScienceIdByTopicId(topicId)
+                URI.create("science/" + scienceService.getScienceIdByTopicId(topicId)
                         + "/topic/" + topicId + "/questions/" + question.getId())
         ).build();
     }
 
-    @PutMapping("/sciences")
+    @PutMapping("/science")
     public ResponseEntity<?> updateScience(@Valid @RequestBody Science science) {
 
         boolean scienceNameExist = scienceService.isScienceNameExist(science.getName());
@@ -181,13 +181,13 @@ public class ScienceController {
         return ResponseEntity.noContent().build();
     }
 
-    @PatchMapping("/sciences")
-    public ResponseEntity<Void> updateScienceName(@RequestParam Long id,@Valid @RequestParam String name) {
+    @PatchMapping("/science")
+    public ResponseEntity<Void> updateScienceName(@RequestParam Long id, @Valid @RequestParam String name) {
         scienceService.updateScienceName(id, name);
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/sciences/{scienceId}")
+    @DeleteMapping("/science/{scienceId}")
     public ResponseEntity<Void> deleteScience(@PathVariable Long scienceId) {
         scienceService.removeScience(scienceId);
         return ResponseEntity.noContent().build();

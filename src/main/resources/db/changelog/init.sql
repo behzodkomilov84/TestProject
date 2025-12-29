@@ -50,6 +50,6 @@ create table topics
 (
     id         bigint not null auto_increment,
     science_id bigint not null,
-    name       varchar(255),
+    name       varchar(255) NOT NULL UNIQUE,
     primary key (id)
 );

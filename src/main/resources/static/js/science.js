@@ -452,5 +452,19 @@ async function saveToDb() {
     }
 }
 
+//===========================================================================
+//          BACK tugmasini bosganda ishlaydi.
+// ===========================================================================
+const
+    focusId =
+        Number(new URLSearchParams(window.location.search).get("focus"));
+
+if (focusId) {
+    focusIndex = itemBlock.findIndex(s => s.id === focusId);
+}
+render();
+
+//===========================================================================
+
 
 

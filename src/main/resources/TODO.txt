@@ -1,0 +1,10 @@
+-BackEndda topics ni dublikat saqlashini oldini olish
+
+-Frontda mavzuni ustiga bosganda faqat Enter bilan kiryapti. Mishka bilan kiradigan qilish kk
+
+-Mavzuni ustiga bosganda testlarga kiradigan qilish kk.
+
+-Savol yaratadigan page yasash kk. Unda inputda savol, 4 ta javob, 1 tasida to'g'ri belgilanishi kk.
+    Saqlash tugmasini bosganda bo'shliqni tekshirish kk.
+
+- js fayllardagi dublikat kodlarni refactoring qilish

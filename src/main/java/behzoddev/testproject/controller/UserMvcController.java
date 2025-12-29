@@ -8,7 +8,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
@@ -38,12 +37,12 @@ public class UserMvcController {
     @PostMapping("/signin")
     public String login(@ModelAttribute LoginDto dto) {
         userService.checkCredentials(dto);
-        return "redirect:/subjects";
+        return "redirect:/science";
     }
 
-    @GetMapping("/subjects")
+    @GetMapping("/science")
     public String login_success() {
-        return "subjects";
+        return "science";
     }
 }
 

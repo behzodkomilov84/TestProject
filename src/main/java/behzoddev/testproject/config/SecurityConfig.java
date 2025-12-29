@@ -28,7 +28,7 @@ public class SecurityConfig {
                                 "/js/**",
                                 "/images/**",
                                 "/login-success",
-                                "/subjects",
+                                "/science",
                                 "/topics",
                                 "/.well-known/**"
                         ).permitAll()

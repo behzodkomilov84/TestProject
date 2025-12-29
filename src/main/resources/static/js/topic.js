@@ -453,5 +453,31 @@ async function saveToDb() {
     }
 }//DONE
 
+//===========================================================================
+//            BACK tugmasini bosganda ishlaydi.
+//===========================================================================
+document.addEventListener("DOMContentLoaded", () => {
+    const btnBack = document.getElementById("btnBack");
+
+    if (!btnBack) return;
+
+    btnBack.onclick = () => {
+        const scienceId =
+            new URLSearchParams(window.location.search).get("scienceId");
+
+        if (!scienceId) {
+            // fallback
+            window.location.href = "/science";
+            return;
+        }
+
+        window.location.href = `/science?focus=${scienceId}`;
+    };
+});
+//===========================================================================
+
+
+
+
 
 

@@ -6,7 +6,9 @@ import lombok.*;
 import java.util.Set;
 
 @Entity
-@Table(name = "topics", schema = "test_project")
+@Table(name = "topics",
+        schema = "test_project",
+        uniqueConstraints = @UniqueConstraint(columnNames = "name"))
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -19,6 +21,7 @@ public class Topic {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
     private String name;
 
     @OneToMany(mappedBy = "topic", cascade = CascadeType.PERSIST)
