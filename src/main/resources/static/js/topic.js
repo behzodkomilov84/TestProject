@@ -3,34 +3,38 @@
 // ========================================================================
 
 let itemBlock = []; // сюда будут загружены данные из БД
-let deletedSubjectIds = []; // FRONTEND da o'chirilganlarni id'si (Agar u DB da ham bo'lsa)
+let deletedTopicIds = []; // FRONTEND da o'chirilganlarni id'si (Agar u DB da ham bo'lsa)
 let focusIndex = null;//для курсора
 
 let oldName = ""; //for EDIT uses
 let newName = ""; //for EDIT uses
 // ========================================================================
 
-afterStartPage("/api/science");
+const scienceId = getScienceId();
+
+if (!scienceId) {
+    alert("❌ scienceId topilmadi (HTML dan)");
+} else {
+    afterStartPage(`/api/topic?scienceId=${scienceId}`);
+}
+
 
 
 // ========================================================================
 //                      Functions
 // ========================================================================
 
+function getScienceId() {
+    const element = document.getElementById("scienceId");
+    return element ? element.value : null;
+}
+
 function afterStartPage(mapping) {
-
-    const messageName =
-        mapping === "/api/science" ? "Fanlar"
-            : mapping === "/api/topic" ? "Mavzular"
-                : mapping === "/api/question" ? "Savollar" : '';
-
-    document.addEventListener("DOMContentLoaded", () => {
         reloadFromDb(mapping).then(r => {
             focusIndex = 0;// выбрать первый элемент
             render();// отрисовать список с выделением
         });
-    });
-}
+} //DONE
 
 async function reloadFromDb(mapping) {
     const response = await fetch(mapping);
@@ -41,7 +45,7 @@ async function reloadFromDb(mapping) {
         }
     } catch (err) {
         console.error('Yuklash xatosi:', err);
-        showToast('error', `Fanlarni yuklashda xatolik`, 4000);
+        showToast('error', `Mavzularni yuklashda xatolik`, 4000);
     }
 
     const data = await response.json();
@@ -53,7 +57,7 @@ async function reloadFromDb(mapping) {
         mode: "VIEW"
     }));
 
-}
+} //DONE
 
 function render() {
     const list = document.getElementById("list");
@@ -66,7 +70,7 @@ function render() {
         const isView = s.mode === "VIEW";
         const isLink = isView && s.id !== null;
         const isNew = s.mode === "NEW";
-        const placeholder = isNew ? 'placeholder="Yangi fan nomini kiriting"' : '';
+        const placeholder = isNew ? 'placeholder="Yangi mavzu nomini kiriting"' : '';
 
         // Проверяем дубликаты для текущего элемента
         const hasDup = !isView && hasDuplicate(i, s.name);
@@ -82,9 +86,9 @@ function render() {
             <div
             class="row-view"
             tabindex="0"
-            ondblclick="openTopics(${s.id})"
+            ondblclick="openQuestions(${s.id})"
             onkeydown="onViewKeyDown(event, ${i})"
-            title="Enter — Мавзуларни очиш | ↑ ↓ — навигация"
+            title="Enter — Саволларни очиш | ↑ ↓ — навигация"
         >
             <input
                 id="input-${i}"
@@ -120,17 +124,16 @@ function render() {
         const input = document.getElementById(`input-${focusIndex}`);
         if (input) {
             input.focus();
-            // if (itemBlock[focusIndex].mode !== "VIEW") input.select();
             input.scrollIntoView({behavior: 'smooth', block: 'nearest'});
         }
         focusIndex = null;
     }
-}
+} //DONE
 
-function openTopics(scienceId) {
-    if (!scienceId || scienceId < 0) {
+function openQuestions(topicId) {
+    if (!topicId || topicId < 0) {
         // ВАРИАНТ 1 — запрет
-        alert("❗ Бу фан базада йўқ");
+        alert("❗ Бу мавзу бўйича саволлар базада йўқ");
         return;
 
         // ВАРИАНТ 2 — разрешить пустые темы
@@ -138,16 +141,16 @@ function openTopics(scienceId) {
         // return;
     }
 
-    window.location.href = `/topics?scienceId=${scienceId}`;
-}
+    window.location.href = `/questions?topicId=${topicId}`;
+} //TODO
 
 function hasDuplicate(currentIndex, name) {
 
-    return itemBlock.some((subject, index) =>
+    return itemBlock.some((topic, index) =>
         index !== currentIndex &&
-        subject.name.toLowerCase().trim() === name.toLowerCase().trim()
+        topic.name.toLowerCase().trim() === name.toLowerCase().trim()
     );
-}
+} //DONE
 
 function onClickKey(event, i) {
     if (event.key === "Enter" && itemBlock[i].mode !== "VIEW") {
@@ -175,7 +178,7 @@ function onViewKeyDown(event, index) {
 
         case "Enter":
             event.preventDefault();
-            openTopics(s.id);
+            openQuestions(s.id);
             break;
 
         case "ArrowUp":
@@ -188,13 +191,13 @@ function onViewKeyDown(event, index) {
             moveFocus(index + 1);
             break;
     }
-}
+} //DONE
 
 function moveFocus(newIndex) {
     if (newIndex < 0 || newIndex >= itemBlock.length) return;
     focusIndex = newIndex;
     render();
-}
+}//DONE
 
 function cancel(i) {
     const s = itemBlock[i];
@@ -210,11 +213,11 @@ function cancel(i) {
 } //DONE
 
 function undoAll() {
-    reloadFromDb("/api/science").then(r => {
+    reloadFromDb(`/api/topic?scienceId=${scienceId}`).then(r => {
         render()
     });
     showToast('info', 'Ma\'lumotlar bazasidan qayta yuklandi ', 4000);
-}
+}//DONE
 
 function removeFromUi(i) {
     if (itemBlock[i].mode === "NEW") {
@@ -222,17 +225,17 @@ function removeFromUi(i) {
         render();
         return;
     }
-    const subjectName = itemBlock[i].name || "Bu fan";
-    const confirmDelete = confirm(`⚠️ "${subjectName}"ni o'chirishni tasdiqlaysizmi?\n\nBu amalni bekor qilib bo'lmaydi.`);
+    const topicName = itemBlock[i].name || "Bu mavzu";
+    const confirmDelete = confirm(`⚠️ "${topicName}"ni o'chirishni tasdiqlaysizmi?\n\nKeyin bu amalni bekor qilib bo'lmaydi.`);
     if (confirmDelete) {
-        const removedSubject = itemBlock[i];
+        const removedTopic = itemBlock[i];
 
-        if (removedSubject.id > 0) {
-            deletedSubjectIds.push(removedSubject.id);
+        if (removedTopic.id > 0) {
+            deletedTopicIds.push(removedTopic.id);
         }
 
         itemBlock.splice(i, 1);
-        showToast('success', `"${removedSubject.name || 'Fan'}" o'chirildi`, 2000);
+        showToast('success', `"${removedTopic.name || 'Mavzu'}" o'chirildi`, 2000);
         render();
     } else {
         cancel(i);
@@ -241,13 +244,13 @@ function removeFromUi(i) {
 
 function buttons(s, i) {
     if (s.mode === "VIEW") {
-        return `<button onclick="edit(${i})">✏️ Edit</button>`; //TODO
+        return `<button onclick="edit(${i})">✏️ Edit</button>`;
     }
     return `
                <button onclick="saveOnClientSide(${i})">💾 Save</button>
                <button onclick="cancel(${i})">↩ Cancel</button>
                <button onclick="removeFromUi(${i})">🗑️ Delete</button> 
-           `; //TODO
+           `;
 } //DONE
 
 function edit(i) {
@@ -294,7 +297,7 @@ function showToast(type, message, duration = 4000) {
     }, duration);
 
     return toast;
-} //TODO
+} //DONE
 
 function add() {
     if (itemBlock.some(s => s.mode === "NEW" || s.mode === "EDIT")) {
@@ -316,7 +319,7 @@ function add() {
 
     focusIndex = itemBlock.length - 1;
     render();
-}
+} //DONE
 
 function saveOnClientSide(i) {
     const s = itemBlock[i];
@@ -324,16 +327,16 @@ function saveOnClientSide(i) {
 
 
     if (newName === "") {
-        alert('❌ Fan nomi bo\'sh bo\'lishi mumkin emas!');
+        alert('❌ Mavzu matni bo\'sh bo\'lishi mumkin emas!');
         focusIndex = i;
-        console.error("Fan nomi bo\'sh bo\'lishi mumkin emas!");
+        console.error("Mavzu matni bo\'sh bo\'lishi mumkin emas!");
 
         return;
     }
 
     // проверка дубликатов на фронте
     if (hasDuplicate(i, newName)) {
-        alert('❌ Bu fan nomi allaqachon mavjud!');
+        alert('❌ Bu mavzu nomi allaqachon mavjud!');
         focusIndex = i;
         console.log("hasDuplicate = true");
         return;
@@ -344,9 +347,6 @@ function saveOnClientSide(i) {
 
     render();
 
-    // Сохраняем текущее значение как оригинальное для будущих сравнений
-    // s.original = name;
-
     // Определяем тип операции
     if (newName === oldName) {
         showToast('info', 'O\'zgarish bo\'lmadi', 3000);
@@ -356,21 +356,21 @@ function saveOnClientSide(i) {
         if (newName === oldName) {
             showToast('info', 'O\'zgarish bo\'lmadi', 3000);
         } else {
-            showToast('info', 'Yangi fan o\'zgardi', 3000);
+            showToast('info', 'Yangi mavzu o\'zgardi', 3000);
         }
-        showToast('success', 'Yangi fan saqlandi \n\n(bazaga saqlash uchun "Bazaga saqlash" tugmasini bosing)', 3000);
+        showToast('success', 'Yangi mavzu saqlandi \n\n(bazaga saqlash uchun "Bazaga saqlash" tugmasini bosing)', 3000);
     } else {
         // Существующая запись из БД
         if (newName === oldName) {
             showToast('warm', 'O\'zgarish bo\'lmadi', 3000);
         } else {
-            showToast('success', 'Fan muvaffaqiyatli saqlandi', 3000);
+            showToast('success', 'Mavzu muvaffaqiyatli saqlandi', 3000);
         }
 
     }
     oldName = "";
     newName = "";
-}
+}//DONE
 
 async function saveToDb() {
 
@@ -386,7 +386,8 @@ async function saveToDb() {
     const payload = {
         new: itemBlock
             .filter(s => s.id < 0)
-            .map(s => s.name),
+            .map(s => (
+                {science_id: scienceId, name: s.name})),
 
         updated: itemBlock
             .filter(s => s.id > 0 && s.name !== s.original)
@@ -394,14 +395,14 @@ async function saveToDb() {
                 {id: s.id, name: s.name}
             )),
 
-        deletedIds: deletedSubjectIds
+        deletedIds: deletedTopicIds
     };
 
     // Если нечего сохранять — выходим
     if (
         payload.new.length === 0 &&
         payload.updated.length === 0 &&
-        deletedSubjectIds.length === 0) {
+        deletedTopicIds.length === 0) {
         alert('ℹ️ Saqlash uchun o‘zgarishlar yo‘q');
         return;
     }
@@ -410,7 +411,7 @@ async function saveToDb() {
     const confirmed = confirm(
         `Yangi: ${payload.new.length} ta\n` +
         `O\'zgartirilgan: ${payload.updated.length} ta\n\n` +
-        `O\'chirilgan: ${deletedSubjectIds.length} ta\n\n` +
+        `O\'chirilgan: ${deletedTopicIds.length} ta\n\n` +
         `Saqlashni xohlaysizmi?`
     );
     if (!confirmed) return;
@@ -419,7 +420,7 @@ async function saveToDb() {
         showToast('info', 'Maʼlumotlar bazaga saqlanmoqda...', 5000);
 
         // 6. Отправка в backend
-        const response = await fetch("/api/science/save",
+        const response = await fetch("/api/topic/save",
             {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
@@ -437,20 +438,20 @@ async function saveToDb() {
             'success',
             `Saqlandi: yangi — ${payload.new.length}, \n
             o‘zgartirilgan — ${payload.updated.length}, \n\n
-            o'chirilgan - ${deletedSubjectIds.length} ta`,
+            o'chirilgan - ${deletedTopicIds.length} ta`,
             5000
         );
 
         // 🔑 КЛЮЧЕВОЕ МЕСТО — ПОЛНАЯ СИНХРОНИЗАЦИЯ С БД
-        deletedSubjectIds = [];
-        await reloadFromDb("/api/science");
+        deletedTopicIds = [];
+        await reloadFromDb(`/api/topic?scienceId=${scienceId}`);
 
     } catch (err) {
         console.error(err);
         showToast('error', err.message || 'Saqlashda xatolik', 7000);
         alert(err.message);
     }
-}
+}//DONE
 
 
 

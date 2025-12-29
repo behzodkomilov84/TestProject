@@ -15,7 +15,7 @@
 
     <!-- Подключение CSS -->
     <link rel="stylesheet" href="/css/subject.css">
-    <script src="/js/main.js" defer></script>
+    <script src="/js/topic.js" defer></script>
     <!-- Подключение шрифтов Google -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,9 +31,8 @@
 </head>
 
 <body>
-
 <h1>Mavzular</h1>
-
+<input type="hidden" id="scienceId" th:value="${scienceId}">
 <!-- ОСНОВНОЙ КОНТЕЙНЕР -->
 <div class="wrapper">
 
@@ -43,29 +42,24 @@
     -->
     <div class="error" id="error"></div>
 
-    <!-- КОНТЕЙНЕР СПИСКА ТЕМА -->
+    <!-- КОНТЕЙНЕР СПИСКА ПРЕДМЕТОВ -->
     <div class="list" id="list"></div>
 
     <!-- НИЖНЯЯ ПАНЕЛЬ С КНОПКАМИ УПРАВЛЕНИЯ -->
     <div class="fixed-bar">
         <div>
-            <!-- КНОПКА ДОБАВЛЕНИЯ НОВОГО ТЕМА -->
+            <!-- КНОПКА ДОБАВЛЕНИЯ НОВОГО ПРЕДМЕТА -->
             <button onclick="add()">➕ Add</button>
             <button onclick="undoAll()">🔃 Reload</button>
 
         </div>
 
-            <!-- КНОПКА СОХРАНЕНИЯ В БАЗУ ДАННЫХ -->
-            <button onclick="saveToDb()">💾 Save to DB</button>
+        <!-- КНОПКА СОХРАНЕНИЯ В БАЗУ ДАННЫХ -->
+        <button onclick="saveToDb()">💾 Save to DB</button>
     </div>
 </div>
 
 <!-- Контейнер для Toast-уведомлений (добавлено) -->
 <div id="toast-container"></div>
-
-<script>
-
-</script>
-
 </body>
 </html>

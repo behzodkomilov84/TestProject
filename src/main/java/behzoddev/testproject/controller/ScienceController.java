@@ -1,9 +1,6 @@
 package behzoddev.testproject.controller;
 
 import behzoddev.testproject.dto.*;
-import behzoddev.testproject.dto.batch.ScienceBatchDto;
-import behzoddev.testproject.dto.batch.ScienceCreateDto;
-import behzoddev.testproject.dto.batch.ScienceUpdateDto;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
@@ -15,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -38,7 +36,7 @@ public class ScienceController {
 
     @PostMapping("/api/science/save")
     @ResponseBody
-    public ResponseEntity<?> saveScience(@Valid @RequestBody Map<String,Object> payload) {
+    public ResponseEntity<?> saveScience(@RequestBody Map<String,Object> payload) {
 
         var newSubjects = (List<String>) payload.get("new");
         var needToUpdateSubjects = (List<Map<String, Object>>) payload.get("updated");
@@ -85,34 +83,6 @@ public class ScienceController {
     public ResponseEntity<ScienceDto> getScience(@PathVariable Long scienceId) {
         ScienceDto scienceDto = scienceService.getScienceById(scienceId).orElseThrow();
         return ResponseEntity.ok(scienceDto);
-    }
-
-    @GetMapping("/sciences/{scienceId}/topic")
-    public ResponseEntity<Set<TopicIdAndNameDto>> getTopicsOfScience(@PathVariable Long scienceId) {
-        Set<TopicIdAndNameDto> topicIdAndNameDtos = topicService.getTopicsByScienceId(scienceId);
-
-        return ResponseEntity.ok(topicIdAndNameDtos);
-    }
-
-    @GetMapping("/sciences/{scienceId}/topic/{topicId}")
-    public ResponseEntity<TopicIdAndNameDto> getTopicByIds(@PathVariable Long scienceId, @PathVariable Long topicId) {
-        TopicIdAndNameDto topicIdAndNameDto = topicService.getTopicByIds(scienceId, topicId);
-
-        return ResponseEntity.ok(topicIdAndNameDto);
-    }
-
-    @GetMapping("/sciences/{scienceId}/topic/{topicId}/questions")
-    public ResponseEntity<List<QuestionDto>> getQuestionsByIds(@PathVariable Long scienceId, @PathVariable Long topicId) {
-        List<QuestionDto> questionDto = questionService.getQuestionsByIds(scienceId, topicId);
-
-        return ResponseEntity.ok(questionDto);
-    }
-
-    @GetMapping("/questions/{questionId}")
-    public ResponseEntity<QuestionDto> getQuestionById(@PathVariable Long questionId) {
-        QuestionDto questionDto = questionService.getQuestionById(questionId);
-
-        return ResponseEntity.ok(questionDto);
     }
 
     @PostMapping("/sciences")

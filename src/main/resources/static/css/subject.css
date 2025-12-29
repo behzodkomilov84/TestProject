@@ -27,7 +27,7 @@ h1 {
 
 /* Контейнер списка предметов */
 .list {
-    max-height: 320px;
+    /*max-height: 320px;*/
     overflow-y: auto;
     border: 1px solid #444;
     padding: 10px;
@@ -73,6 +73,30 @@ h1 {
     input.view.link:hover {
         text-decoration: underline;
         cursor: pointer;
+    }
+
+
+    .row-link {
+        text-decoration: none;
+        display: flex;
+        flex: 1 1 auto;
+    }
+
+    .row-link input {
+        cursor: pointer;
+
+    }
+
+    .row-view {
+        cursor: pointer;
+        flex: 1 1 auto;
+    }
+
+    .row-view input{
+        cursor: pointer;
+        /*flex: 1 1 auto;*/
+        width: 97%;
+
     }
 
     /* Кнопки */
