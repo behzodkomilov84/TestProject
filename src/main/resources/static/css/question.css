@@ -1,0 +1,188 @@
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #6ca3b7;
+}
+
+.container {
+    max-width: 900px;
+    margin: 120px auto 20px auto;
+    padding: 16px;
+    background: #ccdae1;
+    border-radius: 12px;
+    box-shadow: 0 6px 24px rgba(3, 2, 2, 0.87);
+}
+
+.top-element {
+    display: grid;
+    grid-template-columns:  auto 1fr auto;
+    align-items: center;
+
+    position: fixed;
+    top: 16px;
+
+    left: 50%;
+    transform: translateX(-50%);
+
+    width: 100%;
+    max-width: 1000px;
+
+    background: #a2bdb9;
+    box-shadow: 0 6px 24px rgba(3, 2, 2, 0.87);
+    border-radius: 15px;
+    z-index: 1000;
+}
+
+
+.back-btn {
+    justify-self: start;
+    height: 42px;
+    margin-left: 16px;
+    justify-content: center;
+}
+
+.create-btn {
+    margin-right: 16px;
+    justify-self: end;
+    height: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+button {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    background: #1976d2;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #125aa3;
+}
+
+
+h1 {
+    justify-self: center;
+}
+
+.question-block {
+    background: #fff;
+    border: 1px solid #444;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    margin-top: 15px;
+
+    display: none; /*Blok ekranda ko'rinmay turadi*/
+}
+
+.question-block.active{
+    display: block;/*Faqat aktiv blok ekranda ko'rinadi*/
+}
+
+.question-block h3 {
+    text-align: left;
+    background: #d5c28f;
+    border: 1px solid #605f5f;
+    border-radius: 10px;
+    padding: 15px;
+    font-weight: bold;
+    font-size: 25px;
+    margin-bottom: 30px;
+    margin-top: 0px;
+}
+
+.question-block ul {
+    list-style-type: upper-alpha; /* A, B, C, D */
+}
+
+.question-block ul label {
+    display: flex;
+    align-items: center;
+    padding: 27px 16px;
+    cursor: pointer;
+    min-height: 56px; /* одинаковая высота строки */
+    box-sizing: border-box;
+    border-radius: 10px;
+}
+
+.question-block li {
+    background: #fff;
+    border: 1px solid #605f5f;
+    border-radius: 10px;
+    font-weight: 500;
+    font-size: 23px;
+    box-shadow: 0 6px 24px rgba(63, 49, 49, 0.87);
+    margin-bottom: 10px;
+}
+
+.question-block li:hover {
+    background-color: #e8dbc4;
+}
+
+/*🔑 ВЫБРАННЫЙ ОТВЕТ — ОСТАЁТСЯ КАК HOVER*/
+ul input[type="radio"]:checked + span {
+    font-weight: 600;
+}
+
+/* главное правило*/
+ul input[type="radio"]:checked {
+    accent-color: #2f80ed;
+}
+
+/* фиксируем hover-цвет навсегда*/
+ul input[type="radio"]:checked ~ span,
+.answers input[type="radio"]:checked ~ * {
+    background: none;
+}
+
+/*⬇️ ВОТ ЭТО — КЛЮЧЕВОЕ*/
+ul input[type="radio"]:checked + span,
+ul input[type="radio"]:checked {
+    pointer-events: none;
+}
+
+/* применяем фон к label, если radio выбран*/
+ul label:has(input[type="radio"]:checked) {
+
+    border-color: #2f80ed;
+    background-color: #93e390;
+    height: fit-content;
+}
+
+.question-card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    font-size: 22px;
+}
+
+.question-text {
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+
+.answers {
+    margin-left: 16px;
+
+}
+
+.answer {
+    padding: 16px 0;
+}
+
+.correct {
+    color: green;
+    font-weight: bold;
+}
+
+
+.empty {
+    color: #777;
+}

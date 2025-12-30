@@ -1,12 +1,16 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.AnswerRepository;
 import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dto.AnswerShortDto;
 import behzoddev.testproject.dto.QuestionDto;
+import behzoddev.testproject.dto.QuestionSaveDto;
 import behzoddev.testproject.dto.QuestionShortDto;
 import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Question;
+import behzoddev.testproject.entity.Topic;
+import behzoddev.testproject.mapper.AnswerMapper;
 import behzoddev.testproject.mapper.QuestionMapper;
 import behzoddev.testproject.validation.Validation;
 import lombok.RequiredArgsConstructor;
@@ -19,9 +23,11 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class QuestionService {
+    private final AnswerRepository answerRepository;
     private final QuestionRepository questionRepository;
-    private final QuestionMapper questionMapper;
     private final TopicRepository topicRepository;
+    private final QuestionMapper questionMapper;
+    private final AnswerMapper answerMapper;
 
     @Transactional(readOnly = true)
     public List<QuestionDto> getQuestionsByIds(Long scienceId, Long topicId) {
@@ -35,6 +41,13 @@ public class QuestionService {
         return questionMapper.mapQuestionListToQuestionShortDtoList(questions);
     }
 
+    @Transactional(readOnly = true)
+    public List<QuestionDto> getQuestionDtoListByTopicId(Long topicId) {
+        List<Question> questions = questionRepository.getQuestionsByTopicId(topicId);
+        return questionMapper.mapQuestionListToQuestionDtoList(questions);
+    }
+
+    @Transactional(readOnly = true)
     public boolean isQuestionWithAnswersExists(
             @NotNull List<QuestionShortDto> existingQuestions,
             QuestionShortDto newQuestion
@@ -85,10 +98,30 @@ public class QuestionService {
         questionRepository.deleteById(questionId);
     }
 
+    @Transactional
+    public void save(QuestionSaveDto questionSaveDto) {
+        Topic topic = topicRepository.getTopicById(questionSaveDto.topicId());
 
+        Question newQuestion = Question.builder()
+                .questionText(questionSaveDto.questionText())
+                .topic(topic)
+                .build();
 
+        Question savedQuestion = questionRepository.save(newQuestion);
 
+        List<AnswerShortDto> answerShortDtos = questionSaveDto.answers();
 
+        //----------------------------------------
+        answerShortDtos.stream().forEach(System.out::println);
 
+        //----------------------------------------
+        List<Answer> answerList = answerShortDtos.stream().
+                map(answerShortDto -> {
+                    Answer answer = answerMapper.mapAnswerShortDtoToAnswer(answerShortDto);
+                    answer.setQuestion(savedQuestion);
+                    return answer;
+                }).toList();
 
+        answerList.forEach(answer -> answerRepository.save(answer));
+    }
 }

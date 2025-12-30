@@ -28,4 +28,6 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     @Modifying
     void updateTopicName(@Param("id") Long id,@Param("newName") String newName);
 
+    @Query("select t from Topic t where t.id = :id")
+    Topic getTopicById(@Param("id") Long id);
 }

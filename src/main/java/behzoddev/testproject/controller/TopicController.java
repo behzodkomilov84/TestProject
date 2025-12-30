@@ -20,7 +20,6 @@ public class TopicController {
     private final TopicService topicService;
 
     @GetMapping("/api/topic")
-//    @ResponseBody
     public ResponseEntity<Set<TopicIdAndNameDto>> getTopicsByScience(@RequestParam Long scienceId) {
         Set<TopicIdAndNameDto> topicIdAndNameDtos = topicService.getTopicsByScienceId(scienceId);
 

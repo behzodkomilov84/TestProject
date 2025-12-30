@@ -148,7 +148,7 @@ public class ScienceController {
 
         return ResponseEntity.created(
                 URI.create("science/" + scienceService.getScienceIdByTopicId(topicId)
-                        + "/topic/" + topicId + "/questions/" + question.getId())
+                        + "/topic/" + topicId + "/question/" + question.getId())
         ).build();
     }
 
@@ -199,7 +199,7 @@ public class ScienceController {
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/questions/{questionId}")
+    @DeleteMapping("/question/{questionId}")
     public ResponseEntity<Void> deleteQuestion(@PathVariable Long questionId) {
         questionService.removeQuestion(questionId);
         return ResponseEntity.noContent().build();

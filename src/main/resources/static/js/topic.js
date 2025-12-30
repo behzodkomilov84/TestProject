@@ -141,7 +141,7 @@ function openQuestions(topicId) {
         // return;
     }
 
-    window.location.href = `/questions?topicId=${topicId}`;
+    window.location.href = `/question?topicId=${topicId}`;
 } //TODO
 
 function hasDuplicate(currentIndex, name) {

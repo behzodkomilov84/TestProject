@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Создание теста</title>
+    <link rel="stylesheet" href="/css/test-form.css">
+    <script src="/js/test-form.js"></script>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>Test yaratish</h1>
+
+    <form id="testForm">
+
+        <!-- topicId из URL -->
+        <input type="hidden" id="topicId" th:value="${topicId}">
+        <!-- Вопрос -->
+        <div class="form-group">
+            <label for="question">Savol</label>
+            <textarea id="question" name="question" class="auto-textarea" placeholder="Savol matnini kiriting" required></textarea>
+        </div>
+
+        <!-- Ответы -->
+        <div class="answers">
+            <h3>Javob variantlari</h3>
+
+            <div class="answer">
+                <input type="radio" name="correct" value="0" required>
+                <textarea class="auto-textarea" name="answers[0]" placeholder="Javob A" required></textarea>
+            </div>
+
+            <div class="answer">
+                <input type="radio" name="correct" value="1">
+                <textarea class="auto-textarea" name="answers[1]" placeholder="Javob B" required></textarea>
+            </div>
+
+            <div class="answer">
+                <input type="radio" name="correct" value="2">
+                <textarea class="auto-textarea" name="answers[2]" placeholder="Javob C" required></textarea>
+            </div>
+
+            <div class="answer">
+                <input type="radio" name="correct" value="3">
+                <textarea class="auto-textarea" name="answers[3]" placeholder="Javob D" required></textarea>
+            </div>
+        </div>
+
+        <!-- Кнопки -->
+        <div class="actions">
+            <button type="submit" class="btn primary">💾 Saqlash</button>
+            <button type="reset" class="btn">↩ Tozalash</button>
+            <button type="button" class="btn secondary" onclick="history.back()">⬅ Orqaga</button>
+        </div>
+    </form>
+</div>
+
+
+
+</body>
+
+</html>

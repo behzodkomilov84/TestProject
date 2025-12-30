@@ -4,8 +4,6 @@ import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dto.TopicIdAndNameDto;
 import behzoddev.testproject.dto.TopicNameDto;
-import behzoddev.testproject.dto.TopicShortDto;
-import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.mapper.TopicMapper;
@@ -41,12 +39,6 @@ public class TopicService {
         if (topic.getQuestions() != null) {
             for (Question question : topic.getQuestions()) {
                 question.setTopic(topic);
-
-                if (question.getAnswers() != null) {
-                    for (Answer answer : question.getAnswers()) {
-                        answer.setQuestion(question);
-                    }
-                }
             }
         }
         topic.setScience(scienceRepository.findById(scienceId).orElse(null));
@@ -56,11 +48,6 @@ public class TopicService {
     @Transactional
     public void removeTopic(Long topicId) {
         topicRepository.deleteById(topicId);
-    }
-
-    @Transactional
-    public Set<TopicShortDto> getTopicShortDtoByScienceId(Long scienceId) {
-        return topicRepository.getTopicShortDtoByScienceId(scienceId);
     }
 
     @Transactional

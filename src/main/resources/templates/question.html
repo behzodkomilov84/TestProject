@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Tests by Topic</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="/css/question.css"></link>
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="top-element">
+        <button class="back-btn" onclick="goBack()">← Mavzuga qaytish</button>
+
+        <h1>Mavzuga oid testlar</h1>
+        <input type="hidden" id="topicId" th:value="${topicId}">
+
+        <button class="create-btn" onclick="createTest()">➕ Test yaratish</button>
+    </div>
+
+
+    <div id="questions"></div>
+
+</div>
+
+<script src="/js/question.js"></script>
+
+</body>
+</html>

@@ -1,6 +1,7 @@
 package behzoddev.testproject.mapper;
 
 import behzoddev.testproject.dto.QuestionDto;
+import behzoddev.testproject.dto.QuestionSaveDto;
 import behzoddev.testproject.dto.QuestionShortDto;
 import behzoddev.testproject.entity.Question;
 import org.mapstruct.Mapper;
@@ -13,7 +14,6 @@ import java.util.List;
 public interface QuestionMapper {
 
 
-//    @Mapping(target = "answers", source = "answers")
     QuestionDto mapQuestiontoQuestionDto(Question question);
 
     List<QuestionDto> mapQuestionListToQuestionDtoList(List<Question> questions);
@@ -27,4 +27,10 @@ public interface QuestionMapper {
     @Mapping(target = "topic", ignore = true)
     @Mapping(target = "id", ignore = true)
     Question mapQuestionShortDtoToQuestion(QuestionShortDto newQuestion);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "topic", ignore = true)
+    @Mapping(target = "questionText", ignore = true)
+    Question mapQuestionSaveDtoToQuestion(QuestionSaveDto dto);
 }
+

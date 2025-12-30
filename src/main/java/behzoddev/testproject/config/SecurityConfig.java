@@ -30,7 +30,10 @@ public class SecurityConfig {
                                 "/login-success",
                                 "/science",
                                 "/topics",
-                                "/.well-known/**"
+                                "/.well-known/**",
+                                "/",
+                                "/question",
+                                "/question/**"
                         ).permitAll()
                         .requestMatchers("/api/**").permitAll() // или authenticated()
                         .anyRequest().authenticated()
