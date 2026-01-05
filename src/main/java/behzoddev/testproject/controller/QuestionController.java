@@ -1,5 +1,6 @@
 package behzoddev.testproject.controller;
 
+import behzoddev.testproject.dto.AnswerDto;
 import behzoddev.testproject.dto.AnswerShortDto;
 import behzoddev.testproject.dto.QuestionDto;
 import behzoddev.testproject.dto.QuestionSaveDto;
@@ -43,6 +44,12 @@ public class QuestionController {
             answerShortDto.add(new AnswerShortDto(answerText, isTrue));
         }
 
+        boolean isUnique = questionService.isUnique(answerShortDto); //Javoblarni bir xil masligini tekshiradi.
+
+        if (!isUnique) {
+            throw new IllegalArgumentException("Answers must be unique");
+        }
+
         questionService.save(QuestionSaveDto.builder()
                 .topicId(topicId)
                 .questionText(questionText)
@@ -66,4 +73,42 @@ public class QuestionController {
         return ResponseEntity.ok(questionDto);
     }
 
+    @PutMapping("/api/question/update")
+    public ResponseEntity<Object> updateQuestion(@RequestBody Map<Object, Object> payload) {
+
+        var questionId = Long.parseLong(payload.get("id").toString());
+
+        var newQuestionText = payload.get("questionText").toString();
+
+        List<Map<Object, Object>> answersInPayload = (List<Map<Object, Object>>) payload.get("answers");
+
+        ArrayList<AnswerDto> newAnswers = new ArrayList<>();
+
+        for (Map<Object, Object> answer : answersInPayload) {
+            Long id = Long.parseLong(answer.get("id").toString());
+            String answerText = answer.get("answerText").toString();
+            boolean isTrue = Boolean.parseBoolean(answer.get("isTrue").toString());
+            newAnswers.add(new AnswerDto(id, answerText, isTrue));
+        }
+
+        QuestionDto questionDto = QuestionDto.builder()
+                .id(questionId)
+                .questionText(newQuestionText)
+                .answers(newAnswers)
+                .build();
+
+        questionService.updateQuestion(questionId, questionDto);
+
+
+        return ResponseEntity.ok(Map.of("message", "✅ Ma'lumotlar bazada o'zgartirildi!"));
+    }
+
+    @DeleteMapping("/api/question/{id}")
+    public ResponseEntity<?> delete(@PathVariable Long id) {
+        questionService.deleteQuestion(id);
+        return ResponseEntity.noContent().build();
+    }
+
 }
+
+

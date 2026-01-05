@@ -22,27 +22,31 @@ create table users
     foreign key (role_id) references roles(id)
 );
 
+create table questions
+(
+    id            bigint       not null auto_increment,
+    topic_id      bigint       not null,
+    question_text varchar(255) not null,
+    primary key (id)
+);
+
 create table answers
 (
-    is_true     bit,
     id          bigint not null auto_increment,
     question_id bigint not null,
     answer_text varchar(255),
-    primary key (id)
+    is_true     bit,
+    primary key (id),
+    constraint fk_answers_question
+        foreign key (question_id)
+            references questions (id)
+            on delete cascade
 );
 
 create table science
 (
     id   bigint not null auto_increment,
     name varchar(255) NOT NULL UNIQUE,
-    primary key (id)
-);
-
-create table questions
-(
-    id            bigint       not null auto_increment,
-    topic_id      bigint       not null,
-    question_text varchar(255) not null,
     primary key (id)
 );
 

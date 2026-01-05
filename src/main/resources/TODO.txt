@@ -1,18 +1,10 @@
--Mavzuni ustiga bosganda testlarga kiradigan qilish kk.
-
--Savol yaratadigan page yasash kk. Unda inputda savol, 4 ta javob, 1 tasida to'g'ri belgilanishi kk.
-    Saqlash tugmasini bosganda bo'shliqni tekshirish kk.
-
-- Bir testda javoblar bir xil bo'lishi mumkin emas
-
 - js fayllardagi dublikat kodlarni refactoring qilish
 
-- savollarni yoki javoblarni o'chirganda bir-biriniyam o'chirvorish kk.
-
-- test yaratganda javoblarni xar hilligini tekshirish, bo'sh polya...
-- agar bitta question ga tegishli javoblar bir xil bo'lsa DB ga saqlamaslik, FRONTga javob yuborish
-
 - testlarni EDIT qilish imkonini BACKEND dayam FRONTEND dayam yaratish
+
+- Test yechayotganda javobni belgilaganda, tagida agar javob to'g'ri bo'lsa, "to'g'ri" deb, nimaga to'g'ri
+ekanligini yozish kerak. Bo'lmasa, izoh hali qo'shilmagan.
+
 
 
 
@@ -31,3 +23,15 @@
 добавить pagination
 
 сделать mobile-UI
+
+блокировать кнопки при редактировании
+
+добавить анимацию перехода
+
+считать результат теста
+
+сделать soft delete
+
+добавить валидацию (1 правильный ответ)
+
+реализовать optimistic locking

@@ -201,7 +201,7 @@ public class ScienceController {
 
     @DeleteMapping("/question/{questionId}")
     public ResponseEntity<Void> deleteQuestion(@PathVariable Long questionId) {
-        questionService.removeQuestion(questionId);
+        questionService.deleteQuestion(questionId);
         return ResponseEntity.noContent().build();
     }
 }

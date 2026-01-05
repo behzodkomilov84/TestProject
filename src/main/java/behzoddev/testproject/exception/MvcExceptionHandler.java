@@ -62,4 +62,15 @@ public class MvcExceptionHandler {
         return "app-error";
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public String handleIllegalArgumentException(
+            IllegalArgumentException ex,
+            Model model) {
+        model.addAttribute(
+                "errorMessage",
+                ex.getMessage()
+        );
+        return "app-error";
+    }
+
 }

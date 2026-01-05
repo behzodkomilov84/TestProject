@@ -24,14 +24,33 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const answers = [];
+        //=================Javob textlarini yig'ish====================
+        // собираем тексты ответов
+        const texts = [];
+        for (const ta of answerTextAreas) {
+            const text = ta.value.trim();
+            if (!text) {
+                alert("❌ Barcha javoblarni to‘ldiring");
+                ta.focus();
+                return;
+            }
+            texts.push(text.toLowerCase());
+        }
 
-        answerTextAreas.forEach((ta, index) => {
-            answers.push({
-                answerText: ta.value.trim(),
-                isTrue: Number(correctIndex) === index
-            });
-        });
+                    // проверка на уникальность
+        const uniqueTexts = new Set(texts);
+        if (uniqueTexts.size !== texts.length) {
+            alert("❌ Javob variantlari bir xil bo‘lishi mumkin emas");
+            return;
+        }
+
+                    // формируем ответы
+        const answers = texts.map((text, index) => ({
+            answerText: answerTextAreas[index].value.trim(),
+            isTrue: Number(correctIndex) === index
+        }));
+
+        //=============================================================
 
         const payload = {
             topicId: Number(topicId),
@@ -41,11 +60,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         try {
             const res = await fetch("/api/question/save", {
-                method: "POST",
-                headers: {
+                method: "POST", headers: {
                     "Content-Type": "application/json"
-                },
-                body: JSON.stringify(payload)
+                }, body: JSON.stringify(payload)
             });
 
             if (!res.ok) {

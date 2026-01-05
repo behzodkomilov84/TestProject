@@ -3,10 +3,7 @@ package behzoddev.testproject.service;
 import behzoddev.testproject.dao.AnswerRepository;
 import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.TopicRepository;
-import behzoddev.testproject.dto.AnswerShortDto;
-import behzoddev.testproject.dto.QuestionDto;
-import behzoddev.testproject.dto.QuestionSaveDto;
-import behzoddev.testproject.dto.QuestionShortDto;
+import behzoddev.testproject.dto.*;
 import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Topic;
@@ -19,6 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -124,4 +124,46 @@ public class QuestionService {
 
         answerList.forEach(answer -> answerRepository.save(answer));
     }
+
+    public boolean isUnique(List<AnswerShortDto> answerShortDto) {
+        Set<String> uniqueAnswers =
+                answerShortDto.stream()
+                        .map(answers -> answers.answerText().trim().toLowerCase())
+                        .collect(Collectors.toSet());
+
+        if (uniqueAnswers.size() != answerShortDto.size()) {
+            return false;
+        }
+        return true;
+    }
+
+    @Transactional
+    public void deleteQuestion(Long questionId) {
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new RuntimeException("Question not found"));
+
+        questionRepository.delete(question);
+    }
+
+    @Transactional
+    public void updateQuestion(Long questionId, QuestionDto questionDto) {
+        Question question = questionRepository.findById(questionDto.id())
+                .orElseThrow(() -> new RuntimeException("Question not found"));
+
+        question.setQuestionText(questionDto.questionText());
+
+        for (AnswerDto answerDto : questionDto.answers()) {
+
+            Answer answer = answerRepository.findById(Math.toIntExact(answerDto.id()))
+                    .orElseThrow(() -> new RuntimeException("Answer not found"));
+
+            answer.setAnswerText(answerDto.answerText());
+            answer.setIsTrue(answerDto.isTrue());
+        }
+    }
+
+
+
+
+
 }

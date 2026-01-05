@@ -22,6 +22,7 @@ public class Answer {
     private Boolean isTrue;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "question_id", nullable = false)
     private Question question;
 
 

@@ -80,8 +80,8 @@ h1 {
     display: none; /*Blok ekranda ko'rinmay turadi*/
 }
 
-.question-block.active{
-    display: block;/*Faqat aktiv blok ekranda ko'rinadi*/
+.question-block.active {
+    display: block; /*Faqat aktiv blok ekranda ko'rinadi*/
 }
 
 .question-block h3 {
@@ -94,6 +94,7 @@ h1 {
     font-size: 25px;
     margin-bottom: 30px;
     margin-top: 0px;
+    width: 95%;
 }
 
 .question-block ul {
@@ -121,7 +122,7 @@ h1 {
 }
 
 .question-block li:hover {
-    background-color: #e8dbc4;
+    background-color: #93e390;
 }
 
 /*🔑 ВЫБРАННЫЙ ОТВЕТ — ОСТАЁТСЯ КАК HOVER*/
@@ -185,4 +186,43 @@ ul label:has(input[type="radio"]:checked) {
 
 .empty {
     color: #777;
+}
+
+.hidden {
+    display: none;
+}
+
+.question-header {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.actions button{
+    margin-bottom: 6px;
+    font-weight: bold;
+    align-items: center;
+}
+
+.answer-text {
+    width: 100%;
+}
+
+.edit-answer-input, .edit-question-input {
+    width: 95%;
+    padding: 5px 5px;
+    border-radius: 5px;
+}
+
+.actions-bottom {
+    display: flex;
+    justify-content: center; /* по горизонтали */
+    gap: 12px;
+}
+
+
+.actions-bottom button{
+    align-items: center;
+    font-weight: bold;
 }
