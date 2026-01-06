@@ -36,7 +36,7 @@ body {
     margin-bottom: 1.5rem;
 }
 
-.form input {
+.form input{
     height: 60px;
     width: 100%;
     padding: 0 15px;
@@ -45,6 +45,17 @@ body {
     border: 1px solid #ddd;
     border-radius: 6px;
     outline: none;
+}
+
+.form .checkbox{
+    width: 15px;
+    height: 15px;
+    margin-bottom: 40px;
+}
+
+.form label{
+    font-size: 16px;
+    color: #009579;
 }
 
 .form input:focus {
@@ -104,3 +115,4 @@ body {
     font-weight: 500;
     z-index: 1000;
 }
+

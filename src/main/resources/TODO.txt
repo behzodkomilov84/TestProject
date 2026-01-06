@@ -1,12 +1,23 @@
 - js fayllardagi dublikat kodlarni refactoring qilish
 
-- testlarni EDIT qilish imkonini BACKEND dayam FRONTEND dayam yaratish
+- testlarni edit qilayotganda, agar birortayam o'zgarish qilinmasa Backendga zapros jo'natmaslik
 
+-Test yaratayotganda to'g'ri javobni belgilaganda, o'ng tomoniga "Iz
+oh qo'shish" tugmasi ochilsin.
+-Test yechayotganda javobni belgilaganda, tagiga qo'shilgan izoh chiqishi kk.
 - Test yechayotganda javobni belgilaganda, tagida agar javob to'g'ri bo'lsa, "to'g'ri" deb, nimaga to'g'ri
 ekanligini yozish kerak. Bo'lmasa, izoh hali qo'shilmagan.
 
+-
+❓ анимацию галочки
 
+❓ подсветку правильного/неправильного
 
+❓ disabled режим после ответа
+
+❓ подсветку правильного/неправильного
+
+❓ disabled режим после ответа
 
 сделать режим VIEW / EDIT как у тебя в Topics
 

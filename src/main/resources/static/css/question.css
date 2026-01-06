@@ -221,8 +221,21 @@ ul label:has(input[type="radio"]:checked) {
     gap: 12px;
 }
 
+.question-block.editing {
+    outline: 4px solid #4caf50;
+    background: #f6fff6;
+}
+
 
 .actions-bottom button{
     align-items: center;
     font-weight: bold;
+}
+
+.question-block.editing::after {
+    content: "ESC — bekor qilish | ENTER — saqlash | DELETE — o‘chirish";
+    display: block;
+    font-size: 12px;
+    color: #555;
+    margin-top: 6px;
 }

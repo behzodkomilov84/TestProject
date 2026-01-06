@@ -17,9 +17,11 @@ public class Answer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String answerText;
+       private String answerText;
 
     private Boolean isTrue;
+
+    private String commentary;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "question_id", nullable = false)

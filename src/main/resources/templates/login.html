@@ -36,8 +36,12 @@
     <div class="login form">
         <header>Login</header>
         <form action="/signin" method="post">
-            <input type="text" name="username" placeholder="Enter your name" required>
-            <input type="password" name="password" placeholder="Enter your password" required>
+            <input class="username" type="text" name="username" placeholder="Enter your name" required>
+            <div class="password-box">
+            <input class="password" type="password" name="password" id="pwd" placeholder="Enter your password" required>
+            <input class="checkbox" type="checkbox" id="showPsw" onclick="pwd.type=this.checked?'text':'password'">
+                <label for="showPsw">Show password?</label>
+            </div>
             <a href="#">Forgot password?</a>
             <input type="submit" class="button" value="Login">
         </form>
