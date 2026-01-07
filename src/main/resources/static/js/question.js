@@ -55,56 +55,107 @@ function renderQuestions(questions) {
 
             </div>
 
+          
             <ul>
-                ${q.answers.map(a => `
-                    <li>
-                        <label>
-                            <input type="radio" name="q-${q.id}" }> 
-                            <span class="answer-text" data-answer-id="${a.id}">${a.answerText}</span>
-                        </label>
-                    </li>
-                `).join("")}
-            </ul>
+    ${q.answers.map(a => {
+            return `
+                <li 
+                    data-is-true="${a.isTrue}"
+                    data-commentary="${a.commentary ?? ""}">
+                    <label>
+                        <input 
+                            type="radio"
+                            name="q-${q.id}">
+                        <span class="answer-text" data-answer-id="${a.id}">
+                            ${a.answerText}
+                        </span>
+                    </label>
+                    
+                    <div class="comment-block">
+                    <button class="comment-btn hidden" onclick="addCommentary(this)">IZOH QO'SHISH</button>
+                    <textarea class="commentary hidden"></textarea>
+                    </div>
+                </li>
+            `;
+        }).join("")}
+</ul>
+
             
              <div class="actions-bottom">
                     <button class="previous-btn" onclick="goToPreviousQuestion()">AVVALGI</button>
                     <button class="next-btn" onclick="goToNextQuestion()">KEYINGI</button>
                 </div>
-        `;//${a.isTrue ? "checked" : "" -> buni <input type="radio" name="q-${q.id}" }> ni ichidan oldim.
+        `;  /* <ul>
+                ${q.answers.map(a => `
+                    <li>
+                        <label>
+                            <input type="radio" name="q-${q.id}" }>
+                            <span class="answer-text" data-answer-id="${a.id}" data-commentary="${a.commentary??""}">${a.answerText}</span>
+                        </label>
+
+                        <button class="comment-btn hidden" onclick="addCommentary(this)">IZOH QO'SHISH</button>
+
+                        <textarea class="commentary hidden" placeholder="IZOH KIRITING..."></textarea>
+                    </li>
+                `).join("")}
+            </ul>*/
 
         container.appendChild(block);
         focusFirstAnswer();
     });
 }
 
+function addCommentary(btn) {
+    const li = btn.closest("li");
+    const textarea = li.querySelector(".commentary");
+
+    textarea.classList.toggle("hidden");
+    textarea.focus();
+}
+
 function editQuestion(button) {
     const block = button.closest('.question-block');
     toggleButtons(block, true);
+    block.classList.add("editing");
 
-    block.classList.add("editing"); // 🔑 маркер режима
-
-    // вопрос
+    // ===== вопрос =====
     const questionSpan = block.querySelector('.question-text');
     const text = questionSpan.textContent.replace(/^\d+\.\s*/, '');
-
     questionSpan.innerHTML =
         `<input type="text" class="edit-question-input" value="${text}">`;
 
-    // ответы
-    block.querySelectorAll('.answer-text').forEach(span => {
-        const value = span.textContent;
-        const answerId = span.dataset.answerId;
+    // ===== ответы =====
+    block.querySelectorAll("li").forEach(li => {
+        const span = li.querySelector('.answer-text');
+        const radio = li.querySelector('input[type="radio"]');
 
+        const answerId = span.dataset.answerId;
+        const answerText = span.textContent;
+        const isTrue = li.dataset.isTrue === "true";
+        const commentary = li.dataset.commentary || "";
+
+        // текст → input
         span.innerHTML = `
-            <input 
-                type="text"
-                class="edit-answer-input"
-                data-answer-id="${answerId}"
-                value="${value}">
+            <input type="text"
+                   class="edit-answer-input"
+                   data-answer-id="${answerId}"
+                   value="${answerText.trim()}">
         `;
+
+        // 🔑 ТОЛЬКО В EDIT MODE
+        radio.checked = isTrue;
+
+        if (isTrue) {
+            li.querySelector('.comment-btn').classList.remove("hidden");
+
+            if (commentary) {
+                const textarea = li.querySelector('.commentary');
+                textarea.classList.remove("hidden");
+                textarea.value = commentary;
+            }
+        }
     });
 
-    // сразу фокус на вопрос
     block.querySelector('.edit-question-input').focus();
 }
 
@@ -120,11 +171,13 @@ async function saveQuestion(button) {
     block.querySelectorAll('li').forEach(li => {
         const textInput = li.querySelector('.edit-answer-input');
         const radio = li.querySelector('input[type="radio"]');
+        const commentaryElement = li.querySelector('.commentary');
 
         payload.answers.push({
             id: Number(textInput.dataset.answerId),
             answerText: textInput.value.trim(),
-            isTrue: radio.checked
+            isTrue: radio.checked,
+            commentary: radio.checked?commentaryElement?.value.trim() || null : null
         });
     });
 
@@ -320,6 +373,27 @@ document.addEventListener("keydown", (e) => {
             editActiveQuestionByKey();
             break;
     }
+});
+
+document.addEventListener("change", (e) => {
+    if (e.target.type !== "radio") {return;}
+
+    const block = e.target.closest('.question-block');
+
+    // ❌ если не в режиме редактирования — выходим
+    if (!block?.classList.contains("editing")) return;
+
+    const li = e.target.closest("li");
+    const list = li.parentElement.querySelectorAll("li");
+
+    // скрываем всё
+    list.forEach(item => {
+        item.querySelector('.comment-btn')?.classList.add("hidden");
+        item.querySelector('.commentary')?.classList.add("hidden");
+    });
+
+    // показываем только у выбранного
+    li.querySelector('.comment-btn')?.classList.remove("hidden");
 });
 
 function moveAnswerCursor(direction) {

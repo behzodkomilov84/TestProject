@@ -16,7 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -66,7 +65,7 @@ public class QuestionService {
                     return newAnswers.stream()
                             .allMatch(newAns -> existingAnswers.stream()
                                     .anyMatch(existingAns -> existingAns.answerText().equalsIgnoreCase(newAns.answerText())
-                                            && existingAns.isTrue() == newAns.isTrue()
+                                            && existingAns.isTrue().equals(newAns.isTrue())
                                     )
                             );
                 });
@@ -94,11 +93,6 @@ public class QuestionService {
     }
 
     @Transactional
-    public void removeQuestion(Long questionId) {
-        questionRepository.deleteById(questionId);
-    }
-
-    @Transactional
     public void save(QuestionSaveDto questionSaveDto) {
         Topic topic = topicRepository.getTopicById(questionSaveDto.topicId());
 
@@ -109,20 +103,16 @@ public class QuestionService {
 
         Question savedQuestion = questionRepository.save(newQuestion);
 
-        List<AnswerShortDto> answerShortDtos = questionSaveDto.answers();
+        List<AnswerShortDto> answerShortDtoList = questionSaveDto.answers();
 
-        //----------------------------------------
-        answerShortDtos.stream().forEach(System.out::println);
-
-        //----------------------------------------
-        List<Answer> answerList = answerShortDtos.stream().
+             List<Answer> answerList = answerShortDtoList.stream().
                 map(answerShortDto -> {
                     Answer answer = answerMapper.mapAnswerShortDtoToAnswer(answerShortDto);
                     answer.setQuestion(savedQuestion);
                     return answer;
                 }).toList();
 
-        answerList.forEach(answer -> answerRepository.save(answer));
+        answerRepository.saveAll(answerList);
     }
 
     public boolean isUnique(List<AnswerShortDto> answerShortDto) {
@@ -131,10 +121,7 @@ public class QuestionService {
                         .map(answers -> answers.answerText().trim().toLowerCase())
                         .collect(Collectors.toSet());
 
-        if (uniqueAnswers.size() != answerShortDto.size()) {
-            return false;
-        }
-        return true;
+        return uniqueAnswers.size() == answerShortDto.size();
     }
 
     @Transactional
@@ -146,7 +133,7 @@ public class QuestionService {
     }
 
     @Transactional
-    public void updateQuestion(Long questionId, QuestionDto questionDto) {
+    public void updateQuestion(QuestionDto questionDto) {
         Question question = questionRepository.findById(questionDto.id())
                 .orElseThrow(() -> new RuntimeException("Question not found"));
 
@@ -159,6 +146,7 @@ public class QuestionService {
 
             answer.setAnswerText(answerDto.answerText());
             answer.setIsTrue(answerDto.isTrue());
+            answer.setCommentary(answerDto.commentary());
         }
     }
 

@@ -32,7 +32,7 @@ public class QuestionController {
 
         long topicId = Long.parseLong(payload.get("topicId").toString());
 
-        String questionText = payload.get("question").toString();
+        String questionText = payload.get("questionText").toString();
 
         var answers = (List<Map<Object, Object>>) payload.get("answers");
         List<AnswerShortDto> answerShortDto = new ArrayList<>();
@@ -41,7 +41,16 @@ public class QuestionController {
             String answerText = answer.get("answerText").toString();
             boolean isTrue = Boolean.parseBoolean(answer.get("isTrue").toString());
 
-            answerShortDto.add(new AnswerShortDto(answerText, isTrue));
+            String commentary = "Noto'g'ri javob";
+            if (isTrue){
+                commentary = "To'g'ri javob";
+            }
+
+            if (answer.get("commentary") != null) {
+                commentary = answer.get("commentary").toString();
+            }
+
+            answerShortDto.add(new AnswerShortDto(answerText, isTrue, commentary));
         }
 
         boolean isUnique = questionService.isUnique(answerShortDto); //Javoblarni bir xil masligini tekshiradi.
@@ -88,7 +97,16 @@ public class QuestionController {
             Long id = Long.parseLong(answer.get("id").toString());
             String answerText = answer.get("answerText").toString();
             boolean isTrue = Boolean.parseBoolean(answer.get("isTrue").toString());
-            newAnswers.add(new AnswerDto(id, answerText, isTrue));
+
+            String commentary = "Noto'g'ri javob";
+            if (isTrue){
+                commentary = "To'g'ri javob";
+            }
+
+            if (answer.get("commentary") != null) {
+                commentary = answer.get("commentary").toString();
+            }
+            newAnswers.add(new AnswerDto(id, answerText, isTrue, commentary));
         }
 
         QuestionDto questionDto = QuestionDto.builder()
@@ -97,7 +115,7 @@ public class QuestionController {
                 .answers(newAnswers)
                 .build();
 
-        questionService.updateQuestion(questionId, questionDto);
+        questionService.updateQuestion(questionDto);
 
 
         return ResponseEntity.ok(Map.of("message", "✅ Ma'lumotlar bazada o'zgartirildi!"));

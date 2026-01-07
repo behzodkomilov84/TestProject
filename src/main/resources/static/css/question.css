@@ -6,7 +6,8 @@ body {
 }
 
 .container {
-    max-width: 900px;
+    max-width: 1000px;
+    width: 100%;
     margin: 120px auto 20px auto;
     padding: 16px;
     background: #ccdae1;
@@ -78,6 +79,14 @@ h1 {
     margin-top: 15px;
 
     display: none; /*Blok ekranda ko'rinmay turadi*/
+}
+
+.question-block::after{
+    content: "ESC — mavzuga qaytish | ➕ — test yaratish | F2 — tahrirlash | ⬅️ — avvalgi | ➡️ — keyingi";
+    display: block;
+    font-size: 12px;
+    color: #555;
+    margin-top: 6px;
 }
 
 .question-block.active {
@@ -219,6 +228,7 @@ ul label:has(input[type="radio"]:checked) {
     display: flex;
     justify-content: center; /* по горизонтали */
     gap: 12px;
+    margin-bottom: 20px;
 }
 
 .question-block.editing {
@@ -238,4 +248,32 @@ ul label:has(input[type="radio"]:checked) {
     font-size: 12px;
     color: #555;
     margin-top: 6px;
+}
+
+button.comment-btn {
+    margin-left: 30px;
+    font-weight: 550;
+}
+
+.comment-block{
+    width: 90%;
+    font-size: 15px;
+    font-weight: 550;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    margin-left: 8px;
+    align-items: center;
+}
+.comment-block .commentary{
+    width: 100%;
+    border-radius: 5px;
+    background: floralwhite;
+    font-size: 15px;
+    font-weight: 550;
+    padding: 5px 10px;
+    margin-top: 8px;
+    margin-bottom: 8px;
+    margin-left: auto;
+    align-items: center;
+    min-height: 60px;
 }

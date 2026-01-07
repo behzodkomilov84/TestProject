@@ -112,3 +112,11 @@ label {
 .btn:hover {
     opacity: 0.9;
 }
+
+.hidden {
+    display: none;
+}
+
+.comment-btn {
+    margin-top: 6px;
+}
