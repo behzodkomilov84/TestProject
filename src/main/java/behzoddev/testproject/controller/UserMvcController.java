@@ -18,7 +18,7 @@ public class UserMvcController {
 
     @PostMapping("/registration")
     public String register(@ModelAttribute RegisterDto dto,
-                        RedirectAttributes redirectAttributes) {
+                           RedirectAttributes redirectAttributes) {
         userService.register(dto);
 
         redirectAttributes.addFlashAttribute(
@@ -34,16 +34,14 @@ public class UserMvcController {
         return "login";
     }
 
-    @PostMapping("/signin")
+   /* @PostMapping("/login")
     public String login(@ModelAttribute LoginDto dto) {
         userService.checkCredentials(dto);
-        return "redirect:/science";
-    }
+        return "redirect:/index";
+    }*/
 
-    @GetMapping("/science")
+    @GetMapping("/index")
     public String login_success() {
-        return "science";
+        return "index";
     }
 }
-
-

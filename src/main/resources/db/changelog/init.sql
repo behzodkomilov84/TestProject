@@ -8,11 +8,10 @@ create table roles
     primary key (id)
 );
 
-INSERT INTO roles (role_name)
-VALUES ('ROLE_ADMIN');
-
-INSERT INTO roles (role_name)
-VALUES ('ROLE_USER');
+INSERT INTO roles (role_name) VALUES
+                                  ('ROLE_OWNER'),
+                                  ('ROLE_ADMIN'),
+                                  ('ROLE_USER');
 
 create table users
 (
@@ -20,6 +19,7 @@ create table users
     username varchar(255),
     password varchar(255),
     role_id  bigint,
+#     enabled BOOLEAN NOT NULL DEFAULT TRUE,
     primary key (id),
     foreign key (role_id) references roles (id)
 );

@@ -1,0 +1,78 @@
+    <!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Platform</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+
+<header class="navbar">
+    <form action="users" method="get" class="logo-form">
+        <button type="submit" class="logo-btn">🧠 TestPlatform</button>
+    </form>
+
+
+    <nav>
+        <a href="index#">Bosh sahifa</a>
+        <a href="#">Statistika</a>
+        <a href="#">Profil</a>
+        <a href="login">Chiqish</a>
+    </nav>
+</header>
+
+<main class="container">
+
+    <section class="hero">
+        <h1>Bilimingizni sinab ko‘ring</h1>
+        <p>
+            Testlar orqali bilimni mustahkamlash, xatolar ustida ishlash
+            va imtihonlarga tayyorlanish.
+        </p>
+    </section>
+
+    <section class="modes">
+
+        <div class="mode-card practice" onclick="startPractice()">
+            <h2>📝 Amaliyot</h2>
+            <ul>
+                <li>Cheklovsiz vaqt</li>
+                <li>Izohlar mavjud</li>
+                <li>Orqaga qaytish mumkin</li>
+            </ul>
+            <button>Boshlash</button>
+        </div>
+
+        <div class="mode-card exam" onclick="startExam()">
+            <h2>⏱ Imtihon</h2>
+            <ul>
+                <li>Vaqt cheklangan</li>
+                <li>Orqaga qaytish yo‘q</li>
+                <li>Natija oxirida</li>
+            </ul>
+            <button>Boshlash</button>
+        </div>
+
+        <div class="mode-card hard" onclick="startHardMode()">
+            <h2>🔥 Murakkab</h2>
+            <ul>
+                <li>Faqat qiyin savollar</li>
+                <li>Qisqa vaqt</li>
+                <li>Izohlar yo‘q</li>
+            </ul>
+            <button>Boshlash</button>
+        </div>
+
+    </section>
+
+</main>
+
+<footer class="footer">
+    © 2026 TestPlatform. Made by Behzod Komilov.
+</footer>
+
+<script src="/js/main.js"></script>
+</body>
+</html>

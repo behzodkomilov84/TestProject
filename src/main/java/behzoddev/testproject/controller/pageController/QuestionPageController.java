@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Controller
 @RequiredArgsConstructor
 public class QuestionPageController {
+
     @GetMapping("/question")
     public String getQuestionPage(@RequestParam("topicId") Long topicId,
                                   Model model) {

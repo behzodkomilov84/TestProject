@@ -18,8 +18,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/login",
-                                "/signin",
+                                "/index",
+//                                "/login",
                                 "/registration",
                                 "/registration.html",
                                 "/error",
@@ -31,15 +31,24 @@ public class SecurityConfig {
                                 "/science",
                                 "/topics",
                                 "/.well-known/**",
-                                "/",
                                 "/question",
-                                "/question/**"
+                                "/question/**",
+                                "/"
                         ).permitAll()
+
+                        .requestMatchers("/users")
+                        .hasAuthority("ROLE_OWNER") // <-- доступ только владельцу
+
                         .requestMatchers("/api/**").permitAll() // или authenticated()
+
+                        /*.requestMatchers("/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_OWNER")
+                        .requestMatchers("/test/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN", "ROLE_OWNER") TODO*/
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
                         .loginPage("/login")
+                        .loginProcessingUrl("/login")
+                        .defaultSuccessUrl("/index",true)
                         .permitAll()
                 )
                 .logout(logout -> logout.permitAll());

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>User Management</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="/css/users.css">
+</head>
+
+<!-- th:attr гарантирует, что Thymeleaf подставит значение role -->
+<body th:attr="data-role=${role}">
+
+
+<div class="container">
+
+    <header class="top-bar">
+        <h1>👥 Управление пользователями</h1>
+        <button class="back-btn" onclick="history.back()">← Назад</button>
+    </header>
+
+    <table class="users-table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+
+        <tbody id="usersTableBody">
+        <!-- users via JS -->
+        </tbody>
+    </table>
+
+</div>
+
+<script src="/js/users.js"></script>
+</body>
+</html>

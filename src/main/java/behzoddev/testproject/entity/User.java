@@ -30,9 +30,12 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "role_id")
+    @ManyToOne(fetch = FetchType.EAGER) //❗ EAGER обязателен — роли нужны при авторизации.
+    @JoinColumn(name = "role_id", nullable = false)
     private Role role;
+
+    /*@Column(nullable = false)
+    private boolean enabled = true;*/
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -7,6 +7,18 @@ if (!topicId) {
 } else {
     loadQuestions(topicId);
 }
+//Состояние теста
+const testState = {
+    topicId: null,
+
+    allQuestions: [], //Все вопросы (НИКОГДА не меняем)
+    questions: [], //Текущий набор (all / wrong only)
+
+    currentIndex: 0,
+    answers: new Map(), // questionId -> answerId
+    startedAt: Date.now(),
+    finishedAt: null
+};
 
 //===============================================================================
 async function loadQuestions(topicId) {
@@ -19,7 +31,17 @@ async function loadQuestions(topicId) {
 
         const questions = await res.json();
 
+        // 🔑 ИНИЦИАЛИЗАЦИЯ ТЕСТА
+        testState.topicId = Number(topicId);
+        testState.allQuestions = questions; // Оригинал
+        testState.questions = questions; // Текущие
+        testState.answers.clear();
+        testState.startedAt = Date.now();
+
         renderQuestions(questions);
+
+        // ⛔ не стартуем тест здесь
+        document.getElementById("questions").classList.add("hidden");
 
     } catch (e) {
         document.getElementById("questions").innerHTML =
@@ -84,22 +106,9 @@ function renderQuestions(questions) {
              <div class="actions-bottom">
                     <button class="previous-btn" onclick="goToPreviousQuestion()">AVVALGI</button>
                     <button class="next-btn" onclick="goToNextQuestion()">KEYINGI</button>
+                    <button class="endTest-btn" onclick="finishTest()">Test Natijasi</button>
                 </div>
-        `;  /* <ul>
-                ${q.answers.map(a => `
-                    <li>
-                        <label>
-                            <input type="radio" name="q-${q.id}" }>
-                            <span class="answer-text" data-answer-id="${a.id}" data-commentary="${a.commentary??""}">${a.answerText}</span>
-                        </label>
-
-                        <button class="comment-btn hidden" onclick="addCommentary(this)">IZOH QO'SHISH</button>
-
-                        <textarea class="commentary hidden" placeholder="IZOH KIRITING..."></textarea>
-                    </li>
-                `).join("")}
-            </ul>*/
-
+        `;
         container.appendChild(block);
         focusFirstAnswer();
     });
@@ -177,7 +186,7 @@ async function saveQuestion(button) {
             id: Number(textInput.dataset.answerId),
             answerText: textInput.value.trim(),
             isTrue: radio.checked,
-            commentary: radio.checked?commentaryElement?.value.trim() || null : null
+            commentary: radio.checked ? commentaryElement?.value.trim() || null : null
         });
     });
 
@@ -376,7 +385,9 @@ document.addEventListener("keydown", (e) => {
 });
 
 document.addEventListener("change", (e) => {
-    if (e.target.type !== "radio") {return;}
+    if (e.target.type !== "radio") {
+        return;
+    }
 
     const block = e.target.closest('.question-block');
 
@@ -418,6 +429,7 @@ function selectAnswerAndNext() {
     if (!focused || focused.type !== "radio") return;
 
     focused.checked = true;
+    focused.dispatchEvent(new Event("change", {bubbles: true}));
 
     // перейти к следующему вопросу
     setTimeout(() => {
@@ -431,6 +443,9 @@ function selectAnswerOnly() {
     if (!focused || focused.type !== "radio") return;
 
     focused.checked = true;
+
+    // 🔑 ЯВНО вызываем change для прохождения теста
+    focused.dispatchEvent(new Event("change", {bubbles: true}));
 }
 
 function editActiveQuestionByKey() {
@@ -446,6 +461,262 @@ function editActiveQuestionByKey() {
     }
 }
 
+//==============================================================
+//                     Модель прохождение теста
+//==============================================================
+//                      Start test
+function startTest() {
+    /* document.querySelectorAll(".edit-btn").forEach(btn => {
+         btn.disabled = true;
+     });*///Блокируем редактирование после старта (ОЧЕНЬ желательно)
+
+    initTest();
+
+    document.getElementById("startScreen").classList.add("hidden");
+    document.getElementById("questions").classList.remove("hidden");
+
+    testState.startedAt = Date.now();
+    testState.currentIndex = 0;
+    testState.answers.clear();
+
+    showQuestion(0);
+    focusFirstAnswer();
+}
+
+//==============================================================
+//              Логика прохождение теста
+//                      Выбор ответа
+document.addEventListener("change", (e) => {
+    if (e.target.type !== "radio") return;
+
+    const block = e.target.closest('.question-block');
+    const questionId = Number(block.dataset.questionId);
+    const answerId = Number(
+        e.target.closest('li').querySelector('.answer-text').dataset.answerId
+    );
+
+    testState.answers.set(questionId, answerId);
+});
+//==============================================================
+//           Завершение теста
+//        Проверка перед завершением
+//==============================================================
+function finishTest() {
+    const unanswered = testState.questions.filter(
+        q => !testState.answers.has(q.id)
+    );
+
+    if (unanswered.length > 0) {
+        alert(`❗ Barcha savollarga javob bering (${unanswered.length} ta qoldi)`);
+        return;
+    }
+
+    testState.finishedAt = Date.now();
+    calculateResult();
+}
+
+//==============================================================
+//                   Расчёт результата
+//          Локальный расчёт (быстро, без сервера)
+//==============================================================
+function calculateResult() {
+    let correct = 0;
+
+    testState.questions.forEach(q => {
+        const selectedAnswerId = testState.answers.get(q.id);
+        const correctAnswer = q.answers.find(a => a.isTrue);
+
+        if (correctAnswer && correctAnswer.id === selectedAnswerId) {
+            correct++;
+        }
+    });
+
+    const result = {
+        total: testState.questions.length,
+        correct,
+        percent: Math.round((correct / testState.questions.length) * 100),
+        durationSec: Math.floor((testState.finishedAt - testState.startedAt) / 1000)
+    };
+
+    showResult(result);
+}
+
+//==============================================================
+//                  Отображение результатов (UI)
+//                          Экран результата
+//==============================================================
+function showResult(result) {
+    document.getElementById("questions").innerHTML = `
+        <div class="result-card">
+            <h2>📊 Natija</h2>
+
+            <p>Jami savollar: <b>${result.total}</b></p>
+            <p>To‘g‘ri javoblar: <b>${result.correct}</b></p>
+            <p>Xato javoblar: <b>${result.total - result.correct}</b></p>
+
+            <p>Foiz: <b>${result.percent}%</b></p>
+            <p>Vaqt: <b>${result.durationSec} soniya</b></p>
+
+            <div class="result-actions">
+                <button onclick="restartTest()">🔄 Qayta boshlash</button>
+                <button onclick="goBack()">⬅ Mavzuga qaytish</button>
+                <button onclick="showWrongAnswers()">❌ Xatolarni ko‘rish</button>
+            </div>
+        </div>
+    `;
+}
+
+//==============================================================
+//              Показ правильных ответов и комментариев
+//                      После завершения теста
+//==============================================================
+function showWrongAnswers() {
+
+    const container = document.getElementById("questions");
+    container.innerHTML = "";
+
+    let hasErrors = false;
+
+    testState.questions.forEach((q, index) => {
+
+        const selectedAnswerId = testState.answers.get(q.id);
+        const correctAnswer = q.answers.find(a => a.isTrue);
+
+        // если ответ верный — пропускаем
+        if (!correctAnswer || correctAnswer.id === selectedAnswerId) {
+            return;
+        }
+
+        hasErrors = true;
+
+        const selectedAnswer = q.answers.find(a => a.id === selectedAnswerId);
+
+        const block = document.createElement("div");
+        block.className = "wrong-question-card";
+
+        block.innerHTML = `
+            <h3>❓ ${index + 1}. ${q.questionText}</h3>
+
+            <ul class="answers-review">
+                <li class="wrong-answer">
+                    ❌ Siz tanlagan javob:
+                    <div>${selectedAnswer?.answerText ?? "Javob tanlanmagan"}</div>
+                </li>
+
+                <li class="correct-answer">
+                    ✅ To‘g‘ri javob:
+                    <div>${correctAnswer.answerText}</div>
+                </li>
+            </ul>
+
+            ${correctAnswer.commentary ? `<div class="commentary-box">💬 Izoh: ${correctAnswer.commentary}</div>` : ""
+
+        }
+        `;
+
+        container.appendChild(block);
+    });
+
+    if (!hasErrors) {
+        container.innerHTML = `
+            <div class="result-card">
+                <h2>🎉 Tabriklaymiz!</h2>
+                <p>Sizda xato javoblar yo‘q.</p>
+                <div class="result-actions">
+                <button onclick="restartTest()">🔄 Testni qayta boshlash</button>
+                <button onclick="goBack()">⬅ Mavzuga qaytish</button>
+                </div>
+                
+            </div>
+        `;
+        return;
+    }
+    /* === КНОПКИ ПОСЛЕ СПИСКА ОШИБОК === */
+    const actions = document.createElement("div");
+    actions.className = "result-actions";
+
+    actions.innerHTML = `
+    <button onclick="restartTest()">🔄 Testni qayta boshlash</button>
+    <button onclick="repeatWrongOnly()">🧪 Faqat xatolar bilan test</button>
+    <button onclick="goBack()">⬅ Mavzuga qaytish</button>
+`;
+
+    container.appendChild(actions);
+}
+
+function initTest() {
+
+    // 1. Сброс состояния теста
+    testState.answers.clear();
+    testState.currentIndex = 0;
+    testState.startedAt = Date.now();
+    testState.finishedAt = null;
+
+    // 2. Очистить все radio
+    document.querySelectorAll('input[type="radio"]').forEach(radio => {
+        radio.checked = false;
+    });
+
+    // 3. Убрать подсветку результатов (если была)
+    document.querySelectorAll('li.correct, li.wrong').forEach(li => {
+        li.classList.remove("correct", "wrong");
+    });
+
+}
+
+function restartTest() {
+
+    testState.questions = testState.allQuestions; //Возврат ко всем
+    initTest();
+
+/*    // 4. Показать вопросы обратно (если был экран результатов)
+    const container = document.getElementById("questions");
+    container.innerHTML = "";*/
+    renderQuestions(testState.questions);
+
+    // 5. Активировать первый вопрос
+    setTimeout(() => {
+        showQuestion(0);
+        focusFirstAnswer();
+    }, 0);
+}
+
+function showTests(){
+const questions = testState.allQuestions;
+    document.getElementById("startScreen").classList.add("hidden");
+    document.getElementById("questions").classList.remove("hidden");
+
+renderQuestions(questions);
+}
+
+function getWrongQuestions() {
+    return testState.allQuestions.filter(q => {
+        const selectedAnswerId = testState.answers.get(q.id);
+        const correctAnswer = q.answers.find(a => a.isTrue);
+
+        return !correctAnswer || correctAnswer.id !== selectedAnswerId;
+    });
+}
+
+function repeatWrongOnly() {
+
+    const wrongQuestions = getWrongQuestions();
+
+    if (wrongQuestions.length === 0) {
+        alert("🎉 Xato savollar yo‘q");
+        return;
+    }
+
+    // 🔄 перезапускаем состояние теста
+    testState.questions = wrongQuestions; //только текущий набор
+
+    initTest();
+
+    // перерисовываем ТОЛЬКО неправильные вопросы
+    renderQuestions(wrongQuestions);
+
+    showQuestion(0);
+}
 
 
 
