@@ -1,3 +1,7 @@
+добавить i18n
+
+или показывать модальное окно вместо страницы.
+
 - js fayllardagi dublikat kodlarni refactoring qilish
 
 - testlarni edit qilayotganda, agar birortayam o'zgarish qilinmasa Backendga zapros jo'natmaslik

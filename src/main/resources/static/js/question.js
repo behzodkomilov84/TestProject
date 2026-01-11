@@ -21,7 +21,7 @@ const testState = {
 };
 
 //===============================================================================
-async function loadQuestions(topicId) {
+/*async function loadQuestions(topicId) {
     try {
         const res = await fetch(`/api/question?topicId=${topicId}`);
 
@@ -38,16 +38,46 @@ async function loadQuestions(topicId) {
         testState.answers.clear();
         testState.startedAt = Date.now();
 
-        renderQuestions(questions);
 
-        // ⛔ не стартуем тест здесь
+
+        // ⚠️ ВАЖНО: НЕ рендерим здесь
         document.getElementById("questions").classList.add("hidden");
+        document.getElementById("start-screen").classList.remove("hidden");
+
+         renderQuestions(questions);
+
+    } catch (e) {
+        document.getElementById("questions").innerHTML =
+            `<p class="empty">❌ ${e.message}</p>`;
+    }
+}*/
+
+async function loadQuestions(topicId) {
+    try {
+        const res = await fetch(`/api/question?topicId=${topicId}`);
+        if (!res.ok) throw new Error("Ошибка загрузки тестов");
+
+        const questions = await res.json();
+
+        // инициализация
+        testState.topicId = Number(topicId);
+        testState.allQuestions = questions;
+        testState.questions = questions;
+        testState.answers.clear();
+
+        // UI
+        document.getElementById("questions").classList.add("hidden");
+        document.getElementById("start-screen").classList.remove("hidden");
+
+        // ❌ ВАЖНО: тут НЕ должно быть renderQuestions
+        // renderQuestions(questions); ← УДАЛИТЬ
 
     } catch (e) {
         document.getElementById("questions").innerHTML =
             `<p class="empty">❌ ${e.message}</p>`;
     }
 }
+
 
 function renderQuestions(questions) {
     const container = document.getElementById("questions");
@@ -465,14 +495,14 @@ function editActiveQuestionByKey() {
 //                     Модель прохождение теста
 //==============================================================
 //                      Start test
-function startTest() {
-    /* document.querySelectorAll(".edit-btn").forEach(btn => {
+/*function startTest() {
+    /!* document.querySelectorAll(".edit-btn").forEach(btn => {
          btn.disabled = true;
-     });*///Блокируем редактирование после старта (ОЧЕНЬ желательно)
+     });*!///Блокируем редактирование после старта (ОЧЕНЬ желательно)
 
     initTest();
 
-    document.getElementById("startScreen").classList.add("hidden");
+    document.getElementById("start-screen").classList.add("hidden");
     document.getElementById("questions").classList.remove("hidden");
 
     testState.startedAt = Date.now();
@@ -481,7 +511,25 @@ function startTest() {
 
     showQuestion(0);
     focusFirstAnswer();
+}*/
+function startTest() {
+
+    initTest();
+
+    document.getElementById("start-screen").classList.add("hidden");
+    document.getElementById("questions").classList.remove("hidden");
+
+    // 🔑 ВОТ ТУТ нужно отрисовать вопросы
+    renderQuestions(testState.questions);
+
+    testState.startedAt = Date.now();
+    testState.currentIndex = 0;
+    testState.answers.clear();
+
+    showQuestion(0);
+    focusFirstAnswer();
 }
+
 
 //==============================================================
 //              Логика прохождение теста
@@ -683,20 +731,20 @@ function restartTest() {
 
 function showTests(){
 const questions = testState.allQuestions;
-    document.getElementById("startScreen").classList.add("hidden");
+    document.getElementById("start-screen").classList.add("hidden");
     document.getElementById("questions").classList.remove("hidden");
 
 renderQuestions(questions);
 }
 
 function getWrongQuestions() {
-    return testState.allQuestions.filter(q => {
+    return testState.questions.filter(q => {
         const selectedAnswerId = testState.answers.get(q.id);
         const correctAnswer = q.answers.find(a => a.isTrue);
-
         return !correctAnswer || correctAnswer.id !== selectedAnswerId;
     });
 }
+
 
 function repeatWrongOnly() {
 
@@ -707,16 +755,25 @@ function repeatWrongOnly() {
         return;
     }
 
-    // 🔄 перезапускаем состояние теста
-    testState.questions = wrongQuestions; //только текущий набор
+    // 🔑 Новый тест
+    testState.questions = wrongQuestions;
+    testState.answers.clear();            // ❗ ОБЯЗАТЕЛЬНО
+    testState.currentIndex = 0;
+    testState.startedAt = Date.now();
+    testState.finishedAt = null;
 
-    initTest();
+    // очистить DOM
+    const container = document.getElementById("questions");
+    container.innerHTML = "";
 
-    // перерисовываем ТОЛЬКО неправильные вопросы
+    // перерисовать ТОЛЬКО ошибочные
     renderQuestions(wrongQuestions);
 
+    // активировать первый
     showQuestion(0);
+    focusFirstAnswer();
 }
+
 
 
 

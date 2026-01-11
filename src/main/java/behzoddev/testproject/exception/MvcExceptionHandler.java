@@ -1,17 +1,11 @@
 package behzoddev.testproject.exception;
 
-import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.Map;
-
-@RestControllerAdvice
+@ControllerAdvice
 public class MvcExceptionHandler {
 
     @ExceptionHandler(UserAlreadyExistsException.class)
@@ -70,6 +64,12 @@ public class MvcExceptionHandler {
                 "errorMessage",
                 ex.getMessage()
         );
+        return "app-error";
+    }
+
+    @ExceptionHandler(Exception.class)
+    public String handleAny(Exception ex, Model model) {
+        model.addAttribute("errorMessage", "Internal error: " + ex.getMessage());
         return "app-error";
     }
 

@@ -2,13 +2,17 @@ package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.RoleRepository;
 import behzoddev.testproject.dao.UserRepository;
+import behzoddev.testproject.dto.ChangeRoleDto;
 import behzoddev.testproject.dto.LoginDto;
 import behzoddev.testproject.dto.RegisterDto;
+import behzoddev.testproject.dto.UserDto;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.exception.PasswordsDoNotMatchException;
 import behzoddev.testproject.exception.UserAlreadyExistsException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -73,4 +77,47 @@ public class UserServiceImpl implements UserDetailsService, UserService {
             throw new PasswordsDoNotMatchException("Passwords do not match");
         }
     }
+
+    @Transactional
+    public ChangeRoleDto changeUserRole(Long targetUserId, String newRole, Authentication auth) {
+
+        User currentUser = (User) auth.getPrincipal();
+
+        if (currentUser.getId().equals(targetUserId)) {
+            throw new AccessDeniedException("⛔ Siz o'z rolingizni o'zgartira olmaysiz.");
+        }
+
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new RuntimeException("⛔ Foydalanuvchi topilmadi"));
+
+        Role role = roleRepository.findByRoleName(newRole)
+                .orElseThrow(() -> new RuntimeException(newRole + ": ⛔ Bunday rol topilmadi"));
+
+        targetUser.setRole(role);
+
+        return ChangeRoleDto.builder()
+                .userId(targetUser.getId())
+                .newRole(role.getRoleName())
+                .build();
+    }
+
+    @Transactional
+    public UserDto deleteUser(Long targetUserId, Authentication auth) {
+        User currentUser = (User) auth.getPrincipal();
+
+        if (currentUser.getId().equals(targetUserId)) {
+            throw new AccessDeniedException("⛔ Siz o'zingizni o'chira olmaysiz");
+        }
+
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new RuntimeException("⛔ Foydalanuvchi topilmadi"));
+
+        userRepository.delete(targetUser);
+
+        return UserDto.builder()
+                .id(targetUserId)
+                .username(targetUser.getUsername())
+                .build();
+    }
+
 }

@@ -1,8 +1,8 @@
 package behzoddev.testproject.controller;
 
-import behzoddev.testproject.dto.LoginDto;
 import behzoddev.testproject.dto.RegisterDto;
 import behzoddev.testproject.service.UserServiceImpl;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -34,14 +34,9 @@ public class UserMvcController {
         return "login";
     }
 
-   /* @PostMapping("/login")
-    public String login(@ModelAttribute LoginDto dto) {
-        userService.checkCredentials(dto);
-        return "redirect:/index";
-    }*/
-
     @GetMapping("/index")
     public String login_success() {
         return "index";
     }
+
 }

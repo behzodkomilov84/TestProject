@@ -9,7 +9,7 @@
 </head>
 
 <!-- th:attr гарантирует, что Thymeleaf подставит значение role -->
-<body th:attr="data-role=${role}">
+<!--<body th:attr="data-role=${role}">
 
 
 <div class="container">
@@ -30,12 +30,36 @@
         </thead>
 
         <tbody id="usersTableBody">
-        <!-- users via JS -->
+        &lt;!&ndash; users via JS &ndash;&gt;
         </tbody>
     </table>
 
 </div>
 
 <script src="/js/users.js"></script>
+</body>-->
+<body th:attr="data-role=${role}">
+<div class="container">
+    <header class="top-bar">
+        <h1>👥 Управление пользователями</h1>
+        <button class="back-btn" onclick="history.back()">← Назад</button>
+    </header>
+
+    <table class="users-table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+        <tbody id="usersTableBody">
+        <!-- Подгружается через JS -->
+        </tbody>
+    </table>
+</div>
+<script src="/js/users.js"></script>
 </body>
+
 </html>

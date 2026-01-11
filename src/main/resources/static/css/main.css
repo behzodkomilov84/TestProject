@@ -101,8 +101,12 @@ body {
     color: #777;
 }
 
-.logo-form {
+.logo-form, .admin-panel {
     display: inline-block;
+}
+
+.admin-panel {
+    margin-left: 10px;
 }
 
 .logo-btn {
@@ -110,9 +114,25 @@ body {
     cursor: pointer;
     font-size: 24px;
     font-weight: bold;
-    color: #2c3e50;
+    color: white;
 }
 
-.logo-btn:hover {
+.user-role {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 13px;
+}
+
+.admin-link {
+    color: #c62828;
+    font-weight: 600;
+    background-color: #60c7b2;
+    border-radius: 8px;
+    padding: 8px 15px;
+}
+
+.admin-link:hover {
     opacity: 0.8;
+    cursor: pointer;
 }

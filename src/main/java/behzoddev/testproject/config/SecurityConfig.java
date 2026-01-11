@@ -1,12 +1,19 @@
 package behzoddev.testproject.config;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.servlet.FlashMap;
+import org.springframework.web.servlet.support.SessionFlashMapManager;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 
 @Configuration
 @EnableMethodSecurity
@@ -18,40 +25,72 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                                "/index",
-//                                "/login",
-                                "/registration",
-                                "/registration.html",
-                                "/error",
-                                "/favicon.ico",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
-                                "/login-success",
-                                "/science",
-                                "/topics",
-                                "/.well-known/**",
-                                "/question",
-                                "/question/**",
-                                "/"
+                                "/registration"
                         ).permitAll()
 
-                        .requestMatchers("/users")
-                        .hasAuthority("ROLE_OWNER") // <-- доступ только владельцу
+                        .requestMatchers(
+                                "/users",
+                                "/users/**",
+                                "/api/users/**").hasAuthority("ROLE_OWNER")// <-- доступ только владельцу
 
-                        .requestMatchers("/api/**").permitAll() // или authenticated()
+                        .requestMatchers("/api/**")
+                        .hasAnyAuthority("ROLE_OWNER",
+                                "ROLE_ADMIN")
 
-                        /*.requestMatchers("/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_OWNER")
-                        .requestMatchers("/test/**").hasAnyAuthority("ROLE_USER", "ROLE_ADMIN", "ROLE_OWNER") TODO*/
                         .anyRequest().authenticated()
                 )
+                .exceptionHandling(ex -> ex
+                        // Для API → JSON
+                        .accessDeniedHandler((request, response, ex1) -> {
+                            if (request.getRequestURI().startsWith("/api/")) {
+                                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                                response.setContentType("application/json");
+                                response.getWriter().write(
+                                        "{\"error\":\"" + ex1.getMessage() + "\"}"
+                                );
+                            }
+                            // Для браузера → redirect
+                            else {
+                                response.sendRedirect(
+                                        "/app-error?msg=" +
+                                                URLEncoder.encode(ex1.getMessage(), StandardCharsets.UTF_8)
+                                );
+                            }
+                        })
+                )
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .sessionFixation().migrateSession() //Защита от восстановления сессии. Это запрещает повторное использование старых идентификаторов.
+                        .maximumSessions(1)
+                        .maxSessionsPreventsLogin(false)
+                )//Включаем уничтожение сессии при закрытии браузера
+
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/index",true)
+                        .defaultSuccessUrl("/index", true)
+                        .failureHandler((request, response, exception) -> {
+                            var flashMap = new FlashMap();
+                            flashMap.put("LOGIN_ERROR", exception.getMessage());
+
+                            var flashManager = new SessionFlashMapManager();
+                            flashManager.saveOutputFlashMap(flashMap, request, response);
+
+                            response.sendRedirect("/login");
+                        })
+
                         .permitAll()
                 )
-                .logout(logout -> logout.permitAll());
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .invalidateHttpSession(true) //Включаем уничтожение сессии при закрытии браузера
+                        .deleteCookies("JSESSIONID") //Включаем уничтожение сессии при закрытии браузера
+                        .logoutSuccessUrl("/login")
+                        .permitAll()
+                );
 
         return http.build();
     }

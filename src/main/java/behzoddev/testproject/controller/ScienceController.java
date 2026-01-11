@@ -28,7 +28,7 @@ public class ScienceController {
 
     @GetMapping("/api/science")
     @ResponseBody
-    public ResponseEntity<Set<ScienceIdAndNameDto>> getSciences() {
+    public ResponseEntity<Set<ScienceIdAndNameDto>>  getSciences() {
         Set<ScienceIdAndNameDto> scienceIdsAndNames = scienceService.getAllScienceIdAndNameDto();
 
         return ResponseEntity.ok(scienceIdsAndNames);

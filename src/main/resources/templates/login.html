@@ -32,11 +32,17 @@
      class="success-alert">
 </div>
 
+<p style="color: red"
+   th:if="${LOGIN_ERROR}"
+   th:text="${LOGIN_ERROR}"
+   class="error-alert"
+   id="error-alert"></p>
+
 <div class="container">
     <div class="login form">
         <header>Login</header>
         <form action="/login" method="post">
-            <input class="username" type="text" name="username" placeholder="Enter your name" required>
+            <input class="username" type="text" name="username" id="username" placeholder="Enter your name" required>
             <div class="password-box">
             <input class="password" type="password" name="password" id="pwd" placeholder="Enter your password" required>
             <input class="checkbox" type="checkbox" id="showPsw" onclick="pwd.type=this.checked?'text':'password'">
@@ -45,17 +51,28 @@
             <a href="#">Forgot password?</a>
             <input type="submit" class="button" value="Login">
         </form>
-        <div class="signup">
+        <div class="signup" id="signup">
             <span class="signup">Don't have an account?
-            <label><a href="/registration.html">Sign up</a></label></span>
+            <label><a href="/registration">Sign up</a></label></span>
         </div>
+
+
     </div>
+
+
 
 </div>
 
 <script>
     setTimeout(() => {
         const alert = document.getElementById("success-alert");
+        if (alert) {
+            alert.style.display = "none";
+        }
+    }, 5000);
+
+    setTimeout(() => {
+        const alert = document.getElementById("error-alert");
         if (alert) {
             alert.style.display = "none";
         }

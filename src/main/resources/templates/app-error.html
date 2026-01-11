@@ -20,6 +20,23 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
 
+    <style>
+        .back-btn {
+            justify-content: center;
+            text-align: center;
+            background-color: #4040be;
+            color: white;
+            border-radius: 8px;
+            font-weight: 700;
+            padding: 5px 10px;
+            margin-bottom: 10px;
+            text-decoration: none;
+        }
+
+        .back-btn:hover{
+            background-color: #5050a4;
+        }
+    </style>
 </head>
 <body>
 <div
@@ -31,9 +48,13 @@
         ">
     <b><span th:text="${errorMessage}"></span></b>
     <br>
-    <a href="/registration.html">Назад к регистрации</a>
+    <button class="back-btn" onclick="history.back()">Назад</button>
     <br>
-    <a href="/login">Назад к логин</a>
+    <a href="/registration" class="back-btn">Назад к регистрации</a>
+    <br>
+    <br>
+    <a href="/login" class="back-btn">Назад к логин</a>
+
 </div>
 
 

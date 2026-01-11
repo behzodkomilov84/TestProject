@@ -198,7 +198,7 @@ ul label:has(input[type="radio"]:checked) {
 }
 
 .hidden {
-    display: none;
+    display: none !important;
 }
 
 .question-header {
@@ -310,7 +310,9 @@ button.comment-btn {
     text-align: center;
     padding: 40px;
     display: flex;
-    justify-content: space-around;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
 }
 
 .start-btn {

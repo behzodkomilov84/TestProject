@@ -102,7 +102,7 @@ body {
     text-decoration: underline;
 }
 
-.success-alert {
+.success-alert, .error-alert {
     position: fixed;
     top: 10px;
     left: 50%;
