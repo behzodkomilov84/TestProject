@@ -427,11 +427,13 @@ async function saveToDb() {
                 body: JSON.stringify(payload)
             });
 
-        const data = await response.json();
-
         if (!response.ok) {
-            throw new Error(data.message || "Server xatosi");
+            const text = await response.text();   // 👈 читаем как ТЕКСТ
+            console.error("SERVER RESPONSE:", text);
+            throw new Error("Server error (not JSON)");
         }
+
+        const data = await response.json();   // теперь это безопасно
 
         // Успешное сообщение
         showToast(

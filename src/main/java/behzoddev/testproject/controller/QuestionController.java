@@ -4,11 +4,13 @@ import behzoddev.testproject.dto.AnswerDto;
 import behzoddev.testproject.dto.AnswerShortDto;
 import behzoddev.testproject.dto.QuestionDto;
 import behzoddev.testproject.dto.QuestionSaveDto;
+import behzoddev.testproject.service.ExcelService;
 import behzoddev.testproject.service.QuestionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +20,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class QuestionController {
     private final QuestionService questionService;
+    private final ExcelService excelService;
 
     @GetMapping("/api/question")
     public ResponseEntity<List<QuestionDto>> getQuestionsByTopic(@RequestParam Long topicId) {
@@ -127,6 +130,13 @@ public class QuestionController {
         return ResponseEntity.noContent().build();
     }
 
-}
+    @PostMapping("/api/import/excel")
+    public ResponseEntity<?> importExcel(
+            @RequestParam MultipartFile file,
+            @RequestParam Long topicId
+    ) {
+        return ResponseEntity.ok(excelService.importQuestions(file, topicId));
+    }
 
+}
 

@@ -5,13 +5,38 @@
     <meta charset="UTF-8">
     <title>Создание теста</title>
     <link rel="stylesheet" href="/css/test-form.css">
-    <script src="/js/test-form.js"></script>
+    <script src="/js/test-form.js" defer></script>
 </head>
 
 <body>
 
 <div class="container">
     <h1>Test yaratish</h1>
+
+    <div class="top-btn">
+        <div class="left-btn">
+            <button class="btn-import" type="button" onclick="importExcel()" title="Avval shablonni yuklab oling, to'ldirib qayta import qiling.">📥 Import from Excel</button>
+            <input type="file" id="excelFile" accept=".xlsx" hidden>
+        </div>
+        <div class="right-btn">
+            <button class="btn-export" type="button" onclick="downloadTemplate()">
+                📄 Shablon
+            </button>
+        </div>
+
+
+    </div>
+
+
+
+    <div id="importModal" class="modal hidden">
+        <div class="modal-content">
+            <h3 id="importTitle"></h3>
+            <pre id="importBody"></pre>
+            <button class="btn primary" onclick="closeModal()">OK</button>
+        </div>
+    </div>
+
 
     <form id="testForm">
 

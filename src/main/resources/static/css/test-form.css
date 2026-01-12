@@ -123,9 +123,29 @@ label {
     color: #fff;
 }
 
+.top-btn {
+    display: flex;
+    margin-left: auto;
+}
 
-#testForm {
-    /*position: relative; !* якорь *!*/
+.btn-import, .btn-export {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    background: #1976d2;
+    color: white;
+    cursor: pointer;
+    margin-bottom: 20px;
+    width: fit-content;
+    margin-left: auto;
+}
+
+.btn-import{
+    margin-right: 12px;
+}
+
+.btn-import:hover {
+    background: #125aa3;
 }
 
 textarea.commentary {
@@ -143,4 +163,13 @@ textarea.commentary {
     width: 100%;
     min-height: 80vh;
     z-index: 1000;
+}
+
+.modal {
+    text-align: center;
+    background-color: aquamarine;
+    border: none;
+    border-radius: 8px;
+    padding: 15px 50px;
+    margin: 15px auto 30px;
 }

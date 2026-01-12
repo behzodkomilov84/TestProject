@@ -8,7 +8,10 @@ import java.util.Set;
 @Entity
 @Table(name = "topics",
         schema = "test_project",
-        uniqueConstraints = @UniqueConstraint(columnNames = "name"))
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"science_id", "name"})
+        }
+)
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -21,7 +24,7 @@ public class Topic {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String name;
 
     @OneToMany(mappedBy = "topic", cascade = CascadeType.PERSIST)

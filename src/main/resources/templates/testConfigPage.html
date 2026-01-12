@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Основные метатеги -->
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO и описание страницы -->
+    <meta name="description" content="Описание страницы">
+    <meta name="author" content="Автор">
+
+    <!-- Заголовок страницы -->
+    <title>testConfigPage</title>
+
+    <!-- Подключение CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- Подключение шрифтов Google -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+
+</head>
+<body>
+<h2>Create Test</h2>
+
+<div id="sciences"></div>
+<hr>
+<div id="topics"></div>
+
+<p>Max available: <span id="max">0</span></p>
+<input type="number" id="limit" min="1">
+
+<p>
+    Time (minutes):
+    <input type="number" id="time" value="10">
+</p>
+
+<button onclick="startTest()">START TEST</button>
+
+<hr>
+<div id="timer"></div>
+<div id="test"></div>
+
+<script src="/test.js"></script>
+
+
+</body>
+</html>

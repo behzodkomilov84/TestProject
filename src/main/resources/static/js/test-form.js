@@ -10,75 +10,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    /*form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        const topicId = document.getElementById("topicId").value;
-        const questionText = document.getElementById("question").value.trim();
-
-        const answerTextAreas = document.querySelectorAll(".answer textarea");
-        const correctIndex = document.querySelector("input[name='correct']:checked")?.value;
-
-        if (correctIndex === undefined) {
-            alert("❌ To‘g‘ri javobni tanlang");
-            return;
-        }
-
-        //=================Javob textlarini yig'ish====================
-        // собираем тексты ответов
-        const texts = [];
-        for (const ta of answerTextAreas) {
-            const text = ta.value.trim();
-            if (!text) {
-                alert("❌ Barcha javoblarni to‘ldiring");
-                ta.focus();
-                return;
-            }
-            texts.push(text.toLowerCase());
-        }
-
-                    // проверка на уникальность
-        const uniqueTexts = new Set(texts);
-        if (uniqueTexts.size !== texts.length) {
-            alert("❌ Javob variantlari bir xil bo‘lishi mumkin emas");
-            return;
-        }
-
-                    // формируем ответы
-        const answers = texts.map((text, index) => ({
-            answerText: answerTextAreas[index].value.trim(),
-            isTrue: Number(correctIndex) === index
-        }));
-
-        //=============================================================
-
-        const payload = {
-            topicId: Number(topicId),
-            question: questionText,
-            answers: answers
-        };
-
-        try {
-            const res = await fetch("/api/question/save", {
-                method: "POST", headers: {
-                    "Content-Type": "application/json"
-                }, body: JSON.stringify(payload)
-            });
-
-            if (!res.ok) {
-                const err = await res.text();
-                throw new Error(err);
-            }
-
-            alert("✅ Test muvaffaqiyatli saqlandi");
-            form.reset();
-
-        } catch (e) {
-            console.error(e);
-            alert("❌ Saqlashda xatolik");
-        }
-    });*/
-
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
@@ -201,3 +132,51 @@ document.addEventListener("click", (e) => {
     textarea.classList.remove("hidden");
     textarea.focus();
 });
+
+function importExcel() {
+    document.getElementById("excelFile").click();
+}
+
+document.getElementById("excelFile").addEventListener("change", async function () {
+    const file = this.files[0];
+    if (!file) return;
+
+    const topicId = document.getElementById("topicId").value;
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("topicId", topicId);
+
+    const res = await fetch("/api/import/excel", {
+        method: "POST",
+        body: formData
+    });
+
+    const data = await res.json();
+    showResult(data);
+});
+
+function showResult(data) {
+    const modal = document.getElementById("importModal");
+    const title = document.getElementById("importTitle");
+    const body = document.getElementById("importBody");
+
+    if (data.success) {
+        title.textContent = "Import successful";
+        body.textContent = `Imported: ${data.imported} questions`;
+    } else {
+        title.textContent = "Import errors";
+        body.textContent = data.errors.join("\n");
+    }
+
+    modal.classList.remove("hidden");
+}
+
+function closeModal() {
+    document.getElementById("importModal").classList.add("hidden");
+}
+
+function downloadTemplate() {
+    window.location.href = "/api/import/template";
+}
+
