@@ -45,7 +45,7 @@ public class QuestionController {
             boolean isTrue = Boolean.parseBoolean(answer.get("isTrue").toString());
 
             String commentary = "Noto'g'ri javob";
-            if (isTrue){
+            if (isTrue) {
                 commentary = "To'g'ri javob";
             }
 
@@ -102,7 +102,7 @@ public class QuestionController {
             boolean isTrue = Boolean.parseBoolean(answer.get("isTrue").toString());
 
             String commentary = "Noto'g'ri javob";
-            if (isTrue){
+            if (isTrue) {
                 commentary = "To'g'ri javob";
             }
 

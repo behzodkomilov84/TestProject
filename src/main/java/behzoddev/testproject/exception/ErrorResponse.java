@@ -1,3 +1,4 @@
 package behzoddev.testproject.exception;
 
-public record ErrorResponse(String message, int status) { }
+public record ErrorResponse(String message, int status) {
+}

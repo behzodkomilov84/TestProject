@@ -14,5 +14,4 @@ public interface TopicMapper {
     Topic mapTopicNameDtoToTopic(TopicNameDto topicNameDto);
 
 
-
 }

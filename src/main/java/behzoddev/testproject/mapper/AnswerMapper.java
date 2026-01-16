@@ -6,7 +6,6 @@ import behzoddev.testproject.entity.Answer;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-import javax.swing.*;
 import java.util.List;
 
 @Mapper(componentModel = "spring")

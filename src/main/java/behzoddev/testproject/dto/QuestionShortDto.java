@@ -6,4 +6,5 @@ import java.util.List;
 
 public record QuestionShortDto(
         @NotBlank(message = "QuestionText must not be blank") String questionText,
-        List<AnswerShortDto> answers) {}
+        List<AnswerShortDto> answers) {
+}

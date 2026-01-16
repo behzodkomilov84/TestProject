@@ -21,7 +21,6 @@ import java.util.Map;
 public class UserRestController {
 
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
     private final UserServiceImpl userServiceImpl;
 
     @GetMapping("/api/users")
@@ -40,12 +39,12 @@ public class UserRestController {
     @DeleteMapping("/api/users/{id}")
     @PreAuthorize("hasAuthority('ROLE_OWNER')")
     public ResponseEntity<?> deleteUser(@PathVariable Long id,
-                                              Authentication authentication) {
+                                        Authentication authentication) {
 
         try {
             UserDto deletedUser = userServiceImpl.deleteUser(id, authentication);
             return ResponseEntity.ok(deletedUser);
-        }catch (AccessDeniedException e) {
+        } catch (AccessDeniedException e) {
             // Если пытаются удалить свою роль
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", e.getMessage()));

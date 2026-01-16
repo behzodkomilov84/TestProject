@@ -1,8 +1,5 @@
 package behzoddev.testproject.validation;
 
-import java.util.List;
-import java.util.Objects;
-
 public final class Validation {
 
     public static void validateName(String name) {

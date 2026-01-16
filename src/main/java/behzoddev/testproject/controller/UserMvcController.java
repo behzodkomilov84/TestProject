@@ -2,7 +2,6 @@ package behzoddev.testproject.controller;
 
 import behzoddev.testproject.dto.RegisterDto;
 import behzoddev.testproject.service.UserServiceImpl;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;

@@ -3,9 +3,9 @@ package behzoddev.testproject.service;
 import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
-import behzoddev.testproject.dto.*;
-import behzoddev.testproject.entity.Answer;
-import behzoddev.testproject.entity.Question;
+import behzoddev.testproject.dto.ScienceDto;
+import behzoddev.testproject.dto.ScienceIdAndNameDto;
+import behzoddev.testproject.dto.ScienceNameDto;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.mapper.QuestionMapper;
@@ -16,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
