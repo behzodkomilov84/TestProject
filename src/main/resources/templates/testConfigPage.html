@@ -14,7 +14,7 @@
     <title>testConfigPage</title>
 
     <!-- Подключение CSS -->
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/css/testConfigPage.css">
     <!-- Подключение шрифтов Google -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,28 +22,46 @@
 
 </head>
 <body>
-<h2>Create Test</h2>
+<div class="container">
+    <h2>Bilimingizni sinab ko'ring</h2>
 
-<div id="sciences"></div>
-<hr>
-<div id="topics"></div>
+    <div class="section">
+        <div class="section-title">Fanni tanlang</div>
+        <select id="scienceSelect" onchange="loadTopicsFromSelect()">
+            <option value="">-- Fanni tanlang --</option>
+        </select>
+    </div>
 
-<p>Max available: <span id="max">0</span></p>
-<input type="number" id="limit" min="1">
+    <div class="section">
+        <div class="section-title">Mavzularni tanlang</div>
+        <div class="multiselect" id="topicMultiselect">
+            <div class="selectBox" onclick="toggleTopics()">
+                <span id="topicLabel" >--Mavzuni tanlash uchun bosing--</span>
+                <div class="arrow"></div>
+            </div>
 
-<p>
-    Time (minutes):
-    <input type="number" id="time" value="10">
-</p>
+            <div id="topicDropdown" class="checkboxes"></div>
+        </div>
+    </div>
 
-<button onclick="startTest()">START TEST</button>
+    <div class="section">
+        Mavjud testlar soni: <b><span id="max">0</span></b>
+        <input type="number" id="limit" min="1" placeholder="--Test sonini kiriting--">
+        <div id="limitError" class="error-text"></div>
+    </div>
 
-<hr>
-<div id="timer"></div>
-<div id="test"></div>
+    <div class="section">
+        Umumiy vaqt (minut)
+        <input type="number" id="time" value="10">
+    </div>
 
-<script src="/test.js"></script>
+    <button onclick="startTest()">Testni boshlash</button>
+
+    <div id="timer"></div>
+    <div id="test"></div>
+</div>
 
 
+<script src="/js/testConfigPage.js"></script>
 </body>
 </html>

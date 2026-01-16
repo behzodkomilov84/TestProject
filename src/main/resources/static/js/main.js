@@ -28,15 +28,15 @@ window.addEventListener("beforeunload", function (event) {
 
 function startPractice() {
     // режим практики
-    window.location.href = "/science";
+    window.location.href = "/testConfigPage";
 }
 
 function startExam() {
     // режим экзамена
-    window.location.href = "/science";
+    window.location.href = "/testConfigPage";
 }
 
 function startHardMode() {
     // сложный режим
-    window.location.href = "/science";
+    window.location.href = "/testConfigPage";
 }

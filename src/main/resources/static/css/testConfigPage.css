@@ -1,0 +1,212 @@
+* {
+    box-sizing: border-box;
+    font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+body {
+    margin: 0;
+    background: linear-gradient(135deg, #eef2f7, #dfe7f1);
+    min-height: 100vh;
+}
+
+.container {
+    max-width: 900px;
+    margin: 40px auto;
+    background: white;
+    border-radius: 14px;
+    padding: 32px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.08);
+}
+
+h2 {
+    margin-top: 0;
+    text-align: center;
+    color: #2b3a55;
+    font-size: 28px;
+}
+
+.section {
+    margin-top: 24px;
+}
+
+.section-title {
+    font-weight: 600;
+    color: #4b5d73;
+    margin-bottom: 12px;
+}
+
+/* Subjects (radio buttons) */
+.radio-group label {
+    display: block;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid #dce3ec;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.radio-group input {
+    margin-right: 10px;
+}
+
+.radio-group label:hover {
+    background: #f1f6fb;
+    border-color: #4a90e2;
+}
+
+/* Topics (checkboxes) */
+.checkbox-group label {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid #e1e7ef;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.checkbox-group label:hover {
+    background: #f7faff;
+    border-color: #4a90e2;
+}
+
+.badge {
+    background: #e8f0fc;
+    color: #2a5bd7;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+}
+
+/* Inputs */
+input[type=number] {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #d5dde8;
+    font-size: 16px;
+}
+
+/* Buttons */
+button {
+    margin-top: 20px;
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #4a90e2, #2563eb);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 25px rgba(37,99,235,0.35);
+}
+
+/* Test questions */
+.question {
+    background: #f7f9fc;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.question-title {
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.answer label {
+    display: block;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 8px;
+    cursor: pointer;
+}
+
+.answer label:hover {
+    background: #eaf2ff;
+}
+
+/* Timer */
+#timer {
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e40af;
+    margin: 20px 0;
+}
+
+select {
+    width: 100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #d5dde8;
+    font-size: 16px;
+    background: white;
+}
+
+.multiselect {
+    position: relative;
+}
+
+.selectBox {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #d5dde8;
+    cursor: pointer;
+    background: white;
+}
+
+.arrow {
+    width: 0;
+    height: 0;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-top: 6px solid #555;
+}
+
+.checkboxes {
+    display: none;
+    position: absolute;
+    width: 100%;
+    background: white;
+    border-radius: 10px;
+    border: 1px solid #d5dde8;
+    margin-top: 5px;
+    max-height: 240px;
+    overflow-y: auto;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    z-index: 10;
+}
+
+.checkboxes label {
+    display: block;
+    padding: 10px 14px;
+    cursor: pointer;
+}
+
+.checkboxes label:hover {
+    background: #f1f6fb;
+}
+
+.error-text {
+    color: #dc2626;
+    font-size: 14px;
+    margin-top: 6px;
+}
+
+input.error {
+    border: 2px solid #dc2626;
+    background: #fee2e2;
+}

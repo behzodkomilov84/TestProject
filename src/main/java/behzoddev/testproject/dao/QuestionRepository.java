@@ -1,6 +1,7 @@
 package behzoddev.testproject.dao;
 
 import behzoddev.testproject.entity.Question;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -12,11 +13,11 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     @EntityGraph(value = "questionWithAnswers")
     @Query("""
-        select distinct q
-        from Question q
-        where q.topic.science.id = :scienceId
-          and q.topic.id = :topicId
-    """)
+                select distinct q
+                from Question q
+                where q.topic.science.id = :scienceId
+                  and q.topic.id = :topicId
+            """)
     List<Question> getQuestionsByIds(
             @Param("scienceId") Long scienceId,
             @Param("topicId") Long topicId
@@ -33,4 +34,34 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             """)
     Question getQuestionById(
             @Param("questionId") Long questionId);
+
+    @Query("""
+            SELECT q FROM Question q
+            WHERE q.topic.id IN :topicIds
+            ORDER BY function('RAND')
+            """)
+    List<Question> findRandomQuestionsByTopicIds(@Param("topicIds") List<Long> topicIds);
+
+    @Query("""
+            SELECT q FROM Question q
+            WHERE q.topic.id IN :topicIds
+            ORDER BY function('RAND')
+            """)
+    List<Question> findRandomQuestionsByTopicIds(
+            @Param("topicIds") List<Long> topicIds,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT count(q) FROM Question q
+            WHERE q.topic.id IN :topicIds
+            """)
+    int countByTopicIds(@Param("topicIds") List<Long> topicIds);
+
+    @Query("""
+            SELECT count(q) FROM Question q
+            WHERE q.topic.id = :topicId
+            """)
+    int countByTopicId(@Param("topicId") Long topicId);
+
 }

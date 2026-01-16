@@ -64,7 +64,10 @@
         <a href="#">Profil</a>
 
         <!-- Owner Panel доступен только OWNER -->
-        <a href="/users" sec:authorize="hasAuthority('ROLE_OWNER')" class="admin-link">Owner Panel</a>
+        <a href="/users" sec:authorize="hasAuthority('ROLE_OWNER')" class="owner-link">Owner Panel</a>
+
+        <!-- Admin Panel доступен только OWNER и ADMIN -->
+        <a href="/science" sec:authorize="hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')" class="admin-link">Admin Panel</a>
 
         <a href="/logout">Chiqish</a>
     </nav>
