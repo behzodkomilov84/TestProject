@@ -28,13 +28,20 @@ public class SecurityConfig {
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
-                                "/registration"
+                                "/registration",
+                                "/api/test-session/**",
+                                "/"
                         ).permitAll()
 
                         .requestMatchers(
                                 "/users",
                                 "/users/**",
-                                "/api/users/**").hasAuthority("ROLE_OWNER")// <-- доступ только владельцу
+                                "/api/users/**")
+                        .hasAuthority("ROLE_OWNER")// <-- доступ только владельцу
+
+                        // API тестов доступно всем авторизованным (USER, ADMIN, OWNER)
+                        .requestMatchers("/api/tests/**")
+                        .authenticated()
 
                         .requestMatchers("/api/**")
                         .hasAnyAuthority("ROLE_OWNER",

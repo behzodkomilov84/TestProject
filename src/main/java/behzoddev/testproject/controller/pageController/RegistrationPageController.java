@@ -10,4 +10,9 @@ public class RegistrationPageController {
     public String registration() {
         return "registration";
     }
+
+    @GetMapping("/")
+    public String startPage() {
+        return "/login";
+    }
 }

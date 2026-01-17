@@ -1,4 +1,4 @@
-package behzoddev.testproject.controller;
+package behzoddev.testproject.controller.pageController;
 
 import behzoddev.testproject.dto.RegisterDto;
 import behzoddev.testproject.service.UserServiceImpl;

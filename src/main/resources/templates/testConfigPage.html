@@ -13,8 +13,13 @@
     <!-- Заголовок страницы -->
     <title>testConfigPage</title>
 
-    <!-- Подключение CSS -->
+    <!-- Подключение CSS, JS -->
+    <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/testConfigPage.css">
+
+    <script src="/js/navbar.js" defer></script>
+    <script src="/js/testConfigPage.js" defer></script>
+
     <!-- Подключение шрифтов Google -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,6 +27,9 @@
 
 </head>
 <body>
+
+<div th:replace="fragments/navbar :: navbar"></div>
+
 <div class="container">
     <h2>Bilimingizni sinab ko'ring</h2>
 
@@ -36,7 +44,7 @@
         <div class="section-title">Mavzularni tanlang</div>
         <div class="multiselect" id="topicMultiselect">
             <div class="selectBox" onclick="toggleTopics()">
-                <span id="topicLabel" >--Mavzuni tanlash uchun bosing--</span>
+                <span id="topicLabel">--Mavzuni tanlash uchun bosing--</span>
                 <div class="arrow"></div>
             </div>
 
@@ -62,6 +70,6 @@
 </div>
 
 
-<script src="/js/testConfigPage.js"></script>
+
 </body>
 </html>

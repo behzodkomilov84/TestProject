@@ -6,15 +6,15 @@
 body {
     margin: 0;
     background: linear-gradient(135deg, #eef2f7, #dfe7f1);
-    min-height: 100vh;
+    max-height: 90vh;
 }
 
 .container {
+    padding: 32px;
     max-width: 900px;
-    margin: 40px auto;
+    margin: 100px auto 30px auto;
     background: white;
     border-radius: 14px;
-    padding: 32px;
     box-shadow: 0 20px 60px rgba(0,0,0,0.08);
 }
 

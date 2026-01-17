@@ -21,36 +21,6 @@ const testState = {
 };
 
 //===============================================================================
-/*async function loadQuestions(topicId) {
-    try {
-        const res = await fetch(`/api/question?topicId=${topicId}`);
-
-        if (!res.ok) {
-            throw new Error("Ошибка загрузки тестов");
-        }
-
-        const questions = await res.json();
-
-        // 🔑 ИНИЦИАЛИЗАЦИЯ ТЕСТА
-        testState.topicId = Number(topicId);
-        testState.allQuestions = questions; // Оригинал
-        testState.questions = questions; // Текущие
-        testState.answers.clear();
-        testState.startedAt = Date.now();
-
-
-
-        // ⚠️ ВАЖНО: НЕ рендерим здесь
-        document.getElementById("questions").classList.add("hidden");
-        document.getElementById("start-screen").classList.remove("hidden");
-
-         renderQuestions(questions);
-
-    } catch (e) {
-        document.getElementById("questions").innerHTML =
-            `<p class="empty">❌ ${e.message}</p>`;
-    }
-}*/
 
 async function loadQuestions(topicId) {
     try {
@@ -77,7 +47,6 @@ async function loadQuestions(topicId) {
             `<p class="empty">❌ ${e.message}</p>`;
     }
 }
-
 
 function renderQuestions(questions) {
     const container = document.getElementById("questions");
@@ -729,22 +698,13 @@ function restartTest() {
     }, 0);
 }
 
-function showTests(){
-const questions = testState.allQuestions;
-    document.getElementById("start-screen").classList.add("hidden");
-    document.getElementById("questions").classList.remove("hidden");
-
-renderQuestions(questions);
-}
-
 function getWrongQuestions() {
     return testState.questions.filter(q => {
         const selectedAnswerId = testState.answers.get(q.id);
         const correctAnswer = q.answers.find(a => a.isTrue);
-        return !correctAnswer || correctAnswer.id !== selectedAnswerId;
+        return !correctAnswer || Number(correctAnswer.id) !== Number(selectedAnswerId);
     });
 }
-
 
 function repeatWrongOnly() {
 
@@ -773,7 +733,3 @@ function repeatWrongOnly() {
     showQuestion(0);
     focusFirstAnswer();
 }
-
-
-
-

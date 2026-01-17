@@ -2,16 +2,18 @@ package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.AnswerRepository;
 import behzoddev.testproject.dao.QuestionRepository;
-import behzoddev.testproject.dto.AnswerIdAndTextDto;
-import behzoddev.testproject.dto.TestQuestionDto;
+import behzoddev.testproject.dto.AnswerDto;
+import behzoddev.testproject.dto.QuestionDto;
 import behzoddev.testproject.entity.Question;
+import behzoddev.testproject.mapper.AnswerMapper;
+import behzoddev.testproject.mapper.QuestionMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -19,24 +21,29 @@ public class TestSessionService {
 
     private final QuestionRepository questionRepository;
     private final AnswerRepository answerRepository;
+    private final QuestionMapper questionMapper;
+    private final AnswerMapper answerMapper;
 
-    public List<TestQuestionDto> startTest(List<Long> topicIds, int limit) {
+    @Transactional
+    public List<QuestionDto> startTest(List<Long> topicIds, int limit) {
         List<Question> questions = questionRepository.findRandomQuestionsByTopicIds(topicIds);
 
         Collections.shuffle(questions);
         questions = questions.stream().limit(limit).toList();
 
-        return questions.stream().map(q -> {
-            var answers = q.getAnswers().stream()
-                    .map(a -> new AnswerIdAndTextDto(a.getId(), a.getAnswerText()))
-                    .collect(Collectors.toList());
+        List<QuestionDto> questionDtoList = questionMapper.mapQuestionListToQuestionDtoList(questions);
 
-            Collections.shuffle(answers);
+        return questionDtoList.stream()
+                .map(dto -> {
+                    List<AnswerDto> answerDtoList = dto.answers();
 
-            return new TestQuestionDto(q.getId(), q.getQuestionText(), answers);
-        }).toList();
+                    Collections.shuffle(answerDtoList);
+
+                    return new QuestionDto(dto.id(), dto.questionText(), answerDtoList);
+                }).toList();
     }
 
+    @Transactional
     public int checkAnswers(Map<Long, Long> answers) {
         int correct = 0;
 

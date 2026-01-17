@@ -25,7 +25,7 @@ public class UserManagerPageController {
 
         model.addAttribute("role", role);
 
-        return "users"; // Thymeleaf шаблон users.html
+        return "userManagerPage"; // Thymeleaf шаблон userManagerPage.html
     }
 
 }

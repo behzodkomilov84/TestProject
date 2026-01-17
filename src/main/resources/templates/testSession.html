@@ -1,42 +1,41 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Основные метатеги -->
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- SEO и описание страницы -->
-    <meta name="description" content="Описание страницы">
-    <meta name="author" content="Автор">
+    <title>Test Session</title>
 
-    <!-- Заголовок страницы -->
-    <title>start-test</title>
-
-    <!-- Подключение CSS -->
+    <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/testSession.css">
-    <script src="/js/testSession.js" defer></script>
-    <!-- Подключение шрифтов Google -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
 
+    <script src="/js/navbar.js" defer></script>
+    <script src="/js/testSession.js" defer></script>
 </head>
 <body>
 
-<div id="timer"></div>
+<div th:replace="fragments/navbar :: navbar"></div>
 
-<div class="progress-bar">
-    <div id="progress"></div>
+<div class="container">
+
+   <div id="progressWrapper" class="progress-wrapper">
+
+       <!-- Прогресс -->
+       <div class="progress-bar">
+           <div id="progress"></div>
+       </div>
+
+       <!-- Таймер -->
+       <div id="timer" class="timer"></div>
+
+   </div>
+
+    <!-- Вопросы -->
+    <div id="questions" class="questions-container"></div>
+
 </div>
 
-<div id="questionBox"></div>
-
-<div class="nav">
-    <button onclick="prev()">◀ Prev</button>
-    <button onclick="next()">Next ▶</button>
-    <button class="finish" onclick="finishTest()">Finish</button>
-</div>
 
 </body>
 </html>

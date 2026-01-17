@@ -6,6 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <link rel="stylesheet" href="/css/users.css">
+    <link rel="stylesheet" href="/css/navbar.css">
+
+    <script src="/js/users.js" defer></script>
+    <script src="/js/navbar.js" defer></script>
 </head>
 
 <!-- th:attr гарантирует, что Thymeleaf подставит значение role -->
@@ -39,6 +43,9 @@
 <script src="/js/users.js"></script>
 </body>-->
 <body th:attr="data-role=${role}">
+
+<div th:replace="fragments/navbar :: navbar"></div>
+
 <div class="container">
     <header class="top-bar">
         <h1>👥 Управление пользователями</h1>
@@ -59,7 +66,7 @@
         </tbody>
     </table>
 </div>
-<script src="/js/users.js"></script>
+
 </body>
 
 </html>

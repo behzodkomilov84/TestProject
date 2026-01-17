@@ -5,11 +5,19 @@
     <title>Tests by Topic</title>
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="/css/navbar.css"></link>
     <link rel="stylesheet" href="/css/question.css"></link>
+
+    <script src="/js/navbar.js" defer></script>
+    <script src="/js/question.js" defer></script>
+
 
 </head>
 
 <body>
+
+<div th:replace="fragments/navbar :: navbar"></div>
 
 <div class="container">
 
@@ -35,7 +43,6 @@
 
 </div>
 
-<script src="/js/question.js"></script>
 
 </body>
 </html>

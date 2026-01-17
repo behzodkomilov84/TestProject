@@ -1,0 +1,39 @@
+<header th:fragment="navbar" class="navbar"
+        xmlns:th="http://www.thymeleaf.org"
+        xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+    <div class="logo-btn">🧠 TestPlatform</div>
+
+    <div class="nav-center">
+        <span th:if="${#authorization.expression('isAuthenticated()')}">
+            Xush kelibsiz, <b th:text="${#authentication.name}">username</b> </span>
+        <span th:if="${#authorization.expression('isAuthenticated()')}">
+            <br style="height: 0px">Rolingiz:
+            <b th:text="${#strings.replace(#authentication.authorities[0].authority,'ROLE_','')}"
+               th:attr="data-role=${#strings.replace(#authentication.authorities[0].authority,'ROLE_','')}"
+            style="color: darkred">
+                ROLE </b>
+
+        </span>
+    </div> <!-- ☰ burger -->
+    <button class="burger" onclick="toggleMenu()">☰</button>
+
+    <nav id="nav-menu">
+        <a href="/index">Bosh sahifa</a>
+        <a href="#">Statistika</a>
+        <a href="#">Profil</a>
+
+        <!-- Owner Panel доступен только OWNER -->
+        <a href="/users"
+           sec:authorize="hasAuthority('ROLE_OWNER')"
+           class="owner-link">Owner Panel</a>
+
+        <!-- Admin Panel доступен только OWNER и ADMIN -->
+        <a href="/science"
+           sec:authorize="hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')"
+           class="admin-link">Admin Panel</a>
+
+        <a href="/logout">Chiqish</a>
+    </nav>
+
+</header>

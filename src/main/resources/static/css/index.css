@@ -1,6 +1,6 @@
 * {
     box-sizing: border-box;
-    font-family: system-ui, sans-serif;
+    font-family: "Segoe UI", system-ui, sans-serif;
 }
 
 body {
@@ -9,26 +9,11 @@ body {
     color: #333;
 }
 
-/* ===== NAVBAR ===== */
-.navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px 32px;
-    background: #1e293b;
-    color: white;
-}
-
-.navbar a {
-    color: white;
-    margin-left: 20px;
-    text-decoration: none;
-}
 
 /* ===== CONTENT ===== */
 .container {
     max-width: 1100px;
-    margin: auto;
+    margin: 50px auto 45px auto;
     padding: 40px 20px;
 }
 
@@ -52,7 +37,7 @@ body {
     background: white;
     border-radius: 12px;
     padding: 24px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
     transition: transform 0.2s;
     cursor: pointer;
 }
@@ -101,51 +86,9 @@ body {
     color: #777;
 }
 
-.logo-form, .admin-panel {
-    display: inline-block;
-}
-
-.admin-panel {
-    margin-left: 10px;
-}
-
-.logo-btn {
-    all: unset;              /* убирает стандартные стили кнопки */
-    cursor: pointer;
-    font-size: 24px;
-    font-weight: bold;
-    color: white;
-}
-
 .user-role {
     padding: 4px 10px;
     border-radius: 12px;
     font-weight: bold;
     font-size: 13px;
-}
-
-.admin-link {
-    color: #c62828;
-    font-weight: 600;
-    background-color: #48c2c5;
-    border-radius: 8px;
-    padding: 8px 15px;
-}
-
-.admin-link:hover {
-    opacity: 0.8;
-    cursor: pointer;
-}
-
-.owner-link {
-    color: #c62828;
-    font-weight: 600;
-    background-color: #60c765;
-    border-radius: 8px;
-    padding: 8px 15px;
-}
-
-.owner-link:hover {
-    opacity: 0.8;
-    cursor: pointer;
 }

@@ -1,7 +1,7 @@
 package behzoddev.testproject.controller;
 
+import behzoddev.testproject.dto.QuestionDto;
 import behzoddev.testproject.dto.StartTestDto;
-import behzoddev.testproject.dto.TestQuestionDto;
 import behzoddev.testproject.service.TestSessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,7 +20,7 @@ public class TestSessionController {
     private final TestSessionService testSessionService;
 
     @PostMapping("/start")
-    public List<TestQuestionDto> start(@RequestBody StartTestDto request) {
+    public List<QuestionDto> start(@RequestBody StartTestDto request) {
         return testSessionService.startTest(request.topicIds(), request.limit());
     }
 

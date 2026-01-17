@@ -13,9 +13,13 @@
     <!-- Заголовок страницы -->
     <title>Topics</title>
 
-    <!-- Подключение CSS -->
+    <!-- Подключение CSS, jS -->
+    <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/science.css">
+
+    <script src="/js/navbar.js" defer></script>
     <script src="/js/topic.js" defer></script>
+
     <!-- Подключение шрифтов Google -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -31,6 +35,9 @@
 </head>
 
 <body>
+
+<div th:replace="fragments/navbar :: navbar"></div>
+
 <h1>Mavzular</h1>
 <input type="hidden" id="scienceId" th:value="${scienceId}">
 <!-- ОСНОВНОЙ КОНТЕЙНЕР -->

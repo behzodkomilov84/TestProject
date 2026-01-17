@@ -1,102 +1,37 @@
-    <!DOCTYPE html>
-<html lang="ru" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<!DOCTYPE html>
+<html lang="ru"
+      xmlns:th="http://www.thymeleaf.org"
 <head>
     <meta charset="UTF-8">
     <title>Test Platform</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <link rel="stylesheet" href="/css/main.css">
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/index.css">
+    <script src="/js/navbar.js" defer></script>
+    <script src="/js/index.js" defer></script>
 </head>
-<body >
+<body>
 
-<!--<header class="navbar">
-    <form  class="logo-form">
-        <button type="submit" class="logo-btn">🧠 TestPlatform</button>
-    </form>
-
-    <div class="nav-center">
-        <span class="welcome-text">Xush kelibsiz,
-              <b th:text="${#authentication.name}">
-                  username</b>
-        </span>
-
-        <span class="role-text">&nbsp;&nbsp;&nbsp;&nbsp;Rolingiz:
-              <b th:text="${#strings.replace(#authentication.authorities[0].authority,'ROLE_','')}">
-                  OWNER</b>
-        </span>
-    </div>
-
-    <nav>
-        <a href="/index">Bosh sahifa</a>
-        <a href="#">Statistika</a>
-        <a href="#">Profil</a>
-
-        &lt;!&ndash; Админ-панель только для ADMIN и OWNER &ndash;&gt;
-        <a href="/users"
-           class="admin-link"
-           sec:authorize="hasAuthority('ROLE_OWNER')">
-            Owner Panel
-        </a>
-
-        <a href="/logout">Chiqish</a>
-    </nav>
-</header>-->
-<header class="navbar" xmlns:sec="http://www.w3.org/1999/xhtml">
-    <div class="logo-btn">🧠 TestPlatform</div>
-
-    <div class="nav-center">
-        <span th:if="${#authorization.expression('isAuthenticated()')}">
-            Xush kelibsiz, <b th:text="${#authentication.name}">username</b>
-        </span>
-
-        <span th:if="${#authorization.expression('isAuthenticated()')}">
-            &nbsp;&nbsp;&nbsp;Rolingiz:
-            <b th:text="${#strings.replace(#authentication.authorities[0].authority,'ROLE_','')}"
-               th:attr="data-role=${#strings.replace(#authentication.authorities[0].authority,'ROLE_','')}">
-                ROLE
-            </b>
-        </span>
-    </div>
-
-    <nav>
-        <a href="#">Bosh sahifa</a>
-        <a href="#">Statistika</a>
-        <a href="#">Profil</a>
-
-        <!-- Owner Panel доступен только OWNER -->
-        <a href="/users" sec:authorize="hasAuthority('ROLE_OWNER')" class="owner-link">Owner Panel</a>
-
-        <!-- Admin Panel доступен только OWNER и ADMIN -->
-        <a href="/science" sec:authorize="hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')" class="admin-link">Admin Panel</a>
-
-        <a href="/logout">Chiqish</a>
-    </nav>
-</header>
+<div th:replace="fragments/navbar :: navbar"></div>
 
 <main class="container">
-
     <section class="hero">
         <h1>Bilimingizni sinab ko‘ring</h1>
-        <p>
-            Testlar orqali bilimni mustahkamlash, xatolar ustida ishlash
-            va imtihonlarga tayyorlanish.
-        </p>
+        <p> Testlar orqali bilimni mustahkamlash, xatolar ustida ishlash va imtihonlarga tayyorlanish. </p>
     </section>
 
     <section class="modes">
-
         <div class="mode-card practice" onclick="startPractice()">
             <h2>📝 Amaliyot</h2>
             <ul>
                 <li>Cheklovsiz vaqt</li>
                 <li>Izohlar mavjud</li>
                 <li>Orqaga qaytish mumkin</li>
+
             </ul>
             <button>Boshlash</button>
         </div>
-
-        <div class="mode-card exam" onclick="startExam()">
-            <h2>⏱ Imtihon</h2>
+        <div class="mode-card exam" onclick="startExam()"><h2>⏱ Imtihon</h2>
             <ul>
                 <li>Vaqt cheklangan</li>
                 <li>Orqaga qaytish yo‘q</li>
@@ -104,9 +39,7 @@
             </ul>
             <button onclick="startExam()">Boshlash</button>
         </div>
-
-        <div class="mode-card hard" onclick="startHardMode()">
-            <h2>🔥 Murakkab</h2>
+        <div class="mode-card hard" onclick="startHardMode()"><h2>🔥 Murakkab</h2>
             <ul>
                 <li>Faqat qiyin savollar</li>
                 <li>Qisqa vaqt</li>
@@ -114,15 +47,8 @@
             </ul>
             <button onclick="startHardMode()">Boshlash</button>
         </div>
-
     </section>
-
 </main>
-
-<footer class="footer">
-    © 2026 TestPlatform. Made by Behzod Komilov.
-</footer>
-
-<script src="/js/main.js"></script>
+<footer class="footer"> © 2026 TestPlatform. Made by Behzod Komilov.</footer>
 </body>
 </html>

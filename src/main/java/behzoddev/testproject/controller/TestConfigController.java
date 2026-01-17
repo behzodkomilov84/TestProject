@@ -9,6 +9,7 @@ import behzoddev.testproject.dto.TopicIdsDto;
 import behzoddev.testproject.dto.TopicWithQuestionCountDto;
 import behzoddev.testproject.mapper.QuestionMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,6 +25,7 @@ public class TestConfigController {
 
     // 1. Subjects
     @GetMapping("/sciences")
+    @PreAuthorize("isAuthenticated()")
     public List<ScienceIdAndNameDto> getSciences() {
         return scienceRepository.findAll()
                 .stream()
@@ -33,6 +35,7 @@ public class TestConfigController {
 
     // 2. Topics of selected science
     @GetMapping("/science/{scienceId}/topics")
+    @PreAuthorize("isAuthenticated()")
     public List<TopicWithQuestionCountDto> getTopics(@PathVariable Long scienceId) {
         List<TopicWithQuestionCountDto> topicsWithQuestionCount =
                 topicRepository.getTopicsWithQuestionCount(scienceId);
@@ -41,6 +44,7 @@ public class TestConfigController {
 
     // 3. Max questions
     @PostMapping("/max")
+    @PreAuthorize("isAuthenticated()")
     public int getMax(@RequestBody TopicIdsDto dto) {
         return questionRepository.countByTopicIds(dto.topicIds());
     }

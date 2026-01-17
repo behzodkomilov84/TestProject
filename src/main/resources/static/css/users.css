@@ -1,3 +1,8 @@
+* {
+    box-sizing: border-box;
+    font-family: "Segoe UI", system-ui, sans-serif;
+}
+
 body {
     font-family: system-ui, sans-serif;
     background: #f4f6f8;
@@ -6,7 +11,7 @@ body {
 
 .container {
     max-width: 900px;
-    margin: 40px auto;
+    margin: 90px auto;
     background: #fff;
     padding: 24px;
     border-radius: 8px;
@@ -23,6 +28,8 @@ body {
 .users-table {
     width: 100%;
     border-collapse: collapse;
+    font-size: 22px;
+    font-weight: 600;
 }
 
 .users-table th,
@@ -53,10 +60,15 @@ body {
 }
 
 .action-btn {
-    padding: 6px 12px;
+    padding: 8px 12px;
     border-radius: 4px;
     border: none;
     cursor: pointer;
+    background: #ec8a8a;
+}
+
+.action-btn:hover {
+    background: lightgrey;
 }
 
 .make-admin {
@@ -72,4 +84,11 @@ body {
 .disabled {
     opacity: .5;
     cursor: not-allowed;
+}
+
+select.role-select {
+    padding: 5px 15px;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 700;
 }
