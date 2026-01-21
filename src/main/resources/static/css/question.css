@@ -113,7 +113,7 @@ h1 {
     align-items: center;
     padding: 27px 16px;
     cursor: pointer;
-    min-height: 56px; /* одинаковая высота строки */
+    /*min-height: 56px; !* одинаковая высота строки *!*/
     box-sizing: border-box;
     border-radius: 10px;
 }
@@ -273,7 +273,7 @@ button.comment-btn {
     margin-bottom: 8px;
     margin-left: auto;
     align-items: center;
-    min-height: 60px;
+    /*min-height: 60px;*/
 }
 
 .result-card {
@@ -353,7 +353,7 @@ button.comment-btn {
     border: 1px solid #ddd;
     padding: 5px;
     vertical-align: middle;
-    height: 75px;
+    /*height: 75px;*/
 
     white-space: normal;        /* разрешить перенос */
     word-break: break-word;     /* переносить длинные слова */
@@ -374,6 +374,7 @@ button.comment-btn {
     background: #fafafa;
 }
 
+/*
 .actions-cell {
     text-align: center;
     white-space: nowrap;
@@ -381,8 +382,28 @@ button.comment-btn {
     display: flex;
     gap: 6px;
     justify-content: center;
-    height: 75px;
+    !*height: 75px;*!
+    vertical-align: stretch;   !* важно *!
+    padding: 0;
 }
+*/
+
+.actions-cell {
+    padding: 4px;
+    vertical-align: middle; /* допустимое значение */
+}
+
+.actions-cell .view-actions,
+.actions-cell .edit-actions {
+    display: flex;
+    align-items: center;    /* центр по вертикали */
+    justify-content: center;
+    height: 100%;           /* 🔥 ключевой момент */
+    gap: 0px;
+}
+
+
+
 
 .action-btn {
     border: none;
@@ -440,6 +461,18 @@ button.comment-btn {
 
 tr.editing {
     background-color: #fff8e1;
+    height: auto;
+}
+
+tr{
+    height: auto;
+}
+
+td{
+    vertical-align: middle;   /* или middle, если нужно по центру */
+    padding: 8px 10px;
+    word-break: break-word;
+    white-space: normal;
 }
 
 .view-actions, .edit-actions {
@@ -517,6 +550,10 @@ tr.editing {
     gap: 10px;
 }
 
+.modal-footer button{
+    padding: 10px 15px;
+}
+
 .modal-h2 {
     text-align: center;
 }
@@ -524,7 +561,7 @@ tr.editing {
 input.comment-input {
     border: 2px solid cadetblue;
     background-color: transparent;
-    height: 60px;
+    /*height: 60px;*/
     border-radius: 8px;
 }
 
