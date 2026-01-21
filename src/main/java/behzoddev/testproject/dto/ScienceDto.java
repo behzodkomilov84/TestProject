@@ -6,6 +6,6 @@ import java.util.Set;
 
 public record ScienceDto(
         Long id,
-        @NotBlank(message = "Science name must not be blank") String name,
+        @NotBlank(message = "❌Fan nomi bo'sh bo'lishi mumkin emas.") String name,
         Set<TopicDto> topics) {
 }

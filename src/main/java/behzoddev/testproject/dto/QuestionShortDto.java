@@ -5,6 +5,6 @@ import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 
 public record QuestionShortDto(
-        @NotBlank(message = "QuestionText must not be blank") String questionText,
+        @NotBlank(message = "❌questionText bo'sh bo'lishi mumkin emas.") String questionText,
         List<AnswerShortDto> answers) {
 }

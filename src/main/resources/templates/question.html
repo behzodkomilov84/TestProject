@@ -10,14 +10,16 @@
     <link rel="stylesheet" href="/css/question.css"></link>
 
     <script src="/js/navbar.js" defer></script>
-    <script src="/js/question.js" defer></script>
+
 
 
 </head>
 
 <body>
 
-<div th:replace="fragments/navbar :: navbar"></div>
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div id="alertBox" class="alert hidden"></div>
 
 <div class="container">
 
@@ -30,19 +32,45 @@
         <button class="create-btn" onclick="createTest()">➕ TEST YARATISH</button>
     </div>
 
+    <div class="table-wrapper">
 
-        <div class="start-screen" id="start-screen">
-            <h2>Testni boshlash</h2>
-            <button class="start-btn" onclick="startTest()">▶️ Start test</button>
+        <table id="questionsTable" class="questions-table">
+            <thead>
+            <tr>
+                <th>№</th>
+                <th>SAVOLLAR</th>
+                <th>A</th>
+                <th>B</th>
+                <th>C</th>
+                <th>D</th>
+                <th title="To'g'ri javob">✅</th>
+                <th class="comment-col hidden" title="Izoh">💬To'g'ri <br>javob izohi</th>
+                <th>Amallar</th>
+            </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <!-- Modal для комментариев -->
+    <div id="commentModal" class="modal-overlay">
+        <div class="modal">
+            <h2 class="modal-h2">To'g'ri javob uchun izoh</h2>
+
+            <textarea id="modalComment" readonly></textarea>
+
+            <div class="modal-footer">
+                <button id="modalEdit">✏️ Edit</button>
+                <button id="modalSaveBtn" disabled>💾 Save</button>
+                <button onclick="closeCommentModal()">❌ Close</button>
+            </div>
         </div>
+    </div>
 
 
-
-
-    <div id="questions" class="hidden"></div>
 
 </div>
 
-
+<script src="/js/question.js"></script>
 </body>
 </html>

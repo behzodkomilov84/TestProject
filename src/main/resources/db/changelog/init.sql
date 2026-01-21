@@ -46,6 +46,9 @@ create table answers
             on delete cascade
 );
 
+ALTER TABLE answers
+    MODIFY commentary MEDIUMTEXT;
+
 create table science
 (
     id   bigint       not null auto_increment,

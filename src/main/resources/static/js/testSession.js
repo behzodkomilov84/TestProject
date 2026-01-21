@@ -118,7 +118,7 @@ function renderQuestions(questions) {
     });
     showQuestion(0);
 }
-//Навигация
+
 function getQuestions() {
     return document.querySelectorAll('.question-block');
 }
@@ -180,7 +180,7 @@ document.addEventListener("change", (e) => {
         updateProgress();
     }
 });
-//Начало теста
+
 function startTest() {
     testState.startedAt = Date.now();
     testState.currentIndex = 0;
@@ -192,7 +192,7 @@ function startTest() {
 
     renderQuestions(testState.questions);
 }
-//Завершение теста
+
 function finishTest() {
 
     stopTimer(); // 🔴 ВАЖНО
@@ -219,7 +219,7 @@ function finishTest() {
     testState.finishedAt = Date.now();
     calculateResult();
 }
-//Расчёт результата
+
 function calculateResult() {
     let correct = 0;
     testState.questions.forEach(q => {
@@ -237,7 +237,7 @@ function calculateResult() {
 
     showResult(result);
 }
-//Показ результатов
+
 function showResult(result) {
     document.getElementById("questions").innerHTML = `
         <div class="result-card">
@@ -258,12 +258,12 @@ function showResult(result) {
         </div>
     `;
 }
-//Перезапуск теста
+
 function restartTest() {
     testState.questions = testState.allQuestions;
     startTest();
 }
-//Возврат
+
 function goBack() {
     history.back();
 }
@@ -468,18 +468,6 @@ function selectAnswerOnly() {
     // 🔑 ЯВНО вызываем change для прохождения теста
     focused.dispatchEvent(new Event("change", {bubbles: true}));
 }
-
-
-/*function updateProgress() {
-    const current = getActiveIndex() + 1;
-    const total = testState.questions.length;
-    const percent = Math.round((current / total) * 100);
-
-    const bar = document.getElementById("progress");
-    if (bar) {
-        bar.style.width = percent + "%";
-    }
-}*/
 
 function updateProgress() {
     const answered = testState.answers.size;

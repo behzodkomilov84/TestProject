@@ -1,16 +1,15 @@
 package behzoddev.testproject.controller;
 
-import behzoddev.testproject.dto.AnswerDto;
 import behzoddev.testproject.dto.AnswerShortDto;
+import behzoddev.testproject.dto.ModalCommentSaveDto;
 import behzoddev.testproject.dto.QuestionDto;
 import behzoddev.testproject.dto.QuestionSaveDto;
-import behzoddev.testproject.service.ExcelService;
+import behzoddev.testproject.service.AnswerService;
 import behzoddev.testproject.service.QuestionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,7 +19,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class QuestionController {
     private final QuestionService questionService;
-    private final ExcelService excelService;
+    private final AnswerService answerService;
 
     @GetMapping("/api/question")
     public ResponseEntity<List<QuestionDto>> getQuestionsByTopic(@RequestParam Long topicId) {
@@ -39,9 +38,13 @@ public class QuestionController {
 
         var answers = (List<Map<Object, Object>>) payload.get("answers");
         List<AnswerShortDto> answerShortDto = new ArrayList<>();
+        List<String> answerTextList = new ArrayList<>();
 
         for (Map<Object, Object> answer : answers) {
+
             String answerText = answer.get("answerText").toString();
+            answerTextList.add(answerText);
+
             boolean isTrue = Boolean.parseBoolean(answer.get("isTrue").toString());
 
             String commentary = "Noto'g'ri javob";
@@ -56,10 +59,10 @@ public class QuestionController {
             answerShortDto.add(new AnswerShortDto(answerText, isTrue, commentary));
         }
 
-        boolean isUnique = questionService.isUnique(answerShortDto); //Javoblarni bir xil masligini tekshiradi.
+        boolean isUnique = answerService.isUnique(answerTextList); //Javoblarni bir xil masligini tekshiradi.
 
         if (!isUnique) {
-            throw new IllegalArgumentException("Answers must be unique");
+            throw new IllegalArgumentException("❌Javoblar bir xil bo'lishi mumkin emas.");
         }
 
         questionService.save(QuestionSaveDto.builder()
@@ -86,57 +89,49 @@ public class QuestionController {
     }
 
     @PutMapping("/api/question/update")
-    public ResponseEntity<Object> updateQuestion(@RequestBody Map<Object, Object> payload) {
+    public ResponseEntity<?> updateQuestion(@RequestBody QuestionDto payload) {
 
-        var questionId = Long.parseLong(payload.get("id").toString());
+        try {
+            questionService.updateQuestion(payload);
 
-        var newQuestionText = payload.get("questionText").toString();
-
-        List<Map<Object, Object>> answersInPayload = (List<Map<Object, Object>>) payload.get("answers");
-
-        ArrayList<AnswerDto> newAnswers = new ArrayList<>();
-
-        for (Map<Object, Object> answer : answersInPayload) {
-            Long id = Long.parseLong(answer.get("id").toString());
-            String answerText = answer.get("answerText").toString();
-            boolean isTrue = Boolean.parseBoolean(answer.get("isTrue").toString());
-
-            String commentary = "Noto'g'ri javob";
-            if (isTrue) {
-                commentary = "To'g'ri javob";
-            }
-
-            if (answer.get("commentary") != null) {
-                commentary = answer.get("commentary").toString();
-            }
-            newAnswers.add(new AnswerDto(id, answerText, isTrue, commentary));
+            return ResponseEntity.ok(
+                    Map.of("message", "Updated")
+            );
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of("error", e.getMessage()));
         }
 
-        QuestionDto questionDto = QuestionDto.builder()
-                .id(questionId)
-                .questionText(newQuestionText)
-                .answers(newAnswers)
-                .build();
-
-        questionService.updateQuestion(questionDto);
-
-
-        return ResponseEntity.ok(Map.of("message", "✅ Ma'lumotlar bazada o'zgartirildi!"));
     }
+
+    @PatchMapping("/api/question/updateComment")
+    public ResponseEntity<?> updateComment(@RequestBody ModalCommentSaveDto payload) {
+
+        try {
+            answerService.updateCommentOfTrueAnswer(payload);
+
+            return ResponseEntity.ok(
+                    Map.of("message", "Muvaffaqiyatli o'zgartirildi.")
+            );
+        } catch (Exception e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        }
+
+    }
+
 
     @DeleteMapping("/api/question/{id}")
     public ResponseEntity<?> delete(@PathVariable Long id) {
-        questionService.deleteQuestion(id);
-        return ResponseEntity.noContent().build();
+        try {
+            questionService.deleteQuestion(id);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
-
-    @PostMapping("/api/import/excel")
-    public ResponseEntity<?> importExcel(
-            @RequestParam MultipartFile file,
-            @RequestParam Long topicId
-    ) {
-        return ResponseEntity.ok(excelService.importQuestions(file, topicId));
-    }
-
 }
-

@@ -6,6 +6,6 @@ import java.util.Set;
 
 public record TopicDto(
         Long id,
-        @NotBlank(message = "Topic name must not be blank") String name,
+        @NotBlank(message = "❌Topic.name bo'sh bo'lishi mumkin emas.") String name,
         Set<QuestionDto> questions) {
 }

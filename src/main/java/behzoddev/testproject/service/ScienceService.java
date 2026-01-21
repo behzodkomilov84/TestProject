@@ -1,6 +1,5 @@
 package behzoddev.testproject.service;
 
-import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dto.ScienceDto;
@@ -8,9 +7,7 @@ import behzoddev.testproject.dto.ScienceIdAndNameDto;
 import behzoddev.testproject.dto.ScienceNameDto;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
-import behzoddev.testproject.mapper.QuestionMapper;
 import behzoddev.testproject.mapper.ScienceMapper;
-import behzoddev.testproject.mapper.TopicMapper;
 import behzoddev.testproject.validation.Validation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,10 +22,8 @@ public class ScienceService {
 
     private final ScienceRepository scienceRepository;
     private final TopicRepository topicRepository;
-    private final QuestionRepository questionRepository;
     private final ScienceMapper scienceMapper;
-    private final TopicMapper topicMapper;
-    private final QuestionMapper questionMapper;
+    private final Validation validation;
 
     @Transactional(readOnly = true)
     public Set<ScienceDto> getAllSciencesDto() {
@@ -54,10 +49,10 @@ public class ScienceService {
     @Transactional
     public Science saveScience(ScienceNameDto scienceNameDto) {
 
-        Validation.validateName(scienceNameDto.name().trim());
+        validation.textFieldMustNotBeEmpty(scienceNameDto.name());
 
         if (scienceRepository.existsByName(scienceNameDto.name())) {
-            throw new IllegalArgumentException("Science with this name already exists");
+            throw new IllegalArgumentException("Bunday nomli fan allaqachon mavjud");
         }
 
         Science science = scienceMapper.mapScienceNameDtoToScience(scienceNameDto);
@@ -66,18 +61,6 @@ public class ScienceService {
         if (science.getTopics() != null) {
             for (Topic topic : science.getTopics()) {
                 topic.setScience(science);
-
-               /* if (topic.getQuestions() != null) {
-                    for (Question question : topic.getQuestions()) {
-                        question.setTopic(topic);
-
-                        if (question.getAnswers() != null) {
-                            for (Answer answer : question.getAnswers()) {
-                                answer.setQuestion(question);
-                            }
-                        }
-                    }
-                }*/
             }
         }
 
@@ -86,7 +69,7 @@ public class ScienceService {
 
     @Transactional
     public Science saveScience(Science science) {
-        Validation.validateName(science.getName().trim());
+        validation.textFieldMustNotBeEmpty(science.getName());
 
         return scienceRepository.save(science);
     }
@@ -117,7 +100,7 @@ public class ScienceService {
 
     @Transactional
     public void updateScienceName(Long id, String name) {
-        Validation.validateName(name.trim());
+        validation.textFieldMustNotBeEmpty(name);
 
         scienceRepository.updateScienceName(id, name);
     }

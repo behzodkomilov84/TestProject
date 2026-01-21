@@ -3,15 +3,14 @@ package behzoddev.testproject.service;
 import behzoddev.testproject.dto.AnswerShortDto;
 import behzoddev.testproject.dto.ImportResultDto;
 import behzoddev.testproject.dto.QuestionSaveDto;
+import behzoddev.testproject.validation.Validation;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,6 +20,8 @@ public class ExcelService {
 
     private final QuestionService questionService;
     private final DataFormatter formatter = new DataFormatter();
+    private final AnswerService answerService;
+    private final Validation validation;
 
     @Transactional
     public ImportResultDto importQuestions(MultipartFile file, Long topicId) {
@@ -61,9 +62,13 @@ public class ExcelService {
             String correct = cell(row, 5);
             String comment = cell(row, 6);
 
-            if (qText.isBlank() || a.isBlank() || b.isBlank() || c.isBlank() || d.isBlank()) {
-                throw new RuntimeException("Empty field");
-            }
+            validation.textFieldMustNotBeEmpty(qText);
+            validation.textFieldMustNotBeEmpty(a);
+            validation.textFieldMustNotBeEmpty(b);
+            validation.textFieldMustNotBeEmpty(c);
+            validation.textFieldMustNotBeEmpty(d);
+            validation.textFieldMustNotBeEmpty(correct);
+            validation.textFieldMustNotBeEmpty(comment);
 
             int correctIndex = parseCorrect(correct);
 
@@ -75,10 +80,12 @@ public class ExcelService {
             answerShortDtoList.add(new AnswerShortDto(c, correctIndex == 2, correctIndex == 2 ? comment : commentOfWrongAnswer));
             answerShortDtoList.add(new AnswerShortDto(d, correctIndex == 3, correctIndex == 3 ? comment : commentOfWrongAnswer));
 
-            boolean isUnique = questionService.isUnique(answerShortDtoList); //Javoblarni bir xil masligini tekshiradi.
+            List<String> answersText = List.of(a, b, c, d);
+
+            boolean isUnique = answerService.isUnique(answersText); //Javoblarni bir xil masligini tekshiradi.
 
             if (!isUnique) {
-                throw new IllegalArgumentException("Answers must be unique");
+                throw new IllegalArgumentException("❌Javoblar bir xil bo'lishi mumkin emas.");
             }
 
             QuestionSaveDto newQuestion = QuestionSaveDto.builder()
@@ -108,7 +115,7 @@ public class ExcelService {
             case "B" -> 1;
             case "C" -> 2;
             case "D" -> 3;
-            default -> throw new RuntimeException("Correct must be A/B/C/D");
+            default -> throw new IllegalArgumentException("❌To'g'ri javob varianti faqat A/B/C/D dan biri bo'lishi mumkin.");
         };
     }
 

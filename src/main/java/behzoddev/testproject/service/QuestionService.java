@@ -16,8 +16,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +25,7 @@ public class QuestionService {
     private final TopicRepository topicRepository;
     private final QuestionMapper questionMapper;
     private final AnswerMapper answerMapper;
+    private final Validation validation;
 
     @Transactional(readOnly = true)
     public List<QuestionDto> getQuestionsByIds(Long scienceId, Long topicId) {
@@ -73,12 +72,17 @@ public class QuestionService {
 
     @Transactional
     public Question saveQuestion(Long topicId, QuestionShortDto newQuestion) {
-        Validation.validateName(newQuestion.questionText().trim());
+
+        validation.textFieldMustNotBeEmpty(newQuestion.questionText());
 
         Question question = questionMapper.mapQuestionShortDtoToQuestion(newQuestion);
 
         if (question.getAnswers() != null) {
             for (Answer answer : question.getAnswers()) {
+
+                validation.textFieldMustNotBeEmpty(answer.getAnswerText());
+                validation.textFieldMustNotBeEmpty(answer.getCommentary());
+
                 answer.setQuestion(question);
             }
         }
@@ -96,6 +100,7 @@ public class QuestionService {
     public void save(QuestionSaveDto questionSaveDto) {
         Topic topic = topicRepository.getTopicById(questionSaveDto.topicId());
 
+        validation.textFieldMustNotBeEmpty(questionSaveDto.questionText());
         Question newQuestion = Question.builder()
                 .questionText(questionSaveDto.questionText())
                 .topic(topic)
@@ -105,8 +110,10 @@ public class QuestionService {
 
         List<AnswerShortDto> answerShortDtoList = questionSaveDto.answers();
 
-             List<Answer> answerList = answerShortDtoList.stream().
+        List<Answer> answerList = answerShortDtoList.stream().
                 map(answerShortDto -> {
+                    validation.textFieldMustNotBeEmpty(answerShortDto.answerText());
+                    validation.textFieldMustNotBeEmpty(answerShortDto.commentary());
                     Answer answer = answerMapper.mapAnswerShortDtoToAnswer(answerShortDto);
                     answer.setQuestion(savedQuestion);
                     return answer;
@@ -115,43 +122,54 @@ public class QuestionService {
         answerRepository.saveAll(answerList);
     }
 
-    public boolean isUnique(List<AnswerShortDto> answerShortDto) {
-        Set<String> uniqueAnswers =
-                answerShortDto.stream()
-                        .map(answers -> answers.answerText().trim().toLowerCase())
-                        .collect(Collectors.toSet());
-
-        return uniqueAnswers.size() == answerShortDto.size();
-    }
-
     @Transactional
     public void deleteQuestion(Long questionId) {
         Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new RuntimeException("Question not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Question not found"));
 
         questionRepository.delete(question);
     }
 
     @Transactional
-    public void updateQuestion(QuestionDto questionDto) {
-        Question question = questionRepository.findById(questionDto.id())
-                .orElseThrow(() -> new RuntimeException("Question not found"));
+    public void updateQuestion(QuestionDto dto) {
+        // 1️⃣ ВАЛИДАЦИЯ (СНАЧАЛА!)
+        List<String> answerTextList = dto.answers().stream()
+                .map(AnswerDto::answerText)
+                .toList();
 
-        question.setQuestionText(questionDto.questionText());
+        validation.textFieldOfListMustNotBeEmpty(answerTextList);
 
-        for (AnswerDto answerDto : questionDto.answers()) {
+        // 2️⃣ ЗАГРУЗКА
+        Question question = questionRepository.findById(dto.id())
+                .orElseThrow(() ->
+                        new RuntimeException("Savol ma'lumotlar bazasida topilmadi."));
 
-            Answer answer = answerRepository.findById(Math.toIntExact(answerDto.id()))
-                    .orElseThrow(() -> new RuntimeException("Answer not found"));
+        // 3️⃣ ОБНОВЛЕНИЕ ВОПРОСА
+        validation.textFieldMustNotBeEmpty(dto.questionText().trim());
+        question.setQuestionText(dto.questionText().trim());
 
-            answer.setAnswerText(answerDto.answerText());
-            answer.setIsTrue(answerDto.isTrue());
-            answer.setCommentary(answerDto.commentary());
+        // 4️⃣ СБРОС ВСЕХ ОТВЕТОВ
+        for (Answer answer : question.getAnswers()) {
+            answer.setIsTrue(false);
+            answer.setCommentary("noto'g'ri javob");
+        }
+
+        // 5️⃣ УСТАНОВКА НОВЫХ ЗНАЧЕНИЙ
+        for (AnswerDto aDto : dto.answers()) {
+
+            Answer answer = answerRepository.findById(aDto.id())
+                    .orElseThrow(() ->
+                            new RuntimeException("Javob ma'lumotlar bazasida topilmadi."));
+
+            answer.setAnswerText(aDto.answerText().trim());
+            answer.setIsTrue(aDto.isTrue());
+
+            if (Boolean.TRUE.equals(aDto.isTrue())) {
+                validation.textFieldMustNotBeEmpty(aDto.commentary());
+                answer.setCommentary(aDto.commentary().trim());
+            }
         }
     }
-
-
-
 
 
 }

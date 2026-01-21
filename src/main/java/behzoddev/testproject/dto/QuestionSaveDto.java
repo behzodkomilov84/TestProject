@@ -7,6 +7,6 @@ import java.util.List;
 
 @Builder
 public record QuestionSaveDto(Long topicId,
-                              @NotBlank(message = "QuestionText must not be blank") String questionText,
+                              @NotBlank(message = "❌questionText bo'sh bo'lishi mumkin emas.") String questionText,
                               List<AnswerShortDto> answers) {
 }

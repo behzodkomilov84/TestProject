@@ -20,11 +20,11 @@ public class TopicService {
     private final TopicRepository topicRepository;
     private final TopicMapper topicMapper;
     private final ScienceRepository scienceRepository;
+    private final Validation validation;
 
     public Set<TopicIdAndNameDto> getTopicsByScienceId(Long scienceId) {
         return topicRepository.findTopicsByScienceId(scienceId);
     }
-
 
     public TopicIdAndNameDto getTopicByIds(Long scienceId, Long topicId) {
         return topicRepository.findTopicByIds(scienceId, topicId);
@@ -32,7 +32,7 @@ public class TopicService {
 
     @Transactional
     public Topic saveTopic(Long scienceId, TopicNameDto topicNameDto) {
-        Validation.validateName(topicNameDto.name().trim());
+        validation.textFieldMustNotBeEmpty(topicNameDto.name());
 
         Topic topic = topicMapper.mapTopicNameDtoToTopic(topicNameDto);
 
@@ -52,6 +52,9 @@ public class TopicService {
 
     @Transactional
     public void updateTopic(Long id, String name) {
+
+        validation.textFieldMustNotBeEmpty(name);
+
         topicRepository.updateTopicName(id, name);
     }
 }

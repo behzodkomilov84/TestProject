@@ -3,8 +3,8 @@ package behzoddev.testproject.dto;
 import jakarta.validation.constraints.NotBlank;
 
 public record RegisterDto(
-        @NotBlank(message = "Username must not be blank") String username,
-        @NotBlank(message = "Password must not be blank") String password,
-        @NotBlank(message = "ConfirmPassword must not be blank") String confirmPassword) {
+        @NotBlank(message = "❌Username bo'sh bo'lishi mumkin emas.") String username,
+        @NotBlank(message = "❌Password bo'sh bo'lishi mumkin emas.") String password,
+        @NotBlank(message = "❌ConfirmPassword bo'sh bo'lishi mumkin emas.") String confirmPassword) {
 
 }
