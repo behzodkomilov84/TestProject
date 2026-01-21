@@ -73,7 +73,7 @@ function renderQuestionsTable(questions) {
                     
                     <button class="action-btn edit" 
                     onclick="enableInlineEdit(this, ${q.id})"
-                     title="Tahrirlash">✏️</button>
+                         title="Tahrirlash">✏️</button>
                      
                 </div>
                 <div class="edit-actions" style="display:none;">
