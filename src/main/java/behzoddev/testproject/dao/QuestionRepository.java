@@ -1,6 +1,8 @@
 package behzoddev.testproject.dao;
 
 import behzoddev.testproject.entity.Question;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -48,4 +50,33 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             """)
     int countByTopicIds(@Param("topicIds") List<Long> topicIds);
 
+    @Query("""
+            select q from Question q
+            where q.topic.id = :topicId
+            """
+    )
+    Page<Question> findByTopicId(@Param("topicId") Long topicId, Pageable pageable);
+
+    @Query("""
+                select q
+                from Question q
+                where q.topic.id = :topicId
+                  and (:search is null or lower(q.questionText) like lower(concat('%', :search, '%')))
+            """)
+    Page<Question> findByTopicIdAndQuestionTextContainingIgnoreCase(
+            Long topicId,
+            String search,
+            Pageable pageable
+    );
+
+    // ===== ALL MODE =====
+
+    @EntityGraph(attributePaths = "answers")
+    List<Question> findByTopicId(Long topicId);
+
+    @EntityGraph(attributePaths = "answers")
+    List<Question> findByTopicIdAndQuestionTextContainingIgnoreCase(
+            Long topicId,
+            String questionText
+    );
 }

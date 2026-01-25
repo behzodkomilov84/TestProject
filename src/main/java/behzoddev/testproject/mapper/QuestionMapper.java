@@ -6,13 +6,13 @@ import behzoddev.testproject.dto.QuestionShortDto;
 import behzoddev.testproject.entity.Question;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
 @Mapper(componentModel = "spring",
         uses = AnswerMapper.class)
 public interface QuestionMapper {
-
 
     QuestionDto mapQuestiontoQuestionDto(Question question);
 
@@ -32,5 +32,6 @@ public interface QuestionMapper {
     @Mapping(target = "topic", ignore = true)
     @Mapping(target = "questionText", ignore = true)
     Question mapQuestionSaveDtoToQuestion(QuestionSaveDto dto);
+
 }
 

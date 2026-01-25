@@ -32,6 +32,25 @@
         <button class="create-btn" onclick="createTest()">➕ TEST YARATISH</button>
     </div>
 
+    <div class="controls">
+
+        <input type="text"
+               id="searchInput"
+               placeholder="🔍 Savolni qidirish..."
+               class="search-input"
+               autocomplete="off"
+        >
+
+
+        <select id="pageSizeSelect" class="page-size-select">
+            <option value="10">10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+            <option value="all">Hammasi</option>
+        </select>
+
+    </div>
+
     <div class="table-wrapper">
 
         <table id="questionsTable" class="questions-table">
@@ -51,6 +70,8 @@
             <tbody></tbody>
         </table>
     </div>
+
+    <div id="pagination" class="pagination"></div>
 
     <!-- Modal для комментариев -->
     <div id="commentModal" class="modal-overlay">

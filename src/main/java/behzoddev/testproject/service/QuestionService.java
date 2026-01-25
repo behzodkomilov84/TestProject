@@ -12,6 +12,8 @@ import behzoddev.testproject.mapper.QuestionMapper;
 import behzoddev.testproject.validation.Validation;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -171,5 +173,41 @@ public class QuestionService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public Page<QuestionDto> getQuestionDtoPageByTopicId(Long topicId, String search, Pageable pageable) {
+        Page<Question> page;
 
+        if (search == null || search.isBlank()) {
+            page = questionRepository.findByTopicId(topicId, pageable);
+        } else {
+            page = questionRepository
+                    .findByTopicIdAndQuestionTextContainingIgnoreCase(
+                            topicId,
+                            search,
+                            pageable
+                    );
+        }
+
+        return page.map(question -> questionMapper.mapQuestiontoQuestionDto(question));
+    }
+
+    @Transactional(readOnly = true)
+    public List<QuestionDto> findAll(Long topicId, String q) {
+
+        List<Question> list;
+
+        if (q == null || q.isBlank()) {
+            list = questionRepository.findByTopicId(topicId);
+        } else {
+            list = questionRepository
+                    .findByTopicIdAndQuestionTextContainingIgnoreCase(
+                            topicId,
+                            q
+                    );
+        }
+
+        return questionMapper.mapQuestionListToQuestionDtoList(list);
+    }
 }
+
+

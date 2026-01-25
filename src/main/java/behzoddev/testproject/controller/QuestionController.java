@@ -7,6 +7,10 @@ import behzoddev.testproject.dto.QuestionSaveDto;
 import behzoddev.testproject.service.AnswerService;
 import behzoddev.testproject.service.QuestionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -22,10 +26,28 @@ public class QuestionController {
     private final AnswerService answerService;
 
     @GetMapping("/api/question")
-    public ResponseEntity<List<QuestionDto>> getQuestionsByTopic(@RequestParam Long topicId) {
-        List<QuestionDto> questionDtos = questionService.getQuestionDtoListByTopicId(topicId);
+    public ResponseEntity<Page<QuestionDto>> getPage(
+            @RequestParam Long topicId,
+            @PageableDefault(size = 10, page = 0) Pageable pageable,
+            @RequestParam(required = false) String searchQuestionText
+    ) {
+        Page<QuestionDto> questionDtoPageByTopicId = questionService.getQuestionDtoPageByTopicId(
+                topicId,
+                searchQuestionText,
+                pageable
+        );
 
-        return ResponseEntity.ok(questionDtos);
+            return ResponseEntity.ok(questionDtoPageByTopicId);
+    }
+
+    @GetMapping("/api/question/all")
+    public ResponseEntity<List<QuestionDto>> getAll(
+            @RequestParam Long topicId,
+            @RequestParam(required = false) String searchQuestionText
+    ) {
+        return ResponseEntity.ok(
+                questionService.findAll(topicId, searchQuestionText)
+        );
     }
 
     @PostMapping("/api/question/save")

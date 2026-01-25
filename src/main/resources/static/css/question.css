@@ -601,3 +601,27 @@ td label{
     font-size: 14px;
     font-weight: bold;
 }
+
+.controls {
+    display: flex;
+    gap: 12px;
+    margin: 12px 0;
+    align-items: center;
+}
+
+.pagination {
+    margin-top: 16px;
+    display: flex;
+    gap: 6px;
+    justify-content: center;
+}
+
+.pagination button.active {
+    font-weight: bold;
+    background: #333;
+    color: #fff;
+}
+
+.enumeration{
+    font-size: 10px;
+}

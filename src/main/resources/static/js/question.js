@@ -3,26 +3,72 @@ const topicId = params.get("topicId");
 
 let editingRow = null; // хранит текущую редактируемую строку
 
-let modalState = {
-    questionId: null,
-    answerId: null,
-    originalText: ""
-};
+let questions = null;
+
+let currentPage = 0;
+let pageSize = 10;
+let isAllMode = false;
+let searchQuery = "";
+let totalPages = 1;
+let isServerPaging = false;
 
 if (!topicId) {
     document.querySelector("#questionsTable tbody").innerHTML =
         "<tr><td colspan='9'>❌ topicId yuborilmagan</td></tr>";
 } else {
-    loadQuestions(topicId);
+    loadQuestions(topicId, currentPage);
 }
 
-async function loadQuestions(topicId) {
-    try {
-        const res = await fetch(`/api/question?topicId=${topicId}`);
-        if (!res.ok) throw new Error("Ошибка загрузки тестов");
+function normalizeApiResponse(data) {
+    // CASE 1: Page<T>
+    if (data && Array.isArray(data.content)) {
+        return {
+            items: data.content,
+            totalPages: data.totalPages ?? 1,
+            totalElements: data.totalElements ?? data.content.length,
+            page: data.number ?? 0,
+            isPaged: true
+        };
+    }
 
-        const questions = await res.json();
-        renderQuestionsTable(questions);
+    // CASE 2: List<T>
+    if (Array.isArray(data)) {
+        return {
+            items: data,
+            totalPages: 1,
+            totalElements: data.length,
+            page: 0,
+            isPaged: false
+        };
+    }
+
+    throw new Error("Неподдерживаемый формат ответа API");
+}
+
+async function loadQuestions(topicId, page = 0) {
+    try {
+        const url = `/api/question?topicId=${topicId}&page=${page}&size=${pageSize}`;
+
+        const res = await fetch(url);
+
+        if (!res.ok) throw new Error("Testlarni yuklashda xatolik yuz berdi.");
+
+        questions = await res.json();
+
+        const normalized = normalizeApiResponse(questions);
+
+        isServerPaging = normalized.isPaged;
+        currentPage = normalized.page;
+        totalPages = normalized.totalPages;
+
+        renderQuestionsTable(normalized.items);
+
+        renderPagination({
+            totalPages: normalized.totalPages,
+            number: normalized.page,
+            first: normalized.page === 0,
+            last: normalized.page === normalized.totalPages - 1
+        });
 
     } catch (e) {
         document.querySelector("#questionsTable tbody").innerHTML =
@@ -45,7 +91,7 @@ function renderQuestionsTable(questions) {
         const row = document.createElement("tr");
         row.dataset.questionId = q.id;  // <-- это ключевое
         row.innerHTML = `
-            <td>${index + 1}</td>
+            <td class="enumeration">${index + 1}</td>
             <td data-editable>${q.questionText}</td>
             ${answers.map(a => `
 
@@ -96,6 +142,137 @@ function renderQuestionsTable(questions) {
         tbody.appendChild(row);
     });
 }
+
+function renderPagination(page) {
+    const container = document.getElementById("pagination");
+    container.innerHTML = "";
+
+    if (!page || page.totalPages <= 1) return;
+
+    const prev = document.createElement("button");
+    prev.textContent = "←";
+    prev.disabled = page.first;
+    prev.onclick = () => {
+        currentPage--;
+        loadPage();
+    };
+
+    container.appendChild(prev);
+
+    for (let i = 0; i < page.totalPages; i++) {
+        const btn = document.createElement("button");
+        btn.textContent = i + 1;
+        btn.classList.toggle("active", i === page.number);
+
+        btn.onclick = () => {
+            currentPage = i;
+            loadPage();
+        };
+
+        container.appendChild(btn);
+    }
+
+    const next = document.createElement("button");
+    next.textContent = "→";
+    next.disabled = page.last;
+    next.onclick = () => {
+        currentPage++;
+        loadPage();
+    };
+
+    container.appendChild(next);
+}
+
+function pageBtn(text, page) {
+    const btn = document.createElement("button");
+    btn.textContent = text;
+
+    btn.onclick = () => {
+        if (editingRow) {
+            alert("Avval tahrirni yakunlang!");
+            return;
+        }
+        loadQuestions(topicId, page);
+    };
+
+    return btn;
+}
+
+document.getElementById("pageSizeSelect").addEventListener("change", (e) => {
+
+    const value = e.target.value;
+    if (value === "all") {
+        isAllMode = true;
+        currentPage = 0;
+        loadAllQuestions();
+        return;
+    }
+
+    const size = Number(value);
+
+    if (!Number.isFinite(size)) return;
+
+    isAllMode = false;
+    pageSize = size;
+    currentPage = 0;
+
+    loadPage();
+});
+
+async function loadPage() {
+    if (!topicId || isAllMode) return;
+
+    const params = new URLSearchParams({
+        topicId,
+        page: currentPage,
+        size: pageSize
+    });
+
+    if (searchQuery) {
+        params.append("searchQuestionText", searchQuery); /*Controllerdagi parametr bilan bir xil bo'lishi kk.*/
+    }
+
+    const res = await fetch(`/api/question?${params}`);
+
+    if (!res.ok) {
+        showError("Xatolik yuz berdi");
+        return;
+    }
+
+    const page = await res.json();
+
+    renderQuestionsTable(page.content);
+    renderPagination(page);
+}
+
+
+async function loadAllQuestions() {
+    if (!topicId) return;
+
+    const params = new URLSearchParams({ topicId });
+
+    if (searchQuery) {
+        params.append("q", searchQuery);
+    }
+
+    const res = await fetch(`/api/question/all?${params}`);
+
+    if (!res.ok) {
+        showError("Xatolik yuz berdi");
+        return;
+    }
+
+    const data = await res.json();
+
+    renderQuestionsTable(data);
+    hidePagination();
+}
+
+
+function hidePagination() {
+    document.querySelector(".pagination")?.classList.add("hidden");
+}
+
 
 function enableInlineEdit(btn) {
     const row = btn.closest("tr");
@@ -182,7 +359,7 @@ function cancelInlineEdit(btn) {
     document.querySelectorAll(".comment-col")
         .forEach(c => c.classList.add("hidden"));//скрываем коммент столбцу
 
-    loadQuestions(topicId);
+    loadQuestions(topicId, currentPage);
 }
 
 function saveInlineEdit(btn, questionId) {
@@ -242,7 +419,7 @@ function saveInlineEdit(btn, questionId) {
             document.querySelectorAll(".comment-col")
                 .forEach(c => c.classList.add("hidden"));//скрываем коммент столбцу
 
-            loadQuestions(topicId);
+            loadQuestions(topicId, currentPage);
         })
         .catch(e => alert(e.message));
 }
@@ -281,7 +458,7 @@ async function deleteQuestion(questionId) {
         // 🔑 ВАЖНО: скрываем колонку комментариев (th + td)
         hideCommentColumn();
 
-        await loadQuestions(topicId);
+        await loadQuestions(topicId, currentPage);
     } catch (e) {
         alert(e.message);
     }
@@ -354,7 +531,7 @@ function openCommentModal(btn) {
 
 document.addEventListener("DOMContentLoaded", () => {
     // Закрытие модала
-    window.closeCommentModal = function() {
+    window.closeCommentModal = function () {
         modal.classList.remove("show");
         textarea.value = "";
         textarea.readOnly = true;
@@ -412,7 +589,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Обновляем таблицу
                 const params = new URLSearchParams(window.location.search);
                 const topicId = params.get("topicId");
-                if (topicId) await loadQuestions(topicId);
+                if (topicId) await loadQuestions(topicId, currentPage);
 
             } catch (e) {
                 alert("Ошибка сети");
@@ -426,3 +603,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
 });
+
+//===========================================================================
+//                      Savollarni qidirish
+
+const searchInput = document.getElementById("searchInput");
+
+let searchTimeout = null;
+
+searchInput.addEventListener("input", (e) => {
+    clearTimeout(searchTimeout);
+
+    searchTimeout = setTimeout(() => {
+        searchQuery = e.target.value.trim();
+        currentPage = 0;
+
+        if (isAllMode) {
+            loadAllQuestions();
+        } else {
+            loadPage();
+        }
+    }, 400);
+});
+
