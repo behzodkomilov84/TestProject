@@ -1,13 +1,11 @@
-package behzoddev.testproject.controller;
+package behzoddev.testproject.controller.api;
 
-import behzoddev.testproject.dao.AnswerRepository;
 import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dto.ScienceIdAndNameDto;
 import behzoddev.testproject.dto.TopicIdsDto;
 import behzoddev.testproject.dto.TopicWithQuestionCountDto;
-import behzoddev.testproject.mapper.QuestionMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;

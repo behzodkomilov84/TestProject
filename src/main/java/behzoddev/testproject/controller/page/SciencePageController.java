@@ -1,4 +1,4 @@
-package behzoddev.testproject.controller.pageController;
+package behzoddev.testproject.controller.page;
 
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;

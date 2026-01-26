@@ -1,4 +1,4 @@
-package behzoddev.testproject.controller;
+package behzoddev.testproject.controller.api;
 
 import behzoddev.testproject.dto.*;
 import behzoddev.testproject.entity.Question;

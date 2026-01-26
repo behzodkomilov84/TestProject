@@ -1,4 +1,4 @@
-package behzoddev.testproject.controller;
+package behzoddev.testproject.controller.api;
 
 import behzoddev.testproject.dto.AnswerShortDto;
 import behzoddev.testproject.dto.ModalCommentSaveDto;
@@ -8,7 +8,6 @@ import behzoddev.testproject.service.AnswerService;
 import behzoddev.testproject.service.QuestionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;

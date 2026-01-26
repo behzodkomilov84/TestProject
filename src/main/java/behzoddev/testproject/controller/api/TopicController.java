@@ -1,4 +1,4 @@
-package behzoddev.testproject.controller;
+package behzoddev.testproject.controller.api;
 
 import behzoddev.testproject.dto.TopicIdAndNameDto;
 import behzoddev.testproject.dto.TopicNameDto;

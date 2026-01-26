@@ -1,4 +1,4 @@
-package behzoddev.testproject.controller.pageController;
+package behzoddev.testproject.controller.page;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;

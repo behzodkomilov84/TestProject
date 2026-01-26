@@ -1,4 +1,4 @@
-package behzoddev.testproject.controller;
+package behzoddev.testproject.controller.api;
 
 import behzoddev.testproject.service.ExcelService;
 import lombok.RequiredArgsConstructor;

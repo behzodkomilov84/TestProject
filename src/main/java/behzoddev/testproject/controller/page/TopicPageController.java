@@ -1,4 +1,4 @@
-package behzoddev.testproject.controller.pageController;
+package behzoddev.testproject.controller.page;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;

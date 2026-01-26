@@ -1,6 +1,5 @@
-package behzoddev.testproject.controller;
+package behzoddev.testproject.controller.api;
 
-import behzoddev.testproject.dao.RoleRepository;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.dto.ChangeRoleDto;
 import behzoddev.testproject.dto.UserDto;
