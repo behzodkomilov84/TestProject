@@ -94,6 +94,14 @@ public class ExcelService {
                     .answers(answerShortDtoList)
                     .build();
 
+            //Yangi testni DB da bor-yo'qligini tekshirish
+            List<QuestionSaveDto> existingQuestions = questionService.getQuestionSaveDtoByTopicId(topicId);
+            boolean questionWithAnswersExists = questionService.isQuestionWithAnswersExists(existingQuestions, newQuestion);
+
+            if (questionWithAnswersExists) {
+                throw new IllegalArgumentException("Bu test ayni shu javoblar bilan allaqachon bazada mavjud.");
+            }
+
             questionService.save(newQuestion);
 
             imported++;
