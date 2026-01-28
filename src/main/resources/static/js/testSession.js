@@ -186,11 +186,23 @@ function startTest() {
     testState.currentIndex = 0;
     testState.answers.clear();
 
+    // ✅ ПОКАЗЫВАЕМ progress + timer
     document.getElementById("progress").style.width = "0%";
     document.getElementById("progressWrapper").classList.remove("hidden");
     document.body.classList.remove("no-progress");
 
+    const timerEl = document.getElementById("timer");
+    if (timerEl) {
+        timerEl.style.display = "flex";   // 🔥 ВАЖНО
+        timerEl.classList.remove("danger");
+    }
+
+    // ✅ ПЕРЕЗАПУСК ТАЙМЕРА
+    startTimer(testState.time);
+
     renderQuestions(testState.questions);
+
+    document.body.classList.add("test-started");
 }
 
 function finishTest() {
