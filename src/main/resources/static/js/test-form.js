@@ -49,18 +49,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         // ================= Формирование answers =================
-        /*const answers = answersBlocks.map((block, index) => {
-            const answerText = block.querySelector("textarea.auto-textarea").value.trim();
-            const commentaryTextarea = block.querySelector(".commentary");
-
-            return {
-                answerText,
-                isTrue: index === correctIndex,
-                commentary: index === correctIndex
-                    ? commentaryTextarea?.value.trim() || null
-                    : null
-            };
-        });*/
 
         const answers = [...answersBlocks].map((block, index) => {
             const answerText = block.querySelector("textarea.auto-textarea").value.trim();
@@ -177,6 +165,6 @@ function closeModal() {
 }
 
 function downloadTemplate() {
-    window.location.href = "/api/import/template";
+    window.location.href = "/api/export/template";
 }
 

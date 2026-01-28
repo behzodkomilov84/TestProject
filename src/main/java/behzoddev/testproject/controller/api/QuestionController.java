@@ -4,12 +4,14 @@ import behzoddev.testproject.dto.AnswerShortDto;
 import behzoddev.testproject.dto.ModalCommentSaveDto;
 import behzoddev.testproject.dto.QuestionDto;
 import behzoddev.testproject.dto.QuestionSaveDto;
+import behzoddev.testproject.exception.ErrorResponse;
 import behzoddev.testproject.service.AnswerService;
 import behzoddev.testproject.service.QuestionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
@@ -52,47 +54,64 @@ public class QuestionController {
     @PostMapping("/api/question/save")
     @ResponseBody
     public ResponseEntity<?> saveQuestion(@RequestBody Map<Object, Object> payload) {
+        try {
+            long topicId = Long.parseLong(payload.get("topicId").toString());
 
-        long topicId = Long.parseLong(payload.get("topicId").toString());
+            String questionText = payload.get("questionText").toString();
 
-        String questionText = payload.get("questionText").toString();
+            var answers = (List<Map<Object, Object>>) payload.get("answers");
+            List<AnswerShortDto> answerShortDto = new ArrayList<>();
+            List<String> answerTextList = new ArrayList<>();
 
-        var answers = (List<Map<Object, Object>>) payload.get("answers");
-        List<AnswerShortDto> answerShortDto = new ArrayList<>();
-        List<String> answerTextList = new ArrayList<>();
+            for (Map<Object, Object> answer : answers) {
 
-        for (Map<Object, Object> answer : answers) {
+                String answerText = answer.get("answerText").toString();
+                answerTextList.add(answerText);
 
-            String answerText = answer.get("answerText").toString();
-            answerTextList.add(answerText);
+                boolean isTrue = Boolean.parseBoolean(answer.get("isTrue").toString());
 
-            boolean isTrue = Boolean.parseBoolean(answer.get("isTrue").toString());
+                String commentary = "Noto'g'ri javob";
+                if (isTrue) {
+                    commentary = "To'g'ri javob";
+                }
 
-            String commentary = "Noto'g'ri javob";
-            if (isTrue) {
-                commentary = "To'g'ri javob";
+                if (answer.get("commentary") != null) {
+                    commentary = answer.get("commentary").toString();
+                }
+
+                answerShortDto.add(new AnswerShortDto(answerText, isTrue, commentary));
             }
 
-            if (answer.get("commentary") != null) {
-                commentary = answer.get("commentary").toString();
+            boolean isUnique = answerService.isUnique(answerTextList); //Javoblarni bir xil masligini tekshiradi.
+
+            if (!isUnique) {
+                throw new IllegalArgumentException("❌Javoblar bir xil bo'lishi mumkin emas.");
             }
 
-            answerShortDto.add(new AnswerShortDto(answerText, isTrue, commentary));
+            QuestionSaveDto newQuestion = QuestionSaveDto.builder()
+                    .topicId(topicId)
+                    .questionText(questionText)
+                    .answers(answerShortDto)
+                    .build();
+
+            List<QuestionSaveDto> existingQuestions = questionService.getQuestionSaveDtoByTopicId(topicId);
+
+            if (questionService.isQuestionWithAnswersExists(existingQuestions, newQuestion)) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new ErrorResponse(
+                                "Bunday javoblarga ega savol allaqachon mavjud.",
+                                HttpStatus.CONFLICT.value()
+                        ));
+            }
+
+            questionService.save(newQuestion);
+
+            return ResponseEntity.ok(Map.of("message", "Muvaffaqiyatli saqlandi."));
+        }catch (Exception e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of("error", e.getMessage()));
         }
-
-        boolean isUnique = answerService.isUnique(answerTextList); //Javoblarni bir xil masligini tekshiradi.
-
-        if (!isUnique) {
-            throw new IllegalArgumentException("❌Javoblar bir xil bo'lishi mumkin emas.");
-        }
-
-        questionService.save(QuestionSaveDto.builder()
-                .topicId(topicId)
-                .questionText(questionText)
-                .answers(answerShortDto)
-                .build());
-
-        return ResponseEntity.ok(Map.of("message", "saved"));
     }
 
     @GetMapping("/science/{scienceId}/topic/{topicId}/question")

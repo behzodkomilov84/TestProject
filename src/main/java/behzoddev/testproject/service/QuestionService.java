@@ -7,6 +7,7 @@ import behzoddev.testproject.dto.*;
 import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Topic;
+import behzoddev.testproject.exception.ErrorResponse;
 import behzoddev.testproject.mapper.AnswerMapper;
 import behzoddev.testproject.mapper.QuestionMapper;
 import behzoddev.testproject.validation.Validation;
@@ -14,10 +15,15 @@ import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -42,10 +48,28 @@ public class QuestionService {
     }
 
     @Transactional(readOnly = true)
+    public List<QuestionSaveDto> getQuestionSaveDtoByTopicId(Long topicId) {
+        List<Question> questions = questionRepository.getQuestionsByTopicId(topicId);
+
+        List<QuestionSaveDto> questionSaveDtoList = new ArrayList<>();
+
+        for (Question question : questions) {
+            questionSaveDtoList.add(
+                    QuestionSaveDto.builder()
+                            .topicId(question.getTopic().getId())
+                            .questionText(question.getQuestionText())
+                            .answers(answerMapper.mapAnswerListToAnswerShorDtoList(question.getAnswers()))
+                            .build());
+        }
+
+        return questionSaveDtoList;
+    }
+
+    /*@Transactional(readOnly = true)
     public List<QuestionDto> getQuestionDtoListByTopicId(Long topicId) {
         List<Question> questions = questionRepository.getQuestionsByTopicId(topicId);
         return questionMapper.mapQuestionListToQuestionDtoList(questions);
-    }
+    }*/
 
     @Transactional(readOnly = true)
     public boolean isQuestionWithAnswersExists(
@@ -70,6 +94,30 @@ public class QuestionService {
                                     )
                             );
                 });
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isQuestionWithAnswersExists(
+            @NotNull List<QuestionSaveDto> existingQuestions,
+            QuestionSaveDto newQuestion
+    ) {
+        Set<String> newAnswerSet = newQuestion.answers().stream()
+                .map(this::normalizeAnswer)
+                .collect(Collectors.toSet());
+
+        return existingQuestions.stream()
+                .filter(q -> q.questionText().equalsIgnoreCase(newQuestion.questionText()))
+                .anyMatch(q -> {
+                    Set<String> existingAnswerSet = q.answers().stream()
+                            .map(this::normalizeAnswer)
+                            .collect(Collectors.toSet());
+
+                    return existingAnswerSet.equals(newAnswerSet);
+                });
+    }
+
+    private String normalizeAnswer(AnswerShortDto a) {
+        return a.answerText().trim().toLowerCase() + "|" + a.isTrue();
     }
 
     @Transactional
@@ -144,7 +192,32 @@ public class QuestionService {
         // 2️⃣ ЗАГРУЗКА
         Question question = questionRepository.findById(dto.id())
                 .orElseThrow(() ->
-                        new RuntimeException("Savol ma'lumotlar bazasida topilmadi."));
+                        new IllegalArgumentException("Savol ma'lumotlar bazasida topilmadi."));
+
+        List<Question> existingQuestions = questionRepository.getQuestionsByTopicId(question.getTopic().getId());
+
+        List<QuestionSaveDto> existingQuestionSaveDtos =
+                existingQuestions.stream()
+                        .map(q ->
+                                QuestionSaveDto.builder()
+                                        .topicId(q.getTopic().getId())
+                                        .questionText(q.getQuestionText())
+                                        .answers(answerMapper.mapAnswerListToAnswerShorDtoList(q.getAnswers()))
+                                        .build()
+                        ).toList();
+
+        QuestionSaveDto newUpdatingQuestion =
+                QuestionSaveDto.builder()
+                        .topicId(question.getTopic().getId())
+                        .questionText(dto.questionText())
+                        .answers(answerMapper.mapAnswerDtoListToAnswerShorDtoList(dto.answers()))
+                        .build();
+
+        boolean questionWithAnswersExists = isQuestionWithAnswersExists(existingQuestionSaveDtos, newUpdatingQuestion);
+        if (questionWithAnswersExists) {
+            throw new IllegalArgumentException("Bunday javoblarga ega savol allaqachon mavjud.");
+        }
+
 
         // 3️⃣ ОБНОВЛЕНИЕ ВОПРОСА
         validation.textFieldMustNotBeEmpty(dto.questionText().trim());
@@ -161,7 +234,7 @@ public class QuestionService {
 
             Answer answer = answerRepository.findById(aDto.id())
                     .orElseThrow(() ->
-                            new RuntimeException("Javob ma'lumotlar bazasida topilmadi."));
+                            new IllegalArgumentException("Javob ma'lumotlar bazasida topilmadi."));
 
             answer.setAnswerText(aDto.answerText().trim());
             answer.setIsTrue(aDto.isTrue());

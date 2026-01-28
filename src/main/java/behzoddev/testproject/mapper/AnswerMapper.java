@@ -30,5 +30,10 @@ public interface AnswerMapper {
 
     @Mapping(target = "question", ignore = true)
     List<Answer> mapAnswerDtoListToAnswerList(List<AnswerDto> answerListDto);
+
+    List<AnswerShortDto> mapAnswerListToAnswerShorDtoList(List<Answer> answers);
+
+    @Mapping(target = "id", ignore = true)
+    List<AnswerShortDto> mapAnswerDtoListToAnswerShorDtoList(List<AnswerDto> answers);
 }
 

@@ -11,13 +11,13 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 @RestController
-@RequestMapping("/api/import")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class ExcelImportController {
 
     private final ExcelService excelService;
 
-    @GetMapping("/template")
+    @GetMapping("/export/template")
     public ResponseEntity<Resource> downloadTemplate() throws Exception {
 
         String shablonFile = "templates/template_For_Import.xlsx";
@@ -30,7 +30,7 @@ public class ExcelImportController {
                 .body(file);
     }
 
-    @PostMapping("/excel")
+    @PostMapping("/import/excel")
     public ResponseEntity<?> importExcel(
             @RequestParam MultipartFile file,
             @RequestParam Long topicId

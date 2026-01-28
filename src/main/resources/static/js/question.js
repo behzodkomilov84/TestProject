@@ -235,7 +235,7 @@ async function loadPage() {
     const res = await fetch(`/api/question?${params}`);
 
     if (!res.ok) {
-        showError("Xatolik yuz berdi");
+        alert("Xatolik yuz berdi");
         return;
     }
 

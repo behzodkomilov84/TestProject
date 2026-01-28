@@ -3,11 +3,12 @@ package behzoddev.testproject.mapper;
 import behzoddev.testproject.dto.QuestionDto;
 import behzoddev.testproject.dto.QuestionSaveDto;
 import behzoddev.testproject.dto.QuestionShortDto;
+import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Question;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.springframework.data.domain.Page;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Mapper(componentModel = "spring",
