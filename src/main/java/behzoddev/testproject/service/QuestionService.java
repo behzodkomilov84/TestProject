@@ -117,7 +117,7 @@ public class QuestionService {
     }
 
     private String normalizeAnswer(AnswerShortDto a) {
-        return a.answerText().trim().toLowerCase() + "|" + a.isTrue();
+        return a.answerText().trim().toLowerCase();
     }
 
     @Transactional
