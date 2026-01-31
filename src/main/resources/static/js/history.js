@@ -12,6 +12,7 @@ function loadHistory() {
 
                 tr.innerHTML = `
                     <td>${formatDate(test.finishedAt)}</td>
+                    <td>${test.scienceName}</td>
                     <td>${test.totalQuestions}</td>
                     <td>${test.correctAnswers}</td>
                     <td>${test.percent}%</td>

@@ -146,6 +146,7 @@ public class TestSessionService {
         return testSessionRepo.findByUserId(user.getId(), pageable)
                 .map(s -> new TestSessionHistoryDto(
                         s.getId(),
+                        s.getQuestions().get(0).getQuestion().getTopic().getScience().getName(),
                         s.getTotalQuestions(),
                         s.getCorrectAnswers(),
                         s.getPercent(),

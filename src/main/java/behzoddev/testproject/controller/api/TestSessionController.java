@@ -11,7 +11,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/test-session")
@@ -45,11 +44,11 @@ public class TestSessionController {
     }
 
     // детали
-    @GetMapping("/{testSessionid}")
+    @GetMapping("/{testSessionId}")
     public List<TestSessionDetailDto> details(
-            @PathVariable Long testSessionid,
+            @PathVariable Long testSessionId,
             @AuthenticationPrincipal User user
     ) {
-        return testSessionService.getDetails(testSessionid, user);
+        return testSessionService.getDetails(testSessionId, user);
     }
 }

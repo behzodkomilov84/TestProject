@@ -3,7 +3,8 @@ package behzoddev.testproject.dto;
 import java.time.LocalDateTime;
 
 public record TestSessionHistoryDto(
-        Long id,
+        Long testSessionId,
+        String scienceName,
         int totalQuestions,
         int correctAnswers,
         int percent,
