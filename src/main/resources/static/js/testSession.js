@@ -6,6 +6,7 @@ const testState = {
     limit: Number(sessionStorage.getItem("limit") || 10),
     time: Number(sessionStorage.getItem("time") || 10),
 
+    testSessionId: null,
     allQuestions: [],
     questions: [],
     currentIndex: 0,
@@ -32,16 +33,22 @@ document.addEventListener("DOMContentLoaded", () => {
     })
         .then(r => r.json())
         .then(data => {
-            if (!data || data.length === 0) {
+            if (!data.questions || data.questions.length === 0) {
                 document.getElementById("questions").innerHTML = "<p class='empty'>❌ Вопросы не пришли с сервера</p>";
                 return;
             }
-            testState.allQuestions = data;
-            testState.questions = data;
+            testState.testSessionId = data.testSessionId;
+            testState.allQuestions = data.questions;
+            testState.questions = data.questions;
+            testState.startedAt = Date.now();
+
+            console.log("TestSession ID:", testState.testSessionId);
+
             startTest();
         })
         .catch(err => {
             console.error(err);
+            alert(err);
             document.getElementById("questions").innerHTML = "<p class='empty'>❌ Ошибка загрузки теста</p>";
         });
 
@@ -230,6 +237,35 @@ function finishTest() {
 
     testState.finishedAt = Date.now();
     calculateResult();
+
+    saveTestResult();
+}
+
+function saveTestResult() {
+
+    const payload = {
+        testSessionId: testState.testSessionId,
+        startedAt: testState.startedAt,
+        finishedAt: testState.finishedAt,
+        answers: Array.from(testState.answers.entries()).map(
+            ([questionId, answerId]) => ({
+                questionId,
+                answerId
+            })
+        )
+    };
+
+    fetch("/api/test-session/finish", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(payload)
+    })
+        .then(r => {
+            if (!r.ok) throw new Error("Ошибка сохранения теста");
+        })
+        .then(() => {
+            console.log("✅ Test sessiyasi saqlandi");
+        });
 }
 
 function calculateResult() {

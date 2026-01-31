@@ -33,6 +33,9 @@ public class SecurityConfig {
                                 "/"
                         ).permitAll()
 
+                        .requestMatchers("/user/tests/**")
+                        .hasAuthority("ROLE_USER")
+
                         .requestMatchers(
                                 "/users",
                                 "/users/**",

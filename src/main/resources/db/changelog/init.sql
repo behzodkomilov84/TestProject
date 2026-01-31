@@ -8,10 +8,10 @@ create table roles
     primary key (id)
 );
 
-INSERT INTO roles (role_name) VALUES
-                                  ('ROLE_OWNER'),
-                                  ('ROLE_ADMIN'),
-                                  ('ROLE_USER');
+INSERT INTO roles (role_name)
+VALUES ('ROLE_OWNER'),
+       ('ROLE_ADMIN'),
+       ('ROLE_USER');
 
 create table users
 (
@@ -19,7 +19,6 @@ create table users
     username varchar(255),
     password varchar(255),
     role_id  bigint,
-#     enabled BOOLEAN NOT NULL DEFAULT TRUE,
     primary key (id),
     foreign key (role_id) references roles (id)
 );
@@ -56,21 +55,28 @@ create table science
     primary key (id)
 );
 
-/*create table topics
+create table topics
 (
     id         bigint       not null auto_increment,
     science_id bigint       not null,
-    name       varchar(255) NOT NULL UNIQUE,
-    primary key (id)
-);*/
-
-create table topics
-(
-    id         bigint not null auto_increment,
-    science_id bigint not null,
     name       varchar(255) not null,
     primary key (id),
     unique key uk_science_topic (science_id, name),
     constraint fk_topic_science
-        foreign key (science_id) references science(id)
+        foreign key (science_id) references science (id)
+);
+
+create table test_sessions
+(
+    id              bigint auto_increment primary key,
+    user_id         bigint    not null,
+    total_questions INTEGER       null,
+    correct_answers INTEGER       null,
+    wrong_answers   INTEGER       null,
+    percent         INTEGER       null,
+    duration_sec    bigint    null,
+    started_at      timestamp not null,
+    finished_at     timestamp null,
+    constraint fk_test_sessions_user
+        foreign key (user_id) references users (id)
 );

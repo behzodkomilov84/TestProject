@@ -1,3 +1,4 @@
+/*
 package behzoddev.testproject.controller.api;
 
 import behzoddev.testproject.dto.*;
@@ -11,22 +12,16 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
-@RequestMapping("/api/test-session")
+@RequestMapping("/user/tests")
 @RequiredArgsConstructor
-public class TestSessionController {
+public class TestSessionHistoryController {
 
     private final TestSessionService testSessionService;
 
-    @PostMapping("/start")
-    public StartTestResponseDto start(@RequestBody StartTestDto request,
-                                      @AuthenticationPrincipal User user) {
-        return testSessionService.startTest(user, request.topicIds(), request.limit());
-    }
-
-    // завершение теста
+   */
+/* // завершение теста
     @PostMapping("/finish")
     public ResponseEntity<Void> finish(
             @RequestBody FinishTestRequestDto request,
@@ -34,9 +29,12 @@ public class TestSessionController {
     ) {
         testSessionService.finishTest(request, user);
         return ResponseEntity.ok().build();
-    }
+    }*//*
 
-    @GetMapping("/history")
+
+    // история
+    */
+/*@GetMapping
     public Page<TestSessionHistoryDto> history(
             @AuthenticationPrincipal User user,
             Pageable pageable
@@ -45,11 +43,13 @@ public class TestSessionController {
     }
 
     // детали
-    @GetMapping("/{testSessionid}")
+    @GetMapping("/{id}")
     public List<TestSessionDetailDto> details(
             @PathVariable Long testSessionid,
             @AuthenticationPrincipal User user
     ) {
         return testSessionService.getDetails(testSessionid, user);
-    }
+    }*//*
+
 }
+*/

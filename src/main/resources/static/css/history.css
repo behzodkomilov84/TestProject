@@ -1,0 +1,52 @@
+*{
+    box-sizing: border-box;
+    font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+body {
+    font-family: system-ui, sans-serif;
+    background: #f5f6fa;
+}
+
+.container {
+    max-width: 900px;
+    margin: 40px auto;
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 12px;
+    border-bottom: 1px solid #ddd;
+    text-align: center;
+}
+
+button {
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.correct {
+    background: #d4edda;
+}
+
+.wrong {
+    background: #f8d7da;
+}
+
+.hidden {
+    display: none;
+}
+
+.question-card {
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 10px;
+}
