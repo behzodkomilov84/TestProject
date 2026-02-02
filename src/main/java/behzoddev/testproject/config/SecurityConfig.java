@@ -43,7 +43,10 @@ public class SecurityConfig {
                         .hasAuthority("ROLE_OWNER")// <-- доступ только владельцу
 
                         // API тестов доступно всем авторизованным (USER, ADMIN, OWNER)
-                        .requestMatchers("/api/tests/**")
+                        .requestMatchers(
+                                "/api/tests/**",
+                                "/api/profile/**",
+                                "/profile/**")
                         .authenticated()
 
                         .requestMatchers("/api/**")

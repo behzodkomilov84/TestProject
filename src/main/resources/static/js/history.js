@@ -18,7 +18,7 @@ function loadHistory() {
                     <td>${test.percent}%</td>
                     <td>${test.durationSec} sec.</td>
                     <td>
-                        <button onclick="loadDetails(${test.id})">
+                        <button onclick="loadDetails(${test.testSessionId})">
                             Batafsil...
                         </button>
                     </td>

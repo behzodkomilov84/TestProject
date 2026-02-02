@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Profile</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="/css/navbar.css"></link>
+    <link rel="stylesheet" href="/css/profile.css"></link>
+
+    <script src="/js/navbar.js" defer></script>
+
+</head>
+
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="profile-container">
+    <div class="profile-container-up">
+        <div class="profile-container-left">
+            <h2>Profil</h2>
+            <div id="user-info">
+                <p>Foydalanuvchi nomi: <span id="username"></span></p>
+                <p>Rol: <span id="role"></span></p>
+            </div>
+        </div>
+
+        <div class="profile-container-right">
+            <h2>Ko'rsatkichlar</h2>
+            <div id="stats">
+                <p>Jami testlar: <span id="total-tests"></span></p>
+                <p>O'rtacha natija: <span id="avg-percent"></span>%</p>
+                <p>Eng yaxshi natija: <span id="best-percent"></span>%</p>
+                <p>Eng yomon natija: <span id="worst-percent"></span>%</p>
+                <p>Jami vaqt: <span id="total-duration"></span> sec</p>
+            </div>
+        </div>
+    </div>
+
+
+
+    <h2>Test tarixi</h2>
+    <table border="1">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Boshlandi</th>
+            <th>Tugadi</th>
+            <th>%</th>
+            <th>Batafsil</th>
+        </tr>
+        </thead>
+        <tbody id="history-body"></tbody>
+    </table>
+</div>
+
+
+<script src="/js/profile.js"></script>
+</body>
+</html>

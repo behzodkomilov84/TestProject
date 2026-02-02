@@ -1,0 +1,159 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+}
+
+body {
+    background: #f4f6f9;
+    color: #1f2937;
+    padding: 30px;
+    margin: 80px auto 10px auto;
+}
+
+/* ===== Основной контейнер ===== */
+.test-page {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 32px 40px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+}
+
+/* ===== Заголовок ===== */
+.test-page h1, h3 {
+    font-size: 26px;
+    font-weight: 600;
+    margin-bottom: 25px;
+    margin-top: 20px;
+    color: #111827;
+}
+
+/* ===== Блок дат ===== */
+#test-details {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 30px;
+    margin-top: 20px;
+}
+
+#test-details p {
+    font-size: 14px;
+    margin-bottom: 8px;
+    color: #374151;
+}
+
+#test-details p b {
+    color: #111827;
+}
+
+/* ===== Итоговая статистика ===== */
+.summary-box {
+    margin-top: 20px;
+}
+
+.summary-box h2 {
+    font-size: 20px;
+    margin-bottom: 15px;
+    margin-top: 20px;
+    color: #111827;
+}
+
+/* ===== Список результатов ===== */
+#test-summary {
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 14px;
+    margin-top: 20px;
+}
+
+#test-summary li {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 16px;
+    font-size: 15px;
+    font-weight: 500;
+    color: #1f2937;
+    display: flex;
+    justify-content: space-between;
+}
+
+/* ===== Цветовые акценты ===== */
+#test-summary li:nth-child(1) {
+    border-left: 4px solid #6366f1;
+}
+
+#test-summary li:nth-child(2) {
+    border-left: 4px solid #22c55e;
+}
+
+#test-summary li:nth-child(3) {
+    border-left: 4px solid #ef4444;
+}
+
+#test-summary li:nth-child(4) {
+    border-left: 4px solid #3b82f6;
+}
+
+#test-summary li:nth-child(5) {
+    border-left: 4px solid #f59e0b;
+}
+
+/* ===== Кнопки ===== */
+.actions {
+    margin-top: 35px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.actions button {
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    border: none;
+    transition: 0.2s ease;
+}
+
+.btn-back {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+.btn-back:hover {
+    background: #d1d5db;
+}
+
+.btn-profile {
+    background: #2563eb;
+    color: #ffffff;
+}
+
+.btn-profile:hover {
+    background: #1d4ed8;
+}
+
+/* ===== Ошибки ===== */
+#error {
+    color: #dc2626;
+    font-weight: 500;
+    margin-top: 10px;
+}
+
+/* ===== Адаптив ===== */
+@media (max-width: 600px) {
+    .test-page {
+        padding: 20px;
+    }
+
+    #test-summary {
+        grid-template-columns: 1fr;
+    }
+}

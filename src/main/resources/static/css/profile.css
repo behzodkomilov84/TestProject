@@ -1,0 +1,93 @@
+/* ======= Общие стили для профиля ======= */
+* {
+    box-sizing: border-box;
+    font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+.profile-container {
+    max-width: 900px;
+    margin: 85px auto 20px auto;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.profile-container-up{
+    display: flex;
+    justify-content: space-around;
+}
+.profile-container h2{
+    color: #333;
+    margin-bottom: 10px;
+}
+
+#user-info p,
+#stats p {
+    margin: 6px 0;
+    font-size: 16px;
+}
+
+#stats {
+    margin-bottom: 20px;
+}
+
+/* ======= Таблица истории ======= */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    background-color: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+thead {
+    background-color: #343a40;
+    color: #fff;
+}
+
+th, td {
+    padding: 12px 8px;
+    text-align: center;
+    border-bottom: 1px solid #dee2e6;
+    font-size: 14px;
+}
+
+tr:hover {
+    background-color: #e9ecef;
+    transition: 0.2s;
+}
+
+button {
+    padding: 6px 10px;
+    font-size: 13px;
+    background-color: #0d6efd;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+button:hover {
+    background-color: #084298;
+}
+
+/* ======= Мобильная адаптация ======= */
+@media (max-width: 768px) {
+    .profile-container {
+        padding: 15px;
+    }
+
+    th, td {
+        padding: 8px 4px;
+        font-size: 12px;
+    }
+
+    button {
+        font-size: 12px;
+        padding: 5px 8px;
+    }
+}

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Details</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="stylesheet" href="/css/navbar.css"></link>
+    <link rel="stylesheet" href="/css/profile-test-detail.css"></link>
+
+    <script src="/js/navbar.js" defer></script>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        const testId = [[${testSessionId}]];
+        /*]]>*/
+    </script>
+
+</head>
+
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="test-page">
+
+
+<h2>📘 Test natijasi</h2>
+
+<div id="test-details"
+     th:attr="data-test-id=${testSessionId}">
+    Загрузка...
+</div>
+
+<hr>
+
+<h3>📊 Yakuniy natija</h3>
+<ul id="test-summary"></ul>
+
+<div class="actions">
+    <button class="btn-profile" onclick="history.back()">
+        ⬅ Orqaga
+    </button>
+</div>
+
+</div>
+
+<script src="/js/profile-test-detail.js"></script>
+</body>
+</html>
