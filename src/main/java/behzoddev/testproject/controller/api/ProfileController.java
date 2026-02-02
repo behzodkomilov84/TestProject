@@ -1,18 +1,15 @@
 package behzoddev.testproject.controller.api;
 
 import behzoddev.testproject.dao.TestSessionRepository;
-import behzoddev.testproject.dto.ProfileDto;
-import behzoddev.testproject.dto.TestHistoryDto;
-import behzoddev.testproject.dto.TestStatsDto;
+import behzoddev.testproject.dto.*;
 import behzoddev.testproject.entity.TestSession;
 import behzoddev.testproject.entity.User;
+import behzoddev.testproject.service.ProfileService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
@@ -23,6 +20,7 @@ import java.util.List;
 public class ProfileController {
 
     private final TestSessionRepository testSessionRepository;
+    private final ProfileService profileService;
 
     // 1️⃣ Профиль
     @GetMapping
@@ -92,5 +90,23 @@ public class ProfileController {
                 s.getPercent(),
                 s.getDurationSec()
         );
+    }
+
+    @PatchMapping("/username")
+    public ResponseEntity<Void> changeUsername(
+            @RequestBody ChangeUsernameDto changeUsernameDto,
+            @AuthenticationPrincipal User user
+    ) {
+        profileService.changeUsername(user, changeUsernameDto);
+        return ResponseEntity.ok().header("X-LOGOUT", "true").build();
+    }
+
+    @PatchMapping("/password")
+    public ResponseEntity<Void> changePassword(
+            @RequestBody ChangePasswordDto changePasswordDto,
+            @AuthenticationPrincipal User user
+    ) {
+        profileService.changePassword(user, changePasswordDto);
+        return ResponseEntity.ok().header("X-LOGOUT", "true").build();
     }
 }

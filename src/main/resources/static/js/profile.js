@@ -33,8 +33,113 @@ document.addEventListener("DOMContentLoaded", () => {
                 tbody.appendChild(tr);
             });
         });
+
+    document.getElementById("edit").addEventListener("click", enableEditUsername);
+    document.getElementById("save-username").addEventListener("click", saveUsername);
+    document.getElementById("cancel-username").addEventListener("click", cancelUsernameEdit);
 });
+
+function enableEditUsername() {
+    const current = document.getElementById("username").innerText;
+
+    document.getElementById("username-input").value = current;
+
+    document.getElementById("username-view").style.display = "none";
+    document.getElementById("username-edit").style.display = "inline";
+    document.getElementById("edit").style.display = "none";
+}
+
+function cancelUsernameEdit() {
+    document.getElementById("username-edit").style.display = "none";
+    document.getElementById("username-view").style.display = "inline";
+    document.getElementById("edit").style.display = "inline";
+}
+
+
 
 function viewTest(id) {
     window.location.href = `/profile/test/${id}`; // или открытие модалки
 }
+
+function saveUsername() {
+    const newUsername = document.getElementById("username-input").value.trim();
+
+    if (newUsername.length < 3) {
+        alert("Username juda qisqa");
+        return;
+    }
+
+    fetch("/api/profile/username", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newUsername })
+    })
+        .then(r => {
+            if (!r.ok) throw new Error();
+            return r;
+        })
+        .then(() => {
+            document.getElementById("username").innerText = newUsername;
+
+            document.getElementById("username-edit").style.display = "none";
+            document.getElementById("username-view").style.display = "inline";
+            document.getElementById("edit").style.display = "inline";
+
+            alert("Username o'zgartirildi");
+        })
+        .catch(() => {
+            alert("Bu username band yoki xatolik");
+        });
+}
+
+/*ОТКРЫТЬ / ЗАКРЫТЬ МОДАЛКУ*/
+document.getElementById("open-password-modal")
+    .addEventListener("click", () => {
+        document.getElementById("password-modal").classList.remove("hidden");
+    });
+
+document.getElementById("close-password-modal")
+    .addEventListener("click", closePasswordModal);
+
+function closePasswordModal() {
+    document.getElementById("password-modal").classList.add("hidden");
+    document.getElementById("currentPassword").value = "";
+    document.getElementById("newPassword").value = "";
+}
+
+/*СОХРАНЕНИЕ ПАРОЛЯ (API)*/
+document.getElementById("save-password")
+    .addEventListener("click", changePassword);
+
+function changePassword() {
+    const currentPassword = document.getElementById("currentPassword").value;
+    const newPassword = document.getElementById("newPassword").value;
+
+    if (!currentPassword || !newPassword) {
+        alert("Barcha maydonlarni to‘ldiring");
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        alert("Parol kamida 6 belgidan iborat bo‘lishi kerak");
+        return;
+    }
+
+    fetch("/api/profile/password", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            currentPassword,
+            newPassword
+        })
+    })
+        .then(r => {
+            if (!r.ok) throw new Error();
+            alert("Parol o‘zgartirildi. Qayta kiring.");
+            location.href = "/logout";
+        })
+        .catch(() => {
+            alert("Hozirgi parol noto‘g‘ri");
+        });
+}
+//=========================================================

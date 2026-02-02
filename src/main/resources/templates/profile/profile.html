@@ -25,17 +25,49 @@
                 <table border="1">
                     <tr>
                         <td style="text-align: left">Foydalanuvchi <br> nomi</td>
-                        <td style="text-align: right"><span id="username"></span></td>
-                        <td style="text-align: center"><button id="edit">✏️</button></td>
+                        <td style="text-align: right">
+                                <span id="username-view">
+                                    <span id="username"></span>
+                                </span>
+
+                                <span id="username-edit" style="display:none;">
+                                    <input type="text" id="username-input"/>
+                                    <button id="save-username" title="Saqlash">💾</button>
+                                    <button id="cancel-username" title="Bekor qilish">✖</button>
+                                </span>
+
+                                <button id="edit" style="margin-left: 20px" title="Tahrirlash">✏️</button>
+                        </td>
                     </tr>
                     <tr>
                         <td style="text-align: left">Rol</td>
                         <td style="text-align: right"><span id="role"></span></td>
                     </tr>
                 </table>
-<!--                <p>Foydalanuvchi nomi: <span id="username"></span></p>-->
-<!--                <p>Rol: <span id="role"></span></p>-->
+
             </div>
+            <!-- 🔐 Change password modal -->
+            <div id="password-modal" class="modal hidden">
+                <div class="modal-content">
+                    <h3>Parolni o‘zgartirish</h3>
+
+                    <label>Hozirgi parol</label>
+                    <input type="password" id="currentPassword">
+
+                    <label>Yangi parol</label>
+                    <input type="password" id="newPassword">
+
+                    <div class="modal-actions">
+                        <button id="save-password">Saqlash</button>
+                        <button id="close-password-modal">Bekor qilish</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- кнопка открытия -->
+            <button id="open-password-modal" style="margin-top:10px;">
+                🔐 Parolni o‘zgartirish
+            </button>
         </div>
 
         <div class="profile-container-right">
@@ -68,15 +100,10 @@
                         <td style="text-align: right"><span id="total-duration"></span> sec</td>
                     </tr>
                 </table>
-                <!--<p>Jami testlar: <span id="total-tests"></span></p>
-                <p>O'rtacha natija: <span id="avg-percent"></span>%</p>
-                <p>Eng yaxshi natija: <span id="best-percent"></span>%</p>
-                <p>Eng yomon natija: <span id="worst-percent"></span>%</p>
-                <p>Jami vaqt: <span id="total-duration"></span> sec</p>-->
+
             </div>
         </div>
     </div>
-
 
 
     <h2>Test tarixi</h2>
@@ -93,6 +120,8 @@
         <tbody id="history-body"></tbody>
     </table>
 </div>
+
+
 
 
 <script src="/js/profile.js"></script>
