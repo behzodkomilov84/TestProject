@@ -16,7 +16,7 @@
 
 .profile-container-up{
     display: flex;
-    justify-content: space-around;
+    justify-content: space-between;
 }
 .profile-container h2{
     color: #333;

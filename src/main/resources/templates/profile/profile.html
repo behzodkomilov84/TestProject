@@ -6,8 +6,8 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link rel="stylesheet" href="/css/navbar.css"></link>
-    <link rel="stylesheet" href="/css/profile.css"></link>
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/profile.css">
 
     <script src="/js/navbar.js" defer></script>
 
@@ -20,21 +20,59 @@
 <div class="profile-container">
     <div class="profile-container-up">
         <div class="profile-container-left">
-            <h2>Profil</h2>
+            <h2 style="text-align: center">Profil</h2>
             <div id="user-info">
-                <p>Foydalanuvchi nomi: <span id="username"></span></p>
-                <p>Rol: <span id="role"></span></p>
+                <table border="1">
+                    <tr>
+                        <td style="text-align: left">Foydalanuvchi <br> nomi</td>
+                        <td style="text-align: right"><span id="username"></span></td>
+                        <td style="text-align: center"><button id="edit">✏️</button></td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: left">Rol</td>
+                        <td style="text-align: right"><span id="role"></span></td>
+                    </tr>
+                </table>
+<!--                <p>Foydalanuvchi nomi: <span id="username"></span></p>-->
+<!--                <p>Rol: <span id="role"></span></p>-->
             </div>
         </div>
 
         <div class="profile-container-right">
-            <h2>Ko'rsatkichlar</h2>
+            <h2 style="text-align: center">Ko'rsatkichlar</h2>
             <div id="stats">
-                <p>Jami testlar: <span id="total-tests"></span></p>
+
+                <table border="1" style="width: 300px">
+                    <tr>
+                        <td style="text-align: left">Jami testlar</td>
+                        <td style="text-align: right"><span id="total-tests"></span></td>
+                    </tr>
+
+                    <tr>
+                        <td style="text-align: left">O'rtacha natija</td>
+                        <td style="text-align: right"><span id="avg-percent"></span>%</td>
+                    </tr>
+
+                    <tr>
+                        <td style="text-align: left">Eng yaxshi natija</td>
+                        <td style="text-align: right"><span id="best-percent"></span>%</td>
+                    </tr>
+
+                    <tr>
+                        <td style="text-align: left">Eng yomon natija</td>
+                        <td style="text-align: right"><span id="worst-percent"></span>%</td>
+                    </tr>
+
+                    <tr>
+                        <td style="text-align: left">Jami vaqt</td>
+                        <td style="text-align: right"><span id="total-duration"></span> sec</td>
+                    </tr>
+                </table>
+                <!--<p>Jami testlar: <span id="total-tests"></span></p>
                 <p>O'rtacha natija: <span id="avg-percent"></span>%</p>
                 <p>Eng yaxshi natija: <span id="best-percent"></span>%</p>
                 <p>Eng yomon natija: <span id="worst-percent"></span>%</p>
-                <p>Jami vaqt: <span id="total-duration"></span> sec</p>
+                <p>Jami vaqt: <span id="total-duration"></span> sec</p>-->
             </div>
         </div>
     </div>
