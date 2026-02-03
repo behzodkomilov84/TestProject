@@ -27,6 +27,7 @@ public class TestSessionQuestion {
     private Answer selectedAnswer;
 
     @Column(name = "is_correct", nullable = false)
+    @Builder.Default
     private Boolean isCorrect = false;
 }
 

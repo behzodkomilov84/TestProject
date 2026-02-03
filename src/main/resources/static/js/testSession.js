@@ -98,6 +98,9 @@ function renderQuestions(questions) {
     container.innerHTML = "";
 
     questions.forEach((q, index) => {
+
+        const correctAnswer = q.answers.find(a => a.isTrue);
+
         const block = document.createElement("div");
         block.className = "question-block";
         if (index === 0) block.classList.add("active");
@@ -116,6 +119,12 @@ function renderQuestions(questions) {
                 `).join("")}
             </ul>
             <div class="actions-bottom">
+                <button class="action-btn comment"
+                        data-comment="${encodeURIComponent(correctAnswer?.commentary || '')}"
+                        onclick="openCommentModal(this)"
+                        title="Izohni ko‘rish">
+                    💬
+                </button>
                 <button onclick="goToPreviousQuestion()">AVVALGI</button>
                 <button onclick="goToNextQuestion()">KEYINGI</button>
                 <button onclick="finishTest()">Test Natijasi</button>
@@ -529,6 +538,21 @@ function updateProgress() {
     }
 }
 
+function openCommentModal(button) {
+    const comment = decodeURIComponent(button.dataset.comment || "");
+
+    if (!comment || comment.trim() === "") {
+        alert("Izoh mavjud emas");
+        return;
+    }
+
+    document.getElementById("commentModalBody").innerText = comment;
+    document.getElementById("commentModal").classList.remove("hidden");
+}
+
+function closeCommentModal() {
+    document.getElementById("commentModal").classList.add("hidden");
+}
 
 
 

@@ -1,16 +1,23 @@
 package behzoddev.testproject.controller.api;
 
+import behzoddev.testproject.dao.TestSessionRepository;
 import behzoddev.testproject.dto.*;
+import behzoddev.testproject.entity.TestSession;
 import behzoddev.testproject.entity.User;
+import behzoddev.testproject.mapper.TestSessionMapper;
 import behzoddev.testproject.service.TestSessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/test-session")
@@ -18,6 +25,8 @@ import java.util.List;
 public class TestSessionController {
 
     private final TestSessionService testSessionService;
+    private final TestSessionRepository testSessionRepository;
+    private final TestSessionMapper testSessionMapper;
 
     @PostMapping("/start")
     public StartTestResponseDto start(@RequestBody StartTestDto request,
@@ -36,11 +45,16 @@ public class TestSessionController {
     }
 
     @GetMapping("/history")
-    public Page<TestSessionHistoryDto> history(
+    public Page<TestSessionHistoryDto> getHistory(
             @AuthenticationPrincipal User user,
-            Pageable pageable
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "7") int size
     ) {
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("finishedAt").descending());
+
         return testSessionService.getHistory(user, pageable);
+
     }
 
     // детали

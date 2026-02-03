@@ -7,6 +7,7 @@ import behzoddev.testproject.dao.TestSessionRepository;
 import behzoddev.testproject.dto.*;
 import behzoddev.testproject.entity.*;
 import behzoddev.testproject.mapper.QuestionMapper;
+import behzoddev.testproject.mapper.TestSessionMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,7 +20,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -31,6 +32,8 @@ public class TestSessionService {
     private final QuestionRepository questionRepository;
     private final AnswerRepository answerRepository;
     private final QuestionMapper questionMapper;
+    private final TestSessionMapper testSessionMapper;
+    private final TestSessionRepository testSessionRepository;
 
     @Transactional
     public StartTestResponseDto startTest(User user, List<Long> topicIds, int limit) {
@@ -61,18 +64,6 @@ public class TestSessionService {
                 session.getId(),
                 questionDtoListWithShuffledAnswers
         );
-    }
-
-    @Transactional
-    public int checkAnswers(Map<Long, Long> answers) {
-        int correct = 0;
-
-        for (var entry : answers.entrySet()) {
-            if (answerRepository.isCorrect(entry.getKey(), entry.getValue())) {
-                correct++;
-            }
-        }
-        return correct;
     }
 
     // ✅ ЗАВЕРШЕНИЕ ТЕСТА
@@ -113,7 +104,7 @@ public class TestSessionService {
             Answer selected = answerRepository.findById(dto.answerId())
                     .orElseThrow();
 
-            Boolean isCorrect = Boolean.TRUE.equals(selected.getIsTrue());
+            boolean isCorrect = Boolean.TRUE.equals(selected.getIsTrue());
             if (isCorrect) correct++;
 
             TestSessionQuestion testSessionQuestion =
@@ -134,7 +125,6 @@ public class TestSessionService {
         session.setPercent(total > 0 ? (correct * 100 / total) : 0);
 
 
-
         testSessionRepo.save(session);
     }
 
@@ -143,16 +133,8 @@ public class TestSessionService {
     @Transactional(readOnly = true)
     public Page<TestSessionHistoryDto> getHistory(User user, Pageable pageable) {
 
-        return testSessionRepo.findByUserId(user.getId(), pageable)
-                .map(s -> new TestSessionHistoryDto(
-                        s.getId(),
-                        s.getQuestions().get(0).getQuestion().getTopic().getScience().getName(),
-                        s.getTotalQuestions(),
-                        s.getCorrectAnswers(),
-                        s.getPercent(),
-                        s.getFinishedAt(),
-                        s.getDurationSec()
-                ));
+        return testSessionRepo.findByUserId(user.getId(), pageable);
+
     }
 
     // ✅ ДЕТАЛИ ТЕСТА
@@ -176,5 +158,23 @@ public class TestSessionService {
                         q.getIsCorrect()
                 ))
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public TestStatsDto getStats(User user) {
+        List<TestSession> sessions =
+                testSessionRepository.findByUserId(user.getId()).stream()
+                        .filter(testSession -> testSession.getFinishedAt()!= null) //Faqat yakuniga yetkazilgan testlar
+                        .toList();
+
+        int totalTests = sessions.size();
+        int avgPercent = sessions.stream().mapToInt(TestSession::getPercent).sum();
+        avgPercent = totalTests > 0 ? avgPercent / totalTests : 0;
+
+        int best = sessions.stream().mapToInt(TestSession::getPercent).max().orElse(0);
+        int worst = sessions.stream().mapToInt(TestSession::getPercent).min().orElse(0);
+        long totalDuration = sessions.stream().mapToLong(TestSession::getDurationSec).sum();
+
+        return new TestStatsDto(totalTests, avgPercent, best, worst, totalDuration);
     }
 }

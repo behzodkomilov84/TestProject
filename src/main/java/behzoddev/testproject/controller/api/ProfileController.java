@@ -5,6 +5,7 @@ import behzoddev.testproject.dto.*;
 import behzoddev.testproject.entity.TestSession;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.ProfileService;
+import behzoddev.testproject.service.TestSessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +22,7 @@ public class ProfileController {
 
     private final TestSessionRepository testSessionRepository;
     private final ProfileService profileService;
+    private final TestSessionService testSessionService;
 
     // 1️⃣ Профиль
     @GetMapping
@@ -36,34 +38,15 @@ public class ProfileController {
     @GetMapping("/stats")
     public TestStatsDto getStats(@AuthenticationPrincipal User user) {
 
-        List<TestSession> sessions = testSessionRepository.findByUserId(user.getId());
-
-        int totalTests = sessions.size();
-        int avgPercent = sessions.stream().mapToInt(TestSession::getPercent).sum();
-        avgPercent = totalTests > 0 ? avgPercent / totalTests : 0;
-
-        int best = sessions.stream().mapToInt(TestSession::getPercent).max().orElse(0);
-        int worst = sessions.stream().mapToInt(TestSession::getPercent).min().orElse(0);
-        long totalDuration = sessions.stream().mapToLong(TestSession::getDurationSec).sum();
-
-        return new TestStatsDto(totalTests, avgPercent, best, worst, totalDuration);
+        return testSessionService.getStats(user);
     }
 
     // 3️⃣ История тестов
     @GetMapping("/history")
     public List<TestHistoryDto> getHistory(@AuthenticationPrincipal User user) {
-        List<TestSession> sessions = testSessionRepository.findByUserId(user.getId());
 
-        return sessions.stream().map(s -> new TestHistoryDto(
-                s.getId(),
-                s.getStartedAt(),
-                s.getFinishedAt(),
-                s.getTotalQuestions(),
-                s.getCorrectAnswers(),
-                s.getWrongAnswers(),
-                s.getPercent(),
-                s.getDurationSec()
-        )).toList();
+        return profileService.getHistory(user);
+
     }
 
     // 4️⃣ Детальный просмотр теста (DTO!)

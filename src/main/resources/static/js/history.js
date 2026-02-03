@@ -1,9 +1,30 @@
-document.addEventListener("DOMContentLoaded", loadHistory);
+document.addEventListener("DOMContentLoaded", () => loadHistory(0));
 
-function loadHistory() {
-    fetch("/api/test-session/history")
-        .then(r => r.json())
+
+let currentPage = 0;
+const pageSize = 7;
+
+function loadHistory(page = 0) {
+    fetch(`/api/test-session/history?page=${page}&size=${pageSize}`)
+        .then(r => {
+            if (!r.ok) {
+                throw new Error("HTTP error: " + r.status);
+            }
+
+            const contentType = r.headers.get("content-type") || "";
+            if (!contentType.includes("application/json")) {
+                throw new Error("Response is not JSON");
+            }
+
+            return r.json();
+        })
         .then(data => {
+            console.log("History response:", data); // 🔍 DEBUG
+
+            if (!data || !Array.isArray(data.content)) {
+                throw new Error("Invalid history format");
+            }
+
             const tbody = document.querySelector("#testsTable tbody");
             tbody.innerHTML = "";
 
@@ -23,9 +44,35 @@ function loadHistory() {
                         </button>
                     </td>
                 `;
+
                 tbody.appendChild(tr);
             });
+
+            renderPagination(data);
+        })
+        .catch(err => {
+            console.error("❌ History load error:", err);
+            alert("Test tarixi yuklanmadi. Qayta urinib ko‘ring.");
         });
+}
+
+function renderPagination(data) {
+    const pagination = document.querySelector("#pagination");
+
+    if (!pagination) {
+        console.warn("⚠️ Pagination container not found");
+        return;
+    }
+
+    pagination.innerHTML = "";
+
+    for (let i = 0; i < data.totalPages; i++) {
+        const btn = document.createElement("button");
+        btn.textContent = i + 1;
+        btn.disabled = i === data.number;
+        btn.onclick = () => loadHistory(i);
+        pagination.appendChild(btn);
+    }
 }
 
 function loadDetails(testId) {
