@@ -7,6 +7,8 @@ import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.ProfileService;
 import behzoddev.testproject.service.TestSessionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -43,9 +45,10 @@ public class ProfileController {
 
     // 3️⃣ История тестов
     @GetMapping("/history")
-    public List<TestHistoryDto> getHistory(@AuthenticationPrincipal User user) {
+    public Page<TestHistoryDto> getHistory(@AuthenticationPrincipal User user,
+                                           Pageable pageable) {
 
-        return profileService.getHistory(user);
+        return profileService.getHistory(user, pageable);
 
     }
 

@@ -18,9 +18,10 @@
     display: flex;
     justify-content: space-between;
 }
-.profile-container h2{
+.profile-container h2 {
     color: #333;
     margin-bottom: 10px;
+    margin-top: -15px;
 }
 
 #user-info p,

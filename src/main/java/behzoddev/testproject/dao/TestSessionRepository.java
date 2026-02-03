@@ -1,7 +1,9 @@
 package behzoddev.testproject.dao;
 
+import behzoddev.testproject.dto.TestHistoryDto;
 import behzoddev.testproject.dto.TestSessionHistoryDto;
 import behzoddev.testproject.entity.TestSession;
+import behzoddev.testproject.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -35,7 +37,7 @@ public interface TestSessionRepository extends JpaRepository<TestSession, Long> 
             group by t.id, s.name, t.finishedAt,
             t.totalQuestions, t.correctAnswers,
             t.percent, t.durationSec
-            order by t.finishedAt desc
+            order by t.id desc
             """)
     Page<TestSessionHistoryDto> findByUserId(@Param("userId") Long userId, Pageable pageable);
 
@@ -43,5 +45,23 @@ public interface TestSessionRepository extends JpaRepository<TestSession, Long> 
 
     Optional<TestSession> findByIdAndUserId(Long id, Long userId);
 
+    @Query("""
+            select new behzoddev.testproject.dto.TestHistoryDto
+            (
+            t.id,
+            t.startedAt,
+            t.finishedAt,
+            t.totalQuestions,
+            t.correctAnswers,
+            t.wrongAnswers,
+            t.percent,
+            t.durationSec
+            )
+            from TestSession t
+            where t.user = :user
+            and t.finishedAt is not null 
+            order by t.id desc
+            """)
+    Page<TestHistoryDto> getPageableTestHistoryDtoByUser(@Param("user") User user, Pageable pageable);
 }
 

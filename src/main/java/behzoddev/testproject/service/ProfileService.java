@@ -7,6 +7,8 @@ import behzoddev.testproject.entity.User;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.mapper.TestSessionMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,14 +56,8 @@ public class ProfileService {
     }
 
     @Transactional(readOnly = true)
-    public List<TestHistoryDto> getHistory(User user) {
+    public Page<TestHistoryDto> getHistory(User user, Pageable pageable) {
 
-        List<TestSession> sessions = testSessionRepository.findByUserId(user.getId());
-
-        return sessions.stream()
-                .filter(testSession -> testSession.getFinishedAt() != null) //Faqat yakuniga yetgan testSessiyalar
-                .map(testSession -> testSessionMapper.mapTestSessiontoTestHistoryDto(testSession))
-                .toList();
-
+        return testSessionRepository.getPageableTestHistoryDtoByUser(user, pageable);
     }
 }

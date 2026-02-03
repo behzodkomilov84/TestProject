@@ -1,3 +1,6 @@
+let currentPage = 0;
+const pageSize = 4;
+
 document.addEventListener("DOMContentLoaded", () => {
     fetch("/api/profile")
         .then(r => r.json())
@@ -16,12 +19,13 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("total-duration").innerText = data.totalDurationSec;
         });
 
-    fetch("/api/profile/history")
+    loadHistory(0);
+    /*fetch("/api/profile/history")
         .then(r => r.json())
         .then(data => {
             const tbody = document.getElementById("history-body");
             tbody.innerHTML = "";
-            data.forEach(test => {
+            data.content.forEach(test => {
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
                     <td>${test.testSessionId}</td>
@@ -32,12 +36,69 @@ document.addEventListener("DOMContentLoaded", () => {
                 `;
                 tbody.appendChild(tr);
             });
-        });
+        });*/
 
     document.getElementById("edit").addEventListener("click", enableEditUsername);
     document.getElementById("save-username").addEventListener("click", saveUsername);
     document.getElementById("cancel-username").addEventListener("click", cancelUsernameEdit);
 });
+
+function loadHistory(page) {
+    fetch(`/api/profile/history?page=${page}&size=${pageSize}`)
+        .then(r => r.json())
+        .then(data => {
+
+            const tbody = document.getElementById("history-body");
+            tbody.innerHTML = "";
+
+            data.content.forEach(test => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+                    <td>${test.testSessionId}</td>
+                    <td>${new Date(test.startedAt).toLocaleString()}</td>
+                    <td>${test.finishedAt ? new Date(test.finishedAt).toLocaleString() : "—"}</td>
+                    <td>${test.percent}</td>
+                    <td>
+                        <button onclick="viewTest(${test.testSessionId})">
+                            Ko'rish
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            renderPagination(data);
+        });
+}
+
+function renderPagination(pageData) {
+    const pagination = document.getElementById("pagination");
+    pagination.innerHTML = "";
+
+    // Previous
+    const prev = document.createElement("li");
+    prev.className = "page-item " + (pageData.first ? "disabled" : "");
+    prev.innerHTML = `<a class="page-link" href="#">Previous</a>`;
+    prev.onclick = () => !pageData.first && loadHistory(pageData.number - 1);
+    pagination.appendChild(prev);
+
+    // Pages
+    for (let i = 0; i < pageData.totalPages; i++) {
+        const li = document.createElement("li");
+        li.className = "page-item " + (i === pageData.number ? "active" : "");
+        li.innerHTML = `<a class="page-link" href="#">${i + 1}</a>`;
+        li.onclick = () => loadHistory(i);
+        pagination.appendChild(li);
+    }
+
+    // Next
+    const next = document.createElement("li");
+    next.className = "page-item " + (pageData.last ? "disabled" : "");
+    next.innerHTML = `<a class="page-link" href="#">Next</a>`;
+    next.onclick = () => !pageData.last && loadHistory(pageData.number + 1);
+    pagination.appendChild(next);
+}
+
 
 function enableEditUsername() {
     const current = document.getElementById("username").innerText;
