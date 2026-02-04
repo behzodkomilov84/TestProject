@@ -20,23 +20,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
     loadHistory(0);
-    /*fetch("/api/profile/history")
-        .then(r => r.json())
-        .then(data => {
-            const tbody = document.getElementById("history-body");
-            tbody.innerHTML = "";
-            data.content.forEach(test => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td>${test.testSessionId}</td>
-                    <td>${new Date(test.startedAt).toLocaleString()}</td>
-                    <td>${test.finishedAt ? new Date(test.finishedAt).toLocaleString() : "—"}</td>
-                    <td>${test.percent}</td>
-                    <td><button onclick="viewTest(${test.testSessionId})">Ko'rish</button></td>
-                `;
-                tbody.appendChild(tr);
-            });
-        });*/
 
     document.getElementById("edit").addEventListener("click", enableEditUsername);
     document.getElementById("save-username").addEventListener("click", saveUsername);

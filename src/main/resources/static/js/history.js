@@ -1,10 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => loadHistory(0));
 
-
-let currentPage = 0;
 const pageSize = 7;
 
-function loadHistory(page = 0) {
+function loadHistory(page) {
     fetch(`/api/test-session/history?page=${page}&size=${pageSize}`)
         .then(r => {
             if (!r.ok) {
@@ -57,7 +55,7 @@ function loadHistory(page = 0) {
 }
 
 function renderPagination(data) {
-    const pagination = document.querySelector("#pagination");
+    const pagination = document.getElementById("pagination");
 
     if (!pagination) {
         console.warn("⚠️ Pagination container not found");
@@ -66,13 +64,36 @@ function renderPagination(data) {
 
     pagination.innerHTML = "";
 
-    for (let i = 0; i < data.totalPages; i++) {
+    // Previous
+    const prev = document.createElement("li");
+    prev.className = "page-item " + (data.first ? "disabled" : "");
+    prev.innerHTML = `<a class="page-link" href="#">Previous</a>`;
+    prev.onclick = () => !data.first && loadHistory(data.number - 1);
+    pagination.appendChild(prev);
+
+    // Pages
+   /* for (let i = 0; i < data.totalPages; i++) {
         const btn = document.createElement("button");
         btn.textContent = i + 1;
         btn.disabled = i === data.number;
         btn.onclick = () => loadHistory(i);
         pagination.appendChild(btn);
+    }*/
+
+    for (let i = 0; i < data.totalPages; i++) {
+        const li = document.createElement("li");
+        li.className = "page-item " + (i === data.number ? "active" : "");
+        li.innerHTML = `<a class="page-link" href="#">${i + 1}</a>`;
+        li.onclick = () => loadHistory(i);
+        pagination.appendChild(li);
     }
+
+    // Next
+    const next = document.createElement("li");
+    next.className = "page-item " + (data.last ? "disabled" : "");
+    next.innerHTML = `<a class="page-link" href="#">Next</a>`;
+    next.onclick = () => !data.last && loadHistory(data.number + 1);
+    pagination.appendChild(next);
 }
 
 function loadDetails(testId) {
