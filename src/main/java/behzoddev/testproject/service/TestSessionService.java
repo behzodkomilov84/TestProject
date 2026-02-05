@@ -7,7 +7,6 @@ import behzoddev.testproject.dao.TestSessionRepository;
 import behzoddev.testproject.dto.*;
 import behzoddev.testproject.entity.*;
 import behzoddev.testproject.mapper.QuestionMapper;
-import behzoddev.testproject.mapper.TestSessionMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,19 +19,16 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 
 @Service
 @RequiredArgsConstructor
 public class TestSessionService {
 
-    private final TestSessionRepository testSessionRepo;
-    private final TestSessionQuestionRepository tsqRepo;
+    private final TestSessionQuestionRepository testSessionQuestionRepository;
     private final QuestionRepository questionRepository;
     private final AnswerRepository answerRepository;
     private final QuestionMapper questionMapper;
-    private final TestSessionMapper testSessionMapper;
     private final TestSessionRepository testSessionRepository;
 
     @Transactional
@@ -42,7 +38,7 @@ public class TestSessionService {
         TestSession session = new TestSession();
         session.setUser(user);
         session.setStartedAt(LocalDateTime.now());
-        testSessionRepo.save(session);
+        testSessionRepository.save(session);
 
         // 2️⃣ получаем вопросы
         List<Question> questions = questionRepository.findRandomQuestionsByTopicIds(topicIds);
@@ -70,7 +66,7 @@ public class TestSessionService {
     @Transactional
     public void finishTest(FinishTestRequestDto request, User user) {
 
-        TestSession session = testSessionRepo.findById(request.testSessionId())
+        TestSession session = testSessionRepository.findById(request.testSessionId())
                 .orElseThrow(() -> new IllegalArgumentException("Test session not found"));
 
         if (!session.getUser().getId().equals(user.getId())) {
@@ -115,7 +111,7 @@ public class TestSessionService {
                             .isCorrect(isCorrect)
                             .build();
 
-            tsqRepo.save(testSessionQuestion);
+            testSessionQuestionRepository.save(testSessionQuestion);
             session.addQuestion(testSessionQuestion);
         }
 
@@ -125,7 +121,7 @@ public class TestSessionService {
         session.setPercent(total > 0 ? (correct * 100 / total) : 0);
 
 
-        testSessionRepo.save(session);
+        testSessionRepository.save(session);
     }
 
 
@@ -133,7 +129,7 @@ public class TestSessionService {
     @Transactional(readOnly = true)
     public Page<TestSessionHistoryDto> getHistory(User user, Pageable pageable) {
 
-        return testSessionRepo.findByUserId(user.getId(), pageable);
+        return testSessionRepository.findByUserId(user.getId(), pageable);
 
     }
 
@@ -141,11 +137,11 @@ public class TestSessionService {
     @Transactional(readOnly = true)
     public List<TestSessionDetailDto> getDetails(Long testSessionid, User user) {
 
-        TestSession session = testSessionRepo
+        TestSession session = testSessionRepository
                 .findByIdAndUserId(testSessionid, user.getId())
                 .orElseThrow(() -> new AccessDeniedException("Нет доступа"));
 
-        return tsqRepo.findByTestSessionId(session.getId())
+        return testSessionQuestionRepository.findByTestSessionId(session.getId())
                 .stream()
                 .map(q -> new TestSessionDetailDto(
                         q.getQuestion().getQuestionText(),
@@ -154,6 +150,11 @@ public class TestSessionService {
                                 .filter(Answer::getIsTrue)
                                 .findFirst()
                                 .map(Answer::getAnswerText)
+                                .orElse(""),
+                        q.getQuestion().getAnswers().stream()
+                                .filter(answer -> answer.getIsTrue() == true)
+                                .findFirst()
+                                .map(Answer::getCommentary)
                                 .orElse(""),
                         q.getIsCorrect()
                 ))
@@ -164,7 +165,7 @@ public class TestSessionService {
     public TestStatsDto getStats(User user) {
         List<TestSession> sessions =
                 testSessionRepository.findByUserId(user.getId()).stream()
-                        .filter(testSession -> testSession.getFinishedAt()!= null) //Faqat yakuniga yetkazilgan testlar
+                        .filter(testSession -> testSession.getFinishedAt() != null) //Faqat yakuniga yetkazilgan testlar
                         .toList();
 
         int totalTests = sessions.size();

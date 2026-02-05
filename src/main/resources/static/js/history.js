@@ -94,28 +94,57 @@ function loadDetails(testId) {
             return r.json();
         })
         .then(data => {
+
             const container = document.getElementById("detailsContent");
             container.innerHTML = "";
 
             data.forEach((q, index) => {
-                const div = document.createElement("div");
-                div.className =
-                    "question-card mb-3 p-3 border rounded " +
-                    (q.correct ? "border-success" : "border-danger");
 
-                div.innerHTML = `
+                const card = document.createElement("div");
+
+                const correctClass = q.correct
+                    ? "border-success "
+                    : "border-danger ";
+
+                card.className = `mb-3 p-3 border rounded ${correctClass}`;
+
+                let commentBlock = "";
+
+                // 👉 если ответ неправильный — добавляем кнопку + collapse
+                if (!q.correct && q.commentOfCorrectAnswer) {
+
+                    const collapseId = `comment-${index}`;
+
+                    commentBlock = `
+                        <button 
+                            class="btn btn-sm btn-warning mt-2"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#${collapseId}">
+                            Izohni ko'rish
+                        </button>
+
+                        <div id="${collapseId}" class="collapse mt-2">
+                            <div class="alert alert-info mb-0">
+                                ${q.commentOfCorrectAnswer}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
                     <div><b>${index + 1}. ${q.questionText}</b></div>
                     <div><i>Sizning javobingiz:</i> ${q.selectedAnswer}</div>
                     <div><i>To'g'ri javob:</i> ${q.correctAnswer}</div>
+                    ${commentBlock}
                 `;
 
-                container.appendChild(div);
+                container.appendChild(card);
             });
 
-            // 🔥 Открываем Bootstrap modal
             const modal = new bootstrap.Modal(
                 document.getElementById("detailsModal")
             );
+
             modal.show();
         })
         .catch(err => {
@@ -123,8 +152,6 @@ function loadDetails(testId) {
             alert("Test tafsilotlari yuklanmadi");
         });
 }
-
-
 
 function formatDate(dateStr) {
     return new Date(dateStr).toLocaleString();
