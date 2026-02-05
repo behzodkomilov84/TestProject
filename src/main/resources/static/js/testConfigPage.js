@@ -1,6 +1,7 @@
 const testMode = sessionStorage.getItem("testMode");
+let hardTopicIds = [];
 
-document.body.dataset.mode = testMode;
+document.body.dataset.testMode = testMode;
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -63,6 +64,9 @@ function resetTestConfig() {
 }
 
 function loadTopics(id) {
+
+    const mode = sessionStorage.getItem("testMode");
+
     fetch(`/api/tests/science/${id}/topics`)
         .then(r => r.json())
         .then(data => {
@@ -70,35 +74,41 @@ function loadTopics(id) {
             const box = document.getElementById("topicDropdown");
             box.innerHTML = "";
 
-            // HARD MODE — автоселект всех тем
-            if (testMode === "hard") {
+            // ==============================
+            // HARD MODE
+            // ==============================
+            if (mode === "hard") {
 
-                data.forEach(t => {
+                hardTopicIds = data.map(t => t.id);
 
-                    const hidden = document.createElement("input");
-                    hidden.type = "checkbox";
-                    hidden.value = t.id;
-                    hidden.checked = true;
-                    hidden.style.display = "none";
+                updateMax(hardTopicIds);   // ← теперь реально вызовется
+                updateTopicLabel();
 
-                    box.appendChild(hidden);
-                });
-
-                // сразу обновляем максимум
-                updateMax();
                 return;
             }
 
-            // обычный режим
+            // ==============================
+            // NORMAL MODES
+            // ==============================
             data.forEach(t => {
-                box.innerHTML += `
-                    <label>
-                      <input type="checkbox" value="${t.id}"
-                             onchange="updateMax(); updateTopicLabel()">
-                      ${t.name} (${t.questionCount} ta test)
-                    </label>
+
+                const label = document.createElement("label");
+
+                label.innerHTML = `
+                    <input type="checkbox" value="${t.id}">
+                    ${t.name} (${t.questionCount} ta test)
                 `;
+
+                const checkbox = label.querySelector("input");
+
+                checkbox.addEventListener("change", () => {
+                    updateMax();
+                    updateTopicLabel();
+                });
+
+                box.appendChild(label);
             });
+
         });
 }
 
@@ -119,9 +129,18 @@ function updateTopicLabel() {
         checked.length + " ta mavzu tanlandi";
 }
 
-function updateMax() {
-    const topicIds = [...document.querySelectorAll("#topicDropdown input:checked")]
-        .map(i => Number(i.value));
+function updateMax(forcedIds = null) {
+
+    let topicIds;
+
+    // hard mode
+    if (forcedIds) {
+        topicIds = forcedIds;
+    } else {
+        // normal mode
+        topicIds = [...document.querySelectorAll("#topicDropdown input:checked")]
+            .map(i => Number(i.value));
+    }
 
 
     if (topicIds.length === 0) {
@@ -132,12 +151,18 @@ function updateMax() {
     fetch("/api/tests/max", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({topicIds})
+        body: JSON.stringify({
+            topicIds,
+            testMode})
     })
-        .then(r => r.text())
+        .then(r => r.json())
         .then(max => {
             document.getElementById("max").innerText = max;
+
             document.getElementById("limit").max = max;
+
+            document.getElementById("limit").value =
+                Math.min(document.getElementById("limit").value || max, max);
         });
 }
 
@@ -155,7 +180,7 @@ document.addEventListener("click", function (event) {
 });
 
 /*==================================================================*/
-        /*Testlar sonini tanlashda validatsiya qo'yish*/
+/*Testlar sonini tanlashda validatsiya qo'yish*/
 document.getElementById("limit").addEventListener("input", validateLimit);
 
 function validateLimit() {
@@ -177,25 +202,29 @@ function validateLimit() {
         error.innerText = "";
     }
 }
+
 /*==================================================================*/
 function startTest() {
 
     const mode = sessionStorage.getItem("testMode");
-    sessionStorage.setItem("testMode", mode);
 
-
+    let topicIds;
     // получаем выбранные темы и лимит
-    const topicIds = [...document.querySelectorAll("#topicDropdown input:checked")]
-        .map(i => Number(i.value));
+    if (mode === "hard") {
+        topicIds = hardTopicIds;
+    }else {
+        topicIds = [...document.querySelectorAll("#topicDropdown input:checked")]
+            .map(i => Number(i.value));
+    }
     const limit = Number(document.getElementById("limit").value);
     const timeValue = Number(document.getElementById("time").value);
 
-    if(topicIds.length === 0){
+    if (topicIds.length === 0) {
         alert("Mavzu tanlang!");
         return;
     }
 
-    if(limit <= 0){
+    if (limit <= 0) {
         alert("Test sonini kiriting");
         return;
     }
@@ -204,7 +233,8 @@ function startTest() {
     sessionStorage.setItem("topicIds", JSON.stringify(topicIds));
     sessionStorage.setItem("limit", limit);
     sessionStorage.setItem("time", timeValue);
+    sessionStorage.setItem("testMode", mode);
 
-    // Переходим на страницу теста
+    // 👉 просто переход
     window.location.href = "/testSession";
 }

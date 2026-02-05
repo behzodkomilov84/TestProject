@@ -21,6 +21,7 @@ const testState = {
 //                DOMContentLoaded
 //==============================================================
 document.addEventListener("DOMContentLoaded", () => {
+
     if (testState.mode !== "practice") {
         startTimer(testState.time);
     } else {
@@ -39,7 +40,11 @@ document.addEventListener("DOMContentLoaded", () => {
     fetch("/api/test-session/start", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({topicIds: testState.topicIds, limit: testState.limit})
+        body: JSON.stringify({
+            topicIds: testState.topicIds,
+            limit: testState.limit,
+            mode: testState.mode
+        })
     })
         .then(r => r.json())
         .then(data => {
@@ -62,8 +67,6 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("questions").innerHTML = "<p class='empty'>❌ Ошибка загрузки теста</p>";
         });
 
-    // Запускаем таймер
-    startTimer(testState.time);
 });
 
 function setupModeLabel() {

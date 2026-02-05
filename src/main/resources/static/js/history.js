@@ -1,9 +1,14 @@
 document.addEventListener("DOMContentLoaded", () => loadHistory(0));
 
 const pageSize = 7;
+let currentPage = 0;
 
 function loadHistory(page) {
-    fetch(`/api/test-session/history?page=${page}&size=${pageSize}`)
+
+    currentPage = safePage(page);
+
+
+    fetch(`/api/test-session/history?page=${currentPage}&size=${pageSize}`)
         .then(r => {
             if (!r.ok) {
                 throw new Error("HTTP error: " + r.status);
@@ -68,14 +73,18 @@ function renderPagination(data) {
     const prev = document.createElement("li");
     prev.className = "page-item " + (data.first ? "disabled" : "");
     prev.innerHTML = `<a class="page-link" href="#">Previous</a>`;
-    prev.onclick = () => !data.first && loadHistory(data.number - 1);
+    prev.onclick = () => {
+
+        if (!data.first)
+            loadHistory(safePage(data.number) - 1);
+    }
     pagination.appendChild(prev);
 
     for (let i = 0; i < data.totalPages; i++) {
         const li = document.createElement("li");
         li.className = "page-item " + (i === data.number ? "active" : "");
         li.innerHTML = `<a class="page-link" href="#">${i + 1}</a>`;
-        li.onclick = () => loadHistory(i);
+        li.onclick = () => loadHistory(safePage(i));
         pagination.appendChild(li);
     }
 
@@ -83,7 +92,10 @@ function renderPagination(data) {
     const next = document.createElement("li");
     next.className = "page-item " + (data.last ? "disabled" : "");
     next.innerHTML = `<a class="page-link" href="#">Next</a>`;
-    next.onclick = () => !data.last && loadHistory(data.number + 1);
+    next.onclick = () => {
+        if (!data.last)
+            loadHistory(safePage(data.number) + 1);
+    }
     pagination.appendChild(next);
 }
 
@@ -133,8 +145,8 @@ function loadDetails(testId) {
 
                 card.innerHTML = `
                     <div><b>${index + 1}. ${q.questionText}</b></div>
-                    <div><i>Sizning javobingiz:</i> ${q.selectedAnswer}</div>
-                    <div><i>To'g'ri javob:</i> ${q.correctAnswer}</div>
+                    <div><i><b>Sizning javobingiz:</b></i> ${q.selectedAnswer}</div>
+                    <div><i><b>To'g'ri javob:</b></i> ${q.correctAnswer}</div>
                     ${commentBlock}
                 `;
 
@@ -155,4 +167,9 @@ function loadDetails(testId) {
 
 function formatDate(dateStr) {
     return new Date(dateStr).toLocaleString();
+}
+
+function safePage(page) {
+    const n = Number(page);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
 }

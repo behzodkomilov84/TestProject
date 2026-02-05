@@ -214,3 +214,7 @@ input.error {
 body[data-mode="practice"] #timeSection {
     display: none;
 }
+
+body[data-mode="hard"] #topicSection {
+    display: none; /* скрываем выбор темы, но updateMax() всё равно срабатывает */
+}

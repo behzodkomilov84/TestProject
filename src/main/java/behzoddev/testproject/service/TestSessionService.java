@@ -1,11 +1,9 @@
 package behzoddev.testproject.service;
 
-import behzoddev.testproject.dao.AnswerRepository;
-import behzoddev.testproject.dao.QuestionRepository;
-import behzoddev.testproject.dao.TestSessionQuestionRepository;
-import behzoddev.testproject.dao.TestSessionRepository;
+import behzoddev.testproject.dao.*;
 import behzoddev.testproject.dto.*;
 import behzoddev.testproject.entity.*;
+import behzoddev.testproject.entity.compositeKey.UserQuestionKey;
 import behzoddev.testproject.mapper.QuestionMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,6 +17,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -30,9 +29,11 @@ public class TestSessionService {
     private final AnswerRepository answerRepository;
     private final QuestionMapper questionMapper;
     private final TestSessionRepository testSessionRepository;
+    private final UserQuestionStatsRepository userQuestionStatsRepository;
+
 
     @Transactional
-    public StartTestResponseDto startTest(User user, List<Long> topicIds, int limit) {
+    public StartTestResponseDto startTest(User user, List<Long> topicIds, int limit, String mode) {
 
         // 1️⃣ создаём сессию
         TestSession session = new TestSession();
@@ -41,12 +42,20 @@ public class TestSessionService {
         testSessionRepository.save(session);
 
         // 2️⃣ получаем вопросы
-        List<Question> questions = questionRepository.findRandomQuestionsByTopicIds(topicIds);
+        List<Question> questions;
+
+        if ("hard".equals(mode)) {
+            questions = questionRepository.findHardForUser(user.getId(), topicIds);
+        } else {
+            questions = questionRepository.findRandomQuestionsByTopicIds(topicIds);
+        }
+
 
         Collections.shuffle(questions);
         questions = questions.stream().limit(limit).toList();
-
-        List<QuestionDto> questionDtoListWithShuffledAnswers = questionMapper.mapQuestionListToQuestionDtoList(questions).stream()
+        // 3️⃣ возвращаем вопросы с перемешанными ответами
+        List<QuestionDto> questionDtoListWithShuffledAnswers = questionMapper
+                .mapQuestionListToQuestionDtoList(questions).stream()
                 .map(dto -> {
                     List<AnswerDto> answerDtoList = dto.answers();
 
@@ -55,7 +64,7 @@ public class TestSessionService {
                     return new QuestionDto(dto.id(), dto.questionText(), answerDtoList);
                 }).toList();
 
-        // 3️⃣ возвращаем ID + вопросы
+        // возвращаем ID + вопросы
         return new StartTestResponseDto(
                 session.getId(),
                 questionDtoListWithShuffledAnswers
@@ -103,6 +112,20 @@ public class TestSessionService {
             boolean isCorrect = Boolean.TRUE.equals(selected.getIsTrue());
             if (isCorrect) correct++;
 
+            // ===== ПЕРСОНАЛЬНАЯ СЛОЖНОСТЬ =====
+            UserQuestionKey key = new UserQuestionKey(user.getId(), q.getId());
+            UserQuestionStats userQuestionStats = userQuestionStatsRepository.findById(key)
+                    .orElse(UserQuestionStats.builder()
+                            .id(key)
+                            .totalAttempts(0)
+                            .correctAttempts(0)
+                            .build());
+
+            userQuestionStats.setTotalAttempts(userQuestionStats.getTotalAttempts() + 1);
+            if (isCorrect) userQuestionStats.setCorrectAttempts(userQuestionStats.getCorrectAttempts() + 1);
+            userQuestionStatsRepository.save(userQuestionStats);
+
+            // ===== СЕССИЯ =====
             TestSessionQuestion testSessionQuestion =
                     TestSessionQuestion.builder()
                             .testSession(session)
@@ -127,9 +150,19 @@ public class TestSessionService {
 
     // ✅ ИСТОРИЯ ТЕСТОВ
     @Transactional(readOnly = true)
-    public Page<TestSessionHistoryDto> getHistory(User user, Pageable pageable) {
+    public PageResponseDto<TestSessionHistoryDto> getHistory(User user, Pageable pageable) {
 
-        return testSessionRepository.findByUserId(user.getId(), pageable);
+        Page<TestSessionHistoryDto> pageData = testSessionRepository.findByUserId(user.getId(), pageable);
+
+        List<TestSessionHistoryDto> dtos = pageData.getContent();
+
+        return new PageResponseDto<>(
+                dtos,
+                pageData.getTotalPages(),
+                pageData.getNumber(),
+                pageData.isFirst(),
+                pageData.isLast()
+        );
 
     }
 

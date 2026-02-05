@@ -1,12 +1,26 @@
-create table test_session_questions
+CREATE TABLE test_session_questions
 (
-    id              bigint auto_increment primary key,
-    test_session_id bigint not null,
-    question_id     bigint not null,
-    selected_answer_id bigint null,
-    is_correct      BOOLEAN not null,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
 
-    foreign key (test_session_id) references test_sessions(id),
-    foreign key (question_id) references questions(id),
-    foreign key (selected_answer_id) references answers(id)
+    test_session_id BIGINT NOT NULL,
+    question_id BIGINT NOT NULL,
+    selected_answer_id BIGINT NULL,
+
+    is_correct BOOLEAN NOT NULL,
+
+    CONSTRAINT fk_tsq_session
+        FOREIGN KEY (test_session_id)
+            REFERENCES test_sessions(id)
+            ON DELETE CASCADE,
+
+    CONSTRAINT fk_tsq_question
+        FOREIGN KEY (question_id)
+            REFERENCES questions(id)
+            ON DELETE CASCADE,
+
+    CONSTRAINT fk_tsq_selected_answer
+        FOREIGN KEY (selected_answer_id)
+            REFERENCES answers(id)
+            ON DELETE SET NULL
 );
+

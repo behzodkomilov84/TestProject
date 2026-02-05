@@ -3,11 +3,13 @@ package behzoddev.testproject.controller.api;
 import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
+import behzoddev.testproject.dto.MaxRequestDto;
 import behzoddev.testproject.dto.ScienceIdAndNameDto;
-import behzoddev.testproject.dto.TopicIdsDto;
 import behzoddev.testproject.dto.TopicWithQuestionCountDto;
+import behzoddev.testproject.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,16 +37,24 @@ public class TestConfigController {
     @GetMapping("/science/{scienceId}/topics")
     @PreAuthorize("isAuthenticated()")
     public List<TopicWithQuestionCountDto> getTopics(@PathVariable Long scienceId) {
-        List<TopicWithQuestionCountDto> topicsWithQuestionCount =
-                topicRepository.getTopicsWithQuestionCount(scienceId);
-        return topicsWithQuestionCount;
+        return topicRepository.getTopicsWithQuestionCount(scienceId);
     }
 
     // 3. Max questions
     @PostMapping("/max")
     @PreAuthorize("isAuthenticated()")
-    public int getMax(@RequestBody TopicIdsDto dto) {
-        return questionRepository.countByTopicIds(dto.topicIds());
+    public int getMax(
+            @RequestBody MaxRequestDto req,
+            @AuthenticationPrincipal User user
+    ) {
+        if ("hard".equals(req.testMode())) {
+
+            return questionRepository
+                    .findHardForUser(user.getId(), req.topicIds())
+                    .size();
+        }
+
+        return questionRepository.countByTopicIds(req.topicIds());
     }
 
 

@@ -27,7 +27,10 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function loadHistory(page) {
-    fetch(`/api/profile/history?page=${page}&size=${pageSize}`)
+
+    currentPage = safePage(page);
+
+    fetch(`/api/profile/history?page=${currentPage}&size=${pageSize}`)
         .then(r => r.json())
         .then(data => {
 
@@ -62,7 +65,7 @@ function renderPagination(pageData) {
     const prev = document.createElement("li");
     prev.className = "page-item " + (pageData.first ? "disabled" : "");
     prev.innerHTML = `<a class="page-link" href="#">Previous</a>`;
-    prev.onclick = () => !pageData.first && loadHistory(pageData.number - 1);
+    prev.onclick = () => !pageData.first && loadHistory(safePage(pageData.number) - 1);
     pagination.appendChild(prev);
 
     // Pages
@@ -70,7 +73,7 @@ function renderPagination(pageData) {
         const li = document.createElement("li");
         li.className = "page-item " + (i === pageData.number ? "active" : "");
         li.innerHTML = `<a class="page-link" href="#">${i + 1}</a>`;
-        li.onclick = () => loadHistory(i);
+        li.onclick = () => loadHistory(safePage(i));
         pagination.appendChild(li);
     }
 
@@ -78,7 +81,7 @@ function renderPagination(pageData) {
     const next = document.createElement("li");
     next.className = "page-item " + (pageData.last ? "disabled" : "");
     next.innerHTML = `<a class="page-link" href="#">Next</a>`;
-    next.onclick = () => !pageData.last && loadHistory(pageData.number + 1);
+    next.onclick = () => !pageData.last && loadHistory(safePage(pageData.number) + 1);
     pagination.appendChild(next);
 }
 
@@ -187,3 +190,8 @@ function changePassword() {
         });
 }
 //=========================================================
+
+function safePage(page) {
+    const n = Number(page);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+}

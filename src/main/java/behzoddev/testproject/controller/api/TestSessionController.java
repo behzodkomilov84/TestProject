@@ -31,7 +31,7 @@ public class TestSessionController {
     @PostMapping("/start")
     public StartTestResponseDto start(@RequestBody StartTestDto request,
                                       @AuthenticationPrincipal User user) {
-        return testSessionService.startTest(user, request.topicIds(), request.limit());
+        return testSessionService.startTest(user, request.topicIds(), request.limit(), request.mode());
     }
 
     // завершение теста
@@ -45,7 +45,7 @@ public class TestSessionController {
     }
 
     @GetMapping("/history")
-    public Page<TestSessionHistoryDto> getHistory(
+    public PageResponseDto<TestSessionHistoryDto> getHistory(
             @AuthenticationPrincipal User user,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "7") int size

@@ -45,7 +45,7 @@ public class ProfileController {
 
     // 3️⃣ История тестов
     @GetMapping("/history")
-    public Page<TestHistoryDto> getHistory(@AuthenticationPrincipal User user,
+    public PageResponseDto<TestHistoryDto> getHistory(@AuthenticationPrincipal User user,
                                            Pageable pageable) {
 
         return profileService.getHistory(user, pageable);

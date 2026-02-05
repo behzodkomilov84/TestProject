@@ -79,4 +79,34 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             Long topicId,
             String questionText
     );
+
+    @Query("""
+    SELECT q
+    FROM Question q
+    LEFT JOIN UserQuestionStats s
+        ON q.id = s.id.questionId
+        AND s.id.userId = :userId
+    WHERE q.topic.id IN :topicIds
+    AND (
+        s IS NULL
+        OR (
+            s.totalAttempts > 0
+            AND (s.correctAttempts * 1.0 / s.totalAttempts) < 0.8
+        )
+    )
+    ORDER BY
+        COALESCE(
+            1.0 - (
+                s.correctAttempts * 1.0 /
+                CASE
+                    WHEN s.totalAttempts = 0 OR s.totalAttempts IS NULL
+                    THEN 1
+                    ELSE s.totalAttempts
+                END
+            ),
+            0.7
+        ) DESC
+""")
+    List<Question> findHardForUser(Long userId, List<Long> topicIds);
+
 }

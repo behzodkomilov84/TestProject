@@ -2,7 +2,6 @@ package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.TestSessionRepository;
 import behzoddev.testproject.dto.*;
-import behzoddev.testproject.entity.TestSession;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.mapper.TestSessionMapper;
@@ -56,8 +55,19 @@ public class ProfileService {
     }
 
     @Transactional(readOnly = true)
-    public Page<TestHistoryDto> getHistory(User user, Pageable pageable) {
+    public PageResponseDto<TestHistoryDto> getHistory(User user, Pageable pageable) {
 
-        return testSessionRepository.getPageableTestHistoryDtoByUser(user, pageable);
+        Page<TestHistoryDto> pageData = testSessionRepository.getPageableTestHistoryDtoByUser(user, pageable);
+
+        List<TestHistoryDto> dtos = pageData.getContent();
+
+        return new PageResponseDto<>(
+                dtos,
+                pageData.getTotalPages(),
+                pageData.getNumber(),
+                pageData.isFirst(),
+                pageData.isLast()
+        );
+
     }
 }

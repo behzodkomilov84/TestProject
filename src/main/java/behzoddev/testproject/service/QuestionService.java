@@ -3,11 +3,11 @@ package behzoddev.testproject.service;
 import behzoddev.testproject.dao.AnswerRepository;
 import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.TopicRepository;
+import behzoddev.testproject.dao.UserQuestionStatsRepository;
 import behzoddev.testproject.dto.*;
 import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Topic;
-import behzoddev.testproject.exception.ErrorResponse;
 import behzoddev.testproject.mapper.AnswerMapper;
 import behzoddev.testproject.mapper.QuestionMapper;
 import behzoddev.testproject.validation.Validation;
@@ -15,8 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,12 +62,6 @@ public class QuestionService {
 
         return questionSaveDtoList;
     }
-
-    /*@Transactional(readOnly = true)
-    public List<QuestionDto> getQuestionDtoListByTopicId(Long topicId) {
-        List<Question> questions = questionRepository.getQuestionsByTopicId(topicId);
-        return questionMapper.mapQuestionListToQuestionDtoList(questions);
-    }*/
 
     @Transactional(readOnly = true)
     public boolean isQuestionWithAnswersExists(
