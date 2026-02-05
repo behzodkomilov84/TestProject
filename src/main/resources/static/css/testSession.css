@@ -76,7 +76,7 @@ body {
 }
 
 .questions-container{
-    padding-top: 35px;
+    padding-top: 8px;
 }
 
 .question-block {
@@ -337,4 +337,31 @@ body.test-started .question-block {
 
 .modal-footer button:hover {
     background: #4338ca;
+}
+
+.mode-label {
+    text-align: center;
+    font-weight: bold;
+    padding: 8px;
+    margin-bottom: 10px;
+    margin-top: 115px;
+    border-radius: 8px;
+}
+
+/* PRACTICE */
+body[data-mode="practice"] .mode-label {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+/* EXAM */
+body[data-mode="exam"] .mode-label {
+    background: #fff3e0;
+    color: #ef6c00;
+}
+
+/* HARD */
+body[data-mode="hard"] .mode-label {
+    background: #ffebee;
+    color: #c62828;
 }

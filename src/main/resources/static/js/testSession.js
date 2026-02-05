@@ -2,6 +2,8 @@
 //            Состояние теста
 //==============================================================
 const testState = {
+    mode: sessionStorage.getItem("testMode"),
+
     topicIds: JSON.parse(sessionStorage.getItem("topicIds") || "[]"),
     limit: Number(sessionStorage.getItem("limit") || 10),
     time: Number(sessionStorage.getItem("time") || 10),
@@ -19,11 +21,19 @@ const testState = {
 //                DOMContentLoaded
 //==============================================================
 document.addEventListener("DOMContentLoaded", () => {
+    if (testState.mode !== "practice") {
+        startTimer(testState.time);
+    } else {
+        document.getElementById("timer").style.display = "none";
+    }
+
     if (testState.topicIds.length === 0) {
         alert("Нет выбранных тем. Вернитесь на предыдущую страницу.");
         window.location.href = "/testConfigPage";
         return;
     }
+
+    setupModeLabel();
 
     // Запрашиваем тест сразу после загрузки страницы
     fetch("/api/test-session/start", {
@@ -55,6 +65,24 @@ document.addEventListener("DOMContentLoaded", () => {
     // Запускаем таймер
     startTimer(testState.time);
 });
+
+function setupModeLabel() {
+
+    const label = document.getElementById("modeLabel");
+
+    const modeNames = {
+        practice: "📝 PRACTICE MODE",
+        exam: "⏱ EXAM MODE",
+        hard: "🔥 HARD MODE"
+    };
+
+    const mode = testState.mode;
+
+    label.innerText = modeNames[mode] || mode.toUpperCase();
+
+    // ключевая строка — режим в body для CSS
+    document.body.dataset.mode = mode;
+}
 
 //==============================================================
 //                   Таймер
@@ -119,12 +147,13 @@ function renderQuestions(questions) {
                 `).join("")}
             </ul>
             <div class="actions-bottom">
+                ${testState.mode === "practice" ? `
                 <button class="action-btn comment"
-                        data-comment="${encodeURIComponent(correctAnswer?.commentary || '')}"
-                        onclick="openCommentModal(this)"
-                        title="Izohni ko‘rish">
-                    💬
-                </button>
+                    data-comment="${encodeURIComponent(correctAnswer?.commentary || '')}"
+                    onclick="openCommentModal(this)">
+                💬
+                </button>` : ""}
+
                 <button onclick="goToPreviousQuestion()">AVVALGI</button>
                 <button onclick="goToNextQuestion()">KEYINGI</button>
                 <button onclick="finishTest()">Test Natijasi</button>
@@ -208,13 +237,14 @@ function startTest() {
     document.body.classList.remove("no-progress");
 
     const timerEl = document.getElementById("timer");
-    if (timerEl) {
-        timerEl.style.display = "flex";   // 🔥 ВАЖНО
-        timerEl.classList.remove("danger");
+
+    if (testState.mode === "practice") {
+        timerEl.style.display = "none";
+    } else {
+        timerEl.style.display = "flex";
+        startTimer(testState.time);
     }
 
-    // ✅ ПЕРЕЗАПУСК ТАЙМЕРА
-    startTimer(testState.time);
 
     renderQuestions(testState.questions);
 
@@ -310,7 +340,11 @@ function showResult(result) {
             <div class="result-actions">
                 <button onclick="restartTest()">🔄 Qayta boshlash</button>
                 <button onclick="goBack()">⬅ Qayta sozlash</button>
-                <button onclick="showWrongAnswers()">❌ Xatolarni ko‘rish</button>
+                
+                ${testState.mode === "practice" 
+                ? `<button onclick="showWrongAnswers()">❌ Xatolarni ko‘rish</button>`
+                : ""}
+
             </div>
         </div>
     `;

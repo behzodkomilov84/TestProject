@@ -1,3 +1,22 @@
+const testMode = sessionStorage.getItem("testMode");
+
+document.body.dataset.mode = testMode;
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    const timeSection = document.getElementById("timeSection");
+    const topicSection = document.getElementById("topicSection");
+
+    if (testMode === "practice") {
+        timeSection.style.display = "none";
+    }
+
+    if (testMode === "hard") {
+        topicSection.style.display = "none";
+    }
+
+});
+
 fetch("/api/tests/sciences")
     .then(r => r.json())
     .then(data => {
@@ -47,9 +66,30 @@ function loadTopics(id) {
     fetch(`/api/tests/science/${id}/topics`)
         .then(r => r.json())
         .then(data => {
+
             const box = document.getElementById("topicDropdown");
             box.innerHTML = "";
 
+            // HARD MODE — автоселект всех тем
+            if (testMode === "hard") {
+
+                data.forEach(t => {
+
+                    const hidden = document.createElement("input");
+                    hidden.type = "checkbox";
+                    hidden.value = t.id;
+                    hidden.checked = true;
+                    hidden.style.display = "none";
+
+                    box.appendChild(hidden);
+                });
+
+                // сразу обновляем максимум
+                updateMax();
+                return;
+            }
+
+            // обычный режим
             data.forEach(t => {
                 box.innerHTML += `
                     <label>
@@ -139,6 +179,11 @@ function validateLimit() {
 }
 /*==================================================================*/
 function startTest() {
+
+    const mode = sessionStorage.getItem("testMode");
+    sessionStorage.setItem("testMode", mode);
+
+
     // получаем выбранные темы и лимит
     const topicIds = [...document.querySelectorAll("#topicDropdown input:checked")]
         .map(i => Number(i.value));
