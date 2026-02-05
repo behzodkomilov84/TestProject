@@ -89,21 +89,24 @@ function renderPagination(data) {
 
 function loadDetails(testId) {
     fetch(`/api/test-session/${testId}`)
-        .then(r => r.json())
+        .then(r => {
+            if (!r.ok) throw new Error("Failed to load details");
+            return r.json();
+        })
         .then(data => {
             const container = document.getElementById("detailsContent");
             container.innerHTML = "";
 
-            data.forEach(q => {
+            data.forEach((q, index) => {
                 const div = document.createElement("div");
                 div.className =
-                    "question-card mb-3 p-2 border rounded " +
+                    "question-card mb-3 p-3 border rounded " +
                     (q.correct ? "border-success" : "border-danger");
 
                 div.innerHTML = `
-                    <b>${q.questionText}</b><br>
-                    <i>Sizning javobingiz:</i> ${q.selectedAnswer}<br>
-                    <i>To'g'ri javob:</i> ${q.correctAnswer}
+                    <div><b>${index + 1}. ${q.questionText}</b></div>
+                    <div><i>Sizning javobingiz:</i> ${q.selectedAnswer}</div>
+                    <div><i>To'g'ri javob:</i> ${q.correctAnswer}</div>
                 `;
 
                 container.appendChild(div);
@@ -116,10 +119,11 @@ function loadDetails(testId) {
             modal.show();
         })
         .catch(err => {
-            console.error("Details load error:", err);
-            alert("Tafsilotlar yuklanmadi");
+            console.error("❌ Details load error:", err);
+            alert("Test tafsilotlari yuklanmadi");
         });
 }
+
 
 
 function formatDate(dateStr) {
