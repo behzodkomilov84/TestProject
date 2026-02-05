@@ -37,7 +37,7 @@ function loadHistory(page) {
                     <td>${test.percent}%</td>
                     <td>${test.durationSec} sec.</td>
                     <td>
-                        <button onclick="loadDetails(${test.testSessionId})">
+                        <button class="btn btn-sm btn-primary" onclick="loadDetails(${test.testSessionId})">
                             Batafsil...
                         </button>
                     </td>
@@ -71,15 +71,6 @@ function renderPagination(data) {
     prev.onclick = () => !data.first && loadHistory(data.number - 1);
     pagination.appendChild(prev);
 
-    // Pages
-   /* for (let i = 0; i < data.totalPages; i++) {
-        const btn = document.createElement("button");
-        btn.textContent = i + 1;
-        btn.disabled = i === data.number;
-        btn.onclick = () => loadHistory(i);
-        pagination.appendChild(btn);
-    }*/
-
     for (let i = 0; i < data.totalPages; i++) {
         const li = document.createElement("li");
         li.className = "page-item " + (i === data.number ? "active" : "");
@@ -105,23 +96,31 @@ function loadDetails(testId) {
 
             data.forEach(q => {
                 const div = document.createElement("div");
-                div.className = "question-card " + (q.correct ? "correct" : "wrong");
+                div.className =
+                    "question-card mb-3 p-2 border rounded " +
+                    (q.correct ? "border-success" : "border-danger");
 
                 div.innerHTML = `
                     <b>${q.questionText}</b><br>
                     <i>Sizning javobingiz:</i> ${q.selectedAnswer}<br>
                     <i>To'g'ri javob:</i> ${q.correctAnswer}
                 `;
+
                 container.appendChild(div);
             });
 
-            document.getElementById("details").classList.remove("hidden");
+            // 🔥 Открываем Bootstrap modal
+            const modal = new bootstrap.Modal(
+                document.getElementById("detailsModal")
+            );
+            modal.show();
+        })
+        .catch(err => {
+            console.error("Details load error:", err);
+            alert("Tafsilotlar yuklanmadi");
         });
 }
 
-function closeDetails() {
-    document.getElementById("details").classList.add("hidden");
-}
 
 function formatDate(dateStr) {
     return new Date(dateStr).toLocaleString();
