@@ -202,6 +202,8 @@ function showQuestion(index) {
         behavior: 'smooth',
         block: 'start'
     });
+
+    focusFirstAnswer();
 }
 
 function goToNextQuestion() {
@@ -469,6 +471,26 @@ function repeatWrongOnly() {
     renderQuestions(wrongQuestions);
     showQuestion(0);
     focusFirstAnswer();
+}
+
+function focusFirstAnswer() {
+
+    // берём активный вопрос
+    const activeQuestion = getActiveQuestion();
+
+    if (!activeQuestion) return;
+
+    // ищем первый radio
+    const firstRadio = activeQuestion.querySelector(
+        'input[type="radio"]'
+    );
+
+    if (!firstRadio) return;
+
+    // небольшой defer — чтобы гарантировать готовность DOM
+    requestAnimationFrame(() => {
+        firstRadio.focus();
+    });
 }
 
 function getWrongQuestions() {
