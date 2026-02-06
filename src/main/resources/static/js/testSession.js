@@ -593,16 +593,19 @@ function closeCommentModal() {
 
 window.addEventListener("beforeunload", () => {
 
-    if (!testState.finishedAt && testState.testSessionId) {
+    if (!testState.finished && testState.testSessionId) {
 
-        const payload = new Blob(
-            [JSON.stringify({ testSessionId: testState.testSessionId })],
-            { type: "application/json" }
-        );
-
-        navigator.sendBeacon("/api/test-session/cancel", payload);
+        fetch("/api/test-session/cancel", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                testSessionId: testState.testSessionId
+            }),
+            keepalive: true
+        });
     }
 });
+
 
 
 
