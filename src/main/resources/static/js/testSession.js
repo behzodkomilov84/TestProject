@@ -591,6 +591,19 @@ function closeCommentModal() {
     document.getElementById("commentModal").classList.add("hidden");
 }
 
+window.addEventListener("beforeunload", () => {
+
+    if (!testState.finishedAt && testState.testSessionId) {
+
+        const payload = new Blob(
+            [JSON.stringify({ testSessionId: testState.testSessionId })],
+            { type: "application/json" }
+        );
+
+        navigator.sendBeacon("/api/test-session/cancel", payload);
+    }
+});
+
 
 
 

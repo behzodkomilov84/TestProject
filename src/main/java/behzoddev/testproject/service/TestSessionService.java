@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 
@@ -210,5 +211,17 @@ public class TestSessionService {
         long totalDuration = sessions.stream().mapToLong(TestSession::getDurationSec).sum();
 
         return new TestStatsDto(totalTests, avgPercent, best, worst, totalDuration);
+    }
+
+    @Transactional
+    public void cancelTest(Map<String, Long> payload, User user) {
+        Long testSessionId = payload.get("testSessionId");
+
+        TestSession session = testSessionRepository.findById(testSessionId)
+                .orElse(null);
+
+        if (session != null && session.getUser().getId().equals(user.getId())) {
+            testSessionRepository.delete(session);
+        }
     }
 }
