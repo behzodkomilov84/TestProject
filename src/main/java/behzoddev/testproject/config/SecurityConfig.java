@@ -20,7 +20,7 @@ import java.nio.charset.StandardCharsets;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
@@ -52,6 +52,14 @@ public class SecurityConfig {
                         .requestMatchers("/api/**")
                         .hasAnyAuthority("ROLE_OWNER",
                                 "ROLE_ADMIN")
+
+                        .requestMatchers("/pupil",
+                                         "/pupil/**")
+                        .hasAnyAuthority("ROLE_OWNER", "ROLE_USER")
+
+                        .requestMatchers("/teacher",
+                                         "/teacher/**")
+                        .hasAnyAuthority("ROLE_OWNER", "ROLE_ADMIN")
 
                         .anyRequest().authenticated()
                 )
