@@ -6,12 +6,10 @@
     /* СТИЛИ ДЛЯ СТРАНИЦЫ УПРАВЛЕНИЯ ПРЕДМЕТАМИ */
 
     /* Основные стили страницы */
-html, body {
-    height: 90vh;
-    margin: 0;
-}
 
 body {
+    height: 90vh;
+    margin-top: 85px;
     background: #f4f6f9;
     color: #333;
     font-family: Arial, sans-serif;

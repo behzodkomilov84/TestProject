@@ -1,4 +1,3 @@
-/*
 package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.*;
@@ -9,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -21,9 +21,9 @@ public class TeacherService {
     private final AssignmentRepository assignmentRepository;
 
     @Transactional
-    public Group createGroup(User teacher, String name) {
+    public TeacherGroup createGroup(User teacher, String name) {
 
-        Group g = Group.builder()
+        TeacherGroup g = TeacherGroup.builder()
                 .name(name)
                 .teacher(teacher)
                 .build();
@@ -34,7 +34,7 @@ public class TeacherService {
     @Transactional
     public void invitePupil(Long groupId, User pupil) {
 
-        Group group = groupRepository.findById(groupId).orElseThrow();
+        TeacherGroup group = groupRepository.findById(groupId).orElseThrow();
 
         GroupInvite invite = GroupInvite.builder()
                 .group(group)
@@ -59,7 +59,7 @@ public class TeacherService {
                 QuestionSet.builder()
                         .name(name)
                         .teacher(teacher)
-                        .questions(questions)
+                        .questions((Set<Question>) questions)
                         .build()
         );
     }
@@ -74,11 +74,10 @@ public class TeacherService {
         Assignment assignment = Assignment.builder()
                 .questionSet(set)
                 .group(group)
-                .createdAt(LocalDateTime.now())
+                .assignedAt(LocalDateTime.now())
                 .build();
 
         assignmentRepository.save(assignment);
     }
 
 }
-*/

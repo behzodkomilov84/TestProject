@@ -18,7 +18,7 @@
     </div> <!-- ☰ burger -->
     <button class="burger" onclick="toggleMenu()">☰</button>
 
-    <nav id="nav-menu">
+    <nav id="nav-menu" class="nav-items">
         <a href="/index">Bosh sahifa</a>
         <a href="/history">Statistika</a>
         <a href="/profile">Profil</a>
@@ -29,9 +29,21 @@
            class="owner-link">Owner Panel</a>
 
         <!-- Admin Panel доступен только OWNER и ADMIN -->
-        <a href="/science"
-           sec:authorize="hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')"
-           class="admin-link">Admin Panel</a>
+        <!-- Admin dropdown (OWNER + ADMIN) -->
+        <div class="dropdown"
+             sec:authorize="hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')">
+
+            <button class="dropbtn">
+                Admin Panel ▾
+            </button>
+
+            <div class="dropdown-content">
+                <a href="/science">Менеджер теста</a>
+                <a href="/teacher">Группа</a>
+            </div>
+
+        </div>
+
 
         <a href="/logout">Chiqish</a>
     </nav>

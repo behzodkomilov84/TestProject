@@ -34,3 +34,10 @@ document.addEventListener("click", e => {
         menu.classList.remove("active");
     }
 });
+
+document.querySelectorAll(".dropbtn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        btn.parentElement.classList.toggle("active");
+    });
+});
+
