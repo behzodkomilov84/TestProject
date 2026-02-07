@@ -14,7 +14,8 @@ const testState = {
     currentIndex: 0,
     answers: new Map(),
     startedAt: null,
-    finishedAt: null
+    finishedAt: null,
+    finished: false
 };
 
 //==============================================================
@@ -257,6 +258,8 @@ function startTest() {
 }
 
 function finishTest() {
+
+    testState.finished = true;
 
     stopTimer(); // 🔴 ВАЖНО
 
