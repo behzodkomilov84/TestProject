@@ -133,12 +133,38 @@ function replaceWithSpan(input, groupId, text) {
     input.replaceWith(span);
 }
 
-function createGroup() {
+/*function createGroup() {
     fetch("/api/teacher/create-group", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({name: groupName.value})
     }).then(loadGroups);
+}*/
+function createGroup() {
+    const nameInput = document.getElementById("groupName");
+    const name = nameInput.value.trim();
+
+    if (!name) return alert("Введите название группы");
+
+    fetch("/api/teacher/create-group", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name})
+    })
+        .then(res => {
+            if (!res.ok) throw new Error("Ошибка создания группы");
+
+            // Обновляем sidebar и select
+            loadGroups();       // обновляем список слева
+            loadGroupSelect();  // обновляем select справа
+
+            // очищаем input
+            nameInput.value = "";
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Ошибка при создании группы");
+        });
 }
 
 function deleteGroup(id) {
@@ -326,7 +352,7 @@ function saveSet() {
 
     if (!name || selectedMap.size === 0) {
 
-        alert("Name or questions missing");
+        alert("Введите имя и выберите хотя бы один вопрос");
         return;
     }
 
@@ -341,12 +367,21 @@ function saveSet() {
         .then(r => {
 
             if (!r.ok)
-                throw new Error();
+                throw new Error("Ошибка сохранения набора");
 
-            alert("Saved!");
-
+            // сбрасываем builder
             resetBuilder();
-        });
+
+            // обновляем select справа
+            loadSets();
+
+            // уведомляем пользователя
+            alert("Набор вопросов успешно сохранён!");
+        })
+        .catch(err => {
+        console.error(err);
+        alert("Ошибка при сохранении набора");
+    });
 }
 
 function updatePlaceholder() {
@@ -384,16 +419,19 @@ function resetBuilder() {
 }
 
 function loadSets() {
+    const setSelect = document.getElementById("setSelect");
+
     fetch("/api/teacher/questionsets")
         .then(r => r.json())
         .then(list => {
 
-            setSelect.innerHTML = "";
+            setSelect.innerHTML = `<option value="">--Testni tanlang--</option>`;
 
             list.forEach(s =>
                 setSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`
             );
-        });
+        })
+        .catch(err => console.error("Error loading sets:", err));
 }
 
 /* STUDENTS */
