@@ -4,6 +4,7 @@ import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dto.TopicIdAndNameDto;
 import behzoddev.testproject.dto.TopicNameDto;
+import behzoddev.testproject.dto.TopicWithQuestionCountDto;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.mapper.TopicMapper;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -56,5 +58,10 @@ public class TopicService {
         validation.textFieldMustNotBeEmpty(name);
 
         topicRepository.updateTopicName(id, name);
+    }
+
+    @Transactional
+    public List<TopicWithQuestionCountDto> getTopicsWithQuestionCount(Long scienceId) {
+        return topicRepository.getTopicsWithQuestionCount(scienceId);
     }
 }

@@ -7,11 +7,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <!-- Заголовок страницы -->
-    <title>Teacher Panel</title>
+    <title>Teacher Workspace</title>
 
     <!-- Подключение CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
-          integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <link rel="stylesheet" th:href="@{/css/navbar.css}">
     <link rel="stylesheet" th:href="@{/css/teacher.css}">
@@ -21,48 +20,117 @@
 
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-<header>
-    <h1>Teacher Dashboard</h1>
-</header>
+<div class="app-layout">
 
-<section class="panel">
+    <!-- LEFT SIDEBAR — GROUPS -->
+    <aside id="leftSidebar" class="sidebar">
 
-    <h2>Создать группу</h2>
-    <input id="groupName" placeholder="Название группы">
-    <button onclick="createGroup()">Создать</button>
+        <div class="sidebar-header">
+            <h6>Groups</h6>
+            <button onclick="toggleSidebar('leftSidebar')">⮜</button>
+        </div>
 
-</section>
+        <div class="sidebar-body">
 
-<section class="panel">
+            <div class="d-flex mb-2">
+                <input id="groupName" class="form-control me-1" placeholder="--Yangi guruh--">
+                <button class="btn btn-sm btn-primary" onclick="createGroup()">+</button>
+            </div>
 
-    <h2>Выбор вопросов</h2>
+            <ul id="groupList" class="list-group"></ul>
 
-    <div id="questions"></div>
+        </div>
 
-    <div class="counter">
-        Выбрано: <span id="counter">0</span>
-    </div>
+    </aside>
 
-    <input id="setName" placeholder="Название теста">
-    <button onclick="saveSet()">Сохранить набор</button>
+    <!-- MAIN WORKSPACE -->
+    <main class="workspace">
 
-</section>
+        <div class="workspace-header">
 
-<section class="panel">
+            <button onclick="toggleSidebar('leftSidebar')">☰ Groups</button>
 
-    <h2>Назначить тест группе</h2>
+            <h5>Question Builder</h5>
 
-    <select id="groupSelect"></select>
-    <select id="setSelect"></select>
+            <button onclick="toggleSidebar('rightSidebar')">Students ☰</button>
 
-    <button onclick="assignToGroup()">Назначить</button>
+        </div>
 
-</section>
+        <div class="workspace-body">
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
-        crossorigin="anonymous"></script>
+            <!-- TOP — QUESTION BROWSER -->
+            <div class="builder-top">
 
+                <div class="row mb-2">
+
+                    <div class="col">
+                        <select id="scienceSelect" class="form-select"></select>
+                    </div>
+
+                    <div class="col">
+                        <select id="topicSelect" class="form-select"></select>
+                    </div>
+
+                </div>
+
+                <div id="questions" class="question-box"></div>
+
+            </div>
+
+            <!-- BOTTOM — SELECTED QUESTIONS -->
+            <div class="builder-bottom">
+
+                <h6>Selected questions</h6>
+
+                <div id="selectedList" class="question-box">
+                    <div id="selectedPlaceholder"
+                         class="placeholder">
+                        Yangi ro'yxat shu yerda shakllanadi
+                    </div>
+                </div>
+
+                <div class="builder-footer">
+
+                    <div>Selected: <b id="counter">0</b></div>
+
+                    <div class="d-flex">
+                        <input id="setName" class="form-control me-2" placeholder="--Testlist nomi--">
+                        <button class="btn btn-success" onclick="saveSet()">Save</button>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- RIGHT SIDEBAR — STUDENTS -->
+    <aside id="rightSidebar" class="sidebar">
+
+        <div class="sidebar-header">
+            <h6>Students</h6>
+            <button onclick="toggleSidebar('rightSidebar')">⮞</button>
+        </div>
+
+        <div class="sidebar-body">
+
+            <div id="studentList"></div>
+
+            <hr>
+
+            <select id="groupSelect" class="form-select mb-2"></select>
+            <select id="setSelect" class="form-select mb-2"></select>
+
+            <button class="btn btn-warning w-100" onclick="assignToGroup()">
+                Assign Test
+            </button>
+
+        </div>
+
+    </aside>
+
+</div>
 <script th:src="@{/js/navbar.js}"></script>
 <script th:src="@{/js/teacher.js}"></script>
 </body>

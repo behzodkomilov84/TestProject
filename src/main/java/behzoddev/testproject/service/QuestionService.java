@@ -273,6 +273,14 @@ public class QuestionService {
 
         return questionMapper.mapQuestionListToQuestionDtoList(list);
     }
+
+    public List<ResponseQuestionTextDto> getQuestionsByTopic(Long topicId) {
+        // Преобразуем сущности Question в DTO
+        return questionRepository.findByTopicId(topicId)
+                .stream()
+                .map(q -> questionMapper.mapQuestionToResponseQuestionTextDto(q))
+                .toList();
+    }
 }
 
 

@@ -1,112 +1,452 @@
-const selected = new Set();
+const selectedMap = new Map();
 
 document.addEventListener("DOMContentLoaded", () => {
-    loadQuestions();
+
     loadGroups();
+    loadStudents();
+    loadSciences();
     loadSets();
+    loadGroupSelect();
+
+    document
+        .getElementById("scienceSelect")
+        ?.addEventListener("change", e => {
+
+            const id = e.target.value;
+
+            if (id) loadTopics(id);
+        });
+
+    updatePlaceholder();
 });
 
-function loadQuestions() {
+/* SIDEBAR TOGGLE */
 
-    fetch("/api/questions")
+function toggleSidebar(id) {
+    document.getElementById(id).classList.toggle("collapsed");
+}
+
+/* GROUPS */
+
+function loadGroups() {
+
+    fetch("/api/teacher/get-groups")
         .then(r => r.json())
         .then(list => {
 
-            const box = document.getElementById("questions");
-            box.innerHTML = "";
+            const ul = document.getElementById("groupList");
+            ul.innerHTML = "";
 
-            list.forEach(q => {
+            list.forEach(g => {
 
-                const div = document.createElement("div");
-                div.className = "question";
+                ul.innerHTML += `
+<li class="list-group-item d-flex justify-content-between align-items-center">
 
-                div.innerHTML = `
-                    <label>
-                        <input type="checkbox" value="${q.id}">
-                        ${q.questionText}
-                    </label>
-                `;
+    <span class="group-name"
+          data-id="${g.teacherGroupId}">
+        ${g.groupName}
+    </span>
 
-                const cb = div.querySelector("input");
+    <div>
+        <button onclick="startInlineEdit(${g.teacherGroupId})">✏️</button>
+        <button onclick="deleteGroup(${g.teacherGroupId})">🗑</button>
+    </div>
 
-                cb.addEventListener("change", () => {
-
-                    cb.checked
-                        ? selected.add(q.id)
-                        : selected.delete(q.id);
-
-                    document.getElementById("counter")
-                        .innerText = selected.size;
-                });
-
-                box.appendChild(div);
+</li>`;
             });
         });
 }
 
+function startInlineEdit(groupId) {
+
+    const span = document.querySelector(
+        `.group-name[data-id="${groupId}"]`
+    );
+
+    const oldValue = span.innerText;
+
+    const input = document.createElement("input");
+    input.value = oldValue;
+    input.className = "form-control";
+
+    span.replaceWith(input);
+    input.focus();
+    input.select();
+
+    // save on enter
+    input.addEventListener("keydown", e => {
+
+        if (e.key === "Enter") {
+            saveInlineEdit(groupId, input, oldValue);
+        }
+
+        if (e.key === "Escape") {
+            cancelInlineEdit(input, oldValue, groupId);
+        }
+    });
+
+    // save on blur
+    input.addEventListener("blur", () =>
+        saveInlineEdit(groupId, input, oldValue)
+    );
+}
+
+function saveInlineEdit(groupId, input, oldValue) {
+
+    const newName = input.value.trim();
+
+    if (!newName || newName === oldValue) {
+        cancelInlineEdit(input, oldValue, groupId);
+        return;
+    }
+
+    fetch(`/api/teacher/groups/${groupId}`, {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({name: newName})
+    })
+        .then(r => {
+
+            if (!r.ok) throw new Error();
+
+            replaceWithSpan(input, groupId, newName);
+        })
+        .catch(() => {
+
+            alert("Ошибка сохранения");
+            replaceWithSpan(input, groupId, oldValue);
+        });
+}
+
+function cancelInlineEdit(input, value, groupId) {
+
+    replaceWithSpan(input, groupId, value);
+}
+
+function replaceWithSpan(input, groupId, text) {
+
+    const span = document.createElement("span");
+    span.className = "group-name";
+    span.dataset.id = groupId;
+    span.innerText = text;
+
+    input.replaceWith(span);
+}
+
 function createGroup() {
-
-    const name = document.getElementById("groupName").value;
-
-    fetch("/teacher/group", {
+    fetch("/api/teacher/create-group", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({name})
+        body: JSON.stringify({name: groupName.value})
     }).then(loadGroups);
 }
 
+function deleteGroup(id) {
+    fetch(`/api/teacher/groups/${id}`, {method: "DELETE"})
+        .then(loadGroups);
+}
+
+/* SCIENCE/TOPIC */
+
+function loadSciences() {
+
+    const scienceSelect = document.getElementById("scienceSelect");
+
+    fetch("/api/teacher/sciences")
+        .then(r => {
+
+            if (!r.ok) throw new Error("Fetch sciences failed");
+
+            return r.json();
+        })
+        .then(list => {
+
+            scienceSelect.innerHTML =
+                `<option value="">--Fanni tanlang--</option>`;
+
+            list.forEach(s => {
+
+                const option = document.createElement("option");
+
+                option.value = s.id;
+                option.textContent = s.name;
+
+                scienceSelect.appendChild(option);
+            });
+        })
+        .catch(err => console.error(err));
+}
+
+document
+    .getElementById("scienceSelect")
+    .addEventListener("change", e => {
+
+        const scienceId = e.target.value;
+
+        if (scienceId) loadTopics(scienceId);
+    });
+
+
+function loadTopics(scienceId) {
+    fetch(`/api/teacher/topics/${scienceId}`)
+        .then(r => r.json())
+        .then(list => {
+
+            // Считаем сумму вопросов
+            const totalQuestions = list.reduce((sum, t) => sum + (t.questionCount || 0), 0);
+
+            // Вставляем первый option с суммарным количеством вопросов
+            topicSelect.innerHTML = `<option value="">--Mavzularni tanlang-- | Testlar soni: (${totalQuestions} ta)</option>`;
+
+            // Добавляем остальные темы
+
+            list.forEach(t =>
+                topicSelect.innerHTML += `<option value="${t.id}">${t.name} | (${t.questionCount} ta)</option>`
+            );
+
+            topicSelect.onchange = () => loadQuestions(topicSelect.value);
+        });
+}
+
+/* QUESTIONS */
+function loadQuestions(topicId) {
+
+    fetch(`/api/teacher/questions/topic/${topicId}`)
+        .then(r => r.json())
+        .then(list => {
+
+            const box =
+                document.getElementById("questions");
+
+            box.innerHTML = "";
+
+            list.forEach((q, i) => {
+
+                const checked =
+                    selectedMap.has(q.id)
+                        ? "checked"
+                        : "";
+
+                box.innerHTML += `
+<div class="question-item">
+
+    <input type="checkbox"
+           ${checked}
+           onchange="toggleQuestion(${q.id}, this,
+                \`${q.questionText}\`)">
+
+    <span>${i + 1}. </span>
+    <span>${q.questionText}</span>
+
+</div>`;
+            });
+        });
+}
+
+function toggleQuestion(id, checkbox, text) {
+
+    if (checkbox.checked) {
+
+        selectedMap.set(id, {id, text});
+        addSelectedUI(id, text);
+
+    } else {
+
+        selectedMap.delete(id);
+        removeSelectedUI(id);
+    }
+
+    updateCounter();
+}
+
+function removeSelected(id) {
+
+    selectedMap.delete(id);
+
+    removeSelectedUI(id);
+
+    // снять чекбокс сверху
+    const checkbox =
+        document.querySelector(
+            `#questions input[onchange*="${id}"]`
+        );
+
+    if (checkbox)
+        checkbox.checked = false;
+
+    updateCounter();
+    updatePlaceholder();
+}
+
+function removeSelectedUI(id) {
+
+    const el =
+        document.getElementById("sel-" + id);
+
+    if (el) el.remove();
+}
+
+function updateCounter() {
+
+    document.getElementById("counter")
+        .innerText = selectedMap.size;
+}
+
+function addSelectedUI(id, text) {
+
+    const list =
+        document.getElementById("selectedList");
+
+    if (document.getElementById("sel-" + id))
+        return;
+
+    list.innerHTML += `
+<div class="question-item"
+     id="sel-${id}">
+
+    <span>${text}</span>
+
+    <span class="remove-btn"
+          onclick="removeSelected(${id})">
+          ✖
+    </span>
+
+</div>`;
+
+    updatePlaceholder();
+}
+
+/* TEST SET */
+// Отправка выбранных вопросов на бэкенд для создания QuestionSet
 function saveSet() {
 
-    const name = document.getElementById("setName").value;
+    const name =
+        document.getElementById("setName")
+            .value.trim();
 
-    fetch("/teacher/questionset", {
+    if (!name || selectedMap.size === 0) {
+
+        alert("Name or questions missing");
+        return;
+    }
+
+    fetch("/api/teacher/questionset", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({
             name,
-            questionIds: [...selected]
+            questionIds: [...selectedMap.keys()]
         })
-    }).then(loadSets);
-}
+    })
+        .then(r => {
 
-function assignToGroup() {
+            if (!r.ok)
+                throw new Error();
 
-    const groupId = document.getElementById("groupSelect").value;
-    const setId = document.getElementById("setSelect").value;
+            alert("Saved!");
 
-    fetch("/teacher/assign/group", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({groupId, setId})
-    });
-}
-
-function loadGroups() {
-
-    fetch("/teacher/groups")
-        .then(r => r.json())
-        .then(list => {
-
-            const sel = document.getElementById("groupSelect");
-            sel.innerHTML = "";
-
-            list.forEach(g => {
-                sel.innerHTML += `<option value="${g.id}">${g.name}</option>`;
-            });
+            resetBuilder();
         });
+}
+
+function updatePlaceholder() {
+
+    const ph =
+        document.getElementById("selectedPlaceholder");
+
+    if (!ph) return;
+
+    ph.style.display =
+        selectedMap.size === 0
+            ? "flex"
+            : "none";
+}
+
+function resetBuilder() {
+
+    selectedMap.clear();
+
+    document
+        .querySelectorAll("#selectedList .question-item")
+        .forEach(el => el.remove());
+
+    document.getElementById("counter")
+        .innerText = 0;
+
+    document.getElementById("setName")
+        .value = "";
+
+    document
+        .querySelectorAll("#questions input")
+        .forEach(cb => cb.checked = false);
+
+    updatePlaceholder();
 }
 
 function loadSets() {
-
-    fetch("/teacher/questionsets")
+    fetch("/api/teacher/questionsets")
         .then(r => r.json())
         .then(list => {
 
-            const sel = document.getElementById("setSelect");
-            sel.innerHTML = "";
+            setSelect.innerHTML = "";
 
-            list.forEach(s => {
-                sel.innerHTML += `<option value="${s.id}">${s.name}</option>`;
-            });
+            list.forEach(s =>
+                setSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`
+            );
         });
+}
+
+/* STUDENTS */
+function loadStudents() {
+    fetch("/api/users/pupils")
+        .then(r => r.json())
+        .then(list => {
+
+            studentList.innerHTML = "";
+
+            list.forEach(s =>
+                studentList.innerHTML += `
+<label>
+<input type="checkbox" value="${s.id}">
+${s.name}
+</label><br>`
+            );
+        });
+}
+
+/* ASSIGN */
+function assignToGroup() {
+    fetch("/api/teacher/assign/group", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            groupId: groupSelect.value,
+            setId: setSelect.value
+        })
+    });
+}
+
+function loadGroupSelect() {
+
+    const select =
+        document.getElementById("groupSelect");
+
+    fetch("/api/teacher/groups/select")
+        .then(r => r.json())
+        .then(list => {
+
+            select.innerHTML =
+                `<option value="">--Guruhni tanlang--</option>`;
+
+            list.forEach(g => {
+
+                select.innerHTML += `
+<option value="${g.id}">
+    ${g.name}
+</option>`;
+            });
+        })
+        .catch(err =>
+            console.error("Groups load error:", err)
+        );
 }
