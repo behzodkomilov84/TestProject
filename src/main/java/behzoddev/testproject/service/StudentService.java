@@ -3,33 +3,46 @@ package behzoddev.testproject.service;
 import behzoddev.testproject.dao.AssignmentRepository;
 import behzoddev.testproject.dao.AttemptRepository;
 import behzoddev.testproject.dao.GroupInviteRepository;
+import behzoddev.testproject.dao.GroupMemberRepository;
 import behzoddev.testproject.entity.Attempt;
 import behzoddev.testproject.entity.GroupInvite;
+import behzoddev.testproject.entity.GroupMember;
 import behzoddev.testproject.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
-public class PupilService {
+public class StudentService {
 
     private final GroupInviteRepository groupInviteRepository;
     private final AssignmentRepository assignmentRepository;
     private final AttemptRepository attemptRepository;
+    private final GroupMemberRepository groupMemberRepository;
 
     @Transactional
     public void acceptInvite(Long inviteId, User pupil) {
 
-        GroupInvite invite = groupInviteRepository.findById(inviteId).orElseThrow();
+        GroupInvite invite =
+                groupInviteRepository.findById(inviteId)
+                        .orElseThrow();
 
-        if (!invite.getPupil().getId().equals(pupil.getId()))
-            throw new AccessDeniedException("");
+        if(!invite.getPupil().getId()
+                .equals(pupil.getId()))
+            throw new RuntimeException("Forbidden");
 
+        invite.setStatus("ACCEPTED");
         invite.setAccepted(true);
 
-        invite.getGroup().getPupils().add(pupil);
+        groupMemberRepository.save(GroupMember.builder()
+                .group(invite.getGroup())
+                .pupil(pupil)
+                .joinedAt(LocalDateTime.now())
+                .build());
     }
 
     //Сохранение результата ученика

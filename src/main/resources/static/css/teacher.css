@@ -19,7 +19,7 @@ body {
 /* SIDEBARS */
 
 .sidebar {
-    width: 260px;
+    width: 25%;
     background: white;
     border-right: 1px solid #ddd;
     display: flex;
@@ -67,6 +67,7 @@ body {
     padding: 8px;
     background: white;
     border-bottom: 1px solid #ddd;
+    text-transform: uppercase;
 }
 
 .workspace-body {
@@ -118,6 +119,10 @@ body {
     overflow: hidden;
 }
 
+.builder-bottom h6{
+    text-transform: uppercase;
+    text-align: center;
+}
 .builder-footer {
     display: flex;
     justify-content: space-between;
@@ -140,4 +145,10 @@ body {
 input.form-control {
     height: 28px;
     font-size: 14px;
+}
+
+.col{
+    text-transform: uppercase;
+    text-align: center;
+    font-weight: bold;
 }

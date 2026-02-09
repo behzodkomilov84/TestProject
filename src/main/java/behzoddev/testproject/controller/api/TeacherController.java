@@ -1,13 +1,8 @@
 package behzoddev.testproject.controller.api;
 
-import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dto.*;
 import behzoddev.testproject.entity.User;
-import behzoddev.testproject.mapper.QuestionMapperImpl;
-import behzoddev.testproject.service.QuestionService;
-import behzoddev.testproject.service.ScienceService;
-import behzoddev.testproject.service.TeacherService;
-import behzoddev.testproject.service.TopicService;
+import behzoddev.testproject.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -34,9 +29,8 @@ public class TeacherController {
     private final TeacherService teacherService;
     private final ScienceService scienceService;
     private final TopicService topicService;
-    private final QuestionRepository questionRepository;
-    private final QuestionMapperImpl questionMapper;
     private final QuestionService questionService;
+    private final StudentService studentService;
 
     @PostMapping("/create-group")
     public ResponseEntity<Void> createTeacherGroup(
@@ -48,7 +42,6 @@ public class TeacherController {
     }
 
     @GetMapping("/get-groups")
-    @PreAuthorize("hasAnyRole('ROLE_ADMIN', 'ROLE_OWNER')")
     public ResponseEntity<List<ResponseForGetTeacherGroupDto>> getTeacherGroups(
             @AuthenticationPrincipal User teacher
     ) {
@@ -59,7 +52,7 @@ public class TeacherController {
     }
 
     @DeleteMapping("/groups/{id}")
-    public void delete(@PathVariable Long id) {
+    public void deleteGroup(@PathVariable Long id) {
         teacherService.deleteGroup(id);
     }
 
@@ -71,24 +64,16 @@ public class TeacherController {
     }
 
     @PostMapping("/questionset")
-    public ResponseEntity<?> createQuestionSet(@RequestBody @Valid CreateQuestionSetDto dto,
-                                               @AuthenticationPrincipal User teacher) {
+    public ResponseEntity<QuestionSetResponseDto> createQuestionSet(@RequestBody @Valid CreateQuestionSetDto dto,
+                                                                    @AuthenticationPrincipal User teacher) {
         QuestionSetResponseDto createdQuestionSet = teacherService.createQuestionSet(teacher, dto);
 
-        return ResponseEntity.ok().body(createdQuestionSet + " muvaffaqiyatli yaratildi.");
+        return ResponseEntity.ok().body(createdQuestionSet);
     }
 
     @GetMapping("/questionsets")
-    public List<QuestionSetDto> sets(@AuthenticationPrincipal User teacher) {
+    public List<QuestionSetDto> getQuestionSetsForSelect(@AuthenticationPrincipal User teacher) {
         return teacherService.getSets(teacher);
-    }
-
-
-
-
-    @PostMapping("/assign/group")
-    public void assign(@RequestBody AssignToGroupDto dto) {
-        teacherService.assignToGroup(dto);
     }
 
     @PatchMapping("/groups/{groupId}")
@@ -102,14 +87,14 @@ public class TeacherController {
     }
 
     @GetMapping("/sciences")
-    public List<ScienceIdAndNameDto> getSciences() {
+    public List<ScienceIdAndNameDto> getSciencesForSelect() {
 
         return scienceService.getSciences();
     }
 
     //Topics of selected science
     @GetMapping("/topics/{scienceId}")
-    public List<TopicWithQuestionCountDto> getTopics(
+    public List<TopicWithQuestionCountDto> getTopicsForSelect(
             @PathVariable Long scienceId) {
 
         return topicService.getTopicsWithQuestionCount(scienceId);
@@ -117,9 +102,31 @@ public class TeacherController {
 
     // Получение вопросов по теме
     @GetMapping("/questions/topic/{topicId}")
-    public List<ResponseQuestionTextDto> getQuestionsByTopic(@PathVariable Long topicId) {
+    public List<ResponseQuestionTextDto> getQuestionsByTopicForSelect(@PathVariable Long topicId) {
 
         return questionService.getQuestionsByTopic(topicId);
+    }
+
+    @PostMapping("/group/{groupId}/invite")
+    public void invite(
+            @PathVariable Long groupId,
+            @RequestBody InviteDto dto) {
+
+        teacherService.inviteStudent(groupId, dto.pupilId());
+    }
+
+    //список студентов, уже в группе (правый сайдбар).
+    @GetMapping("/group/{id}/students")
+    public List<GroupStudentRowDto> getStudents(@PathVariable Long id) {
+
+        return teacherService.getGroupStudents(id);
+    }
+
+    //список всех студентов/users для invite modal.
+    @GetMapping("/group/students")
+    public List<GroupStudentDto> getStudentsForGroups() {
+
+        return teacherService.getAllStudentsForGroups();
     }
 
 }

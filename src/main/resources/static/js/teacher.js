@@ -3,7 +3,7 @@ const selectedMap = new Map();
 document.addEventListener("DOMContentLoaded", () => {
 
     loadGroups();
-    loadStudents();
+    // loadStudents();
     loadSciences();
     loadSets();
     loadGroupSelect();
@@ -50,6 +50,7 @@ function loadGroups() {
     <div>
         <button onclick="startInlineEdit(${g.teacherGroupId})">✏️</button>
         <button onclick="deleteGroup(${g.teacherGroupId})">🗑</button>
+        <button onclick="openAddStudentModal(${g.teacherGroupId})">➕</button>
     </div>
 
 </li>`;
@@ -169,7 +170,13 @@ function createGroup() {
 
 function deleteGroup(id) {
     fetch(`/api/teacher/groups/${id}`, {method: "DELETE"})
-        .then(loadGroups);
+        .then(()=>{
+            loadGroups();
+            loadGroupSelect();
+        });
+
+
+
 }
 
 /* SCIENCE/TOPIC */
@@ -436,7 +443,7 @@ function loadSets() {
 
 /* STUDENTS */
 function loadStudents() {
-    fetch("/api/users/pupils")
+    fetch("/api/teacher/group/students")
         .then(r => r.json())
         .then(list => {
 
@@ -478,13 +485,103 @@ function loadGroupSelect() {
 
             list.forEach(g => {
 
-                select.innerHTML += `
-<option value="${g.id}">
-    ${g.name}
-</option>`;
+                select.innerHTML += `<option value="${g.id}">${g.name}</option>`;
+            });
+
+            // Добавляем обработчик выбора группы
+            select.addEventListener("change", e => {
+                const groupId = e.target.value;
+                if (groupId) {
+                    loadGroupStudents(groupId);
+                } else {
+                    clearStudentTable();
+                }
             });
         })
         .catch(err =>
             console.error("Groups load error:", err)
         );
 }
+
+//Load студентов для правого сайдбара
+function loadGroupStudents(groupId) {
+    fetch(`/api/teacher/group/${groupId}/students`)
+        .then(r => {
+            if (!r.ok) throw new Error("Failed to load group students");
+            return r.json();
+        })
+        .then(list => {
+            const table = document.getElementById("studentTable");
+            table.innerHTML = "";
+
+            list.forEach(s => {
+                const color = s.status === "ACCEPTED" ? "green" : "orange";
+
+                table.innerHTML += `
+                                <tr>
+                                <td>${s.username}</td>
+                                <td style="font-weight:bold;color:${color}">${s.status}</td>
+                                </tr>`;
+            });
+        })
+        .catch(err => console.error(err));
+}
+
+function clearStudentTable() {
+    document.getElementById("studentTable").innerHTML = "";
+}
+
+//==========================================================
+//MODAL
+let currentGroupId = null;
+
+function openAddStudentModal(groupId) {
+    currentGroupId = groupId;
+
+    /*список всех студентов/users для invite modal.*/
+    fetch("/api/teacher/group/students")
+        .then(r => {
+            if (!r.ok) throw new Error("Forbidden or server error");
+            return r.json();
+        })
+        .then(list => {
+            const table = document.getElementById("inviteTable");
+            table.innerHTML = "";
+
+            list.forEach(u => {
+                table.innerHTML += `
+<tr>
+<td>${u.username}</td>
+<td>
+<button class="btn btn-sm btn-primary"
+onclick="inviteStudent(${u.id})">
+Пригласить
+</button>
+</td>
+</tr>`;
+            });
+
+            const modal = new bootstrap.Modal(
+                document.getElementById("inviteModal")
+            );
+            modal.show();
+        })
+        .catch(err => console.error("Ошибка загрузки студентов:", err));
+}
+//==========================================================
+
+function inviteStudent(pupilId) {
+    fetch(`/api/teacher/group/${currentGroupId}/invite`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({pupilId})
+    })
+        .then(r => {
+            if (!r.ok) throw new Error("Ошибка приглашения");
+            loadGroupStudents(currentGroupId);
+            alert("Приглашение отправлено");
+        })
+        .catch(() => alert("Ошибка приглашения"));
+}
+
+

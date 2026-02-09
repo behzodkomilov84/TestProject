@@ -54,11 +54,14 @@ public class SecurityConfig {
                                 "ROLE_ADMIN")
 
                         .requestMatchers("/pupil",
-                                         "/pupil/**")
+                                "/pupil/**")
                         .hasAnyAuthority("ROLE_OWNER", "ROLE_USER")
 
                         .requestMatchers("/teacher",
-                                         "/teacher/**")
+                                "/teacher/**",
+                                "/api/teacher",
+                                "/api/teacher/**")
+
                         .hasAnyAuthority("ROLE_OWNER", "ROLE_ADMIN")
 
                         .anyRequest().authenticated()

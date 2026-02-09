@@ -1,6 +1,6 @@
 package behzoddev.testproject.dto;
 
-public record PupilDto(
+public record GroupStudentDto(
         Long id,
-        String fullName
+        String username
 ) {}

@@ -4,6 +4,7 @@ import behzoddev.testproject.dao.*;
 import behzoddev.testproject.dto.*;
 import behzoddev.testproject.entity.*;
 import behzoddev.testproject.mapper.TeacherGroupMapper;
+import behzoddev.testproject.mapper.UserMapper;
 import behzoddev.testproject.validation.Validation;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -29,6 +30,8 @@ public class TeacherService {
     private final TeacherGroupMapper teacherGroupMapper;
     private final UserRepository userRepository;
     private final Validation validation;
+    private final GroupMemberRepository groupMemberRepository;
+    private final UserMapper userMapper;
 
     @Transactional
     @SneakyThrows
@@ -97,6 +100,44 @@ public class TeacherService {
                 .toList();
     }
 
+    /* ================= PUPILS ================= */
+    @Transactional
+    public void inviteStudent(Long groupId, Long pupilId) {
+
+        if (groupMemberRepository.existsByGroupIdAndPupilId(groupId, pupilId))
+            throw new RuntimeException("Already member");
+
+        if (groupInviteRepository
+                .findByGroupIdAndPupilId(groupId, pupilId)
+                .isPresent())
+            return;
+
+        TeacherGroup group =
+                teacherGroupRepository.findById(groupId).orElseThrow();
+
+        User pupil =
+                userRepository.findById(pupilId).orElseThrow();
+
+        groupInviteRepository.save(GroupInvite.builder()
+                .group(group)
+                .pupil(pupil)
+                .build());
+    }
+
+    public List<GroupStudentRowDto> getGroupStudents(Long groupId) {
+
+        return groupInviteRepository.findByGroupId(groupId)
+                .stream()
+                .map(i -> new GroupStudentRowDto(
+                        i.getId(),
+                        i.getPupil().getId(),
+                        i.getPupil().getUsername(),
+                        i.getStatus()
+                ))
+                .toList();
+    }
+
+
     /* ================= ASSIGN ================= */
 
     //Назначение теста
@@ -132,20 +173,6 @@ public class TeacherService {
         assignmentRepository.save(assignment);
     }
 
-    /* ================= PUPILS ================= */
-    @Transactional
-    public void invitePupil(Long groupId, User pupil) {
-
-        TeacherGroup group = teacherGroupRepository.findById(groupId).orElseThrow();
-
-        GroupInvite invite = GroupInvite.builder()
-                .group(group)
-                .pupil(pupil)
-                .accepted(false)
-                .build();
-
-        groupInviteRepository.save(invite);
-    }
 
     @Transactional
     public void updateGroup(Long groupId, UpdateTeacherGroupDto dto, User teacher) {
@@ -168,17 +195,18 @@ public class TeacherService {
 
         return teacherGroupRepository.getTeacherGroupsByUser(teacher)
                 .stream()
-                .map(g -> teacherGroupMapper.mapTeacherGroupToGroupDto(g)
+                .map(teacherGroupMapper::mapTeacherGroupToGroupDto
                 )
                 .toList();
     }
 
-    /*public List<PupilDto> getPupils() {
-        return userRepo.findByRole(Role.ROLE_USER)
-                .stream()
-                .map(u -> new PupilDto(u.getId(), u.getFullName()))
-                .toList();
-    }*/
+    public List<GroupStudentDto> getAllStudentsForGroups() {
 
+        return userRepository
+                .findByRole_RoleName("ROLE_USER")
+                .stream()
+                .map(u -> userMapper.mapUserToGroupStudentDto(u))
+                .toList();
+    }
 
 }
