@@ -21,9 +21,11 @@ function toggleMenu() {
     document.getElementById("nav-menu").classList.toggle("active");
 }
 
-function closeMenu() {
-    document.getElementById("nav-menu").classList.remove("active");
-}
+document.querySelectorAll(".nav-items a").forEach(a =>
+    a.addEventListener("click", () =>
+        document.getElementById("nav-menu").classList.remove("active")
+    )
+);
 
 /* закрытие при клике вне меню */
 document.addEventListener("click", e => {

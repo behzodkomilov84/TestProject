@@ -2,50 +2,68 @@
         xmlns:th="http://www.thymeleaf.org"
         xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
-    <div class="logo-btn">🧠 Smart-Test</div>
+    <div class="nav-logo">🧠 Smart-Test</div>
 
-    <div class="nav-center">
+    <div class="nav-user nav-center">
         <span th:if="${#authorization.expression('isAuthenticated()')}">
             Xush kelibsiz, <b th:text="${#authentication.name}">username</b> </span>
         <span th:if="${#authorization.expression('isAuthenticated()')}">
             <br style="height: 0px">Rolingiz:
             <b th:text="${#strings.replace(#authentication.authorities[0].authority,'ROLE_','')}"
                th:attr="data-role=${#strings.replace(#authentication.authorities[0].authority,'ROLE_','')}"
-            style="color: darkred">
+               style="color: darkred">
                 ROLE </b>
 
         </span>
     </div> <!-- ☰ burger -->
-    <button class="burger" onclick="toggleMenu()">☰</button>
 
-    <nav id="nav-menu" class="nav-items">
-        <a href="/index">Bosh sahifa</a>
-        <a href="/history">Statistika</a>
-        <a href="/profile">Profil</a>
+    <div class="nav-actions">
+        <button class="burger" onclick="toggleMenu()">☰</button>
+        <nav id="nav-menu" class="nav-items">
+            <a href="/index">Bosh sahifa</a>
+            <a href="/history">Statistika</a>
+            <a href="/profile">Profil</a>
 
-        <!-- Owner Panel доступен только OWNER -->
-        <a href="/users"
-           sec:authorize="hasAuthority('ROLE_OWNER')"
-           class="owner-link">Owner Panel</a>
+            <!-- Owner Panel доступен только OWNER -->
+            <a href="/users"
+               sec:authorize="hasAuthority('ROLE_OWNER')"
+               class="owner-link">Owner Panel</a>
 
-        <!-- Admin Panel доступен только OWNER и ADMIN -->
-        <!-- Admin dropdown (OWNER + ADMIN) -->
-        <div class="dropdown"
-             sec:authorize="hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')">
+            <!-- Admin Panel доступен только OWNER и ADMIN -->
+            <!-- Admin dropdown (OWNER + ADMIN) -->
+            <div class="dropdown"
+                 sec:authorize="hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')">
 
-            <button class="dropbtn">
-                Admin Panel ▾
-            </button>
+                <button class="dropbtn">
+                    Admin Panel ▾
+                </button>
 
-            <div class="dropdown-content">
-                <a href="/science">Менеджер теста</a>
-                <a href="/teacher">Группа</a>
+                <div class="dropdown-content">
+                    <a href="/science">Менеджер теста</a>
+                    <a href="/teacher">Группа</a>
+                </div>
+
             </div>
 
-        </div>
+            <!-- Student Panel доступен только OWNER и USER -->
+            <!-- USER dropdown (OWNER + USER) -->
+            <div class="dropdown"
+                 sec:authorize="hasAnyAuthority('ROLE_OWNER','ROLE_USER')">
+
+                <button class="dropbtn">
+                    Student Panel ▾
+                </button>
+
+                <div class="dropdown-content">
+                    <a href="/student">Группа</a>
+                </div>
+
+            </div>
+
+            <a href="/logout">Chiqish</a>
+        </nav>
+    </div>
 
 
-        <a href="/logout">Chiqish</a>
-    </nav>
 
 </header>

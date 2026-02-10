@@ -1,30 +1,60 @@
 package behzoddev.testproject.controller.api;
 
+import behzoddev.testproject.dto.GroupDto;
+import behzoddev.testproject.dto.GroupInviteDto;
+import behzoddev.testproject.dto.ResponseGroupMembershipDto;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.StudentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /*
-Pupil API
-GET  /pupil/invites
-POST /pupil/invite/accept
-GET  /pupil/assignments
-POST /pupil/attempt
+Student API
+GET  /api/student/invites
+POST /api/student/invite/{id}/accept
+POST /api/student/invite/{id}/reject
+GET  /api/student/tasks
 */
-@Controller
+@RestController
 @RequiredArgsConstructor
+@RequestMapping("/api/student")
+@PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_OWNER')")
 public class StudentController {
     private final StudentService studentService;
 
+    @GetMapping("/invites")
+    public List<GroupInviteDto> getInvites(@AuthenticationPrincipal User pupil) {
+
+        return studentService.getInvites(pupil);
+    }
+
     @PostMapping("/invite/{id}/accept")
-    public void accept(
+    public void acceptInvitation(
             @PathVariable Long id,
             @AuthenticationPrincipal User pupil) {
 
         studentService.acceptInvite(id, pupil);
     }
+
+    @PostMapping("/invite/{id}/reject")
+    public void rejectInvite(@PathVariable Long id, @AuthenticationPrincipal User pupil) {
+        studentService.rejectInvite(id, pupil);
+    }
+
+    @GetMapping("/memberships")
+    public List<ResponseGroupMembershipDto> memberships(@AuthenticationPrincipal User student) {
+        return studentService.getMemberships(student.getUsername());
+    }
+
+    @GetMapping("/debug")
+    public Object debug(@AuthenticationPrincipal User u) {
+        return u.getAuthorities();
+    }
+
 }

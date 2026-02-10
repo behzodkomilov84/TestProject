@@ -1,70 +1,112 @@
 package behzoddev.testproject.service;
 
-import behzoddev.testproject.dao.AssignmentRepository;
-import behzoddev.testproject.dao.AttemptRepository;
-import behzoddev.testproject.dao.GroupInviteRepository;
-import behzoddev.testproject.dao.GroupMemberRepository;
-import behzoddev.testproject.entity.Attempt;
+import behzoddev.testproject.dao.*;
+import behzoddev.testproject.dto.GroupDto;
+import behzoddev.testproject.dto.GroupInviteDto;
+import behzoddev.testproject.dto.ResponseGroupMembershipDto;
 import behzoddev.testproject.entity.GroupInvite;
 import behzoddev.testproject.entity.GroupMember;
 import behzoddev.testproject.entity.User;
+import behzoddev.testproject.entity.enums.InviteStatus;
+import behzoddev.testproject.mapper.GroupInviteMapper;
+import behzoddev.testproject.mapper.GroupMemberMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class StudentService {
 
     private final GroupInviteRepository groupInviteRepository;
+    private final GroupInviteMapper groupInviteMapper;
     private final AssignmentRepository assignmentRepository;
     private final AttemptRepository attemptRepository;
     private final GroupMemberRepository groupMemberRepository;
+    private final TeacherGroupRepository teacherGroupRepository;
+    private final UserRepository userRepository;
+    private final GroupMemberMapper groupMemberMapper;
 
     @Transactional
-    public void acceptInvite(Long inviteId, User pupil) {
+    public List<GroupInviteDto> getInvites(User pupil) {
+        return groupInviteRepository.findByPupilWithGroup(pupil)
+                .stream()
+                .map(groupInviteMapper::mapGroupInviteToGroupInviteDto)
+                .toList();
+    }
+
+    @Transactional
+    public void acceptInvite(Long inviteId, User student) {
 
         GroupInvite invite =
                 groupInviteRepository.findById(inviteId)
-                        .orElseThrow();
+                        .orElseThrow(() -> new RuntimeException("Invite not found"));
 
-        if(!invite.getPupil().getId()
-                .equals(pupil.getId()))
-            throw new RuntimeException("Forbidden");
+        if (!invite.getPupil().getId()
+                .equals(student.getId()))
+            throw new RuntimeException("Not your invite");
 
-        invite.setStatus("ACCEPTED");
-        invite.setAccepted(true);
+        if (invite.getStatus().equals(InviteStatus.REJECTED)) {
+            throw new RuntimeException("Rad etilgan taklifni qabul qilib bo'lmaydi. \nTaklif qayta jo'natilishi kerak.");
+        }
 
-        groupMemberRepository.save(GroupMember.builder()
+        if (invite.getStatus().equals(InviteStatus.ACCEPTED)) {
+            throw new RuntimeException("Bu taklif allaqachon qabul qilingan");
+        }
+
+        // 1️⃣ обновляем статус приглашения
+        invite.setStatus(InviteStatus.ACCEPTED);
+
+        // 2️⃣ создаём membership
+        GroupMember member = GroupMember.builder()
                 .group(invite.getGroup())
-                .pupil(pupil)
+                .pupil(student)
                 .joinedAt(LocalDateTime.now())
-                .build());
-    }
-
-    //Сохранение результата ученика
-    @Transactional
-    public void saveAttempt(
-            User pupil,
-            Long assignmentId,
-            int correct,
-            int total,
-            int duration
-    ) {
-
-        Attempt attempt = Attempt.builder()
-                .assignment(assignmentRepository.getReferenceById(assignmentId))
-                .pupil(pupil)
-                .correctAnswers(correct)
-                .totalQuestions(total)
-                .percent(correct * 100 / total)
-                .durationSec(duration)
                 .build();
 
-        attemptRepository.save(attempt);
+        groupMemberRepository.save(member);
     }
 
+    @Transactional
+    public void rejectInvite(Long inviteId, User pupil) {
+
+        GroupInvite invite = groupInviteRepository.findById(inviteId)
+                .orElseThrow(() -> new RuntimeException("Bunday taklif topilmadi"));
+
+        if (!invite.getPupil().getId().equals(pupil.getId()))
+            throw new RuntimeException("Not allowed");
+
+        if (invite.getStatus().equals(InviteStatus.REJECTED)) {
+            throw new RuntimeException("Bu taklif allaqachon rad etilgan.");
+        }
+        invite.setStatus(InviteStatus.REJECTED);
+        groupInviteRepository.save(invite);
+
+        //Gruppa a'zoligidan ham chiqarvorish kerak.
+        if (!groupMemberRepository.existsByGroupIdAndPupil(invite.getGroup().getId(), pupil)) {
+            throw new RuntimeException("Bu o'quvchi gruppada yo'q");
+        }
+
+        groupMemberRepository
+                .deleteByGroupIdAndPupil(invite.getGroup().getId(), pupil);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ResponseGroupMembershipDto> getMemberships(String username) {
+        User student = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("Foydalanuvchi topilmadi"));
+
+        List<GroupMember> membershipByUser = groupMemberRepository
+                .findByUser(student);
+
+        if (membershipByUser.isEmpty()) throw new RuntimeException("A'zolik topilmadi");
+
+        return membershipByUser
+                .stream()
+                .map(groupMemberMapper::mapGroupMemberToResponseGroupMembershipDto)
+                .toList();
+    }
 }

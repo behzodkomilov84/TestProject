@@ -35,12 +35,14 @@ CREATE TABLE group_invites
     group_id   BIGINT      NOT NULL,
     pupil_id   BIGINT      NOT NULL,
     status     VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-    accepted   BOOLEAN     NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP            DEFAULT CURRENT_TIMESTAMP,
+
     CONSTRAINT uq_group_invite UNIQUE (group_id, pupil_id),
+
     CONSTRAINT fk_invite_group FOREIGN KEY (group_id)
         REFERENCES teacher_groups (id)
         ON DELETE CASCADE,
+
     CONSTRAINT fk_invite_user FOREIGN KEY (pupil_id)
         REFERENCES users (id)
         ON DELETE CASCADE

@@ -30,7 +30,11 @@ public class TeacherController {
     private final ScienceService scienceService;
     private final TopicService topicService;
     private final QuestionService questionService;
-    private final StudentService studentService;
+
+    @GetMapping("/debug")
+    public Object debug(@AuthenticationPrincipal User u) {
+        return u.getAuthorities();
+    }
 
     @PostMapping("/create-group")
     public ResponseEntity<Void> createTeacherGroup(
@@ -108,11 +112,12 @@ public class TeacherController {
     }
 
     @PostMapping("/group/{groupId}/invite")
-    public void invite(
+    public ResponseEntity<Void> invite(
             @PathVariable Long groupId,
             @RequestBody InviteDto dto) {
 
         teacherService.inviteStudent(groupId, dto.pupilId());
+        return ResponseEntity.ok().build();
     }
 
     //список студентов, уже в группе (правый сайдбар).

@@ -30,6 +30,7 @@ public class SecurityConfig {
                                 "/images/**",
                                 "/registration",
                                 "/api/test-session/**",
+                                "/favicon.ico",
                                 "/"
                         ).permitAll()
 
@@ -49,13 +50,13 @@ public class SecurityConfig {
                                 "/profile/**")
                         .authenticated()
 
-                        .requestMatchers("/api/**")
-                        .hasAnyAuthority("ROLE_OWNER",
-                                "ROLE_ADMIN")
-
-                        .requestMatchers("/pupil",
-                                "/pupil/**")
+                        // student API — СНАЧАЛА
+                        .requestMatchers("/api/student/**")
                         .hasAnyAuthority("ROLE_OWNER", "ROLE_USER")
+
+                        // остальные API
+                        .requestMatchers("/api/**")
+                        .hasAnyAuthority("ROLE_OWNER", "ROLE_ADMIN")
 
                         .requestMatchers("/teacher",
                                 "/teacher/**",

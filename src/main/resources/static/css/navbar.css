@@ -1,86 +1,183 @@
+/* ===== GLOBAL ===== */
+
 * {
     box-sizing: border-box;
     font-family: "Segoe UI", system-ui, sans-serif;
 }
 
-.logo-btn {
-    all: unset; /* убирает стандартные стили кнопки */
-    cursor: pointer;
-    font-size: 24px;
-    font-weight: bold;
-    color: white;
+/* ===== MOBILE MENU OVERLAY ===== */
+
+body.menu-open::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 900;
 }
 
-.owner-link {
-    color: #c62828;
-}
+/* ===== NAVBAR GRID LAYOUT ===== */
 
 .navbar {
+
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
 
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-
     height: 72px;
+    padding: 0 24px;
 
-    padding: 0 32px;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
 
     background: #1e293b;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-    color: #fff;
+    color: white;
 
-    margin-bottom: 15px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    z-index: 1000;
+
+    backdrop-filter: blur(8px);
 }
 
-.nav-center {
-    display: flex;
-    flex-direction: column;
-    justify-content: center; /* 🔥 */
-    align-items: center;
+/* ===== LOGO ===== */
 
+.nav-logo,
+.logo-btn {
+    font-size: 22px;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+/* ===== CENTER USER INFO ===== */
+
+.nav-center {
+    text-align: center;
     font-size: 14px;
     line-height: 1.2;
 }
 
+/* ===== ACTION AREA ===== */
 
-.navbar nav {
+.nav-actions {
     display: flex;
     align-items: center;
-    gap: 3px;
+    gap: 6px;
+    justify-content: end;
 }
 
-.navbar nav a, .owner-link {
-    color: #fff;
+/* ===== NAV LINKS ===== */
+
+.nav-items {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.nav-items a,
+.owner-link,
+.dropbtn {
+
+    color: white;
     text-decoration: none;
     text-transform: uppercase;
+
+    padding: 8px 14px;
     border-radius: 6px;
-    padding: 8px 18px;
-}
 
-.navbar nav a:hover{
-    background-color: #60c765;
-}
-
-.owner-link:hover {
-    background-color: #60c765;
-}
-
-.burger {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    background: none;
+    background: transparent;
     border: none;
-    color: #fff;
     cursor: pointer;
 }
 
-/* === MOBILE === */
+.nav-items a:hover,
+.owner-link:hover,
+.dropbtn:hover {
+    background: #60c765;
+}
+
+/* owner color */
+
+.owner-link {
+    color: #c62828;
+}
+
+/* ===== BURGER ===== */
+
+.burger {
+
+    display: none;
+
+    font-size: 22px;
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+}
+
+/* ===== DROPDOWN ===== */
+
+.dropdown {
+    position: relative;
+}
+
+.dropdown-content {
+
+    display: none;
+
+    position: absolute;
+    right: 0;
+    top: 100%;
+
+    background: #1f2933;
+    min-width: 180px;
+
+    border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+
+    overflow: hidden;
+    z-index: 999;
+}
+
+.dropdown-content a {
+    display: block;
+    padding: 10px 14px;
+    color: white;
+    text-decoration: none;
+}
+
+.dropdown-content a:hover {
+    background: #374151;
+}
+
+/* desktop hover */
+
+.dropdown:hover .dropdown-content {
+    display: block;
+}
+
+/* ===== MOBILE MODE ===== */
+@media (min-width: 769px) and (max-width: 930px) {
+
+    /* скрываем блок пользователя */
+    .nav-center {
+        display: none;
+    }
+
+    /* уменьшаем шрифт меню */
+    .nav-items a,
+    .dropbtn {
+        font-size: 13px;
+        padding: 6px 10px;
+    }
+
+    /* логотип тоже можно слегка уменьшить */
+    .logo-btn {
+        font-size: 18px;
+    }
+}
+
 @media (max-width: 768px) {
 
     .nav-center {
@@ -91,48 +188,49 @@
         display: block;
     }
 
-    .navbar nav {
-        position: absolute;
-        top: 100%;
+    .nav-items {
+
+        position: fixed;
+
+        top: 72px;
         right: 0;
 
-        width: 240px;
+        width: 260px;
+        height: calc(100vh - 72px);
+
         background: #0f172a;
 
         flex-direction: column;
-        gap: 0;
+        align-items: stretch;
 
-        overflow: hidden;
-        max-height: 0;
-        opacity: 0;
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
 
-        transition: max-height 0.35s ease, opacity 0.3s ease;
-        border-radius: 0 0 10px 10px;
+        overflow-y: auto;
     }
 
-    .navbar nav.active {
-        max-height: 400px;
-        opacity: 1;
+    .nav-items.active {
+        transform: translateX(0);
     }
 
-    .navbar nav a {
-        padding: 10px 16px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        margin-bottom: 7px;
-        width: 90%;
-        text-align: center;
+    .nav-items a,
+    .dropbtn {
+        width: 100%;
+        text-align: left;
+        padding: 14px;
     }
 
-    /* mobile user block */
-    .mobile-user {
-        padding: 12px 16px;
-        font-size: 14px;
-        background: #020617;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    /* dropdown mobile */
+
+    .dropdown {
+        width: 100%;
     }
 
     .dropdown-content {
+
         position: static;
+        display: none;
+
         box-shadow: none;
         border-radius: 0;
     }
@@ -141,55 +239,3 @@
         display: block;
     }
 }
-
-/* Dropdown container */
-.dropdown {
-    position: relative;
-    display: inline-block;
-}
-
-/* Button */
-.dropbtn {
-    background: transparent;
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
-    padding: 5px 15px;
-    text-transform: uppercase;
-    border: none;
-    border-radius: 8px;
-}
-
-/* Dropdown menu */
-.dropdown-content {
-    display: none;
-    position: absolute;
-    right: 0;
-    padding-top: 20px;
-    background: #1f2933;
-    min-width: 180px;
-    border-radius: 8px;
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-    overflow: hidden;
-    z-index: 999;
-}
-
-/* Links */
-.dropdown-content a {
-    color: white;
-    padding: 10px 14px;
-    display: block;
-    text-decoration: none;
-    transition: background 0.2s;
-}
-
-.dropdown-content a:hover {
-    background: #374151;
-}
-
-/* Show dropdown on hover (desktop) */
-.dropdown:hover .dropdown-content {
-    display: block;
-}
-
-

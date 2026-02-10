@@ -1,5 +1,6 @@
 package behzoddev.testproject.entity;
 
+import behzoddev.testproject.entity.enums.InviteStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -31,13 +32,9 @@ public class GroupInvite {
 
     // Статус приглашения (PENDING, ACCEPTED, REJECTED)
     @Builder.Default
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status = "PENDING";
-
-    // Булево поле для упрощённой проверки, принят ли запрос
-    @Builder.Default
-    @Column(nullable = false)
-    private Boolean accepted = false;
+    private InviteStatus status = InviteStatus.PENDING;
 
     // Время создания приглашения
     @Builder.Default

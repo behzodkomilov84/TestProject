@@ -3,6 +3,7 @@ package behzoddev.testproject.service;
 import behzoddev.testproject.dao.*;
 import behzoddev.testproject.dto.*;
 import behzoddev.testproject.entity.*;
+import behzoddev.testproject.entity.enums.InviteStatus;
 import behzoddev.testproject.mapper.TeacherGroupMapper;
 import behzoddev.testproject.mapper.UserMapper;
 import behzoddev.testproject.validation.Validation;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -104,26 +106,38 @@ public class TeacherService {
     @Transactional
     public void inviteStudent(Long groupId, Long pupilId) {
 
-        if (groupMemberRepository.existsByGroupIdAndPupilId(groupId, pupilId))
-            throw new RuntimeException("Already member");
+        TeacherGroup group = teacherGroupRepository.findById(groupId).orElseThrow();
 
-        if (groupInviteRepository
-                .findByGroupIdAndPupilId(groupId, pupilId)
-                .isPresent())
+        User pupil = userRepository.findById(pupilId).orElseThrow();
+
+        Optional<GroupInvite> optionalGroupInvite = groupInviteRepository
+                .findByGroupIdAndPupilId(groupId, pupilId);
+
+        if (optionalGroupInvite.isPresent()) {
+            GroupInvite invite = optionalGroupInvite.get();
+
+            // Если уже PENDING или ACCEPTED — ничего делать не нужно
+            if (optionalGroupInvite.get().getStatus() == InviteStatus.PENDING ||
+                    optionalGroupInvite.get().getStatus() == InviteStatus.ACCEPTED) {
+                return;
+            }
+
+            // Если REJECTED — просто обновляем существующий
+            optionalGroupInvite.get().setStatus(InviteStatus.PENDING);
+            groupInviteRepository.save(invite);
+
             return;
+        }
 
-        TeacherGroup group =
-                teacherGroupRepository.findById(groupId).orElseThrow();
-
-        User pupil =
-                userRepository.findById(pupilId).orElseThrow();
-
+        // Если записи нет — создаём новую
         groupInviteRepository.save(GroupInvite.builder()
                 .group(group)
                 .pupil(pupil)
+                .status(InviteStatus.PENDING)
                 .build());
     }
 
+    @Transactional
     public List<GroupStudentRowDto> getGroupStudents(Long groupId) {
 
         return groupInviteRepository.findByGroupId(groupId)
@@ -132,7 +146,7 @@ public class TeacherService {
                         i.getId(),
                         i.getPupil().getId(),
                         i.getPupil().getUsername(),
-                        i.getStatus()
+                        i.getStatus().name()
                 ))
                 .toList();
     }
@@ -200,6 +214,7 @@ public class TeacherService {
                 .toList();
     }
 
+    @Transactional
     public List<GroupStudentDto> getAllStudentsForGroups() {
 
         return userRepository
