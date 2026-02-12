@@ -24,25 +24,33 @@
 <div class="app-layout">
 
     <!-- LEFT SIDEBAR — GROUPS -->
-    <aside id="leftSidebar" class="sidebar">
+    <aside id="leftSidebar" class="sidebar" aria-labelledby="groupsSidebarTitle">
 
         <div class="sidebar-header">
-            <h6>Groups</h6>
+            <h6 id="groupsSidebarTitle">Groups</h6>
             <button onclick="toggleSidebar('leftSidebar')">⮜</button>
         </div>
 
         <div class="sidebar-body">
 
-            <div class="d-flex mb-2">
-                <input id="groupName" class="form-control me-1" placeholder="--Yangi guruh--">
+            <div class="d-flex flex-column gap-2 w-100">
+                <label for="groupName" class="w-100">Yangi guruh</label>
+
+                <div class="d-flex gap-2 w-100">
+                <input id="groupName" class="form-control flex-grow-1" placeholder="--Yangi guruh nomini kiriting--">
                 <button class="btn btn-sm btn-primary" onclick="createGroup()">+</button>
+                </div>
             </div>
 
+            <hr>
+
+            <h6>Guruhlar ro'yxati</h6>
             <ul id="groupList" class="list-group"></ul>
 
         </div>
 
     </aside>
+    <div class="resize-handle" data-target="leftSidebar"></div>
 
     <!-- MAIN WORKSPACE -->
     <main class="workspace">
@@ -51,7 +59,7 @@
 
             <button onclick="toggleSidebar('leftSidebar')">☰ Groups</button>
 
-            <h5>Question Builder</h5>
+            <h5>Savollar to'plami</h5>
 
             <button onclick="toggleSidebar('rightSidebar')">Students ☰</button>
 
@@ -65,12 +73,12 @@
                 <div class="row mb-2">
 
                     <div class="col">
-                        <span>Fanlar</span>
+                        <label for="scienceSelect">Fanlar</label>
                         <select id="scienceSelect" class="form-select"></select>
                     </div>
 
                     <div class="col">
-                        <span>Mavzular</span>
+                        <label for="topicSelect">Mavzular</label>
                         <select id="topicSelect" class="form-select"></select>
                     </div>
 
@@ -83,7 +91,7 @@
             <!-- BOTTOM — SELECTED QUESTIONS -->
             <div class="builder-bottom">
 
-                <h6>Selected questions</h6>
+                <h6>Tanlangan savollar</h6>
 
                 <div id="selectedList" class="question-box">
                     <div id="selectedPlaceholder"
@@ -92,13 +100,17 @@
                     </div>
                 </div>
 
-                <div class="builder-footer">
+                <div class="builder-footer d-flex gap-2 w-100">
 
-                    <div>Selected: <b id="counter">0</b></div>
+                    <div class="w-50">Tanlanganlar<br> savollar: <b id="counter">0</b></div>
 
-                    <div class="d-flex">
-                        <input id="setName" class="form-control me-2" placeholder="--Testlist nomi--">
-                        <button class="btn btn-success" onclick="saveSet()">Save</button>
+                    <div class="d-flex flex-column gap-2 w-50">
+                        <label for="setName" class="w-100">Savollar paketi</label>
+
+                        <div class="d-flex gap-2 w-100">
+                        <input id="setName" class="form-control flex-grow-1" placeholder="--Yangi paket nomini kiriting--">
+                            <button class="btn btn-success" onclick="saveSet()">Save</button>
+                        </div>
                     </div>
 
                 </div>
@@ -109,41 +121,62 @@
     </main>
 
     <!-- RIGHT SIDEBAR — STUDENTS -->
-    <aside id="rightSidebar" class="sidebar">
-
+    <div class="resize-handle" data-target="rightSidebar"></div>
+    <aside id="rightSidebar" class="sidebar" aria-labelledby="studentsSidebarTitle">
         <div class="sidebar-header">
-            <h6>Students</h6>
             <button onclick="toggleSidebar('rightSidebar')">⮞</button>
+            <h6 id="studentsSidebarTitle">Students</h6>
         </div>
 
-        <div class="sidebar-body">
+        <div class="rightsidebar-body">
 
-            <select id="groupSelect" class="form-select mb-2"></select>
+            <div class="rightsidebar-top">
+            <!-- BLOCK 1 — просмотр студентов -->
+                <div class="group-block mb-4">
+                    <select id="groupSelectToShowMembers" class="group-select form-select mb-2" title="--Guruhni tanlang--"></select>
 
-            <div id="studentList">
-                <table class="table table-sm">
-                    <thead>
-                    <tr>
-                        <th>Student</th>
-                        <th>Status</th>
-                    </tr>
-                    </thead>
-                    <tbody id="studentTable"></tbody>
-                </table>
-
+                    <h6>Guruh a'zolari:</h6>
+                    <table class="table table-sm">
+                        <thead>
+                        <tr>
+                            <th>№</th>
+                            <th><input type="checkbox" id="selectAllStudents"></th>
+                            <th>Student</th>
+                            <th>Status</th>
+                        </tr>
+                        </thead>
+                        <tbody class="student-table"></tbody>
+                    </table>
+                </div>
             </div>
+
 
             <hr>
 
-            <select id="setSelect" class="form-select mb-2"></select>
+            <div class="rightsidebar-bottom">
+                <!-- BLOCK 2 — назначение теста -->
+                <div class="group-block mb-3">
+                    <h6>Vazifa yuklash</h6>
+                    <select id="groupSelectToAssignTask" class="group-select form-select mb-2" title="--Guruhni tanlang--"></select>
+                </div>
 
-            <button class="btn btn-warning w-100" onclick="assignToGroup()">
-                Assign Test
-            </button>
+                <select id="setSelect" class="form-select mb-2"></select>
+
+                <label for="dueDate" class="form-label">Topshiriq muddati:</label>
+                <input type="datetime-local" id="dueDate" class="mb-2">
+
+                <button class="btn-assignTest btn btn-warning" onclick="assignTest()">
+                    Topshiriq berish
+                </button>
+            </div>
+
+
 
         </div>
-
     </aside>
+
+
+
 
 </div>
 

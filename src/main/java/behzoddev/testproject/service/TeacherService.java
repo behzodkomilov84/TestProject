@@ -14,10 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -32,7 +30,6 @@ public class TeacherService {
     private final TeacherGroupMapper teacherGroupMapper;
     private final UserRepository userRepository;
     private final Validation validation;
-    private final GroupMemberRepository groupMemberRepository;
     private final UserMapper userMapper;
 
     @Transactional
@@ -156,35 +153,96 @@ public class TeacherService {
 
     //Назначение теста
     @Transactional
-    public void assignToGroup(AssignToGroupDto dto) {
+    public AssignResultDto assignQuestionSetToStudents(User teacher,
+                                                       AssignDto payload) {
 
-        Long setId = dto.setId();
-        Long groupId = dto.groupId();
-
+        Long setId = payload.setId();
+        Long groupId = payload.groupId();
+        LocalDateTime dueDate = payload.dueDate();
+        List<Long> studentIds = payload.studentIds();
+        System.out.println("==================================");
+        System.out.println("studentIds: " + studentIds);
+        System.out.println("1");
+        System.out.println("==================================");
         QuestionSet set = questionSetRepository.findById(setId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "QuestionSet not found: " + setId));
+                .orElseThrow(() ->
+                        new IllegalArgumentException("QuestionSet not found"));
 
         TeacherGroup group = teacherGroupRepository.findById(groupId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Group not found: " + groupId));
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Group not found"));
 
-        // опционально — защита от повторного назначения
-        boolean exists = assignmentRepository
-                .existsByQuestionSetIdAndGroupId(setId, groupId);
+        // --- 1. Найти существующих студентов
 
-        if (exists) {
-            throw new IllegalStateException(
-                    "This test is already assigned to the group");
+        List<User> existingStudents =
+                userRepository.findAllById(studentIds);
+
+        Set<Long> existingIds = existingStudents.stream()
+                .map(User::getId)
+                .collect(Collectors.toSet());
+        System.out.println("==================================");
+        System.out.println("2");
+        System.out.println("==================================");
+        // --- 2. Найти отсутствующих
+
+        List<Long> missingIds = studentIds.stream()
+                .filter(id -> !existingIds.contains(id))
+                .toList();
+
+        // --- 3. Проверка уже назначенных
+
+        List<Long> alreadyAssigned = new ArrayList<>();
+        List<User> toAssign = new ArrayList<>();
+        System.out.println("==================================");
+        System.out.println("3");
+        System.out.println("==================================");
+        for (User student : existingStudents) {
+
+            boolean exists =
+                    assignmentRepository.existsByQuestionSetIdAndGroupIdAndDueDateAndStudentId(
+                            setId,
+                            groupId,
+                            dueDate,
+                            student.getId()
+                    );
+            System.out.println("==================================");
+            System.out.println("4");
+            System.out.println("==================================");
+            if (exists)
+                alreadyAssigned.add(student.getId());
+            else
+                toAssign.add(student);
         }
 
-        Assignment assignment = Assignment.builder()
-                .questionSet(set)
-                .group(group)
-                .assignedAt(LocalDateTime.now())
-                .build();
+        // --- 4. Создание назначений
 
-        assignmentRepository.save(assignment);
+        List<Long> assignedIds = new ArrayList<>();
+
+        for (User student : toAssign) {
+
+            Assignment assignment = Assignment.builder()
+                    .questionSet(set)
+                    .group(group)
+                    .pupil(student)
+                    .assignedAt(LocalDateTime.now())
+                    .assignedBy(teacher)
+                    .dueDate(dueDate)
+                    .build();
+
+            assignmentRepository.save(assignment);
+
+            assignedIds.add(student.getId());
+        }
+        System.out.println("==================================");
+        System.out.println("5");
+        System.out.println("==================================");
+        // --- 5. Результат
+
+        return AssignResultDto.builder()
+                .assigned(assignedIds)
+                .missing(missingIds)
+                .alreadyAssigned(alreadyAssigned)
+                .build();
     }
 
 
@@ -220,7 +278,7 @@ public class TeacherService {
         return userRepository
                 .findByRole_RoleName("ROLE_USER")
                 .stream()
-                .map(u -> userMapper.mapUserToGroupStudentDto(u))
+                .map(userMapper::mapUserToGroupStudentDto)
                 .toList();
     }
 

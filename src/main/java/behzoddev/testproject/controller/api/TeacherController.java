@@ -134,4 +134,17 @@ public class TeacherController {
         return teacherService.getAllStudentsForGroups();
     }
 
+    @PostMapping("/assign")
+    public ResponseEntity<AssignResultDto> assign(@RequestBody AssignDto assignment,
+                       @AuthenticationPrincipal User teacher) {
+
+        AssignResultDto assignResultDto =
+                teacherService.assignQuestionSetToStudents(teacher, assignment);
+        System.out.println("==================================");
+        System.out.println("controller");
+        System.out.println("==================================");
+        return ResponseEntity.ok().body(assignResultDto);
+    }
+
+
 }
