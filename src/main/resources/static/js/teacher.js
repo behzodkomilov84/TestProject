@@ -10,6 +10,8 @@ document.addEventListener("DOMContentLoaded", () => {
     loadSets();
     initSelectAll();
     void loadGroupStudents(null); //sahifa ochilganda o'ng sidebardagi table ni parent' ini yashirish uchun kk.
+    initAssignButtonReactivity();
+
     //-------------------------------------------------------------------------
     //Agar o'ng saydbarda gruppa ochiq bo'lsa, chap saydbarda ayni shu
     // gruppani tahrirlaganda berkilib ketmaydi
@@ -65,6 +67,31 @@ function updateAssignButtonState(assignBlock) {
 
     // итоговое состояние
     assignBtn.disabled = !(studentsOk && setOk && dateOk);
+}
+
+function initAssignButtonReactivity() {
+
+    const setSelect = document.getElementById("setSelect");
+    const dueDateInput = document.getElementById("dueDate");
+
+    if (setSelect) {
+        setSelect.addEventListener("change", () =>
+            updateAssignButtonState()
+        );
+    }
+
+    if (dueDateInput) {
+        dueDateInput.addEventListener("input", () =>
+            updateAssignButtonState()
+        );
+    }
+
+    // чекбоксы — через делегирование (динамически создаются)
+    document.addEventListener("change", e => {
+        if (e.target.classList.contains("student-checkbox")) {
+            updateAssignButtonState();
+        }
+    });
 }
 
 function updatePlaceholder() {
