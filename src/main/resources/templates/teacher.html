@@ -130,46 +130,38 @@
 
         <div class="rightsidebar-body">
 
-            <div class="rightsidebar-top">
-            <!-- BLOCK 1 — просмотр студентов -->
-                <div class="group-block mb-4">
-                    <select id="groupSelectToShowMembers" class="group-select form-select mb-2" title="--Guruhni tanlang--"></select>
+            <div class="rightsidebar">
 
-                    <h6>Guruh a'zolari:</h6>
-                    <table class="table table-sm">
-                        <thead>
+                <div class="group-block mb-4">
+                    <h6>Vazifa yuklash</h6>
+                    <select id="groupSelectToShowMembers" class="group-select form-select mb-2" title="Guruh a'zolarini ko'rish uchun guruhni tanlang"></select>
+
+                    <h6 id="studentsTitle" class="students-hidden">Guruh a'zolari:</h6>
+
+                    <div class="border rounded shadow-sm p-2" id="studentsTableParent">
+                    <table class="table table-sm table-bordered table-hover align-middle students-hidden " id="studentsTable">
+                        <thead class="table-light">
                         <tr>
-                            <th>№</th>
-                            <th><input type="checkbox" id="selectAllStudents"></th>
-                            <th>Student</th>
-                            <th>Status</th>
+                            <th class="text-center">№</th>
+                            <th class="text-center"><input type="checkbox" id="selectAllStudents"></th>
+                            <th class="text-center">Student</th>
+                            <th class="text-center">Status</th>
                         </tr>
                         </thead>
                         <tbody class="student-table"></tbody>
                     </table>
+                    </div>
+
+                    <select id="setSelect" class="form-select mb-2"></select>
+
+                    <label for="dueDate" class="form-label">Topshiriq muddati:</label>
+                    <input type="datetime-local" id="dueDate" class="mb-2">
+
+                    <button class="btn-assignTest btn btn-warning" onclick="assignTest()">
+                        Topshiriq berish
+                    </button>
                 </div>
             </div>
-
-
-            <hr>
-
-            <div class="rightsidebar-bottom">
-                <!-- BLOCK 2 — назначение теста -->
-                <div class="group-block mb-3">
-                    <h6>Vazifa yuklash</h6>
-                    <select id="groupSelectToAssignTask" class="group-select form-select mb-2" title="--Guruhni tanlang--"></select>
-                </div>
-
-                <select id="setSelect" class="form-select mb-2"></select>
-
-                <label for="dueDate" class="form-label">Topshiriq muddati:</label>
-                <input type="datetime-local" id="dueDate" class="mb-2">
-
-                <button class="btn-assignTest btn btn-warning" onclick="assignTest()">
-                    Topshiriq berish
-                </button>
-            </div>
-
 
 
         </div>

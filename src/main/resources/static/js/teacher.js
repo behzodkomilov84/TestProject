@@ -1,6 +1,6 @@
 const selectedMap = new Map();
 let currentGroupId = null;
-
+let activeGroupIdOnRightSidebar = null;
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -9,7 +9,22 @@ document.addEventListener("DOMContentLoaded", () => {
     void loadAllGroupSelects();
     loadSets();
     initSelectAll();
+    void loadGroupStudents(null); //sahifa ochilganda o'ng sidebardagi table ni parent' ini yashirish uchun kk.
+    //-------------------------------------------------------------------------
+    //Agar o'ng saydbarda gruppa ochiq bo'lsa, chap saydbarda ayni shu
+    // gruppani tahrirlaganda berkilib ketmaydi
+    const groupSelect = document.getElementById("groupSelectToShowMembers");
 
+    if (groupSelect) {
+        groupSelect.addEventListener("change", e => {
+
+            activeGroupIdOnRightSidebar = e.target.value || null;
+
+            void loadGroupStudents(activeGroupIdOnRightSidebar);
+        });
+    }
+    //--------------------------------------------------------------------------
+    /*  Fanni tanlaganda shu fanga oid mavzularni zagruzka qiladi*/
     document.getElementById("scienceSelect")
         ?.addEventListener("change", e => {
 
@@ -19,7 +34,38 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
     updatePlaceholder();
+
+    // Инициализация кнопки
+    updateAssignButtonState();
+
 });
+
+// Универсальная функция обновления состояния кнопки "Назначить тест"
+function updateAssignButtonState(assignBlock) {
+    // Если assignBlock не передан, ищем стандартный блок справа
+    let block = assignBlock || document.querySelector("#rightSidebar .group-block");
+    if (!block) return;
+
+    let assignBtn = block.querySelector(".btn-assignTest");
+    let studentCheckboxes = block.querySelectorAll(".student-checkbox");
+    let setSelect = document.getElementById("setSelect");
+    let dueDateInput = document.getElementById("dueDate");
+
+    if (!assignBtn || !setSelect || !dueDateInput || !studentCheckboxes) return;
+
+    // 1️⃣ есть ли выбранные студенты
+    let studentsOk = Array.from(studentCheckboxes)
+        .some(cb => cb.checked);
+
+    // 2️⃣ выбран ли тест
+    let setOk = setSelect.value !== "";
+
+    // 3️⃣ выбрана ли дата
+    let dateOk = dueDateInput.value !== "";
+
+    // итоговое состояние
+    assignBtn.disabled = !(studentsOk && setOk && dateOk);
+}
 
 function updatePlaceholder() {
 
@@ -34,6 +80,7 @@ function updatePlaceholder() {
 
     box.classList.toggle("has-items", hasItems);
 }
+
 //--------------------------------------------------------
 //          TESTLAR BLOKI
 //--------------------------------------------------------
@@ -216,6 +263,22 @@ function resetBuilder() {
     updatePlaceholder();
 }
 
+//Savollar satrini bosganda checkbox tanlanadigan qilish
+document.addEventListener("click", e => {
+
+    const item = e.target.closest(".question-item");
+    if (!item) return;
+
+    // если кликнули прямо по checkbox — ничего не делаем
+    if (e.target.tagName === "INPUT") return;
+
+    const checkbox = item.querySelector("input[type='checkbox']");
+    if (!checkbox) return;
+
+    checkbox.click();
+});
+
+
 //=======================================================================
 //              GRUPPANI TAHRIRLASH
 //=======================================================================
@@ -225,20 +288,25 @@ function startInlineEdit(groupId) {
         `.group-name[data-id="${groupId}"]`
     );
 
+    if (!span) return;
+
     const oldValue = span.innerText;
 
     const input = document.createElement("input");
     input.value = oldValue;
     input.className = "form-control";
 
+    // флаг защиты от двойного вызова
+    input.dataset.saved = "false";
+
     span.replaceWith(input);
     input.focus();
     input.select();
 
-    // save on enter
     input.addEventListener("keydown", e => {
 
         if (e.key === "Enter") {
+            e.preventDefault();
             saveInlineEdit(groupId, input, oldValue);
         }
 
@@ -246,14 +314,14 @@ function startInlineEdit(groupId) {
             cancelInlineEdit(input, oldValue, groupId);
         }
     });
-
-    // save on blur
-    input.addEventListener("blur", () =>
-        saveInlineEdit(groupId, input, oldValue)
-    );
 }
 
 function saveInlineEdit(groupId, input, oldValue) {
+
+    // уже сохраняли → выход
+    if (input.dataset.saved === "true") return;
+
+    input.dataset.saved = "true";
 
     const newName = input.value.trim();
 
@@ -272,6 +340,24 @@ function saveInlineEdit(groupId, input, oldValue) {
             if (!r.ok) throw new Error();
 
             replaceWithSpan(input, groupId, newName);
+
+            // обновляем select'ы
+            loadAllGroupSelects().then(() => {
+
+                if (activeGroupIdOnRightSidebar) {
+
+                    const select =
+                        document.getElementById("groupSelectToShowMembers");
+
+                    if (select) {
+                        select.value = activeGroupIdOnRightSidebar;
+                    }
+
+                    // таблицу НЕ скрываем — просто обновляем данные
+                    void loadGroupStudents(activeGroupIdOnRightSidebar);
+                }
+            });
+
         })
         .catch(() => {
 
@@ -354,7 +440,7 @@ function createGroup() {
 
 function deleteGroup(id) {
     fetch(`/api/teacher/groups/${id}`, {method: "DELETE"})
-        .then(()=>{
+        .then(() => {
             loadGroups();
             void loadAllGroupSelects();
         });
@@ -417,9 +503,6 @@ async function loadAllGroupSelects() {
         const showMembersSelect =
             document.getElementById("groupSelectToShowMembers");
 
-        const assignSelect =
-            document.getElementById("groupSelectToAssignTask");
-
         // helper для заполнения select
         const fillSelect = select => {
             if (!select) return;
@@ -434,17 +517,6 @@ async function loadAllGroupSelects() {
         };
 
         fillSelect(showMembersSelect);
-        fillSelect(assignSelect);
-
-        // загрузка студентов при выборе группы
-        if (showMembersSelect) {
-            showMembersSelect.onchange = e => {
-                const groupId = e.target.value;
-                if (!groupId) return;
-
-                loadGroupStudents(groupId);
-            };
-        }
 
     } catch (err) {
         console.error("Group select load error:", err);
@@ -458,6 +530,7 @@ async function loadAllGroupSelects() {
 function toggleSidebar(id) {
     document.getElementById(id).classList.toggle("collapsed");
 }
+
 //Sidebarni razmerini boshqaradi
 document.querySelectorAll(".resize-handle").forEach(handle => {
 
@@ -494,8 +567,50 @@ document.querySelectorAll(".resize-handle").forEach(handle => {
         document.addEventListener("mouseup", stop);
     });
 });
-//=======================================================================
 
+document.querySelectorAll(".resize-handle").forEach(handle => {
+
+    handle.addEventListener("mousedown", e => {
+
+        const sidebar =
+            document.getElementById(handle.dataset.target);
+
+        const styles = getComputedStyle(sidebar);
+
+        const min =
+            parseFloat(styles.minWidth) || 180;
+
+        const max =
+            parseFloat(styles.maxWidth) || 600;
+
+        const startX = e.clientX;
+        const startWidth = sidebar.offsetWidth;
+
+        const isRight =
+            sidebar.id === "rightSidebar";
+
+        function onMove(ev) {
+
+            const dx = ev.clientX - startX;
+
+            let newWidth = isRight
+                ? startWidth - dx
+                : startWidth + dx;
+
+            newWidth = Math.max(min, Math.min(max, newWidth));
+
+            sidebar.style.width = newWidth + "px";
+        }
+
+        function stop() {
+            document.removeEventListener("mousemove", onMove);
+            document.removeEventListener("mouseup", stop);
+        }
+
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", stop);
+    });
+});
 
 //=======================================================================
 //              QUESTIONSET BO'YICHA AMALLAR
@@ -503,7 +618,7 @@ document.querySelectorAll(".resize-handle").forEach(handle => {
 function saveSet() {
 
     const name = document.getElementById("setName")
-            .value.trim();
+        .value.trim();
 
     if (!name || selectedMap.size === 0) {
 
@@ -571,115 +686,185 @@ async function apiFetch(url, options = {}) {
 }
 
 //=======================================================================
+function hideTableIfGroupNotSelected() {
+
+    let block = document.querySelector("#rightSidebar .group-block");
+    if (!block) return;
+
+    let tbody = block.querySelector(".student-table");
+    let assignBtn = block.querySelector(".btn-assignTest");
+    let studentsTitle = document.getElementById("studentsTitle");
+    let tableParent = document.getElementById("studentsTableParent");
+
+    if (tbody) tbody.innerHTML = "";
+
+    studentsTitle && studentsTitle.classList.add("students-hidden");
+    tableParent && tableParent.classList.add("hidden");
+
+    if (assignBtn) assignBtn.disabled = true;
+}
+
+function showTableIfGroupIsSelected() {
+
+    let studentsTitle = document.getElementById("studentsTitle");
+    let tableParent = document.getElementById("studentsTableParent");
+    let table = document.getElementById("studentsTable");
+
+    studentsTitle && studentsTitle.classList.remove("students-hidden");
+    tableParent && tableParent.classList.remove("hidden");
+    table && table.classList.remove("students-hidden");
+}
+
 async function loadGroupStudents(groupId) {
+
+    const block = document.querySelector("#rightSidebar .group-block");
+    if (!block) return;
+
+    if (!groupId) {
+        hideTableIfGroupNotSelected();
+        return;
+    }
 
     try {
 
-        const tbody =
-            document.querySelector(".student-table");
+        const list = await apiFetch(
+            "/api/teacher/group/" + groupId + "/students"
+        );
 
-        if (!tbody) {
-            console.warn("student-table not found");
-            return;
-        }
-
-        const list =
-            await apiFetch(`/api/teacher/group/${groupId}/students`);
-
-        tbody.innerHTML = "";
-
-        if (!list || list.length === 0) {
-
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="3" style="text-align:center">
-                        Bu guruhga a'zo o'quvchi yo'q
-                    </td>
-                </tr>
-            `;
-
-            return;
-        }
-
-        list.forEach(s => {
-
-            const row = document.createElement("tr");
-
-            row.innerHTML = `
-                
-                <td></td>
-                
-                <td>
-                    <input type="checkbox"
-                           class="student-checkbox"
-                           data-id="${s.id}">
-                </td>
-                <td>${s.username}</td>
-                <td style="
-                        font-weight:bold;
-                        color:${s.status === "ACCEPTED" ? "green" : "orange"}
-                    ">
-                    ${s.status}
-                </td>
-            `;
-
-            tbody.appendChild(row);
-        });
+        renderGroupStudents(block, list);
 
     } catch (err) {
 
         console.error("loadGroupStudents error:", err);
+        hideTableIfGroupNotSelected();
     }
 }
 
-// Выбор всех студентов
+function renderGroupStudents(block, list) {
+
+    const tbody = block.querySelector(".student-table");
+    if (!tbody) return;
+
+    tbody.innerHTML = "";
+
+    if (!list || list.length === 0) {
+
+        tbody.innerHTML =
+            `<tr>
+                <td colspan="4" class="text-center text-muted">
+                    Bu guruhga a'zo o'quvchi yo'q    
+                </td>
+            </tr>`;
+
+        showTableIfGroupIsSelected();
+        return;
+    }
+list.forEach(function (s, index) {
+
+        const row = document.createElement("tr");
+
+        row.innerHTML =
+            '<td class="text-center">' + (index + 1) + '</td>' +
+            '<td class="text-center">' +
+            '<input type="checkbox" class="student-checkbox" data-id="' + s.pupilId + '">' +
+            '</td>' +
+            '<td>' + s.username + '</td>' +
+            '<td class="text-center" style="font-weight:bold;color:' +
+            (s.status === "ACCEPTED" ? "green" : "orange") +
+            '">' + s.status + '</td>';
+
+        tbody.appendChild(row);
+    });
+
+    showTableIfGroupIsSelected();
+
+    updateAssignButtonState(block);
+}
+
+//=======================================================================
+
+// Инициализация "Select All" и индивидуальных чекбоксов
 function initSelectAll() {
-    const selectAll = document.getElementById("selectAllStudents");
+    let selectAll = document.getElementById("selectAllStudents");
 
     if (!selectAll) return;
 
-    selectAll.addEventListener("change", e => {
+    // При выборе/снятии "Select All"
+    selectAll.addEventListener("change", function (e) {
+        const checked = e.target.checked;
         document.querySelectorAll(".student-checkbox")
-            .forEach(cb => cb.checked = e.target.checked);
+            .forEach(function (cb) {
+                cb.checked = checked;
+            });
+
+        updateAssignButtonState();
     });
+
+    // Слушатели на все существующие и будущие чекбоксы
+    document.addEventListener("change", function (e) {
+        if (e.target.classList.contains("student-checkbox")) {
+            updateAssignButtonState();
+        }
+    });
+
+    // Инициализация кнопки при старте
+    updateAssignButtonState();
 }
 
 /* ===============================
    UNIVERSAL ASSIGN FUNCTION
 ================================ */
 
-// Универсальная функция назначения теста
+// Функция назначения теста
 async function assignTest() {
     try {
-        const assignBlock = document.querySelector("#rightSidebar .btn-warning").closest(".sidebar-body");
+        let assignBlock = document.querySelector("#rightSidebar .btn-assignTest").closest(".group-block");
+        if (!assignBlock) throw new Error("Assign block not found");
 
         const groupSelect = assignBlock.querySelector(".group-select");
         const groupId = Number(groupSelect.value);
         if (!groupId) return alert("Выберите группу");
 
-        const setId = Number(document.getElementById("setSelect").value);
+        const setSelect = document.getElementById("setSelect");
+        const setId = Number(setSelect.value);
         if (!setId) return alert("Выберите тест");
 
-        const dueDate = document.getElementById("dueDate").value || null;
+        const dueDateInput = document.getElementById("dueDate");
+        const dueDate = dueDateInput.value ? new Date(dueDateInput.value).toISOString() : null;
 
-        // Получаем всех студентов из таблицы (если ничего не выбрано, назначаем всей группе)
-        let studentIds = [...assignBlock.querySelectorAll(".student-checkbox")].map(cb => Number(cb.value));
-        const checked = [...assignBlock.querySelectorAll(".student-checkbox:checked")].map(cb => Number(cb.value));
-        if (checked.length > 0) studentIds = checked;
+        const block = document.querySelector("#rightSidebar .group-block");
+        if (!block) return;
 
-        const payload = { groupId, setId, dueDate, studentIds };
+        const checked = block.querySelectorAll(
+            ".student-checkbox:checked"
+        );
+
+        const studentIds = Array.from(checked)
+            .map(cb => Number(cb.dataset.id))
+            .filter(Boolean);
+
+        if (studentIds.length === 0) {
+            alert("Выберите хотя бы одного студента");
+            return;
+        }
+
+        console.log("selected students:", studentIds);
+
+
+        const payload = {groupId, setId, dueDate, studentIds};
 
         await apiFetch("/api/teacher/assign", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {"Content-Type": "application/json"},
             body: JSON.stringify(payload)
         });
 
         alert("Тест успешно назначен!");
+        assignBlock.querySelectorAll(".student-checkbox:checked").forEach(cb => cb.checked = false);
+        // Обновляем состояние кнопки после назначения
+        assignBlock.querySelector(".btn-assignTest").disabled = true;
     } catch (err) {
         console.error(err);
-        alert("Ошибка назначения: " + err.message);
+        alert("Ошибка назначения: " + (err.message || err));
     }
 }
-
-
