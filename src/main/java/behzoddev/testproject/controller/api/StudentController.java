@@ -1,15 +1,14 @@
 package behzoddev.testproject.controller.api;
 
-import behzoddev.testproject.dto.GroupDto;
 import behzoddev.testproject.dto.GroupInviteDto;
+import behzoddev.testproject.dto.ResponseAssignmentsDto;
 import behzoddev.testproject.dto.ResponseGroupMembershipDto;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.StudentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -48,8 +47,13 @@ public class StudentController {
     }
 
     @GetMapping("/memberships")
-    public List<ResponseGroupMembershipDto> memberships(@AuthenticationPrincipal User student) {
-        return studentService.getMemberships(student.getUsername());
+    public ResponseEntity<List<ResponseGroupMembershipDto>> getMemberships(@AuthenticationPrincipal User student) {
+        return ResponseEntity.ok(studentService.getMemberships(student.getUsername()));
+    }
+
+    @GetMapping("/tasks")
+    public ResponseEntity<List<ResponseAssignmentsDto>> getTasks(@AuthenticationPrincipal User pupil){
+        return ResponseEntity.ok(studentService.getTasks(pupil));
     }
 
     @GetMapping("/debug")

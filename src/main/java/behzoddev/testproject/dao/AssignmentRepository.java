@@ -1,11 +1,13 @@
 package behzoddev.testproject.dao;
 
 import behzoddev.testproject.entity.Assignment;
+import behzoddev.testproject.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
 
@@ -20,4 +22,6 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
     boolean existsByQuestionSetIdAndGroupIdAndDueDateAndStudentId(
             @Param("setId") Long setId, @Param("groupId") Long groupId,
             @Param("dueDate") LocalDateTime dueDate, @Param("studentId") Long studentId);
+
+    List<Assignment> findAllByPupil(User pupil);
 }

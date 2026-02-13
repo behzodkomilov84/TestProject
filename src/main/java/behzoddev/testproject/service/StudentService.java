@@ -1,9 +1,10 @@
 package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.*;
-import behzoddev.testproject.dto.GroupDto;
 import behzoddev.testproject.dto.GroupInviteDto;
+import behzoddev.testproject.dto.ResponseAssignmentsDto;
 import behzoddev.testproject.dto.ResponseGroupMembershipDto;
+import behzoddev.testproject.entity.Assignment;
 import behzoddev.testproject.entity.GroupInvite;
 import behzoddev.testproject.entity.GroupMember;
 import behzoddev.testproject.entity.User;
@@ -24,11 +25,10 @@ public class StudentService {
     private final GroupInviteRepository groupInviteRepository;
     private final GroupInviteMapper groupInviteMapper;
     private final AssignmentRepository assignmentRepository;
-    private final AttemptRepository attemptRepository;
     private final GroupMemberRepository groupMemberRepository;
-    private final TeacherGroupRepository teacherGroupRepository;
     private final UserRepository userRepository;
     private final GroupMemberMapper groupMemberMapper;
+    private final QuestionSetRepository questionSetRepository;
 
     @Transactional
     public List<GroupInviteDto> getInvites(User pupil) {
@@ -107,6 +107,29 @@ public class StudentService {
         return membershipByUser
                 .stream()
                 .map(groupMemberMapper::mapGroupMemberToResponseGroupMembershipDto)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ResponseAssignmentsDto> getTasks(User pupil) {
+        List<Assignment> assignments = assignmentRepository.findAllByPupil(pupil);
+
+        if (assignments.isEmpty()) throw new RuntimeException("Bu foydalanuvchiga qo'yilgan vazifa topilmadi");
+
+        return assignments.stream()
+                .map(a ->
+                        ResponseAssignmentsDto.builder()
+                                .id(a.getId())
+                                .questionSetId(a.getQuestionSet().getId())
+                                .questionSetName(questionSetRepository.findById(a.getQuestionSet().getId()).get().getName())
+                                .groupId(a.getGroup().getId())
+                                .groupName(a.getGroup().getName())
+                                .assignerId(a.getAssignedBy().getId())
+                                .assignerName(a.getAssignedBy().getUsername())
+                                .assignedAt(a.getAssignedAt())
+                                .dueDate(a.getDueDate())
+                                .build()
+                )
                 .toList();
     }
 }

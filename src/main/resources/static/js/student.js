@@ -86,23 +86,35 @@ async function loadTasks() {
         <table class="table">
         <thead>
         <tr>
-            <th>Test</th>
-            <th>Group</th>
-            <th></th>
+            <th>№</th>
+            <th>Guruh nomi</th>
+            <th>Topshiriq beruvchi nomi</th>
+            <th>Savollar paketi id'si </th>
+            <th>Savollar paketi nomi </th>
+            <th>Topshiriq berilgan vaqt </th>
+            <th>Topshiriq muddati </th>
+            <th>Amallar</th>
+            <th>Status</th>
         </tr>
         </thead><tbody>`;
 
-        list.forEach(t => {
+        list.forEach((t,index) => {
             html += `
             <tr>
-                <td>${t.name}</td>
-                <td>${t.group}</td>
+                <td>${index + 1}</td>
+                <td>${t.groupName}</td>
+                <td>${t.assignerName}</td>
+                <td>${t.questionSetId}</td>
+                <td>${t.questionSetName}</td>
+                <td>${t.assignedAt}</td>
+                <td>${t.dueDate}</td>
                 <td>
                     <button class="btn btn-primary btn-sm"
-                        onclick="startTask(${t.id})">
-                        Start
+                        onclick="loadTaskQuestions(${t.questionSetId})">
+                        Savollarni ko'rish
                     </button>
                 </td>
+                <td></td>
             </tr>`;
         });
 
