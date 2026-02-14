@@ -1,6 +1,8 @@
 package behzoddev.testproject.controller.api;
 
-import behzoddev.testproject.dto.*;
+import behzoddev.testproject.dto.science.ScienceIdAndNameDto;
+import behzoddev.testproject.dto.teacher.*;
+import behzoddev.testproject.dto.topic.TopicWithQuestionCountDto;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.*;
 import jakarta.validation.Valid;
@@ -136,7 +138,7 @@ public class TeacherController {
 
     @PostMapping("/assign")
     public ResponseEntity<AssignResultDto> assign(@RequestBody AssignDto assignment,
-                       @AuthenticationPrincipal User teacher) {
+                                                  @AuthenticationPrincipal User teacher) {
 
         AssignResultDto assignResultDto =
                 teacherService.assignQuestionSetToStudents(teacher, assignment);

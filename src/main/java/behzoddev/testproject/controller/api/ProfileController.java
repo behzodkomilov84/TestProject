@@ -2,20 +2,22 @@ package behzoddev.testproject.controller.api;
 
 import behzoddev.testproject.dao.TestSessionRepository;
 import behzoddev.testproject.dto.*;
+import behzoddev.testproject.dto.profile.ChangePasswordDto;
+import behzoddev.testproject.dto.profile.ChangeUsernameDto;
+import behzoddev.testproject.dto.profile.ProfileDto;
+import behzoddev.testproject.dto.profile.TestHistoryDto;
+import behzoddev.testproject.dto.testsession.TestStatsDto;
 import behzoddev.testproject.entity.TestSession;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.ProfileService;
 import behzoddev.testproject.service.TestSessionService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/profile")
@@ -46,7 +48,7 @@ public class ProfileController {
     // 3️⃣ История тестов
     @GetMapping("/history")
     public PageResponseDto<TestHistoryDto> getHistory(@AuthenticationPrincipal User user,
-                                           Pageable pageable) {
+                                                      Pageable pageable) {
 
         return profileService.getHistory(user, pageable);
 

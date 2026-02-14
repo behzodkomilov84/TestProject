@@ -1,8 +1,8 @@
 package behzoddev.testproject.mapper;
 
-import behzoddev.testproject.dto.QuestionDto;
-import behzoddev.testproject.dto.QuestionShortDto;
-import behzoddev.testproject.dto.ResponseQuestionTextDto;
+import behzoddev.testproject.dto.question.QuestionDto;
+import behzoddev.testproject.dto.question.QuestionShortDto;
+import behzoddev.testproject.dto.teacher.ResponseQuestionTextDto;
 import behzoddev.testproject.entity.Question;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

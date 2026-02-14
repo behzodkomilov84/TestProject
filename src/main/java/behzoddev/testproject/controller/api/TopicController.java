@@ -1,7 +1,7 @@
 package behzoddev.testproject.controller.api;
 
-import behzoddev.testproject.dto.TopicIdAndNameDto;
-import behzoddev.testproject.dto.TopicNameDto;
+import behzoddev.testproject.dto.topic.TopicIdAndNameDto;
+import behzoddev.testproject.dto.topic.TopicNameDto;
 import behzoddev.testproject.service.TopicService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

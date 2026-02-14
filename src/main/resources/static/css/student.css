@@ -96,7 +96,7 @@ body {
 .center-msg {
     text-align: center;
     margin-top: 120px;
-    font-size: 18px;
+    font-size: 30px;
     color: #64748b;
 }
 
@@ -106,7 +106,7 @@ body {
     background: white;
     border-radius: 8px;
     padding: 15px;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
 }
 
 #sidebarToggle {
@@ -126,4 +126,115 @@ body {
 #workspaceTitle {
     text-align: center;
     text-transform: uppercase;
+    font-size: 35px;
+}
+
+/*-------------------------------------------------------------------*/
+/* ===== EXAM CARD ===== */
+
+.exam-card {
+
+    background: white;
+    border-radius: 14px;
+    padding: 28px;
+
+    min-height: 70vh;
+
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+
+    animation: fadeIn 0.25s ease;
+}
+
+/* header */
+
+.exam-header {
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.exam-counter {
+
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #0d6efd;
+}
+
+/* question */
+
+.exam-question {
+
+    font-size: 1.5rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+/* answers */
+
+.exam-answers {
+
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.exam-answer {
+
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid #dee2e6;
+
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    font-size: 1.1rem;
+}
+
+.exam-answer:hover {
+
+    background: rgba(13,110,253,0.08);
+}
+
+.exam-answer.selected {
+
+    background: rgba(25,135,84,0.15);
+    border-color: #198754;
+    font-weight: 500;
+}
+
+/* animation */
+
+@keyframes fadeIn {
+
+    from {opacity: 0; transform: translateY(10px);}
+    to {opacity: 1; transform: translateY(0);}
+}
+
+/* mobile */
+
+@media (max-width: 768px) {
+
+    .exam-question {
+
+        font-size: 1.2rem;
+    }
+
+    .exam-answer {
+
+        font-size: 1rem;
+    }
+}
+
+.question-fullscreen {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }

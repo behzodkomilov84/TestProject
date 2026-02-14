@@ -1,6 +1,6 @@
 package behzoddev.testproject.controller.page;
 
-import behzoddev.testproject.dto.RegisterDto;
+import behzoddev.testproject.dto.user.RegisterDto;
 import behzoddev.testproject.service.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;

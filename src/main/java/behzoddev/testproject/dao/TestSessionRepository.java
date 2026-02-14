@@ -1,7 +1,7 @@
 package behzoddev.testproject.dao;
 
-import behzoddev.testproject.dto.TestHistoryDto;
-import behzoddev.testproject.dto.TestSessionHistoryDto;
+import behzoddev.testproject.dto.profile.TestHistoryDto;
+import behzoddev.testproject.dto.testsession.TestSessionHistoryDto;
 import behzoddev.testproject.entity.TestSession;
 import behzoddev.testproject.entity.User;
 import org.springframework.data.domain.Page;
@@ -17,7 +17,7 @@ public interface TestSessionRepository extends JpaRepository<TestSession, Long> 
 
 
     @Query("""
-            select new behzoddev.testproject.dto.TestSessionHistoryDto
+            select new behzoddev.testproject.dto.testsession.TestSessionHistoryDto
             (
             t.id,
             s.name,
@@ -46,7 +46,7 @@ public interface TestSessionRepository extends JpaRepository<TestSession, Long> 
     Optional<TestSession> findByIdAndUserId(Long id, Long userId);
 
     @Query("""
-            select new behzoddev.testproject.dto.TestHistoryDto
+            select new behzoddev.testproject.dto.profile.TestHistoryDto
             (
             t.id,
             t.startedAt,

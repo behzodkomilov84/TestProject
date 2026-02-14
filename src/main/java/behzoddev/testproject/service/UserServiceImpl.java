@@ -2,10 +2,10 @@ package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.RoleRepository;
 import behzoddev.testproject.dao.UserRepository;
-import behzoddev.testproject.dto.ChangeRoleDto;
-import behzoddev.testproject.dto.LoginDto;
-import behzoddev.testproject.dto.RegisterDto;
-import behzoddev.testproject.dto.UserDto;
+import behzoddev.testproject.dto.user.ChangeRoleDto;
+import behzoddev.testproject.dto.user.LoginDto;
+import behzoddev.testproject.dto.user.RegisterDto;
+import behzoddev.testproject.dto.user.UserDto;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.exception.PasswordsDoNotMatchException;

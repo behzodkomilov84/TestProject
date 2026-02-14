@@ -1,6 +1,6 @@
 package behzoddev.testproject.mapper;
 
-import behzoddev.testproject.dto.ResponseGroupMembershipDto;
+import behzoddev.testproject.dto.student.ResponseGroupMembershipDto;
 import behzoddev.testproject.entity.GroupMember;
 import behzoddev.testproject.entity.enums.GroupRole;
 import org.mapstruct.Mapper;

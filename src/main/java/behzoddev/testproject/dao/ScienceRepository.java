@@ -1,6 +1,6 @@
 package behzoddev.testproject.dao;
 
-import behzoddev.testproject.dto.ScienceIdAndNameDto;
+import behzoddev.testproject.dto.science.ScienceIdAndNameDto;
 import behzoddev.testproject.entity.Science;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -23,10 +23,10 @@ public interface ScienceRepository extends JpaRepository<Science, Long> {
     Optional<Science> findByIdWithTopics(Long id);
 
 
-    @Query("select new behzoddev.testproject.dto.ScienceIdAndNameDto(s.id, s.name) from Science s")
+    @Query("select new behzoddev.testproject.dto.science.ScienceIdAndNameDto(s.id, s.name) from Science s")
     Set<ScienceIdAndNameDto> findAllScienceNames();
 
-    @Query("select new behzoddev.testproject.dto.ScienceIdAndNameDto(s.id, s.name) from Science s where s.id = :id")
+    @Query("select new behzoddev.testproject.dto.science.ScienceIdAndNameDto(s.id, s.name) from Science s where s.id = :id")
     Optional<ScienceIdAndNameDto> findScienceNameById(@Param("id") Long id);
 
     @Query("select s from Science s where s.name = :name")

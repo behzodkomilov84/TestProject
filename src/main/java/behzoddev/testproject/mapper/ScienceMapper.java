@@ -1,8 +1,8 @@
 package behzoddev.testproject.mapper;
 
-import behzoddev.testproject.dto.QuestionDto;
-import behzoddev.testproject.dto.ScienceDto;
-import behzoddev.testproject.dto.ScienceNameDto;
+import behzoddev.testproject.dto.question.QuestionDto;
+import behzoddev.testproject.dto.science.ScienceDto;
+import behzoddev.testproject.dto.science.ScienceNameDto;
 import behzoddev.testproject.dto.batch.ScienceCreateDto;
 import behzoddev.testproject.dto.batch.ScienceUpdateDto;
 import behzoddev.testproject.entity.Question;

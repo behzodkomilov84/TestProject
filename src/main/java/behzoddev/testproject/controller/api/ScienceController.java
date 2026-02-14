@@ -1,6 +1,11 @@
 package behzoddev.testproject.controller.api;
 
-import behzoddev.testproject.dto.*;
+import behzoddev.testproject.dto.question.QuestionShortDto;
+import behzoddev.testproject.dto.science.ScienceDto;
+import behzoddev.testproject.dto.science.ScienceIdAndNameDto;
+import behzoddev.testproject.dto.science.ScienceNameDto;
+import behzoddev.testproject.dto.topic.TopicIdAndNameDto;
+import behzoddev.testproject.dto.topic.TopicNameDto;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;

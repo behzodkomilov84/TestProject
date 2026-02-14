@@ -1,8 +1,8 @@
 package behzoddev.testproject.service;
 
-import behzoddev.testproject.dto.AnswerShortDto;
-import behzoddev.testproject.dto.ImportResultDto;
-import behzoddev.testproject.dto.QuestionSaveDto;
+import behzoddev.testproject.dto.answer.AnswerShortDto;
+import behzoddev.testproject.dto.excel.ImportResultDto;
+import behzoddev.testproject.dto.question.QuestionSaveDto;
 import behzoddev.testproject.validation.Validation;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;

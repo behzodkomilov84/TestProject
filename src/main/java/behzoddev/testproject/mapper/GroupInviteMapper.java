@@ -1,6 +1,6 @@
 package behzoddev.testproject.mapper;
 
-import behzoddev.testproject.dto.GroupInviteDto;
+import behzoddev.testproject.dto.student.GroupInviteDto;
 import behzoddev.testproject.entity.GroupInvite;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

@@ -1,8 +1,8 @@
 package behzoddev.testproject.controller.api;
 
 import behzoddev.testproject.dao.UserRepository;
-import behzoddev.testproject.dto.ChangeRoleDto;
-import behzoddev.testproject.dto.UserDto;
+import behzoddev.testproject.dto.user.ChangeRoleDto;
+import behzoddev.testproject.dto.user.UserDto;
 import behzoddev.testproject.service.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

@@ -1,16 +1,14 @@
 package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.*;
-import behzoddev.testproject.dto.GroupInviteDto;
-import behzoddev.testproject.dto.ResponseAssignmentsDto;
-import behzoddev.testproject.dto.ResponseGroupMembershipDto;
-import behzoddev.testproject.entity.Assignment;
-import behzoddev.testproject.entity.GroupInvite;
-import behzoddev.testproject.entity.GroupMember;
-import behzoddev.testproject.entity.User;
+import behzoddev.testproject.dto.answer.AnswerDto;
+import behzoddev.testproject.dto.question.QuestionDto;
+import behzoddev.testproject.dto.student.*;
+import behzoddev.testproject.entity.*;
 import behzoddev.testproject.entity.enums.InviteStatus;
 import behzoddev.testproject.mapper.GroupInviteMapper;
 import behzoddev.testproject.mapper.GroupMemberMapper;
+import behzoddev.testproject.mapper.QuestionSetMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +27,7 @@ public class StudentService {
     private final UserRepository userRepository;
     private final GroupMemberMapper groupMemberMapper;
     private final QuestionSetRepository questionSetRepository;
+    private final QuestionSetMapper questionSetMapper;
 
     @Transactional
     public List<GroupInviteDto> getInvites(User pupil) {
@@ -132,4 +131,17 @@ public class StudentService {
                 )
                 .toList();
     }
+
+    @Transactional(readOnly = true)
+    public ResponseQuestionSetDto getQuestionSet(Long id) {
+
+        QuestionSet set = questionSetRepository.fetchFullById(id)
+                .orElseThrow(() ->
+                        new RuntimeException("Question set not found: " + id)
+                );
+
+        return questionSetMapper.mapQuestionSetToResponseQuestionSetDto(set);
+    }
+
+
 }

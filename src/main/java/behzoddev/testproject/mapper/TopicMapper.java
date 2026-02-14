@@ -1,6 +1,6 @@
 package behzoddev.testproject.mapper;
 
-import behzoddev.testproject.dto.TopicNameDto;
+import behzoddev.testproject.dto.topic.TopicNameDto;
 import behzoddev.testproject.entity.Topic;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

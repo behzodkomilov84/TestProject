@@ -2,6 +2,9 @@ package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.TestSessionRepository;
 import behzoddev.testproject.dto.*;
+import behzoddev.testproject.dto.profile.ChangePasswordDto;
+import behzoddev.testproject.dto.profile.ChangeUsernameDto;
+import behzoddev.testproject.dto.profile.TestHistoryDto;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.mapper.TestSessionMapper;

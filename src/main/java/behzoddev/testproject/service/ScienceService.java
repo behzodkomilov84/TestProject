@@ -2,9 +2,9 @@ package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
-import behzoddev.testproject.dto.ScienceDto;
-import behzoddev.testproject.dto.ScienceIdAndNameDto;
-import behzoddev.testproject.dto.ScienceNameDto;
+import behzoddev.testproject.dto.science.ScienceDto;
+import behzoddev.testproject.dto.science.ScienceIdAndNameDto;
+import behzoddev.testproject.dto.science.ScienceNameDto;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.mapper.ScienceMapper;

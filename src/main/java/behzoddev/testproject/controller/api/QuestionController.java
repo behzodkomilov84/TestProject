@@ -1,9 +1,9 @@
 package behzoddev.testproject.controller.api;
 
-import behzoddev.testproject.dto.AnswerShortDto;
+import behzoddev.testproject.dto.answer.AnswerShortDto;
 import behzoddev.testproject.dto.ModalCommentSaveDto;
-import behzoddev.testproject.dto.QuestionDto;
-import behzoddev.testproject.dto.QuestionSaveDto;
+import behzoddev.testproject.dto.question.QuestionDto;
+import behzoddev.testproject.dto.question.QuestionSaveDto;
 import behzoddev.testproject.exception.ErrorResponse;
 import behzoddev.testproject.service.AnswerService;
 import behzoddev.testproject.service.QuestionService;

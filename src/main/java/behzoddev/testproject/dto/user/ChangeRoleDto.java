@@ -1,0 +1,7 @@
+package behzoddev.testproject.dto.user;
+
+import lombok.Builder;
+
+@Builder
+public record ChangeRoleDto(Long userId, String newRole) {
+}

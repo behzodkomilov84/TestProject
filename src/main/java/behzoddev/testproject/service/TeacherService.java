@@ -1,7 +1,7 @@
 package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.*;
-import behzoddev.testproject.dto.*;
+import behzoddev.testproject.dto.teacher.*;
 import behzoddev.testproject.entity.*;
 import behzoddev.testproject.entity.enums.InviteStatus;
 import behzoddev.testproject.mapper.TeacherGroupMapper;
