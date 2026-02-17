@@ -2,6 +2,7 @@ package behzoddev.testproject.mapper;
 
 import behzoddev.testproject.dto.answer.AnswerDto;
 import behzoddev.testproject.dto.answer.AnswerShortDto;
+import behzoddev.testproject.dto.student.ResponseAnswerDto;
 import behzoddev.testproject.entity.Answer;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -19,7 +20,7 @@ public interface AnswerMapper {
     @Mapping(target = "id", ignore = true)
     Answer mapAnswerShortDtoToAnswer(AnswerShortDto dto);
 
-    AnswerDto mapAnswertoAnswerDto(Answer answer);
+    AnswerDto mapAnswerToAnswerDto(Answer answer);
 
     @Mapping(target = "question", ignore = true)
     List<AnswerDto> mapAnswerListToAnswerDtoList(List<Answer> answers);
@@ -35,5 +36,11 @@ public interface AnswerMapper {
 
     @Mapping(target = "id", ignore = true)
     List<AnswerShortDto> mapAnswerDtoListToAnswerShorDtoList(List<AnswerDto> answers);
+
+    @Mapping(source = "answerText", target = "text")
+    ResponseAnswerDto mapAnswertoResponseAnswerDto(Answer answer);
+
+    List<ResponseAnswerDto> mapAnswerListToResponseAnswerDtoList(List<Answer> answers);
+
 }
 

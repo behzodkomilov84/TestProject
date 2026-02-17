@@ -8,13 +8,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "assignment_attempts")
+@Table(name = "assignment_attempts",
+        uniqueConstraints=@UniqueConstraint(columnNames={"assignment_id","pupil_id"}))
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Attempt {
+public class AssignmentAttempt {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -63,25 +64,27 @@ public class Attempt {
      */
     @Builder.Default
     @OneToMany(
-            mappedBy = "attempt",
+            mappedBy = "assignmentAttempt",
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
     private List<AttemptAnswer> answers = new ArrayList<>();
+
+    private LocalDateTime lastSync;
 
     /**
      * Удобный helper для добавления ответа
      */
     public void addAnswer(AttemptAnswer answer) {
         answers.add(answer);
-        answer.setAttempt(this);
+        answer.setAssignmentAttempt(this);
     }
 
     /**
      * Удобный helper для очистки ответов
      */
     public void clearAnswers() {
-        answers.forEach(a -> a.setAttempt(null));
+        answers.forEach(a -> a.setAssignmentAttempt(null));
         answers.clear();
     }
 }

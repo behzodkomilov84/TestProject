@@ -1,10 +1,14 @@
 package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.*;
-import behzoddev.testproject.dto.answer.AnswerDto;
-import behzoddev.testproject.dto.question.QuestionDto;
-import behzoddev.testproject.dto.student.*;
-import behzoddev.testproject.entity.*;
+import behzoddev.testproject.dto.student.GroupInviteDto;
+import behzoddev.testproject.dto.student.ResponseAssignmentsDto;
+import behzoddev.testproject.dto.student.ResponseGroupMembershipDto;
+import behzoddev.testproject.dto.student.ResponseQuestionSetDto;
+import behzoddev.testproject.entity.GroupInvite;
+import behzoddev.testproject.entity.GroupMember;
+import behzoddev.testproject.entity.QuestionSet;
+import behzoddev.testproject.entity.User;
 import behzoddev.testproject.entity.enums.InviteStatus;
 import behzoddev.testproject.mapper.GroupInviteMapper;
 import behzoddev.testproject.mapper.GroupMemberMapper;
@@ -111,16 +115,14 @@ public class StudentService {
 
     @Transactional(readOnly = true)
     public List<ResponseAssignmentsDto> getTasks(User pupil) {
-        List<Assignment> assignments = assignmentRepository.findAllByPupil(pupil);
 
-        if (assignments.isEmpty()) throw new RuntimeException("Bu foydalanuvchiga qo'yilgan vazifa topilmadi");
-
-        return assignments.stream()
+        return assignmentRepository.findAllByPupil(pupil)
+                .stream()
                 .map(a ->
                         ResponseAssignmentsDto.builder()
                                 .id(a.getId())
                                 .questionSetId(a.getQuestionSet().getId())
-                                .questionSetName(questionSetRepository.findById(a.getQuestionSet().getId()).get().getName())
+                                .questionSetName(a.getQuestionSet().getName())
                                 .groupId(a.getGroup().getId())
                                 .groupName(a.getGroup().getName())
                                 .assignerId(a.getAssignedBy().getId())

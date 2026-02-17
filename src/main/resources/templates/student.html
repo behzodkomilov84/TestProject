@@ -117,56 +117,37 @@
                     </span>
                 </h5>
 
-                <div class="progress mb-2">
-                    <div id="taskProgress"
-                         class="progress-bar"
-                         style="width:0%"></div>
+                <div class="progress mb-2" style="flex:1">
+                    <div id="taskProgress" class="progress-bar" style="width:0%"></div>
                 </div>
 
-
                 <div class="d-flex gap-2">
-                    <button class="btn btn-success btn-sm"
-                            onclick="startTaskSession()">
-                        Vazifani boshlash
-                    </button>
 
-                    <button class="btn btn-warning btn-sm"
-                            onclick="saveTaskState()">
+                    <button class="btn btn-danger btn-sm" onclick="finishTaskSession()">
+                        Tugatish
+                    </button>
+                    <button class="btn btn-warning btn-sm" onclick="saveTaskState()">
                         Holatni saqlash
                     </button>
                 </div>
             </div>
 
             <div class="modal-body">
-
-                <table class="table table-sm table-bordered">
-                    <thead>
-                    <tr>
-                    </tr>
-                    </thead>
-
-                    <tbody id="taskQuestionsBody"></tbody>
-                </table>
-
+                <!-- ✅ Контейнер вопросов теперь div -->
+                <div id="taskQuestionsBody"></div>
             </div>
 
-            <div class="modal-footer">
+            <div class="modal-footer d-flex justify-content-between">
                 <div class="exam-nav">
-
-                    <button class="btn btn-outline-secondary btn-sm"
-                            onclick="prevQuestion()">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="prevQuestion()">
                         ◀ Oldingi
                     </button>
-
-                    <button class="btn btn-outline-secondary btn-sm"
-                            onclick="nextQuestion()">
+                    <button class="btn btn-outline-secondary btn-sm" onclick="nextQuestion()">
                         Keyingi ▶
                     </button>
-
                 </div>
 
-                <button class="btn btn-secondary"
-                        data-bs-dismiss="modal">
+                <button class="btn btn-secondary" data-bs-dismiss="modal">
                     Yopish
                 </button>
             </div>
@@ -174,6 +155,7 @@
         </div>
     </div>
 </div>
+
 
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>

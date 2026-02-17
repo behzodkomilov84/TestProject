@@ -70,22 +70,22 @@ public class Assignment {
             cascade = CascadeType.ALL,
             orphanRemoval = true
     )
-    private List<Attempt> attempts = new ArrayList<>();
+    private List<AssignmentAttempt> assignmentAttempts = new ArrayList<>();
 
     /**
      * Helper — добавить попытку
      */
-    public void addAttempt(Attempt attempt) {
-        attempts.add(attempt);
-        attempt.setAssignment(this);
+    public void addAttempt(AssignmentAttempt assignmentAttempt) {
+        assignmentAttempts.add(assignmentAttempt);
+        assignmentAttempt.setAssignment(this);
     }
 
     /**
      * Helper — удалить попытку
      */
-    public void removeAttempt(Attempt attempt) {
-        attempts.remove(attempt);
-        attempt.setAssignment(null);
+    public void removeAttempt(AssignmentAttempt assignmentAttempt) {
+        assignmentAttempts.remove(assignmentAttempt);
+        assignmentAttempt.setAssignment(null);
     }
 
     /**

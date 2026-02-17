@@ -106,15 +106,21 @@ function showError(msg) {
 
 async function apiFetch(url, options = {}) {
 
-    const r = await fetch(url, options);
+    options.headers = {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+    };
 
-    if (!r.ok) {
-        const err = await r.json().catch(() => ({}));
-        throw new Error(err.error || "API error");
+    const res = await fetch(url, options);
+
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text);
     }
 
-    return r.json().catch(() => null);
+    return res.json().catch(() => ({}));
 }
+
 
 async function loadMembershipGroups() {
 

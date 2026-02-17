@@ -160,11 +160,8 @@ public class TeacherService {
         Long groupId = payload.groupId();
         LocalDateTime dueDate = payload.dueDate();
         List<Long> studentIds = payload.studentIds();
-        System.out.println("==================================");
-        System.out.println("studentIds: " + studentIds);
-        System.out.println("1");
-        System.out.println("==================================");
-        QuestionSet set = questionSetRepository.findById(setId)
+
+                QuestionSet set = questionSetRepository.findById(setId)
                 .orElseThrow(() ->
                         new IllegalArgumentException("QuestionSet not found"));
 
@@ -180,22 +177,16 @@ public class TeacherService {
         Set<Long> existingIds = existingStudents.stream()
                 .map(User::getId)
                 .collect(Collectors.toSet());
-        System.out.println("==================================");
-        System.out.println("2");
-        System.out.println("==================================");
-        // --- 2. Найти отсутствующих
 
+        // --- 2. Найти отсутствующих
         List<Long> missingIds = studentIds.stream()
                 .filter(id -> !existingIds.contains(id))
                 .toList();
 
         // --- 3. Проверка уже назначенных
-
         List<Long> alreadyAssigned = new ArrayList<>();
         List<User> toAssign = new ArrayList<>();
-        System.out.println("==================================");
-        System.out.println("3");
-        System.out.println("==================================");
+
         for (User student : existingStudents) {
 
             boolean exists =
@@ -205,9 +196,7 @@ public class TeacherService {
                             dueDate,
                             student.getId()
                     );
-            System.out.println("==================================");
-            System.out.println("4");
-            System.out.println("==================================");
+
             if (exists)
                 alreadyAssigned.add(student.getId());
             else
@@ -233,11 +222,8 @@ public class TeacherService {
 
             assignedIds.add(student.getId());
         }
-        System.out.println("==================================");
-        System.out.println("5");
-        System.out.println("==================================");
-        // --- 5. Результат
 
+        // --- 5. Результат
         return AssignResultDto.builder()
                 .assigned(assignedIds)
                 .missing(missingIds)

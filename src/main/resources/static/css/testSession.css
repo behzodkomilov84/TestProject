@@ -365,3 +365,42 @@ body[data-mode="hard"] .mode-label {
     background: #ffebee;
     color: #c62828;
 }
+
+/* скрываем стандартный radio */
+input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+
+    width: 20px;
+    height: 20px;
+
+    border: 2px solid #6c757d;
+    border-radius: 4px; /* квадрат */
+
+    display: inline-grid;
+    place-content: center;
+
+    cursor: pointer;
+    margin-right: 10px;
+
+    transition: all 0.2s ease;
+}
+
+/* hover */
+input[type="radio"]:hover {
+    border-color: #198754;
+}
+
+/* выбранный */
+input[type="radio"]:checked {
+    border-color: #198754;
+    background: #198754;
+}
+
+/* галочка */
+input[type="radio"]:checked::before {
+    content: "✓";
+    color: white;
+    font-size: 14px;
+    font-weight: bold;
+}

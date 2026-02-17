@@ -106,27 +106,29 @@ CREATE TABLE assignment_attempts
     assignment_id   BIGINT    NOT NULL,
     pupil_id        BIGINT    NOT NULL,
     total_questions INT       NOT NULL,
-    correct_answers INT       NOT NULL,
-    percent         INT       NOT NULL,
-    duration_sec    INT       NOT NULL,
+    correct_answers INT default 0,
+    percent         INT default 0,
+    duration_sec    INT default 0,
     started_at      TIMESTAMP NULL,
     finished_at     TIMESTAMP NULL,
+    last_sync       TIMESTAMP NULL,
     CONSTRAINT fk_attempt_assignment FOREIGN KEY (assignment_id)
         REFERENCES assignments (id)
         ON DELETE CASCADE,
     CONSTRAINT fk_attempt_user FOREIGN KEY (pupil_id)
         REFERENCES users (id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+    unique key uq_attempt (assignment_id, pupil_id)
 );
 
 --changeset raw:init-teacher-module::8
 CREATE TABLE attempt_answers
 (
     id                 BIGINT AUTO_INCREMENT PRIMARY KEY,
-    attempt_id         BIGINT  NOT NULL,
-    question_id        BIGINT  NOT NULL,
-    selected_answer_id BIGINT  NULL,
-    is_correct         BOOLEAN NOT NULL,
+    attempt_id         BIGINT NOT NULL,
+    question_id        BIGINT NOT NULL,
+    selected_answer_id BIGINT NULL,
+    is_correct         BOOLEAN default 0,
     CONSTRAINT fk_answer_attempt FOREIGN KEY (attempt_id)
         REFERENCES assignment_attempts (id)
         ON DELETE CASCADE,
@@ -135,5 +137,6 @@ CREATE TABLE attempt_answers
         ON DELETE CASCADE,
     CONSTRAINT fk_answer_selected FOREIGN KEY (selected_answer_id)
         REFERENCES answers (id)
-        ON DELETE SET NULL
+        ON DELETE SET NULL,
+    unique key uq_answer (attempt_id, question_id)
 );

@@ -4,16 +4,22 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "attempt_answers")
+@Table(name = "attempt_answers",
+        uniqueConstraints =
+        @UniqueConstraint(
+                columnNames={"attempt_id","question_id"}
+        ))
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class AttemptAnswer {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     /**
@@ -21,7 +27,7 @@ public class AttemptAnswer {
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "attempt_id", nullable = false)
-    private Attempt attempt;
+    private AssignmentAttempt assignmentAttempt;
 
     /**
      * Вопрос

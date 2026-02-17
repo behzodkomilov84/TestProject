@@ -19,22 +19,17 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
                 where q.topic.science.id = :scienceId
                   and q.topic.id = :topicId
             """)
-    List<Question> getQuestionsByIds(
-            @Param("scienceId") Long scienceId,
-            @Param("topicId") Long topicId
-    );
+    List<Question> getQuestionsByIds(@Param("scienceId") Long scienceId, @Param("topicId") Long topicId);
 
     @Query("""
             select q from Question q where q.topic.id = :topicId
             """)
-    List<Question> getQuestionsByTopicId(
-            @Param("topicId") Long topicId);
+    List<Question> getQuestionsByTopicId(@Param("topicId") Long topicId);
 
     @Query("""
             select q from Question q where q.id = :questionId
             """)
-    Question getQuestionById(
-            @Param("questionId") Long questionId);
+    Question getQuestionById(@Param("questionId") Long questionId);
 
     @Query("""
              select distinct q
@@ -53,8 +48,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Query("""
             select q from Question q
             where q.topic.id = :topicId
-            """
-    )
+            """)
     Page<Question> findByTopicId(@Param("topicId") Long topicId, Pageable pageable);
 
     @Query("""
@@ -63,11 +57,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
                 where q.topic.id = :topicId
                   and (:search is null or lower(q.questionText) like lower(concat('%', :search, '%')))
             """)
-    Page<Question> findByTopicIdAndQuestionTextContainingIgnoreCase(
-            Long topicId,
-            String search,
-            Pageable pageable
-    );
+    Page<Question> findByTopicIdAndQuestionTextContainingIgnoreCase(Long topicId, String search, Pageable pageable);
 
     // ===== ALL MODE =====
 
@@ -75,38 +65,35 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     List<Question> findByTopicId(Long topicId);
 
     @EntityGraph(attributePaths = "answers")
-    List<Question> findByTopicIdAndQuestionTextContainingIgnoreCase(
-            Long topicId,
-            String questionText
-    );
+    List<Question> findByTopicIdAndQuestionTextContainingIgnoreCase(Long topicId, String questionText);
 
     @Query("""
-    SELECT q
-    FROM Question q
-    LEFT JOIN UserQuestionStats s
-        ON q.id = s.id.questionId
-        AND s.id.userId = :userId
-    WHERE q.topic.id IN :topicIds
-    AND (
-        s IS NULL
-        OR (
-            s.totalAttempts > 0
-            AND (s.correctAttempts * 1.0 / s.totalAttempts) < 0.8
-        )
-    )
-    ORDER BY
-        COALESCE(
-            1.0 - (
-                s.correctAttempts * 1.0 /
-                CASE
-                    WHEN s.totalAttempts = 0 OR s.totalAttempts IS NULL
-                    THEN 1
-                    ELSE s.totalAttempts
-                END
-            ),
-            0.7
-        ) DESC
-""")
+                SELECT q
+                FROM Question q
+                LEFT JOIN UserQuestionStats s
+                    ON q.id = s.id.questionId
+                    AND s.id.userId = :userId
+                WHERE q.topic.id IN :topicIds
+                AND (
+                    s IS NULL
+                    OR (
+                        s.totalAttempts > 0
+                        AND (s.correctAttempts * 1.0 / s.totalAttempts) < 0.8
+                    )
+                )
+                ORDER BY
+                    COALESCE(
+                        1.0 - (
+                            s.correctAttempts * 1.0 /
+                            CASE
+                                WHEN s.totalAttempts = 0 OR s.totalAttempts IS NULL
+                                THEN 1
+                                ELSE s.totalAttempts
+                            END
+                        ),
+                        0.7
+                    ) DESC
+            """)
     List<Question> findHardForUser(Long userId, List<Long> topicIds);
 
-}
+  }

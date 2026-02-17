@@ -9,9 +9,11 @@ const taskStore = {
 //Bitta taskdagi ma'lumotlar shu yerga yuklanadi.
 let currentTask = {
     meta: null,
+    attemptId: null,
     questions: [],
     started: false,
-    startedAt: null
+    startedAt: null,
+    syncTimer: null
 };
 
 async function loadTasks() {
@@ -25,8 +27,8 @@ async function loadTasks() {
         taskStore.list = list;
         taskStore.byId.clear();
 
-        list.forEach(task  => {
-            taskStore.byId.set(task.id, task );
+        list.forEach(task => {
+            taskStore.byId.set(task.id, task);
         });
 
         console.log("TASK STORE:", taskStore);//TODO
@@ -38,7 +40,7 @@ async function loadTasks() {
     }
 }
 
-function renderTasks(list){
+function renderTasks(list) {
     let html = `
         <div class="table-box">
         <table class="table">
@@ -84,13 +86,28 @@ function renderTasks(list){
     render(html);
 }
 
-async function loadCurrentTask(taskId) {
+function resetCurrentTask() {
 
+    currentTask.meta = null;
+    currentTask.attemptId = null;
     currentTask.questions = [];
     currentTask.started = false;
     currentTask.startedAt = null;
 
-    console.log("taskId:", taskId);
+    clearInterval(currentTask.syncTimer);
+    currentTask.syncTimer = null;
+
+    currentQuestionIndex = 0;
+
+    const container = document.getElementById("taskQuestionsBody");
+    if (container) container.innerHTML = "";
+}
+
+async function loadCurrentTask(taskId) {
+
+    resetCurrentTask();
+
+    console.log("taskId:", taskId);//TODO
 
     try {
 
@@ -98,35 +115,22 @@ async function loadCurrentTask(taskId) {
         const task = taskStore.byId.get(taskId);
 
         if (!task) {
-            alert("Задача не найдена");
+            alert("Topshiriq topilmadi.");
             return;
         }
 
         // 2️⃣ сохраняем meta
         currentTask.meta = task;
 
-        // 3️⃣ пробуем восстановить прогресс
-        const saved = localStorage.getItem("task_" + taskId);
-
-        if (saved) {
-
-            const parsed = JSON.parse(saved);
-
-            currentTask.questions = parsed.questions || [];
-            currentTask.started = !!parsed.started;
-            currentTask.startedAt = parsed.startedAt || null;
-
-            console.log("Restored from localStorage");
-
-        } else {
+        console.log("currentTask.meta", currentTask.meta);
 
             // 4️⃣ загружаем с сервера
             const response = await apiFetch(
-                `/api/student/question-set/${task.questionSetId}`
+                `/api/student/question-set/${task.questionSetId}`, {method: "GET"}
             );
 
             if (!response || !response.questions)
-                throw new Error("Invalid backend response");
+                throw new Error("Backend javobi noto‘g‘ri");
 
             const questions = Array.isArray(response.questions)
                 ? response.questions
@@ -149,21 +153,49 @@ async function loadCurrentTask(taskId) {
             currentTask.startedAt = null;
 
             console.log("Loaded from backend");
-        }
+
 
         // 5️⃣ открываем UI
         openTaskModal();
+        updateTaskHeader();
 
         // 6️⃣ рендер
         renderTaskQuestions();
+        updateProgress();
 
-        updateTaskHeader();
+        console.log("currentTask.started: ", currentTask.started);
+        console.log("currentTask.attemptId: ", currentTask.attemptId);
 
+        if (currentTask.started && currentTask.attemptId) {
+
+            console.log("AutoSync resumed");
+
+            setTimeout(() => {
+                startAutoSync();
+            }, 200);
+        }
     } catch (err) {
 
         console.error("loadCurrentTask error:", err);
-        alert("Ошибка загрузки задачи");
+        alert("Vazifani yuklashda xatolik yuz berdi");
     }
+
+}
+
+function renderTaskPlaceholder(container) {
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="text-center p-5">
+            <h4 class="mb-3">Test boshlashga tayyormisiz?</h4>
+            <p class="text-muted">
+                Boshlash tugmasini bosganingizdan so'ng test sessiyasi ishga tushadi.
+            </p>
+            <button class="btn btn-success mt-3" onclick="startTaskSession()">
+                Boshlash
+            </button>
+        </div>
+    `;
 }
 
 function openTaskModal() {
@@ -174,6 +206,9 @@ function openTaskModal() {
         );
 
     modal.show();
+    setTimeout(() => {
+        updateProgress();
+    }, 50);
 }
 
 function showQuestion(index) {
@@ -195,31 +230,44 @@ function renderTaskQuestions() {
 
     if (!container) return;
 
-    const q = currentTask.questions[currentQuestionIndex];
-    if (!q) return;
+    // placeholder
+    if (!currentTask.started) {
+        renderTaskPlaceholder(container);
+        return;
+    }
+
+    if (!currentTask.questions.length) {
+
+        container.innerHTML = `
+            <div class="text-danger p-4 text-center">
+                Savollar topilmadi
+            </div>`;
+        return;
+    }
+
+    const q =
+        currentTask.questions[currentQuestionIndex];
 
     let html = `
-
-    <div class="exam-card">
-
-        <div class="exam-header">
-
-            <div class="exam-counter">
-                Savol ${currentQuestionIndex + 1}
-                / ${currentTask.questions.length}
+        <div class="exam-card">
+            <div class="exam-header">
+                <div class="exam-counter">
+                    Savol ${currentQuestionIndex + 1}
+                    / ${currentTask.questions.length}
+                </div>
             </div>
-        </div>
 
-        <div class="exam-question">
-            ${q.questionText}
-        </div>
+            <div class="exam-question">
+                ${q.questionText}
+            </div>
 
-        <div class="exam-answers">
+            <div class="exam-answers">
     `;
 
     q.answers.forEach(a => {
 
-        const selected = q.selectedAnswerId === a.id;
+        const selected =
+            q.selectedAnswerId === a.id;
 
         html += `
             <label class="exam-answer ${selected ? "selected" : ""}">
@@ -233,16 +281,16 @@ function renderTaskQuestions() {
         `;
     });
 
-    html += `
-        </div>
-    </div>
-    `;
+    html += `</div></div>`;
 
     container.innerHTML = html;
 
+    updateProgress();
 }
 
 function nextQuestion() {
+
+    if (!currentTask.started) return;
 
     if (currentQuestionIndex <
         currentTask.questions.length - 1) {
@@ -254,6 +302,8 @@ function nextQuestion() {
 
 function prevQuestion() {
 
+    if (!currentTask.started) return;
+
     if (currentQuestionIndex > 0) {
 
         currentQuestionIndex--;
@@ -261,18 +311,90 @@ function prevQuestion() {
     }
 }
 
-function startTaskSession() {
-
+async function startTaskSession() {
     if (!currentTask.meta) return;
 
+    const res = await apiFetch(`/api/student/attempt/start/${currentTask.meta.id}`, {method: "POST"});
+
+    currentTask.attemptId = res.attemptId;
     currentTask.started = true;
+    currentTask.startedAt = Date.now();
+    currentQuestionIndex = 0;
 
-    alert("Сессия началась!");
+    startAutoSync();
+    saveTaskState();
 
-    // тут можешь:
-    // → открыть testSession.html
-    // → переключить UI
-} //TODO
+    // 🔹 сразу показываем первый вопрос
+    renderTaskQuestions();
+}
+
+function startAutoSync() {
+
+    if (!currentTask.attemptId) return;
+
+    clearInterval(currentTask.syncTimer);
+
+    currentTask.syncTimer = setInterval(() => {
+
+        void syncAttempt();
+
+    }, 30000);
+
+    console.log("AutoSync started", currentTask.syncTimer);
+}
+
+
+async function syncAttempt() {
+
+    if (!currentTask.started || !currentTask.attemptId) {
+        console.log("SYNC skipped");
+        return;
+    }
+
+    console.log("SYNC sending...");
+
+    const payload = {
+        attemptId: currentTask.attemptId,
+        answers: currentTask.questions
+            .filter(q => q.selectedAnswerId !== null)
+            .map(q => ({
+            questionId: q.questionId,
+            selectedAnswerId: q.selectedAnswerId
+        }))
+    };
+
+    try {
+
+        await apiFetch("/api/student/attempt/sync", {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+
+        console.log("SYNC OK");
+
+    } catch (e) {
+
+        console.error("SYNC FAILED", e);
+    }
+}
+
+async function finishTaskSession() {
+
+    await syncAttempt();
+
+    await apiFetch(
+        `/api/student/attempt/finish/${currentTask.attemptId}`,
+        {method: "POST"}
+    );
+
+    clearInterval(currentTask.syncTimer);
+
+    localStorage.removeItem(
+        "task_" + currentTask.meta.id
+    );
+
+    alert("Test yakunlandi");
+}
 
 function selectAnswer(questionId, answerId) {
 
@@ -293,11 +415,19 @@ function saveTaskState() {
 
     if (!currentTask.meta) return;
 
+    const safeState = {
+        attemptId: currentTask.attemptId,
+        questions: currentTask.questions,
+        started: currentTask.started,
+        startedAt: currentTask.startedAt
+    };
+
     localStorage.setItem(
         "task_" + currentTask.meta.id,
-        JSON.stringify(currentTask)
+        JSON.stringify(safeState)
     );
 }
+
 
 function updateTaskHeader() {
 
@@ -308,6 +438,7 @@ function updateTaskHeader() {
 }
 
 function updateProgress() {
+    if (!currentTask.questions.length) return;
 
     const answered = currentTask.questions
         .filter(q => q.answered).length;

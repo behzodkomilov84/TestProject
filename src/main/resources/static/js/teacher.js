@@ -886,12 +886,12 @@ async function assignTest() {
             body: JSON.stringify(payload)
         });
 
-        alert("Тест успешно назначен!");
+        alert("Test topshirig'i muvaffaqiyatli jo'natildi!");
         assignBlock.querySelectorAll(".student-checkbox:checked").forEach(cb => cb.checked = false);
         // Обновляем состояние кнопки после назначения
         assignBlock.querySelector(".btn-assignTest").disabled = true;
     } catch (err) {
         console.error(err);
-        alert("Ошибка назначения: " + (err.message || err));
+        alert("Topshiriq berishda xatolik: " + (err.message || err));
     }
 }
