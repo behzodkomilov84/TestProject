@@ -1,4 +1,3 @@
-
 let currentQuestionIndex = 0;
 
 //Barcha tasklarni shu yerga zagruzka qilinadi.
@@ -27,7 +26,7 @@ let currentTask = {
     timerInterval: null,
     durationSec: 0,
 
-    timerBaseTimestamp:null
+    timerBaseTimestamp: null
 
 };
 
@@ -137,7 +136,7 @@ async function showCurrentTask(taskId) {
     }
 }
 
-async function loadAttempt(taskId){
+async function loadAttempt(taskId) {
     const response = await apiFetch(
         `/api/student/attempt/getattempt/${taskId}`,
         {method: "GET"}
@@ -158,6 +157,20 @@ async function loadAttempt(taskId){
 
 function renderTaskPlaceholder(container, currentTask) {
     if (!container) return;
+
+    const taskProgressbar = document.getElementById("taskProgressbar");
+    const taskTimer = document.getElementById("taskTimer");
+    const finishBtn = document.getElementById("finishBtn");
+    const syncBtn = document.getElementById("syncBtn");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+
+    if (taskProgressbar) taskProgressbar.style.display = "none";
+    if (taskTimer) taskTimer.style.display = "none";
+    if (finishBtn) finishBtn.style.display = "none";
+    if (syncBtn) syncBtn.style.display = "none";
+    if (prevBtn) prevBtn.style.display = "none";
+    if (nextBtn) nextBtn.style.display = "none";
 
     if (currentTask.attemptId === null) {
         container.innerHTML = `
@@ -205,6 +218,12 @@ function renderTaskPlaceholder(container, currentTask) {
 }//TODO
 
 function openTaskModal() {
+
+    const summary = document.getElementById("resultSummary");
+    if (summary) summary.style.display = "none";
+
+    const progressBarWrapper = document.getElementById("taskProgress")?.parentElement;
+    if (progressBarWrapper) progressBarWrapper.style.display = "";
 
     const finishBtn = document.getElementById("finishBtn");
     const syncBtn = document.getElementById("syncBtn");
@@ -259,7 +278,7 @@ async function startTaskSession(taskId) {
     currentTask.started = true;
 
     startDisplayTimer();
-    startHeartbeat(); //TODO
+    startHeartbeat();
     startAutoSync();
 
     await loadCurrentTaskQuestions(taskId);
@@ -338,11 +357,11 @@ function resetCurrentTask() {
 document.addEventListener("visibilitychange", () => {
 
     if (document.hidden) {
-
+        stopDisplayTimer();
         stopHeartbeat();
 
     } else {
-
+        startDisplayTimer();
         startHeartbeat();
     }
 });
@@ -363,7 +382,7 @@ function startHeartbeat() {
             {method: "POST"}
         );
 
-    }, 5000);
+    }, 60000);
 }
 
 function stopHeartbeat() {
@@ -380,6 +399,13 @@ function renderTaskQuestions() {
         document.getElementById("taskQuestionsBody");
 
     if (!container) return;
+
+    document.getElementById("taskProgressbar").style.display = "";
+    document.getElementById("taskTimer").style.display = "";
+    document.getElementById("finishBtn").style.display = "";
+    document.getElementById("syncBtn").style.display = "";
+    document.getElementById("prevBtn").style.display = "";
+    document.getElementById("nextBtn").style.display = "";
 
     if (!currentTask.questions.length) {
 
@@ -540,6 +566,7 @@ function closeTaskModal() {
 
             stopHeartbeat();
             stopAutoSync();
+            stopDisplayTimer();
         });
     }
     const modal =
@@ -598,51 +625,61 @@ function updateProgress() {
 
 async function finishTaskSession() {
 
-    stopDisplayTimer();
-    stopHeartbeat();
-
-    if (!currentTask.started || !currentTask.attemptId) {
-        return;
-    }
-
+    // 🔒 базовая защита
+    if (!currentTask.started || !currentTask.attemptId) return;
     if (currentTask.finishing) return;
+
     currentTask.finishing = true;
+
+    const btn = document.getElementById("finishBtn");
+    if (btn) btn.disabled = true;   // 🔒 БЛОКИРУЕМ СРАЗУ
 
     try {
 
-        // 👉 финальный sync перед закрытием
+        // 1️⃣ Останавливаем UI таймер
+        stopDisplayTimer();
+
+        // 2️⃣ Останавливаем фоновые процессы СРАЗУ
+        stopAutoSync();
+        stopHeartbeat();
+
+        // 3️⃣ Финальный sync (если есть грязные ответы)
         await syncAttempt();
 
-        // 👉 backend finish
-        await apiFetch(
+        // 4️⃣ Finish на backend
+        const finishRes = await apiFetch(
             `/api/student/attempt/${currentTask.attemptId}/finish`,
-            { method: "POST" }
+            {method: "POST"}
         );
 
-        // === остановка autosync ===
-        stopAutoSync();
+        // 5️⃣ Берём финальные данные из backend (источник истины)
+        currentTask.durationSec = finishRes.durationSec;
+        currentTask.finishedAt = finishRes.finishedAt;
+        currentTask.correctAnswers = finishRes.correctAnswers;
+        currentTask.percent = finishRes.percent;
 
-        // === UI состояние ===
+        // 6️⃣ Блокируем состояние
         currentTask.started = false;
 
-        // можно показать результат
-        alert("Test yakunlandi");
+        // 7️⃣ Обновляем UI таймера финальным значением
+        updateTimerUI(currentTask.durationSec);
 
-        // обновить прогресс / задачи
-        updateProgress();
-
-        // закрыть модалку (если нужно)
-        closeTaskModal();
+        // 8️⃣ Показываем результат (по желанию)
+        await showTaskResult(currentTask.id);
 
     } catch (err) {
 
-        console.error("FINISH FAILED", err);
-        alert("Testni yakunlab bo‘lmadi");
+        console.error("FINISH FAILED:", err);
 
-    } finally {
+        alert("Testni yakunlab bo‘lmadi. Qayta urinib ko‘ring.");
 
+        // ❗ если finish не удался — разрешаем повторную попытку
         currentTask.finishing = false;
+        return;
+
     }
+
+    currentTask.finishing = false;
 }
 
 function formatDuration(sec) {
@@ -661,20 +698,37 @@ function startDisplayTimer() {
 
     stopDisplayTimer();
 
-    updateTimerUI();
+    if (!currentTask.startedAt) return;
 
-    // если finished — просто показываем время
-    if (currentTask.finishedAt !== null) return;
+    // если тест завершён — просто показываем БД время
+    if (currentTask.finishedAt !== null) {
+        updateTimerUI(currentTask.durationSec);
+        return;
+    }
+
+    currentTask.timerBaseTimestamp = Date.now();
 
     currentTask.timerInterval = setInterval(() => {
 
-        currentTask.durationSec++;
-        updateTimerUI();
+        const delta =
+            Math.floor((Date.now() - currentTask.timerBaseTimestamp) / 1000);
+
+        const total =
+            currentTask.durationSec + delta;
+
+        updateTimerUI(total);
 
     }, 1000);
 }
 
 function stopDisplayTimer() {
+
+    if (!currentTask.timerInterval) return;
+
+    const delta =
+        Math.floor((Date.now() - currentTask.timerBaseTimestamp) / 1000);
+
+    currentTask.durationSec += delta;
 
     clearInterval(currentTask.timerInterval);
     currentTask.timerInterval = null;
@@ -683,19 +737,19 @@ function stopDisplayTimer() {
 function updateTimerUI() {
 
     const el =
-        document.getElementById("attemptTimer");
+        document.getElementById("taskTimer");
 
     if (!el) return;
 
     el.textContent =
         "⏱ " + formatDuration(currentTask.durationSec);
-}
+}//TODO hozir
 
 async function showTaskResult(taskId) {
     try {
         const res = await apiFetch(
             `/api/student/attempt/get-full-attempt/${taskId}`,
-            { method: "GET" }
+            {method: "GET"}
         );
 
         // сохраняем общие данные attempt
@@ -737,6 +791,7 @@ async function showTaskResult(taskId) {
 
         // рендерим результаты
         renderTaskResult();
+        updateTimerUI();
 
     } catch (e) {
         console.error(e);
@@ -748,8 +803,29 @@ let wrongQuestionIndexes = []; // массив индексов неправил
 let currentResultIndex = 0;
 
 function renderTaskResult() {
+
     const container = document.getElementById("taskQuestionsBody");
     if (!container) return;
+
+    container.innerHTML = "";
+    const modalFooter = document.getElementById("modal-footer");
+    if (modalFooter) {modalFooter.innerHTML = "";}
+
+    // Скрываем прогрессбар
+    const progressBar = document.getElementById("taskProgress")?.parentElement;
+    if (progressBar) progressBar.style.display = "none";
+
+// Показ summary
+    const summary = document.getElementById("resultSummary");
+    if (summary) {
+        summary.style.display = "block";
+        summary.innerHTML = `
+        <strong style="color: #C62828">Natija:</strong>
+<!--        To'g'ri javoblar: ${currentTask.correctAnswers} / ${currentTask.totalQuestions} |-->
+        <strong style="color: #1b5e20">Foiz:</strong> ${currentTask.percent}% |
+        <strong style="color: #1b5e20">Sarflangan vaqt:</strong> ${formatDuration(currentTask.durationSec)}
+    `;
+    }
 
     // --- собираем индексы неправильных вопросов
     wrongQuestionIndexes = [];
@@ -761,13 +837,7 @@ function renderTaskResult() {
 
     // --- блок статистики и навигации по ошибкам
     let html = `
-        <div class="alert alert-info mb-4">
-            <strong>Natija:</strong><br>
-            To'g'ri javoblar: ${currentTask.correctAnswers} / ${currentTask.totalQuestions}<br>
-            Foiz: ${currentTask.percent}%<br>
-            Sarflangan vaqt: ${formatDuration(currentTask.durationSec)}
-        </div>
-
+       
         <div id="resultNav" class="mb-3">
             ${wrongQuestionIndexes.length > 0
         ? `<strong>Xatolar:</strong> ${wrongQuestionIndexes.map(idx =>
@@ -835,3 +905,86 @@ function showWrongQuestion(idx) {
     showResultQuestion(idx);
 }
 
+async function continueTaskSession(taskId) {
+
+    if (!taskId) return;
+
+    try {
+
+        // 1️⃣ получаем актуальный attempt с backend
+        const res = await apiFetch(
+            `/api/student/attempt/getattempt/${taskId}`,
+            {method: "GET"}
+        );
+
+        // 2️⃣ заполняем состояние
+        currentTask.attemptId = res.attemptId;
+        currentTask.totalQuestions = res.totalQuestions;
+        currentTask.correctAnswers = res.correctAnswers;
+        currentTask.percent = res.percent;
+        currentTask.durationSec = res.durationSec;
+        currentTask.startedAt = res.startedAt;
+        currentTask.finishedAt = res.finishedAt;
+        currentTask.lastSync = res.lastSync;
+
+        currentTask.started = true;
+        currentTask.viewMode = false;
+
+        // 3️⃣ загружаем вопросы
+        await loadCurrentTaskQuestions(taskId);
+
+        // 4️⃣ загружаем уже выбранные ответы
+        if (res.attemptedQuestions) {
+
+            const answerMap = new Map();
+
+            res.attemptedQuestions.forEach(a => {
+                answerMap.set(a.questionId, a.selectedAnswerId);
+            });
+
+            currentTask.questions.forEach(q => {
+                q.selectedAnswerId = answerMap.get(q.questionId) || null;
+                q.answered = !!q.selectedAnswerId;
+                q.dirty = false;
+            });
+        }
+
+        // 5️⃣ запускаем таймер (корректный способ)
+        startDisplayTimer();
+
+        // 6️⃣ запускаем heartbeat
+        startHeartbeat();
+
+        // 7️⃣ запускаем autosync
+        startAutoSync();
+
+        // 8️⃣ показываем первый вопрос
+        renderTaskQuestions();
+
+    } catch (err) {
+
+        console.error("CONTINUE FAILED:", err);
+        alert("Testni davom ettirib bo‘lmadi");
+
+    }
+}
+
+async function apiFetch(url, options = {}) {
+
+    options.headers = {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+    };
+
+    const res = await fetch(url,{
+        credentials: "include",   // 🔥 обязательно
+        ...options
+    });
+
+    if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text);
+    }
+
+    return res.json().catch(() => ({}));
+}

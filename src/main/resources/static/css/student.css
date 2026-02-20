@@ -138,7 +138,7 @@ body {
     border-radius: 14px;
     padding: 28px;
 
-    min-height: 70vh;
+    min-height: 58vh;
 
     display: flex;
     flex-direction: column;
@@ -169,8 +169,8 @@ body {
 
 .exam-question {
 
-    font-size: 1.5rem;
-    font-weight: 600;
+    font-size: 2.5rem;
+    font-weight: 700;
     line-height: 1.4;
 }
 
@@ -348,4 +348,46 @@ input[type="radio"]:checked::before {
 
 div#taskTimer {
     margin-right: 15px;
+    width: 15%;
+    text-align: center;
+    font-size: 20px;
+}
+
+/* 1. Ограничиваем модал экраном */
+#taskModal .modal-dialog {
+    max-height: 95vh;
+}
+
+#taskModal .modal-content {
+    height: 95vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* 2. Header и Footer не сжимаются */
+#taskModal .modal-header,
+#taskModal .modal-footer {
+    flex-shrink: 0;
+}
+
+/* 3. Body занимает всё между ними */
+#taskModal .modal-body {
+    flex: 1;
+    display: flex;
+    overflow: hidden; /* ❗ запрещаем scroll тут */
+    padding: 20px;
+}
+
+/* 4. Scroll ТОЛЬКО внутри тестов */
+#taskQuestionsBody {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0; /* ❗ критично для flex */
+
+
+}
+
+div#resultSummary {
+    text-align: end;
+    font-size: 18px;
 }

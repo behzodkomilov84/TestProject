@@ -8,9 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -229,38 +227,45 @@ public class AssignmentAttemptService {
     @Transactional(readOnly = true)
     public AttemptFullDto getFullAttemptForResult(Long taskId, User pupil) {
 
-        // 1️⃣ Загружаем попытку вместе с ответами
         AssignmentAttempt attempt =
                 assignmentAttemptRepository
                         .findFullByTaskIdAndPupil(taskId, pupil)
                         .orElseThrow(() ->
                                 new RuntimeException(ATTEMPT_NOT_FOUND));
 
-        // 2️⃣ Получаем QuestionSet
         QuestionSet questionSet =
                 attempt.getAssignment().getQuestionSet();
 
-        // ⚠ Важно: вопросы должны быть загружены fetch join
+        // ✅ mutable copy
         List<Question> questions =
-                questionSet.getQuestions().stream().toList();
+                new ArrayList<>(questionSet.getQuestions());
 
-        // 3️⃣ Мапим вопросы
+        Collections.shuffle(questions);
+
         List<ResponseQuestionDto> questionDtos =
                 questions.stream()
-                        .map(q -> new ResponseQuestionDto(
-                                q.getId(),
-                                q.getQuestionText(),
-                                q.getAnswers().stream()
-                                        .map(a -> new ResponseAnswerDto(
-                                                a.getId(),
-                                                a.getAnswerText(),
-                                                a.getIsTrue()
-                                        ))
-                                        .toList()
-                        ))
+                        .map(q -> {
+
+                            // mutable copy ответов
+                            List<Answer> answers =
+                                    new ArrayList<>(q.getAnswers());
+
+                            Collections.shuffle(answers);
+
+                            return new ResponseQuestionDto(
+                                    q.getId(),
+                                    q.getQuestionText(),
+                                    answers.stream()
+                                            .map(a -> new ResponseAnswerDto(
+                                                    a.getId(),
+                                                    a.getAnswerText(),
+                                                    a.getIsTrue()
+                                            ))
+                                            .toList()
+                            );
+                        })
                         .toList();
 
-        // 4️⃣ Мапим выбранные ответы ученика
         List<AttemptQuestionDto> attempted =
                 attempt.getAnswers().stream()
                         .map(a -> new AttemptQuestionDto(
@@ -271,7 +276,6 @@ public class AssignmentAttemptService {
                         ))
                         .toList();
 
-        // 5️⃣ Возвращаем DTO
         return new AttemptFullDto(
                 attempt.getId(),
                 attempt.getTotalQuestions(),
