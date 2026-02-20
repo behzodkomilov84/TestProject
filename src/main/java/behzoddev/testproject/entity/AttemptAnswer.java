@@ -47,5 +47,6 @@ public class AttemptAnswer {
      * Был ли ответ правильным
      */
     @Column(name = "is_correct", nullable = false)
-    private boolean correct;
+    @Builder.Default
+    private boolean correct = false;
 }

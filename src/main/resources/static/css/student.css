@@ -282,3 +282,70 @@ input[type="radio"]:checked::before {
     font-size: 14px;
     font-weight: bold;
 }
+
+.answer-icon {
+    margin-left: 8px;
+    font-weight: bold;
+}
+
+.exam-card {
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: #fff;
+}
+
+.exam-header {
+    display: flex;
+    justify-content: flex-start;
+    margin-bottom: 10px;
+    font-weight: 600;
+}
+
+.exam-counter {
+    font-size: 0.9rem;
+    color: #6c757d;
+}
+
+.exam-question {
+    font-size: 1rem;
+    margin-bottom: 10px;
+}
+
+.exam-answers {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.exam-answer {
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #ced4da;
+    cursor: default;
+}
+
+.exam-answer.correct-answer {
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    color: #155724;
+}
+
+.exam-answer.wrong-answer {
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+    color: #721c24;
+}
+
+.question-card {
+    transition: all 0.2s ease-in-out;
+}
+
+#resultNav button {
+    min-width: 36px;
+    padding: 2px 6px;
+}
+
+div#taskTimer {
+    margin-right: 15px;
+}

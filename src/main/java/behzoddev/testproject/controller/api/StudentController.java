@@ -58,7 +58,7 @@ public class StudentController {
     }
 
     @GetMapping("/question-set/{id}")
-    public ResponseEntity<ResponseQuestionSetDto> getQuestionSetSet(
+    public ResponseEntity<ResponseQuestionSetDto> getQuestionSet(
             @PathVariable Long id
     ) {
         return ResponseEntity.ok(studentService.getQuestionSet(id));

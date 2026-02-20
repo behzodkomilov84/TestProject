@@ -121,12 +121,16 @@
                     <div id="taskProgress" class="progress-bar" style="width:0%"></div>
                 </div>
 
+                <div id="taskTimer" class="ms-3 fw-bold text-primary">
+                    ⏱ 00:00
+                </div>
+
                 <div class="d-flex gap-2">
 
-                    <button class="btn btn-danger btn-sm" onclick="finishTaskSession()">
+                    <button id="finishBtn" class="btn btn-danger btn-sm" onclick="finishTaskSession()">
                         Tugatish
                     </button>
-                    <button class="btn btn-warning btn-sm" onclick="saveTaskState()">
+                    <button id="syncBtn" class="btn btn-warning btn-sm" onclick="syncAttempt()">
                         Holatni saqlash
                     </button>
                 </div>

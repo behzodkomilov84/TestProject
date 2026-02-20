@@ -87,4 +87,13 @@ public class AssignmentAttempt {
         answers.forEach(a -> a.setAssignmentAttempt(null));
         answers.clear();
     }
+
+    public boolean isStarted() {
+        return startedAt != null;
+    }
+
+    public boolean isFinished() {
+        return finishedAt != null;
+    }
+
 }

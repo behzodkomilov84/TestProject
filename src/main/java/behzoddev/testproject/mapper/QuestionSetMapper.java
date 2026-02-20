@@ -21,7 +21,8 @@ public interface QuestionSetMapper {
                                 .stream()
                                 .map(a -> new ResponseAnswerDto(
                                         a.getId(),
-                                        a.getAnswerText()
+                                        a.getAnswerText(),
+                                        a.getIsTrue()
                                 ))
                                 .toList()
                 ))

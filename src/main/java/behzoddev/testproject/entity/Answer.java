@@ -19,7 +19,8 @@ public class Answer {
 
     private String answerText;
 
-    private Boolean isTrue;
+    @Builder.Default
+    private Boolean isTrue = false;
 
     private String commentary;
 

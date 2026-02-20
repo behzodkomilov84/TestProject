@@ -142,10 +142,7 @@ public class TeacherController {
 
         AssignResultDto assignResultDto =
                 teacherService.assignQuestionSetToStudents(teacher, assignment);
-        System.out.println("==================================");
-        System.out.println("controller");
-        System.out.println("==================================");
-        return ResponseEntity.ok().body(assignResultDto);
+               return ResponseEntity.ok().body(assignResultDto);
     }
 
 
