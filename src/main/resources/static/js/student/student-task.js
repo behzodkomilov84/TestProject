@@ -18,6 +18,7 @@ let currentTask = {
     percent: 0,
     startedAt: null,
     finishedAt: null,
+    dueDate: null,
 
     started: false,
     syncTimer: null,
@@ -38,7 +39,7 @@ async function loadTasks() {
     setTitle("Mening vazifalarim");
 
     try {
-        const list = await apiFetch(`/api/student/tasks`);
+        const list = await apiFetch(`/api/student/attempt/tasks`);
 
         // ✅ сохраняем состояние
         taskStore.list = list;
@@ -78,6 +79,8 @@ function renderTasks(list) {
 
     list.forEach((t, index) => {
 
+        const status = resolveTaskStatus(t);
+
         html += `
             <tr>
                 <td>${index + 1}</td>
@@ -94,7 +97,9 @@ function renderTasks(list) {
                         Topshiriqni ko'rish
                     </button>
                 </td>
-                <td></td>
+                <td>
+                ${renderStatusBadge(t.taskStatus)}
+                </td>
             </tr>`;
     });
 
@@ -102,6 +107,24 @@ function renderTasks(list) {
 
     render(html);
 }//DONE
+
+function resolveTaskStatus(t) {
+    const now = new Date();
+
+    if (!t.attemptId) {
+        return { label: "NEW", class: "secondary" };
+    }
+
+    if (t.finishedAt) {
+        return { label: "FINISHED", class: "success" };
+    }
+
+    if (t.dueDate && new Date(t.dueDate) < now) {
+        return { label: "OVERDUE", class: "danger" };
+    }
+
+    return { label: "IN PROGRESS", class: "warning" };
+}
 
 async function showCurrentTask(taskId) {
 
@@ -752,6 +775,7 @@ async function showTaskResult(taskId) {
             {method: "GET"}
         );
 
+        console.log("response-get-full-attempt", res);
         // сохраняем общие данные attempt
         currentTask.attemptId = res.attemptId;
         currentTask.totalQuestions = res.totalQuestions;
@@ -912,20 +936,7 @@ async function continueTaskSession(taskId) {
     try {
 
         // 1️⃣ получаем актуальный attempt с backend
-        const res = await apiFetch(
-            `/api/student/attempt/getattempt/${taskId}`,
-            {method: "GET"}
-        );
-
-        // 2️⃣ заполняем состояние
-        currentTask.attemptId = res.attemptId;
-        currentTask.totalQuestions = res.totalQuestions;
-        currentTask.correctAnswers = res.correctAnswers;
-        currentTask.percent = res.percent;
-        currentTask.durationSec = res.durationSec;
-        currentTask.startedAt = res.startedAt;
-        currentTask.finishedAt = res.finishedAt;
-        currentTask.lastSync = res.lastSync;
+        const res = await loadAttempt(taskId);
 
         currentTask.started = true;
         currentTask.viewMode = false;
@@ -987,4 +998,18 @@ async function apiFetch(url, options = {}) {
     }
 
     return res.json().catch(() => ({}));
+}
+
+function renderStatusBadge(status) {
+
+    const map = {
+        NEW: { label: "Yangi", class: "secondary" },
+        IN_PROGRESS: { label: "Jarayonda", class: "warning" },
+        FINISHED: { label: "Tugallangan", class: "success" },
+        OVERDUE: { label: "Muddati o'tgan", class: "danger" }
+    };
+
+    const s = map[status] || map.NEW;
+
+    return `<span class="badge bg-${s.class}">${s.label}</span>`;
 }

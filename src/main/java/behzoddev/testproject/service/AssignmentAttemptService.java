@@ -3,12 +3,14 @@ package behzoddev.testproject.service;
 import behzoddev.testproject.dao.*;
 import behzoddev.testproject.dto.student.*;
 import behzoddev.testproject.entity.*;
+import behzoddev.testproject.entity.enums.TaskStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -290,7 +292,65 @@ public class AssignmentAttemptService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public List<ResponseAssignmentsAndTaskStatusDto> getTasksAndTaskStatus(User pupil) {
+
+        List<Assignment> assignments =
+                assignmentRepository.findAllByPupil(pupil);
+
+        List<AssignmentAttempt> attempts =
+                assignmentAttemptRepository.findAllByPupil(pupil);
+
+        Map<Long, AssignmentAttempt> attemptMap =
+                attempts.stream()
+                        .collect(Collectors.toMap(
+                                a -> a.getAssignment().getId(),
+                                Function.identity()
+                        ));
+
+        LocalDateTime now = LocalDateTime.now();
+
+        return assignments.stream()
+                .map(a -> {
+
+                    AssignmentAttempt attempt =
+                            attemptMap.get(a.getId());
+
+                    TaskStatus status;
+
+                    if (attempt == null) {
+                        status = a.getDueDate().isBefore(now)
+                                ? TaskStatus.OVERDUE
+                                : TaskStatus.NEW;
+
+                    } else if (attempt.getFinishedAt() != null) {
+                        status = TaskStatus.FINISHED;
+
+                    } else if (a.getDueDate().isBefore(now)) {
+                        status = TaskStatus.OVERDUE;
+
+                    } else {
+                        status = TaskStatus.IN_PROGRESS;
+                    }
+
+                    return ResponseAssignmentsAndTaskStatusDto.builder()
+                            .id(a.getId())
+                            .questionSetId(a.getQuestionSet().getId())
+                            .questionSetName(a.getQuestionSet().getName())
+                            .groupId(a.getGroup().getId())
+                            .groupName(a.getGroup().getName())
+                            .assignerId(a.getAssignedBy().getId())
+                            .assignerName(a.getAssignedBy().getUsername())
+                            .assignedAt(a.getAssignedAt())
+                            .dueDate(a.getDueDate())
+                            .taskStatus(status)
+                            .build();
+                })
+                .toList();
+    }
+
 }
+
 
 
 

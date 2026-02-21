@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface AssignmentAttemptRepository extends JpaRepository<AssignmentAttempt, Long> {
@@ -28,4 +29,5 @@ public interface AssignmentAttemptRepository extends JpaRepository<AssignmentAtt
             @Param("pupil") User pupil
     );
 
+    List<AssignmentAttempt> findAllByPupil(User pupil);
 }

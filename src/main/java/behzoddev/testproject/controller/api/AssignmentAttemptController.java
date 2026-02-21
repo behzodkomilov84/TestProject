@@ -2,6 +2,7 @@ package behzoddev.testproject.controller.api;
 
 import behzoddev.testproject.dto.student.AttemptDto;
 import behzoddev.testproject.dto.student.AttemptFullDto;
+import behzoddev.testproject.dto.student.ResponseAssignmentsAndTaskStatusDto;
 import behzoddev.testproject.dto.student.SyncAttemptRequestDto;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.AssignmentAttemptService;
@@ -11,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/student/attempt")
 @RequiredArgsConstructor
@@ -18,6 +21,12 @@ public class AssignmentAttemptController {
 
     private final AssignmentAttemptService assignmentAttemptService;
     private final AttemptHeartbeatService attemptHeartbeatService;
+
+    @GetMapping("/tasks")
+    public ResponseEntity<List<ResponseAssignmentsAndTaskStatusDto>> getTasksAndTaskStatus(
+            @AuthenticationPrincipal User pupil){
+        return ResponseEntity.ok(assignmentAttemptService.getTasksAndTaskStatus(pupil));
+    }
 
     @GetMapping("/getattempt/{taskId}")
     public ResponseEntity<AttemptDto> getAttemptByTaskId(

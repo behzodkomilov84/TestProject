@@ -1,10 +1,8 @@
 package behzoddev.testproject.controller.api;
 
-import behzoddev.testproject.dto.student.GroupInviteDto;
-import behzoddev.testproject.dto.student.ResponseAssignmentsDto;
-import behzoddev.testproject.dto.student.ResponseGroupMembershipDto;
-import behzoddev.testproject.dto.student.ResponseQuestionSetDto;
+import behzoddev.testproject.dto.student.*;
 import behzoddev.testproject.entity.User;
+import behzoddev.testproject.service.AssignmentAttemptService;
 import behzoddev.testproject.service.StudentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +25,7 @@ GET  /api/student/tasks
 @PreAuthorize("hasAnyAuthority('ROLE_USER','ROLE_OWNER')")
 public class StudentController {
     private final StudentService studentService;
+    private final AssignmentAttemptService assignmentAttemptService;
 
     @GetMapping("/invites")
     public List<GroupInviteDto> getInvites(@AuthenticationPrincipal User pupil) {
@@ -56,6 +55,9 @@ public class StudentController {
     public ResponseEntity<List<ResponseAssignmentsDto>> getTasks(@AuthenticationPrincipal User pupil){
         return ResponseEntity.ok(studentService.getTasks(pupil));
     }
+
+
+
 
     @GetMapping("/question-set/{id}")
     public ResponseEntity<ResponseQuestionSetDto> getQuestionSet(
