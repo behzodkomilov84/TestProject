@@ -23,6 +23,7 @@ let currentTask = {
     started: false,
     syncTimer: null,
     finishing: false,
+    saving: false,
 
     timerInterval: null,
     durationSec: 0,
@@ -480,6 +481,7 @@ function renderTaskQuestions() {
     container.innerHTML = html;
 
     updateProgress();
+    updateFinishButtonState();
 }
 
 function nextQuestion() {
@@ -614,6 +616,7 @@ function selectAnswer(questionId, answerId) {
 
     saveTaskState();
     updateProgress();
+    updateFinishButtonState();
 }
 
 function saveTaskState() {
@@ -766,7 +769,14 @@ function updateTimerUI() {
 
     el.textContent =
         "⏱ " + formatDuration(currentTask.durationSec);
-}//TODO hozir
+}
+
+async function getFullAttemptInfo(taskId){
+    return await apiFetch(
+        `/api/student/attempt/get-full-attempt/${taskId}`,
+        {method: "GET"}
+    );
+}
 
 async function showTaskResult(taskId) {
     try {
@@ -775,7 +785,6 @@ async function showTaskResult(taskId) {
             {method: "GET"}
         );
 
-        console.log("response-get-full-attempt", res);
         // сохраняем общие данные attempt
         currentTask.attemptId = res.attemptId;
         currentTask.totalQuestions = res.totalQuestions;
@@ -924,11 +933,6 @@ function showResultQuestion(index) {
     container.innerHTML = container.innerHTML.split('<div class="exam-card')[0] + html;
 }
 
-// переход к вопросу с ошибкой
-function showWrongQuestion(idx) {
-    showResultQuestion(idx);
-}
-
 async function continueTaskSession(taskId) {
 
     if (!taskId) return;
@@ -936,7 +940,40 @@ async function continueTaskSession(taskId) {
     try {
 
         // 1️⃣ получаем актуальный attempt с backend
-        const res = await loadAttempt(taskId);
+        const res = await getFullAttemptInfo(taskId);
+
+        /*// сохраняем общие данные attempt
+        currentTask.attemptId = res.attemptId;
+        currentTask.totalQuestions = res.totalQuestions;
+        currentTask.correctAnswers = res.correctAnswers;
+        currentTask.percent = res.percent;
+        currentTask.durationSec = res.durationSec;
+        currentTask.startedAt = res.startedAt;
+        currentTask.finishedAt = res.finishedAt;
+        currentTask.lastSync = res.lastSync;
+
+        currentTask.viewMode = true; // 🔹 режим просмотра
+
+        // --- сохраняем attemptedQuestions для быстрого доступа
+        currentTask.attemptedQuestions = res.attemptedQuestions || [];
+
+        // --- объединяем вопросы с ответами
+        const answersMap = new Map();
+        currentTask.attemptedQuestions.forEach(a => {
+            answersMap.set(a.questionId, a.selectedAnswerId);
+        });
+
+        currentTask.questions = res.questions.map(q => ({
+            questionId: q.id,
+            questionText: q.text,
+            selectedAnswerId: answersMap.get(q.id) || null,
+            answers: q.answers.map(a => ({
+                id: a.id,
+                text: a.text,
+                isCorrect: a.isTrue
+            }))
+        }));
+*/
 
         currentTask.started = true;
         currentTask.viewMode = false;
@@ -971,6 +1008,7 @@ async function continueTaskSession(taskId) {
 
         // 8️⃣ показываем первый вопрос
         renderTaskQuestions();
+        updateFinishButtonState();
 
     } catch (err) {
 
@@ -1012,4 +1050,93 @@ function renderStatusBadge(status) {
     const s = map[status] || map.NEW;
 
     return `<span class="badge bg-${s.class}">${s.label}</span>`;
+}
+
+function updateFinishButtonState() {
+
+    const btn = document.getElementById("finishBtn");
+    if (!btn) return;
+
+    // если режим просмотра — всегда выключена
+    if (currentTask.viewMode) {
+        btn.disabled = true;
+        return;
+    }
+
+    // если тест не запущен
+    if (!currentTask.started) {
+        btn.disabled = true;
+        return;
+    }
+
+    // есть ли хотя бы один неотвеченный вопрос
+    const hasUnanswered = currentTask.questions.some(q => !q.selectedAnswerId);
+
+    btn.disabled = hasUnanswered;
+}
+
+async function manualSaveAttempt() {
+
+    // 🔒 базовая защита
+    if (!currentTask.started || !currentTask.attemptId) return;
+    if (currentTask.saving) return;
+
+    const btn = document.getElementById("syncBtn");
+    if (!btn) return;
+
+    // Проверяем есть ли изменения
+    const dirtyAnswers = currentTask.questions
+        .filter(q => q.dirty && q.selectedAnswerId !== null);
+
+    if (!dirtyAnswers.length) {
+        showSaveState("O'zgarish yo'q", "secondary");
+        return;
+    }
+
+    try {
+
+        currentTask.saving = true;
+
+        btn.disabled = true;
+        btn.innerHTML = "Saqlanmoqda...";
+
+        await syncAttempt(); // используем твой существующий метод
+
+        showSaveState("Saqlandi ✓", "success");
+
+    } catch (e) {
+
+        console.error("MANUAL SAVE ERROR:", e);
+        showSaveState("Xatolik!", "danger");
+
+    } finally {
+
+        currentTask.saving = false;
+        btn.disabled = false;
+        btn.innerHTML = "Holatni saqlash";
+    }
+}
+
+function showSaveState(text, type) {
+
+    const btn = document.getElementById("syncBtn");
+    if (!btn) return;
+
+    const original = btn.innerHTML;
+
+    btn.classList.remove(
+        "btn-warning",
+        "btn-success",
+        "btn-danger",
+        "btn-secondary"
+    );
+
+    btn.classList.add("btn-" + type);
+    btn.innerHTML = text;
+
+    setTimeout(() => {
+        btn.classList.remove("btn-" + type);
+        btn.classList.add("btn-warning");
+        btn.innerHTML = "Holatni saqlash";
+    }, 1500);
 }

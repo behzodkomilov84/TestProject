@@ -5,6 +5,7 @@ import behzoddev.testproject.dto.student.*;
 import behzoddev.testproject.entity.*;
 import behzoddev.testproject.entity.enums.TaskStatus;
 import lombok.RequiredArgsConstructor;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -239,34 +240,7 @@ public class AssignmentAttemptService {
                 attempt.getAssignment().getQuestionSet();
 
         // ✅ mutable copy
-        List<Question> questions =
-                new ArrayList<>(questionSet.getQuestions());
-
-        Collections.shuffle(questions);
-
-        List<ResponseQuestionDto> questionDtos =
-                questions.stream()
-                        .map(q -> {
-
-                            // mutable copy ответов
-                            List<Answer> answers =
-                                    new ArrayList<>(q.getAnswers());
-
-                            Collections.shuffle(answers);
-
-                            return new ResponseQuestionDto(
-                                    q.getId(),
-                                    q.getQuestionText(),
-                                    answers.stream()
-                                            .map(a -> new ResponseAnswerDto(
-                                                    a.getId(),
-                                                    a.getAnswerText(),
-                                                    a.getIsTrue()
-                                            ))
-                                            .toList()
-                            );
-                        })
-                        .toList();
+        List<ResponseQuestionDto> questionDtos = getResponseQuestionDtos(questionSet);
 
         List<AttemptQuestionDto> attempted =
                 attempt.getAnswers().stream()
@@ -290,6 +264,36 @@ public class AssignmentAttemptService {
                 questionDtos,
                 attempted
         );
+    }
+
+    public static List<ResponseQuestionDto> getResponseQuestionDtos(QuestionSet questionSet) {
+        List<Question> questions =
+                new ArrayList<>(questionSet.getQuestions());
+
+        Collections.shuffle(questions);
+
+        return questions.stream()
+                        .map(q -> {
+
+                            // mutable copy ответов
+                            List<Answer> answers =
+                                    new ArrayList<>(q.getAnswers());
+
+                            Collections.shuffle(answers);
+
+                            return new ResponseQuestionDto(
+                                    q.getId(),
+                                    q.getQuestionText(),
+                                    answers.stream()
+                                            .map(a -> new ResponseAnswerDto(
+                                                    a.getId(),
+                                                    a.getAnswerText(),
+                                                    a.getIsTrue()
+                                            ))
+                                            .toList()
+                            );
+                        })
+                        .toList();
     }
 
     @Transactional(readOnly = true)

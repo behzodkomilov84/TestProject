@@ -56,9 +56,6 @@ public class StudentController {
         return ResponseEntity.ok(studentService.getTasks(pupil));
     }
 
-
-
-
     @GetMapping("/question-set/{id}")
     public ResponseEntity<ResponseQuestionSetDto> getQuestionSet(
             @PathVariable Long id

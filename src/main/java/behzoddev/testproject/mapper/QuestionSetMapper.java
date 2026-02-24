@@ -1,9 +1,9 @@
 package behzoddev.testproject.mapper;
 
-import behzoddev.testproject.dto.student.ResponseAnswerDto;
 import behzoddev.testproject.dto.student.ResponseQuestionDto;
 import behzoddev.testproject.dto.student.ResponseQuestionSetDto;
 import behzoddev.testproject.entity.QuestionSet;
+import behzoddev.testproject.service.AssignmentAttemptService;
 import org.mapstruct.Mapper;
 
 import java.util.List;
@@ -12,21 +12,9 @@ import java.util.List;
 public interface QuestionSetMapper {
 
     default ResponseQuestionSetDto mapQuestionSetToResponseQuestionSetDto(QuestionSet set) {
-        List<ResponseQuestionDto> questions = set.getQuestions()
-                .stream()
-                .map(q -> new ResponseQuestionDto(
-                        q.getId(),
-                        q.getQuestionText(),
-                        q.getAnswers()
-                                .stream()
-                                .map(a -> new ResponseAnswerDto(
-                                        a.getId(),
-                                        a.getAnswerText(),
-                                        a.getIsTrue()
-                                ))
-                                .toList()
-                ))
-                .toList();
+
+        List<ResponseQuestionDto> questions =
+                AssignmentAttemptService.getResponseQuestionDtos(set);
 
         return new ResponseQuestionSetDto(
                 set.getId(),
@@ -34,4 +22,5 @@ public interface QuestionSetMapper {
                 questions
         );
     }
+
 }
