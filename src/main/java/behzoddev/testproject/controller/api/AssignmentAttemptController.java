@@ -4,6 +4,7 @@ import behzoddev.testproject.dto.student.AttemptDto;
 import behzoddev.testproject.dto.student.AttemptFullDto;
 import behzoddev.testproject.dto.student.ResponseAssignmentsAndTaskStatusDto;
 import behzoddev.testproject.dto.student.SyncAttemptRequestDto;
+import behzoddev.testproject.entity.AssignmentAttempt;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.AssignmentAttemptService;
 import behzoddev.testproject.service.AttemptHeartbeatService;
@@ -13,6 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/student/attempt")
@@ -82,6 +84,20 @@ public class AssignmentAttemptController {
     ) {
         return ResponseEntity.ok(
                 assignmentAttemptService.getFullAttemptForResult(taskId, pupil)
+        );
+    }
+
+    @GetMapping("/{id}/time")
+    public ResponseEntity<Map<String, Integer>> getTime(
+            @AuthenticationPrincipal User pupil,
+            @PathVariable Long id
+    ) {
+
+        AssignmentAttempt attempt =
+                assignmentAttemptService.updateAndGetTime(pupil, id);
+
+        return ResponseEntity.ok(
+                Map.of("durationSec", attempt.getDurationSec())
         );
     }
 }

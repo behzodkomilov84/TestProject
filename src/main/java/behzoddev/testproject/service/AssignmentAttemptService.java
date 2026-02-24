@@ -94,6 +94,8 @@ public class AssignmentAttemptService {
                         .orElseThrow(() ->
                                 new RuntimeException(ATTEMPT_NOT_FOUND));
 
+        updateDuration(attempt);
+
         if (attempt.getFinishedAt() != null) {
             return;
         }
@@ -196,6 +198,8 @@ public class AssignmentAttemptService {
                 : (int) Math.round((correct * 100.0) / total);
 
         // === обновляем attempt ===
+        updateDuration(attempt);
+
         attempt.setCorrectAnswers(correct);
         attempt.setPercent(percent);
         attempt.setFinishedAt(now);
@@ -204,13 +208,15 @@ public class AssignmentAttemptService {
         // dirty checking сохранит всё автоматически
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public AttemptDto getFullAttemptByTaskId(Long taskId, User pupil) {
         Optional<AssignmentAttempt> attempt =
                 assignmentAttemptRepository.findByAssignmentIdAndPupilId(taskId, pupil.getId());
 
         if (attempt.isPresent()) {
             AssignmentAttempt assignmentAttempt = attempt.get();
+
+            updateDuration(assignmentAttempt);
 
             return AttemptDto.builder()
                     .attemptId(assignmentAttempt.getId())
@@ -227,7 +233,7 @@ public class AssignmentAttemptService {
         }
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public AttemptFullDto getFullAttemptForResult(Long taskId, User pupil) {
 
         AssignmentAttempt attempt =
@@ -235,6 +241,8 @@ public class AssignmentAttemptService {
                         .findFullByTaskIdAndPupil(taskId, pupil)
                         .orElseThrow(() ->
                                 new RuntimeException(ATTEMPT_NOT_FOUND));
+
+        updateDuration(attempt);
 
         QuestionSet questionSet =
                 attempt.getAssignment().getQuestionSet();
@@ -353,6 +361,45 @@ public class AssignmentAttemptService {
                 .toList();
     }
 
+    public static void updateDuration(AssignmentAttempt attempt) {
+
+        if (attempt.getStartedAt() == null) return;
+        if (attempt.getFinishedAt() != null) return;
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (attempt.getLastSync() != null) {
+
+            long seconds = java.time.Duration
+                    .between(attempt.getLastSync(), now)
+                    .getSeconds();
+
+            if (seconds > 300) {
+                seconds = 300; // максимум 5 минут за один раз
+            }
+
+            if (seconds > 0) {
+                attempt.setDurationSec(
+                        attempt.getDurationSec() + (int) seconds
+                );
+            }
+        }
+
+        attempt.setLastSync(now);
+    }
+
+    @Transactional
+    public AssignmentAttempt updateAndGetTime(User pupil, Long id) {
+
+        AssignmentAttempt attempt =
+                assignmentAttemptRepository
+                        .findByIdAndPupil(id, pupil)
+                        .orElseThrow(() -> new RuntimeException(ATTEMPT_NOT_FOUND));
+
+        updateDuration(attempt);
+
+        return attempt;
+    }
 }
 
 

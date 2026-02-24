@@ -28,8 +28,6 @@ let currentTask = {
     timerInterval: null,
     durationSec: 0,
 
-    timerBaseTimestamp: null
-
 };
 
 //Taskni bajarishga real qancha vaqt sarflaganini bilish uchun
@@ -301,7 +299,7 @@ async function startTaskSession(taskId) {
 
     currentTask.started = true;
 
-    startDisplayTimer();
+    startServerTimerSync();
     startHeartbeat();
     startAutoSync();
 
@@ -663,7 +661,7 @@ async function finishTaskSession() {
     try {
 
         // 1️⃣ Останавливаем UI таймер
-        stopDisplayTimer();
+        stopServerTimerSync();
 
         // 2️⃣ Останавливаем фоновые процессы СРАЗУ
         stopAutoSync();
@@ -689,6 +687,7 @@ async function finishTaskSession() {
 
         // 7️⃣ Обновляем UI таймера финальным значением
         updateTimerUI(currentTask.durationSec);
+
 
         // 8️⃣ Показываем результат (по желанию)
         await showTaskResult(currentTask.id);
@@ -720,45 +719,9 @@ function formatDuration(sec) {
     return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-function startDisplayTimer() {
 
-    stopDisplayTimer();
 
-    if (!currentTask.startedAt) return;
 
-    // если тест завершён — просто показываем БД время
-    if (currentTask.finishedAt !== null) {
-        updateTimerUI(currentTask.durationSec);
-        return;
-    }
-
-    currentTask.timerBaseTimestamp = Date.now();
-
-    currentTask.timerInterval = setInterval(() => {
-
-        const delta =
-            Math.floor((Date.now() - currentTask.timerBaseTimestamp) / 1000);
-
-        const total =
-            currentTask.durationSec + delta;
-
-        updateTimerUI(total);
-
-    }, 1000);
-}
-
-function stopDisplayTimer() {
-
-    if (!currentTask.timerInterval) return;
-
-    const delta =
-        Math.floor((Date.now() - currentTask.timerBaseTimestamp) / 1000);
-
-    currentTask.durationSec += delta;
-
-    clearInterval(currentTask.timerInterval);
-    currentTask.timerInterval = null;
-}
 
 function updateTimerUI() {
 
@@ -942,39 +905,6 @@ async function continueTaskSession(taskId) {
         // 1️⃣ получаем актуальный attempt с backend
         const res = await getFullAttemptInfo(taskId);
 
-        /*// сохраняем общие данные attempt
-        currentTask.attemptId = res.attemptId;
-        currentTask.totalQuestions = res.totalQuestions;
-        currentTask.correctAnswers = res.correctAnswers;
-        currentTask.percent = res.percent;
-        currentTask.durationSec = res.durationSec;
-        currentTask.startedAt = res.startedAt;
-        currentTask.finishedAt = res.finishedAt;
-        currentTask.lastSync = res.lastSync;
-
-        currentTask.viewMode = true; // 🔹 режим просмотра
-
-        // --- сохраняем attemptedQuestions для быстрого доступа
-        currentTask.attemptedQuestions = res.attemptedQuestions || [];
-
-        // --- объединяем вопросы с ответами
-        const answersMap = new Map();
-        currentTask.attemptedQuestions.forEach(a => {
-            answersMap.set(a.questionId, a.selectedAnswerId);
-        });
-
-        currentTask.questions = res.questions.map(q => ({
-            questionId: q.id,
-            questionText: q.text,
-            selectedAnswerId: answersMap.get(q.id) || null,
-            answers: q.answers.map(a => ({
-                id: a.id,
-                text: a.text,
-                isCorrect: a.isTrue
-            }))
-        }));
-*/
-
         currentTask.started = true;
         currentTask.viewMode = false;
 
@@ -998,7 +928,7 @@ async function continueTaskSession(taskId) {
         }
 
         // 5️⃣ запускаем таймер (корректный способ)
-        startDisplayTimer();
+        startServerTimerSync();
 
         // 6️⃣ запускаем heartbeat
         startHeartbeat();
@@ -1140,3 +1070,48 @@ function showSaveState(text, type) {
         btn.innerHTML = "Holatni saqlash";
     }, 1500);
 }
+
+function startServerTimerSync() {
+
+    stopServerTimerSync();
+
+    currentTask.timerInterval = setInterval(async () => {
+
+        if (!currentTask.attemptId) return;
+
+        try {
+            const res = await apiFetch(
+                `/api/student/attempt/${currentTask.attemptId}/time`
+            );
+
+            currentTask.durationSec = res.durationSec;
+            updateTimerUI();
+
+        } catch (e) {
+            console.error("Timer sync error", e);
+        }
+
+    }, 5000);
+}
+
+function stopServerTimerSync() {
+
+    if (currentTask.timerInterval !== null) {
+        clearInterval(currentTask.timerInterval);
+        currentTask.timerInterval = null;
+    }
+}
+
+document.getElementById("taskModal")
+    .addEventListener("hidden.bs.modal", async () => {
+
+        if (currentTask.started && currentTask.attemptId) {
+
+            await apiFetch(
+                `/api/student/attempt/heartbeat/${currentTask.attemptId}`,
+                { method: "POST" }
+            );
+
+            stopServerTimerSync();
+        }
+    });
