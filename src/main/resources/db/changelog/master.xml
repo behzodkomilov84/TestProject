@@ -10,6 +10,7 @@
     <include file="db/changelog/test_session_questions.sql"/>
     <include file="db/changelog/user_question_stats.sql"/>
     <include file="db/changelog/teacher-module.sql"/>
+    <include file="db/changelog/index_for_assignment.sql"/>
 
 
 </databaseChangeLog>

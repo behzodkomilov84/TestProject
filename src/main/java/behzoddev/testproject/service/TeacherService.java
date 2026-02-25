@@ -31,6 +31,7 @@ public class TeacherService {
     private final UserRepository userRepository;
     private final Validation validation;
     private final UserMapper userMapper;
+    private final AssignmentAttemptRepository assignmentAttemptRepository;
 
     @Transactional
     @SneakyThrows
@@ -266,6 +267,124 @@ public class TeacherService {
                 .stream()
                 .map(userMapper::mapUserToGroupStudentDto)
                 .toList();
+    }
+
+    public List<AssignmentAdminRowDto> getAllAssignments() {
+
+        List<Assignment> assignments =
+                assignmentRepository.findAllGroupAssignments();
+
+        return assignments.stream().map(a -> {
+
+            List<User> students = new ArrayList<>(a.getGroup().getPupils());
+
+            List<AssignmentAttempt> attempts =
+                    assignmentAttemptRepository.findAllByAssignmentId(a.getId());
+
+            Map<Long, AssignmentAttempt> attemptMap =
+                    attempts.stream()
+                            .collect(Collectors.toMap(
+                                    at -> at.getPupil().getId(),
+                                    at -> at
+                            ));
+
+            int total = students.size();
+            int finished = 0;
+            int started = 0;
+            int percentSum = 0;
+
+            for (User student : students) {
+
+                AssignmentAttempt at =
+                        attemptMap.get(student.getId());
+
+                if (at != null) {
+
+                    if (at.getStartedAt() != null)
+                        started++;
+
+                    if (at.getFinishedAt() != null)
+                        finished++;
+
+                    percentSum += at.getPercent();
+                }
+            }
+
+            double avg = finished == 0
+                    ? 0
+                    : (double) percentSum / finished;
+
+            return new AssignmentAdminRowDto(
+                    a.getId(),
+                    a.getQuestionSet().getName(),
+                    a.getGroup().getName(),
+                    a.getAssignedAt(),
+                    a.getDueDate(),
+                    total,
+                    finished,
+                    avg
+            );
+
+        }).toList();
+    }
+
+
+    public List<AssignmentStudentDetailDto> getAssignmentDetails(Long id) {
+
+        Assignment assignment =
+                assignmentRepository.findById(id)
+                        .orElseThrow();
+
+        List<User> students =
+                new ArrayList<>(assignment.getGroup().getPupils());
+
+        List<AssignmentAttempt> attempts =
+                assignmentAttemptRepository.findAllByAssignmentId(id);
+
+        Map<Long, AssignmentAttempt> attemptMap =
+                attempts.stream()
+                        .collect(Collectors.toMap(
+                                at -> at.getPupil().getId(),
+                                at -> at
+                        ));
+
+        List<AssignmentStudentDetailDto> result = new ArrayList<>();
+
+        for (User student : students) {
+
+            AssignmentAttempt at =
+                    attemptMap.get(student.getId());
+
+            String status;
+            Integer percent = 0;
+            Integer duration = 0;
+            LocalDateTime lastActivity = null;
+
+            if (at == null) {
+                status = "NEW";
+            } else if (at.getFinishedAt() != null) {
+                status = "FINISHED";
+                percent = at.getPercent();
+                duration = at.getDurationSec();
+                lastActivity = at.getLastSync();
+            } else {
+                status = "IN_PROGRESS";
+                percent = at.getPercent();
+                duration = at.getDurationSec();
+                lastActivity = at.getLastSync();
+            }
+
+            result.add(new AssignmentStudentDetailDto(
+                    student.getId(),
+                    student.getUsername(),
+                    status,
+                    percent,
+                    duration,
+                    lastActivity
+            ));
+        }
+
+        return result;
     }
 
 }
