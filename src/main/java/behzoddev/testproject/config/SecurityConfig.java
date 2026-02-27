@@ -47,7 +47,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/tests/**",
                                 "/api/profile/**",
-                                "/profile/**")
+                                "/profile/**",
+                                "/api/assignments/**")
                         .authenticated()
 
                         // student API — СНАЧАЛА

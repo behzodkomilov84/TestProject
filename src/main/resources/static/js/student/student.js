@@ -1,7 +1,3 @@
-/*document.addEventListener("DOMContentLoaded", () => {
-    void loadMembershipGroups();
-});*/
-
 function toggleSidebar() {
     const sidebar = document.getElementById("studentSidebar");
     const workspace = document.querySelector(".workspace");
@@ -79,7 +75,7 @@ function formatDateTime(iso) {
 
     const [date, time] = iso.split("T");
 
-    return date + "<br>" + time;
+    return date + ", " + time;
 }
 
 function render(html) {

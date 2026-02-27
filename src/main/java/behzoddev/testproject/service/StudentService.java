@@ -116,7 +116,7 @@ public class StudentService {
     @Transactional(readOnly = true)
     public List<ResponseAssignmentsDto> getTasks(User pupil) {
 
-        return assignmentRepository.findAllByPupil(pupil)
+        return assignmentRepository.findAllByRecipientsPupil(pupil)
                 .stream()
                 .map(a ->
                         ResponseAssignmentsDto.builder()

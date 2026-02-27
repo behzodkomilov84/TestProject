@@ -1,3 +1,27 @@
+const CURRENT_USER_ID = Number(document.body.dataset.userId);
+
+let currentChatAssignment = null;
+let chatModalInstance = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    const modalElement = document.getElementById("chatModal");
+    chatModalInstance = new bootstrap.Modal(modalElement);
+
+});
+
+//--------------------------------------------------------
+const chatModalEl = document.getElementById("chatModal");
+const chatInput = document.getElementById("chatInput");
+
+chatModalEl.addEventListener("shown.bs.modal", () => {
+    chatInput.focus();
+
+    //Чтобы курсор ставился в конец текста (если поле не пустое)
+    chatInput.setSelectionRange(chatInput.value.length, chatInput.value.length);
+});
+//--------------------------------------------------------
+
 let currentQuestionIndex = 0;
 
 //Barcha tasklarni shu yerga zagruzka qilinadi.
@@ -91,11 +115,16 @@ function renderTasks(list) {
                 <td>${formatDateTime(t.assignedAt)}</td>
                 <td>${formatDateTime(t.dueDate)}</td>
                 <td>
-                    <button class="btn btn-primary btn-sm"
-                        onclick="showCurrentTask(${t.id})">
-                        Topshiriqni ko'rish
-                    </button>
-                </td>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-primary btn-sm"
+                            onclick="showCurrentTask(${t.id})">
+                            OCHISH
+                        </button>
+                        <button class="btn btn-sm btn-secondary"
+                            onclick="openChat(${t.id})">
+                            Chat
+                        </button>
+                    </div>                </td>
                 <td>
                 ${renderStatusBadge(t.taskStatus)}
                 </td>
@@ -106,6 +135,89 @@ function renderTasks(list) {
 
     render(html);
 }//DONE
+
+async function openChat(id) {
+
+    console.log("CURRENT_USER_ID: ", CURRENT_USER_ID);
+
+    currentChatAssignment = id;
+
+    const container = document.getElementById("chatContainer");
+    if (!container) {
+        console.error("chatContainer not found in DOM");
+        return;
+    }
+
+    const res = await fetch(`/api/assignments/${id}/chat`);
+    const data = await res.json();
+
+    container.innerHTML = "";
+
+    data.forEach(msg => {
+
+        const isMine = Number(msg.senderId) === CURRENT_USER_ID;
+        const senderName = isMine ? "Men" : msg.senderName;
+        const roleLabel =
+            msg.role === "ROLE_ADMIN" ? "O'qituvchi" : "O'quvchi";
+
+        container.innerHTML += `
+            <div class="chat-row ${isMine ? "mine" : "other"}">
+                <div class="chat-bubble">
+                    <div class="chat-header">
+                        <span class="chat-name" style="margin-right: 25px; font-weight: 600;">${senderName}</span>
+                        <span class="chat-role">${roleLabel}</span>
+                    </div>
+                        <hr>
+                    <div class="chat-text">${msg.message}</div>
+                    <div class="chat-time">
+                        ${formatDate(msg.createdAt)}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.scrollTop = container.scrollHeight;
+
+    chatModalInstance.show();
+
+    setTimeout(() => {
+        document.getElementById("chatInput")?.focus();
+    }, 200);
+}
+
+async function sendMessage() {
+
+    const input = document.getElementById("chatInput");
+    const text = input.value.trim();
+
+    if (!text) return; // пустые сообщения не отправляем
+
+    await fetch(`/api/assignments/${currentChatAssignment}/chat`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({text})
+    });
+
+    input.value = "";              // 🔥 очищаем поле
+    input.focus();                 // удобно — курсор обратно в поле
+
+    await openChat(currentChatAssignment);
+}
+
+document.getElementById("chatInput")
+    .addEventListener("keydown", function (e) {
+
+        if (e.key === "Enter") {
+            e.preventDefault();   // чтобы не было submit формы
+            void sendMessage();
+        }
+    });
+
+function formatDate(d) {
+    if (!d) return "-";
+    return new Date(d).toLocaleString();
+}
 
 function resolveTaskStatus(t) {
     const now = new Date();

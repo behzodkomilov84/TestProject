@@ -9,7 +9,9 @@ import java.util.List;
 
 @Entity
 @Table(name = "assignment_attempts",
-        uniqueConstraints=@UniqueConstraint(columnNames={"assignment_id","pupil_id"}))
+        uniqueConstraints=@UniqueConstraint(
+                name = "uq_attempt",
+                columnNames={"assignment_id","pupil_id"}))
 @Getter
 @Setter
 @NoArgsConstructor

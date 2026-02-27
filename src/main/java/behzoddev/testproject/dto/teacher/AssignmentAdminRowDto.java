@@ -8,8 +8,8 @@ public record AssignmentAdminRowDto(
         String groupName,
         LocalDateTime assignedAt,
         LocalDateTime dueDate,
-        int totalStudents,
-        int finished,
-        double avgPercent
+        Long totalStudents,
+        Long finished,
+        Double avgPercent
 ) {}
 

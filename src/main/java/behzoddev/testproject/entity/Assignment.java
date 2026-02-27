@@ -35,13 +35,6 @@ public class Assignment {
     private TeacherGroup group;
 
     /**
-     * Конкретный ученик (опционально)
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "pupil_id")
-    private User pupil;
-
-    /**
      * Учитель, который назначил задание
      */
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -61,6 +54,14 @@ public class Assignment {
     @Column(name = "due_date")
     private LocalDateTime dueDate;
 
+    @Builder.Default
+    @OneToMany(
+            mappedBy = "assignment",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private List<AssignmentRecipient> recipients = new ArrayList<>();
+
     /**
      * Попытки прохождения
      */
@@ -73,31 +74,15 @@ public class Assignment {
     private List<AssignmentAttempt> assignmentAttempts = new ArrayList<>();
 
     /**
-     * Helper — добавить попытку
-     */
-    public void addAttempt(AssignmentAttempt assignmentAttempt) {
-        assignmentAttempts.add(assignmentAttempt);
-        assignmentAttempt.setAssignment(this);
-    }
-
-    /**
-     * Helper — удалить попытку
-     */
-    public void removeAttempt(AssignmentAttempt assignmentAttempt) {
-        assignmentAttempts.remove(assignmentAttempt);
-        assignmentAttempt.setAssignment(null);
-    }
-
-    /**
      * Бизнес-проверка:
      * задание должно быть назначено либо группе, либо ученику
      */
     @PrePersist
     @PreUpdate
     private void validateTarget() {
-        if (group == null && pupil == null) {
+        if (group == null && recipients == null) {
             throw new IllegalStateException(
-                    "Assignment must target either a group or a pupil"
+                    "Topshiriq guruhga yoki o'quvchiga qaratilgan bo'lishi kerak"
             );
         }
     }

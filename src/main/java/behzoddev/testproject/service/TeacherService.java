@@ -162,75 +162,104 @@ public class TeacherService {
         LocalDateTime dueDate = payload.dueDate();
         List<Long> studentIds = payload.studentIds();
 
-                QuestionSet set = questionSetRepository.findById(setId)
+        // --- 1. Проверка QuestionSet
+
+        QuestionSet set = questionSetRepository.findById(setId)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("QuestionSet not found"));
+                        new IllegalArgumentException("Savollar paketi topilmadi."));
+
+        // --- 2. Проверка группы
 
         TeacherGroup group = teacherGroupRepository.findById(groupId)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Group not found"));
+                        new IllegalArgumentException("Gruppa topilmadi."));
 
-        // --- 1. Найти существующих студентов
+        // --- 3. Проверка что учитель владелец группы
 
-        List<User> existingStudents =
-                userRepository.findAllById(studentIds);
-
-        Set<Long> existingIds = existingStudents.stream()
-                .map(User::getId)
-                .collect(Collectors.toSet());
-
-        // --- 2. Найти отсутствующих
-        List<Long> missingIds = studentIds.stream()
-                .filter(id -> !existingIds.contains(id))
-                .toList();
-
-        // --- 3. Проверка уже назначенных
-        List<Long> alreadyAssigned = new ArrayList<>();
-        List<User> toAssign = new ArrayList<>();
-
-        for (User student : existingStudents) {
-
-            boolean exists =
-                    assignmentRepository.existsByQuestionSetIdAndGroupIdAndDueDateAndStudentId(
-                            setId,
-                            groupId,
-                            dueDate,
-                            student.getId()
-                    );
-
-            if (exists)
-                alreadyAssigned.add(student.getId());
-            else
-                toAssign.add(student);
+        if (!group.getTeacher().getId().equals(teacher.getId())) {
+            throw new IllegalStateException("Begona gruppaga topshiriq berolmaysiz.");
         }
 
-        // --- 4. Создание назначений
+        // --- 4. Проверка уже существующего assignment (одно на группу)
 
-        List<Long> assignedIds = new ArrayList<>();
+        boolean alreadyExists =
+                assignmentRepository.existsByQuestionSetIdAndGroupIdAndDueDate(
+                        setId,
+                        groupId,
+                        dueDate
+                );
 
-        for (User student : toAssign) {
+        if (alreadyExists) {
+            throw new IllegalStateException("Bu topshiriq bu gruppaga allaqachon yuklangan.");
+        }
 
-            Assignment assignment = Assignment.builder()
-                    .questionSet(set)
-                    .group(group)
-                    .pupil(student)
-                    .assignedAt(LocalDateTime.now())
-                    .assignedBy(teacher)
-                    .dueDate(dueDate)
+        // --- 5. Определяем список студентов
+
+        List<User> pupils;
+
+        if (studentIds == null || studentIds.isEmpty()) {
+            // назначить всем в группе
+            pupils = userRepository.findAllByGroupId(groupId);
+        } else {
+
+            pupils = userRepository.findAllById(studentIds);
+
+            Set<Long> foundIds = pupils.stream()
+                    .map(User::getId)
+                    .collect(Collectors.toSet());
+
+            List<Long> missingIds = studentIds.stream()
+                    .filter(id -> !foundIds.contains(id))
+                    .toList();
+
+            if (!missingIds.isEmpty()) {
+                throw new IllegalArgumentException("Students not found: " + missingIds);
+            }
+
+            long count = teacherGroupRepository
+                    .countStudentsInGroup(groupId, studentIds);
+
+            if (count != studentIds.size()) {
+                throw new IllegalStateException("Some students not in this group");
+            }
+
+        }
+
+        // --- 6. Создаём ОДИН Assignment
+
+        Assignment assignment = Assignment.builder()
+                .questionSet(set)
+                .group(group)
+                .assignedBy(teacher)
+                .assignedAt(LocalDateTime.now())
+                .dueDate(dueDate)
+                .build();
+
+        // --- 7. Создаём AssignmentStudent
+
+        for (User pupil : pupils) {
+
+            AssignmentRecipient assignmentRecipient = AssignmentRecipient.builder()
+                    .assignment(assignment)
+                    .pupil(pupil)
                     .build();
 
-            assignmentRepository.save(assignment);
-
-            assignedIds.add(student.getId());
+            assignment.getRecipients().add(assignmentRecipient);
         }
 
-        // --- 5. Результат
+        assignmentRepository.save(assignment);
+
+        // --- 8. Результат
+
         return AssignResultDto.builder()
-                .assigned(assignedIds)
-                .missing(missingIds)
-                .alreadyAssigned(alreadyAssigned)
+                .assigned(
+                        pupils.stream()
+                                .map(User::getId)
+                                .toList()
+                )
                 .build();
     }
+
 
 
     @Transactional
@@ -269,10 +298,10 @@ public class TeacherService {
                 .toList();
     }
 
-    public List<AssignmentAdminRowDto> getAllAssignments() {
+    /*public List<AssignmentAdminRowDto> getAllAssignments(User teacher) {
 
         List<Assignment> assignments =
-                assignmentRepository.findAllGroupAssignments();
+                assignmentRepository.findAllGroupAssignments(teacher.getId());
 
         return assignments.stream().map(a -> {
 
@@ -288,8 +317,8 @@ public class TeacherService {
                                     at -> at
                             ));
 
-            int total = students.size();
-            int finished = 0;
+            Long total = students.size();
+            Long finished = 0L;
             int started = 0;
             int percentSum = 0;
 
@@ -310,7 +339,7 @@ public class TeacherService {
                 }
             }
 
-            double avg = finished == 0
+            Double avg = finished == 0
                     ? 0
                     : (double) percentSum / finished;
 
@@ -326,6 +355,9 @@ public class TeacherService {
             );
 
         }).toList();
+    }*/
+    public List<AssignmentAdminRowDto> getAllAssignments(User teacher) {
+        return assignmentRepository.findAllAssignmentsByTeacherId(teacher.getId());
     }
 
 
@@ -387,4 +419,19 @@ public class TeacherService {
         return result;
     }
 
+    @Transactional
+    public void bulkDeleteAssignments(List<Long> ids, User teacher) {
+
+        List<Assignment> assignments =
+                assignmentRepository.findAllById(ids);
+
+        for (Assignment a : assignments) {
+
+            if (!a.getAssignedBy().getId().equals(teacher.getId())) {
+                throw new RuntimeException("O'zingiz qo'ymagan topshiriqni o'chira olmaysiz.");
+            }
+        }
+
+        assignmentRepository.deleteAll(assignments);
+    }
 }

@@ -308,7 +308,7 @@ public class AssignmentAttemptService {
     public List<ResponseAssignmentsAndTaskStatusDto> getTasksAndTaskStatus(User pupil) {
 
         List<Assignment> assignments =
-                assignmentRepository.findAllByPupil(pupil);
+                assignmentRepository.findAllByRecipientsPupil(pupil);
 
         List<AssignmentAttempt> attempts =
                 assignmentAttemptRepository.findAllByPupil(pupil);
@@ -328,22 +328,7 @@ public class AssignmentAttemptService {
                     AssignmentAttempt attempt =
                             attemptMap.get(a.getId());
 
-                    TaskStatus status;
-
-                    if (attempt == null) {
-                        status = a.getDueDate().isBefore(now)
-                                ? TaskStatus.OVERDUE
-                                : TaskStatus.NEW;
-
-                    } else if (attempt.getFinishedAt() != null) {
-                        status = TaskStatus.FINISHED;
-
-                    } else if (a.getDueDate().isBefore(now)) {
-                        status = TaskStatus.OVERDUE;
-
-                    } else {
-                        status = TaskStatus.IN_PROGRESS;
-                    }
+                    TaskStatus status = getTaskStatus(a, attempt, now);
 
                     return ResponseAssignmentsAndTaskStatusDto.builder()
                             .id(a.getId())
@@ -359,6 +344,26 @@ public class AssignmentAttemptService {
                             .build();
                 })
                 .toList();
+    }
+
+    private static @NotNull TaskStatus getTaskStatus(Assignment a, AssignmentAttempt attempt, LocalDateTime now) {
+        TaskStatus status;
+
+        if (attempt == null) {
+            status = a.getDueDate().isBefore(now)
+                    ? TaskStatus.OVERDUE
+                    : TaskStatus.NEW;
+
+        } else if (attempt.getFinishedAt() != null) {
+            status = TaskStatus.FINISHED;
+
+        } else if (a.getDueDate().isBefore(now)) {
+            status = TaskStatus.OVERDUE;
+
+        } else {
+            status = TaskStatus.IN_PROGRESS;
+        }
+        return status;
     }
 
     public static void updateDuration(AssignmentAttempt attempt) {

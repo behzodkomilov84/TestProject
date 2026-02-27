@@ -6,11 +6,8 @@
         http://www.liquibase.org/xml/ns/dbchangelog
         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.23.xsd">
 
-    <include file="db/changelog/init.sql"/>
-    <include file="db/changelog/test_session_questions.sql"/>
-    <include file="db/changelog/user_question_stats.sql"/>
-    <include file="db/changelog/teacher-module.sql"/>
-    <include file="db/changelog/index_for_assignment.sql"/>
+    <include file="/db/changelog/init.sql"/>
+    <include file="/db/changelog/assignment-chat.sql"/>
 
 
 </databaseChangeLog>

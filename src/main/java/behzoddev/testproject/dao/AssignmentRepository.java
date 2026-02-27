@@ -1,6 +1,6 @@
 package behzoddev.testproject.dao;
 
-import behzoddev.testproject.dto.teacher.GroupedAssignmentDto;
+import behzoddev.testproject.dto.teacher.AssignmentAdminRowDto;
 import behzoddev.testproject.entity.Assignment;
 import behzoddev.testproject.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,55 +12,35 @@ import java.util.List;
 
 public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
 
-    @Query("""
-                select case when count(a) > 0 then true else false end
-                from Assignment a
-                where a.questionSet.id = :setId
-                  and a.group.id = :groupId
-                  and a.dueDate = :dueDate
-                  and a.pupil.id = :studentId
-            """)
-    boolean existsByQuestionSetIdAndGroupIdAndDueDateAndStudentId(
-            @Param("setId") Long setId, @Param("groupId") Long groupId,
-            @Param("dueDate") LocalDateTime dueDate, @Param("studentId") Long studentId);
-
-    List<Assignment> findAllByPupil(User pupil);
+    List<Assignment> findAllByRecipientsPupil(User pupil);
 
     @Query("""
-                SELECT a FROM Assignment a
-                JOIN FETCH a.questionSet
-                JOIN FETCH a.group g
-                JOIN FETCH g.pupils
-                WHERE a.group IS NOT NULL
-            """)
-    List<Assignment> findAllGroupAssignments();
-
-    @Query("""
-                SELECT new behzoddev.testproject.dto.teacher.GroupedAssignmentDto(
-                    MIN(a.id),
-                    a.questionSet.id,
-                    a.group.id,
-                    a.assignedBy.id,
+                SELECT new behzoddev.testproject.dto.teacher.AssignmentAdminRowDto(
+                    a.id,
+                    qs.name,
+                    g.name,
                     a.assignedAt,
                     a.dueDate,
-                    COUNT(a)
+                    COUNT(DISTINCT u.id),
+                    COUNT(DISTINCT atFinished.id),
+                    CAST(COALESCE(AVG(atFinished.percent), 0.0) AS double)
                 )
                 FROM Assignment a
-                WHERE a.group IS NOT NULL
-                GROUP BY
-                    a.questionSet.id,
-                    a.group.id,
-                    a.assignedBy.id,
-                    a.assignedAt,
-                    a.dueDate
-                ORDER BY a.assignedAt DESC
+                JOIN a.questionSet qs
+                JOIN a.group g
+                JOIN g.pupils u
+                LEFT JOIN AssignmentAttempt atFinished
+                    ON atFinished.assignment = a
+                    AND atFinished.pupil = u
+                    AND atFinished.finishedAt IS NOT NULL
+                WHERE a.assignedBy.id = :teacherId
+                GROUP BY a.id, qs.name, g.name, a.assignedAt, a.dueDate
             """)
-    List<GroupedAssignmentDto> findGroupedAssignments();
+    List<AssignmentAdminRowDto> findAllAssignmentsByTeacherId(@Param("teacherId") Long teacherId);
 
-    List<Assignment> findByGroup_IdAndQuestionSet_IdAndAssignedAtAndDueDate(
-            Long groupId,
+    boolean existsByQuestionSetIdAndGroupIdAndDueDate(
             Long setId,
-            LocalDateTime assignedAt,
+            Long groupId,
             LocalDateTime dueDate
     );
 

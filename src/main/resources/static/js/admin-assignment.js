@@ -1,4 +1,28 @@
-document.addEventListener("DOMContentLoaded", loadAssignments);
+const CURRENT_USER_ID = Number(document.body.dataset.userId);
+
+let currentChatAssignment = null;
+let chatModalInstance = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+
+    void loadAssignments();
+
+    const modalElement = document.getElementById("chatModal");
+    chatModalInstance = new bootstrap.Modal(modalElement);
+
+});
+
+//--------------------------------------------------------
+const chatModalEl = document.getElementById("chatModal");
+const chatInput = document.getElementById("chatInput");
+
+chatModalEl.addEventListener("shown.bs.modal", () => {
+    chatInput.focus();
+
+    //Чтобы курсор ставился в конец текста (если поле не пустое)
+    chatInput.setSelectionRange(chatInput.value.length, chatInput.value.length);
+});
+//--------------------------------------------------------
 
 async function loadAssignments() {
 
@@ -12,6 +36,7 @@ async function loadAssignments() {
 
         tbody.innerHTML += `
             <tr>
+                <td><input type="checkbox" class="bulkCheck" value="${a.id}"></td>
                 <td>${a.id}</td>
                 <td>${a.questionSetName}</td>
                 <td>${a.groupName}</td>
@@ -21,13 +46,24 @@ async function loadAssignments() {
                 <td>${a.finished}/${a.totalStudents}</td>
                 <td>${a.avgPercent.toFixed(1)}%</td>
                 <td>
-                    <button class="btn btn-sm btn-primary"
-                        onclick="openDetails(${a.id})">
-                        Batafsil...
-                    </button>
+                    <button class="btn btn-sm btn-info" onclick="openDetails(${a.id})">Batafsil...</button>
+                    <button class="btn btn-sm btn-secondary" onclick="openChat(${a.id})">Chat</button>
                 </td>
             </tr>
         `;
+    });
+}
+
+function toggleAll(masterCheckbox) {
+
+    const tbody = document.getElementById("assignmentTable");
+
+    if (!tbody) return;
+
+    const checkboxes = tbody.querySelectorAll("input[type='checkbox']");
+
+    checkboxes.forEach(cb => {
+        cb.checked = masterCheckbox.checked;
     });
 }
 
@@ -45,7 +81,7 @@ async function openDetails(id) {
             <tr>
                 <td>${s.pupilId}</td>
                 <td>${s.pupilName}</td>
-                <td>${s.status}</td>
+                <td>${statusFormat(s.status)}</td>
                 <td>${s.percent ?? 0}%</td>
                 <td>${s.durationSec ?? 0}</td>
                 <td>${formatDate(s.lastActivity)}</td>
@@ -55,8 +91,196 @@ async function openDetails(id) {
 
     new bootstrap.Modal(document.getElementById('detailModal')).show();
 }
+function statusFormat(status){
+    if (status === "NEW") {return colorStatus("YANGI");}
+    if (status === "IN_PROGRESS") {return colorStatus("BOSHLANGAN");}
+    if (status === "FINISHED") {return colorStatus("TUGAGAN");}
+}
 
+function colorStatus(status) {
+
+    switch (status) {
+
+        case "YANGI":
+            return `<span class="badge bg-secondary">YANGI</span>`;
+
+        case "BOSHLANGAN":
+            return `<span class="badge bg-warning text-dark">BOSHLANGAN</span>`;
+
+        case "TUGAGAN":
+            return `<span class="badge bg-success">TUGAGAN</span>`;
+
+        case "KECHIKKAN":
+            return `<span class="badge bg-danger">KECHIKKAN</span>`;
+
+        default:
+            return `<span class="badge bg-light text-dark">${status}</span>`;
+    }
+}
 function formatDate(d) {
     if (!d) return "-";
     return new Date(d).toLocaleString();
+}
+
+function getSelectedIds() {
+    return Array.from(document.querySelectorAll(".bulkCheck:checked"))
+        .map(cb => cb.value);
+}
+
+async function bulkReassign() {
+
+    const ids = getSelectedIds();
+
+    if (ids.length === 0) {
+        alert("Avval topshiriqni belgilang!!!");
+        return;
+    }
+
+    await fetch("/api/admin/assignments/bulk-reassign", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(ids)
+    });
+
+    void loadAssignments();
+}
+
+async function bulkExtend() {
+
+    const ids = getSelectedIds();
+
+    if (ids.length === 0) {
+        alert("Avval topshiriqni belgilang!!!");
+        return;
+    }
+
+    if (ids.length > 1) {
+        alert("Bir vaqtda bittadan ortiq topshiriqni muddatini o'zgartira olmaysiz.");
+        return;
+    }
+
+    const newDate = prompt("New due date (YYYY-MM-DD HH:mm)");
+    if (!newDate) return;
+
+    await fetch("/api/admin/assignments/bulk-extend", {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            ids: ids,
+            dueDate: newDate
+        })
+    });
+
+    void loadAssignments();
+}
+
+async function openChat(id) {
+
+    console.log("CURRENT_USER_ID: ", CURRENT_USER_ID);
+
+    currentChatAssignment = id;
+
+    const container = document.getElementById("chatContainer");
+    if (!container) {
+        console.error("chatContainer not found in DOM");
+        return;
+    }
+
+    const res = await fetch(`/api/admin/assignments/${id}/chat`);
+    const data = await res.json();
+
+    container.innerHTML = "";
+
+    data.forEach(msg => {
+
+        const isMine = Number(msg.senderId) === CURRENT_USER_ID;
+        const senderName = isMine ? "Men" : msg.senderName;
+        const roleLabel =
+            msg.role === "ROLE_ADMIN" ? "O'qituvchi" : "O'quvchi";
+
+        container.innerHTML += `
+            <div class="chat-row ${isMine ? "mine" : "other"}">
+                <div class="chat-bubble">
+                    <div class="chat-header">
+                        <span class="chat-name" style="margin-right: 25px; font-weight: 600;">${senderName}</span>
+                        <span class="chat-role">${roleLabel}</span>
+                    </div>
+                        <hr>
+                    <div class="chat-text">${msg.message}</div>
+                    <div class="chat-time">
+                        ${formatDate(msg.createdAt)}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.scrollTop = container.scrollHeight;
+
+    chatModalInstance.show();
+
+    setTimeout(() => {
+        document.getElementById("chatInput")?.focus();
+    }, 200);
+}
+async function sendMessage() {
+
+    const input = document.getElementById("chatInput");
+    const text = input.value.trim();
+
+    if (!text) return; // пустые сообщения не отправляем
+
+    await fetch(`/api/admin/assignments/${currentChatAssignment}/chat`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({text})
+    });
+
+    input.value = "";              // 🔥 очищаем поле
+    input.focus();                 // удобно — курсор обратно в поле
+
+    await openChat(currentChatAssignment);
+}
+
+document.getElementById("chatInput")
+    .addEventListener("keydown", function (e) {
+
+        if (e.key === "Enter") {
+            e.preventDefault();   // чтобы не было submit формы
+            void sendMessage();
+        }
+    });
+
+async function deleteAssignment() {
+
+    const ids = getSelectedIds();
+
+    if (ids.length === 0) {
+        alert("Avval topshiriqni tanlang!!!");
+        return;
+    }
+
+    if (!confirm(`Haqiqatan ham ${ids.length} ta topshiriqni o‘chirmoqchimisiz?`))
+        return;
+
+    try {
+
+        const res = await fetch("/api/admin/assignments/bulk-delete", {
+            method: "DELETE",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(ids)
+        });
+
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error(text || "Topshiriqni o'chirishda xatolik yuz berdi.");
+        }
+
+        void loadAssignments();
+
+    } catch (e) {
+
+        console.error(e);
+        alert("O‘chirishda xatolik yuz berdi");
+    }
 }
