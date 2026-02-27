@@ -14,7 +14,7 @@ body {
     background-size: cover;
     background-repeat: no-repeat;
 
-    max-height: 70%;
+    max-height: 470px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -70,4 +70,17 @@ body {
     opacity: 0.6;
     margin-top: 5px;
     text-align: right;
+}
+
+.chat-text {
+    white-space: pre-wrap; /* сохраняет переносы строк из текста */
+    word-wrap: break-word; /* переносит длинные слова */
+}
+
+.modal-header .btn-close {
+    margin-right: 10px;
+}
+
+#chatModal .modal-content {
+    height: 90vh;
 }

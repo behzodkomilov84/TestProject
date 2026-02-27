@@ -144,7 +144,7 @@ body {
     flex-direction: column;
     gap: 20px;
 
-    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
 
     animation: fadeIn 0.25s ease;
 }
@@ -197,12 +197,12 @@ body {
 
 .exam-answer:hover {
 
-    background: rgba(13,110,253,0.08);
+    background: rgba(13, 110, 253, 0.08);
 }
 
 .exam-answer.selected {
 
-    background: rgba(25,135,84,0.15);
+    background: rgba(25, 135, 84, 0.15);
     border-color: #198754;
     font-weight: 500;
 }
@@ -211,8 +211,14 @@ body {
 
 @keyframes fadeIn {
 
-    from {opacity: 0; transform: translateY(10px);}
-    to {opacity: 1; transform: translateY(0);}
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* mobile */
@@ -235,11 +241,17 @@ body {
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.progress{
+.progress {
     margin-left: 20px;
     margin-right: 20px;
 }
@@ -401,7 +413,7 @@ div#resultSummary {
     font-size: 1.5rem;
 }
 
-.btn{
+.btn {
     font-weight: 600;
 }
 
@@ -409,13 +421,14 @@ span.badge {
     text-transform: uppercase;
 }
 
+
 #chatContainer {
     background-image: url("/images/fon.jpg");
     background-position: left top;
     background-size: cover;
     background-repeat: no-repeat;
 
-    max-height: 70%;
+    max-height: 470px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -439,7 +452,7 @@ span.badge {
     max-width: 70%;
     padding: 10px 14px;
     border-radius: 14px;
-    font-size: 14px;
+    font-size: 15px;
 }
 
 .chat-row.mine .chat-bubble {
@@ -472,3 +485,17 @@ span.badge {
     margin-top: 5px;
     text-align: right;
 }
+
+.chat-text {
+    white-space: pre-wrap; /* сохраняет переносы строк из текста */
+    word-wrap: break-word; /* переносит длинные слова */
+}
+
+.modal-header .btn-close {
+    margin-right: 10px;
+}
+
+#chatModal .modal-content {
+    height: 90vh;
+}
+

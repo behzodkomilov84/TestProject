@@ -174,16 +174,36 @@
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Topshiriq bo'yicha chat</h5>
-                <button type="button" class="btn-close"
-                        data-bs-dismiss="modal"></button>
+                <h5 class="modal-title">💬 Topshiriq bo'yicha chat</h5>
+
+                <div class="ms-auto d-flex gap-2 align-items-center">
+
+                    <!-- Fullscreen -->
+                    <button type="button"
+                            class="btn btn-sm btn-outline-secondary"
+                            id="chatFullscreenBtn"
+                            onclick="toggleChatFullscreen()">
+                        🔲
+                    </button>
+
+                    <!-- Close -->
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal">
+                    </button>
+
+                </div>
             </div>
             <div class="modal-body">
 
-                <div>
-                    <div id="chatContainer" style="max-height:400px; overflow-y:auto;"></div>
-                    <input type="text" id="chatInput" class="form-control mt-2">
-                    <button class="btn btn-primary mt-2" onclick="sendMessage()">Send</button>
+                <div class="modal-container">
+                    <div id="chatContainer"></div>
+                    <textarea id="chatInput"
+                              class="form-control"
+                              rows="1"
+                              placeholder="Xabar yozing..."
+                              style="resize: none;margin-top: 10px;"></textarea>
+                    <button class="btn btn-primary mt-2" onclick="sendMessage()">✉️ Send</button>
                 </div>
 
             </div>

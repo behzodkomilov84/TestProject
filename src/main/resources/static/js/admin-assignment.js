@@ -237,19 +237,40 @@ async function sendMessage() {
     });
 
     input.value = "";              // 🔥 очищаем поле
+    input.style.height = "auto";   // 🔥 сброс высоты после отправки
     input.focus();                 // удобно — курсор обратно в поле
 
     await openChat(currentChatAssignment);
 }
 
+//-----------------------------------------------------------------------
+let sending = false;
+
 document.getElementById("chatInput")
-    .addEventListener("keydown", function (e) {
+    .addEventListener("keydown", async function (e) {
+
+        if (e.key === "Enter" && e.shiftKey) return;
 
         if (e.key === "Enter") {
-            e.preventDefault();   // чтобы не было submit формы
-            void sendMessage();
+            e.preventDefault();
+
+            if (sending) return;
+
+            sending = true;
+            try {
+                await sendMessage();
+            } finally {
+                sending = false;
+            }
         }
     });
+
+//auto-grow как Telegram
+chatInput.addEventListener("input", function () {
+    this.style.height = "auto";
+    this.style.height = this.scrollHeight + "px";
+});
+//-----------------------------------------------------------------------
 
 async function deleteAssignment() {
 
@@ -282,5 +303,18 @@ async function deleteAssignment() {
 
         console.error(e);
         alert("O‘chirishda xatolik yuz berdi");
+    }
+}
+
+function toggleChatFullscreen() {
+    const modalDialog = document.querySelector("#chatModal .modal-dialog");
+    const btn = document.getElementById("chatFullscreenBtn");
+
+    modalDialog.classList.toggle("modal-fullscreen");
+
+    if (modalDialog.classList.contains("modal-fullscreen")) {
+        btn.textContent = "🗗"; // уменьшить
+    } else {
+        btn.textContent = "🔲"; // во весь экран
     }
 }
