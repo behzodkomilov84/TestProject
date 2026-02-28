@@ -151,6 +151,8 @@ async function openChat(id) {
     const res = await fetch(`/api/assignments/${id}/chat`);
     const data = await res.json();
 
+    const wasAtBottom = isUserNearBottom(container);
+
     container.innerHTML = "";
 
     data.forEach(msg => {
@@ -176,6 +178,10 @@ async function openChat(id) {
             </div>
         `;
     });
+
+    if (wasAtBottom) {
+        scrollToBottom(container);
+    }
 
     container.scrollTop = container.scrollHeight;
 
@@ -204,6 +210,9 @@ async function sendMessage() {
     input.focus();                 // удобно — курсор обратно в поле
 
     await openChat(currentChatAssignment);
+
+    const container = document.getElementById("chatContainer");
+    scrollToBottom(container);
 }
 
 //-----------------------------------------------------------------------
@@ -1259,4 +1268,13 @@ function toggleChatFullscreen() {
     } else {
         btn.textContent = "🔲"; // во весь экран
     }
+}
+
+function isUserNearBottom(container) {
+    const threshold = 80; // px
+    return container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
+}
+
+function scrollToBottom(container) {
+    container.scrollTop = container.scrollHeight;
 }

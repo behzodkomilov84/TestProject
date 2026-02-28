@@ -197,13 +197,22 @@
             <div class="modal-body">
 
                 <div class="modal-container">
+
                     <div id="chatContainer"></div>
-                    <textarea id="chatInput"
+
+                    <div class="chat-input-wrapper">
+
+                        <textarea id="chatInput"
                               class="form-control"
                               rows="1"
                               placeholder="Xabar yozing..."
-                              style="resize: none;margin-top: 10px;"></textarea>
-                    <button class="btn btn-primary mt-2" onclick="sendMessage()">✉️ Send</button>
+                              style="resize:none;">
+                        </textarea>
+
+                        <button class="btn btn-primary mt-2"
+                                onclick="sendMessage()">✉️ Send</button>
+                    </div>
+
                 </div>
 
             </div>
