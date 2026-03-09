@@ -126,7 +126,7 @@ public class StudentService {
                                 .groupId(a.getGroup().getId())
                                 .groupName(a.getGroup().getName())
                                 .assignerId(a.getAssignedBy().getId())
-                                .assignerName(a.getAssignedBy().username())
+                                .assignerName(a.getAssignedBy().getUsername())
                                 .assignedAt(a.getAssignedAt())
                                 .dueDate(a.getDueDate())
                                 .build()

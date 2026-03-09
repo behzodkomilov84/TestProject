@@ -95,7 +95,7 @@ public class AssignmentService {
                 .map(chat -> new ChatMessageDto(
                         chat.getId(),
                         chat.getSender().getId(),
-                        chat.getSender().username(),
+                        chat.getSender().getUsername(),
                         chat.getMessageText(),
                         chat.getSender().getRole().getRoleName(), // если есть role
                         chat.getCreatedAt()

@@ -29,7 +29,7 @@ public class UserRestController {
                 .stream()
                 .map(u -> new UserDto(
                         u.getId(),
-                        u.username(),
+                        u.getUsername(),
                         u.getRole().getRoleName()
                 ))
                 .toList();

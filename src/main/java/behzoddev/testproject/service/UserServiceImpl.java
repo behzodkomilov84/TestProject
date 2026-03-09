@@ -116,7 +116,7 @@ public class UserServiceImpl implements UserDetailsService, UserService {
 
         return UserDto.builder()
                 .id(targetUserId)
-                .username(targetUser.username())
+                .username(targetUser.getUsername())
                 .build();
     }
 

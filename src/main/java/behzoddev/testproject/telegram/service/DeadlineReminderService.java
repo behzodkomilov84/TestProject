@@ -44,7 +44,7 @@ public class DeadlineReminderService {
                 msg.setText(
                         "⏰ Eslatma!\n\n" +
                                 "Topshiriq: " + a.getQuestionSet().getName() +
-                                "\nTopshiriq beruvchi: " + a.getAssignedBy().username() +
+                                "\nTopshiriq beruvchi: " + a.getAssignedBy().getUsername() +
                                 "\nSavollar soni: " + a.getQuestionSet().getQuestions().size() + " ta" +
                                 "\nMuddat: " + a.getDueDate()
                 );

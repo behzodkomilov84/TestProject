@@ -33,7 +33,7 @@ public class ProfileController {
     public ProfileDto getProfile(@AuthenticationPrincipal User user) {
         return new ProfileDto(
                 user.getId(),
-                user.username(),
+                user.getUsername(),
                 user.getRole().getRoleName()
         );
     }

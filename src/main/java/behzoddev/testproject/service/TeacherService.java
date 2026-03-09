@@ -146,7 +146,7 @@ public class TeacherService {
                 .map(i -> new GroupStudentRowDto(
                         i.getId(),
                         i.getPupil().getId(),
-                        i.getPupil().username(),
+                        i.getPupil().getUsername(),
                         i.getStatus().name()
                 ))
                 .toList();
@@ -438,7 +438,7 @@ public class TeacherService {
 
             result.add(new AssignmentStudentDetailDto(
                     student.getId(),
-                    student.username(),
+                    student.getUsername(),
                     status,
                     percent,
                     duration,
