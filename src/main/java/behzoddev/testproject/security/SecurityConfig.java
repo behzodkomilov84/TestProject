@@ -1,4 +1,4 @@
-package behzoddev.testproject.config;
+package behzoddev.testproject.security;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
@@ -34,7 +34,8 @@ public class SecurityConfig {
                                 "/"
                         ).permitAll()
 
-                        .requestMatchers("/user/tests/**")
+                        .requestMatchers("/user/tests/**",
+                                "/api/telegram/**")
                         .hasAuthority("ROLE_USER")
 
                         .requestMatchers(

@@ -28,3 +28,7 @@ server.servlet.session.timeout: 30m
 server:
   tomcat:
     secure-random-algorithm=NativePRNGNonBlocking
+telegram:
+  bot:
+    token: 8764646633:AAHflXFjDDn-V5oKyDXzlg7LKoKri6iW23k
+    username: perform_a_task_bot

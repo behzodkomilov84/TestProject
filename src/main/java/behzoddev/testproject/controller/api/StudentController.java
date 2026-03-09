@@ -48,7 +48,7 @@ public class StudentController {
 
     @GetMapping("/memberships")
     public ResponseEntity<List<ResponseGroupMembershipDto>> getMemberships(@AuthenticationPrincipal User student) {
-        return ResponseEntity.ok(studentService.getMemberships(student.getUsername()));
+        return ResponseEntity.ok(studentService.getMemberships(student.username()));
     }
 
     @GetMapping("/tasks")

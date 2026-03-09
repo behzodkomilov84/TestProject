@@ -44,4 +44,27 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
             LocalDateTime dueDate
     );
 
+    @Query("""
+        SELECT DISTINCT a
+        FROM Assignment a
+        JOIN a.recipients r
+        JOIN FETCH a.questionSet qs
+        WHERE r.pupil.id = :pupilId
+        ORDER BY a.assignedAt DESC
+    """)
+    List<Assignment> findForStudent(Long pupilId);
+
+    @Query("""
+            SELECT a FROM Assignment a JOIN a.recipients r WHERE r.pupil.telegramId = :telegramId
+    """)
+    List<Assignment> findByRecipientTelegramId(@Param("telegramId") Long telegramId);
+
+
+    @Query("""
+           SELECT a
+           FROM Assignment a
+           WHERE a.dueDate IS NOT NULL
+           AND a.dueDate BETWEEN CURRENT_TIMESTAMP AND :tomorrow
+           """)
+    List<Assignment> findAssignmentsDueSoon(LocalDateTime tomorrow);
 }

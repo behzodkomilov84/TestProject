@@ -239,3 +239,18 @@ body.menu-open::after {
         display: block;
     }
 }
+
+.btn-telegram{
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    padding: 5px 14px;
+    border-radius: 6px ;
+}
+
+.btn-telegram:hover {
+    background: #60c765;
+    color: white;
+}
+

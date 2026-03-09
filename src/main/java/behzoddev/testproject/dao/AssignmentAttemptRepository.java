@@ -32,4 +32,6 @@ public interface AssignmentAttemptRepository extends JpaRepository<AssignmentAtt
     List<AssignmentAttempt> findAllByPupil(User pupil);
 
     List<AssignmentAttempt> findAllByAssignmentId(Long assignmentId);
+
+    List<AssignmentAttempt> findByPupil_TelegramId(Long telegramId);
 }

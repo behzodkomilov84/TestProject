@@ -337,7 +337,7 @@ public class AssignmentAttemptService {
                             .groupId(a.getGroup().getId())
                             .groupName(a.getGroup().getName())
                             .assignerId(a.getAssignedBy().getId())
-                            .assignerName(a.getAssignedBy().getUsername())
+                            .assignerName(a.getAssignedBy().username())
                             .assignedAt(a.getAssignedAt())
                             .dueDate(a.getDueDate())
                             .taskStatus(status)

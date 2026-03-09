@@ -860,10 +860,6 @@ function formatDuration(sec) {
     return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-
-
-
-
 function updateTimerUI() {
 
     const el =

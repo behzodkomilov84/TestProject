@@ -43,3 +43,16 @@ document.querySelectorAll(".dropbtn").forEach(btn => {
     });
 });
 
+async function linkTelegram() {
+
+    const res = await fetch("/api/telegram/link", {
+        method: "POST"
+    });
+
+    const data = await res.json();
+
+    alert("Botga ulanish uchun botga quyidagini yozing: /link " + data.code);
+
+}
+
+

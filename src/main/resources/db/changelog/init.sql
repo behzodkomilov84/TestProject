@@ -258,4 +258,4 @@ CREATE INDEX idx_assignment_group ON assignments(group_id);
 CREATE INDEX idx_recipient_assignment ON assignment_recipients(assignment_id);
 
 --changeset behzod:22
-CREATE INDEX idx_recipient_student ON assignment_recipients(pupil_id);
+CREATE INDEX idx_recipient_pupil ON assignment_recipients(pupil_id);

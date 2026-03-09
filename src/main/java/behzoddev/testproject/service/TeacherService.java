@@ -6,12 +6,14 @@ import behzoddev.testproject.entity.*;
 import behzoddev.testproject.entity.enums.InviteStatus;
 import behzoddev.testproject.mapper.TeacherGroupMapper;
 import behzoddev.testproject.mapper.UserMapper;
+import behzoddev.testproject.telegram.TelegramBot;
 import behzoddev.testproject.validation.Validation;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -32,6 +34,7 @@ public class TeacherService {
     private final Validation validation;
     private final UserMapper userMapper;
     private final AssignmentAttemptRepository assignmentAttemptRepository;
+    private final TelegramBot telegramBot;
 
     @Transactional
     @SneakyThrows
@@ -143,7 +146,7 @@ public class TeacherService {
                 .map(i -> new GroupStudentRowDto(
                         i.getId(),
                         i.getPupil().getId(),
-                        i.getPupil().getUsername(),
+                        i.getPupil().username(),
                         i.getStatus().name()
                 ))
                 .toList();
@@ -249,6 +252,9 @@ public class TeacherService {
 
         assignmentRepository.save(assignment);
 
+       //Уведомление когда учитель назначает Assignment
+        notifyStudents(assignment);
+
         // --- 8. Результат
 
         return AssignResultDto.builder()
@@ -260,7 +266,31 @@ public class TeacherService {
                 .build();
     }
 
+    @SneakyThrows
+    private void notifyStudents(Assignment assignment) {
 
+        for (AssignmentRecipient r : assignment.getRecipients()) {
+
+            Long telegramId = r.getPupil().getTelegramId();
+
+            if (telegramId == null)
+                continue;
+
+            SendMessage msg = new SendMessage();
+
+            msg.setChatId(telegramId.toString());
+
+            msg.setText(
+                    "📢 Yangi topshiriq!\n\n" +
+                            "Savol paketi: " +
+                            assignment.getQuestionSet().getName() +
+                            "\nMuddat: " +
+                            assignment.getDueDate()
+            );
+
+            telegramBot.execute(msg);
+        }
+    }
 
     @Transactional
     public void updateGroup(Long groupId, UpdateTeacherGroupDto dto, User teacher) {
@@ -408,7 +438,7 @@ public class TeacherService {
 
             result.add(new AssignmentStudentDetailDto(
                     student.getId(),
-                    student.getUsername(),
+                    student.username(),
                     status,
                     percent,
                     duration,

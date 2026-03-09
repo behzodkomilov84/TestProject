@@ -38,6 +38,9 @@ public class User implements UserDetails {
     @JoinColumn(name = "group_id")
     private TeacherGroup group;
 
+    @Column(name = "telegram_id", unique = true)
+    private Long telegramId;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return role == null

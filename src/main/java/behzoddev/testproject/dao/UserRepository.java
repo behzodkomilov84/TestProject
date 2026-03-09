@@ -16,4 +16,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     List<User> findAllByGroupId(Long groupId);
 
+    Optional<User> findByTelegramId(Long telegramId);
+
+    boolean existsByTelegramId(Long telegramId);
+
+
 }
