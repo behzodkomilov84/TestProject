@@ -4,19 +4,26 @@ import behzoddev.testproject.dao.AssignmentAttemptRepository;
 import behzoddev.testproject.dao.AssignmentRepository;
 import behzoddev.testproject.dao.TelegramLinkCodeRepository;
 import behzoddev.testproject.dao.UserRepository;
+import behzoddev.testproject.dto.student.ResponseAssignmentsAndTaskStatusDto;
 import behzoddev.testproject.entity.Assignment;
 import behzoddev.testproject.entity.AssignmentAttempt;
 import behzoddev.testproject.entity.TelegramLinkCode;
 import behzoddev.testproject.entity.User;
+import behzoddev.testproject.entity.enums.TaskStatus;
+import behzoddev.testproject.service.AssignmentAttemptService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -26,8 +33,11 @@ public class TelegramUserService {
 
     private final UserRepository userRepository;
     private final TelegramLinkCodeRepository telegramLinkCodeRepository;
-    private final AssignmentRepository assignmentRepository;
     private final AssignmentAttemptRepository assignmentAttemptRepository;
+    private final AssignmentAttemptService assignmentAttemptService;
+    private final AssignmentRepository assignmentRepository;
+    public static final DateTimeFormatter DATE_TIME_FORMATTER =
+            DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
     public SendMessage handleStart(Message message) {
 
@@ -113,41 +123,106 @@ public class TelegramUserService {
         return response;
     }
 
-
     public SendMessage sendMyAssignments(Long chatId) {
 
         SendMessage msg = new SendMessage();
         msg.setChatId(chatId.toString());
 
-        List<Assignment> assignments =
-                assignmentRepository.findByRecipientTelegramId(chatId);
+        User pupil = userRepository
+                .findByTelegramId(chatId)
+                .orElseThrow(() -> new RuntimeException("Foydalanuvchi topilmadi"));
 
-        if (assignments.isEmpty()) {
+        List<ResponseAssignmentsAndTaskStatusDto> tasks =
+                assignmentAttemptService.getTasksAndTaskStatus(pupil);
+
+        if (tasks.isEmpty()) {
             msg.setText("Sizda hali topshiriq yo'q 📭");
             return msg;
         }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("📚 Sizning topshiriqlaringiz:\n\n");
+        String text =
+                "📚 Topshiriqlar\n\n" +
+                        "\t ℹ️ Belgilar:\n\n" +
+                        "\t 🆕 — yangi\n" +
+                        "\t ⏳ — davom etmoqda\n" +
+                        "\t ✅ — tugatilgan\n" +
+                        "\t ❌ — muddat o'tgan";
 
-        for (Assignment a : assignments) {
+        msg.setText(text);
 
-            sb.append("📌 Savol paketi: ")
-                    .append(a.getQuestionSet().getName())
-                    .append("\n");
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
 
-            sb.append("👥 Guruh: ")
-                    .append(a.getGroup().getName())
-                    .append("\n");
+        for (ResponseAssignmentsAndTaskStatusDto task : tasks) {
+            StringBuilder sb = new StringBuilder();
 
-            sb.append("⏳ Muddat: ")
-                    .append(a.getDueDate())
-                    .append("\n\n");
+            InlineKeyboardButton button = new InlineKeyboardButton();
+
+
+
+            String deadlineText = formatDeadline(task.dueDate(), task.taskStatus());
+
+
+            sb.append("📌 ")
+                    .append(task.questionSetName())
+                    .append("\t");
+
+            sb.append(getStatusEmoji(task.taskStatus()))
+                    .append("\t");
+
+            sb.append(deadlineText);
+
+            button.setText("▶ " + sb);
+
+            button.setCallbackData("assignment_" + task.id());
+
+            rows.add(List.of(button));
         }
 
-        msg.setText(sb.toString());
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(rows);
+
+        msg.setReplyMarkup(markup);
 
         return msg;
+    }
+
+    private String formatDeadline(LocalDateTime dueDate, TaskStatus status) {
+
+        if (dueDate == null) return "";
+
+        if (status == TaskStatus.FINISHED) {
+            return "";
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        long days = java.time.Duration
+                .between(now, dueDate)
+                .toDays();
+
+        if (status == TaskStatus.OVERDUE) {
+            return "(Muddat o'tgan)";
+        }
+
+        if (days == 0) {
+            return "(Bugun)";
+        }
+
+        if (days == 1) {
+            return "(1 kun qoldi)";
+        }
+
+        return "(" + days + " kun qoldi)";
+    }
+
+    private String getStatusEmoji(TaskStatus status) {
+
+        return switch (status) {
+            case NEW -> "🆕";
+            case IN_PROGRESS -> "⏳";
+            case FINISHED -> "✅";
+            case OVERDUE -> "❌";
+        };
     }
 
     public SendMessage sendMyResults(Long chatId) {
@@ -178,6 +253,36 @@ public class TelegramUserService {
         }
 
         msg.setText(sb.toString());
+
+        return msg;
+    }
+
+    public SendMessage showAssignmentInfo(Long chatId, Long assignmentId) {
+
+        Assignment assignment =
+                assignmentRepository.findById(assignmentId)
+                        .orElseThrow(() -> new RuntimeException("Topshiriq topilmadi"));
+
+        SendMessage msg = new SendMessage();
+        msg.setChatId(chatId.toString());
+
+        String text =
+                "📘 " + assignment.getQuestionSet().getName() + "\n\n" +
+                        "👨‍🏫 O'qituvchi: " + assignment.getAssignedBy().getUsername() + "\n" +
+                        "👥 Guruh: " + assignment.getGroup().getName() + "\n" +
+                        "❓ Savollar: " + assignment.getQuestionSet().getQuestions().size() + " ta\n" +
+                        "⏳ Muddat: " + assignment.getDueDate().format(DATE_TIME_FORMATTER);
+
+        msg.setText(text);
+
+        InlineKeyboardButton startButton = new InlineKeyboardButton();
+        startButton.setText("▶ Testni boshlash");
+        startButton.setCallbackData("start_test_" + assignmentId);
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(List.of(List.of(startButton)));
+
+        msg.setReplyMarkup(markup);
 
         return msg;
     }

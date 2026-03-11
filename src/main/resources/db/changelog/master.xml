@@ -4,11 +4,12 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="
         http://www.liquibase.org/xml/ns/dbchangelog
-        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.23.xsd">
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.23.xsd">
 
     <include file="/db/changelog/init.sql"/>
     <include file="/db/changelog/assignment-chat.sql"/>
     <include file="/db/changelog/telegram.sql"/>
+    <include file="/db/changelog/attempt_question_order.sql"/>
 
 
 </databaseChangeLog>

@@ -4,6 +4,8 @@ import behzoddev.testproject.dao.*;
 import behzoddev.testproject.dto.student.*;
 import behzoddev.testproject.entity.*;
 import behzoddev.testproject.entity.enums.TaskStatus;
+import behzoddev.testproject.telegram.dao.AttemptQuestionOrderRepository;
+import behzoddev.testproject.telegram.entity.AttemptQuestionOrder;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
 public class AssignmentAttemptService {
 
     public static final String ATTEMPT_NOT_FOUND = "Attempt not found";
+    public static final String ASSIGNMENT_NOT_FOUND = "Assignment not found";
     private final AssignmentAttemptRepository assignmentAttemptRepository;
     private final AssignmentRepository assignmentRepository;
     private final QuestionSetItemRepository questionSetItemRepository;
@@ -26,17 +29,116 @@ public class AssignmentAttemptService {
     private final QuestionRepository questionRepository;
     private final AnswerRepository answerRepository;
     private final AttemptHeartbeatService attemptHeartbeatService;
+    private final AttemptQuestionOrderRepository attemptQuestionOrderRepository;
+
+    public static List<ResponseQuestionDto> getResponseQuestionDtos(QuestionSet questionSet) {
+        List<Question> questions =
+                new ArrayList<>(questionSet.getQuestions());
+
+        Collections.shuffle(questions);
+
+        return getResponseQuestionDtos(questions);
+    }
+
+    public static List<ResponseQuestionDto> getResponseQuestionDtosForTelegramBot(
+            QuestionSet questionSet) {
+
+        return questionSet.getQuestions()
+                .stream()
+                .map(q -> new ResponseQuestionDto(
+                        q.getId(),
+                        q.getQuestionText(),
+                        q.getAnswers()
+                                .stream()
+                                .map(a -> new ResponseAnswerDto(
+                                        a.getId(),
+                                        a.getAnswerText(),
+                                        a.getIsTrue()
+                                ))
+                                .toList()
+                ))
+                .toList();
+    }
+
+    @NotNull
+    private static List<ResponseQuestionDto> getResponseQuestionDtos(List<Question> questions) {
+        return questions.stream()
+                .map(q -> {
+
+                    // mutable copy ответов
+                    List<Answer> answers =
+                            new ArrayList<>(q.getAnswers());
+
+                    Collections.shuffle(answers);
+
+                    return new ResponseQuestionDto(
+                            q.getId(),
+                            q.getQuestionText(),
+                            answers.stream()
+                                    .map(a -> new ResponseAnswerDto(
+                                            a.getId(),
+                                            a.getAnswerText(),
+                                            a.getIsTrue()
+                                    ))
+                                    .toList()
+                    );
+                })
+                .toList();
+    }
+
+    private static @NotNull TaskStatus getTaskStatus(Assignment a, AssignmentAttempt attempt, LocalDateTime now) {
+        TaskStatus status;
+
+        if (attempt == null) {
+            status = a.getDueDate().isBefore(now)
+                    ? TaskStatus.OVERDUE
+                    : TaskStatus.NEW;
+
+        } else if (attempt.getFinishedAt() != null) {
+            status = TaskStatus.FINISHED;
+
+        } else if (a.getDueDate().isBefore(now)) {
+            status = TaskStatus.OVERDUE;
+
+        } else {
+            status = TaskStatus.IN_PROGRESS;
+        }
+        return status;
+    }
+
+    public static void updateDuration(AssignmentAttempt attempt) {
+
+        if (attempt.getStartedAt() == null) return;
+        if (attempt.getFinishedAt() != null) return;
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (attempt.getLastSync() != null) {
+
+            long seconds = java.time.Duration
+                    .between(attempt.getLastSync(), now)
+                    .getSeconds();
+
+            if (seconds > 300) {
+                seconds = 300; // максимум 5 минут за один раз
+            }
+
+            if (seconds > 0) {
+                attempt.setDurationSec(
+                        attempt.getDurationSec() + (int) seconds
+                );
+            }
+        }
+
+        attempt.setLastSync(now);
+    }
 
     @Transactional
-    public AttemptDto startAttempt(
-            Long assignmentId,
-            User pupil
-    ) {
+    public AttemptDto startAttempt(Long assignmentId, @NotNull User pupil) {
 
         Assignment assignment = assignmentRepository
                 .findById(assignmentId)
-                .orElseThrow(() ->
-                        new RuntimeException("Assignment not found"));
+                .orElseThrow(() -> new IllegalArgumentException(ASSIGNMENT_NOT_FOUND));
 
         AssignmentAttempt attempt =
                 assignmentAttemptRepository
@@ -46,13 +148,31 @@ public class AssignmentAttemptService {
                         )
                         .orElseGet(() -> createAttempt(assignment, pupil));
 
-        // === load questions once ===
-        List<Question> questions =
-                questionSetItemRepository.fetchQuestionsForSet(
-                        assignment.getQuestionSet().getId()
-                );
+        if (attempt.getTotalQuestions() == 0) {
 
-        attempt.setTotalQuestions(questions.size());
+            List<Question> questions =
+                    questionSetItemRepository.fetchQuestionsForSet(
+                            assignment.getQuestionSet().getId()
+                    );
+
+            Collections.shuffle(questions);
+
+            int position = 0;
+
+            List<AttemptQuestionOrder> orders = new ArrayList<>();
+
+            for (Question q : questions) {
+
+                orders.add(AttemptQuestionOrder.builder()
+                                .attempt(attempt)
+                                .question(q)
+                                .position(position++)
+                                .build());
+            }
+                attemptQuestionOrderRepository.saveAll(orders);
+
+            attempt.setTotalQuestions(questions.size());
+        }
 
         assignmentAttemptRepository.save(attempt);
 
@@ -73,7 +193,7 @@ public class AssignmentAttemptService {
             User pupil
     ) {
 
-        return AssignmentAttempt.builder()
+        return assignmentAttemptRepository.save(AssignmentAttempt.builder()
                 .assignment(assignment)
                 .pupil(pupil)
                 .totalQuestions(0)
@@ -82,7 +202,7 @@ public class AssignmentAttemptService {
                 .durationSec(0)
                 .startedAt(LocalDateTime.now())
                 .lastSync(LocalDateTime.now())
-                .build();
+                .build());
     }
 
     @Transactional
@@ -242,66 +362,7 @@ public class AssignmentAttemptService {
                         .orElseThrow(() ->
                                 new RuntimeException(ATTEMPT_NOT_FOUND));
 
-        updateDuration(attempt);
-
-        QuestionSet questionSet =
-                attempt.getAssignment().getQuestionSet();
-
-        // ✅ mutable copy
-        List<ResponseQuestionDto> questionDtos = getResponseQuestionDtos(questionSet);
-
-        List<AttemptQuestionDto> attempted =
-                attempt.getAnswers().stream()
-                        .map(a -> new AttemptQuestionDto(
-                                a.getQuestion().getId(),
-                                a.getSelectedAnswer() != null
-                                        ? a.getSelectedAnswer().getId()
-                                        : null
-                        ))
-                        .toList();
-
-        return new AttemptFullDto(
-                attempt.getId(),
-                attempt.getTotalQuestions(),
-                attempt.getCorrectAnswers(),
-                attempt.getPercent(),
-                attempt.getDurationSec(),
-                attempt.getStartedAt(),
-                attempt.getFinishedAt(),
-                attempt.getLastSync(),
-                questionDtos,
-                attempted
-        );
-    }
-
-    public static List<ResponseQuestionDto> getResponseQuestionDtos(QuestionSet questionSet) {
-        List<Question> questions =
-                new ArrayList<>(questionSet.getQuestions());
-
-        Collections.shuffle(questions);
-
-        return questions.stream()
-                        .map(q -> {
-
-                            // mutable copy ответов
-                            List<Answer> answers =
-                                    new ArrayList<>(q.getAnswers());
-
-                            Collections.shuffle(answers);
-
-                            return new ResponseQuestionDto(
-                                    q.getId(),
-                                    q.getQuestionText(),
-                                    answers.stream()
-                                            .map(a -> new ResponseAnswerDto(
-                                                    a.getId(),
-                                                    a.getAnswerText(),
-                                                    a.getIsTrue()
-                                            ))
-                                            .toList()
-                            );
-                        })
-                        .toList();
+        return getAttemptFullDto(attempt);
     }
 
     @Transactional(readOnly = true)
@@ -346,53 +407,6 @@ public class AssignmentAttemptService {
                 .toList();
     }
 
-    private static @NotNull TaskStatus getTaskStatus(Assignment a, AssignmentAttempt attempt, LocalDateTime now) {
-        TaskStatus status;
-
-        if (attempt == null) {
-            status = a.getDueDate().isBefore(now)
-                    ? TaskStatus.OVERDUE
-                    : TaskStatus.NEW;
-
-        } else if (attempt.getFinishedAt() != null) {
-            status = TaskStatus.FINISHED;
-
-        } else if (a.getDueDate().isBefore(now)) {
-            status = TaskStatus.OVERDUE;
-
-        } else {
-            status = TaskStatus.IN_PROGRESS;
-        }
-        return status;
-    }
-
-    public static void updateDuration(AssignmentAttempt attempt) {
-
-        if (attempt.getStartedAt() == null) return;
-        if (attempt.getFinishedAt() != null) return;
-
-        LocalDateTime now = LocalDateTime.now();
-
-        if (attempt.getLastSync() != null) {
-
-            long seconds = java.time.Duration
-                    .between(attempt.getLastSync(), now)
-                    .getSeconds();
-
-            if (seconds > 300) {
-                seconds = 300; // максимум 5 минут за один раз
-            }
-
-            if (seconds > 0) {
-                attempt.setDurationSec(
-                        attempt.getDurationSec() + (int) seconds
-                );
-            }
-        }
-
-        attempt.setLastSync(now);
-    }
-
     @Transactional
     public AssignmentAttempt updateAndGetTime(User pupil, Long id) {
 
@@ -404,6 +418,85 @@ public class AssignmentAttemptService {
         updateDuration(attempt);
 
         return attempt;
+    }
+
+    @Transactional(readOnly = true)
+    public AttemptFullDto getFullAttemptForTestSessionOfBot(Long attemptId) {
+
+        AssignmentAttempt attempt =
+                assignmentAttemptRepository
+                        .findById(attemptId)
+                        .orElseThrow(() -> new RuntimeException(ATTEMPT_NOT_FOUND));
+
+        return getAttemptFullDtoForTelegramBot(attempt);
+    }
+
+
+    @NotNull
+    private AttemptFullDto getAttemptFullDto(AssignmentAttempt attempt) {
+        updateDuration(attempt);
+
+        QuestionSet questionSet =
+                attempt.getAssignment().getQuestionSet();
+
+        List<ResponseQuestionDto> questionDtos =
+                getResponseQuestionDtos(questionSet);
+
+        return getAttemptFullDto(attempt, questionDtos);
+    }
+
+    @NotNull
+    private AttemptFullDto getAttemptFullDtoForTelegramBot(AssignmentAttempt attempt) {
+        updateDuration(attempt);
+
+        QuestionSet questionSet =
+                attempt.getAssignment().getQuestionSet();
+
+        List<ResponseQuestionDto> questionDtos =
+                getResponseQuestionDtosForTelegramBot(questionSet);
+
+        return getAttemptFullDto(attempt, questionDtos);
+    }
+
+    @NotNull
+    private AttemptFullDto getAttemptFullDto(AssignmentAttempt attempt, List<ResponseQuestionDto> questionDtos) {
+        List<AttemptQuestionDto> attempted =
+                attempt.getAnswers().stream()
+                        .map(a -> new AttemptQuestionDto(
+                                a.getQuestion().getId(),
+                                a.getSelectedAnswer() != null
+                                        ? a.getSelectedAnswer().getId()
+                                        : null
+                        ))
+                        .toList();
+
+        return new AttemptFullDto(
+                attempt.getId(),
+                attempt.getTotalQuestions(),
+                attempt.getCorrectAnswers(),
+                attempt.getPercent(),
+                attempt.getDurationSec(),
+                attempt.getStartedAt(),
+                attempt.getFinishedAt(),
+                attempt.getLastSync(),
+                questionDtos,
+                attempted
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<Question> getQuestionsForAttempt(Long attemptId) {
+
+        AssignmentAttempt attempt =
+                assignmentAttemptRepository
+                        .findById(attemptId)
+                        .orElseThrow();
+
+        return attemptQuestionOrderRepository
+                .findByAttemptOrderByPosition(attempt)
+                .stream()
+                .map(AttemptQuestionOrder::getQuestion)
+                .toList();
     }
 }
 
