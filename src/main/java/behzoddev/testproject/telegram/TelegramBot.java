@@ -1,10 +1,10 @@
 package behzoddev.testproject.telegram;
 
-import behzoddev.testproject.dao.AssignmentRepository;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.dto.student.AnswerSyncDto;
 import behzoddev.testproject.dto.student.AttemptDto;
 import behzoddev.testproject.dto.student.SyncAttemptRequestDto;
+import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.AssignmentAttemptService;
 import behzoddev.testproject.telegram.service.TelegramQuizService;
@@ -14,7 +14,9 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
@@ -29,7 +31,6 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final TelegramUserService telegramUserService;
     private final UserRepository userRepository;
     private final AssignmentAttemptService assignmentAttemptService;
-    private final AssignmentRepository assignmentRepository;
     private final TelegramQuizService telegramQuizService;
 
     public TelegramBot(
@@ -38,7 +39,6 @@ public class TelegramBot extends TelegramLongPollingBot {
             TelegramUserService telegramUserService,
             UserRepository userRepository,
             AssignmentAttemptService assignmentAttemptService,
-            AssignmentRepository assignmentRepository,
             TelegramQuizService telegramQuizService) {
         super(token);
         this.token = token;
@@ -46,7 +46,6 @@ public class TelegramBot extends TelegramLongPollingBot {
         this.telegramUserService = telegramUserService;
         this.userRepository = userRepository;
         this.assignmentAttemptService = assignmentAttemptService;
-        this.assignmentRepository = assignmentRepository;
         this.telegramQuizService = telegramQuizService;
     }
 
@@ -56,6 +55,11 @@ public class TelegramBot extends TelegramLongPollingBot {
         try {
 
             if (update.hasCallbackQuery()) {
+
+                // убирает loading на кнопке в Telegram
+                AnswerCallbackQuery answer = new AnswerCallbackQuery();
+                answer.setCallbackQueryId(update.getCallbackQuery().getId());
+                execute(answer);
 
                 String data = update.getCallbackQuery().getData();
                 Long chatId = update.getCallbackQuery().getMessage().getChatId();
@@ -95,24 +99,56 @@ public class TelegramBot extends TelegramLongPollingBot {
                     Long answerId = Long.parseLong(parts[3]);
                     int index = Integer.parseInt(parts[4]);
 
+                    Integer messageId =
+                            update.getCallbackQuery()
+                                    .getMessage()
+                                    .getMessageId();
+
+                    User pupil = getUserByChatId(chatId);
+
                     SyncAttemptRequestDto dto =
                             new SyncAttemptRequestDto(
                                     attemptId,
                                     List.of(new AnswerSyncDto(questionId, answerId))
                             );
 
-                    User pupil = getUserByChatId(chatId);
-
                     assignmentAttemptService.syncAttempt(pupil, dto);
 
-                    SendMessage msg =
-                            telegramQuizService.sendQuestion(
-                                    chatId,
-                                    attemptId,
-                                    index + 1
-                            );
+                    int nextIndex = index + 1;
 
-                    execute(msg);
+                    List<Question> questions =
+                            assignmentAttemptService.getQuestionsForAttempt(attemptId);
+
+                    if (nextIndex >= questions.size()) {
+
+                        assignmentAttemptService.finishTaskSession(pupil, attemptId);
+
+                        // 1️⃣ редактируем последний вопрос
+                        EditMessageText finishEdit = new EditMessageText();
+                        finishEdit.setChatId(chatId.toString());
+                        finishEdit.setMessageId(messageId);
+                        finishEdit.setText("✅ Test yakunlandi!\n\nNatija hisoblanmoqda...");
+
+                        execute(finishEdit);
+
+                        // 2️⃣ отправляем результат
+                        SendMessage result =
+                                telegramQuizService.sendFinishMessage(chatId, attemptId);
+
+                        execute(result);
+
+                    } else {
+
+                        EditMessageText edit =
+                                telegramQuizService.editQuestion(
+                                        chatId,
+                                        messageId,
+                                        attemptId,
+                                        nextIndex
+                                );
+
+                        execute(edit);
+                    }
                 }
                 return;
             }
@@ -159,7 +195,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         return token;
     }
 
-    private @NotNull SendMessage getSendMessage(Long chatId, AttemptDto attempt) {
+    private @NotNull SendMessage getSendMessage(@NotNull Long chatId, @NotNull AttemptDto attempt) {
         SendMessage msg = new SendMessage();
         msg.setChatId(chatId.toString());
 
@@ -168,7 +204,10 @@ public class TelegramBot extends TelegramLongPollingBot {
             msg.setText("Bu test allaqachon yakunlangan. \nYakunlangan vaqt: "
                     + attempt.finishedAt().format(TelegramUserService.DATE_TIME_FORMATTER));
         } else {
-            msg = telegramQuizService.sendQuestion(chatId, attempt.attemptId(), 0);
+            msg = telegramQuizService.resumeAttempt(
+                    chatId,
+                    attempt.attemptId()
+            );
         }
         return msg;
     }

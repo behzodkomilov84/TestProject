@@ -10,6 +10,7 @@
     <include file="/db/changelog/assignment-chat.sql"/>
     <include file="/db/changelog/telegram.sql"/>
     <include file="/db/changelog/attempt_question_order.sql"/>
+    <include file="/db/changelog/unique_index_for_attempt_answer.sql"/>
 
 
 </databaseChangeLog>

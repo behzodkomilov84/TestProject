@@ -9,4 +9,6 @@ import java.util.List;
 public interface AttemptAnswerRepository extends JpaRepository<AttemptAnswer, Long> {
 
     List<AttemptAnswer> findByAssignmentAttempt(AssignmentAttempt attempt);
+
+    long countByAssignmentAttempt_Id(Long attemptId);
 }

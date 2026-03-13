@@ -52,6 +52,9 @@ public class AssignmentAttempt {
     @Column(name = "duration_sec", nullable = false)
     private int durationSec;
 
+    @Column(nullable = false)
+    private int currentQuestionIndex;
+
     /**
      * Время начала/окончания
      */
@@ -73,29 +76,5 @@ public class AssignmentAttempt {
     private List<AttemptAnswer> answers = new ArrayList<>();
 
     private LocalDateTime lastSync;
-
-    /**
-     * Удобный helper для добавления ответа
-     */
-    public void addAnswer(AttemptAnswer answer) {
-        answers.add(answer);
-        answer.setAssignmentAttempt(this);
-    }
-
-    /**
-     * Удобный helper для очистки ответов
-     */
-    public void clearAnswers() {
-        answers.forEach(a -> a.setAssignmentAttempt(null));
-        answers.clear();
-    }
-
-    public boolean isStarted() {
-        return startedAt != null;
-    }
-
-    public boolean isFinished() {
-        return finishedAt != null;
-    }
 
 }
