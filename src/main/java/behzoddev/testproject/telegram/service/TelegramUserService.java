@@ -68,11 +68,9 @@ public class TelegramUserService {
 
         KeyboardRow row1 = new KeyboardRow();
         row1.add("📚 Mening topshiriqlarim");
+        row1.add("📊 Natijalarim");
 
-        KeyboardRow row2 = new KeyboardRow();
-        row2.add("📊 Natijalarim");
-
-        keyboard.setKeyboard(List.of(row1, row2));
+        keyboard.setKeyboard(List.of(row1));
 
         return keyboard;
     }

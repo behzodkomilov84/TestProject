@@ -127,7 +127,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                         EditMessageText finishEdit = new EditMessageText();
                         finishEdit.setChatId(chatId.toString());
                         finishEdit.setMessageId(messageId);
-                        finishEdit.setText("✅ Test yakunlandi!\n\nNatija hisoblanmoqda...");
+                        finishEdit.setText("✅ Test yakunlandi!");
 
                         execute(finishEdit);
 
