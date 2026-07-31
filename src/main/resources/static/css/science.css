@@ -101,8 +101,10 @@ h1 {
 
     }
 
-    /* Кнопки */
-    button {
+    /* Кнопки — MUHIM: .wrapper ichida cheklangan, aks holda navbar fragment
+       ichidagi tugmalarga (burger, dropdown, telegram) ham tarqalib,
+       navbar ko'rinishini buzib qo'yardi. */
+    .wrapper button {
         padding: 6px 10px;
         cursor: pointer;
         font-size: 15px;
@@ -112,7 +114,7 @@ h1 {
         transition: background-color 0.3s ease-out;
     }
 
-    button:hover{
+    .wrapper button:hover{
         background-color: rgb(134, 219, 232);
     }
     /* Блок для отображения ошибок (оставляем, но скрываем) */

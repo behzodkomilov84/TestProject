@@ -32,6 +32,42 @@ body {
 }
 
 
+.question-image {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    object-fit: contain;
+    margin: 10px 0;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.answer-image {
+    max-width: 220px;
+    max-height: 160px;
+    object-fit: contain;
+    margin-top: 6px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+}
+
+.comment-image {
+    display: block;
+    max-width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+    margin: 10px 0;
+    border-radius: 8px;
+}
+
+.comment-video {
+    display: block;
+    max-width: 100%;
+    max-height: 320px;
+    margin: 10px 0;
+    border-radius: 8px;
+}
+
 .timer {
     background: linear-gradient(135deg, darkorchid, #6a1b9a);
     color: #fff;
@@ -164,7 +200,10 @@ ul {
     margin-top: 30px;
 }
 
-button {
+/* MUHIM: .container ichida cheklangan — aks holda navbar fragment ichidagi
+   tugmalarga (burger, dropdown, telegram) ham tarqalib, navbar ko'rinishini
+   buzib qo'yardi. */
+.container button {
     padding: 10px 22px;
     border-radius: 10px;
     font-size: 15px;

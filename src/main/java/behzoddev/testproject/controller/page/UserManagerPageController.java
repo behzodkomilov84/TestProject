@@ -17,10 +17,15 @@ public class UserManagerPageController {
     @PreAuthorize("hasAuthority('ROLE_OWNER')")
     public String openUserManagerPage(Model model, Authentication authentication) {
 
-        // Берём первую роль пользователя (или можно сделать список всех)
+        // Bu sahifaga @PreAuthorize orqali faqat ROLE_OWNER kira oladi, lekin
+        // dual-role tufayli foydalanuvchida boshqa rollar ham bo'lishi mumkin
+        // (masalan ROLE_ADMIN). Shu sabab "findFirst()" o'rniga aynan
+        // ROLE_OWNER'ni qidiramiz — aks holda Set tartibi tasodifiy bo'lgani
+        // uchun boshqa rol birinchi chiqib, JS'dagi tekshiruv xato ishlashi mumkin edi.
         String role = authentication.getAuthorities().stream()
-                .findFirst()
                 .map(GrantedAuthority::getAuthority)
+                .filter("ROLE_OWNER"::equals)
+                .findFirst()
                 .orElse("UNKNOWN");
 
         model.addAttribute("role", role);

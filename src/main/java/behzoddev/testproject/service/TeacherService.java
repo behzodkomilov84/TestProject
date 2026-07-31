@@ -35,12 +35,13 @@ public class TeacherService {
     private final UserMapper userMapper;
     private final AssignmentAttemptRepository assignmentAttemptRepository;
     private final TelegramBot telegramBot;
+    private final NotificationService notificationService;
 
     @Transactional
     @SneakyThrows
     public void createGroup(User teacher, String name) {
 
-        if (!teacher.getRole().getRoleName().equals("ROLE_ADMIN") && !teacher.getRole().getRoleName().equals("ROLE_OWNER")) {
+        if (!teacher.hasRole("ROLE_ADMIN") && !teacher.hasRole("ROLE_OWNER")) {
             throw new AccessDeniedException("Gruppani faqat admin statusidagi foydalanuvchi yarata oladi.");
         }
 
@@ -127,6 +128,10 @@ public class TeacherService {
             optionalGroupInvite.get().setStatus(InviteStatus.PENDING);
             groupInviteRepository.save(invite);
 
+            notificationService.create(pupil,
+                    "👥 Siz \"" + group.getName() + "\" guruhiga taklif qilindingiz.",
+                    "/student");
+
             return;
         }
 
@@ -136,6 +141,10 @@ public class TeacherService {
                 .pupil(pupil)
                 .status(InviteStatus.PENDING)
                 .build());
+
+        notificationService.create(pupil,
+                "👥 Siz \"" + group.getName() + "\" guruhiga taklif qilindingiz.",
+                "/student");
     }
 
     @Transactional
@@ -271,6 +280,11 @@ public class TeacherService {
 
         for (AssignmentRecipient r : assignment.getRecipients()) {
 
+            notificationService.create(r.getPupil(),
+                    "📢 Yangi topshiriq: " + assignment.getQuestionSet().getName() +
+                            ". Muddat: " + assignment.getDueDate(),
+                    "/student");
+
             Long telegramId = r.getPupil().getTelegramId();
 
             if (telegramId == null)
@@ -322,7 +336,7 @@ public class TeacherService {
     public List<GroupStudentDto> getAllStudentsForGroups() {
 
         return userRepository
-                .findByRole_RoleName("ROLE_USER")
+                .findByRoles_RoleName("ROLE_USER")
                 .stream()
                 .map(userMapper::mapUserToGroupStudentDto)
                 .toList();

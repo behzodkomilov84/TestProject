@@ -97,10 +97,19 @@ public class AssignmentService {
                         chat.getSender().getId(),
                         chat.getSender().getUsername(),
                         chat.getMessageText(),
-                        chat.getSender().getRole().getRoleName(), // если есть role
+                        displayRole(chat.getSender()), // dual-role: eng "yuqori" rol ko'rsatiladi
                         chat.getCreatedAt()
                 ))
                 .toList();
+    }
+
+    // Dual-role tufayli foydalanuvchida bir nechta rol bo'lishi mumkin.
+    // Chat'da bittagina "belgi" ko'rsatish uchun eng yuqori rolni tanlaymiz:
+    // OWNER > ADMIN (o'qituvchi) > USER (o'quvchi).
+    private String displayRole(User user) {
+        if (user.hasRole("ROLE_OWNER")) return "ROLE_OWNER";
+        if (user.hasRole("ROLE_ADMIN")) return "ROLE_ADMIN";
+        return "ROLE_USER";
     }
 
     @Transactional(readOnly = true)
@@ -109,7 +118,13 @@ public class AssignmentService {
         Assignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow();
 
-        if (user.getRole().getRoleName().equals("ROLE_USER")) {
+        // Dual-role tufayli o'qituvchida ham ROLE_USER bo'lishi mumkin, shuning
+        // uchun "ROLE_USER bormi" emas, balki "ADMIN/OWNER YO'Qmi" tekshiriladi —
+        // faqat sof o'quvchi (elevated rolsiz) o'z guruhiga tegishli ekanligi
+        // bo'yicha cheklanadi.
+        boolean isPrivileged = user.hasRole("ROLE_ADMIN") || user.hasRole("ROLE_OWNER");
+
+        if (!isPrivileged) {
 
             boolean belongs =
                     assignment.getGroup().getPupils()

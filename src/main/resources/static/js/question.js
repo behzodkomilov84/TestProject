@@ -90,12 +90,26 @@ function renderQuestionsTable(questions) {
 
         const row = document.createElement("tr");
         row.dataset.questionId = q.id;  // <-- это ключевое
+        // Rasm URL'lari saqlab qo'yiladi (bu sahifada rasmni tahrirlash yo'q,
+        // lekin savol matnini saqlashda mavjud rasm o'chib ketmasligi uchun kerak).
+        row.dataset.imageUrl = q.imageUrl || "";
         row.innerHTML = `
             <td class="enumeration">${index + 1}</td>
-            <td data-editable>${q.questionText}</td>
+            <td data-editable>
+                ${q.questionText}
+                ${q.imageUrl ? `<br><img class="question-thumb" src="${q.imageUrl}" alt="Savol rasmi">` : ""}
+            </td>
             ${answers.map(a => `
 
-            <td data-editable data-answer-id="${a.id}" class="answer-cell ${a.isTrue ? "correct" : ""}">${a.answerText}</td>
+            <td data-editable
+                data-answer-id="${a.id}"
+                data-image-url="${a.imageUrl || ""}"
+                data-commentary-image-url="${a.commentaryImageUrl || ""}"
+                data-commentary-video-url="${a.commentaryVideoUrl || ""}"
+                class="answer-cell ${a.isTrue ? "correct" : ""}">
+                ${a.answerText}
+                ${a.imageUrl ? `<br><img class="answer-thumb" src="${a.imageUrl}" alt="Javob rasmi">` : ""}
+            </td>
 
             `).join("")}
             <td class="correct-letter"><b>${correctLetter}</b></td>
@@ -107,12 +121,14 @@ function renderQuestionsTable(questions) {
             <td class="actions-cell">
                 <div class="view-actions">
                     
-                    <button class="action-btn comment" 
+                    <button class="action-btn comment"
                         data-question-id="${q.id}"
                         data-answer-id="${correctAnswer?.id ?? ''}"
                         data-comment="${encodeURIComponent(correctAnswer?.commentary ?? '')}"
-    
-                        onclick="openCommentModal(this)" 
+                        data-comment-image="${encodeURIComponent(correctAnswer?.commentaryImageUrl ?? '')}"
+                        data-comment-video="${encodeURIComponent(correctAnswer?.commentaryVideoUrl ?? '')}"
+
+                        onclick="openCommentModal(this)"
                         title="Izoh ko‘rsatish">
                     💬
                     </button>
@@ -274,6 +290,139 @@ function hidePagination() {
 }
 
 
+// ================= Tahrirlash rejimida rasm/video widget'lari =================
+// Har bir chaqiruvda yangi HTML qaytaradi; joriy URL data-current-url'da saqlanadi,
+// fayl tanlansa yuklanadi va shu atributga yangi URL yoziladi (saveInlineEdit shundan o'qiydi).
+function buildInlineImageWidget(role, currentUrl, altText) {
+    const url = currentUrl || "";
+    return `
+        <div class="inline-image-upload" data-role="${role}" data-current-url="${url}">
+            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="inline-image-input" hidden>
+            <button type="button" class="inline-media-btn inline-image-btn">🖼️</button>
+            <img class="inline-image-preview ${url ? "" : "hidden"}" src="${url}" alt="${altText}">
+            <button type="button" class="inline-media-btn inline-remove-image-btn ${url ? "" : "hidden"}">✖</button>
+        </div>
+    `;
+}
+
+function buildInlineVideoWidget(currentUrl) {
+    const url = currentUrl || "";
+    return `
+        <div class="inline-video-upload" data-current-url="${url}">
+            <input type="file" accept="video/mp4,video/webm,video/ogg" class="inline-video-input" hidden>
+            <button type="button" class="inline-media-btn inline-video-btn">🎬</button>
+            <video class="inline-video-preview ${url ? "" : "hidden"}" src="${url}" controls></video>
+            <button type="button" class="inline-media-btn inline-remove-video-btn ${url ? "" : "hidden"}">✖</button>
+        </div>
+    `;
+}
+
+document.addEventListener("click", (e) => {
+    if (e.target.classList.contains("inline-image-btn")) {
+        e.target.closest(".inline-image-upload").querySelector(".inline-image-input").click();
+        return;
+    }
+    if (e.target.classList.contains("inline-video-btn")) {
+        e.target.closest(".inline-video-upload").querySelector(".inline-video-input").click();
+        return;
+    }
+    if (e.target.classList.contains("inline-remove-image-btn")) {
+        const container = e.target.closest(".inline-image-upload");
+        container.dataset.currentUrl = "";
+        const preview = container.querySelector(".inline-image-preview");
+        preview.src = "";
+        preview.classList.add("hidden");
+        e.target.classList.add("hidden");
+        return;
+    }
+    if (e.target.classList.contains("inline-remove-video-btn")) {
+        const container = e.target.closest(".inline-video-upload");
+        container.dataset.currentUrl = "";
+        const preview = container.querySelector(".inline-video-preview");
+        preview.src = "";
+        preview.classList.add("hidden");
+        e.target.classList.add("hidden");
+    }
+});
+
+document.addEventListener("change", async (e) => {
+    if (e.target.classList.contains("inline-image-input")) {
+        const container = e.target.closest(".inline-image-upload");
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const endpoint = container.dataset.role === "commentary-image"
+            ? "/api/question/upload-commentary-image"
+            : "/api/question/upload-image";
+
+        const formData = new FormData();
+        formData.append("image", file);
+
+        const uploadBtn = container.querySelector(".inline-image-btn");
+        const originalLabel = uploadBtn.textContent;
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = "⏳";
+
+        try {
+            const res = await fetch(endpoint, { method: "POST", body: formData });
+            const data = await res.json();
+
+            if (!res.ok) {
+                alert(data.error || "❌ Rasmni yuklab bo'lmadi");
+                return;
+            }
+
+            container.dataset.currentUrl = data.url;
+            const preview = container.querySelector(".inline-image-preview");
+            preview.src = data.url;
+            preview.classList.remove("hidden");
+            container.querySelector(".inline-remove-image-btn").classList.remove("hidden");
+        } catch (err) {
+            console.error(err);
+            alert("❌ Rasmni yuklashda tarmoq xatoligi");
+        } finally {
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = originalLabel;
+        }
+    }
+
+    if (e.target.classList.contains("inline-video-input")) {
+        const container = e.target.closest(".inline-video-upload");
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append("video", file);
+
+        const uploadBtn = container.querySelector(".inline-video-btn");
+        const originalLabel = uploadBtn.textContent;
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = "⏳";
+
+        try {
+            const res = await fetch("/api/question/upload-commentary-video", { method: "POST", body: formData });
+            const data = await res.json();
+
+            if (!res.ok) {
+                alert(data.error || "❌ Videoni yuklab bo'lmadi");
+                return;
+            }
+
+            container.dataset.currentUrl = data.url;
+            const preview = container.querySelector(".inline-video-preview");
+            preview.src = data.url;
+            preview.classList.remove("hidden");
+            container.querySelector(".inline-remove-video-btn").classList.remove("hidden");
+        } catch (err) {
+            console.error(err);
+            alert("❌ Videoni yuklashda tarmoq xatoligi");
+        } finally {
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = originalLabel;
+        }
+    }
+});
+
 function enableInlineEdit(btn) {
     const row = btn.closest("tr");
 
@@ -295,11 +444,13 @@ function enableInlineEdit(btn) {
     // 🔹 ВОПРОС
     const questionCell = row.querySelector("td[data-editable]");
     const qText = questionCell.innerText;
+    const questionImageUrl = row.dataset.imageUrl || "";
 
     questionCell.innerHTML = `
     <input type="text"
            class="inline-input question-input"
            value="${qText}">
+    ${buildInlineImageWidget("question-image", questionImageUrl, "Savol rasmi")}
 `;
 
 
@@ -309,6 +460,7 @@ function enableInlineEdit(btn) {
         const text = cell.innerText;
         const id = cell.dataset.answerId;
         const isCorrect = cell.classList.contains("correct");
+        const answerImageUrl = cell.dataset.imageUrl || "";
 
         cell.innerHTML = `
             <label style="display:flex; gap:6px; align-items:center;">
@@ -321,6 +473,7 @@ function enableInlineEdit(btn) {
                        data-answer-id="${id}"
                        value="${text}">
             </label>
+            ${buildInlineImageWidget("answer-image", answerImageUrl, "Javob rasmi")}
         `;
     });
 //обработчик radio (КЛЮЧЕВОЕ)
@@ -344,11 +497,22 @@ function enableInlineEdit(btn) {
 
     const commentCol = row.querySelector(".comment-col");
 
+    // Hozircha to'g'ri deb belgilangan javobga biriktirilgan izoh media'si
+    // (foydalanuvchi tahrirlash paytida boshqa variantni to'g'ri qilib belgilasa ham,
+    // shu media/matn saqlanayotganda o'sha yangi to'g'ri javobga yoziladi).
+    const correctCell = row.querySelector(".answer-cell.correct");
+    const commentaryImageUrl = correctCell?.dataset.commentaryImageUrl || "";
+    const commentaryVideoUrl = correctCell?.dataset.commentaryVideoUrl || "";
+
     commentCol.innerHTML = `
     <input type="text"
            class="comment-input"
            placeholder="To'g'ri javob uchun izoh"
            value="${commentText}">
+    <div class="inline-commentary-media">
+        ${buildInlineImageWidget("commentary-image", commentaryImageUrl, "Izoh rasmi")}
+        ${buildInlineVideoWidget(commentaryVideoUrl)}
+    </div>
 `;
 
 }
@@ -366,6 +530,8 @@ function saveInlineEdit(btn, questionId) {
     const row = btn.closest("tr");
 
     const questionText = row.querySelector('td[data-editable] input').value;
+    const questionImageWidget = row.querySelector('.inline-image-upload[data-role="question-image"]');
+    const questionImageUrl = questionImageWidget?.dataset.currentUrl || null;
 
     const answerRows = row.querySelectorAll(".answer-cell");
 
@@ -375,6 +541,7 @@ function saveInlineEdit(btn, questionId) {
     answerRows.forEach((cell, i) => {
         const input = cell.querySelector(".inline-input");
         const radio = cell.querySelector(".correct-radio");
+        const imageWidget = cell.querySelector('.inline-image-upload[data-role="answer-image"]');
 
         if (radio.checked) correctIndex = i;
 
@@ -382,19 +549,28 @@ function saveInlineEdit(btn, questionId) {
             id: Number(input.dataset.answerId),
             answerText: input.value,
             isTrue: radio.checked,
-            commentary: ""
+            commentary: "",
+            imageUrl: imageWidget?.dataset.currentUrl || null,
+            commentaryImageUrl: null,
+            commentaryVideoUrl: null
         });
     });
 
-    // комментарий — ТОЛЬКО правильному
+    // комментарий (matn + rasm/video) — ТОЛЬКО правильному
     const comment = row.querySelector(".comment-input")?.value ?? "";
+    const commentaryImageWidget = row.querySelector('.inline-commentary-media .inline-image-upload');
+    const commentaryVideoWidget = row.querySelector('.inline-commentary-media .inline-video-upload');
+
     if (correctIndex !== -1) {
         answers[correctIndex].commentary = comment;
+        answers[correctIndex].commentaryImageUrl = commentaryImageWidget?.dataset.currentUrl || null;
+        answers[correctIndex].commentaryVideoUrl = commentaryVideoWidget?.dataset.currentUrl || null;
     }
 
     const payload = {
         id: questionId,
         questionText,
+        imageUrl: questionImageUrl,
         answers
     };
 
@@ -502,6 +678,8 @@ function openCommentModal(btn) {
     const modal = document.getElementById("commentModal");
     const textarea = document.getElementById("modalComment");
     const saveBtn = document.getElementById("modalSaveBtn");
+    const commentImage = document.getElementById("modalCommentImage");
+    const commentVideo = document.getElementById("modalCommentVideo");
 
     if (!modal || !textarea || !saveBtn) {
         console.error("Modal, textarea или saveBtn не найдены!");
@@ -511,6 +689,8 @@ function openCommentModal(btn) {
     const answerId = btn.dataset.answerId;
     const questionId = btn.dataset.questionId;
     const commentary = decodeURIComponent(btn.dataset.comment || "");
+    const commentImageUrl = decodeURIComponent(btn.dataset.commentImage || "");
+    const commentVideoUrl = decodeURIComponent(btn.dataset.commentVideo || "");
 
     if (!answerId) {
         alert("❌ Правильный ответ не найден, комментарий отсутствует.");
@@ -525,6 +705,21 @@ function openCommentModal(btn) {
     textarea.readOnly = true;
     saveBtn.disabled = true;
 
+    // Rasm/video faqat ko'rish uchun (bu sahifada tahrirlanmaydi)
+    if (commentImageUrl) {
+        commentImage.src = commentImageUrl;
+        commentImage.classList.remove("hidden");
+    } else {
+        commentImage.classList.add("hidden");
+    }
+
+    if (commentVideoUrl) {
+        commentVideo.src = commentVideoUrl;
+        commentVideo.classList.remove("hidden");
+    } else {
+        commentVideo.classList.add("hidden");
+    }
+
     modal.classList.add("show");
 }
 
@@ -536,6 +731,12 @@ document.addEventListener("DOMContentLoaded", () => {
         textarea.value = "";
         textarea.readOnly = true;
         saveBtn.disabled = true;
+
+        const commentImage = document.getElementById("modalCommentImage");
+        const commentVideo = document.getElementById("modalCommentVideo");
+        commentImage?.classList.add("hidden");
+        if (commentVideo) commentVideo.src = "";
+        commentVideo?.classList.add("hidden");
     };
 
     // Режим редактирования

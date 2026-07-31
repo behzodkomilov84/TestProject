@@ -114,6 +114,12 @@
             <version>6.9.7.1</version>
         </dependency>
 
+        <!-- Parolni tiklash kodini email orqali yuborish uchun (SMTP). -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

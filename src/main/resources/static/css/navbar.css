@@ -240,6 +240,132 @@ body.menu-open::after {
     }
 }
 
+/* ===== NOTIFICATIONS (bell) ===== */
+
+.notif-dropdown {
+    position: relative;
+}
+
+.btn-bell {
+    position: relative;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 20px;
+    padding: 5px 14px;
+    border-radius: 6px;
+    color: white;
+}
+
+.btn-bell:hover {
+    background: #60c765;
+}
+
+.notif-badge {
+    position: absolute;
+    top: -2px;
+    right: 4px;
+    background: #e53935;
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    padding: 3px 5px;
+    border-radius: 999px;
+    min-width: 16px;
+    text-align: center;
+}
+
+.notif-panel {
+    display: none;
+
+    position: absolute;
+    right: 0;
+    top: 100%;
+
+    width: 320px;
+    max-height: 420px;
+    overflow-y: auto;
+
+    background: #1f2933;
+    border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+    z-index: 999;
+}
+
+.notif-panel.open {
+    display: block;
+}
+
+.notif-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border-bottom: 1px solid #374151;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    background: #1f2933;
+}
+
+.notif-mark-all {
+    background: transparent;
+    border: none;
+    color: #60c765;
+    font-size: 12px;
+    cursor: pointer;
+    text-transform: none;
+    padding: 0;
+    white-space: nowrap;
+}
+
+.notif-item {
+    padding: 12px 14px;
+    border-bottom: 1px solid #2d3748;
+    cursor: pointer;
+}
+
+.notif-item:hover {
+    background: #374151;
+}
+
+.notif-item.unread {
+    background: rgba(96, 199, 101, 0.1);
+    border-left: 3px solid #60c765;
+}
+
+.notif-message {
+    font-size: 13px;
+    color: #f1f5f9;
+    text-transform: none;
+    line-height: 1.4;
+}
+
+.notif-time {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 4px;
+}
+
+.notif-empty {
+    padding: 20px 14px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 13px;
+}
+
+@media (max-width: 768px) {
+    .notif-panel {
+        position: fixed;
+        top: 72px;
+        right: 8px;
+        left: 8px;
+        width: auto;
+    }
+}
+
 .btn-telegram{
     background: transparent;
     border: none;

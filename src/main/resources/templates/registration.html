@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
     <!-- Основные метатеги -->
     <meta charset="UTF-8">
@@ -24,8 +24,15 @@
 <div class="container">
     <div class="registration form">
         <header>Sign up</header>
+
+        <p style="color: red"
+           th:if="${registrationError}"
+           th:text="${registrationError}"
+           class="error-alert"></p>
+
         <form action="/registration" method="post">
             <input type="text" name="username" placeholder="Enter your name" required>
+            <input type="email" name="email" placeholder="Enter your email" required>
             <input type="password" name="password" placeholder="Create a password" required>
             <input type="password" name="confirmPassword" placeholder="Confirm your password" required>
 

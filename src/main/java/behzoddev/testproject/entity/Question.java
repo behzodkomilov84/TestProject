@@ -28,6 +28,11 @@ public class Question {
     @Column(nullable = false)
     private String questionText;
 
+    // Savolga biriktirilgan rasm (masalan, geometrik chizma). Ixtiyoriy —
+    // bo'lmasligi ham mumkin.
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
     @OneToMany(mappedBy = "question",
             cascade = CascadeType.ALL,
             orphanRemoval = true

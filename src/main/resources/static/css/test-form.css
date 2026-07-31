@@ -148,21 +148,35 @@ label {
     background: #125aa3;
 }
 
-textarea.commentary {
-    /*position: absolute;
-    left: 105%;
-    top: 15%;
-    width: 100%;
-    margin-right: 20px;
-    min-height: 300px;*/
+/* Izoh (to'g'ri javobga oid) — yagona ixcham box */
+.commentary-box {
     position: fixed;
     right: 15px;
     top: 5%;
-
-    max-width: 320px;
+    max-width: 260px;
     width: 100%;
-    min-height: 80vh;
+    max-height: 70vh;
+    overflow-y: auto;
     z-index: 1000;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.commentary-box textarea.commentary {
+    width: 100%;
+    min-height: 90px;
+    max-height: 200px;
+    padding: 8px;
+    font-size: 13px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    resize: vertical;
 }
 
 .modal {
@@ -172,4 +186,87 @@ textarea.commentary {
     border-radius: 8px;
     padding: 15px 50px;
     margin: 15px auto 30px;
+}
+
+/* Savol/javob rasm yuklash bloki */
+.image-upload {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.image-btn {
+    background: #455a64;
+    color: #fff;
+}
+
+.remove-image-btn {
+    background: #c62828;
+    color: #fff;
+    padding: 6px 10px;
+}
+
+.image-preview {
+    max-width: 160px;
+    max-height: 120px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    object-fit: contain;
+}
+
+/* Izohga (commentary) rasm + video qo'shish bloki — bitta box ichida, ixcham */
+.commentary-media {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
+}
+
+.commentary-box .image-upload,
+.commentary-box .video-upload {
+    margin-top: 0;
+    gap: 6px;
+}
+
+.commentary-box .btn {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+.commentary-box .image-preview {
+    max-width: 100px;
+    max-height: 70px;
+}
+
+.video-upload {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.video-btn {
+    background: #4a148c;
+    color: #fff;
+}
+
+.remove-video-btn {
+    background: #c62828;
+    color: #fff;
+    padding: 6px 10px;
+}
+
+.video-preview {
+    max-width: 220px;
+    max-height: 160px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+.commentary-box .video-preview {
+    max-width: 130px;
+    max-height: 90px;
 }

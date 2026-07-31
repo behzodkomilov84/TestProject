@@ -7,13 +7,20 @@
     <div class="nav-user nav-center">
         <span th:if="${#authorization.expression('isAuthenticated()')}">
             Xush kelibsiz, <b th:text="${#authentication.name}">username</b> </span>
-        <span th:if="${#authorization.expression('isAuthenticated()')}">
+        <!-- Dual-role: foydalanuvchida bir nechta rol bo'lishi mumkin (masalan,
+             ham o'qituvchi, ham o'quvchi), shuning uchun barcha rollar vergul
+             bilan ko'rsatiladi (avval faqat authorities[0] ko'rsatilardi).
+             Spring Security 7 parolli login'dan keyin "FACTOR_PASSWORD" kabi
+             o'ziga xos texnik authority ham qo'shib qo'yadi (bu rol emas,
+             autentifikatsiya "faktori"), shuning uchun faqat "ROLE_" bilan
+             boshlanadigan haqiqiy rollarni filtrlab olamiz. -->
+        <span th:if="${#authorization.expression('isAuthenticated()')}"
+              th:with="roleNames=${#authentication.authorities.?[authority != null and authority.startsWith('ROLE_')].![authority]}">
             <br style="height: 0px">Rolingiz:
-            <b th:text="${#strings.replace(#authentication.authorities[0].authority,'ROLE_','')}"
-               th:attr="data-role=${#strings.replace(#authentication.authorities[0].authority,'ROLE_','')}"
+            <b th:text="${#strings.listJoin(roleNames, ', ').replace('ROLE_','')}"
+               th:attr="data-role=${#strings.listJoin(roleNames, ',').replace('ROLE_','')}"
                style="color: darkred">
                 ROLE </b>
-
         </span>
     </div> <!-- ☰ burger -->
 
@@ -59,6 +66,22 @@
                     <a href="/student">Группа</a>
                 </div>
 
+            </div>
+
+            <div class="notif-dropdown" sec:authorize="isAuthenticated()">
+                <button class="btn-bell" onclick="toggleNotifications(event)" title="Bildirishnomalar">
+                    🔔
+                    <span id="notif-badge" class="notif-badge" style="display:none;">0</span>
+                </button>
+                <div id="notif-panel" class="notif-panel">
+                    <div class="notif-header">
+                        <span>Bildirishnomalar</span>
+                        <button type="button" onclick="markAllNotificationsRead()" class="notif-mark-all">Barchasini o'qildi deb belgilash</button>
+                    </div>
+                    <div id="notif-list" class="notif-list">
+                        <div class="notif-empty">Bildirishnoma yo'q</div>
+                    </div>
+                </div>
             </div>
 
             <button class="btn-telegram" onclick="linkTelegram()" title="Telegramga ulash">

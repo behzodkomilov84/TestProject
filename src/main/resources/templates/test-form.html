@@ -47,6 +47,14 @@
         <div class="form-group">
             <label for="question">Savol</label>
             <textarea id="question" name="question" class="auto-textarea" placeholder="Savol matnini kiriting" required></textarea>
+
+            <!-- Savolga rasm qo'shish (masalan, geometrik chizma) -->
+            <div class="image-upload" data-role="question-image">
+                <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" id="questionImageInput" hidden>
+                <button type="button" class="btn image-btn">🖼️ Rasm qo'shish</button>
+                <img class="image-preview hidden" alt="Savol rasmi">
+                <button type="button" class="btn remove-image-btn hidden">✖ Rasmni olib tashlash</button>
+            </div>
         </div>
 
         <!-- Ответы -->
@@ -56,37 +64,129 @@
             <div class="answer">
                 <input type="radio" name="correct" value="0" required>
                 <textarea class="auto-textarea" name="answers[0]" placeholder="A variantni kiriting..." required></textarea>
+                <div class="image-upload" data-role="answer-image">
+                    <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" hidden>
+                    <button type="button" class="btn image-btn">🖼️ Rasm</button>
+                    <img class="image-preview hidden" alt="A javob rasmi">
+                    <button type="button" class="btn remove-image-btn hidden">✖</button>
+                </div>
                 <button type="button" class="comment-btn btn hidden">✏️Izoh</button>
-                <textarea class="commentary hidden"
-                          name="commentaries[0]"
-                          placeholder="Izoh kiriting..."></textarea>
+                <div class="commentary-box hidden">
+                    <textarea class="commentary"
+                              name="commentaries[0]"
+                              placeholder="To'g'ri javob uchun izoh kiriting..."></textarea>
+
+                    <div class="commentary-media">
+                        <div class="image-upload" data-role="commentary-image">
+                            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" hidden>
+                            <button type="button" class="btn image-btn">🖼️ Rasm</button>
+                            <img class="image-preview hidden" alt="Izoh rasmi">
+                            <button type="button" class="btn remove-image-btn hidden">✖</button>
+                        </div>
+                        <div class="video-upload" data-role="commentary-video">
+                            <input type="file" accept="video/mp4,video/webm,video/ogg" class="video-input" hidden>
+                            <button type="button" class="btn video-btn">🎬 Video</button>
+                            <video class="video-preview hidden" controls></video>
+                            <button type="button" class="btn remove-video-btn hidden">✖</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="answer">
                 <input type="radio" name="correct" value="1">
                 <textarea class="auto-textarea" name="answers[1]" placeholder="B variantni kiriting..." required></textarea>
+                <div class="image-upload" data-role="answer-image">
+                    <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" hidden>
+                    <button type="button" class="btn image-btn">🖼️ Rasm</button>
+                    <img class="image-preview hidden" alt="B javob rasmi">
+                    <button type="button" class="btn remove-image-btn hidden">✖</button>
+                </div>
                 <button type="button" class="comment-btn btn hidden">✏️Izoh</button>
-                <textarea class="commentary hidden"
-                          name="commentaries[1]"
-                          placeholder="Izoh kiriting..."></textarea>
+                <div class="commentary-box hidden">
+                    <textarea class="commentary"
+                              name="commentaries[1]"
+                              placeholder="To'g'ri javob uchun izoh kiriting..."></textarea>
+
+                    <div class="commentary-media">
+                        <div class="image-upload" data-role="commentary-image">
+                            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" hidden>
+                            <button type="button" class="btn image-btn">🖼️ Rasm</button>
+                            <img class="image-preview hidden" alt="Izoh rasmi">
+                            <button type="button" class="btn remove-image-btn hidden">✖</button>
+                        </div>
+                        <div class="video-upload" data-role="commentary-video">
+                            <input type="file" accept="video/mp4,video/webm,video/ogg" class="video-input" hidden>
+                            <button type="button" class="btn video-btn">🎬 Video</button>
+                            <video class="video-preview hidden" controls></video>
+                            <button type="button" class="btn remove-video-btn hidden">✖</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="answer">
                 <input type="radio" name="correct" value="2">
                 <textarea class="auto-textarea" name="answers[2]" placeholder="C variantni kiriting..." required></textarea>
+                <div class="image-upload" data-role="answer-image">
+                    <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" hidden>
+                    <button type="button" class="btn image-btn">🖼️ Rasm</button>
+                    <img class="image-preview hidden" alt="C javob rasmi">
+                    <button type="button" class="btn remove-image-btn hidden">✖</button>
+                </div>
                 <button type="button" class="comment-btn btn hidden">✏️Izoh</button>
-                <textarea class="commentary hidden"
-                          name="commentaries[2]"
-                          placeholder="Izoh kiriting..."></textarea>
+                <div class="commentary-box hidden">
+                    <textarea class="commentary"
+                              name="commentaries[2]"
+                              placeholder="To'g'ri javob uchun izoh kiriting..."></textarea>
+
+                    <div class="commentary-media">
+                        <div class="image-upload" data-role="commentary-image">
+                            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" hidden>
+                            <button type="button" class="btn image-btn">🖼️ Rasm</button>
+                            <img class="image-preview hidden" alt="Izoh rasmi">
+                            <button type="button" class="btn remove-image-btn hidden">✖</button>
+                        </div>
+                        <div class="video-upload" data-role="commentary-video">
+                            <input type="file" accept="video/mp4,video/webm,video/ogg" class="video-input" hidden>
+                            <button type="button" class="btn video-btn">🎬 Video</button>
+                            <video class="video-preview hidden" controls></video>
+                            <button type="button" class="btn remove-video-btn hidden">✖</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="answer">
                 <input type="radio" name="correct" value="3">
                 <textarea class="auto-textarea" name="answers[3]" placeholder="D variantni kiriting..." required></textarea>
+                <div class="image-upload" data-role="answer-image">
+                    <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" hidden>
+                    <button type="button" class="btn image-btn">🖼️ Rasm</button>
+                    <img class="image-preview hidden" alt="D javob rasmi">
+                    <button type="button" class="btn remove-image-btn hidden">✖</button>
+                </div>
                 <button type="button" class="comment-btn btn hidden">✏️Izoh</button>
-                <textarea class="commentary hidden"
-                          name="commentaries[3]"
-                          placeholder="Izoh kiriting..."></textarea>
+                <div class="commentary-box hidden">
+                    <textarea class="commentary"
+                              name="commentaries[3]"
+                              placeholder="To'g'ri javob uchun izoh kiriting..."></textarea>
+
+                    <div class="commentary-media">
+                        <div class="image-upload" data-role="commentary-image">
+                            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" hidden>
+                            <button type="button" class="btn image-btn">🖼️ Rasm</button>
+                            <img class="image-preview hidden" alt="Izoh rasmi">
+                            <button type="button" class="btn remove-image-btn hidden">✖</button>
+                        </div>
+                        <div class="video-upload" data-role="commentary-video">
+                            <input type="file" accept="video/mp4,video/webm,video/ogg" class="video-input" hidden>
+                            <button type="button" class="btn video-btn">🎬 Video</button>
+                            <video class="video-preview hidden" controls></video>
+                            <button type="button" class="btn remove-video-btn hidden">✖</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 

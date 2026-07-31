@@ -11,6 +11,13 @@
     <include file="/db/changelog/telegram.sql"/>
     <include file="/db/changelog/attempt_question_order.sql"/>
     <include file="/db/changelog/unique_index_for_attempt_answer.sql"/>
+    <include file="/db/changelog/multi-role.sql"/>
+    <include file="/db/changelog/question-answer-images.sql"/>
+    <include file="/db/changelog/commentary-media.sql"/>
+    <include file="/db/changelog/subscriptions.sql"/>
+    <include file="/db/changelog/password-reset.sql"/>
+    <include file="/db/changelog/login-lockout.sql"/>
+    <include file="/db/changelog/notifications.sql"/>
 
 
 </databaseChangeLog>

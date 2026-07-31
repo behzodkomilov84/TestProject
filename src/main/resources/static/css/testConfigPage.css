@@ -89,8 +89,10 @@ input[type=number] {
     font-size: 16px;
 }
 
-/* Buttons */
-button {
+/* Buttons — MUHIM: .container ichida cheklangan, aks holda navbar
+   fragment ichidagi tugmalarga (burger, dropdown, telegram) ham tarqalib,
+   navbar ko'rinishini buzib qo'yardi. */
+.container button {
     margin-top: 20px;
     width: 100%;
     padding: 14px;
@@ -104,7 +106,7 @@ button {
     transition: 0.2s;
 }
 
-button:hover {
+.container button:hover {
     transform: translateY(-1px);
     box-shadow: 0 10px 25px rgba(37,99,235,0.35);
 }

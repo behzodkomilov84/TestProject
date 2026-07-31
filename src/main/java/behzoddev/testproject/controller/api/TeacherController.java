@@ -25,7 +25,11 @@ GET  /teacher/results
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/teacher")
-@PreAuthorize("hasAnyRole('ROLE_ADMIN','ROLE_OWNER')")
+// ESLATMA: bu yerda avval "hasAnyRole('ROLE_ADMIN','ROLE_OWNER')" edi — bu XATO
+// edi, chunki hasAnyRole avtomatik "ROLE_" prefiksini qo'shadi va haqiqatda
+// "ROLE_ROLE_ADMIN"/"ROLE_ROLE_OWNER" ni tekshirar edi (hech qachon mos kelmaydi),
+// natijada BUTUN /api/teacher/** doim 403 qaytarardi. hasAnyAuthority to'g'ri variant.
+@PreAuthorize("hasAnyAuthority('ROLE_ADMIN','ROLE_OWNER')")
 public class TeacherController {
 
     private final TeacherService teacherService;

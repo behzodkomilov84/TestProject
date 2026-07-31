@@ -6,7 +6,11 @@ document.addEventListener("DOMContentLoaded", () => {
         .then(r => r.json())
         .then(data => {
             document.getElementById("username").innerText = data.username;
-            document.getElementById("role").innerText = data.role;
+            document.getElementById("email").innerText = data.email || "— (kiritilmagan)";
+            // Dual-role: foydalanuvchida bir nechta rol bo'lishi mumkin
+            // (masalan, ham o'qituvchi, ham o'quvchi) — barchasi ko'rsatiladi.
+            document.getElementById("role").innerText =
+                (data.roles || []).map(r => r.replace("ROLE_", "")).join(", ");
         });
 
     fetch("/api/profile/stats")
@@ -24,6 +28,10 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("edit").addEventListener("click", enableEditUsername);
     document.getElementById("save-username").addEventListener("click", saveUsername);
     document.getElementById("cancel-username").addEventListener("click", cancelUsernameEdit);
+
+    document.getElementById("edit-email").addEventListener("click", enableEditEmail);
+    document.getElementById("save-email").addEventListener("click", saveEmail);
+    document.getElementById("cancel-email").addEventListener("click", cancelEmailEdit);
 });
 
 function loadHistory(page) {
@@ -103,6 +111,56 @@ function cancelUsernameEdit() {
 }
 
 
+
+function enableEditEmail() {
+    const current = document.getElementById("email").innerText;
+    const input = document.getElementById("email-input");
+
+    input.value = current.startsWith("—") ? "" : current;
+
+    document.getElementById("email-view").style.display = "none";
+    document.getElementById("email-edit").style.display = "inline";
+    document.getElementById("edit-email").style.display = "none";
+}
+
+function cancelEmailEdit() {
+    document.getElementById("email-edit").style.display = "none";
+    document.getElementById("email-view").style.display = "inline";
+    document.getElementById("edit-email").style.display = "inline";
+}
+
+function saveEmail() {
+    const newEmail = document.getElementById("email-input").value.trim();
+
+    if (!newEmail || !newEmail.includes("@")) {
+        alert("To'g'ri email kiriting");
+        return;
+    }
+
+    fetch("/api/profile/email", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newEmail })
+    })
+        .then(async r => {
+            if (!r.ok) {
+                const data = await r.json().catch(() => ({}));
+                throw new Error(data.error || "Xatolik yuz berdi");
+            }
+        })
+        .then(() => {
+            document.getElementById("email").innerText = newEmail;
+
+            document.getElementById("email-edit").style.display = "none";
+            document.getElementById("email-view").style.display = "inline";
+            document.getElementById("edit-email").style.display = "inline";
+
+            alert("✅ Email saqlandi. Endi parolni tiklashda zaxira kanal sifatida ishlatiladi.");
+        })
+        .catch(err => {
+            alert(err.message || "Bu email band yoki xatolik");
+        });
+}
 
 function viewTest(id) {
     window.location.href = `/profile/test/${id}`; // или открытие модалки

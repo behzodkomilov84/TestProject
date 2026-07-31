@@ -1,13 +1,13 @@
-version: '3.8'
-
 services:
 
   mysql:
     image: mysql:8.0
     container_name: mysql-db
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
       MYSQL_DATABASE: test_project
+    ports:
+      - "3306:3306" # IntelliJ'dan (kontaynerdan tashqarida) ulanish uchun — faqat local dev
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:
@@ -25,10 +25,22 @@ services:
       - "8080:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/test_project?createDatabaseIfNotExist=true
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root
-      SPRING_JPA_HIBERNATE_DDL_AUTO: validate
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-root}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-root}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?TELEGRAM_BOT_TOKEN env var kiritilishi shart (.env fayliga qarang)}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-study_grow_bot}
+      UPLOAD_DIR: /app/uploads
+      # Parolni tiklash — email kanali (ixtiyoriy, Telegram ustuvor kanal).
+      # Standart: Brevo (smtp-relay.brevo.com) — .env'ga qarang.
+      SMTP_HOST: ${SMTP_HOST:-smtp-relay.brevo.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@smart-test.local}
+    volumes:
+      - uploads-data:/app/uploads # Savol/javob rasmlari konteyner qayta ishga tushganda ham saqlanib qolishi uchun
     restart: unless-stopped
 
 volumes:
   mysql-data:
+  uploads-data:

@@ -60,6 +60,7 @@ public class QuestionService {
                     QuestionSaveDto.builder()
                             .topicId(question.getTopic().getId())
                             .questionText(question.getQuestionText())
+                            .imageUrl(question.getImageUrl())
                             .answers(answerMapper.mapAnswerListToAnswerShorDtoList(question.getAnswers()))
                             .build());
         }
@@ -149,6 +150,7 @@ public class QuestionService {
         validation.textFieldMustNotBeEmpty(questionSaveDto.questionText());
         Question newQuestion = Question.builder()
                 .questionText(questionSaveDto.questionText())
+                .imageUrl(questionSaveDto.imageUrl())
                 .topic(topic)
                 .build();
 
@@ -190,7 +192,13 @@ public class QuestionService {
                 .orElseThrow(() ->
                         new IllegalArgumentException("Savol ma'lumotlar bazasida topilmadi."));
 
-        List<Question> existingQuestions = questionRepository.getQuestionsByTopicId(question.getTopic().getId());
+        // O'zini o'ziga "dublikat" deb hisoblab qo'ymaslik uchun hozir tahrirlanayotgan
+        // savolni "mavjud savollar" ro'yxatidan chiqarib tashlaymiz (aks holda matn/javoblar
+        // o'zgarmagan holda faqat rasm/video qo'shilganda ham dublikat xatosi chiqadi).
+        List<Question> existingQuestions = questionRepository.getQuestionsByTopicId(question.getTopic().getId())
+                .stream()
+                .filter(q -> !q.getId().equals(question.getId()))
+                .toList();
 
         List<QuestionSaveDto> existingQuestionSaveDtos =
                 existingQuestions.stream()
@@ -198,6 +206,7 @@ public class QuestionService {
                                 QuestionSaveDto.builder()
                                         .topicId(q.getTopic().getId())
                                         .questionText(q.getQuestionText())
+                                        .imageUrl(q.getImageUrl())
                                         .answers(answerMapper.mapAnswerListToAnswerShorDtoList(q.getAnswers()))
                                         .build()
                         ).toList();
@@ -206,6 +215,7 @@ public class QuestionService {
                 QuestionSaveDto.builder()
                         .topicId(question.getTopic().getId())
                         .questionText(dto.questionText())
+                        .imageUrl(dto.imageUrl())
                         .answers(answerMapper.mapAnswerDtoListToAnswerShorDtoList(dto.answers()))
                         .build();
 
@@ -218,6 +228,7 @@ public class QuestionService {
         // 3️⃣ ОБНОВЛЕНИЕ ВОПРОСА
         validation.textFieldMustNotBeEmpty(dto.questionText().trim());
         question.setQuestionText(dto.questionText().trim());
+        question.setImageUrl(dto.imageUrl());
 
         // 4️⃣ СБРОС ВСЕХ ОТВЕТОВ
         for (Answer answer : question.getAnswers()) {
@@ -234,6 +245,9 @@ public class QuestionService {
 
             answer.setAnswerText(aDto.answerText().trim());
             answer.setIsTrue(aDto.isTrue());
+            answer.setImageUrl(aDto.imageUrl());
+            answer.setCommentaryImageUrl(aDto.commentaryImageUrl());
+            answer.setCommentaryVideoUrl(aDto.commentaryVideoUrl());
 
             if (Boolean.TRUE.equals(aDto.isTrue())) {
                 validation.textFieldMustNotBeEmpty(aDto.commentary());

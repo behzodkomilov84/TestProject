@@ -20,6 +20,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -28,6 +32,7 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final NotificationService notificationService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -45,6 +50,15 @@ public class UserServiceImpl implements UserDetailsService, UserService {
             throw new UserAlreadyExistsException(dto.username());
         }
 
+        // 1.1 Email — parolni tiklash uchun kerak, shuning uchun majburiy va unikal.
+        if (dto.email() == null || dto.email().isBlank()) {
+            throw new IllegalArgumentException("❌Email bo'sh bo'lishi mumkin emas.");
+        }
+
+        if (userRepository.existsByEmail(dto.email())) {
+            throw new IllegalArgumentException("❌Bu email allaqachon ro'yxatdan o'tgan.");
+        }
+
         // 2. Проверка паролей
         if (!dto.password().equals(dto.confirmPassword())) {
             throw new PasswordsDoNotMatchException("Passwords do not match");
@@ -54,14 +68,23 @@ public class UserServiceImpl implements UserDetailsService, UserService {
         Role userRole = roleRepository.findByRoleName("ROLE_USER")
                 .orElseThrow(() -> new RuntimeException("ROLE_USER not found in database"));
 
-        // 4. Создаём пользователя с ролью
+        // 4. Создаём пользователя с ролью.
+        // Har bir ro'yxatdan o'tgan foydalanuvchi kamida ROLE_USER (o'quvchi)
+        // huquqiga ega bo'ladi. Keyinchalik OWNER uni ROLE_ADMIN (o'qituvchi)
+        // sifatida ham belgilashi mumkin — ROLE_USER olib tashlanmaydi, shunda
+        // o'qituvchi ham o'quvchi funksiyalaridan (masalan, boshqa fandan test
+        // ishlash) foydalana oladi.
+        Set<Role> roles = new HashSet<>();
+        roles.add(userRole);
+
         User user = User.builder()
                 .username(dto.username())
+                .email(dto.email())
                 .password(passwordEncoder.encode(dto.password()))
-                .role(userRole)
+                .roles(roles)
                 .build();
 
-        // 5. Сохраняем (роль уже существует, пользователь сохранится с role_id)
+        // 5. Сохраняем
         userRepository.save(user);
     }
 
@@ -78,8 +101,12 @@ public class UserServiceImpl implements UserDetailsService, UserService {
         }
     }
 
+    // Foydalanuvchiga qo'shimcha rol beradi (masalan, o'quvchini o'qituvchi
+    // ham qiladi). Mavjud rollar OLIB TASHLANMAYDI — shu tufayli bitta odam
+    // bir vaqtning o'zida ham o'qituvchi (ROLE_ADMIN), ham o'quvchi
+    // (ROLE_USER) bo'la oladi.
     @Transactional
-    public ChangeRoleDto changeUserRole(Long targetUserId, String newRole, Authentication auth) {
+    public ChangeRoleDto addRole(Long targetUserId, String newRole, Authentication auth) {
 
         User currentUser = (User) auth.getPrincipal();
 
@@ -93,11 +120,44 @@ public class UserServiceImpl implements UserDetailsService, UserService {
         Role role = roleRepository.findByRoleName(newRole)
                 .orElseThrow(() -> new RuntimeException(newRole + ": ⛔ Bunday rol topilmadi"));
 
-        targetUser.setRole(role);
+        targetUser.getRoles().add(role);
+        userRepository.save(targetUser);
 
         return ChangeRoleDto.builder()
                 .userId(targetUser.getId())
-                .newRole(role.getRoleName())
+                .roles(targetUser.getRoles().stream().map(Role::getRoleName).sorted().toList())
+                .build();
+    }
+
+    // Foydalanuvchidan bitta rolni olib tashlaydi. Kamida bitta rol doim
+    // qolishi shart — aks holda foydalanuvchi hech qanday huquqsiz qolib,
+    // tizimga kira olmay qoladi.
+    @Transactional
+    public ChangeRoleDto removeRole(Long targetUserId, String roleName, Authentication auth) {
+
+        User currentUser = (User) auth.getPrincipal();
+
+        if (currentUser.getId().equals(targetUserId)) {
+            throw new AccessDeniedException("⛔ Siz o'z rolingizni o'zgartira olmaysiz.");
+        }
+
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new RuntimeException("⛔ Foydalanuvchi topilmadi"));
+
+        if (targetUser.getRoles().size() <= 1) {
+            throw new IllegalArgumentException(
+                    "⛔ Foydalanuvchining kamida bitta roli bo'lishi kerak.");
+        }
+
+        Role role = roleRepository.findByRoleName(roleName)
+                .orElseThrow(() -> new RuntimeException(roleName + ": ⛔ Bunday rol topilmadi"));
+
+        targetUser.getRoles().remove(role);
+        userRepository.save(targetUser);
+
+        return ChangeRoleDto.builder()
+                .userId(targetUser.getId())
+                .roles(targetUser.getRoles().stream().map(Role::getRoleName).sorted().toList())
                 .build();
     }
 
@@ -112,12 +172,30 @@ public class UserServiceImpl implements UserDetailsService, UserService {
         User targetUser = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new RuntimeException("⛔ Foydalanuvchi topilmadi"));
 
+        List<String> roles = targetUser.getRoles().stream().map(Role::getRoleName).sorted().toList();
+
         userRepository.delete(targetUser);
 
         return UserDto.builder()
                 .id(targetUserId)
                 .username(targetUser.getUsername())
+                .roles(roles)
                 .build();
+    }
+
+    // Brute-force himoyasi orqali bloklangan hisobni OWNER qo'lda ochadi.
+    @Transactional
+    public void unlockUser(Long targetUserId) {
+        User targetUser = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new RuntimeException("⛔ Foydalanuvchi topilmadi"));
+
+        targetUser.setFailedAttempts(0);
+        targetUser.setLockedUntil(null);
+        userRepository.save(targetUser);
+
+        notificationService.create(targetUser,
+                "🔓 Hisobingiz administrator tomonidan blokdan chiqarildi. Endi tizimga kirishingiz mumkin.",
+                null);
     }
 
 }

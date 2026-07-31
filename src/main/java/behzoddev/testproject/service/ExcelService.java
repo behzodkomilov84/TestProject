@@ -74,11 +74,13 @@ public class ExcelService {
 
             String commentOfWrongAnswer = "Noto'g'ri javob";
 
+            // Excel orqali import qilinganda rasm/video bo'lmaydi (barchasi null) —
+            // ular faqat saytdagi "savol yaratish" formasi orqali qo'shiladi.
             List<AnswerShortDto> answerShortDtoList = new ArrayList<>();
-            answerShortDtoList.add(new AnswerShortDto(a, correctIndex == 0, correctIndex == 0 ? comment : commentOfWrongAnswer));
-            answerShortDtoList.add(new AnswerShortDto(b, correctIndex == 1, correctIndex == 1 ? comment : commentOfWrongAnswer));
-            answerShortDtoList.add(new AnswerShortDto(c, correctIndex == 2, correctIndex == 2 ? comment : commentOfWrongAnswer));
-            answerShortDtoList.add(new AnswerShortDto(d, correctIndex == 3, correctIndex == 3 ? comment : commentOfWrongAnswer));
+            answerShortDtoList.add(new AnswerShortDto(a, correctIndex == 0, correctIndex == 0 ? comment : commentOfWrongAnswer, null, null, null));
+            answerShortDtoList.add(new AnswerShortDto(b, correctIndex == 1, correctIndex == 1 ? comment : commentOfWrongAnswer, null, null, null));
+            answerShortDtoList.add(new AnswerShortDto(c, correctIndex == 2, correctIndex == 2 ? comment : commentOfWrongAnswer, null, null, null));
+            answerShortDtoList.add(new AnswerShortDto(d, correctIndex == 3, correctIndex == 3 ? comment : commentOfWrongAnswer, null, null, null));
 
             List<String> answersText = List.of(a, b, c, d);
 

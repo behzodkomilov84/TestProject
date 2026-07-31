@@ -2,6 +2,7 @@ package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.TestSessionRepository;
 import behzoddev.testproject.dto.*;
+import behzoddev.testproject.dto.profile.ChangeEmailDto;
 import behzoddev.testproject.dto.profile.ChangePasswordDto;
 import behzoddev.testproject.dto.profile.ChangeUsernameDto;
 import behzoddev.testproject.dto.profile.TestHistoryDto;
@@ -40,6 +41,26 @@ public class ProfileService {
         }
 
         user.setUsername(changeUsernameDto.newUsername());
+        userRepository.save(user);
+    }
+
+    // 🔹 email qo'shish/o'zgartirish (parolni tiklashda zaxira kanal sifatida ishlatiladi)
+    @Transactional
+    public void changeEmail(User user, ChangeEmailDto dto) {
+
+        String newEmail = dto.newEmail().trim();
+
+        if (newEmail.isBlank()) {
+            throw new ResponseStatusException(BAD_REQUEST, "Email bo'sh bo'lishi mumkin emas");
+        }
+
+        boolean sameAsBefore = newEmail.equalsIgnoreCase(user.getEmail());
+
+        if (!sameAsBefore && userRepository.existsByEmail(newEmail)) {
+            throw new ResponseStatusException(CONFLICT, "Bu email allaqachon band");
+        }
+
+        user.setEmail(newEmail);
         userRepository.save(user);
     }
 

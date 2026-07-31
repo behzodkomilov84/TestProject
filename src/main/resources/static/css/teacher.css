@@ -461,7 +461,10 @@ input#dueDate {
     border-radius: var(--bs-border-radius);
 }
 
-button, select {
+/* MUHIM: .app-layout ichida cheklangan — aks holda navbar fragment ichidagi
+   tugmalarga ham tarqalib, navbar ko'rinishini buzib qo'yardi. */
+.app-layout button,
+.app-layout select {
     text-transform: uppercase;
 }
 

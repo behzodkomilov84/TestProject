@@ -2,11 +2,13 @@ package behzoddev.testproject.controller.api;
 
 import behzoddev.testproject.dao.TestSessionRepository;
 import behzoddev.testproject.dto.*;
+import behzoddev.testproject.dto.profile.ChangeEmailDto;
 import behzoddev.testproject.dto.profile.ChangePasswordDto;
 import behzoddev.testproject.dto.profile.ChangeUsernameDto;
 import behzoddev.testproject.dto.profile.ProfileDto;
 import behzoddev.testproject.dto.profile.TestHistoryDto;
 import behzoddev.testproject.dto.testsession.TestStatsDto;
+import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.TestSession;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.ProfileService;
@@ -34,7 +36,11 @@ public class ProfileController {
         return new ProfileDto(
                 user.getId(),
                 user.getUsername(),
-                user.getRole().getRoleName()
+                user.getEmail(),
+                user.getRoles().stream()
+                        .map(Role::getRoleName)
+                        .sorted()
+                        .toList()
         );
     }
 
@@ -87,6 +93,17 @@ public class ProfileController {
     ) {
         profileService.changeUsername(user, changeUsernameDto);
         return ResponseEntity.ok().header("X-LOGOUT", "true").build();
+    }
+
+    // Email o'zgartirish username/parol kabi autentifikatsiya identifikatoriga
+    // ta'sir qilmaydi, shuning uchun qayta login talab qilinmaydi (X-LOGOUT yo'q).
+    @PatchMapping("/email")
+    public ResponseEntity<Void> changeEmail(
+            @RequestBody ChangeEmailDto changeEmailDto,
+            @AuthenticationPrincipal User user
+    ) {
+        profileService.changeEmail(user, changeEmailDto);
+        return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/password")

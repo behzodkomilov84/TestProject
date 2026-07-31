@@ -12,13 +12,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByUsername(String username);
 
-    List<User> findByRole_RoleName(String roleName);
+    List<User> findByRoles_RoleName(String roleName);
 
     List<User> findAllByGroupId(Long groupId);
 
     Optional<User> findByTelegramId(Long telegramId);
 
     boolean existsByTelegramId(Long telegramId);
+
+    boolean existsByEmail(String email);
 
 
 }

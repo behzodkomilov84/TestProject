@@ -140,12 +140,14 @@ function renderQuestions(questions) {
 
         block.innerHTML = `
             <h3>${index + 1}. ${q.questionText}</h3>
+            ${q.imageUrl ? `<img class="question-image" src="${q.imageUrl}" alt="Savol rasmi">` : ""}
             <ul>
                 ${q.answers.map(a => `
                     <li>
                         <label>
                             <input type="radio" name="q-${q.id}" data-answer-id="${a.id}">
                             ${a.answerText}
+                            ${a.imageUrl ? `<br><img class="answer-image" src="${a.imageUrl}" alt="Javob rasmi">` : ""}
                         </label>
                     </li>
                 `).join("")}
@@ -154,6 +156,8 @@ function renderQuestions(questions) {
                 ${testState.mode === "practice" ? `
                 <button class="action-btn comment"
                     data-comment="${encodeURIComponent(correctAnswer?.commentary || '')}"
+                    data-comment-image="${encodeURIComponent(correctAnswer?.commentaryImageUrl || '')}"
+                    data-comment-video="${encodeURIComponent(correctAnswer?.commentaryVideoUrl || '')}"
                     onclick="openCommentModal(this)">
                 💬
                 </button>` : ""}
@@ -408,6 +412,7 @@ function showWrongAnswers() {
 
         block.innerHTML = `
             <h3>❓ ${index + 1}. ${q.questionText}</h3>
+            ${q.imageUrl ? `<img class="question-image" src="${q.imageUrl}" alt="Savol rasmi">` : ""}
 
             <ul class="answers-review">
                 <li class="wrong-answer">
@@ -421,9 +426,9 @@ function showWrongAnswers() {
                 </li>
             </ul>
 
-            ${correctAnswer.commentary ? `<div class="commentary-box">💬 Izoh: ${correctAnswer.commentary}</div>` : ""
-
-        }
+            ${correctAnswer.commentary ? `<div class="commentary-box">💬 Izoh: ${correctAnswer.commentary}</div>` : ""}
+            ${correctAnswer.commentaryImageUrl ? `<img class="comment-image" src="${correctAnswer.commentaryImageUrl}" alt="Izoh rasmi">` : ""}
+            ${correctAnswer.commentaryVideoUrl ? `<video class="comment-video" src="${correctAnswer.commentaryVideoUrl}" controls></video>` : ""}
         `;
 
         container.appendChild(block);
@@ -602,13 +607,22 @@ function updateProgress() {
 
 function openCommentModal(button) {
     const comment = decodeURIComponent(button.dataset.comment || "");
+    const imageUrl = decodeURIComponent(button.dataset.commentImage || "");
+    const videoUrl = decodeURIComponent(button.dataset.commentVideo || "");
 
-    if (!comment || comment.trim() === "") {
+    if (!comment.trim() && !imageUrl && !videoUrl) {
         alert("Izoh mavjud emas");
         return;
     }
 
-    document.getElementById("commentModalBody").innerText = comment;
+    // Izohda matn, rasm va video birga bo'lishi mumkin.
+    const body = document.getElementById("commentModalBody");
+    body.innerHTML = `
+        ${comment ? `<p>${comment}</p>` : ""}
+        ${imageUrl ? `<img class="comment-image" src="${imageUrl}" alt="Izoh rasmi">` : ""}
+        ${videoUrl ? `<video class="comment-video" src="${videoUrl}" controls></video>` : ""}
+    `;
+
     document.getElementById("commentModal").classList.remove("hidden");
 }
 

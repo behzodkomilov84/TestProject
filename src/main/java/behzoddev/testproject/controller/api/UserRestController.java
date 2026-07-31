@@ -3,6 +3,7 @@ package behzoddev.testproject.controller.api;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.dto.user.ChangeRoleDto;
 import behzoddev.testproject.dto.user.UserDto;
+import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.service.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -30,9 +31,18 @@ public class UserRestController {
                 .map(u -> new UserDto(
                         u.getId(),
                         u.getUsername(),
-                        u.getRole().getRoleName()
+                        u.getRoles().stream().map(Role::getRoleName).sorted().toList(),
+                        !u.isAccountNonLocked()
                 ))
                 .toList();
+    }
+
+    // Brute-force himoyasi tufayli bloklangan hisobni OWNER qo'lda ochadi.
+    @PostMapping("/api/users/{id}/unlock")
+    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    public ResponseEntity<?> unlockUser(@PathVariable Long id) {
+        userServiceImpl.unlockUser(id);
+        return ResponseEntity.ok(Map.of("id", id, "locked", false));
     }
 
     @DeleteMapping("/api/users/{id}")
@@ -51,23 +61,42 @@ public class UserRestController {
 
     }
 
-    @PatchMapping("/api/users/change-role")
+    // Foydalanuvchiga qo'shimcha rol beradi (masalan, o'quvchini o'qituvchi
+    // ham qilib belgilash). Mavjud rollari saqlanib qoladi — dual-role.
+    @PostMapping("/api/users/{id}/roles/{roleName}")
     @PreAuthorize("hasAuthority('ROLE_OWNER')")
-    public ResponseEntity<?> changeRole(
-            @RequestBody ChangeRoleDto changeRoleRequest,
+    public ResponseEntity<?> addRole(
+            @PathVariable Long id,
+            @PathVariable String roleName,
             Authentication authentication
     ) {
         try {
-            ChangeRoleDto result = userServiceImpl.changeUserRole(
-                    changeRoleRequest.userId(),
-                    changeRoleRequest.newRole(),
-                    authentication
-            );
+            ChangeRoleDto result = userServiceImpl.addRole(id, roleName, authentication);
             return ResponseEntity.ok(result);
         } catch (AccessDeniedException e) {
-            // Если пытаются изменить свою роль
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Foydalanuvchidan bitta rolni olib tashlaydi (kamida bitta rol qolishi shart).
+    @DeleteMapping("/api/users/{id}/roles/{roleName}")
+    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    public ResponseEntity<?> removeRole(
+            @PathVariable Long id,
+            @PathVariable String roleName,
+            Authentication authentication
+    ) {
+        try {
+            ChangeRoleDto result = userServiceImpl.removeRole(id, roleName, authentication);
+            return ResponseEntity.ok(result);
+        } catch (AccessDeniedException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("error", e.getMessage()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 

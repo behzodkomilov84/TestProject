@@ -6,6 +6,7 @@ import behzoddev.testproject.dto.question.QuestionDto;
 import behzoddev.testproject.dto.question.QuestionSaveDto;
 import behzoddev.testproject.exception.ErrorResponse;
 import behzoddev.testproject.service.AnswerService;
+import behzoddev.testproject.service.FileStorageService;
 import behzoddev.testproject.service.QuestionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -15,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,6 +27,45 @@ import java.util.Map;
 public class QuestionController {
     private final QuestionService questionService;
     private final AnswerService answerService;
+    private final FileStorageService fileStorageService;
+
+    // Savol yoki javob variantiga (masalan, geometrik chizmaga) rasm yuklash.
+    // Frontend avval shu endpoint orqali rasmni yuklaydi, qaytgan URL'ni esa
+    // savolni saqlashda (QuestionSaveDto/AnswerShortDto ichida) jo'natadi.
+    @PostMapping("/api/question/upload-image")
+    @ResponseBody
+    public ResponseEntity<?> uploadImage(@RequestParam("image") MultipartFile image) {
+        try {
+            String url = fileStorageService.storeQuestionImage(image);
+            return ResponseEntity.ok(Map.of("url", url));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Izoh (commentary) uchun rasm yuklash — matn, rasm va video birga bo'lishi mumkin.
+    @PostMapping("/api/question/upload-commentary-image")
+    @ResponseBody
+    public ResponseEntity<?> uploadCommentaryImage(@RequestParam("image") MultipartFile image) {
+        try {
+            String url = fileStorageService.storeCommentaryImage(image);
+            return ResponseEntity.ok(Map.of("url", url));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Izoh (commentary) uchun video yuklash.
+    @PostMapping("/api/question/upload-commentary-video")
+    @ResponseBody
+    public ResponseEntity<?> uploadCommentaryVideo(@RequestParam("video") MultipartFile video) {
+        try {
+            String url = fileStorageService.storeCommentaryVideo(video);
+            return ResponseEntity.ok(Map.of("url", url));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 
     @GetMapping("/api/question")
     public ResponseEntity<Page<QuestionDto>> getPage(
@@ -59,6 +100,12 @@ public class QuestionController {
 
             String questionText = payload.get("questionText").toString();
 
+            // Savolga biriktirilgan rasm (ixtiyoriy) — frontend avval
+            // /api/question/upload-image orqali yuklab, qaytgan URL'ni shu yerga jo'natadi.
+            String questionImageUrl = payload.get("imageUrl") != null
+                    ? payload.get("imageUrl").toString()
+                    : null;
+
             var answers = (List<Map<Object, Object>>) payload.get("answers");
             List<AnswerShortDto> answerShortDto = new ArrayList<>();
             List<String> answerTextList = new ArrayList<>();
@@ -79,7 +126,23 @@ public class QuestionController {
                     commentary = answer.get("commentary").toString();
                 }
 
-                answerShortDto.add(new AnswerShortDto(answerText, isTrue, commentary));
+                String answerImageUrl = answer.get("imageUrl") != null
+                        ? answer.get("imageUrl").toString()
+                        : null;
+
+                // Izohga (commentary) biriktirilgan rasm/video — ixtiyoriy,
+                // matnni almashtirmaydi, unga qo'shimcha sifatida saqlanadi.
+                String commentaryImageUrl = answer.get("commentaryImageUrl") != null
+                        ? answer.get("commentaryImageUrl").toString()
+                        : null;
+
+                String commentaryVideoUrl = answer.get("commentaryVideoUrl") != null
+                        ? answer.get("commentaryVideoUrl").toString()
+                        : null;
+
+                answerShortDto.add(new AnswerShortDto(
+                        answerText, isTrue, commentary, answerImageUrl,
+                        commentaryImageUrl, commentaryVideoUrl));
             }
 
             boolean isUnique = answerService.isUnique(answerTextList); //Javoblarni bir xil masligini tekshiradi.
@@ -91,6 +154,7 @@ public class QuestionController {
             QuestionSaveDto newQuestion = QuestionSaveDto.builder()
                     .topicId(topicId)
                     .questionText(questionText)
+                    .imageUrl(questionImageUrl)
                     .answers(answerShortDto)
                     .build();
 

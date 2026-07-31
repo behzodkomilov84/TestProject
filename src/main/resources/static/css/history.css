@@ -27,7 +27,10 @@ th, td {
     text-align: center;
 }
 
-button {
+/* MUHIM: .container ichida cheklangan — aks holda navbar fragment ichidagi
+   tugmalarga (burger, dropdown, telegram) ham tarqalib, navbar ko'rinishini
+   buzib qo'yardi. */
+.container button {
     padding: 6px 14px;
     border-radius: 8px;
     cursor: pointer;

@@ -61,7 +61,10 @@ tr:hover {
     transition: 0.2s;
 }
 
-button {
+/* MUHIM: .profile-container ichida cheklangan — aks holda navbar fragment
+   ichidagi tugmalarga (burger, dropdown, telegram) ham tarqalib, navbar
+   ko'rinishini buzib qo'yardi. */
+.profile-container button {
     padding: 6px 10px;
     font-size: 13px;
     background-color: #0d6efd;
@@ -72,7 +75,7 @@ button {
     transition: 0.2s;
 }
 
-button:hover {
+.profile-container button:hover {
     background-color: #084298;
 }
 
@@ -87,7 +90,7 @@ button:hover {
         font-size: 12px;
     }
 
-    button {
+    .profile-container button {
         font-size: 12px;
         padding: 5px 8px;
     }

@@ -48,12 +48,14 @@ public class AssignmentAttemptService {
                 .map(q -> new ResponseQuestionDto(
                         q.getId(),
                         q.getQuestionText(),
+                        q.getImageUrl(),
                         q.getAnswers()
                                 .stream()
                                 .map(a -> new ResponseAnswerDto(
                                         a.getId(),
                                         a.getAnswerText(),
-                                        a.getIsTrue()
+                                        a.getIsTrue(),
+                                        a.getImageUrl()
                                 ))
                                 .toList()
                 ))
@@ -74,11 +76,13 @@ public class AssignmentAttemptService {
                     return new ResponseQuestionDto(
                             q.getId(),
                             q.getQuestionText(),
+                            q.getImageUrl(),
                             answers.stream()
                                     .map(a -> new ResponseAnswerDto(
                                             a.getId(),
                                             a.getAnswerText(),
-                                            a.getIsTrue()
+                                            a.getIsTrue(),
+                                            a.getImageUrl()
                                     ))
                                     .toList()
                     );

@@ -447,6 +447,8 @@ async function saveToDb() {
         // 🔑 КЛЮЧЕВОЕ МЕСТО — ПОЛНАЯ СИНХРОНИЗАЦИЯ С БД
         deletedTopicIds = [];
         await reloadFromDb(`/api/topic?scienceId=${scienceId}`);
+        focusIndex = 0;
+        render(); // ❗ shu qator yo'q edi — shuning uchun DB yangilangan, lekin ekran eskicha qolardi
 
     } catch (err) {
         console.error(err);

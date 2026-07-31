@@ -1,8 +1,10 @@
 package behzoddev.testproject.security;
 
+import behzoddev.testproject.service.LoginAttemptService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.LockedException;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -20,7 +22,7 @@ import java.nio.charset.StandardCharsets;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, LoginAttemptService loginAttemptService) {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
@@ -29,7 +31,8 @@ public class SecurityConfig {
                                 "/js/**",
                                 "/images/**",
                                 "/registration",
-                                "/api/test-session/**",
+                                "/forgot-password",
+                                "/reset-password",
                                 "/favicon.ico",
                                 "/"
                         ).permitAll()
@@ -41,15 +44,21 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/users",
                                 "/users/**",
-                                "/api/users/**")
+                                "/api/users/**",
+                                "/api/subscriptions/**")
                         .hasAuthority("ROLE_OWNER")// <-- доступ только владельцу
 
                         // API тестов доступно всем авторизованным (USER, ADMIN, OWNER)
+                        // /api/test-session/** shu yerga ko'chirildi: kontroller
+                        // @AuthenticationPrincipal User'ga tayanadi, permitAll bo'lsa
+                        // anonim so'rovda NullPointerException beradi.
                         .requestMatchers(
                                 "/api/tests/**",
                                 "/api/profile/**",
                                 "/profile/**",
-                                "/api/assignments/**")
+                                "/api/test-session/**",
+                                "/api/assignments/**",
+                                "/api/notifications/**")
                         .authenticated()
 
                         // student API — СНАЧАЛА
@@ -98,10 +107,25 @@ public class SecurityConfig {
                 .formLogin(form -> form
                         .loginPage("/login")
                         .loginProcessingUrl("/login")
-                        .defaultSuccessUrl("/index", true)
+                        .successHandler((request, response, authentication) -> {
+                            loginAttemptService.resetAttempts(request.getParameter("username"));
+                            response.sendRedirect("/index");
+                        })
                         .failureHandler((request, response, exception) -> {
+                            String message;
+
+                            // Hisob allaqachon bloklangan bo'lsa, urinishlar soni oshirilmaydi —
+                            // faqat qolgan blok haqida xabar beriladi.
+                            if (exception instanceof LockedException) {
+                                message = "Hisobingiz juda ko'p noto'g'ri urinish tufayli vaqtincha bloklandi. " +
+                                        "Iltimos, 10 daqiqadan keyin qayta urinib ko'ring.";
+                            } else {
+                                loginAttemptService.recordFailedAttempt(request.getParameter("username"));
+                                message = exception.getMessage();
+                            }
+
                             var flashMap = new FlashMap();
-                            flashMap.put("LOGIN_ERROR", exception.getMessage());
+                            flashMap.put("LOGIN_ERROR", message);
 
                             var flashManager = new SessionFlashMapManager();
                             flashManager.saveOutputFlashMap(flashMap, request, response);

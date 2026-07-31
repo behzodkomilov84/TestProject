@@ -7,8 +7,11 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "users")
@@ -17,7 +20,7 @@ import java.util.List;
 @Getter
 @Setter
 @Builder
-@ToString(exclude = "password")
+@ToString(exclude = {"password", "roles"})
 public class User implements UserDetails {
 
     @Id
@@ -30,9 +33,17 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
-    @ManyToOne(fetch = FetchType.EAGER) //❗ EAGER обязателен — роли нужны при авторизации.
-    @JoinColumn(name = "role_id", nullable = false)
-    private Role role;
+    // ❗ Bitta akkaunt bir nechta rolga ega bo'lishi mumkin (masalan, ham
+    // o'qituvchi — ROLE_ADMIN, ham o'quvchi — ROLE_USER). EAGER majburiy —
+    // rollar avtorizatsiya vaqtida darhol kerak bo'ladi.
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "user_roles",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    @Builder.Default
+    private Set<Role> roles = new HashSet<>();
 
     @ManyToOne
     @JoinColumn(name = "group_id")
@@ -41,11 +52,38 @@ public class User implements UserDetails {
     @Column(name = "telegram_id", unique = true)
     private Long telegramId;
 
+    // Parolni tiklash uchun (email kanali). Eski userlarda bo'sh bo'lishi
+    // mumkin — faqat yangi ro'yxatdan o'tishda majburiy qilingan.
+    @Column(unique = true)
+    private String email;
+
+    // Brute-force himoyasi: ketma-ket noto'g'ri parol urinishlari soni.
+    // Muvaffaqiyatli login'da 0'ga tushiriladi.
+    @Column(name = "failed_attempts", nullable = false)
+    @Builder.Default
+    private int failedAttempts = 0;
+
+    // Shu vaqtgacha hisob bloklangan (5-marta noto'g'ri urinishdan keyin).
+    // null bo'lsa — bloklanmagan.
+    @Column(name = "locked_until")
+    private LocalDateTime lockedUntil;
+
+    /**
+     * Foydalanuvchida berilgan nomdagi rol bor-yo'qligini tekshiradi.
+     * Masalan: user.hasRole("ROLE_ADMIN")
+     */
+    public boolean hasRole(String roleName) {
+        return roles != null && roles.stream()
+                .anyMatch(r -> roleName.equals(r.getRoleName()));
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return role == null
-                ? List.of()
-                : List.of(new SimpleGrantedAuthority(role.getRoleName()));
+        return roles == null
+                ? Set.of()
+                : roles.stream()
+                        .map(r -> new SimpleGrantedAuthority(r.getRoleName()))
+                        .collect(Collectors.toSet());
     }
 
     @Override
@@ -65,7 +103,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return lockedUntil == null || lockedUntil.isBefore(LocalDateTime.now());
     }
 
     @Override

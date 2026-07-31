@@ -18,7 +18,13 @@ public class UserMvcController {
     @PostMapping("/registration")
     public String register(@ModelAttribute RegisterDto dto,
                            RedirectAttributes redirectAttributes) {
-        userService.register(dto);
+        try {
+            userService.register(dto);
+        } catch (Exception e) {
+            // Masalan: username/email band, parollar mos kelmadi va h.k.
+            redirectAttributes.addFlashAttribute("registrationError", e.getMessage());
+            return "redirect:/registration";
+        }
 
         redirectAttributes.addFlashAttribute(
                 "successMessage",

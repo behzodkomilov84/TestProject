@@ -24,6 +24,18 @@ public class Answer {
 
     private String commentary;
 
+    // Javob variantiga biriktirilgan rasm (masalan, geometrik chizma). Ixtiyoriy.
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
+    // Izoh (commentary) ichida ham rasm, ham video bo'lishi mumkin — matn
+    // bilan bir qatorda, matnni almashtirmaydi.
+    @Column(name = "commentary_image_url", length = 500)
+    private String commentaryImageUrl;
+
+    @Column(name = "commentary_video_url", length = 500)
+    private String commentaryVideoUrl;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "question_id", nullable = false)
     private Question question;

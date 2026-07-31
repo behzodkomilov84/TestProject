@@ -64,7 +64,7 @@ public class TestSessionService {
 
                     Collections.shuffle(answerDtoList);
 
-                    return new QuestionDto(dto.id(), dto.questionText(), answerDtoList);
+                    return new QuestionDto(dto.id(), dto.questionText(), dto.imageUrl(), answerDtoList);
                 }).toList();
 
         // возвращаем ID + вопросы

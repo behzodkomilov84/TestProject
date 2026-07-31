@@ -16,17 +16,36 @@ body {
     padding: 24px;
     border-radius: 8px;
     box-shadow: 0 8px 24px rgba(0,0,0,.08);
+    box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+    .container {
+        margin: 16px auto;
+        padding: 16px;
+    }
 }
 
 .top-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
     margin-bottom: 20px;
+}
+
+/* Tor ekranlarda (mobile/tablet) jadval konteynerdan kengroq bo'lib,
+   qatorlarni "sindirib" chiqarib yubormasligi uchun — gorizontal scroll
+   ichida qoladi, sahifa qatlami esa buzilmaydi. */
+.table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .users-table {
     width: 100%;
+    min-width: 640px;
     border-collapse: collapse;
     font-size: 22px;
     font-weight: 600;
@@ -93,9 +112,100 @@ select.role-select {
     font-weight: 700;
 }
 
-button{
+.roles-cell {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+/* Action ustunidagi tugmalar (masalan, blokdan chiqarish + o'chirish) yonma-yon
+   turishi uchun — aks holda ular vertikal uchma-uch turib, faqat shu qatorni
+   boshqalaridan balandroq va "singan" ko'rinishga keltirib qo'yardi. */
+.actions-cell {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: nowrap;
+}
+
+.role-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* MUHIM: .container ichida cheklangan — aks holda navbar fragment ichidagi
+   tugmalarga (burger, dropdown, telegram) ham tarqalib, navbar ko'rinishini
+   buzib qo'yardi. */
+.container button {
     padding: 10px 22px;
     border-radius: 10px;
     font-size: 15px;
     font-weight: 600;
+}
+
+/* ===== To'lov / obuna paneli ===== */
+
+.subscriptions-panel {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 2px solid #eee;
+}
+
+.subscriptions-panel h2 {
+    font-size: 18px;
+    margin-bottom: 12px;
+}
+
+.subscriptions-table {
+    width: 100%;
+    min-width: 560px;
+    border-collapse: collapse;
+    font-size: 15px;
+    font-weight: normal;
+    margin-bottom: 24px;
+}
+
+.subscriptions-table th,
+.subscriptions-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #e0e0e0;
+    text-align: left;
+}
+
+.subscriptions-table th {
+    background: #f1f3f5;
+}
+
+.empty-row {
+    text-align: center;
+    color: #888;
+    font-style: italic;
+}
+
+.manual-subscription-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.manual-subscription-form select,
+.manual-subscription-form input {
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #d5dde8;
+    font-size: 14px;
+}
+
+.manual-subscription-form input[type="number"] {
+    width: 130px;
+}
+
+.manual-subscription-form input[type="text"] {
+    flex: 1;
+    min-width: 160px;
 }

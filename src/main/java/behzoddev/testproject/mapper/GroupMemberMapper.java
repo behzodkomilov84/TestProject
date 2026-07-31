@@ -16,13 +16,14 @@ public interface GroupMemberMapper {
 
     default String mapRole(GroupMember gm) {
 
-        if (gm == null || gm.getPupil() == null || gm.getPupil().getRole() == null) {
+        if (gm == null || gm.getPupil() == null) {
             return GroupRole.MEMBER.name();
         }
 
-        String authority = gm.getPupil().getRole().getAuthority();
-
-        if ("ROLE_ADMIN".equalsIgnoreCase(authority)) {
+        // Dual-role: bitta odam ham ROLE_USER, ham ROLE_ADMIN bo'lishi mumkin,
+        // shuning uchun "bittagina rol" emas, balki ROLE_ADMIN/ROLE_OWNER
+        // rolining bor-yo'qligini tekshiramiz.
+        if (gm.getPupil().hasRole("ROLE_ADMIN") || gm.getPupil().hasRole("ROLE_OWNER")) {
             return GroupRole.TEACHER.name();
         }
 

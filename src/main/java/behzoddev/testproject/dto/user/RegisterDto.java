@@ -1,10 +1,12 @@
 package behzoddev.testproject.dto.user;
 
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 public record RegisterDto(
         @NotBlank(message = "❌Username bo'sh bo'lishi mumkin emas.") String username,
+        @NotBlank(message = "❌Email bo'sh bo'lishi mumkin emas.") @Email(message = "❌Email formati noto'g'ri.") String email,
         @NotBlank(message = "❌Password bo'sh bo'lishi mumkin emas.") @Size(min = 6, message = "Parolingiz kamida 6 xonali bo'lishi kerak") String password,
         @NotBlank(message = "❌ConfirmPassword bo'sh bo'lishi mumkin emas.") String confirmPassword) {
 

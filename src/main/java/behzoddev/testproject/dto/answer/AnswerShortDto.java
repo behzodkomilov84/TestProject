@@ -7,7 +7,9 @@ import lombok.Builder;
 public record AnswerShortDto(
         @NotBlank(message = "❌answerText bo'sh bo'lishi mumkin emas.") String answerText,
         @NotBlank(message = "❌isTrue bo'sh bo'lishi mumkin emas.") Boolean isTrue,
-        @NotBlank(message = "❌commentary bo'sh bo'lishi mumkin emas.") String commentary) {
+        @NotBlank(message = "❌commentary bo'sh bo'lishi mumkin emas.") String commentary,
+        String imageUrl,
+        String commentaryImageUrl,
+        String commentaryVideoUrl) {
 
 }
-
