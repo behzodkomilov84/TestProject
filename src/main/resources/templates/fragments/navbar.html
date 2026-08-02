@@ -31,39 +31,37 @@
             <a href="/history">Statistika</a>
             <a href="/profile">Profil</a>
 
-            <!-- Owner Panel доступен только OWNER -->
-            <a href="/users"
-               sec:authorize="hasAuthority('ROLE_OWNER')"
-               class="owner-link">Owner Panel</a>
-
-            <!-- Admin Panel доступен только OWNER и ADMIN -->
-            <!-- Admin dropdown (OWNER + ADMIN) -->
+            <!-- Owner/Admin/Student panellari yagona "Panels" dropdown ichida —
+                 har biri o'z rollariga qarab (sec:authorize) ko'rinadi. -->
             <div class="dropdown"
-                 sec:authorize="hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')">
+                 sec:authorize="hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN','ROLE_USER')">
 
                 <button class="dropbtn">
-                    Admin Panel ▾
+                    Panels ▾
                 </button>
 
                 <div class="dropdown-content">
-                    <a href="/science">Test boshqaruvi</a>
-                    <a href="/teacher">Gruppa</a>
-                    <a href="/admin-assignment">Topshiriqlar</a>
-                </div>
+                    <a href="/users"
+                       sec:authorize="hasAuthority('ROLE_OWNER')"
+                       class="owner-link">Owner Panel</a>
 
-            </div>
+                    <!-- Admin Panel — ichki (nested) dropdown, bosilganda ochiladi -->
+                    <div class="sub-dropdown" sec:authorize="hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')">
+                        <button class="dropbtn sub-dropbtn" type="button">Admin Panel ▾</button>
+                        <div class="sub-dropdown-content">
+                            <a href="/science">Test boshqaruvi</a>
+                            <a href="/teacher">Gruppa</a>
+                            <a href="/admin-assignment">Topshiriqlar</a>
+                        </div>
+                    </div>
 
-            <!-- Student Panel доступен только OWNER и USER -->
-            <!-- USER dropdown (OWNER + USER) -->
-            <div class="dropdown"
-                 sec:authorize="hasAnyAuthority('ROLE_OWNER','ROLE_USER')">
-
-                <button class="dropbtn">
-                    Student Panel ▾
-                </button>
-
-                <div class="dropdown-content">
-                    <a href="/student">Группа</a>
+                    <!-- Student Panel — ichki (nested) dropdown, bosilganda ochiladi -->
+                    <div class="sub-dropdown" sec:authorize="hasAnyAuthority('ROLE_OWNER','ROLE_USER')">
+                        <button class="dropbtn sub-dropbtn" type="button">Student Panel ▾</button>
+                        <div class="sub-dropdown-content">
+                            <a href="/student">Группа</a>
+                        </div>
+                    </div>
                 </div>
 
             </div>

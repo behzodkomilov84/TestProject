@@ -151,6 +151,55 @@ body.menu-open::after {
     background: #374151;
 }
 
+/* Ichki (nested) dropdown — "Panels" menyusi ichidagi "Admin Panel" va
+   "Student Panel" o'zlari ham bosilganda ochiladigan alohida dropdown.
+   Faqat bosish (click) orqali ishlaydi — tashqi ".dropdown"dagi hover
+   xatti-harakatiga bog'liq emas, shuning uchun alohida class nomlari
+   ishlatilgan (".dropdown-content" bilan aralashib ketmasligi uchun). */
+.sub-dropdown {
+    position: relative;
+}
+
+.sub-dropbtn {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    color: white;
+    border: none;
+    padding: 10px 14px;
+    cursor: pointer;
+    text-transform: none;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.sub-dropbtn:hover {
+    background: #374151;
+}
+
+.sub-dropdown-content {
+    display: none;
+    background: #172033;
+}
+
+.sub-dropdown.active .sub-dropdown-content {
+    display: block;
+}
+
+.sub-dropdown-content a {
+    display: block;
+    padding: 8px 14px 8px 26px;
+    color: #cbd5e1;
+    text-decoration: none;
+    font-size: 13px;
+}
+
+.sub-dropdown-content a:hover {
+    background: #374151;
+    color: white;
+}
+
 /* desktop hover */
 
 .dropdown:hover .dropdown-content {
