@@ -8,6 +8,8 @@ import behzoddev.testproject.dto.user.RegisterDto;
 import behzoddev.testproject.dto.user.UserDto;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.User;
+import behzoddev.testproject.entity.enums.RoleAuditAction;
+import behzoddev.testproject.entity.enums.RoleAuditSource;
 import behzoddev.testproject.exception.PasswordsDoNotMatchException;
 import behzoddev.testproject.exception.UserAlreadyExistsException;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,7 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
+    private final RoleAuditService roleAuditService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -123,6 +126,8 @@ public class UserServiceImpl implements UserDetailsService, UserService {
         targetUser.getRoles().add(role);
         userRepository.save(targetUser);
 
+        roleAuditService.record(targetUser, currentUser, newRole, RoleAuditAction.GRANTED, RoleAuditSource.MANUAL);
+
         return ChangeRoleDto.builder()
                 .userId(targetUser.getId())
                 .roles(targetUser.getRoles().stream().map(Role::getRoleName).sorted().toList())
@@ -154,6 +159,8 @@ public class UserServiceImpl implements UserDetailsService, UserService {
 
         targetUser.getRoles().remove(role);
         userRepository.save(targetUser);
+
+        roleAuditService.record(targetUser, currentUser, roleName, RoleAuditAction.REVOKED, RoleAuditSource.MANUAL);
 
         return ChangeRoleDto.builder()
                 .userId(targetUser.getId())

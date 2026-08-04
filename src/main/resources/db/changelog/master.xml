@@ -18,6 +18,7 @@
     <include file="/db/changelog/password-reset.sql"/>
     <include file="/db/changelog/login-lockout.sql"/>
     <include file="/db/changelog/notifications.sql"/>
+    <include file="/db/changelog/role-audit-log.sql"/>
 
 
 </databaseChangeLog>

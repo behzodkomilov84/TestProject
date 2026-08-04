@@ -100,6 +100,28 @@
             <button onclick="createManualSubscription()">✅ Tasdiqlash va ADMIN berish</button>
         </div>
     </div>
+
+    <!-- Rol o'zgarishlari tarixi — kim, qachon, kimga qanday rol berdi/olib tashladi -->
+    <div class="subscriptions-panel">
+        <h2>📜 Rol o'zgarishlari tarixi (audit log)</h2>
+        <div class="table-scroll">
+        <table class="subscriptions-table">
+            <thead>
+            <tr>
+                <th>Vaqt</th>
+                <th>Foydalanuvchi</th>
+                <th>Rol</th>
+                <th>Amal</th>
+                <th>Kim tomonidan</th>
+                <th>Manba</th>
+            </tr>
+            </thead>
+            <tbody id="roleAuditTableBody">
+                <tr><td colspan="6" class="empty-row">Yuklanmoqda...</td></tr>
+            </tbody>
+        </table>
+        </div>
+    </div>
 </div>
 
 </body>

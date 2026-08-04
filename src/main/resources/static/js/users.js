@@ -15,6 +15,7 @@ let cachedUsers = [];
 document.addEventListener("DOMContentLoaded", () => {
     loadUsers();
     loadPendingSubscriptions();
+    loadRoleAudit();
 });
 
 function loadUsers() {
@@ -150,6 +151,47 @@ function renderPendingSubscriptions(subscriptions) {
     `).join("");
 }
 
+// ================= Rol o'zgarishlari tarixi (audit log) =================
+
+const ROLE_AUDIT_ACTION_LABELS = {
+    GRANTED: "✅ berildi",
+    REVOKED: "❌ olib tashlandi"
+};
+
+const ROLE_AUDIT_SOURCE_LABELS = {
+    MANUAL: "Qo'lda (checkbox)",
+    SUBSCRIPTION: "Obuna (to'lov)",
+    SYSTEM: "Tizim (avtomatik)"
+};
+
+function loadRoleAudit() {
+    fetch("/api/users/roles-audit")
+        .then(r => r.ok ? r.json() : [])
+        .then(renderRoleAudit)
+        .catch(err => console.error(err));
+}
+
+function renderRoleAudit(logs) {
+    const tbody = document.getElementById("roleAuditTableBody");
+    if (!tbody) return;
+
+    if (!logs.length) {
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-row">Hali rol o'zgarishi yo'q</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = logs.map(l => `
+        <tr>
+            <td>${new Date(l.createdAt).toLocaleString("uz-UZ")}</td>
+            <td>${l.targetUsername}</td>
+            <td>${l.roleName.replace("ROLE_", "")}</td>
+            <td>${ROLE_AUDIT_ACTION_LABELS[l.action] || l.action}</td>
+            <td>${l.changedByUsername}</td>
+            <td>${ROLE_AUDIT_SOURCE_LABELS[l.source] || l.source}</td>
+        </tr>
+    `).join("");
+}
+
 async function confirmSubscription(id) {
     const months = prompt("ADMIN huquqi necha oyga beriladi?", "1");
     if (months === null) return;
@@ -225,6 +267,7 @@ async function createManualSubscription() {
         document.getElementById("manualAmount").value = "";
         document.getElementById("manualNote").value = "";
         loadUsers();
+        loadRoleAudit();
     } catch (err) {
         console.error(err);
         alert("Network error");
@@ -256,6 +299,7 @@ async function toggleRole(userId, roleName, checkbox) {
 
         const result = await response.json();
         updateRoleColors(checkbox.closest("tr"), result.roles);
+        loadRoleAudit();
     } catch (err) {
         console.error(err);
         alert("Network error");

@@ -8,6 +8,8 @@ import behzoddev.testproject.dto.subscription.SubscriptionDto;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.Subscription;
 import behzoddev.testproject.entity.User;
+import behzoddev.testproject.entity.enums.RoleAuditAction;
+import behzoddev.testproject.entity.enums.RoleAuditSource;
 import behzoddev.testproject.entity.enums.SubscriptionSource;
 import behzoddev.testproject.entity.enums.SubscriptionStatus;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +47,7 @@ public class SubscriptionService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final NotificationService notificationService;
+    private final RoleAuditService roleAuditService;
 
     @Transactional
     public SubscriptionDto createManual(CreateSubscriptionDto dto, User owner) {
@@ -70,7 +73,7 @@ public class SubscriptionService {
                 .build();
 
         subscriptionRepository.save(subscription);
-        grantAdmin(user);
+        grantAdmin(user, owner);
 
         notificationService.create(user,
                 "✅ ADMIN huquqingiz tasdiqlandi! Endi " + months + " oy davomida o'qituvchi sifatida ishlashingiz mumkin.",
@@ -125,7 +128,7 @@ public class SubscriptionService {
         subscription.setEndDate(now.plusMonths(months));
         subscription.setConfirmedBy(owner);
 
-        grantAdmin(subscription.getUser());
+        grantAdmin(subscription.getUser(), owner);
 
         notificationService.create(subscription.getUser(),
                 "✅ ADMIN huquqingiz tasdiqlandi! Endi " + months + " oy davomida o'qituvchi sifatida ishlashingiz mumkin.",
@@ -201,7 +204,7 @@ public class SubscriptionService {
         }
     }
 
-    private void grantAdmin(User user) {
+    private void grantAdmin(User user, User owner) {
         if (user.hasRole(ADMIN_ROLE)) return;
 
         Role adminRole = roleRepository.findByRoleName(ADMIN_ROLE)
@@ -209,8 +212,12 @@ public class SubscriptionService {
 
         user.getRoles().add(adminRole);
         userRepository.save(user);
+
+        roleAuditService.record(user, owner, ADMIN_ROLE, RoleAuditAction.GRANTED, RoleAuditSource.SUBSCRIPTION);
     }
 
+    // Faqat scheduled job (expireSubscriptions) orqali chaqiriladi — inson
+    // ishtirok etmagani uchun changedBy=null, source=SYSTEM.
     private void revokeAdmin(User user) {
         if (!user.hasRole(ADMIN_ROLE)) return;
 
@@ -220,6 +227,8 @@ public class SubscriptionService {
         roleRepository.findByRoleName(ADMIN_ROLE).ifPresent(adminRole -> {
             user.getRoles().remove(adminRole);
             userRepository.save(user);
+
+            roleAuditService.record(user, null, ADMIN_ROLE, RoleAuditAction.REVOKED, RoleAuditSource.SYSTEM);
         });
     }
 
