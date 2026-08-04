@@ -1,6 +1,8 @@
 package behzoddev.testproject.service;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -16,10 +18,21 @@ import java.util.UUID;
 /**
  * Savol, javob va izoh (commentary)ga rasm/video biriktirish uchun
  * fayllarni diskka saqlaydigan xizmat.
+ * <p>
+ * Har bir fayl saqlanishdan oldin ikki bosqichda tekshiriladi:
+ * 1) Apache Tika orqali faylning HAQIQIY turi (magic-byte) aniqlanadi —
+ *    client yuborgan Content-Type header'iga ishonib bo'lmaydi (masalan,
+ *    ".jpg" deb nomlangan, lekin ichida .exe bo'lgan faylni ushlash uchun).
+ * 2) {@link ClamAvScanService} orqali virus/zararli kod tekshiriladi
+ *    (ClamAV yoqilgan bo'lsa — {@code app.upload.clamav.enabled}).
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class FileStorageService {
+
+    private final ClamAvScanService clamAvScanService;
+    private final Tika tika = new Tika();
 
     private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
             "image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"
@@ -29,7 +42,11 @@ public class FileStorageService {
     private static final long MAX_IMAGE_SIZE_BYTES = 5L * 1024 * 1024; // 5MB
 
     private static final Set<String> ALLOWED_VIDEO_TYPES = Set.of(
-            "video/mp4", "video/webm", "video/ogg"
+            "video/mp4", "video/webm", "video/ogg",
+            // Tika magic-byte tekshiruvida video konteynerlar ba'zan shu
+            // muqobil (lekin haqiqiy) turlar sifatida aniqlanadi — WebM
+            // texnik jihatdan Matroska profili, OGG esa umumiy konteyner.
+            "application/ogg", "video/x-matroska"
     );
     private static final List<String> ALLOWED_VIDEO_EXTENSIONS =
             List.of(".mp4", ".webm", ".ogg", ".ogv");
@@ -88,6 +105,28 @@ public class FileStorageService {
             throw new IllegalArgumentException(typeErrorMessage);
         }
 
+        byte[] content;
+        try {
+            content = file.getBytes();
+        } catch (IOException e) {
+            log.error("Faylni o'qishda xatolik", e);
+            throw new IllegalStateException("❌Faylni o'qib bo'lmadi.", e);
+        }
+
+        // 1) Magic-byte tekshiruvi — faylning HAQIQIY turi client yuborgan
+        // Content-Type header bilan (yuqorida tekshirilgan) mos kelishi shart.
+        // Aks holda, masalan ".jpg" nomli, lekin ichida boshqa narsa bo'lgan
+        // fayl ushlanadi.
+        String detectedType = tika.detect(content);
+        if (!allowedContentTypes.contains(detectedType.toLowerCase())) {
+            log.warn("Fayl turi mos kelmadi: client Content-Type='{}', haqiqiy (Tika)='{}', fayl='{}'",
+                    contentType, detectedType, file.getOriginalFilename());
+            throw new IllegalArgumentException(typeErrorMessage);
+        }
+
+        // 2) Virus/zararli kod tekshiruvi (ClamAV yoqilgan bo'lsa).
+        clamAvScanService.scan(content, file.getOriginalFilename());
+
         try {
             Path targetDir = Path.of(uploadDir, subDir).toAbsolutePath().normalize();
             Files.createDirectories(targetDir);
@@ -102,7 +141,7 @@ public class FileStorageService {
                 throw new IllegalArgumentException("❌Noto'g'ri fayl nomi.");
             }
 
-            file.transferTo(targetFile);
+            Files.write(targetFile, content);
 
             return "/uploads/" + subDir + "/" + newFileName;
 

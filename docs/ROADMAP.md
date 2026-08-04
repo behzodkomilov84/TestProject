@@ -26,26 +26,32 @@ qamrab oladi.
 
 ## 2. Xavfsizlik
 
-- **Parolni tiklash (forgot password) yo'q** — foydalanuvchi parolni unutsa, hech qanday
-  yo'l bilan tiklay olmaydi. Email yoki Telegram orqali tasdiqlash kodi yuborish kerak.
-- **Login urinishlarini cheklash yo'q** — brute-force hujumga qarshi himoya (masalan,
-  5 marta noto'g'ri urinishdan keyin vaqtincha bloklash) qo'shilmagan.
-- **Rol o'zgarishlari uchun audit log yo'q** — kim, qachon, kimga qanday rol berganini
-  saqlaydigan tarix yo'q (hozir faqat `Subscription` orqali berilgan ADMIN'lar uchun
-  qisman tarix bor, lekin checkbox orqali qo'lda berilgan/olib tashlangan rollar
-  butunlay izsiz).
-- **HTTPS/SSL** — production muhitda albatta reverse proxy (nginx) orqali SSL sertifikat
-  bo'lishi shart, hozir loyihada bunga oid konfiguratsiya yo'q.
-- **Fayl yuklashda antivirus/tekshiruv yo'q** — foydalanuvchi yuklagan rasm/videolar
-  zararli kodga ega bo'lishi mumkin (kamdan-kam, lekin professional tizimda tekshiriladi).
+- ✅ **BAJARILDI — Parolni tiklash (forgot password)**: email (Brevo SMTP) va Telegram
+  kanallari orqali tasdiqlash kodi yuboriladi (`PasswordResetService`, `EmailService`).
+- ✅ **BAJARILDI — Login urinishlarini cheklash**: 5 marta noto'g'ri urinishdan keyin
+  hisob 10 daqiqaga bloklanadi (`LoginAttemptService`); OWNER `/users` sahifasida
+  qo'lda blokdan chiqara oladi.
+- ✅ **BAJARILDI — Rol o'zgarishlari uchun audit log**: `RoleAuditLog` — checkbox
+  orqali qo'lda va `Subscription` orqali avtomatik berilgan/olib tashlangan barcha
+  rollar birlashgan tarixda saqlanadi, `/users` sahifasida ko'rinadi.
+- ✅ **BAJARILDI — HTTPS/SSL**: `docker-compose.prod.yml` + nginx reverse proxy +
+  Let's Encrypt (avtomatik yangilanadigan sertifikat). Batafsil: `docs/DEPLOYMENT.md`.
+- ✅ **BAJARILDI — Fayl yuklashda antivirus/tekshiruv**: har bir yuklangan rasm/video
+  ikki bosqichda tekshiriladi — (1) Apache Tika orqali faylning haqiqiy turi (magic-byte)
+  aniqlanadi, client yuborgan Content-Type header'iga ishonilmaydi (masalan, ".jpg" deb
+  nomlangan .exe/PHP-shell ushlanadi); (2) ClamAV (`clamav` Docker servisi) orqali
+  virus/zararli kod skanerlanadi. Docker orqali ishlaganda avtomatik yoqiladi
+  (`app.upload.clamav.enabled`); Docker'siz (IntelliJ) ishga tushirilganda o'chirilgan —
+  faqat Tika tekshiruvi ishlaydi.
 
 ## 3. Funksional kamchiliklar / yetishmayotgan logika
 
-- **Bildirishnoma tizimi** — hozir faqat Telegram bot orqali eslatma bor (topshiriq
-  muddati). Saytning o'zida bildirishnoma markazi (masalan, "ADMIN so'rovingiz
-  tasdiqlandi", "yangi topshiriq berildi") yo'q.
-- **Email integratsiyasi umuman yo'q** — ro'yxatdan o'tishda email tasdiqlash,
-  parol tiklash, hisobotlarni email orqali yuborish kabi funksiyalar qo'shilishi mumkin.
+- ✅ **BAJARILDI — Bildirishnoma markazi**: saytning o'zida 🔔 (navbar), ADMIN
+  tasdiqlash/muddat tugashi/yangi topshiriq/guruhga taklif/blokdan chiqarish
+  hodisalari uchun (`NotificationService`, `/api/notifications`).
+- **Email integratsiyasi qisman** — parolni tiklashda bor (Brevo SMTP), lekin
+  ro'yxatdan o'tishda email tasdiqlash yoki hisobotlarni email orqali yuborish
+  hali yo'q.
 - **To'lov tarixi va hisobot** — OWNER uchun "qaysi oyda qancha ADMIN to'lovi tushdi"
   degan statistika/hisobot sahifasi yo'q (buni keyingi qadam sifatida qo'shish oson,
   chunki `Subscription` jadvali allaqachon shu ma'lumotni saqlaydi).
@@ -75,11 +81,13 @@ qamrab oladi.
 
 ## Ustuvorlik bo'yicha tavsiya
 
-Eng katta amaliy foyda beradigan va nisbatan tez qo'shsa bo'ladigan narsalar:
-1. Parolni tiklash (email yoki Telegram orqali).
-2. To'lov tarixi/hisobot sahifasi OWNER uchun (mavjud `Subscription` ma'lumotidan).
-3. Login urinishlarini cheklash (Spring Security'da tayyor yechimlar bor).
-4. Obuna tugashi haqida avtomatik Telegram eslatmasi.
+~~1. Parolni tiklash~~, ~~2. Login urinishlarini cheklash~~, ~~3. Rol audit log~~,
+~~4. Bildirishnoma markazi~~ va ~~5. HTTPS/SSL~~ — bajarildi.
 
-Payme/Click integratsiyasi va to'liq audit log tizimi — kattaroq va alohida
+Qolgan, nisbatan tez qo'shsa bo'ladigan narsalar:
+1. To'lov tarixi/hisobot sahifasi OWNER uchun (mavjud `Subscription` ma'lumotidan).
+2. Obuna tugashi haqida avtomatik Telegram eslatmasi (`DeadlineReminderService`
+   patternida).
+
+Payme/Click integratsiyasi, avtomatik testlar va CI/CD — kattaroq va alohida
 rejalashtirish talab qiladigan ishlar.

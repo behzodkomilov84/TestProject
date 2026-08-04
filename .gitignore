@@ -2,6 +2,8 @@ HELP.md
 target/
 .env
 uploads/
+# Let's Encrypt sertifikatlari va shaxsiy kalitlari — hech qachon git'ga tushmasligi shart.
+certbot/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

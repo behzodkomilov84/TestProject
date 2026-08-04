@@ -54,6 +54,12 @@ server.servlet.session.timeout: 30m
 server:
   tomcat:
     secure-random-algorithm=NativePRNGNonBlocking
+  # Nginx kabi reverse proxy orqasida ishlaganda X-Forwarded-* header'larni
+  # to'g'ri o'qishi uchun (https/http'ni to'g'ri aniqlash — shunga qarab
+  # redirect URL'lar va "Secure" cookie to'g'ri ishlaydi). Standart "none" —
+  # local dev'da hech narsani o'zgartirmaydi; production'da
+  # docker-compose.prod.yml "framework"ga o'rnatadi.
+  forward-headers-strategy: ${SERVER_FORWARD_HEADERS_STRATEGY:none}
 telegram:
   bot:
     token: ${TELEGRAM_BOT_TOKEN}
@@ -64,6 +70,13 @@ app:
     # papkaga saqlanadi. Jar ichida emas — jar tashqarisida, doimiy joyda
     # turishi kerak (deploy/restart'da yo'qolib qolmasligi uchun).
     dir: ${UPLOAD_DIR:uploads}
+    clamav:
+      # Standart — o'chirilgan (masalan IntelliJ'dan Docker'siz ishga
+      # tushirilganda, clamd konteyneri yo'q). Docker orqali (dev ham,
+      # prod ham) "true"ga o'rnatiladi — docker-compose*.yml'ga qarang.
+      enabled: ${CLAMAV_ENABLED:false}
+      host: ${CLAMAV_HOST:clamav}
+      port: ${CLAMAV_PORT:3310}
   mail:
     # Parolni tiklash kodini yuboruvchi email manzili.
     from: ${MAIL_FROM:no-reply@smart-test.local}

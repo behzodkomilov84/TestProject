@@ -1,0 +1,112 @@
+# Production uchun to'liq (mustaqil) konfiguratsiya — dev'dagi
+# docker-compose.yml'dan farqli, `app`/`mysql` internetga to'g'ridan-to'g'ri
+# ochiq emas, faqat nginx (SSL reverse proxy) orqali kirish mumkin.
+#
+# Birinchi marta ishga tushirish (sertifikat hali yo'q):
+#   1. .env faylida DOMAIN va LETSENCRYPT_EMAIL'ni to'ldiring
+#      (docs/DEPLOYMENT.md'ga qarang).
+#   2. ./scripts/init-letsencrypt.sh — bir martalik, haqiqiy sertifikat oladi.
+#   3. docker compose -f docker-compose.prod.yml up -d --build
+#
+# Keyingi deploy'larda (sertifikat allaqachon bor):
+#   docker compose -f docker-compose.prod.yml up -d --build
+
+services:
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-root}
+      MYSQL_DATABASE: test_project
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # Yuklangan rasm/video fayllarni virus/zararli koddan tekshiradi
+  # (FileStorageService shu konteynerga ulanadi). Birinchi marta ishga
+  # tushganda virus bazasini (freshclam) yuklab olgani uchun bir necha
+  # daqiqa vaqt olishi mumkin — keyingi ishga tushishlarda tez.
+  clamav:
+    image: clamav/clamav:1.4
+    container_name: clamav
+    volumes:
+      - clamav-data:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "clamdcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 180s
+    restart: unless-stopped
+
+  app:
+    build: .
+    container_name: spring-app
+    depends_on:
+      mysql:
+        condition: service_healthy
+      clamav:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/test_project?createDatabaseIfNotExist=true
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-root}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-root}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?TELEGRAM_BOT_TOKEN env var kiritilishi shart (.env fayliga qarang)}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-study_grow_bot}
+      UPLOAD_DIR: /app/uploads
+      CLAMAV_ENABLED: "true"
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
+      SMTP_HOST: ${SMTP_HOST:-smtp-relay.brevo.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-no-reply@smart-test.local}
+      # Nginx proksisi orqasida ekanini bilishi uchun — X-Forwarded-Proto
+      # asosida https/http'ni to'g'ri aniqlaydi (redirect URL'lar,
+      # "Secure" cookie va h.k. uchun muhim).
+      SERVER_FORWARD_HEADERS_STRATEGY: framework
+    volumes:
+      - uploads-data:/app/uploads
+    # DIQQAT: bu yerda "ports:" yo'q — ilova faqat nginx orqali (ichki
+    # tarmoq, app:8080) ko'rinadi, tashqariga to'g'ridan-to'g'ri ochiq emas.
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: nginx-proxy
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?DOMAIN env var kiritilishi shart (.env fayliga qarang)}
+    volumes:
+      - ./nginx/templates:/etc/nginx/templates:ro
+      # Named volume o'rniga bind mount — init-letsencrypt.sh skripti
+      # sertifikatni to'g'ridan-to'g'ri shu papkalarga yozadi, Docker
+      # volume nomini "topish" kerak bo'lmaydi.
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    restart: unless-stopped
+
+  # Sertifikatni har 12 soatda tekshirib, muddati yaqinlashganda avtomatik
+  # yangilaydi (Let's Encrypt sertifikatlari 90 kunlik).
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;"
+
+volumes:
+  mysql-data:
+  uploads-data:
+  clamav-data:

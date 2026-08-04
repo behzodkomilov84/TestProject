@@ -5,31 +5,57 @@ import behzoddev.testproject.dto.excel.ImportResultDto;
 import behzoddev.testproject.dto.question.QuestionSaveDto;
 import behzoddev.testproject.validation.Validation;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.tika.Tika;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ExcelService {
+
+    private static final long MAX_EXCEL_SIZE_BYTES = 10L * 1024 * 1024; // 10MB
+    private static final List<String> ALLOWED_EXCEL_EXTENSIONS = List.of(".xlsx", ".xls");
+    private static final Set<String> ALLOWED_EXCEL_TYPES = Set.of(
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
+            "application/vnd.ms-excel", // .xls
+            "application/x-tika-msoffice" // Tika eski .xls (OLE2) uchun ba'zan shu umumiy turni qaytaradi
+    );
 
     private final QuestionService questionService;
     private final DataFormatter formatter = new DataFormatter();
     private final AnswerService answerService;
     private final Validation validation;
+    private final ClamAvScanService clamAvScanService;
+    private final Tika tika = new Tika();
 
     @Transactional
     public ImportResultDto importQuestions(MultipartFile file, Long topicId) {
 
+        byte[] content;
+        try {
+            content = validateAndReadExcelFile(file);
+        } catch (IllegalArgumentException e) {
+            // Frontend (test-form.js) javobni to'g'ridan-to'g'ri ImportResultDto
+            // sifatida o'qiydi (res.ok'ni tekshirmaydi) — shuning uchun
+            // validatsiya xatoligi ham shu shaklda qaytarilishi shart.
+            return new ImportResultDto(false, 0L, List.of(e.getMessage()));
+        }
+
         List<String> errors = new ArrayList<>();
         Long imported = 0L;
 
-        try (Workbook wb = WorkbookFactory.create(file.getInputStream())) {
+        try (Workbook wb = WorkbookFactory.create(new ByteArrayInputStream(content))) {
 
             Sheet sheet = wb.getSheetAt(0);
 
@@ -112,6 +138,55 @@ public class ExcelService {
             errors.add("Row " + (i + 1) + ": " + e.getMessage());
         }
         return imported;
+    }
+
+    // Excel fayl haqiqatan ham yaroqli Excel fayli ekanini (kengaytma +
+    // magic-byte) va zararli kod bo'lmasligini (ClamAV) tekshiradi —
+    // FileStorageService'dagi rasm/video tekshiruvi bilan bir xil g'oya:
+    // client yuborgan Content-Type header'iga ishonilmaydi.
+    private byte[] validateAndReadExcelFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("❌Fayl tanlanmagan.");
+        }
+
+        if (file.getSize() > MAX_EXCEL_SIZE_BYTES) {
+            throw new IllegalArgumentException("❌Fayl hajmi 10MB dan katta bo'lishi mumkin emas.");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        String extension = extractExtension(originalFilename);
+        if (!ALLOWED_EXCEL_EXTENSIONS.contains(extension)) {
+            throw new IllegalArgumentException("❌Faqat .xlsx yoki .xls formatidagi fayllar qabul qilinadi.");
+        }
+
+        byte[] content;
+        try {
+            content = file.getBytes();
+        } catch (IOException e) {
+            log.error("Excel faylni o'qishda xatolik", e);
+            throw new IllegalArgumentException("❌Faylni o'qib bo'lmadi.");
+        }
+
+        // Fayl nomi "hint" sifatida beriladi — bu OOXML ichidagi xlsx/docx/pptx
+        // farqini aniqroq ajratadi, lekin haqiqiy magic-byte tekshiruvini
+        // yengib bo'lmaydi (masalan .exe/.php fayl .xlsx deb nomlansa ham,
+        // aniq turi bilan — application/x-msdownload va h.k. — ochiladi).
+        String detectedType = tika.detect(content, originalFilename);
+        if (!ALLOWED_EXCEL_TYPES.contains(detectedType)) {
+            log.warn("Excel fayl turi mos kelmadi: fayl='{}', aniqlangan tur='{}'", originalFilename, detectedType);
+            throw new IllegalArgumentException("❌Fayl haqiqiy Excel fayli emas (turi mos kelmadi).");
+        }
+
+        // Virus/zararli kod tekshiruvi (ClamAV yoqilgan bo'lsa).
+        clamAvScanService.scan(content, originalFilename);
+
+        return content;
+    }
+
+    private String extractExtension(String filename) {
+        if (filename == null) return "";
+        int dotIndex = filename.lastIndexOf('.');
+        return dotIndex < 0 ? "" : filename.substring(dotIndex).toLowerCase();
     }
 
     private String cell(Row row, int i) {

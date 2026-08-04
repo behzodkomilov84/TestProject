@@ -15,11 +15,30 @@ services:
       interval: 10s
       retries: 5
 
+  # Yuklangan rasm/video fayllarni virus/zararli koddan tekshiradi
+  # (FileStorageService shu konteynerga ulanadi). Birinchi marta ishga
+  # tushganda virus bazasini (freshclam) yuklab olgani uchun bir necha
+  # daqiqa vaqt olishi mumkin — keyingi ishga tushishlarda tez.
+  clamav:
+    image: clamav/clamav:1.4
+    container_name: clamav
+    volumes:
+      - clamav-data:/var/lib/clamav
+    healthcheck:
+      test: ["CMD", "clamdcheck.sh"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 180s
+    restart: unless-stopped
+
   app:
     build: .
     container_name: spring-app
     depends_on:
       mysql:
+        condition: service_healthy
+      clamav:
         condition: service_healthy
     ports:
       - "8080:8080"
@@ -30,6 +49,9 @@ services:
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?TELEGRAM_BOT_TOKEN env var kiritilishi shart (.env fayliga qarang)}
       TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-study_grow_bot}
       UPLOAD_DIR: /app/uploads
+      CLAMAV_ENABLED: "true"
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
       # Parolni tiklash — email kanali (ixtiyoriy, Telegram ustuvor kanal).
       # Standart: Brevo (smtp-relay.brevo.com) — .env'ga qarang.
       SMTP_HOST: ${SMTP_HOST:-smtp-relay.brevo.com}
@@ -44,3 +66,4 @@ services:
 volumes:
   mysql-data:
   uploads-data:
+  clamav-data:
