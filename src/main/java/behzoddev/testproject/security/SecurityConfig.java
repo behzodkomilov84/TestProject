@@ -37,13 +37,13 @@ public class SecurityConfig {
                                 "/"
                         ).permitAll()
 
-                        .requestMatchers("/user/tests/**",
-                                "/api/telegram/**")
+                        .requestMatchers("/user/tests/**")
                         .hasAuthority("ROLE_USER")
 
                         .requestMatchers(
                                 "/users",
                                 "/users/**",
+                                "/payments",
                                 "/api/users/**",
                                 "/api/subscriptions/**")
                         .hasAuthority("ROLE_OWNER")// <-- доступ только владельцу
@@ -58,7 +58,12 @@ public class SecurityConfig {
                                 "/profile/**",
                                 "/api/test-session/**",
                                 "/api/assignments/**",
-                                "/api/notifications/**")
+                                "/api/notifications/**",
+                                // Telegram bog'lash — rolidan qat'i nazar, har qanday
+                                // login qilgan foydalanuvchiga ochiq bo'lishi kerak
+                                // (masalan, faqat ROLE_OWNER'ga ega, ROLE_USER'i
+                                // bo'lmagan hisoblar ham botga ulana olishi kerak).
+                                "/api/telegram/**")
                         .authenticated()
 
                         // student API — СНАЧАЛА

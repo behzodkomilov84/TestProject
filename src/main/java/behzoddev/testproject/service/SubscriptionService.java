@@ -4,7 +4,9 @@ import behzoddev.testproject.dao.RoleRepository;
 import behzoddev.testproject.dao.SubscriptionRepository;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.dto.subscription.CreateSubscriptionDto;
+import behzoddev.testproject.dto.subscription.MonthlyRevenueDto;
 import behzoddev.testproject.dto.subscription.SubscriptionDto;
+import behzoddev.testproject.dto.subscription.SubscriptionStatsDto;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.Subscription;
 import behzoddev.testproject.entity.User;
@@ -20,7 +22,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.NoSuchElementException;
 
 /**
@@ -151,6 +158,70 @@ public class SubscriptionService {
 
         subscription.setStatus(SubscriptionStatus.CANCELLED);
         return toDto(subscription);
+    }
+
+    // OWNER uchun to'lov tarixi/hisobot sahifasidagi umumiy ko'rsatkichlar.
+    // Faqat CONFIRMED to'lovlar haqiqiy tushum hisoblanadi (PENDING hali
+    // to'lanmagan, CANCELLED/EXPIRED esa tushum emas).
+    @Transactional(readOnly = true)
+    public SubscriptionStatsDto getStats() {
+        LocalDateTime now = LocalDateTime.now();
+        YearMonth currentMonth = YearMonth.now();
+
+        List<Subscription> confirmed = subscriptionRepository
+                .findByStatusOrderByCreatedAtDesc(SubscriptionStatus.CONFIRMED);
+
+        BigDecimal totalRevenue = confirmed.stream()
+                .map(Subscription::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal thisMonthRevenue = confirmed.stream()
+                .filter(s -> YearMonth.from(s.getCreatedAt()).equals(currentMonth))
+                .map(Subscription::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        // Oy bo'yicha guruhlash — TreeMap avtomatik xronologik tartibda saqlaydi.
+        DateTimeFormatter monthKeyFormat = DateTimeFormatter.ofPattern("yyyy-MM");
+        Map<String, MonthlyAccumulator> byMonth = new TreeMap<>();
+
+        for (Subscription s : confirmed) {
+            String key = YearMonth.from(s.getCreatedAt()).format(monthKeyFormat);
+            byMonth.computeIfAbsent(key, k -> new MonthlyAccumulator())
+                    .add(s.getAmount());
+        }
+
+        List<MonthlyRevenueDto> monthlyBreakdown = byMonth.entrySet().stream()
+                .map(e -> MonthlyRevenueDto.builder()
+                        .month(e.getKey())
+                        .amount(e.getValue().total)
+                        .count(e.getValue().count)
+                        .build())
+                .sorted(Comparator.comparing(MonthlyRevenueDto::month))
+                .toList();
+
+        long activeSubscribersCount = subscriptionRepository
+                .countByStatusAndEndDateAfter(SubscriptionStatus.CONFIRMED, now);
+        long pendingCount = subscriptionRepository.countByStatus(SubscriptionStatus.PENDING);
+
+        return SubscriptionStatsDto.builder()
+                .totalRevenue(totalRevenue)
+                .thisMonthRevenue(thisMonthRevenue)
+                .totalConfirmedCount(confirmed.size())
+                .activeSubscribersCount(activeSubscribersCount)
+                .pendingCount(pendingCount)
+                .monthlyBreakdown(monthlyBreakdown)
+                .build();
+    }
+
+    // Oylik yig'indini hisoblash uchun ichki yordamchi (faqat getStats() ichida ishlatiladi).
+    private static class MonthlyAccumulator {
+        private BigDecimal total = BigDecimal.ZERO;
+        private long count = 0;
+
+        void add(BigDecimal amount) {
+            total = total.add(amount);
+            count++;
+        }
     }
 
     @Transactional(readOnly = true)

@@ -43,14 +43,23 @@ document.querySelectorAll(".dropbtn").forEach(btn => {
 
 async function linkTelegram() {
 
-    const res = await fetch("/api/telegram/link", {
-        method: "POST"
-    });
+    try {
+        const res = await fetch("/api/telegram/link", {
+            method: "POST"
+        });
 
-    const data = await res.json();
+        const data = await res.json().catch(() => ({}));
 
-    alert("Botga ulanish uchun botga quyidagini yozing: /link " + data.code);
+        if (!res.ok || !data.code) {
+            alert(data.error || "❌ Kod olishda xatolik yuz berdi. Qayta urinib ko'ring.");
+            return;
+        }
 
+        alert("Botga ulanish uchun botga quyidagini yozing: /link " + data.code);
+    } catch (err) {
+        console.error(err);
+        alert("❌ Tarmoq xatoligi — qayta urinib ko'ring.");
+    }
 }
 
 /* ===== Bildirishnomalar (notification center) ===== */

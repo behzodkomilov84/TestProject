@@ -3,6 +3,7 @@ package behzoddev.testproject.controller.api;
 import behzoddev.testproject.dto.subscription.ConfirmSubscriptionDto;
 import behzoddev.testproject.dto.subscription.CreateSubscriptionDto;
 import behzoddev.testproject.dto.subscription.SubscriptionDto;
+import behzoddev.testproject.dto.subscription.SubscriptionStatsDto;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
@@ -56,6 +57,13 @@ public class SubscriptionController {
             return ResponseEntity.ok(subscriptionService.listPending());
         }
         return ResponseEntity.ok(subscriptionService.listAll());
+    }
+
+    // To'lov tarixi/hisobot sahifasi uchun umumiy ko'rsatkichlar (jami
+    // tushum, shu oy, faol obunachilar va h.k.).
+    @GetMapping("/stats")
+    public ResponseEntity<SubscriptionStatsDto> stats() {
+        return ResponseEntity.ok(subscriptionService.getStats());
     }
 
     @GetMapping("/user/{userId}")

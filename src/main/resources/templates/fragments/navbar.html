@@ -29,7 +29,6 @@
         <nav id="nav-menu" class="nav-items">
             <a href="/index">Bosh sahifa</a>
             <a href="/history">Statistika</a>
-            <a href="/profile">Profil</a>
 
             <!-- Owner/Admin/Student panellari yagona "Panels" dropdown ichida —
                  har biri o'z rollariga qarab (sec:authorize) ko'rinadi. -->
@@ -44,6 +43,10 @@
                     <a href="/users"
                        sec:authorize="hasAuthority('ROLE_OWNER')"
                        class="owner-link">Owner Panel</a>
+
+                    <a href="/payments"
+                       sec:authorize="hasAuthority('ROLE_OWNER')"
+                       class="owner-link">To'lov tarixi</a>
 
                     <!-- Admin Panel — ichki (nested) dropdown, bosilganda ochiladi -->
                     <div class="sub-dropdown" sec:authorize="hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')">
@@ -95,7 +98,13 @@
                 </svg>
             </button>
 
-            <a href="/logout">Chiqish</a>
+            <div class="dropdown">
+                <button class="dropbtn" title="Profil">👤</button>
+                <div class="dropdown-content">
+                    <a href="/profile">Profil</a>
+                    <a href="/logout">Chiqish</a>
+                </div>
+            </div>
         </nav>
     </div>
 

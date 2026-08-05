@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>To'lov tarixi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/css/users.css">
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/payments.css">
+
+    <script src="/js/payments.js" defer></script>
+    <script src="/js/navbar.js" defer></script>
+</head>
+
+<body th:attr="data-role=${role}">
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container">
+    <header class="top-bar">
+        <h1>💰 To'lov tarixi va hisobot</h1>
+        <button class="back-btn" onclick="history.back()">← Назад</button>
+    </header>
+
+    <!-- Umumiy ko'rsatkichlar (KPI) -->
+    <div class="stat-cards">
+        <div class="stat-card">
+            <div class="stat-label">Jami tushum</div>
+            <div class="stat-value" id="statTotalRevenue">—</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Shu oy</div>
+            <div class="stat-value" id="statThisMonth">—</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Faol obunachilar</div>
+            <div class="stat-value" id="statActiveSubscribers">—</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Jami to'lovlar</div>
+            <div class="stat-value" id="statTotalCount">—</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Tasdiq kutmoqda</div>
+            <div class="stat-value" id="statPending">—</div>
+        </div>
+    </div>
+
+    <!-- Oylik dinamika -->
+    <div class="subscriptions-panel">
+        <h2>📈 Oylar bo'yicha tushum</h2>
+        <div class="table-scroll">
+        <table class="subscriptions-table">
+            <thead>
+            <tr>
+                <th>Oy</th>
+                <th>Tushum</th>
+                <th>To'lovlar soni</th>
+            </tr>
+            </thead>
+            <tbody id="monthlyTableBody">
+                <tr><td colspan="3" class="empty-row">Yuklanmoqda...</td></tr>
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+    <!-- To'liq to'lov tarixi -->
+    <div class="subscriptions-panel">
+        <h2>📋 To'liq to'lov tarixi</h2>
+        <div class="table-scroll">
+        <table class="subscriptions-table">
+            <thead>
+            <tr>
+                <th>Foydalanuvchi</th>
+                <th>Summa</th>
+                <th>Manba</th>
+                <th>Holat</th>
+                <th>Sana</th>
+                <th>Muddat</th>
+                <th>Izoh</th>
+            </tr>
+            </thead>
+            <tbody id="historyTableBody">
+                <tr><td colspan="7" class="empty-row">Yuklanmoqda...</td></tr>
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

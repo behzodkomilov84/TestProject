@@ -22,4 +22,10 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
     // Foydalanuvchining hozircha boshqa faol (muddati o'tmagan) obunasi
     // bor-yo'qligini tekshirish uchun (ADMIN rolini olib tashlashdan oldin).
     boolean existsByUser_IdAndStatusAndEndDateAfter(Long userId, SubscriptionStatus status, LocalDateTime time);
+
+    // To'lov tarixi/hisobot sahifasi uchun: hozir faol obunalar soni.
+    long countByStatusAndEndDateAfter(SubscriptionStatus status, LocalDateTime time);
+
+    // To'lov tarixi/hisobot sahifasi uchun: tasdiq kutayotgan so'rovlar soni.
+    long countByStatus(SubscriptionStatus status);
 }
