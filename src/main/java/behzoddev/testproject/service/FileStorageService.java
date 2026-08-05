@@ -82,6 +82,24 @@ public class FileStorageService {
                 "❌Faqat video fayllari (MP4, WEBM, OGG) yuklash mumkin.");
     }
 
+    /**
+     * Kurs bo'limi uchun video (UPLOAD manba) — "courses" ostki papkasiga saqlanadi.
+     */
+    public String storeCourseVideo(MultipartFile file) {
+        return store(file, "courses", ALLOWED_VIDEO_TYPES, ALLOWED_VIDEO_EXTENSIONS,
+                MAX_VIDEO_SIZE_BYTES, "❌Video hajmi 50MB dan katta bo'lishi mumkin emas.",
+                "❌Faqat video fayllari (MP4, WEBM, OGG) yuklash mumkin.");
+    }
+
+    /**
+     * Kurs muqova rasmi — "courses" ostki papkasiga saqlanadi.
+     */
+    public String storeCourseCoverImage(MultipartFile file) {
+        return store(file, "courses", ALLOWED_IMAGE_TYPES, ALLOWED_IMAGE_EXTENSIONS,
+                MAX_IMAGE_SIZE_BYTES, "❌Rasm hajmi 5MB dan katta bo'lishi mumkin emas.",
+                "❌Faqat rasm fayllari (PNG, JPEG, WEBP, GIF) yuklash mumkin.");
+    }
+
     private String store(
             MultipartFile file,
             String subDir,

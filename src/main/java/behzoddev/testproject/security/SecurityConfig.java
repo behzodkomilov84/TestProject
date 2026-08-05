@@ -63,7 +63,16 @@ public class SecurityConfig {
                                 // login qilgan foydalanuvchiga ochiq bo'lishi kerak
                                 // (masalan, faqat ROLE_OWNER'ga ega, ROLE_USER'i
                                 // bo'lmagan hisoblar ham botga ulana olishi kerak).
-                                "/api/telegram/**")
+                                "/api/telegram/**",
+                                // Kurslar — katalog/ko'rish istalgan rolga (OWNER/ADMIN/USER)
+                                // ochiq; CRUD va obuna tasdiqlash @PreAuthorize orqali
+                                // faqat ROLE_OWNER'ga cheklangan (pastdagi umumiy
+                                // "/api/**" qoidasi bu yerga tegmasligi uchun aniq
+                                // ro'yxatga kiritilgan).
+                                "/courses",
+                                "/courses/**",
+                                "/api/courses/**",
+                                "/api/course-subscriptions/**")
                         .authenticated()
 
                         // student API — СНАЧАЛА

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <title>Bo'lim</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/courses.css">
+
+    <script th:inline="javascript">
+        const COURSE_ID = /*[[${courseId}]]*/ 0;
+        const SECTION_ID = /*[[${sectionId}]]*/ 0;
+    </script>
+    <!-- YouTube IFrame Player API — video oxirigacha ko'rilganini aniqlash uchun -->
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="/js/courseSectionView.js" defer></script>
+    <script src="/js/navbar.js" defer></script>
+</head>
+
+<body th:attr="data-role=${role}">
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="courses-container">
+    <header class="courses-top-bar">
+        <h1 id="sectionTitle">Yuklanmoqda...</h1>
+        <button class="back-btn" id="backToCourseBtn">← Kursga qaytish</button>
+    </header>
+
+    <div id="sectionContent" class="section-content"></div>
+
+    <div class="section-nav-actions">
+        <button id="nextSectionBtn" disabled>Keyingi mavzu →</button>
+        <span id="nextHint" class="next-hint"></span>
+    </div>
+</div>
+
+</body>
+</html>

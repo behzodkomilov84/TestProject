@@ -19,6 +19,7 @@
     <include file="/db/changelog/login-lockout.sql"/>
     <include file="/db/changelog/notifications.sql"/>
     <include file="/db/changelog/role-audit-log.sql"/>
+    <include file="/db/changelog/courses.sql"/>
 
 
 </databaseChangeLog>

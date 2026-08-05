@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <title>Kurs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/courses.css">
+
+    <script th:inline="javascript">
+        const COURSE_ID = /*[[${courseId}]]*/ 0;
+    </script>
+    <script src="/js/courseDetail.js" defer></script>
+    <script src="/js/navbar.js" defer></script>
+</head>
+
+<body th:attr="data-role=${role}">
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="courses-container">
+    <header class="courses-top-bar">
+        <h1 id="courseTitle">Yuklanmoqda...</h1>
+        <button class="back-btn" onclick="location.href='/courses'">← Kurslar</button>
+    </header>
+
+    <p id="courseDescription" class="course-description"></p>
+
+    <div id="subscribeBanner" class="subscribe-banner" style="display:none;">
+        🔒 Bu kursning to'liq mazmuniga kirish uchun obuna kerak. Obuna bo'lish uchun administratorga (OWNER) murojaat qiling.
+    </div>
+
+    <!-- OWNER uchun — kursni boshqarish paneli -->
+    <div id="manageCoursePanel" class="course-manage-panel owner-only-el" style="display:none;">
+        <h2>⚙️ Kursni boshqarish</h2>
+
+        <div class="manage-actions-row">
+            <button onclick="togglePublish()" id="togglePublishBtn">—</button>
+            <button onclick="openEditCourseForm()">✏️ Kursni tahrirlash</button>
+            <button class="danger-btn" onclick="deleteCourse()">🗑️ Kursni o'chirish</button>
+        </div>
+
+        <div id="editCourseForm" class="course-form" style="display:none;">
+            <input type="text" id="editCourseTitle" placeholder="Kurs nomi">
+            <textarea id="editCourseDescription" placeholder="Kurs tavsifi" rows="3"></textarea>
+            <div class="course-form-actions">
+                <button onclick="submitEditCourse()">✅ Saqlash</button>
+                <button onclick="closeEditCourseForm()">Bekor qilish</button>
+            </div>
+        </div>
+
+        <h3>➕ Yangi bo'lim qo'shish</h3>
+        <div class="section-form">
+            <input type="text" id="newSectionTitle" placeholder="Bo'lim nomi">
+            <select id="newSectionType" onchange="onSectionTypeChange()">
+                <option value="TEXT">📄 Matn</option>
+                <option value="VIDEO">🎬 Video</option>
+            </select>
+
+            <div id="textFields">
+                <textarea id="newSectionText" placeholder="Matn kontenti" rows="5"></textarea>
+            </div>
+
+            <div id="videoFields" style="display:none;">
+                <select id="newSectionVideoSource" onchange="onVideoSourceChange()">
+                    <option value="YOUTUBE">YouTube</option>
+                    <option value="UPLOAD">Fayl yuklash</option>
+                    <option value="EXTERNAL">Boshqa manba (link)</option>
+                </select>
+                <input type="text" id="newSectionVideoUrl" placeholder="YouTube video ID (masalan: dQw4w9WgXcQ)">
+                <input type="file" id="newSectionVideoFile" accept="video/*" style="display:none;">
+                <input type="number" id="newSectionVideoDuration" placeholder="Video davomiyligi (soniya) — faqat 'Boshqa manba' uchun" style="display:none;">
+            </div>
+
+            <button onclick="submitAddSection()">✅ Bo'limni qo'shish</button>
+        </div>
+
+        <h3>💳 Obuna berish</h3>
+        <div class="section-form">
+            <select id="grantUserSelect"></select>
+            <input type="number" id="grantAmount" placeholder="Summa (so'm)" min="0">
+            <input type="text" id="grantNote" placeholder="Izoh (ixtiyoriy)">
+            <button onclick="submitGrantSubscription()">✅ Obuna berish</button>
+        </div>
+
+        <div class="table-scroll">
+            <table class="course-subscribers-table">
+                <thead>
+                <tr><th>Foydalanuvchi</th><th>Summa</th><th>Holat</th><th>Sana</th><th>Amal</th></tr>
+                </thead>
+                <tbody id="subscribersTableBody">
+                    <tr><td colspan="5" class="empty-row">Yuklanmoqda...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <h2 class="curriculum-title">📋 Dastur</h2>
+    <div id="sectionsList" class="sections-list">
+        <div class="courses-empty">Yuklanmoqda...</div>
+    </div>
+</div>
+
+</body>
+</html>

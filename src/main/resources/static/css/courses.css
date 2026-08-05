@@ -1,0 +1,377 @@
+* {
+    box-sizing: border-box;
+    font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+body {
+    background: #f4f6f8;
+    margin: 0;
+}
+
+.courses-container {
+    max-width: 1000px;
+    margin: 90px auto 40px;
+    padding: 0 16px;
+}
+
+.courses-top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.courses-top-bar h1 {
+    margin: 0;
+}
+
+.back-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    background: white;
+    cursor: pointer;
+}
+
+#createCourseBtn {
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: none;
+    background: #16a34a;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* ===== Kurslar katalogi (grid) ===== */
+
+.courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 18px;
+}
+
+.courses-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #888;
+    font-style: italic;
+    padding: 40px 0;
+}
+
+.course-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+}
+
+.course-card:hover {
+    transform: translateY(-3px);
+}
+
+.course-card-cover {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+}
+
+.course-card-body {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex: 1;
+}
+
+.course-card-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin: 0;
+}
+
+.course-card-desc {
+    font-size: 13px;
+    color: #64748b;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+}
+
+.course-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: auto;
+    font-size: 12px;
+}
+
+.course-badge {
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.course-badge.subscribed {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.course-badge.locked {
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.course-badge.draft {
+    background: #fef9c3;
+    color: #854d0e;
+}
+
+/* ===== Forma (kurs yaratish/tahrirlash, bo'lim qo'shish) ===== */
+
+.course-form, .section-form {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.course-form input, .course-form textarea,
+.section-form input, .section-form select, .section-form textarea {
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid #d5dde8;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.course-form-actions, .manage-actions-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.course-form-actions button, .manage-actions-row button, .section-form button {
+    padding: 9px 16px;
+    border-radius: 8px;
+    border: none;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.manage-actions-row .danger-btn {
+    background: #dc2626;
+}
+
+.course-form-cover {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+/* ===== Kurs sahifasi (detail) ===== */
+
+.course-description {
+    color: #475569;
+    margin-bottom: 16px;
+}
+
+.subscribe-banner {
+    background: #fef9c3;
+    color: #854d0e;
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    font-weight: 600;
+}
+
+.course-manage-panel {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    padding: 18px;
+    margin-bottom: 24px;
+}
+
+.curriculum-title {
+    margin-bottom: 12px;
+}
+
+.sections-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.section-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: white;
+    border-radius: 10px;
+    padding: 14px 18px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.section-item.locked {
+    opacity: 0.6;
+}
+
+.section-item-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.section-index {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.section-index.completed {
+    background: #16a34a;
+    color: white;
+}
+
+.section-item a {
+    text-decoration: none;
+    color: #1e293b;
+    font-weight: 600;
+}
+
+.section-item.locked a {
+    pointer-events: none;
+    color: #94a3b8;
+}
+
+.section-type-icon {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-left: 8px;
+}
+
+.section-manage-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.section-manage-actions button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+/* ===== Bo'lim ko'rish sahifasi ===== */
+
+.section-content {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    padding: 24px;
+    margin-bottom: 20px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+}
+
+/* Responsive video embed — har qanday manba (YouTube/upload/external) uchun
+   16:9 nisbatda, to'liq width/height bilan ko'rinadi. */
+.video-embed-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.video-embed-wrapper iframe,
+.video-embed-wrapper video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+.section-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#nextSectionBtn {
+    padding: 12px 24px;
+    border-radius: 10px;
+    border: none;
+    background: #16a34a;
+    color: white;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+#nextSectionBtn:disabled {
+    background: #cbd5e1;
+    cursor: not-allowed;
+}
+
+.next-hint {
+    font-size: 13px;
+    color: #64748b;
+}
+
+/* ===== Obunachilar jadvali ===== */
+
+.course-subscribers-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin-top: 12px;
+}
+
+.course-subscribers-table th, .course-subscribers-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #e0e0e0;
+    text-align: left;
+}
+
+.course-subscribers-table th {
+    background: #f1f3f5;
+}
+
+.empty-row {
+    text-align: center;
+    color: #888;
+    font-style: italic;
+}
+
+.table-scroll {
+    overflow-x: auto;
+}

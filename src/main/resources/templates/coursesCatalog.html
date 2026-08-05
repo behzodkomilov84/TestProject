@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <title>Kurslar</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/courses.css">
+
+    <script src="/js/courses.js" defer></script>
+    <script src="/js/navbar.js" defer></script>
+</head>
+
+<body th:attr="data-role=${role}">
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="courses-container">
+    <header class="courses-top-bar">
+        <h1>🎓 Kurslar</h1>
+        <button id="createCourseBtn" class="owner-only-el" style="display:none;" onclick="openCreateCourseForm()">+ Yangi kurs</button>
+    </header>
+
+    <!-- OWNER uchun — yangi kurs yaratish formasi -->
+    <div id="createCourseForm" class="course-form" style="display:none;">
+        <input type="text" id="newCourseTitle" placeholder="Kurs nomi">
+        <textarea id="newCourseDescription" placeholder="Kurs tavsifi" rows="3"></textarea>
+        <div class="course-form-cover">
+            <input type="file" id="newCourseCoverFile" accept="image/*">
+            <span id="newCourseCoverStatus"></span>
+        </div>
+        <div class="course-form-actions">
+            <button onclick="submitCreateCourse()">✅ Yaratish</button>
+            <button onclick="closeCreateCourseForm()">Bekor qilish</button>
+        </div>
+    </div>
+
+    <div id="coursesGrid" class="courses-grid">
+        <div class="courses-empty">Yuklanmoqda...</div>
+    </div>
+</div>
+
+</body>
+</html>
