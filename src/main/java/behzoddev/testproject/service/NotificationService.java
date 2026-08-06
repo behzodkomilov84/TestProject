@@ -4,30 +4,76 @@ import behzoddev.testproject.dao.NotificationRepository;
 import behzoddev.testproject.dto.notification.NotificationDto;
 import behzoddev.testproject.entity.Notification;
 import behzoddev.testproject.entity.User;
-import lombok.RequiredArgsConstructor;
+import behzoddev.testproject.telegram.TelegramBot;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.util.List;
 import java.util.NoSuchElementException;
 
 // Saytning o'zidagi bildirishnoma markazi — Telegram'dan tashqari, sayt
 // ichida ham foydalanuvchiga muhim hodisalar (ADMIN tasdiqlandi, yangi
-// topshiriq va h.k.) haqida xabar berish uchun.
+// topshiriq va h.k.) haqida xabar berish uchun. Foydalanuvchi Telegram'ga
+// ulangan bo'lsa (telegramId bor), har bir bildirishnoma avtomatik botga
+// ham yuboriladi — "✅ O'qildim" tugmasi bilan, uni bosganda sayt tarafida
+// ham "o'qilgan" statusiga o'tadi (TelegramBot.onUpdateReceived, "notif_read_" prefiksi).
+@Slf4j
 @Service
-@RequiredArgsConstructor
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    // @Lazy — TelegramBot ham (callback qaytganda) NotificationService'ga
+    // muhtoj, shuning uchun to'g'ridan-to'g'ri constructor-injection bilan
+    // aylanma bog'liqlik (circular dependency) hosil bo'lardi. @Lazy proksi
+        // orqali bu zanjir uziladi.
+    private final TelegramBot telegramBot;
+
+    public NotificationService(NotificationRepository notificationRepository,
+                                @Lazy TelegramBot telegramBot) {
+        this.notificationRepository = notificationRepository;
+        this.telegramBot = telegramBot;
+    }
 
     @Transactional
     public void create(User user, String message, String link) {
-        notificationRepository.save(Notification.builder()
+        Notification notification = notificationRepository.save(Notification.builder()
                 .user(user)
                 .message(message)
                 .link(link)
                 .build());
+
+        sendTelegramCopy(user, notification);
+    }
+
+    private void sendTelegramCopy(User user, Notification notification) {
+        Long telegramId = user.getTelegramId();
+        if (telegramId == null) return;
+
+        try {
+            SendMessage msg = new SendMessage();
+            msg.setChatId(telegramId.toString());
+            msg.setText("🔔 " + notification.getMessage());
+
+            InlineKeyboardButton readButton = new InlineKeyboardButton();
+            readButton.setText("✅ O'qildim");
+            readButton.setCallbackData("notif_read_" + notification.getId());
+
+            InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+            markup.setKeyboard(List.of(List.of(readButton)));
+            msg.setReplyMarkup(markup);
+
+            telegramBot.execute(msg);
+        } catch (Exception e) {
+            // Telegram yuborilmasa ham sayt bildirishnomasi saqlangan
+            // bo'lishi kerak — shuning uchun xatolikni yutamiz, faqat loglaymiz.
+            log.warn("Bildirishnomani Telegram'ga yuborib bo'lmadi: user={}", user.getUsername(), e);
+        }
     }
 
     @Transactional(readOnly = true)

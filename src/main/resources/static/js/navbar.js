@@ -98,6 +98,20 @@ function notifTimeAgo(dateStr) {
     return days + " kun oldin";
 }
 
+function renderNotifGroup(title, items) {
+    if (!items.length) return "";
+
+    return `
+        <div class="notif-group-title">${title}</div>
+        ${items.map(n => `
+            <div class="notif-item ${n.read ? "" : "unread"}" data-id="${n.id}" data-link="${n.link || ""}">
+                <div class="notif-message">${n.message}</div>
+                <div class="notif-time">${notifTimeAgo(n.createdAt)}</div>
+            </div>
+        `).join("")}
+    `;
+}
+
 function renderNotifications(items) {
     const list = document.getElementById("notif-list");
     if (!list) return;
@@ -107,12 +121,12 @@ function renderNotifications(items) {
         return;
     }
 
-    list.innerHTML = items.map(n => `
-        <div class="notif-item ${n.read ? "" : "unread"}" data-id="${n.id}" data-link="${n.link || ""}">
-            <div class="notif-message">${n.message}</div>
-            <div class="notif-time">${notifTimeAgo(n.createdAt)}</div>
-        </div>
-    `).join("");
+    const unread = items.filter(n => !n.read);
+    const read = items.filter(n => n.read);
+
+    list.innerHTML =
+        renderNotifGroup(`🆕 Yangi (${unread.length})`, unread) +
+        renderNotifGroup("✓ O'qilgan", read);
 
     list.querySelectorAll(".notif-item").forEach(item => {
         item.addEventListener("click", () => {

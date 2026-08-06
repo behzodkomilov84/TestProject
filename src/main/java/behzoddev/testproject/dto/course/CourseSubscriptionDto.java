@@ -14,6 +14,8 @@ public record CourseSubscriptionDto(
         String courseTitle,
         BigDecimal amount,
         String status,
+        LocalDateTime startDate,
+        LocalDateTime endDate,
         String note,
         LocalDateTime createdAt
 ) {

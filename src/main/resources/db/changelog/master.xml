@@ -21,6 +21,7 @@
     <include file="/db/changelog/role-audit-log.sql"/>
     <include file="/db/changelog/courses.sql"/>
     <include file="/db/changelog/email-verification.sql"/>
+    <include file="/db/changelog/course-subscription-duration.sql"/>
 
 
 </databaseChangeLog>

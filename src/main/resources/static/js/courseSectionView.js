@@ -2,7 +2,9 @@ let youTubePlayer = null;
 let sectionData = null;
 let externalTimerId = null;
 
-document.getElementById("backToCourseBtn").href = "/courses/" + COURSE_ID;
+document.getElementById("backToCourseBtn").onclick = () => {
+    location.href = "/courses/" + COURSE_ID;
+};
 
 document.addEventListener("DOMContentLoaded", () => {
     loadSection();

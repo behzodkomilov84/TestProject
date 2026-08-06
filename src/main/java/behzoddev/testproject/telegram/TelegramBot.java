@@ -7,6 +7,7 @@ import behzoddev.testproject.dto.student.SyncAttemptRequestDto;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.AssignmentAttemptService;
+import behzoddev.testproject.service.NotificationService;
 import behzoddev.testproject.telegram.service.TelegramQuizService;
 import behzoddev.testproject.telegram.service.TelegramUserService;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final UserRepository userRepository;
     private final AssignmentAttemptService assignmentAttemptService;
     private final TelegramQuizService telegramQuizService;
+    private final NotificationService notificationService;
 
     public TelegramBot(
             @Value("${telegram.bot.token}") String token,
@@ -39,7 +41,8 @@ public class TelegramBot extends TelegramLongPollingBot {
             TelegramUserService telegramUserService,
             UserRepository userRepository,
             AssignmentAttemptService assignmentAttemptService,
-            TelegramQuizService telegramQuizService) {
+            TelegramQuizService telegramQuizService,
+            NotificationService notificationService) {
         super(token);
         this.token = token;
         this.username = username;
@@ -47,6 +50,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         this.userRepository = userRepository;
         this.assignmentAttemptService = assignmentAttemptService;
         this.telegramQuizService = telegramQuizService;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -63,6 +67,30 @@ public class TelegramBot extends TelegramLongPollingBot {
 
                 String data = update.getCallbackQuery().getData();
                 Long chatId = update.getCallbackQuery().getMessage().getChatId();
+
+                if (data.startsWith("notif_read_")) {
+
+                    Long notificationId = Long.parseLong(data.replace("notif_read_", ""));
+
+                    User pupil = getUserByChatId(chatId);
+
+                    try {
+                        notificationService.markRead(notificationId, pupil);
+
+                        Integer messageId = update.getCallbackQuery().getMessage().getMessageId();
+                        String originalText = ((Message) update.getCallbackQuery().getMessage()).getText();
+
+                        EditMessageText edit = new EditMessageText();
+                        edit.setChatId(chatId.toString());
+                        edit.setMessageId(messageId);
+                        edit.setText(originalText + "\n\n✅ O'qilgan deb belgilandi");
+
+                        execute(edit);
+                    } catch (Exception e) {
+                        log.warn("Bildirishnomani o'qilgan deb belgilashda xatolik", e);
+                    }
+                    return;
+                }
 
                 if (data.startsWith("assignment_")) {
 

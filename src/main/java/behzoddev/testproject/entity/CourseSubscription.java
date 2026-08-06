@@ -7,9 +7,11 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-// Foydalanuvchining bitta kursga (muddatsiz) kirish huquqi — faqat OWNER
-// tomonidan qo'lda qayd qilib tasdiqlanadi (hozircha Telegram orqali
-// so'rov yo'q — ADMIN-rol obunasidan farqli, bu kurs-maxsus va muddatsiz).
+// Foydalanuvchining bitta kursga muddatli kirish huquqi (ADMIN-rol
+// obunasi bilan bir xil g'oyada — startDate/endDate) — foydalanuvchi
+// so'rov yuboradi (PENDING) yoki OWNER to'g'ridan-to'g'ri beradi,
+// ikkala holatda ham yakuniy tasdiqlash OWNER tomonidan (hozircha
+// Telegram orqali avtomatik oqim yo'q).
 @Entity
 @Table(name = "course_subscriptions")
 @Getter
@@ -41,6 +43,13 @@ public class CourseSubscription {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "confirmed_by")
     private User confirmedBy;
+
+    // Faqat CONFIRMED bo'lgach to'ldiriladi (PENDING so'rovda hali bo'sh).
+    @Column(name = "start_date")
+    private LocalDateTime startDate;
+
+    @Column(name = "end_date")
+    private LocalDateTime endDate;
 
     @Column(length = 500)
     private String note;

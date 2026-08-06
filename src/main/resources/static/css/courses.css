@@ -199,6 +199,22 @@ body {
     border-radius: 10px;
     margin-bottom: 20px;
     font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+#requestSubscriptionBtn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    background: #d97706;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
 }
 
 .course-manage-panel {

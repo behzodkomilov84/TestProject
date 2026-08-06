@@ -1,8 +1,13 @@
 package behzoddev.testproject.entity.enums;
 
 public enum CourseSubscriptionStatus {
-    // OWNER tomonidan qo'lda tasdiqlangan — kursga kirish huquqi faol (muddatsiz).
+    // Foydalanuvchi "obuna bo'lishni xohlayman" so'rovini yubordi,
+    // OWNER hali ko'rib chiqmagan.
+    PENDING,
+    // OWNER tomonidan qo'lda tasdiqlangan — kursga kirish huquqi endDate'gacha faol.
     CONFIRMED,
-    // OWNER tomonidan bekor qilingan/qaytarib olingan.
+    // Muddati o'tgan (kunlik scheduled job avtomatik belgilaydi).
+    EXPIRED,
+    // OWNER tomonidan bekor qilingan/rad etilgan.
     CANCELLED
 }

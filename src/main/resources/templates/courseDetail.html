@@ -29,7 +29,8 @@
     <p id="courseDescription" class="course-description"></p>
 
     <div id="subscribeBanner" class="subscribe-banner" style="display:none;">
-        🔒 Bu kursning to'liq mazmuniga kirish uchun obuna kerak. Obuna bo'lish uchun administratorga (OWNER) murojaat qiling.
+        <div id="subscribeBannerText">🔒 Bu kursning to'liq mazmuniga kirish uchun obuna kerak.</div>
+        <button id="requestSubscriptionBtn" onclick="requestSubscription()">📩 Obunaga so'rov yuborish</button>
     </div>
 
     <!-- OWNER uchun — kursni boshqarish paneli -->
@@ -81,6 +82,7 @@
         <div class="section-form">
             <select id="grantUserSelect"></select>
             <input type="number" id="grantAmount" placeholder="Summa (so'm)" min="0">
+            <input type="number" id="grantDuration" placeholder="Necha oy" value="1" min="1">
             <input type="text" id="grantNote" placeholder="Izoh (ixtiyoriy)">
             <button onclick="submitGrantSubscription()">✅ Obuna berish</button>
         </div>
@@ -88,10 +90,10 @@
         <div class="table-scroll">
             <table class="course-subscribers-table">
                 <thead>
-                <tr><th>Foydalanuvchi</th><th>Summa</th><th>Holat</th><th>Sana</th><th>Amal</th></tr>
+                <tr><th>Foydalanuvchi</th><th>Summa</th><th>Holat</th><th>Muddat</th><th>Sana</th><th>Amal</th></tr>
                 </thead>
                 <tbody id="subscribersTableBody">
-                    <tr><td colspan="5" class="empty-row">Yuklanmoqda...</td></tr>
+                    <tr><td colspan="6" class="empty-row">Yuklanmoqda...</td></tr>
                 </tbody>
             </table>
         </div>

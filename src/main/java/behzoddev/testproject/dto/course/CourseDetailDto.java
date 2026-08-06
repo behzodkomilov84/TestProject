@@ -13,6 +13,7 @@ public record CourseDetailDto(
         String coverImageUrl,
         boolean published,
         boolean subscribed,
+        boolean requestPending, // foydalanuvchi obunaga so'rov yuborgan, OWNER hali ko'rib chiqmagan
         boolean canManage, // OWNER uchun tahrirlash tugmalarini ko'rsatish
         List<CourseSectionSummaryDto> sections
 ) {

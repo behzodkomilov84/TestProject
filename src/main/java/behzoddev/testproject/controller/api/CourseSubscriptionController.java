@@ -19,6 +19,15 @@ public class CourseSubscriptionController {
 
     private final CourseSubscriptionService courseSubscriptionService;
 
+    // Istalgan login qilgan foydalanuvchi (rolidan qat'i nazar) kursga
+    // obuna bo'lishni so'rashi mumkin — method-level @PreAuthorize
+    // class-level "faqat OWNER" cheklovini shu endpoint uchun bekor qiladi.
+    @PostMapping("/api/courses/{courseId}/subscriptions/request")
+    @PreAuthorize("isAuthenticated()")
+    public void request(@PathVariable Long courseId, @AuthenticationPrincipal User user) {
+        courseSubscriptionService.requestSubscription(courseId, user);
+    }
+
     @PostMapping("/api/courses/{courseId}/subscriptions")
     public CourseSubscriptionDto subscribe(
             @PathVariable Long courseId,

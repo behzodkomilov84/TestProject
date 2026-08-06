@@ -31,8 +31,21 @@ function renderCourse(course) {
     document.getElementById("courseTitle").textContent = course.title;
     document.getElementById("courseDescription").textContent = course.description || "";
 
-    document.getElementById("subscribeBanner").style.display =
-        (!course.subscribed && !course.canManage) ? "block" : "none";
+    const showBanner = !course.subscribed && !course.canManage;
+    document.getElementById("subscribeBanner").style.display = showBanner ? "flex" : "none";
+
+    if (showBanner) {
+        const btn = document.getElementById("requestSubscriptionBtn");
+        if (course.requestPending) {
+            document.getElementById("subscribeBannerText").textContent =
+                "⏳ Obunaga so'rovingiz yuborilgan — administrator (OWNER) javobini kuting.";
+            btn.style.display = "none";
+        } else {
+            document.getElementById("subscribeBannerText").textContent =
+                "🔒 Bu kursning to'liq mazmuniga kirish uchun obuna kerak.";
+            btn.style.display = "";
+        }
+    }
 
     if (course.canManage) {
         document.getElementById("togglePublishBtn").textContent =
@@ -42,6 +55,24 @@ function renderCourse(course) {
     }
 
     renderSections(course.sections);
+}
+
+async function requestSubscription() {
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/subscriptions/request`, { method: "POST" });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            alert(data.error || "Xatolik yuz berdi");
+            return;
+        }
+
+        alert("✅ So'rovingiz yuborildi. Administrator (OWNER) ko'rib chiqib, obunani tasdiqlaydi.");
+        loadCourse();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
 }
 
 function renderSections(sections) {
@@ -308,6 +339,7 @@ function loadUsersForGrant() {
 async function submitGrantSubscription() {
     const userId = Number(document.getElementById("grantUserSelect").value);
     const amount = Number(document.getElementById("grantAmount").value) || 0;
+    const durationMonths = Number(document.getElementById("grantDuration").value) || 1;
     const note = document.getElementById("grantNote").value.trim();
 
     if (!userId) {
@@ -319,7 +351,7 @@ async function submitGrantSubscription() {
         const res = await fetch(`/api/courses/${COURSE_ID}/subscriptions`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId, amount, note })
+            body: JSON.stringify({ userId, amount, durationMonths, note })
         });
 
         const data = await res.json().catch(() => ({}));
@@ -329,8 +361,9 @@ async function submitGrantSubscription() {
             return;
         }
 
-        alert("✅ Obuna berildi");
+        alert("✅ Obuna berildi (" + durationMonths + " oy)");
         document.getElementById("grantAmount").value = "";
+        document.getElementById("grantDuration").value = "1";
         document.getElementById("grantNote").value = "";
         loadSubscribers();
     } catch (err) {
@@ -351,23 +384,82 @@ function renderSubscribers(subs) {
     if (!tbody) return;
 
     if (!subs.length) {
-        tbody.innerHTML = `<tr><td colspan="5" class="empty-row">Hali obunachi yo'q</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="empty-row">Hali obunachi yo'q</td></tr>`;
         return;
     }
 
-    tbody.innerHTML = subs.map(s => `
-        <tr>
-            <td>${escapeHtml(s.username)}</td>
-            <td>${Number(s.amount).toLocaleString("uz-UZ")} so'm</td>
-            <td>${s.status === "CONFIRMED" ? "✅ Faol" : "❌ Bekor qilingan"}</td>
-            <td>${new Date(s.createdAt).toLocaleDateString("uz-UZ")}</td>
-            <td>
-                ${s.status === "CONFIRMED"
-                    ? `<button onclick="cancelSubscription(${s.id})">Bekor qilish</button>`
-                    : "—"}
-            </td>
-        </tr>
-    `).join("");
+    const statusLabels = {
+        CONFIRMED: "✅ Faol",
+        PENDING: "⏳ So'rov kutmoqda",
+        EXPIRED: "⌛ Muddati tugagan",
+        CANCELLED: "❌ Bekor qilingan"
+    };
+
+    tbody.innerHTML = subs.map(s => {
+        let actions = "—";
+        if (s.status === "PENDING") {
+            actions = `<button onclick="confirmRequest(${s.id}, '${escapeHtml(s.username)}')">✅ Tasdiqlash</button>
+                       <button onclick="cancelSubscription(${s.id})">❌ Rad etish</button>`;
+        } else if (s.status === "CONFIRMED") {
+            actions = `<button onclick="cancelSubscription(${s.id})">Bekor qilish</button>`;
+        }
+
+        const muddat = s.endDate ? new Date(s.endDate).toLocaleDateString("uz-UZ") : "—";
+
+        return `
+            <tr>
+                <td>${escapeHtml(s.username)}</td>
+                <td>${Number(s.amount).toLocaleString("uz-UZ")} so'm</td>
+                <td>${statusLabels[s.status] || s.status}</td>
+                <td>${muddat}</td>
+                <td>${new Date(s.createdAt).toLocaleDateString("uz-UZ")}</td>
+                <td>${actions}</td>
+            </tr>
+        `;
+    }).join("");
+}
+
+// PENDING so'rovni tasdiqlash — summa va muddatni so'raymiz, keyin mavjud
+// "obuna berish" endpoint'i orqali (u avtomatik PENDING'ni CONFIRMED'ga o'tkazadi).
+async function confirmRequest(subscriptionId, username) {
+    const amountStr = prompt(`"${username}" uchun to'lov summasini kiriting (so'm):`, "0");
+    if (amountStr === null) return;
+
+    const amount = Number(amountStr);
+    if (isNaN(amount) || amount < 0) {
+        alert("❌ Noto'g'ri summa");
+        return;
+    }
+
+    const durationStr = prompt("Obuna necha oyga beriladi?", "1");
+    if (durationStr === null) return;
+
+    const durationMonths = Number(durationStr) || 1;
+
+    const sub = (await fetch(`/api/courses/${COURSE_ID}/subscriptions`).then(r => r.json()))
+        .find(s => s.id === subscriptionId);
+    if (!sub) return;
+
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/subscriptions`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: sub.userId, amount, durationMonths, note: "So'rov orqali tasdiqlandi" })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            alert(data.error || "Xatolik yuz berdi");
+            return;
+        }
+
+        alert("✅ Obuna tasdiqlandi");
+        loadSubscribers();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
 }
 
 async function cancelSubscription(id) {

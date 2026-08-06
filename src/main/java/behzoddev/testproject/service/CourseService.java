@@ -17,6 +17,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
 
@@ -58,6 +59,8 @@ public class CourseService {
         }
 
         boolean subscribed = isSubscribed(currentUser, course);
+        boolean requestPending = !subscribed && courseSubscriptionRepository
+                .existsByUser_IdAndCourse_IdAndStatus(currentUser.getId(), courseId, CourseSubscriptionStatus.PENDING);
 
         List<CourseSection> sections = courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(courseId);
 
@@ -80,6 +83,7 @@ public class CourseService {
                 .coverImageUrl(course.getCoverImageUrl())
                 .published(course.isPublished())
                 .subscribed(subscribed || isOwner)
+                .requestPending(requestPending)
                 .canManage(isOwner)
                 .sections(sectionDtos)
                 .build();
@@ -143,8 +147,8 @@ public class CourseService {
     }
 
     private boolean isSubscribed(User user, Course course) {
-        return courseSubscriptionRepository
-                .existsByUser_IdAndCourse_IdAndStatus(user.getId(), course.getId(), CourseSubscriptionStatus.CONFIRMED);
+        return courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+                user.getId(), course.getId(), CourseSubscriptionStatus.CONFIRMED, LocalDateTime.now());
     }
 
     private boolean isSectionUnlocked(User user, CourseSection section, boolean subscribed) {
