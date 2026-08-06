@@ -20,6 +20,7 @@
     <include file="/db/changelog/notifications.sql"/>
     <include file="/db/changelog/role-audit-log.sql"/>
     <include file="/db/changelog/courses.sql"/>
+    <include file="/db/changelog/email-verification.sql"/>
 
 
 </databaseChangeLog>

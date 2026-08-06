@@ -36,6 +36,7 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
     private final RoleAuditService roleAuditService;
+    private final EmailVerificationService emailVerificationService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -85,10 +86,15 @@ public class UserServiceImpl implements UserDetailsService, UserService {
                 .email(dto.email())
                 .password(passwordEncoder.encode(dto.password()))
                 .roles(roles)
+                .emailVerified(false) // Tasdiqlash kodi kiritilmaguncha kirish mumkin emas (isEnabled()).
                 .build();
 
         // 5. Сохраняем
         userRepository.save(user);
+
+        // 6. Emailni tasdiqlash kodini yuboramiz — user login qilishdan oldin
+        // shu kodni /verify-email sahifasida kiritishi kerak.
+        emailVerificationService.sendVerificationCode(user);
     }
 
     @Override

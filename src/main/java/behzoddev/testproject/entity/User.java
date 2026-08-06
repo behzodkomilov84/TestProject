@@ -57,6 +57,14 @@ public class User implements UserDetails {
     @Column(unique = true)
     private String email;
 
+    // Ro'yxatdan o'tishda email tasdiqlash. DB darajasida DEFAULT TRUE
+    // (mavjud userlar login qilishda davom etishi uchun) — faqat yangi
+    // ro'yxatdan o'tishda (UserServiceImpl.register) explicit "false"
+    // qo'yiladi, tasdiqlash kodi bilan tekshirilgach true'ga o'tadi.
+    @Column(name = "email_verified", nullable = false)
+    @Builder.Default
+    private boolean emailVerified = true;
+
     // Brute-force himoyasi: ketma-ket noto'g'ri parol urinishlari soni.
     // Muvaffaqiyatli login'da 0'ga tushiriladi.
     @Column(name = "failed_attempts", nullable = false)
@@ -113,6 +121,6 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return emailVerified;
     }
 }

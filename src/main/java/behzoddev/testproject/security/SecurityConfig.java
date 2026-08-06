@@ -4,6 +4,7 @@ import behzoddev.testproject.service.LoginAttemptService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -33,6 +34,8 @@ public class SecurityConfig {
                                 "/registration",
                                 "/forgot-password",
                                 "/reset-password",
+                                "/verify-email",
+                                "/verify-email/resend",
                                 "/favicon.ico",
                                 "/"
                         ).permitAll()
@@ -133,6 +136,13 @@ public class SecurityConfig {
                             if (exception instanceof LockedException) {
                                 message = "Hisobingiz juda ko'p noto'g'ri urinish tufayli vaqtincha bloklandi. " +
                                         "Iltimos, 10 daqiqadan keyin qayta urinib ko'ring.";
+                            } else if (exception instanceof DisabledException) {
+                                // Email hali tasdiqlanmagan — bu noto'g'ri parol emas,
+                                // shuning uchun brute-force hisoblagichiga qo'shilmaydi.
+                                // login.html LOGIN_ERROR'ni th:text bilan chiqaradi (HTML
+                                // escape qilinadi), shuning uchun havola emas, oddiy matn.
+                                message = "Emailingiz hali tasdiqlanmagan. Ro'yxatdan o'tishda yuborilgan " +
+                                        "kodni tasdiqlash sahifasida (/verify-email) kiriting.";
                             } else {
                                 loginAttemptService.recordFailedAttempt(request.getParameter("username"));
                                 message = exception.getMessage();

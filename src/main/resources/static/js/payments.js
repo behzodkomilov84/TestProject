@@ -16,6 +16,23 @@ document.addEventListener("DOMContentLoaded", () => {
     loadHistory();
 });
 
+async function emailReport() {
+    try {
+        const res = await fetch("/api/subscriptions/stats/email", { method: "POST" });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            alert(data.error || "❌ Xatolik yuz berdi");
+            return;
+        }
+
+        alert(data.message || "✅ Yuborildi");
+    } catch (err) {
+        console.error(err);
+        alert("❌ Tarmoq xatoligi");
+    }
+}
+
 function formatSum(amount) {
     return Number(amount).toLocaleString("uz-UZ") + " so'm";
 }

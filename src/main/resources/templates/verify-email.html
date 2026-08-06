@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Emailni tasdiqlash</title>
+
+    <link rel="stylesheet" href="/css/register-login.css">
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+</head>
+<body>
+
+<div id="success-alert"
+     th:if="${infoMessage}"
+     th:text="${infoMessage}"
+     class="success-alert"></div>
+
+<p style="color: red"
+   th:if="${verifyEmailError}"
+   th:text="${verifyEmailError}"
+   class="error-alert"
+   id="error-alert"></p>
+
+<div class="container">
+    <div class="registration form">
+        <header>Emailni tasdiqlash</header>
+        <p style="text-align:center; margin-top:-10px; color:#666;">
+            Ro'yxatdan o'tishda kiritgan emailingizga yuborilgan 6 xonali kodni kiriting.
+        </p>
+
+        <form action="/verify-email" method="post">
+            <input type="text" name="username" th:value="${param.username}" placeholder="Username" required>
+            <input type="text" name="code" placeholder="Tasdiqlash kodi (6 xonali)" required maxlength="10">
+
+            <input type="submit" class="button" value="Tasdiqlash">
+        </form>
+
+        <form action="/verify-email/resend" method="post" style="margin-top: 6px;">
+            <input type="hidden" name="username" th:value="${param.username}">
+            <input type="submit" class="button" value="Kodni qayta yuborish">
+        </form>
+
+        <div class="signup">
+            <span class="signup"><a href="/login">Kirish sahifasiga qaytish</a></span>
+        </div>
+    </div>
+</div>
+
+<script>
+    setTimeout(() => {
+        const alert = document.getElementById("error-alert");
+        if (alert) alert.style.display = "none";
+    }, 8000);
+</script>
+</body>
+</html>

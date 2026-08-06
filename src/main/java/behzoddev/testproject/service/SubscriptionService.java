@@ -55,6 +55,7 @@ public class SubscriptionService {
     private final RoleRepository roleRepository;
     private final NotificationService notificationService;
     private final RoleAuditService roleAuditService;
+    private final EmailService emailService;
 
     @Transactional
     public SubscriptionDto createManual(CreateSubscriptionDto dto, User owner) {
@@ -211,6 +212,22 @@ public class SubscriptionService {
                 .pendingCount(pendingCount)
                 .monthlyBreakdown(monthlyBreakdown)
                 .build();
+    }
+
+    // /payments sahifasidagi hisobotni OWNER'ning o'z emailiga yuboradi.
+    @Transactional(readOnly = true)
+    public void emailStatsReport(User owner) {
+        if (owner.getEmail() == null || owner.getEmail().isBlank()) {
+            throw new IllegalArgumentException(
+                    "❌Sizda email manzil ulanmagan. Avval profilda emailingizni kiriting.");
+        }
+
+        SubscriptionStatsDto stats = getStats();
+        boolean sent = emailService.sendSubscriptionReport(owner.getEmail(), stats);
+
+        if (!sent) {
+            throw new IllegalStateException("❌Hisobotni email orqali yuborishda xatolik yuz berdi.");
+        }
     }
 
     // Oylik yig'indini hisoblash uchun ichki yordamchi (faqat getStats() ichida ishlatiladi).

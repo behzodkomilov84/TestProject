@@ -12,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 // Faqat OWNER foydalana oladi — cheklov SecurityConfig'da
 // "/api/subscriptions/**" uchun ROLE_OWNER sifatida qo'yilgan.
@@ -69,5 +70,12 @@ public class SubscriptionController {
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<SubscriptionDto>> listForUser(@PathVariable Long userId) {
         return ResponseEntity.ok(subscriptionService.listForUser(userId));
+    }
+
+    // Joriy hisobotni OWNER'ning o'z emailiga yuboradi.
+    @PostMapping("/stats/email")
+    public ResponseEntity<Map<String, String>> emailStats(@AuthenticationPrincipal User owner) {
+        subscriptionService.emailStatsReport(owner);
+        return ResponseEntity.ok(Map.of("message", "✅ Hisobot emailingizga yuborildi: " + owner.getEmail()));
     }
 }

@@ -27,11 +27,12 @@ public class UserMvcController {
         }
 
         redirectAttributes.addFlashAttribute(
-                "successMessage",
-                "User registered successfully"
+                "infoMessage",
+                "✅ Ro'yxatdan o'tish muvaffaqiyatli! Emailingizga yuborilgan tasdiqlash kodini kiriting."
         );
+        redirectAttributes.addAttribute("username", dto.username());
 
-        return "redirect:/login";
+        return "redirect:/verify-email";
     }
 
     @GetMapping("/login")

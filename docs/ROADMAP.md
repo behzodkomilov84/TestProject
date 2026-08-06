@@ -53,9 +53,12 @@ qamrab oladi.
   (matn yoki video — YouTube/yuklangan fayl/boshqa manba), ADMIN/USER obuna orqali
   kirish huquqi oladi, bo'limlar ketma-ket ochiladi (`Course`, `CourseSection`,
   `CourseSubscription`, `/courses`).
-- **Email integratsiyasi qisman** — parolni tiklashda bor (Brevo SMTP), lekin
-  ro'yxatdan o'tishda email tasdiqlash yoki hisobotlarni email orqali yuborish
-  hali yo'q.
+- ✅ **BAJARILDI — Email integratsiyasi**: ro'yxatdan o'tishda email tasdiqlash
+  (`EmailVerificationService`, `/verify-email` — kod kiritilmaguncha hisob
+  `isEnabled()=false`, kirish bloklanadi; mavjud userlar `email_verified=TRUE`
+  bilan backfill qilindi, ular login qilishda davom etadi) va OWNER uchun
+  `/payments` sahifasidan hisobotni bir tugma bilan o'z emailiga yuborish
+  (`EmailService.sendSubscriptionReport`).
 - ✅ **BAJARILDI — To'lov tarixi va hisobot**: OWNER uchun `/payments` sahifasi —
   jami/oylik tushum, faol obunachilar, to'liq to'lov tarixi (`SubscriptionStatsDto`,
   `GET /api/subscriptions/stats`).
@@ -87,8 +90,9 @@ qamrab oladi.
 
 ~~Parolni tiklash~~, ~~Login urinishlarini cheklash~~, ~~Rol audit log~~,
 ~~Bildirishnoma markazi~~, ~~HTTPS/SSL~~, ~~Fayl antivirus tekshiruvi~~,
-~~To'lov tarixi/hisobot~~, ~~Online kurslar~~, ~~Obuna eslatmasi~~ — bajarildi.
+~~To'lov tarixi/hisobot~~, ~~Online kurslar~~, ~~Obuna eslatmasi~~,
+~~Email integratsiyasi~~ — bajarildi.
 
-Qolganlari (email integratsiyasi, tarif rejalar) — Payme/Click integratsiyasi,
-avtomatik testlar va CI/CD kabi kattaroq va alohida rejalashtirish talab
-qiladigan ishlar bilan bir qatorda.
+Qolgan (tarif rejalar) — Payme/Click integratsiyasi, avtomatik testlar va
+CI/CD kabi kattaroq va alohida rejalashtirish talab qiladigan ishlar bilan
+bir qatorda.
