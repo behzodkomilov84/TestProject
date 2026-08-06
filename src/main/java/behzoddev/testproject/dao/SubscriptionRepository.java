@@ -28,4 +28,8 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Long
 
     // To'lov tarixi/hisobot sahifasi uchun: tasdiq kutayotgan so'rovlar soni.
     long countByStatus(SubscriptionStatus status);
+
+    // Muddati tez orada (masalan 3 kun ichida) tugaydigan faol obunalar —
+    // kunlik eslatma job'i shularni topadi (SubscriptionReminderService).
+    List<Subscription> findByStatusAndEndDateBetween(SubscriptionStatus status, LocalDateTime from, LocalDateTime to);
 }

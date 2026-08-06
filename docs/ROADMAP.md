@@ -49,15 +49,19 @@ qamrab oladi.
 - ✅ **BAJARILDI — Bildirishnoma markazi**: saytning o'zida 🔔 (navbar), ADMIN
   tasdiqlash/muddat tugashi/yangi topshiriq/guruhga taklif/blokdan chiqarish
   hodisalari uchun (`NotificationService`, `/api/notifications`).
+- ✅ **BAJARILDI — Online kurslar (JavaRush uslubida)**: OWNER kurs/bo'lim yaratadi
+  (matn yoki video — YouTube/yuklangan fayl/boshqa manba), ADMIN/USER obuna orqali
+  kirish huquqi oladi, bo'limlar ketma-ket ochiladi (`Course`, `CourseSection`,
+  `CourseSubscription`, `/courses`).
 - **Email integratsiyasi qisman** — parolni tiklashda bor (Brevo SMTP), lekin
   ro'yxatdan o'tishda email tasdiqlash yoki hisobotlarni email orqali yuborish
   hali yo'q.
-- **To'lov tarixi va hisobot** — OWNER uchun "qaysi oyda qancha ADMIN to'lovi tushdi"
-  degan statistika/hisobot sahifasi yo'q (buni keyingi qadam sifatida qo'shish oson,
-  chunki `Subscription` jadvali allaqachon shu ma'lumotni saqlaydi).
-- **Obunani avtomatik eslatish** — ADMIN obunasi tugashiga 3 kun qolganda foydalanuvchiga
-  Telegram orqali "obunangizni yangilang" degan eslatma yuborilmaydi (hozir `DeadlineReminderService`
-  bor, xuddi shu patternda `SubscriptionReminderService` qo'shish mumkin).
+- ✅ **BAJARILDI — To'lov tarixi va hisobot**: OWNER uchun `/payments` sahifasi —
+  jami/oylik tushum, faol obunachilar, to'liq to'lov tarixi (`SubscriptionStatsDto`,
+  `GET /api/subscriptions/stats`).
+- ✅ **BAJARILDI — Obunani avtomatik eslatish**: `SubscriptionReminderService`
+  (`DeadlineReminderService` patternida) — ADMIN obunasi tugashiga 3 kun qolganda
+  har kuni 09:00'da Telegram va saytdagi bildirishnoma orqali eslatma yuboriladi.
 - **Guruh/sinf darajasida chegirma yoki tarif rejalar** yo'q — hammaga bir xil erkin summa.
 
 ## 4. Kod sifati va infratuzilma
@@ -81,13 +85,10 @@ qamrab oladi.
 
 ## Ustuvorlik bo'yicha tavsiya
 
-~~1. Parolni tiklash~~, ~~2. Login urinishlarini cheklash~~, ~~3. Rol audit log~~,
-~~4. Bildirishnoma markazi~~ va ~~5. HTTPS/SSL~~ — bajarildi.
+~~Parolni tiklash~~, ~~Login urinishlarini cheklash~~, ~~Rol audit log~~,
+~~Bildirishnoma markazi~~, ~~HTTPS/SSL~~, ~~Fayl antivirus tekshiruvi~~,
+~~To'lov tarixi/hisobot~~, ~~Online kurslar~~, ~~Obuna eslatmasi~~ — bajarildi.
 
-Qolgan, nisbatan tez qo'shsa bo'ladigan narsalar:
-1. To'lov tarixi/hisobot sahifasi OWNER uchun (mavjud `Subscription` ma'lumotidan).
-2. Obuna tugashi haqida avtomatik Telegram eslatmasi (`DeadlineReminderService`
-   patternida).
-
-Payme/Click integratsiyasi, avtomatik testlar va CI/CD — kattaroq va alohida
-rejalashtirish talab qiladigan ishlar.
+Qolganlari (email integratsiyasi, tarif rejalar) — Payme/Click integratsiyasi,
+avtomatik testlar va CI/CD kabi kattaroq va alohida rejalashtirish talab
+qiladigan ishlar bilan bir qatorda.
