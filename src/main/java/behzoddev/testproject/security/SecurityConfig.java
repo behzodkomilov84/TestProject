@@ -36,6 +36,8 @@ public class SecurityConfig {
                                 "/reset-password",
                                 "/verify-email",
                                 "/verify-email/resend",
+                                "/terms",
+                                "/privacy",
                                 "/favicon.ico",
                                 "/"
                         ).permitAll()
