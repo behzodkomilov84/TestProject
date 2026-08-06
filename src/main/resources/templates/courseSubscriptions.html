@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <title>Kursga obuna berish</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/courses.css">
+
+    <script src="/js/courseSubscriptions.js" defer></script>
+    <script src="/js/navbar.js" defer></script>
+</head>
+
+<body th:attr="data-role=${role}">
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="courses-container">
+    <header class="courses-top-bar">
+        <h1>💳 Kursga obuna berish</h1>
+        <button class="back-btn" onclick="location.href='/courses'">← Kurslar</button>
+    </header>
+
+    <div class="course-manage-panel">
+        <h2>➕ Obuna berish</h2>
+        <div class="section-form">
+            <label class="content-toggle-label">Kurslar (bir nechtasini tanlash mumkin)</label>
+            <div id="grantCourseList" class="course-multiselect-list">
+                <div class="courses-empty">Yuklanmoqda...</div>
+            </div>
+
+            <div class="user-search-wrap">
+                <input type="text" id="grantUserSearch" placeholder="🔍 Foydalanuvchi nomini qidiring..."
+                       autocomplete="off" oninput="onUserSearchInput()" onfocus="onUserSearchInput()">
+                <input type="hidden" id="grantUserId">
+                <div id="grantUserSuggestions" class="user-suggestions"></div>
+            </div>
+
+            <input type="number" id="grantAmount" placeholder="Summa (so'm)" min="0">
+            <input type="number" id="grantDuration" placeholder="Necha oy" value="1" min="1">
+            <input type="text" id="grantNote" placeholder="Izoh (ixtiyoriy)">
+            <button onclick="submitGrantSubscription()">✅ Obuna berish</button>
+        </div>
+    </div>
+
+    <div class="course-manage-panel">
+        <div class="courses-top-bar" style="margin-bottom: 10px;">
+            <h2 style="margin:0;">📋 Barcha obunalar</h2>
+            <input type="text" id="subsFilter" class="subs-filter-input" placeholder="🔍 Kurs yoki foydalanuvchi bo'yicha filtr..."
+                   oninput="renderSubscribers()">
+        </div>
+        <div class="table-scroll">
+            <table class="course-subscribers-table">
+                <thead>
+                <tr>
+                    <th>Kurs</th>
+                    <th>Foydalanuvchi</th>
+                    <th>Summa</th>
+                    <th>Holat</th>
+                    <th>Muddat</th>
+                    <th>Sana</th>
+                    <th>Amal</th>
+                </tr>
+                </thead>
+                <tbody id="subscribersTableBody">
+                    <tr><td colspan="7" class="empty-row">Yuklanmoqda...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

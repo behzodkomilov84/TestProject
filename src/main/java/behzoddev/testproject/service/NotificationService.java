@@ -2,6 +2,7 @@ package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.NotificationRepository;
 import behzoddev.testproject.dto.notification.NotificationDto;
+import behzoddev.testproject.dto.notification.NotificationStatsDto;
 import behzoddev.testproject.entity.Notification;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.telegram.TelegramBot;
@@ -85,6 +86,26 @@ public class NotificationService {
     @Transactional(readOnly = true)
     public long unreadCount(User user) {
         return notificationRepository.countByUser_IdAndReadFalse(user.getId());
+    }
+
+    // /notifications sahifasi uchun — tanlangan tab (Yangi/O'qilgan) bo'yicha
+    // to'liq (cheklovsiz) ro'yxat.
+    @Transactional(readOnly = true)
+    public List<NotificationDto> listByStatus(User user, boolean read) {
+        return notificationRepository.findByUser_IdAndReadOrderByCreatedAtDesc(user.getId(), read)
+                .stream().map(this::toDto).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public NotificationStatsDto stats(User user) {
+        long unread = notificationRepository.countByUser_IdAndReadFalse(user.getId());
+        long read = notificationRepository.countByUser_IdAndReadTrue(user.getId());
+
+        return NotificationStatsDto.builder()
+                .total(unread + read)
+                .unread(unread)
+                .read(read)
+                .build();
     }
 
     @Transactional

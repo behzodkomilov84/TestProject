@@ -1,0 +1,83 @@
+/* /notifications sahifasi — tab tugmalari va bildirishnomalar ro'yxati. */
+
+.notif-tabs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 18px 0 12px;
+    flex-wrap: wrap;
+}
+
+.notif-tab-btn {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    color: #334155;
+    font-weight: 600;
+    padding: 9px 18px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.notif-tab-btn.active {
+    background: #60c765;
+    border-color: #60c765;
+    color: white;
+}
+
+.notif-mark-all-page {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: #2563eb;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.notif-page-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.notif-page-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid transparent;
+    border-radius: 8px;
+    padding: 14px 16px;
+    cursor: pointer;
+}
+
+.notif-page-item:hover {
+    background: #f1f5f9;
+}
+
+.notif-page-item.unread {
+    border-left-color: #60c765;
+    background: #f0fdf4;
+}
+
+.notif-page-item .notif-message {
+    font-size: 14px;
+    color: #0f172a;
+    line-height: 1.4;
+}
+
+.notif-page-item .notif-time {
+    font-size: 12px;
+    color: #64748b;
+    white-space: nowrap;
+    margin-left: 12px;
+}
+
+.notif-page-list .notif-empty {
+    text-align: center;
+    color: #64748b;
+    padding: 40px 0;
+    font-size: 14px;
+}

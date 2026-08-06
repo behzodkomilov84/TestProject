@@ -36,12 +36,26 @@ function renderSection(data) {
         content.textContent = data.textContent || "";
         // Matn bo'lim — ochilgan zahoti "tugatilgan" deb belgilanadi.
         markCompleted();
-    } else {
+    } else if (data.type === "VIDEO") {
         content.innerHTML = buildVideoEmbed(data);
+        setupVideoCompletionTracking(data);
+    } else {
+        // MIXED — matn va video birga ko'rsatiladi, lekin "tugatish" faqat
+        // video oxirigacha ko'rilganda (matn kabi darhol emas — video
+        // ko'rilishini majburlash uchun).
+        content.innerHTML =
+            `<div class="section-text-block">${escapeHtml(data.textContent || "")}</div>` +
+            buildVideoEmbed(data);
         setupVideoCompletionTracking(data);
     }
 
     updateNextButton(data);
+}
+
+function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML.replace(/\n/g, "<br>");
 }
 
 function buildVideoEmbed(data) {
@@ -89,7 +103,7 @@ function setupVideoCompletionTracking(data) {
 
 // YouTube IFrame API global callback — API skripti yuklangach avtomatik chaqiriladi.
 function onYouTubeIframeAPIReady() {
-    if (sectionData && sectionData.type === "VIDEO" && sectionData.videoSourceType === "YOUTUBE") {
+    if (sectionData && sectionData.type !== "TEXT" && sectionData.videoSourceType === "YOUTUBE") {
         initYouTubePlayer(sectionData.videoUrl);
     }
 }

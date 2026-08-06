@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <title>Bildirishnomalar</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/css/users.css">
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/payments.css">
+    <link rel="stylesheet" href="/css/notifications.css">
+
+    <script src="/js/notifications.js" defer></script>
+    <script src="/js/navbar.js" defer></script>
+</head>
+
+<body th:attr="data-role=${role}">
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container">
+    <header class="top-bar">
+        <h1>🔔 Bildirishnomalar</h1>
+        <button class="back-btn" onclick="history.back()">← Orqaga</button>
+    </header>
+
+    <div class="stat-cards">
+        <div class="stat-card">
+            <div class="stat-label">Jami</div>
+            <div class="stat-value" id="statTotal">—</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Yangi</div>
+            <div class="stat-value" id="statUnread">—</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">O'qilgan</div>
+            <div class="stat-value" id="statRead">—</div>
+        </div>
+    </div>
+
+    <div class="notif-tabs">
+        <button type="button" id="tabNewBtn" class="notif-tab-btn" onclick="switchNotifTab('new')">🆕 Yangi</button>
+        <button type="button" id="tabReadBtn" class="notif-tab-btn" onclick="switchNotifTab('read')">✓ O'qilgan</button>
+        <button type="button" id="markAllBtn" class="notif-mark-all-page" onclick="markAllRead()">Barchasini o'qildi deb belgilash</button>
+    </div>
+
+    <div id="notifPageList" class="notif-page-list">
+        <div class="notif-empty">Yuklanmoqda...</div>
+    </div>
+</div>
+
+</body>
+</html>

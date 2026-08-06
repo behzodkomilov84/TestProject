@@ -62,7 +62,11 @@ async function linkTelegram() {
     }
 }
 
-/* ===== Bildirishnomalar (notification center) ===== */
+/* ===== Bildirishnomalar (notification center) =====
+   Bell ustidagi panel endi to'liq ro'yxatni ko'rsatmaydi — u faqat qisqa
+   "kirish darvozasi": yangi bildirishnoma bo'lsa shu haqda yozadi va
+   /notifications sahifasiga o'tkazadi, bo'lmasa faol emas. To'liq
+   ro'yxat, tab'lar (Yangi/O'qilgan) va statistika — notifications.js. */
 
 function toggleNotifications(e) {
     e.stopPropagation();
@@ -73,7 +77,7 @@ function toggleNotifications(e) {
     panel.classList.toggle("open", willOpen);
 
     if (willOpen) {
-        loadNotifications();
+        refreshUnreadCount();
     }
 }
 
@@ -87,68 +91,12 @@ document.addEventListener("click", (e) => {
     }
 });
 
-function notifTimeAgo(dateStr) {
-    const diffMs = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diffMs / 60000);
-    if (mins < 1) return "hozir";
-    if (mins < 60) return mins + " daqiqa oldin";
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return hours + " soat oldin";
-    const days = Math.floor(hours / 24);
-    return days + " kun oldin";
-}
-
-function renderNotifGroup(title, items) {
-    if (!items.length) return "";
-
-    return `
-        <div class="notif-group-title">${title}</div>
-        ${items.map(n => `
-            <div class="notif-item ${n.read ? "" : "unread"}" data-id="${n.id}" data-link="${n.link || ""}">
-                <div class="notif-message">${n.message}</div>
-                <div class="notif-time">${notifTimeAgo(n.createdAt)}</div>
-            </div>
-        `).join("")}
-    `;
-}
-
-function renderNotifications(items) {
-    const list = document.getElementById("notif-list");
-    if (!list) return;
-
-    if (!items.length) {
-        list.innerHTML = '<div class="notif-empty">Bildirishnoma yo\'q</div>';
-        return;
+function goToNotifTab(tab) {
+    if (tab === "new") {
+        const gateway = document.getElementById("notifGatewayNew");
+        if (!gateway || !gateway.classList.contains("active")) return; // yangi yo'q — bosilmaydi
     }
-
-    const unread = items.filter(n => !n.read);
-    const read = items.filter(n => n.read);
-
-    list.innerHTML =
-        renderNotifGroup(`🆕 Yangi (${unread.length})`, unread) +
-        renderNotifGroup("✓ O'qilgan", read);
-
-    list.querySelectorAll(".notif-item").forEach(item => {
-        item.addEventListener("click", () => {
-            const id = item.dataset.id;
-            const link = item.dataset.link;
-
-            fetch(`/api/notifications/${id}/read`, { method: "POST" })
-                .then(() => {
-                    item.classList.remove("unread");
-                    refreshUnreadCount();
-                    if (link) location.href = link;
-                })
-                .catch(err => console.error(err));
-        });
-    });
-}
-
-function loadNotifications() {
-    fetch("/api/notifications")
-        .then(r => r.ok ? r.json() : [])
-        .then(renderNotifications)
-        .catch(err => console.error(err));
+    location.href = "/notifications?tab=" + tab;
 }
 
 function refreshUnreadCount() {
@@ -156,23 +104,26 @@ function refreshUnreadCount() {
         .then(r => r.ok ? r.json() : { count: 0 })
         .then(data => {
             const badge = document.getElementById("notif-badge");
-            if (!badge) return;
-
-            if (data.count > 0) {
-                badge.style.display = "inline-flex";
-                badge.textContent = data.count > 99 ? "99+" : data.count;
-            } else {
-                badge.style.display = "none";
+            if (badge) {
+                if (data.count > 0) {
+                    badge.style.display = "inline-flex";
+                    badge.textContent = data.count > 99 ? "99+" : data.count;
+                } else {
+                    badge.style.display = "none";
+                }
             }
-        })
-        .catch(err => console.error(err));
-}
 
-function markAllNotificationsRead() {
-    fetch("/api/notifications/read-all", { method: "POST" })
-        .then(() => {
-            document.querySelectorAll(".notif-item.unread").forEach(el => el.classList.remove("unread"));
-            refreshUnreadCount();
+            const gatewayNew = document.getElementById("notifGatewayNew");
+            const gatewayNewText = document.getElementById("notifGatewayNewText");
+            if (gatewayNew && gatewayNewText) {
+                if (data.count > 0) {
+                    gatewayNew.classList.add("active");
+                    gatewayNewText.textContent = `🆕 ${data.count} ta yangi bildirishnoma bor →`;
+                } else {
+                    gatewayNew.classList.remove("active");
+                    gatewayNewText.textContent = "Yangi bildirishnoma yo'q";
+                }
+            }
         })
         .catch(err => console.error(err));
 }

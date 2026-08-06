@@ -52,18 +52,23 @@
             </div>
         </div>
 
-        <h3>➕ Yangi bo'lim qo'shish</h3>
-        <div class="section-form">
-            <input type="text" id="newSectionTitle" placeholder="Bo'lim nomi">
-            <select id="newSectionType" onchange="onSectionTypeChange()">
-                <option value="TEXT">📄 Matn</option>
-                <option value="VIDEO">🎬 Video</option>
-            </select>
+        <button id="openAddSectionBtn" onclick="openAddSectionForm()">➕ Yangi bo'lim qo'shish</button>
 
+        <div id="addSectionForm" class="section-form" style="display:none;">
+            <input type="text" id="newSectionTitle" placeholder="Bo'lim nomi">
+
+            <!-- Matn va video bir vaqtning o'zida ham qo'shilishi mumkin —
+                 kamida bittasi belgilangan bo'lishi shart. -->
+            <label class="content-toggle-label">
+                <input type="checkbox" id="includeText" checked onchange="onContentToggle(this)"> 📄 Matn qo'shish
+            </label>
             <div id="textFields">
                 <textarea id="newSectionText" placeholder="Matn kontenti" rows="5"></textarea>
             </div>
 
+            <label class="content-toggle-label">
+                <input type="checkbox" id="includeVideo" onchange="onContentToggle(this)"> 🎬 Video qo'shish
+            </label>
             <div id="videoFields" style="display:none;">
                 <select id="newSectionVideoSource" onchange="onVideoSourceChange()">
                     <option value="YOUTUBE">YouTube</option>
@@ -75,28 +80,17 @@
                 <input type="number" id="newSectionVideoDuration" placeholder="Video davomiyligi (soniya) — faqat 'Boshqa manba' uchun" style="display:none;">
             </div>
 
-            <button onclick="submitAddSection()">✅ Bo'limni qo'shish</button>
+            <div class="course-form-actions">
+                <button onclick="submitAddSection()">✅ Bo'limni qo'shish</button>
+                <button onclick="closeAddSectionForm()">Bekor qilish</button>
+            </div>
         </div>
 
-        <h3>💳 Obuna berish</h3>
-        <div class="section-form">
-            <select id="grantUserSelect"></select>
-            <input type="number" id="grantAmount" placeholder="Summa (so'm)" min="0">
-            <input type="number" id="grantDuration" placeholder="Necha oy" value="1" min="1">
-            <input type="text" id="grantNote" placeholder="Izoh (ixtiyoriy)">
-            <button onclick="submitGrantSubscription()">✅ Obuna berish</button>
-        </div>
-
-        <div class="table-scroll">
-            <table class="course-subscribers-table">
-                <thead>
-                <tr><th>Foydalanuvchi</th><th>Summa</th><th>Holat</th><th>Muddat</th><th>Sana</th><th>Amal</th></tr>
-                </thead>
-                <tbody id="subscribersTableBody">
-                    <tr><td colspan="6" class="empty-row">Yuklanmoqda...</td></tr>
-                </tbody>
-            </table>
-        </div>
+        <!-- Obuna berish/tasdiqlash/bekor qilish — endi barcha kurslar uchun
+             yagona "Kursga obuna berish" sahifasida (navbar > 🎓 Kurslar). -->
+        <button onclick="location.href='/courses/subscriptions?courseId=' + COURSE_ID">
+            💳 Bu kurs uchun obunalarni boshqarish
+        </button>
     </div>
 
     <h2 class="curriculum-title">📋 Dastur</h2>

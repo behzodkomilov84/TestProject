@@ -29,7 +29,16 @@
         <nav id="nav-menu" class="nav-items">
             <a href="/index">Bosh sahifa</a>
             <a href="/history">Statistika</a>
-            <a href="/courses" sec:authorize="isAuthenticated()">🎓 Kurslar</a>
+            <!-- Kurslar — "Mavjud kurslar" (hammaga) va "Kursga obuna berish"
+                 (faqat OWNER, obuna bilan bog'liq barcha funksiyalar shu
+                 alohida sahifada jamlangan) ichki dropdown ichida. -->
+            <div class="dropdown" sec:authorize="isAuthenticated()">
+                <button class="dropbtn">🎓 Kurslar ▾</button>
+                <div class="dropdown-content">
+                    <a href="/courses">📚 Mavjud kurslar</a>
+                    <a href="/courses/subscriptions" sec:authorize="hasAuthority('ROLE_OWNER')">💳 Kursga obuna berish</a>
+                </div>
+            </div>
 
             <!-- Owner/Admin/Student panellari yagona "Panels" dropdown ichida —
                  har biri o'z rollariga qarab (sec:authorize) ko'rinadi. -->
@@ -78,10 +87,15 @@
                 <div id="notif-panel" class="notif-panel">
                     <div class="notif-header">
                         <span>Bildirishnomalar</span>
-                        <button type="button" onclick="markAllNotificationsRead()" class="notif-mark-all">Barchasini o'qildi deb belgilash</button>
                     </div>
-                    <div id="notif-list" class="notif-list">
-                        <div class="notif-empty">Bildirishnoma yo'q</div>
+                    <!-- To'liq ro'yxat/statistika endi alohida /notifications sahifasida —
+                         bu panel faqat qisqa "kirish darvozasi". Yangi bildirishnoma
+                         bo'lmasa, qator faol (bosiladigan) emas. -->
+                    <div id="notifGatewayNew" class="notif-gateway-row" onclick="goToNotifTab('new')">
+                        <span id="notifGatewayNewText">Yuklanmoqda...</span>
+                    </div>
+                    <div class="notif-gateway-row active" onclick="goToNotifTab('read')">
+                        <span>✓ O'qilganlarni ko'rish</span>
                     </div>
                 </div>
             </div>

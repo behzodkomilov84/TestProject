@@ -7,8 +7,6 @@ document.addEventListener("DOMContentLoaded", () => {
     loadCourse();
     if (IS_OWNER) {
         document.getElementById("manageCoursePanel").style.display = "block";
-        loadUsersForGrant();
-        loadSubscribers();
     }
 });
 
@@ -86,7 +84,7 @@ function renderSections(sections) {
     list.innerHTML = sections.map(s => {
         const indexClass = s.completed ? "section-index completed" : "section-index";
         const indexIcon = s.completed ? "✓" : s.orderIndex;
-        const typeIcon = s.type === "VIDEO" ? "🎬" : "📄";
+        const typeIcon = s.type === "VIDEO" ? "🎬" : s.type === "MIXED" ? "📄🎬" : "📄";
 
         const link = s.locked
             ? `<span>${escapeHtml(s.title)}</span>`
@@ -210,10 +208,30 @@ async function deleteCourse() {
 
 /* ===== OWNER: bo'lim qo'shish ===== */
 
-function onSectionTypeChange() {
-    const type = document.getElementById("newSectionType").value;
-    document.getElementById("textFields").style.display = type === "TEXT" ? "block" : "none";
-    document.getElementById("videoFields").style.display = type === "VIDEO" ? "block" : "none";
+function openAddSectionForm() {
+    document.getElementById("addSectionForm").style.display = "flex";
+    document.getElementById("openAddSectionBtn").style.display = "none";
+}
+
+function closeAddSectionForm() {
+    document.getElementById("addSectionForm").style.display = "none";
+    document.getElementById("openAddSectionBtn").style.display = "";
+}
+
+// Matn va video mustaqil checkbox'lar — bittasi yoki ikkalasi ham
+// belgilanishi mumkin, lekin ikkalasi ham bo'sh qolishi mumkin emas
+// (oxirgisini o'chirib bo'lmaydi — avtomatik qayta belgilanadi).
+function onContentToggle(changedCheckbox) {
+    const includeText = document.getElementById("includeText");
+    const includeVideo = document.getElementById("includeVideo");
+
+    if (!includeText.checked && !includeVideo.checked) {
+        // Ikkalasi ham o'chirilgan — hozir bosilgan checkbox'ni qayta yoqamiz.
+        (changedCheckbox || includeText).checked = true;
+    }
+
+    document.getElementById("textFields").style.display = includeText.checked ? "block" : "none";
+    document.getElementById("videoFields").style.display = includeVideo.checked ? "block" : "none";
 }
 
 function onVideoSourceChange() {
@@ -228,22 +246,31 @@ function onVideoSourceChange() {
 
 async function submitAddSection() {
     const title = document.getElementById("newSectionTitle").value.trim();
-    const type = document.getElementById("newSectionType").value;
+    const includeText = document.getElementById("includeText").checked;
+    const includeVideo = document.getElementById("includeVideo").checked;
 
     if (!title) {
         alert("❌ Bo'lim nomini kiriting");
         return;
     }
 
+    if (!includeText && !includeVideo) {
+        alert("❌ Kamida bittasini tanlang: Matn yoki Video");
+        return;
+    }
+
+    const type = includeText && includeVideo ? "MIXED" : includeText ? "TEXT" : "VIDEO";
     const payload = { title, type, textContent: null, videoSourceType: null, videoUrl: null, videoDurationSeconds: null };
 
-    if (type === "TEXT") {
+    if (includeText) {
         payload.textContent = document.getElementById("newSectionText").value.trim();
         if (!payload.textContent) {
             alert("❌ Matn kontentini kiriting");
             return;
         }
-    } else {
+    }
+
+    if (includeVideo) {
         const source = document.getElementById("newSectionVideoSource").value;
         payload.videoSourceType = source;
 
@@ -299,6 +326,10 @@ async function submitAddSection() {
         document.getElementById("newSectionTitle").value = "";
         document.getElementById("newSectionText").value = "";
         document.getElementById("newSectionVideoUrl").value = "";
+        document.getElementById("includeText").checked = true;
+        document.getElementById("includeVideo").checked = false;
+        onContentToggle(document.getElementById("includeText"));
+        closeAddSectionForm();
         loadCourse();
     } catch (err) {
         console.error(err);
@@ -323,158 +354,5 @@ async function deleteSection(sectionId) {
     }
 }
 
-/* ===== OWNER: obuna berish ===== */
-
-function loadUsersForGrant() {
-    fetch("/api/users")
-        .then(r => r.ok ? r.json() : [])
-        .then(users => {
-            const select = document.getElementById("grantUserSelect");
-            if (!select) return;
-            select.innerHTML = users.map(u => `<option value="${u.id}">${escapeHtml(u.username)}</option>`).join("");
-        })
-        .catch(err => console.error(err));
-}
-
-async function submitGrantSubscription() {
-    const userId = Number(document.getElementById("grantUserSelect").value);
-    const amount = Number(document.getElementById("grantAmount").value) || 0;
-    const durationMonths = Number(document.getElementById("grantDuration").value) || 1;
-    const note = document.getElementById("grantNote").value.trim();
-
-    if (!userId) {
-        alert("❌ Foydalanuvchini tanlang");
-        return;
-    }
-
-    try {
-        const res = await fetch(`/api/courses/${COURSE_ID}/subscriptions`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId, amount, durationMonths, note })
-        });
-
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-            alert(data.error || "Xatolik yuz berdi");
-            return;
-        }
-
-        alert("✅ Obuna berildi (" + durationMonths + " oy)");
-        document.getElementById("grantAmount").value = "";
-        document.getElementById("grantDuration").value = "1";
-        document.getElementById("grantNote").value = "";
-        loadSubscribers();
-    } catch (err) {
-        console.error(err);
-        alert("Tarmoq xatoligi");
-    }
-}
-
-function loadSubscribers() {
-    fetch(`/api/courses/${COURSE_ID}/subscriptions`)
-        .then(r => r.ok ? r.json() : [])
-        .then(renderSubscribers)
-        .catch(err => console.error(err));
-}
-
-function renderSubscribers(subs) {
-    const tbody = document.getElementById("subscribersTableBody");
-    if (!tbody) return;
-
-    if (!subs.length) {
-        tbody.innerHTML = `<tr><td colspan="6" class="empty-row">Hali obunachi yo'q</td></tr>`;
-        return;
-    }
-
-    const statusLabels = {
-        CONFIRMED: "✅ Faol",
-        PENDING: "⏳ So'rov kutmoqda",
-        EXPIRED: "⌛ Muddati tugagan",
-        CANCELLED: "❌ Bekor qilingan"
-    };
-
-    tbody.innerHTML = subs.map(s => {
-        let actions = "—";
-        if (s.status === "PENDING") {
-            actions = `<button onclick="confirmRequest(${s.id}, '${escapeHtml(s.username)}')">✅ Tasdiqlash</button>
-                       <button onclick="cancelSubscription(${s.id})">❌ Rad etish</button>`;
-        } else if (s.status === "CONFIRMED") {
-            actions = `<button onclick="cancelSubscription(${s.id})">Bekor qilish</button>`;
-        }
-
-        const muddat = s.endDate ? new Date(s.endDate).toLocaleDateString("uz-UZ") : "—";
-
-        return `
-            <tr>
-                <td>${escapeHtml(s.username)}</td>
-                <td>${Number(s.amount).toLocaleString("uz-UZ")} so'm</td>
-                <td>${statusLabels[s.status] || s.status}</td>
-                <td>${muddat}</td>
-                <td>${new Date(s.createdAt).toLocaleDateString("uz-UZ")}</td>
-                <td>${actions}</td>
-            </tr>
-        `;
-    }).join("");
-}
-
-// PENDING so'rovni tasdiqlash — summa va muddatni so'raymiz, keyin mavjud
-// "obuna berish" endpoint'i orqali (u avtomatik PENDING'ni CONFIRMED'ga o'tkazadi).
-async function confirmRequest(subscriptionId, username) {
-    const amountStr = prompt(`"${username}" uchun to'lov summasini kiriting (so'm):`, "0");
-    if (amountStr === null) return;
-
-    const amount = Number(amountStr);
-    if (isNaN(amount) || amount < 0) {
-        alert("❌ Noto'g'ri summa");
-        return;
-    }
-
-    const durationStr = prompt("Obuna necha oyga beriladi?", "1");
-    if (durationStr === null) return;
-
-    const durationMonths = Number(durationStr) || 1;
-
-    const sub = (await fetch(`/api/courses/${COURSE_ID}/subscriptions`).then(r => r.json()))
-        .find(s => s.id === subscriptionId);
-    if (!sub) return;
-
-    try {
-        const res = await fetch(`/api/courses/${COURSE_ID}/subscriptions`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: sub.userId, amount, durationMonths, note: "So'rov orqali tasdiqlandi" })
-        });
-
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-            alert(data.error || "Xatolik yuz berdi");
-            return;
-        }
-
-        alert("✅ Obuna tasdiqlandi");
-        loadSubscribers();
-    } catch (err) {
-        console.error(err);
-        alert("Tarmoq xatoligi");
-    }
-}
-
-async function cancelSubscription(id) {
-    if (!confirm("Obunani bekor qilmoqchimisiz?")) return;
-
-    try {
-        const res = await fetch(`/api/course-subscriptions/${id}/cancel`, { method: "POST" });
-        if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            alert(data.error || "Xatolik yuz berdi");
-            return;
-        }
-        loadSubscribers();
-    } catch (err) {
-        console.error(err);
-        alert("Tarmoq xatoligi");
-    }
-}
+/* Obuna berish/tasdiqlash/bekor qilish — endi /courses/subscriptions
+   sahifasida (courseSubscriptions.js), barcha kurslar uchun yagona joyda. */

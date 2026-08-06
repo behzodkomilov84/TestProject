@@ -1,6 +1,7 @@
 package behzoddev.testproject.controller.api;
 
 import behzoddev.testproject.dto.notification.NotificationDto;
+import behzoddev.testproject.dto.notification.NotificationStatsDto;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.NotificationService;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,18 @@ public class NotificationController {
     @GetMapping
     public List<NotificationDto> list(@AuthenticationPrincipal User user) {
         return notificationService.list(user);
+    }
+
+    // /notifications sahifasi uchun — "Yangi" (read=false) yoki "O'qilgan"
+    // (read=true) tab bo'yicha to'liq (top-50 bilan cheklanmagan) ro'yxat.
+    @GetMapping("/by-status")
+    public List<NotificationDto> listByStatus(@RequestParam boolean read, @AuthenticationPrincipal User user) {
+        return notificationService.listByStatus(user, read);
+    }
+
+    @GetMapping("/stats")
+    public NotificationStatsDto stats(@AuthenticationPrincipal User user) {
+        return notificationService.stats(user);
     }
 
     @GetMapping("/unread-count")

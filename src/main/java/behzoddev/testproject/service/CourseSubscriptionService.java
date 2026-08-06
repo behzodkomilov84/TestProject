@@ -65,12 +65,12 @@ public class CourseSubscriptionService {
 
         courseSubscriptionRepository.save(request);
 
-        // Barcha OWNER'larga xabar beramiz — /users yoki kurs boshqaruv
-        // panelida so'rovni ko'rib, tasdiqlashlari uchun.
+        // Barcha OWNER'larga xabar beramiz — "Kursga obuna berish" sahifasida
+        // (barcha kurslar obunalari yagona joyda) so'rovni ko'rib, tasdiqlashlari uchun.
         for (User owner : userRepository.findByRoles_RoleName("ROLE_OWNER")) {
             notificationService.create(owner,
                     "🎓 " + user.getUsername() + " \"" + course.getTitle() + "\" kursiga obuna so'radi.",
-                    "/courses/" + courseId);
+                    "/courses/subscriptions?courseId=" + courseId);
         }
 
         log.info("Kurs obunasiga so'rov yuborildi: user={}, course={}", user.getUsername(), course.getTitle());

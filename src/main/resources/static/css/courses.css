@@ -150,6 +150,11 @@ body {
 
 .course-form input, .course-form textarea,
 .section-form input, .section-form select, .section-form textarea {
+    /* width:100% shart — #textFields/#videoFields kabi ichki "wrapper"
+       div'lar ichidagi maydonlar to'g'ridan-to'g'ri flex-farzand emas,
+       shuning uchun avtomatik cho'zilmaydi va brauzerning standart
+       (~20 belgi) kengligida qolib, uzun placeholder matni sig'may qoladi. */
+    width: 100%;
     padding: 9px 12px;
     border-radius: 8px;
     border: 1px solid #d5dde8;
@@ -183,6 +188,19 @@ body {
     gap: 8px;
     font-size: 13px;
     color: #64748b;
+}
+
+.content-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.content-toggle-label input[type="checkbox"] {
+    width: auto;
 }
 
 /* ===== Kurs sahifasi (detail) ===== */
@@ -317,6 +335,11 @@ body {
 
 /* Responsive video embed — har qanday manba (YouTube/upload/external) uchun
    16:9 nisbatda, to'liq width/height bilan ko'rinadi. */
+/* MIXED bo'lim — matn video ustida, orasida bo'shliq bilan. */
+.section-text-block {
+    margin-bottom: 20px;
+}
+
 .video-embed-wrapper {
     position: relative;
     width: 100%;
@@ -361,6 +384,111 @@ body {
 .next-hint {
     font-size: 13px;
     color: #64748b;
+}
+
+/* ===== Obuna berishda bir nechta kursni tanlash (checkbox ro'yxati) ===== */
+
+.course-multiselect-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 180px;
+    overflow-y: auto;
+    border: 1px solid #d5dde8;
+    border-radius: 8px;
+    padding: 6px;
+}
+
+.course-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 8px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.course-checkbox-item:hover {
+    background: #f1f5f9;
+}
+
+.course-checkbox-item input[type="checkbox"] {
+    width: auto;
+}
+
+.subs-filter-input {
+    width: 100%;
+    max-width: 320px;
+    min-width: 200px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #d5dde8;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+/* ===== Foydalanuvchini qidirib tanlash (obuna berish) ===== */
+
+.user-search-wrap {
+    position: relative;
+    width: 100%;
+}
+
+/* .section-form ichida to'g'ridan-to'g'ri farzand (flex item) bo'lmagani
+   uchun bu input avtomatik cho'zilmaydi — aniq width kerak, aks holda
+   brauzerning standart (~20 belgi) kengligida qoladi va placeholder matni
+   sig'may qoladi. */
+.user-search-wrap input {
+    width: 100%;
+}
+
+.user-suggestions {
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid #d5dde8;
+    border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+    max-height: 240px;
+    overflow-y: auto;
+    z-index: 20;
+}
+
+.user-suggestion-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.user-suggestion-item:last-child {
+    border-bottom: none;
+}
+
+.user-suggestion-item:hover {
+    background: #f1f5f9;
+}
+
+.user-suggestion-roles {
+    font-size: 11px;
+    color: #94a3b8;
+    text-transform: uppercase;
+}
+
+.user-suggestion-empty {
+    padding: 10px 12px;
+    color: #94a3b8;
+    font-size: 13px;
+    font-style: italic;
 }
 
 /* ===== Obunachilar jadvali ===== */

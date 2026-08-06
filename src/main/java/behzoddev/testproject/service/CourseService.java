@@ -273,14 +273,17 @@ public class CourseService {
         try {
             type = CourseSectionType.valueOf(dto.type());
         } catch (Exception e) {
-            throw new IllegalArgumentException("❌Bo'lim turi noto'g'ri (TEXT yoki VIDEO bo'lishi kerak).");
+            throw new IllegalArgumentException("❌Bo'lim turi noto'g'ri (TEXT, VIDEO yoki MIXED bo'lishi kerak).");
         }
 
-        if (type == CourseSectionType.TEXT && (dto.textContent() == null || dto.textContent().isBlank())) {
+        // MIXED — bo'limda ham matn, ham video bo'lgani uchun ikkala tekshiruv
+        // ham (TEXT va VIDEO uchun alohida yozilganlar) qo'llaniladi.
+        if ((type == CourseSectionType.TEXT || type == CourseSectionType.MIXED)
+                && (dto.textContent() == null || dto.textContent().isBlank())) {
             throw new IllegalArgumentException("❌Matn kontenti bo'sh bo'lishi mumkin emas.");
         }
 
-        if (type == CourseSectionType.VIDEO) {
+        if (type == CourseSectionType.VIDEO || type == CourseSectionType.MIXED) {
             if (dto.videoSourceType() == null || dto.videoUrl() == null || dto.videoUrl().isBlank()) {
                 throw new IllegalArgumentException("❌Video manba va URL ko'rsatilishi shart.");
             }

@@ -11,5 +11,11 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     List<Notification> findByUser_IdAndReadFalse(Long userId);
 
+    // "Yangi" / "O'qilgan" sahifasi uchun — cheklovsiz (top-50 emas), status
+    // bo'yicha to'liq ro'yxat.
+    List<Notification> findByUser_IdAndReadOrderByCreatedAtDesc(Long userId, boolean read);
+
     long countByUser_IdAndReadFalse(Long userId);
+
+    long countByUser_IdAndReadTrue(Long userId);
 }
