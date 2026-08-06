@@ -148,6 +148,73 @@ public class SubscriptionService {
         return toDto(subscription);
     }
 
+    // Payme/Click orqali avtomatik to'lov muvaffaqiyatli yakunlanganda
+    // (PaymentOrderService.markPaid) chaqiriladi — inson (OWNER) ishtirok
+    // etmagani uchun confirmedBy=null, source=ONLINE.
+    @Transactional
+    public SubscriptionDto confirmOnline(User user, BigDecimal amount, int months) {
+        LocalDateTime now = LocalDateTime.now();
+
+        Subscription subscription = Subscription.builder()
+                .user(user)
+                .amount(amount)
+                .source(SubscriptionSource.ONLINE)
+                .status(SubscriptionStatus.CONFIRMED)
+                .startDate(now)
+                .endDate(now.plusMonths(months))
+                .note("Onlayn to'lov (Payme/Click) orqali avtomatik tasdiqlandi")
+                .build();
+
+        subscriptionRepository.save(subscription);
+        grantAdmin(user, null);
+
+        notificationService.create(user,
+                "✅ ADMIN huquqingiz onlayn to'lov orqali tasdiqlandi! Endi " + months +
+                        " oy davomida o'qituvchi sifatida ishlashingiz mumkin.",
+                "/profile");
+
+        log.info("Obuna (ONLINE) tasdiqlandi: user={}, muddat={} oy", user.getUsername(), months);
+
+        return toDto(subscription);
+    }
+
+    // Payme'da PerformTransaction'dan KEYIN CancelTransaction kelsa (chargeback/
+    // qaytarish) — allaqachon berilgan ADMIN huquqini bekor qilamiz. Bu sxema
+    // bo'yicha kamdan-kam sodir bo'ladi, lekin protokol buni talab qiladi.
+    // MUHIM: subscriptionId — aynan SHU to'lov orqali yaratilgan obuna ID'si
+    // (PaymentOrder.subscriptionId). Avval bu parametr yo'q edi va "boshqa
+    // faol obuna bormi" tekshiruvi doim shu obunaning o'zini topib, ADMIN
+    // hech qachon haqiqatda bekor qilinmas edi — shuning uchun bu yerda
+    // avval o'sha aniq obunani CANCELLED qilamiz, keyin qolganini tekshiramiz.
+    @Transactional
+    public void reverseOnline(User user, Long subscriptionId) {
+        if (subscriptionId != null) {
+            cancelConfirmedById(subscriptionId);
+        }
+
+        boolean hasOtherActive = subscriptionRepository.existsByUser_IdAndStatusAndEndDateAfter(
+                user.getId(), SubscriptionStatus.CONFIRMED, LocalDateTime.now());
+
+        if (!hasOtherActive) {
+            revokeAdmin(user);
+            notificationService.create(user,
+                    "⚠️ Onlayn to'lovingiz bekor qilindi (qaytarildi), shunga ko'ra ADMIN huquqi ham bekor qilindi.",
+                    "/profile");
+            log.info("Onlayn to'lov bekor qilindi, ROLE_ADMIN olib tashlandi: {}", user.getUsername());
+        }
+    }
+
+    // reverseOnline uchun ichki yordamchi — mavjud cancel(id) PENDING'ni talab
+    // qiladi, bu esa CONFIRMED (allaqachon to'langan) obunani bekor qilishi kerak.
+    private void cancelConfirmedById(Long subscriptionId) {
+        subscriptionRepository.findById(subscriptionId).ifPresent(s -> {
+            if (s.getStatus() == SubscriptionStatus.CONFIRMED) {
+                s.setStatus(SubscriptionStatus.CANCELLED);
+                subscriptionRepository.save(s);
+            }
+        });
+    }
+
     @Transactional
     public SubscriptionDto cancel(Long subscriptionId) {
         Subscription subscription = subscriptionRepository.findById(subscriptionId)

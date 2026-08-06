@@ -14,12 +14,14 @@ qamrab oladi.
   buni `/users` sahifasida ko'rib, tasdiqlaydi yoki rad etadi.
 - Har kuni tunda (00:30) muddati o'tgan obunalar avtomatik `EXPIRED` bo'ladi va, agar
   foydalanuvchida boshqa faol obuna qolmagan bo'lsa, ADMIN roli avtomatik olib tashlanadi.
-- **Cheklov**: `ONLINE` manba hozircha faqat enum sifatida tayyor — Payme/Click kabi haqiqiy
-  to'lov shlyuzi ulanmagan. Buning uchun quyidagilar kerak bo'ladi:
-  - Payme/Click'da merchant (savdogar) akkaunt ochish va kalitlarni olish;
-  - webhook endpoint (`/api/payments/online/callback`) yozish va shlyuz tomonidan
-    yuboriladigan holat (success/fail) hamda summani tekshirish;
-  - tranzaksiya ID orqali takroriy so'rovlarni oldini olish (idempotency).
+- ✅ **BAJARILDI — Payme/Click onlayn to'lov integratsiyasi**: `ROLE_ADMIN`
+  obunasini foydalanuvchi o'zi (OWNER ishtirokisiz) `/profile`'dan sotib olishi
+  mumkin. To'liq JSON-RPC (Payme) va Prepare/Complete (Click) protokollari,
+  idempotentlik, chargeback/qaytarish (avtomatik ADMIN'ni bekor qilish) —
+  batafsil: `docs/PAYMENTS.md`. **Cheklov**: haqiqiy merchant akkaunt yo'qligi
+  sabab faqat sintetik (o'zim simulyatsiya qilgan) so'rovlar bilan sinaldi —
+  production'ga chiqarishdan oldin Payme/Click'ning test (sandbox) muhitida
+  sertifikatsiyadan o'tkazish shart.
 - **Cheklov**: Telegram orqali yuborilgan to'lov cheki/skrinshoti hozircha avtomatik
   tekshirilmaydi — OWNER buni Telegram chatining o'zida ko'rib, keyin saytda tasdiqlaydi.
   To'liq avtomatlashtirish uchun rasmni saqlab, admin panelda ko'rsatish kerak bo'ladi.
@@ -81,8 +83,9 @@ qamrab oladi.
 
 ## 5. Huquqiy / monetizatsiya
 
-- **Foydalanish shartlari va maxfiylik siyosati** (Terms of Service, Privacy Policy)
-  sahifalari yo'q — pullik xizmat taqdim etilar ekan, bu huquqiy jihatdan zarur.
+- ✅ **BAJARILDI — Foydalanish shartlari va maxfiylik siyosati**: `/terms` va
+  `/privacy` sahifalari (draft, yuridik ko'rikdan o'tmagan — sahifada shu haqda
+  ogohlantirish bor), ro'yxatdan o'tishda majburiy roziliknoma checkbox'i bilan.
 - **To'lov qaytarish (refund) siyosati** aniqlanmagan — agar ADMIN huquqi noto'g'ri
   berilgan/bekor qilinishi kerak bo'lsa, qanday tartibda pul qaytarilishi hujjatlashtirilmagan.
 
@@ -91,8 +94,8 @@ qamrab oladi.
 ~~Parolni tiklash~~, ~~Login urinishlarini cheklash~~, ~~Rol audit log~~,
 ~~Bildirishnoma markazi~~, ~~HTTPS/SSL~~, ~~Fayl antivirus tekshiruvi~~,
 ~~To'lov tarixi/hisobot~~, ~~Online kurslar~~, ~~Obuna eslatmasi~~,
-~~Email integratsiyasi~~ — bajarildi.
+~~Email integratsiyasi~~, ~~Foydalanish shartlari/Maxfiylik siyosati~~,
+~~Payme/Click integratsiyasi~~ (kod tayyor, sertifikatsiya kutilmoqda) — bajarildi.
 
-Qolgan (tarif rejalar) — Payme/Click integratsiyasi, avtomatik testlar va
-CI/CD kabi kattaroq va alohida rejalashtirish talab qiladigan ishlar bilan
-bir qatorda.
+Qolgan (tarif rejalar, refund siyosati) — avtomatik testlar va CI/CD kabi
+kattaroq va alohida rejalashtirish talab qiladigan ishlar bilan bir qatorda.

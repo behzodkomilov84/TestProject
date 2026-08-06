@@ -11,6 +11,8 @@ document.addEventListener("DOMContentLoaded", () => {
             // (masalan, ham o'qituvchi, ham o'quvchi) — barchasi ko'rsatiladi.
             document.getElementById("role").innerText =
                 (data.roles || []).map(r => r.replace("ROLE_", "")).join(", ");
+
+            loadPaymentConfig(data.roles || []);
         });
 
     fetch("/api/profile/stats")
@@ -252,4 +254,48 @@ function changePassword() {
 function safePage(page) {
     const n = Number(page);
     return Number.isFinite(n) && n >= 0 ? n : 0;
+}
+
+/* ===== Onlayn to'lov (Payme/Click) — ROLE_ADMIN obunasini o'zi sotib olish ===== */
+
+function loadPaymentConfig(roles) {
+    if (roles.includes("ROLE_OWNER")) return; // OWNER'ga kerak emas
+
+    fetch("/api/payments/config")
+        .then(r => r.ok ? r.json() : null)
+        .then(config => {
+            if (!config || (!config.paymeEnabled && !config.clickEnabled)) return;
+
+            document.getElementById("onlinePaymentSection").style.display = "block";
+            document.getElementById("pricePerMonthText").textContent =
+                `1 oy = ${Number(config.pricePerMonthSom).toLocaleString("uz-UZ")} so'm`;
+
+            if (config.paymeEnabled) document.getElementById("payWithPaymeBtn").style.display = "inline-block";
+            if (config.clickEnabled) document.getElementById("payWithClickBtn").style.display = "inline-block";
+        })
+        .catch(err => console.error(err));
+}
+
+async function startPayment(provider) {
+    const durationMonths = Number(document.getElementById("paymentMonths").value) || 1;
+
+    try {
+        const res = await fetch("/api/payments/orders", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ durationMonths, provider })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            alert(data.error || "Xatolik yuz berdi");
+            return;
+        }
+
+        location.href = data.checkoutUrl;
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
 }

@@ -22,6 +22,7 @@
     <include file="/db/changelog/courses.sql"/>
     <include file="/db/changelog/email-verification.sql"/>
     <include file="/db/changelog/course-subscription-duration.sql"/>
+        <include file="/db/changelog/online-payments.sql"/>
 
 
 </databaseChangeLog>

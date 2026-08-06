@@ -39,7 +39,12 @@ public class SecurityConfig {
                                 "/terms",
                                 "/privacy",
                                 "/favicon.ico",
-                                "/"
+                                "/",
+                                // Payme/Click'ning o'z serverlari chaqiradi — sessiyasiz,
+                                // o'zining Basic Auth/imzo tekshiruvi orqali himoyalangan
+                                // (PaymeService.checkAuth / ClickService.verifySign).
+                                "/api/payments/payme/webhook",
+                                "/api/payments/click/webhook"
                         ).permitAll()
 
                         .requestMatchers("/user/tests/**")
@@ -77,7 +82,12 @@ public class SecurityConfig {
                                 "/courses",
                                 "/courses/**",
                                 "/api/courses/**",
-                                "/api/course-subscriptions/**")
+                                "/api/course-subscriptions/**",
+                                // ROLE_ADMIN'ni onlayn sotib olish — asosan ROLE_USER
+                                // uchun (ular hali ADMIN emas), shuning uchun umumiy
+                                // "/api/**" (faqat OWNER/ADMIN) qoidasidan oldin, alohida.
+                                "/api/payments/config",
+                                "/api/payments/orders")
                         .authenticated()
 
                         // student API — СНАЧАЛА
