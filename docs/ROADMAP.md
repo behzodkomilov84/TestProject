@@ -71,17 +71,23 @@ qamrab oladi.
 
 ## 4. Kod sifati va infratuzilma
 
-- ✅ **BAJARILDI (qisman) — Avtomatik unit testlar**: eng muhim servislar
-  JUnit 5 + Mockito bilan qoplandi (120 ta test, `src/test/java/.../service/`):
-  `SubscriptionService`, `CourseSubscriptionService` (ADMIN/kurs kirish
-  huquqini berish-olib tashlash, jumladan `reverseOnline`/`expireSubscriptions`
-  dagi "boshqa faol obuna bormi" tekshiruvi), `UserServiceImpl`
-  (register/rol boshqaruvi/unlock), `QuestionService` (dublikat aniqlash,
-  saqlash/o'chirish), `PhoneNumberService` (E.164 normalizatsiya),
-  `PaymentOrderService`, `PaymeService` va `ClickService` (webhook
-  idempotentligi, imzo tekshiruvi, chargeback/reversal oqimi — avval qo'lda
-  sinov so'rovlari bilan tekshirilgan stsenariylar endi avtomatik
-  regressiya sifatida qulflangan). Qolgan servislar va
+- ✅ **BAJARILDI — Avtomatik unit testlar (servis qatlami to'liq)**: `service`
+  paketidagi BARCHA 28 ta servis JUnit 5 + Mockito bilan qoplandi (315 ta
+  test, `src/test/java/.../service/`). Ayniqsa e'tiborli qismlar:
+  `SubscriptionService`/`CourseSubscriptionService` (ADMIN/kurs kirish
+  huquqini berish-olib tashlash, `reverseOnline`/`expireSubscriptions`dagi
+  "boshqa faol obuna bormi" tekshiruvi), `PaymentOrderService`/`PaymeService`/
+  `ClickService` (webhook idempotentligi, MD5/Basic-Auth imzo tekshiruvi,
+  chargeback/reversal oqimi — avval qo'lda sinov so'rovlari bilan
+  tekshirilgan stsenariylar endi avtomatik regressiya sifatida qulflangan),
+  `TeacherService`/`StudentService`/`AssignmentAttemptService` (ruxsat
+  tekshiruvlari, taklif/topshiriq holat mashinasi, vaqt hisoblash),
+  `CourseService` (bo'limlarning ketma-ket ochilish mantig'i),
+  `FileStorageService`/`ExcelService`/`ClamAvScanService` (haqiqiy fayl
+  baytlari — PNG imzosi, real .xlsx, soxta TCP-server — bilan magic-byte
+  spoofing va "fail closed" xavfsizlik siyosatini tekshiradi),
+  `UserServiceImpl`, `QuestionService`, `PhoneNumberService` va boshqalar.
+  Qolgan
   integration/`@SpringBootTest` darajasidagi testlar hali yo'q.
 - **CI/CD yo'q** — GitHub Actions/GitLab CI orqali har commit'da avtomatik build+test
   ishga tushirish yo'q.
@@ -104,7 +110,9 @@ qamrab oladi.
 ~~Bildirishnoma markazi~~, ~~HTTPS/SSL~~, ~~Fayl antivirus tekshiruvi~~,
 ~~To'lov tarixi/hisobot~~, ~~Online kurslar~~, ~~Obuna eslatmasi~~,
 ~~Email integratsiyasi~~, ~~Foydalanish shartlari/Maxfiylik siyosati~~,
-~~Payme/Click integratsiyasi~~ (kod tayyor, sertifikatsiya kutilmoqda) — bajarildi.
+~~Payme/Click integratsiyasi~~ (kod tayyor, sertifikatsiya kutilmoqda),
+~~Avtomatik unit testlar (servis qatlami)~~ — bajarildi.
 
-Qolgan (tarif rejalar, refund siyosati) — avtomatik testlar va CI/CD kabi
-kattaroq va alohida rejalashtirish talab qiladigan ishlar bilan bir qatorda.
+Qolgan (tarif rejalar, refund siyosati, CI/CD, integration testlar,
+backup strategiyasi) — kattaroq va alohida rejalashtirish talab
+qiladigan ishlar.
