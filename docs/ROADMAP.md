@@ -71,9 +71,18 @@ qamrab oladi.
 
 ## 4. Kod sifati va infratuzilma
 
-- **Avtomatik testlar deyarli yo'q** (unit/integration test topilmadi). Professional
-  loyihada har bir servis (ayniqsa `SubscriptionService`, `QuestionService`,
-  `UserServiceImpl`) uchun kamida asosiy stsenariylar test qilinishi kerak.
+- ✅ **BAJARILDI (qisman) — Avtomatik unit testlar**: eng muhim servislar
+  JUnit 5 + Mockito bilan qoplandi (120 ta test, `src/test/java/.../service/`):
+  `SubscriptionService`, `CourseSubscriptionService` (ADMIN/kurs kirish
+  huquqini berish-olib tashlash, jumladan `reverseOnline`/`expireSubscriptions`
+  dagi "boshqa faol obuna bormi" tekshiruvi), `UserServiceImpl`
+  (register/rol boshqaruvi/unlock), `QuestionService` (dublikat aniqlash,
+  saqlash/o'chirish), `PhoneNumberService` (E.164 normalizatsiya),
+  `PaymentOrderService`, `PaymeService` va `ClickService` (webhook
+  idempotentligi, imzo tekshiruvi, chargeback/reversal oqimi — avval qo'lda
+  sinov so'rovlari bilan tekshirilgan stsenariylar endi avtomatik
+  regressiya sifatida qulflangan). Qolgan servislar va
+  integration/`@SpringBootTest` darajasidagi testlar hali yo'q.
 - **CI/CD yo'q** — GitHub Actions/GitLab CI orqali har commit'da avtomatik build+test
   ishga tushirish yo'q.
 - **Backup strategiyasi yo'q** — MySQL ma'lumotlar bazasi va `uploads/` papkasi uchun
