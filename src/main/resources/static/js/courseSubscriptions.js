@@ -174,7 +174,7 @@ async function submitGrantSubscription() {
     document.getElementById("grantUserSearch").value = "";
     document.getElementById("grantUserId").value = "";
     document.getElementById("grantAmount").value = "";
-    document.getElementById("grantDuration").value = "1";
+    document.getElementById("grantDuration").value = "";
     document.getElementById("grantNote").value = "";
     document.querySelectorAll(".grant-course-checkbox:checked").forEach(cb => cb.checked = false);
     loadSubscribers();
