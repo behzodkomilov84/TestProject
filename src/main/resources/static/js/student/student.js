@@ -310,3 +310,29 @@ function escapeHtml(str) {
         .replaceAll("'", "&#039;");
 }
 
+/*
+    Bildirishnomadan aniq bo'limga o'tish — masalan guruhga taklif qilingan
+    (?tab=invites) yoki yangi topshiriq berilgan (?tab=tasks&assignmentId=X)
+    bildirishnomasini bosganda, foydalanuvchi yon paneldan qo'lda bo'lim
+    tanlashi shart bo'lmasin, to'g'ridan-to'g'ri o'sha joyga tushsin.
+*/
+document.addEventListener("DOMContentLoaded", () => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get("tab");
+
+    if (tab === "invites") {
+        loadInvites();
+    } else if (tab === "tasks") {
+        const assignmentId = Number(params.get("assignmentId"));
+        loadTasks().then(() => {
+            if (assignmentId && taskStore.byId.has(assignmentId)) {
+                showCurrentTask(assignmentId);
+            }
+        });
+    } else if (tab === "membership") {
+        loadMembershipGroups();
+    } else if (tab === "stats") {
+        loadStatistics();
+    }
+});
+

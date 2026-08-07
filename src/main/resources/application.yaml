@@ -56,6 +56,14 @@ logging:
     # chiqaradi. Bu zararsiz (biz faqat final BO'LMAGAN execute(SendMessage)/
     # execute(EditMessageText)'ni chaqiramiz) — shuning uchun jim qildirilgan.
     org.springframework.aop.framework.CglibAopProxy: ERROR
+    # Telegram uzun-polling o'qish oqimi (DefaultBotSession$ReaderThread) —
+    # internet/Telegram server bilan aloqa vaqtincha uzilsa, shu klass ERROR
+    # darajasida stack-trace yozadi, lekin o'zi keyingi tsiklda avtomatik
+    # qayta urinishda davom etadi (bot "o'lib qolmaydi"). Tarmoq beqarorligida
+    # bu bir necha soniyada bir marta takrorlanib, log'ni to'ldirib yuborardi —
+    # shuning uchun jim qilindi (haqiqiy nosozlik — masalan noto'g'ri token —
+    # boshqa, alohida xato sifatida ilova ishga tushganda ko'rinadi).
+    org.telegram.telegrambots.updatesreceivers.DefaultBotSession: OFF
 server.servlet.session.cookie.max-age: -1 # -1 означает: cookie живёт только пока открыт браузер. После закрытия вкладки — cookie исчезает → пользователь разлогинен.
 server.servlet.session.timeout: 30m
 server:

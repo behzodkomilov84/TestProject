@@ -127,7 +127,7 @@ public class TeacherService {
 
             notificationService.create(pupil,
                     "👥 Siz \"" + group.getName() + "\" guruhiga taklif qilindingiz.",
-                    "/student");
+                    "/student?tab=invites");
 
             return;
         }
@@ -281,7 +281,7 @@ public class TeacherService {
             notificationService.create(r.getPupil(),
                     "📢 Yangi topshiriq: " + assignment.getQuestionSet().getName() +
                             ". Muddat: " + assignment.getDueDate(),
-                    "/student");
+                    "/student?tab=tasks&assignmentId=" + assignment.getId());
         }
     }
 

@@ -203,8 +203,29 @@ public class TelegramBot extends TelegramLongPollingBot {
                 if (response != null) execute(response);
             }
         } catch (Exception e) {
-            log.error("Telegram update error", e);
+            if (isNetworkIssue(e)) {
+                // api.telegram.org'ga vaqtincha ulanib bo'lmadi (ISP/tarmoq
+                // beqarorligi) — o'zi keyingi update'da qayta uriniladi,
+                // to'liq stack-trace shart emas, faqat qisqa ogohlantirish.
+                log.warn("Telegram serveriga vaqtincha ulanib bo'lmadi (tarmoq beqarorligi): {}", e.getMessage());
+            } else {
+                log.error("Telegram update error", e);
+            }
         }
+    }
+
+    // Sabab zanjirida tarmoq bilan bog'liq xatolik bormi (ulanish vaqti
+    // tugashi, host topilmadi va h.k.) — bo'lsa, bu shunchaki vaqtinchalik
+    // tarmoq muammosi, dastur xatosi emas.
+    private boolean isNetworkIssue(Throwable e) {
+        Throwable cause = e;
+        while (cause != null) {
+            if (cause instanceof java.io.IOException) {
+                return true;
+            }
+            cause = cause.getCause();
+        }
+        return false;
     }
 
     private User getUserByChatId(Long chatId) {

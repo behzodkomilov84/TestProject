@@ -61,7 +61,18 @@ function loadCourses() {
 function loadUsers() {
     fetch("/api/users")
         .then(r => r.ok ? r.json() : [])
-        .then(users => { allUsers = users; })
+        .then(users => {
+            allUsers = users;
+
+            // Bildirishnomadan (masalan "student2 obuna so'radi") kelingan
+            // bo'lsa (?userId=), o'sha foydalanuvchi qidirish maydonida
+            // oldindan tanlangan holda ko'rsatiladi.
+            const preselect = new URLSearchParams(location.search).get("userId");
+            if (preselect) {
+                const user = users.find(u => String(u.id) === preselect);
+                if (user) selectGrantUser(user.id, user.username);
+            }
+        })
         .catch(err => console.error(err));
 }
 
