@@ -43,8 +43,8 @@ h1 {
     /* Строка с предметом */
     .row {
         display: flex;
-        gap: 6px;
-        margin-bottom: 6px;
+        gap: 10px;
+        margin-bottom: 10px;
         align-items: center;
     }
 

@@ -2,8 +2,10 @@ package behzoddev.testproject.controller.api;
 
 import behzoddev.testproject.dao.TestSessionRepository;
 import behzoddev.testproject.dto.*;
+import behzoddev.testproject.dto.phone.CountryDto;
 import behzoddev.testproject.dto.profile.ChangeEmailDto;
 import behzoddev.testproject.dto.profile.ChangePasswordDto;
+import behzoddev.testproject.dto.profile.ChangePhoneDto;
 import behzoddev.testproject.dto.profile.ChangeUsernameDto;
 import behzoddev.testproject.dto.profile.ProfileDto;
 import behzoddev.testproject.dto.profile.TestHistoryDto;
@@ -11,6 +13,7 @@ import behzoddev.testproject.dto.testsession.TestStatsDto;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.TestSession;
 import behzoddev.testproject.entity.User;
+import behzoddev.testproject.service.PhoneNumberService;
 import behzoddev.testproject.service.ProfileService;
 import behzoddev.testproject.service.TestSessionService;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +24,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/profile")
 @RequiredArgsConstructor
@@ -29,19 +34,42 @@ public class ProfileController {
     private final TestSessionRepository testSessionRepository;
     private final ProfileService profileService;
     private final TestSessionService testSessionService;
+    private final PhoneNumberService phoneNumberService;
 
     // 1️⃣ Профиль
     @GetMapping
     public ProfileDto getProfile(@AuthenticationPrincipal User user) {
+        String phone = user.getPhoneNumber();
+
         return new ProfileDto(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
+                phone,
+                phoneNumberService.formatForDisplay(phone),
+                phoneNumberService.regionOf(phone),
+                phoneNumberService.nationalNumberOf(phone),
                 user.getRoles().stream()
                         .map(Role::getRoleName)
                         .sorted()
                         .toList()
         );
+    }
+
+    // Telefon kiritish formasidagi davlat dropdown'i uchun — barcha
+    // libphonenumber qo'llab-quvvatlaydigan davlatlar (qo'lda ro'yxat shart emas).
+    @GetMapping("/phone/countries")
+    public List<CountryDto> listCountries() {
+        return phoneNumberService.listCountries();
+    }
+
+    @PatchMapping("/phone")
+    public ResponseEntity<Void> changePhone(
+            @RequestBody ChangePhoneDto dto,
+            @AuthenticationPrincipal User user
+    ) {
+        profileService.changePhone(user, dto);
+        return ResponseEntity.ok().build();
     }
 
     // 2️⃣ Статистика пользователя

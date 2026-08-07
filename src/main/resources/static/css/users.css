@@ -86,6 +86,10 @@ body {
     background: #ec8a8a;
 }
 
+.action-btn + .action-btn {
+    margin-left: 6px;
+}
+
 .action-btn:hover {
     background: lightgrey;
 }

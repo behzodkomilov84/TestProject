@@ -129,6 +129,15 @@
             <version>2.9.2</version>
         </dependency>
 
+        <!-- Telefon raqamni istalgan davlat formatida tekshirish/normallashtirish
+             uchun (Google'ning rasmiy kutubxonasi — barcha davlatlar metama'lumoti
+             o'zida bor, qo'lda ro'yxat yuritish shart emas). -->
+        <dependency>
+            <groupId>com.googlecode.libphonenumber</groupId>
+            <artifactId>libphonenumber</artifactId>
+            <version>8.13.55</version>
+        </dependency>
+
     </dependencies>
 
     <build>

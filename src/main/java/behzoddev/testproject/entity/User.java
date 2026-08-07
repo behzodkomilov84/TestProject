@@ -57,6 +57,12 @@ public class User implements UserDetails {
     @Column(unique = true)
     private String email;
 
+    // Xalqaro E.164 formatda saqlanadi (masalan "+998901234567") —
+    // PhoneNumberService orqali tekshirilib shu ko'rinishga keltiriladi.
+    // Ixtiyoriy (barcha eski userlarda bo'sh).
+    @Column(name = "phone_number", length = 20)
+    private String phoneNumber;
+
     // Ro'yxatdan o'tishda email tasdiqlash. DB darajasida DEFAULT TRUE
     // (mavjud userlar login qilishda davom etishi uchun) — faqat yangi
     // ro'yxatdan o'tishda (UserServiceImpl.register) explicit "false"

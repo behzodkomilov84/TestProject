@@ -4,6 +4,7 @@ import behzoddev.testproject.dao.TestSessionRepository;
 import behzoddev.testproject.dto.*;
 import behzoddev.testproject.dto.profile.ChangeEmailDto;
 import behzoddev.testproject.dto.profile.ChangePasswordDto;
+import behzoddev.testproject.dto.profile.ChangePhoneDto;
 import behzoddev.testproject.dto.profile.ChangeUsernameDto;
 import behzoddev.testproject.dto.profile.TestHistoryDto;
 import behzoddev.testproject.entity.User;
@@ -29,6 +30,7 @@ public class ProfileService {
     private final PasswordEncoder passwordEncoder;
     private final TestSessionRepository testSessionRepository;
     private final TestSessionMapper testSessionMapper;
+    private final PhoneNumberService phoneNumberService;
 
     // 🔹 смена имени
     @Transactional
@@ -61,6 +63,15 @@ public class ProfileService {
         }
 
         user.setEmail(newEmail);
+        userRepository.save(user);
+    }
+
+    // 🔹 telefon raqam qo'shish/o'zgartirish — PhoneNumberService orqali
+    // tekshiriladi va E.164 formatga o'giriladi (masalan "+998901234567").
+    @Transactional
+    public void changePhone(User user, ChangePhoneDto dto) {
+        String normalized = phoneNumberService.normalize(dto.isoCode(), dto.rawNumber());
+        user.setPhoneNumber(normalized);
         userRepository.save(user);
     }
 

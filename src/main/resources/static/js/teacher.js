@@ -427,7 +427,7 @@ function loadGroups() {
 
                 <span class="group-name" data-id="${g.teacherGroupId}">${g.groupName}</span>
 
-            <div>
+            <div class="d-flex gap-1">
                 <button onclick="startInlineEdit(${g.teacherGroupId})">✏️</button>
                 <button onclick="deleteGroup(${g.teacherGroupId})">🗑</button>
                 <button onclick="openAddStudentModal(${g.teacherGroupId})">➕</button>

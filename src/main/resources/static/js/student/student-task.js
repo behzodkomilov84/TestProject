@@ -354,7 +354,7 @@ function renderTaskPlaceholder(container, currentTask) {
             <p class="text-muted">
                 "Natijani ko'rish" tugmasini bosganingizdan so'ng test natijalarini ko'rishingiz mumkin.
             </p>
-            <button class="btn btn-success mt-3" onclick="showTaskResult(currentTask.id)">
+            <button class="btn btn-success mt-3 me-2" onclick="showTaskResult(currentTask.id)">
                 Natijani ko'rish
             </button>
             <button class="btn btn-success mt-3" onclick="reStartTaskSession(currentTask.id)">

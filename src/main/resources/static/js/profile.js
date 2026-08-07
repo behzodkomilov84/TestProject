@@ -1,12 +1,14 @@
-let currentPage = 0;
-const pageSize = 4;
+let currentProfile = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     fetch("/api/profile")
         .then(r => r.json())
         .then(data => {
+            currentProfile = data;
+
             document.getElementById("username").innerText = data.username;
             document.getElementById("email").innerText = data.email || "— (kiritilmagan)";
+            document.getElementById("phone").innerText = data.phoneNumberFormatted || "— (kiritilmagan)";
             // Dual-role: foydalanuvchida bir nechta rol bo'lishi mumkin
             // (masalan, ham o'qituvchi, ham o'quvchi) — barchasi ko'rsatiladi.
             document.getElementById("role").innerText =
@@ -15,17 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
             loadPaymentConfig(data.roles || []);
         });
 
-    fetch("/api/profile/stats")
-        .then(r => r.json())
-        .then(data => {
-            document.getElementById("total-tests").innerText = data.totalTests;
-            document.getElementById("avg-percent").innerText = data.avgPercent;
-            document.getElementById("best-percent").innerText = data.bestPercent;
-            document.getElementById("worst-percent").innerText = data.worstPercent;
-            document.getElementById("total-duration").innerText = data.totalDurationSec;
-        });
-
-    loadHistory(0);
+    loadPhoneCountries();
 
     document.getElementById("edit").addEventListener("click", enableEditUsername);
     document.getElementById("save-username").addEventListener("click", saveUsername);
@@ -34,66 +26,15 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("edit-email").addEventListener("click", enableEditEmail);
     document.getElementById("save-email").addEventListener("click", saveEmail);
     document.getElementById("cancel-email").addEventListener("click", cancelEmailEdit);
+
+    document.getElementById("edit-phone").addEventListener("click", enableEditPhone);
+    document.getElementById("save-phone").addEventListener("click", savePhone);
+    document.getElementById("cancel-phone").addEventListener("click", cancelPhoneEdit);
 });
 
-function loadHistory(page) {
-
-    currentPage = safePage(page);
-
-    fetch(`/api/profile/history?page=${currentPage}&size=${pageSize}`)
-        .then(r => r.json())
-        .then(data => {
-
-            const tbody = document.getElementById("history-body");
-            tbody.innerHTML = "";
-
-            data.content.forEach(test => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-                    <td>${test.testSessionId}</td>
-                    <td>${new Date(test.startedAt).toLocaleString()}</td>
-                    <td>${test.finishedAt ? new Date(test.finishedAt).toLocaleString() : "—"}</td>
-                    <td>${test.percent}</td>
-                    <td>
-                        <button onclick="viewTest(${test.testSessionId})">
-                            Ko'rish
-                        </button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-
-            renderPagination(data);
-        });
-}
-
-function renderPagination(pageData) {
-    const pagination = document.getElementById("pagination");
-    pagination.innerHTML = "";
-
-    // Previous
-    const prev = document.createElement("li");
-    prev.className = "page-item " + (pageData.first ? "disabled" : "");
-    prev.innerHTML = `<a class="page-link" href="#">Previous</a>`;
-    prev.onclick = () => !pageData.first && loadHistory(safePage(pageData.number) - 1);
-    pagination.appendChild(prev);
-
-    // Pages
-    for (let i = 0; i < pageData.totalPages; i++) {
-        const li = document.createElement("li");
-        li.className = "page-item " + (i === pageData.number ? "active" : "");
-        li.innerHTML = `<a class="page-link" href="#">${i + 1}</a>`;
-        li.onclick = () => loadHistory(safePage(i));
-        pagination.appendChild(li);
-    }
-
-    // Next
-    const next = document.createElement("li");
-    next.className = "page-item " + (pageData.last ? "disabled" : "");
-    next.innerHTML = `<a class="page-link" href="#">Next</a>`;
-    next.onclick = () => !pageData.last && loadHistory(safePage(pageData.number) + 1);
-    pagination.appendChild(next);
-}
+/* Test tarixi (paginatsiya bilan) endi /student sahifasidagi "Statistika"
+   tugmasida ko'rsatiladi (student/student.js -> loadStatistics()), bir xil
+   /api/profile/history manbasidan. */
 
 
 function enableEditUsername() {
@@ -164,8 +105,79 @@ function saveEmail() {
         });
 }
 
-function viewTest(id) {
-    window.location.href = `/profile/test/${id}`; // или открытие модалки
+/* ===== Telefon raqam (xalqaro, istalgan davlat, bayroqli tanlov) ===== */
+
+let phoneCountriesCache = null;
+let phoneCountryPicker = null;
+
+function loadPhoneCountries() {
+    fetch("/api/profile/phone/countries")
+        .then(r => r.json())
+        .then(countries => {
+            phoneCountriesCache = countries;
+            phoneCountryPicker = initCountryPicker(
+                document.getElementById("phone-country-picker"),
+                countries,
+                "UZ",
+                () => {}
+            );
+        })
+        .catch(err => console.error(err));
+}
+
+function enableEditPhone() {
+    const input = document.getElementById("phone-input");
+
+    if (currentProfile && phoneCountryPicker) {
+        phoneCountryPicker.setIso(currentProfile.phoneCountryIso || "UZ");
+        input.value = currentProfile.phoneNationalNumber || "";
+    }
+
+    document.getElementById("phone-view").style.display = "none";
+    document.getElementById("phone-edit").style.display = "inline";
+    document.getElementById("edit-phone").style.display = "none";
+}
+
+function cancelPhoneEdit() {
+    document.getElementById("phone-edit").style.display = "none";
+    document.getElementById("phone-view").style.display = "inline";
+    document.getElementById("edit-phone").style.display = "inline";
+}
+
+function savePhone() {
+    const isoCode = phoneCountryPicker ? phoneCountryPicker.getIso() : "UZ";
+    const rawNumber = document.getElementById("phone-input").value.trim();
+
+    if (!rawNumber) {
+        alert("Telefon raqamni kiriting");
+        return;
+    }
+
+    fetch("/api/profile/phone", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isoCode, rawNumber })
+    })
+        .then(async r => {
+            if (!r.ok) {
+                const data = await r.json().catch(() => ({}));
+                throw new Error(data.error || "Xatolik yuz berdi");
+            }
+            return fetch("/api/profile").then(r2 => r2.json());
+        })
+        .then(data => {
+            currentProfile = data;
+            document.getElementById("phone").innerText = data.phoneNumberFormatted || "— (kiritilmagan)";
+
+            document.getElementById("phone-edit").style.display = "none";
+            document.getElementById("phone-view").style.display = "inline";
+            document.getElementById("edit-phone").style.display = "inline";
+
+            alert("✅ Telefon raqam saqlandi");
+        })
+        .catch(err => {
+            alert(err.message || "Telefon raqamda xatolik");
+        });
 }
 
 function saveUsername() {
@@ -250,11 +262,6 @@ function changePassword() {
         });
 }
 //=========================================================
-
-function safePage(page) {
-    const n = Number(page);
-    return Number.isFinite(n) && n >= 0 ? n : 0;
-}
 
 /* ===== Onlayn to'lov (Payme/Click) — ROLE_ADMIN obunasini o'zi sotib olish ===== */
 

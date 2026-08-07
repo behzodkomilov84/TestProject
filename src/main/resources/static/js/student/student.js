@@ -30,7 +30,7 @@ async function loadInvites() {
                 <td>${inv.groupName}</td>
                 <td>${inv.status}</td>
                 <td>
-                    <button class="btn btn-success btn-sm"
+                    <button class="btn btn-success btn-sm me-1"
                         onclick="acceptInvite(${inv.id})">
                         Accept
                     </button>
@@ -190,6 +190,108 @@ function renderGroups(groups) {
 function openGroup(groupId) {
 
     window.location.href = `/student/group/${groupId}`;
+}
+
+/*
+    Statistika — /profile sahifasidagi "Test tarixi" bilan bir xil manba
+    (/api/profile/stats + /api/profile/history), shu workspace ichida.
+*/
+const statsPageSize = 5;
+
+async function loadStatistics(page = 0) {
+
+    setTitle("Statistika");
+
+    try {
+        const [stats, history] = await Promise.all([
+            apiFetch(`/api/profile/stats`),
+            apiFetch(`/api/profile/history?page=${page}&size=${statsPageSize}`)
+        ]);
+
+        renderStatistics(stats, history);
+
+    } catch (e) {
+        showError(e.message);
+    }
+}
+
+function renderStatistics(stats, history) {
+
+    let html = `
+        <div class="row g-3 mb-4">
+            ${statBox("Jami testlar", stats.totalTests)}
+            ${statBox("O'rtacha natija", stats.avgPercent + "%")}
+            ${statBox("Eng yaxshi natija", stats.bestPercent + "%")}
+            ${statBox("Eng yomon natija", stats.worstPercent + "%")}
+            ${statBox("Jami vaqt", stats.totalDurationSec + " sek")}
+        </div>
+
+        <div class="table-box">
+        <table class="table">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Boshlandi</th>
+            <th>Tugadi</th>
+            <th>%</th>
+            <th></th>
+        </tr>
+        </thead>
+        <tbody>
+    `;
+
+    if (!history.content || !history.content.length) {
+        html += `<tr><td colspan="5" class="text-center text-muted">Hali test tarixi yo'q</td></tr>`;
+    } else {
+        history.content.forEach(t => {
+            html += `
+                <tr>
+                    <td>${t.testSessionId}</td>
+                    <td>${formatDateTime(t.startedAt)}</td>
+                    <td>${t.finishedAt ? formatDateTime(t.finishedAt) : "—"}</td>
+                    <td>${t.percent}%</td>
+                    <td>
+                        <button class="btn btn-outline-primary btn-sm"
+                            onclick="viewStatTest(${t.testSessionId})">
+                            Ko'rish
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    html += `</tbody></table></div>`;
+
+    if (history.totalPages > 1) {
+        html += `<div class="d-flex gap-2 flex-wrap mt-3">`;
+        for (let i = 0; i < history.totalPages; i++) {
+            html += `
+                <button class="btn btn-sm ${i === history.number ? "btn-primary" : "btn-outline-secondary"}"
+                    onclick="loadStatistics(${i})">
+                    ${i + 1}
+                </button>
+            `;
+        }
+        html += `</div>`;
+    }
+
+    render(html);
+}
+
+function statBox(label, value) {
+    return `
+        <div class="col-6 col-md-2">
+            <div class="card text-center p-2 h-100">
+                <div class="text-muted small">${label}</div>
+                <div class="fs-4 fw-bold">${value}</div>
+            </div>
+        </div>
+    `;
+}
+
+function viewStatTest(testSessionId) {
+    window.location.href = `/profile/test/${testSessionId}`;
 }
 
 

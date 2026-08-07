@@ -197,6 +197,8 @@ ul {
 .actions-bottom {
     display: flex;
     justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
     margin-top: 30px;
 }
 

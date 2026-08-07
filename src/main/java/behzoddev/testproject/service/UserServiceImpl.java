@@ -37,6 +37,7 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     private final NotificationService notificationService;
     private final RoleAuditService roleAuditService;
     private final EmailVerificationService emailVerificationService;
+    private final PhoneNumberService phoneNumberService;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -81,9 +82,17 @@ public class UserServiceImpl implements UserDetailsService, UserService {
         Set<Role> roles = new HashSet<>();
         roles.add(userRole);
 
+        // Telefon ixtiyoriy — kiritilgan bo'lsa tekshirib E.164'ga o'giramiz,
+        // noto'g'ri bo'lsa ro'yxatdan o'tish shu yerda to'xtaydi (aniq xabar bilan).
+        String normalizedPhone = null;
+        if (dto.phoneNumber() != null && !dto.phoneNumber().isBlank()) {
+            normalizedPhone = phoneNumberService.normalize(dto.phoneCountry(), dto.phoneNumber());
+        }
+
         User user = User.builder()
                 .username(dto.username())
                 .email(dto.email())
+                .phoneNumber(normalizedPhone)
                 .password(passwordEncoder.encode(dto.password()))
                 .roles(roles)
                 .emailVerified(false) // Tasdiqlash kodi kiritilmaguncha kirish mumkin emas (isEnabled()).

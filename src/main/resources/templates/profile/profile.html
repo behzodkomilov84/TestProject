@@ -10,8 +10,10 @@
           integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/profile.css">
+    <link rel="stylesheet" href="/css/country-picker.css">
 
     <script src="/js/navbar.js" defer></script>
+    <script src="/js/country-picker.js" defer></script>
 
 </head>
 
@@ -21,12 +23,12 @@
 
 <div class="profile-container">
     <div class="profile-container-up">
-        <div class="profile-container-left">
+        <div class="profile-container-left" style="width:100%;">
             <h2 style="text-align: center">Profil</h2>
             <div id="user-info">
                 <table border="1" class="table table-bordered">
                     <tr>
-                        <td style="text-align: left">Foydalanuvchi <br> nomi</td>
+                        <td style="text-align: left">Foydalanuvchi nomi</td>
                         <td style="text-align: right">
                                 <span id="username-view">
                                     <span id="username"></span>
@@ -55,6 +57,25 @@
                                 </span>
 
                             <button id="edit-email" style="margin-left: 20px" title="Tahrirlash">✏️</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: left">Telefon</td>
+                        <td style="text-align: right">
+                                <span id="phone-view">
+                                    <span id="phone">—</span>
+                                </span>
+
+                            <span id="phone-edit" style="display:none;">
+                                <span style="display:inline-flex; gap:4px; vertical-align:middle;">
+                                    <span id="phone-country-picker" style="display:inline-block;"></span>
+                                    <input type="tel" id="phone-input" placeholder="Telefon raqam" style="width:140px;">
+                                </span>
+                                    <button id="save-phone" title="Saqlash">💾</button>
+                                    <button id="cancel-phone" title="Bekor qilish">✖</button>
+                                </span>
+
+                            <button id="edit-phone" style="margin-left: 20px" title="Tahrirlash">✏️</button>
                         </td>
                     </tr>
                     <tr>
@@ -87,41 +108,10 @@
                 🔐 Parolni o‘zgartirish
             </button>
         </div>
-
-        <div class="profile-container-right">
-            <h2 style="text-align: center">Ko'rsatkichlar</h2>
-            <div id="stats">
-
-                <table border="1" style="width: 300px" class="table table-bordered">
-                    <tr>
-                        <td style="text-align: left">Jami testlar</td>
-                        <td style="text-align: right"><span id="total-tests"></span></td>
-                    </tr>
-
-                    <tr>
-                        <td style="text-align: left">O'rtacha natija</td>
-                        <td style="text-align: right"><span id="avg-percent"></span>%</td>
-                    </tr>
-
-                    <tr>
-                        <td style="text-align: left">Eng yaxshi natija</td>
-                        <td style="text-align: right"><span id="best-percent"></span>%</td>
-                    </tr>
-
-                    <tr>
-                        <td style="text-align: left">Eng yomon natija</td>
-                        <td style="text-align: right"><span id="worst-percent"></span>%</td>
-                    </tr>
-
-                    <tr>
-                        <td style="text-align: left">Jami vaqt</td>
-                        <td style="text-align: right"><span id="total-duration"></span> sec</td>
-                    </tr>
-                </table>
-
-            </div>
-        </div>
     </div>
+
+    <!-- Ko'rsatkichlar (Jami testlar/O'rtacha natija va h.k.) endi shu yerda
+         emas — /student sahifasidagi "Statistika" tugmasida ko'rsatiladi. -->
 
 
     <!-- Onlayn to'lov (Payme/Click) — faqat shlyuz sozlangan bo'lsa ko'rinadi
@@ -138,25 +128,8 @@
         </div>
     </div>
 
-    <h2 style="text-align: center">Test tarixi</h2>
-    <table border="1" class="table table-bordered">
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Boshlandi</th>
-            <th>Tugadi</th>
-            <th>%</th>
-            <th>Batafsil</th>
-        </tr>
-        </thead>
-        <tbody id="history-body"></tbody>
-    </table>
-
-    <nav aria-label="Page navigation">
-        <ul class="pagination justify-content-center" id="pagination">
-
-        </ul>
-    </nav>
+    <!-- Test tarixi endi shu yerda emas — /student sahifasidagi "Statistika"
+         tugmasi orqali ko'rsatiladi (bir xil /api/profile/history manbasidan). -->
 </div>
 
 

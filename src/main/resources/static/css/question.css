@@ -437,7 +437,7 @@ button.comment-btn {
     align-items: center;    /* центр по вертикали */
     justify-content: center;
     height: 100%;           /* 🔥 ключевой момент */
-    gap: 0px;
+    gap: 10px;
 }
 
 

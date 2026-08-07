@@ -46,7 +46,7 @@ async function loadAssignments() {
                 <td>${a.finished}/${a.totalStudents}</td>
                 <td>${a.avgPercent.toFixed(1)}%</td>
                 <td>
-                    <button class="btn btn-sm btn-info" onclick="openDetails(${a.id})">Batafsil...</button>
+                    <button class="btn btn-sm btn-info me-1" onclick="openDetails(${a.id})">Batafsil...</button>
                     <button class="btn btn-sm btn-secondary" onclick="openChat(${a.id})">Chat</button>
                 </td>
             </tr>

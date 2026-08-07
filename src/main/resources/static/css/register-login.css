@@ -18,8 +18,15 @@ body {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    max-width: 430px;
+    /* Qattiq piksel o'rniga — ekran kengligiga moslashadi, lekin 640px'dan
+       oshmaydi (juda keng bo'lib ketmasligi uchun). Registration'da
+       maydonlar yonma-yon (.form-row) joylashgani uchun kengroq kerak. */
+    max-width: min(640px, 94vw);
     width: 100%;
+    /* Balandligi ekrandan oshib ketsa (kichik noutbuk ekranlari) — kesilib
+       qolmasin, o'zi ichida aylanadi. */
+    max-height: 94vh;
+    overflow-y: auto;
     background: #fff;
     border-radius: 7px;
     box-shadow: 0 5px 10px rgba(0, 0, 0, 0.3);
@@ -47,6 +54,43 @@ body {
     outline: none;
 }
 
+/* Ikkita maydonni yonma-yon joylashtirish uchun (username+email,
+   password+confirmPassword) — balandlikni tejaydi. Tor ekranda
+   (mobil) avtomatik pastma-past bo'lib qoladi. */
+.form-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 1.3rem;
+}
+
+.form-row input {
+    flex: 1 1 220px;
+    min-width: 200px;
+    margin-bottom: 0;
+}
+
+/* Telefon raqam — bayroqli davlat tanlash widget'i (country-picker.js/css)
+   + mahalliy raqam (input). Widget yopiq holatda faqat bayroq+kod
+   ko'rsatgani uchun kam joy oladi, raqam maydoniga ko'proq joy qoladi. */
+.phone-field {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 1.3rem;
+}
+
+.phone-field .country-picker .cp-toggle {
+    height: 60px;
+}
+
+.phone-field input {
+    flex: 1 1 180px;
+    min-width: 160px;
+    font-size: 15px;
+    margin-bottom: 0;
+}
+
 .form .checkbox{
     width: 15px;
     height: 15px;
@@ -56,6 +100,17 @@ body {
 .form label{
     font-size: 16px;
     color: #009579;
+}
+
+/* .form input{height:60px; margin-bottom:1.3rem} umumiy qoidasi checkbox'ga
+   ham tegib, uni cho'zilgan va pastga siljigan qilib ko'rsatardi —
+   margin-bottom olib tashlanmasa, align-items:center ishlamay qolardi
+   (checkbox pastdan qo'shimcha joy egallagani uchun markazdan chetlashardi). */
+.form input[type="checkbox"] {
+    height: 16px;
+    width: 16px;
+    margin-bottom: 0;
+    flex-shrink: 0;
 }
 
 .form input:focus {

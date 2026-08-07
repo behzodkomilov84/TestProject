@@ -17,6 +17,18 @@
 .profile-container-up{
     display: flex;
     justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.profile-container-up:last-child {
+    margin-bottom: 0;
+}
+
+.profile-container-left,
+.profile-container-right {
+    flex: 1 1 320px;
 }
 .profile-container h2 {
     color: #333;
