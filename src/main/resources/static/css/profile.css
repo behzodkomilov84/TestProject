@@ -113,6 +113,26 @@ tr:hover {
     font-size: 14px;
 }
 
+/* Bayroqli davlat tanlash widget'i (country-picker.css) — standart
+   min-height:44px registration formasi uchun mo'ljallangan, bu yerda
+   (kompakt jadval qatorida) boshqa edit maydonlariga (~32px) moslashtirish
+   uchun kichraytirilgan. */
+#phone-country-picker .cp-toggle {
+    min-height: 32px;
+    padding: 0 8px;
+    font-size: 13px;
+}
+
+#phone-country-picker .cp-toggle .cp-flag {
+    font-size: 15px;
+}
+
+#phone-input {
+    height: 32px;
+    padding: 4px 6px;
+    font-size: 14px;
+}
+
 #username-edit button {
     margin-left: 4px;
     cursor: pointer;
