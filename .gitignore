@@ -4,6 +4,8 @@ target/
 uploads/
 # Let's Encrypt sertifikatlari va shaxsiy kalitlari — hech qachon git'ga tushmasligi shart.
 certbot/
+# MySQL dump'lari (foydalanuvchi ma'lumotlari, parol hash'lari) — hech qachon git'ga tushmasligi shart.
+backups/
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/

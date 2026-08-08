@@ -95,8 +95,16 @@ qamrab oladi.
   (315 unit + `TestApplicationTests`ning to'liq Spring context yuklanishi)
   bajariladi va ilova qadoqlanadi (`.jar`). Muvaffaqiyatsiz bo'lsa ham
   surefire hisobotlari artifact sifatida saqlanadi.
-- **Backup strategiyasi yo'q** — MySQL ma'lumotlar bazasi va `uploads/` papkasi uchun
-  avtomatik zaxira nusxa olish (masalan, kunlik dump + bulutga yuklash) sozlanmagan.
+- ✅ **BAJARILDI — Backup strategiyasi**: `docker-compose.prod.yml`dagi
+  `backup` servisi har kuni 03:00'da MySQL (`mysqldump --single-transaction`)
+  va `uploads/` papkasining zaxira nusxasini `./backups`ga oladi, eski
+  nusxalarni (`BACKUP_RETENTION_DAYS`, standart 14 kun) avtomatik o'chiradi,
+  tiklash (`restore-db.sh`) skripti bilan birga. Serverdan tashqariga
+  (bulutga) ko'chirish uchun host cron + rclone yo'riqnomasi ham berilgan.
+  Batafsil: `docs/BACKUP.md`. **Cheklov**: bu muhitda Docker daemon ishga
+  tushmagani sabab faqat statik tekshiruv qilindi (`docker compose config`,
+  `bash -n`, jadval hisoblash mantig'i) — haqiqiy konteynerda uchma-uch
+  sinovdan hali o'tkazilmagan.
 - **Loglash markazlashtirilmagan** — hozir faqat konsolga/faylga yoziladi, production'da
   xatolarni kuzatish uchun Sentry kabi xizmat ulash tavsiya etiladi.
 
@@ -115,8 +123,9 @@ qamrab oladi.
 ~~To'lov tarixi/hisobot~~, ~~Online kurslar~~, ~~Obuna eslatmasi~~,
 ~~Email integratsiyasi~~, ~~Foydalanish shartlari/Maxfiylik siyosati~~,
 ~~Payme/Click integratsiyasi~~ (kod tayyor, sertifikatsiya kutilmoqda),
-~~Avtomatik unit testlar (servis qatlami)~~, ~~CI/CD~~ — bajarildi.
+~~Avtomatik unit testlar (servis qatlami)~~, ~~CI/CD~~,
+~~Backup strategiyasi~~ (kod/skript tayyor, real konteynerda hali sinalmagan) — bajarildi.
 
 Qolgan (tarif rejalar, refund siyosati, keng qamrovli integration testlar,
-backup strategiyasi, markazlashtirilgan loglash) — kattaroq va alohida
-rejalashtirish talab qiladigan ishlar.
+markazlashtirilgan loglash) — kattaroq va alohida rejalashtirish talab
+qiladigan ishlar.

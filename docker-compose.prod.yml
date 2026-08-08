@@ -106,6 +106,36 @@ services:
       - ./certbot/www:/var/www/certbot
     entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;"
 
+  # Har kuni 03:00'da MySQL bazasi va uploads/ papkasining zaxira nusxasini
+  # oladi (BACKUP_RETENTION_DAYS kundan eskisi avtomatik o'chiriladi).
+  # Custom image yasalmaydi — xuddi shu "mysql:8.0" ishlatiladi, shunda
+  # mysqldump/mysql client versiyasi serverning o'zi bilan 100% mos keladi
+  # (boshqa image'da autentifikatsiya plagini/versiya nomosligi xavfi
+  # bo'lishi mumkin edi). Zaxiralar named volume emas, balki HOST
+  # mashinadagi ./backups papkasiga tushadi — shunda serverdan tashqariga
+  # (bulutga) ko'chirish uchun istalgan vositani (rclone/rsync/scp)
+  # hostning o'zida, cron orqali ishlatish mumkin bo'ladi. Batafsil,
+  # jumladan tiklash (restore) tartibi: docs/BACKUP.md.
+  backup:
+    image: mysql:8.0
+    container_name: db-backup
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_DATABASE: test_project
+      MYSQL_USER: ${DB_USERNAME:-root}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-root}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-14}
+    entrypoint: [ "/bin/bash", "/scripts/backup.sh" ]
+    volumes:
+      - ./scripts/backup.sh:/scripts/backup.sh:ro
+      - ./scripts/restore-db.sh:/scripts/restore-db.sh:ro
+      - ./backups:/backups
+      - uploads-data:/app/uploads:ro
+    restart: unless-stopped
+
 volumes:
   mysql-data:
   uploads-data:
