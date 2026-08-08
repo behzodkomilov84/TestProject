@@ -39,25 +39,59 @@ chiqarishdan oldin albatta:
 
 ## 1-qadam: Payme merchant ro'yxatdan o'tish
 
-1. https://business.payme.uz — ro'yxatdan o'ting, kompaniya/IP ma'lumotlarini kiriting.
-2. "Kassalar" (Cash registers) bo'limida yangi kassa yarating.
-3. Kassa sozlamalaridan **Merchant ID** va **Kalit (Key)** ni oling.
+⚠️ **Bu oddiy "ro'yxatdan o'tish" emas** — Payme Business'da hozircha o'zi
+uchun (developer sifatida) darhol sandbox kalit oladigan tayyor forma yo'q.
+Jarayon menejer orqali boradi (2026-yil holatiga real tekshirib ko'rilgan):
+
+1. https://business.payme.uz — sahifada faqat telefon raqamingizni qoldirasiz
+   ("Подключить"/"Sinab ko'rish" tugmasi). Kompaniya/IP ma'lumotlarini
+   kiritadigan alohida forma yo'q — bularni menejer keyingi bosqichda so'raydi.
+2. Payme menejeri sizga qo'ng'iroq qiladi (mijozlar sharhiga ko'ra, odatda
+   1 kun ichida) — kompaniya/YaTT ma'lumotlari, shartnoma shartlari
+   muhokama qilinadi.
+3. Shartnoma (odatda elektron, ERI orqali) imzolangach, sizga **shaxsiy
+   kabinet** ochiladi — shundagina "Kassalar" bo'limida kassa yaratib,
+   **Merchant ID** va **Kalit (Key)**ni olasiz.
 4. Callback (webhook) URL sifatida ko'rsating:
    ```
    https://<sizning-domeningiz>/api/payments/payme/webhook
    ```
 5. Test bosqichida checkout bazasi `https://test.paycom.uz` bo'lishi mumkin —
-   shu holda `.env`da `PAYME_CHECKOUT_BASE_URL=https://test.paycom.uz` qo'shing.
+   shu holda `.env`da `PAYME_CHECKOUT_BASE_URL=https://test.paycom.uz` qo'shing
+   (aniq sandbox tartibini shaxsiy kabinet ochilgach menejerdan so'rang).
 
 ## 2-qadam: Click merchant ro'yxatdan o'tish
 
-1. https://merchant.click.uz — ro'yxatdan o'ting.
-2. Yangi xizmat (service) yarating — **Service ID**, **Merchant ID** va
+⚠️ Xuddi Payme kabi — https://merchant.click.uz (`mc.click.uz`) to'g'ridan-
+to'g'ri **kirish** (login) sahifasi, ro'yxatdan o'tish shu yerda emas.
+Ro'yxatdan o'tish https://business.click.uz orqali, va u ham hujjatlar talab
+qiladi (2026-yil holatiga tekshirib ko'rilgan):
+
+1. https://business.click.uz — "Tezkor ulanish" formasi orqali ariza
+   qoldirasiz (STIR/soliq raqami va aloqa ma'lumotlari bilan).
+2. **Kerakli hujjatlar** (rasmiy FAQ'ga ko'ra): rahbarning passporti nusxasi,
+   kompaniya ro'yxatdan o'tganligi guvohnomasi, O'zbekistondagi bank hisob
+   raqami (va MFO), MXIK/QQS kodlari (fiskalizatsiya uchun).
+   - **Muqobil, tezroq yo'l**: agar yakka tartibdagi shaxs (kompaniya emas)
+     bo'lsangiz — "**o'zini o'zi band qilganlar**" (self-employed) maqomida
+     ro'yxatdan o'tsangiz, shartnomasiz darhol to'lov qabul qilishni
+     boshlash mumkin (sayt ma'lumotiga ko'ra). API/sayt integratsiyasi
+     ("Saytda integratsiya" tarifi — aynan bizning "obuna" holimizga mos)
+     uchun ham shu maqom yetarlimi — menejerdan aniqlashtiring.
+3. Shartnoma **Didox** (O'zbekistonning rasmiy elektron hujjat almashish
+   tizimi, ERI/elektron raqamli imzo talab qiladi) orqali imzolanadi.
+4. Ro'yxatdan o'tib, shaxsiy kabinet (`mc.click.uz`) ochilgach — yangi
+   xizmat (service) yaratasiz, shunda **Service ID**, **Merchant ID** va
    **Maxfiy kalit (Secret key)** beriladi.
-3. Callback URL sifatida ko'rsating:
+5. Callback URL sifatida ko'rsating:
    ```
    https://<sizning-domeningiz>/api/payments/click/webhook
    ```
+
+**Muhim**: yuqoridagi hujjatlar (passport nusxasi, STIR, bank rekvizitlari)
+— shaxsiy/moliyaviy ma'lumot. Bularni faqat OWNER'ning o'zi, to'g'ridan-
+to'g'ri Payme/Click'ning rasmiy sahifasida kiritishi kerak — boshqa hech
+kimga (jumladan AI-yordamchiga) berilmasligi kerak.
 
 ## 3-qadam: `.env` faylini to'ldirish
 
