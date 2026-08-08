@@ -89,8 +89,12 @@ qamrab oladi.
   `UserServiceImpl`, `QuestionService`, `PhoneNumberService` va boshqalar.
   Qolgan
   integration/`@SpringBootTest` darajasidagi testlar hali yo'q.
-- **CI/CD yo'q** — GitHub Actions/GitLab CI orqali har commit'da avtomatik build+test
-  ishga tushirish yo'q.
+- ✅ **BAJARILDI — CI/CD**: GitHub Actions (`.github/workflows/ci.yml`) — `master`ga
+  har push/pull request'da avtomatik ishga tushadi: MySQL 8 servis konteyner
+  ko'tariladi, JDK 17 o'rnatiladi, `mvn clean verify` orqali BARCHA 316 ta test
+  (315 unit + `TestApplicationTests`ning to'liq Spring context yuklanishi)
+  bajariladi va ilova qadoqlanadi (`.jar`). Muvaffaqiyatsiz bo'lsa ham
+  surefire hisobotlari artifact sifatida saqlanadi.
 - **Backup strategiyasi yo'q** — MySQL ma'lumotlar bazasi va `uploads/` papkasi uchun
   avtomatik zaxira nusxa olish (masalan, kunlik dump + bulutga yuklash) sozlanmagan.
 - **Loglash markazlashtirilmagan** — hozir faqat konsolga/faylga yoziladi, production'da
@@ -111,8 +115,8 @@ qamrab oladi.
 ~~To'lov tarixi/hisobot~~, ~~Online kurslar~~, ~~Obuna eslatmasi~~,
 ~~Email integratsiyasi~~, ~~Foydalanish shartlari/Maxfiylik siyosati~~,
 ~~Payme/Click integratsiyasi~~ (kod tayyor, sertifikatsiya kutilmoqda),
-~~Avtomatik unit testlar (servis qatlami)~~ — bajarildi.
+~~Avtomatik unit testlar (servis qatlami)~~, ~~CI/CD~~ — bajarildi.
 
-Qolgan (tarif rejalar, refund siyosati, CI/CD, integration testlar,
-backup strategiyasi) — kattaroq va alohida rejalashtirish talab
-qiladigan ishlar.
+Qolgan (tarif rejalar, refund siyosati, keng qamrovli integration testlar,
+backup strategiyasi, markazlashtirilgan loglash) — kattaroq va alohida
+rejalashtirish talab qiladigan ishlar.

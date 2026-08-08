@@ -1,0 +1,67 @@
+name: CI
+
+# Har bir push (master) va master'ga yo'naltirilgan pull request'da avtomatik
+# build + barcha unit testlarni (315 ta, JUnit 5 + Mockito) ishga tushiradi.
+# Qo'lda ham ("Run workflow" tugmasi orqali) ishga tushirish mumkin.
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    # TestApplicationTests (@SpringBootTest, to'liq Spring context) haqiqiy
+    # MySQL'ga muhtoj — shu servis konteyner sifatida ko'tariladi va
+    # application.yaml'dagi standart DB_URL/DB_USERNAME/DB_PASSWORD qiymatlariga
+    # mos keladi ("test_project" bazasi, root/root).
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: test_project
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Kodni olish
+        uses: actions/checkout@v4
+
+      - name: JDK 17 o'rnatish (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: mvnw'ga bajarish ruxsatini berish
+        run: chmod +x mvnw
+
+      - name: Build va testlarni ishga tushirish
+        env:
+          DB_URL: jdbc:mysql://127.0.0.1:3306/test_project?createDatabaseIfNotExist=true
+          DB_USERNAME: root
+          DB_PASSWORD: root
+          # Haqiqiy bot tokeni CI uchun shart emas — TelegramConfig
+          # registerBot() xatoligini yutadi (ilova Telegram'siz ham
+          # ishga tushadi), lekin property'ning o'zi standart qiymatga
+          # ega emas, shuning uchun bo'sh bo'lmagan qandaydir qiymat kerak.
+          TELEGRAM_BOT_TOKEN: dummy-token-for-ci
+        run: ./mvnw -B clean verify
+
+      - name: Test hisobotlarini saqlash (muvaffaqiyatsiz bo'lsa ham)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports/
+          retention-days: 14
