@@ -101,10 +101,14 @@ qamrab oladi.
   nusxalarni (`BACKUP_RETENTION_DAYS`, standart 14 kun) avtomatik o'chiradi,
   tiklash (`restore-db.sh`) skripti bilan birga. Serverdan tashqariga
   (bulutga) ko'chirish uchun host cron + rclone yo'riqnomasi ham berilgan.
-  Batafsil: `docs/BACKUP.md`. **Cheklov**: bu muhitda Docker daemon ishga
-  tushmagani sabab faqat statik tekshiruv qilindi (`docker compose config`,
-  `bash -n`, jadval hisoblash mantig'i) — haqiqiy konteynerda uchma-uch
-  sinovdan hali o'tkazilmagan.
+  Batafsil: `docs/BACKUP.md`. **Haqiqiy Docker konteynerda to'liq uchma-uch
+  sinovdan o'tkazildi** (izolyatsiya qilingan alohida compose loyihasida,
+  asosiy dev stack'ga tegmasdan): mysqldump/tar ishlab chiqargan fayllar
+  qo'lda tekshirildi (`zcat`/`tar -tzvf`), restore-db.sh ham sinaldi —
+  shu jarayonda haqiqiy bug topildi va tuzatildi (oddiy mysqldump-import
+  dump olingandan KEYIN qo'shilgan jadvallarni o'chirmas edi — endi avval
+  `DROP DATABASE` qilib, dump haqiqatan ham to'liq "almashtirish" bo'lishini
+  kafolatlaydi).
 - **Loglash markazlashtirilmagan** — hozir faqat konsolga/faylga yoziladi, production'da
   xatolarni kuzatish uchun Sentry kabi xizmat ulash tavsiya etiladi.
 

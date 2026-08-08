@@ -24,6 +24,16 @@ if [ "$confirm" != "ha" ]; then
     exit 0
 fi
 
+# DIQQAT: mysqldump fayli faqat dump OLINGAN paytda mavjud bo'lgan
+# jadvallar uchun "DROP TABLE IF EXISTS" beradi — agar shu dump olingandan
+# KEYIN yangi jadval qo'shilgan bo'lsa (masalan yangi Liquibase migratsiyasi
+# orqali), oddiy import qilish uni "unutib qoldiradi" (o'chirmaydi). Buni
+# oldini olish uchun avval bazani butunlay o'chirib, dump ichidagi
+# "CREATE DATABASE" orqali qaytadan yaratamiz — shunda natija HAQIQATAN HAM
+# dump olingan paytdagi holatning aniq nusxasi bo'ladi.
+mysql -h "$MYSQL_HOST" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" \
+    -e "DROP DATABASE IF EXISTS \`$MYSQL_DATABASE\`;"
+
 gunzip -c "$DUMP_FILE" | mysql -h "$MYSQL_HOST" -u "$MYSQL_USER" -p"$MYSQL_PASSWORD"
 
 echo "✅ Tiklandi: $DUMP_FILE"
