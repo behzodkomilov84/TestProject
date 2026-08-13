@@ -72,26 +72,62 @@ qiladi (2026-yil holatiga tekshirib ko'rilgan):
 2. **Kerakli hujjatlar** (rasmiy FAQ'ga ko'ra): rahbarning passporti nusxasi,
    kompaniya ro'yxatdan o'tganligi guvohnomasi, O'zbekistondagi bank hisob
    raqami (va MFO), MXIK/QQS kodlari (fiskalizatsiya uchun).
-   - **Muqobil, tezroq yo'l**: agar yakka tartibdagi shaxs (kompaniya emas)
-     bo'lsangiz — "**o'zini o'zi band qilganlar**" (self-employed) maqomida
-     ro'yxatdan o'tsangiz, shartnomasiz darhol to'lov qabul qilishni
-     boshlash mumkin (sayt ma'lumotiga ko'ra). API/sayt integratsiyasi
-     ("Saytda integratsiya" tarifi — aynan bizning "obuna" holimizga mos)
-     uchun ham shu maqom yetarlimi — menejerdan aniqlashtiring.
+   - **Yangilanish (real tekshirilgan)**: "**o'zini o'zi band qilgan**"
+     (SZ — samozanyatiy) maqomi ham **Shop API** (aynan bizning
+     `ClickService.java` implementatsiya qilgan Prepare/Complete sxemasi)
+     integratsiyasi uchun yetarli ekan — kompaniya (MCHJ) bo'lish shart
+     emas. Ariza `business.click.uz` orqali yuboriladi, Click'ning
+     ulanish/sotuv/integratsiya bo'limlari bilan aloqa o'rnatiladi, va
+     natijada **Service ID**, **Merchant ID**, **Secret key** beriladi.
 3. Shartnoma **Didox** (O'zbekistonning rasmiy elektron hujjat almashish
    tizimi, ERI/elektron raqamli imzo talab qiladi) orqali imzolanadi.
-4. Ro'yxatdan o'tib, shaxsiy kabinet (`mc.click.uz`) ochilgach — yangi
-   xizmat (service) yaratasiz, shunda **Service ID**, **Merchant ID** va
-   **Maxfiy kalit (Secret key)** beriladi.
-5. Callback URL sifatida ko'rsating:
-   ```
-   https://<sizning-domeningiz>/api/payments/click/webhook
-   ```
+4. Kalitlarni olgach — **xizmat standart holatda O'CHIRILGAN** turadi!
+   Faollashtirish uchun quyidagi 2.1-qadamga qarang.
 
 **Muhim**: yuqoridagi hujjatlar (passport nusxasi, STIR, bank rekvizitlari)
 — shaxsiy/moliyaviy ma'lumot. Bularni faqat OWNER'ning o'zi, to'g'ridan-
 to'g'ri Payme/Click'ning rasmiy sahifasida kiritishi kerak — boshqa hech
 kimga (jumladan AI-yordamchiga) berilmasligi kerak.
+
+### 2.1-qadam: Click xizmatini faollashtirish (Click'ning o'zidan olingan ko'rsatma)
+
+Kalitlar (Service ID/Merchant ID/Secret key) berilgandan keyin ham xizmat
+ishlamaydi — quyidagi qadamlar bajarilmaguncha Click tomonidan qo'lda
+faollashtirilishi kerak:
+
+1. **Webhook manzilini kiritish**: `merchant.click.uz` kabinetiga kiring →
+   "Сервисы" (Xizmatlar) bo'limi → jadvalning "Действие" (Amal) ustunidagi
+   qalam belgisini bosing → tekshirish (Prepare) va natija (Complete)
+   manzillarini kiriting. Bizning implementatsiyada ikkalasi ham **bitta**
+   manzil (`action` parametri bilan farqlanadi):
+   ```
+   https://<sizning-domeningiz>/api/payments/click/webhook
+   ```
+2. **Static IP / TAS-IX**: agar serveringiz O'zbekiston TAS-IX tarmog'ida
+   BO'LMASA (masalan, xorijiy VPS) — birinchi haqiqiy to'lovdan OLDIN Click
+   integratsiya bo'limiga (ariza bilan birga berilgan mas'ul xodimga)
+   domeningiz, IP-manzilingiz va portingizni yuborib, firewall whitelist'ga
+   qo'shishlarini so'rang. IP **statik** bo'lishi shart — o'zgartirishdan
+   oldin ham ular oldindan xabardor qilinishi kerak.
+3. Webhook manzili kiritilgach, Click'ning mas'ul xodimiga (ariza javobida
+   ko'rsatilgan aloqa) "tayyormiz" deb yozing — shundan keyin ular xizmatni
+   faollashtiradi.
+4. **Sinov to'lovi** (Click'ning o'z tavsiyasi — bu SANDBOX EMAS, kichik
+   summa bilan HAQIQIY tranzaksiya):
+   - Telefonga **Click Up** ilovasini o'rnating.
+   - Quyidagi havolani oching (o'zingizning Service ID/Merchant ID bilan):
+     ```
+     https://my.click.uz/services/pay/?service_id=<SERVICE_ID>&merchant_id=<MERCHANT_ID>&amount=1000&transaction_param=test
+     ```
+   - Chiqqan formada telefon raqami yoki karta ma'lumotlarini kiriting —
+     hisob (invoys) chiqariladi.
+   - Click Up ilovasida shu hisobni to'lang. Xatolik bo'lsa —
+     Prepare/Complete so'rov-javoblarining logini Click'ning integratsiya
+     guruhiga yuboring (shuning uchun webhook endpoint'da so'rov/javoblarni
+     to'liq loglash tavsiya etiladi).
+   - `PaymeException`/`ClickException` kabi holatlarda ham `PaymentTransaction`
+     jadvalida yozuv qolishini tekshiring — muvaffaqiyatsiz urinish ham
+     kuzatilishi kerak.
 
 ## 3-qadam: `.env` faylini to'ldirish
 
