@@ -89,7 +89,7 @@ class ExcelServiceTest {
 
     @Test
     void importQuestions_validRow_importsSuccessfully() throws IOException {
-        byte[] content = buildWorkbook(new String[]{"2+2 nechiga teng?", "3", "4", "5", "6", "B", "Yig'indi"});
+        byte[] content = buildWorkbook(new String[]{"2+2 nechiga teng?", "3", "4", "5", "6", "7", "B", "Yig'indi"});
 
         ImportResultDto result = excelService.importQuestions(excelFile(content), 1L);
 
@@ -101,7 +101,7 @@ class ExcelServiceTest {
 
     @Test
     void importQuestions_correctAnswerMarkedTrueInDto() throws IOException {
-        byte[] content = buildWorkbook(new String[]{"Savol", "birinchi", "ikkinchi", "uchinchi", "to'rtinchi", "C", "Izoh"});
+        byte[] content = buildWorkbook(new String[]{"Savol", "birinchi", "ikkinchi", "uchinchi", "to'rtinchi", "beshinchi", "C", "Izoh"});
 
         org.mockito.ArgumentCaptor<QuestionSaveDto> captor = org.mockito.ArgumentCaptor.forClass(QuestionSaveDto.class);
         excelService.importQuestions(excelFile(content), 1L);
@@ -114,8 +114,8 @@ class ExcelServiceTest {
 
     @Test
     void importQuestions_multipleRows_allImported() throws IOException {
-        byte[] content = buildWorkbook(new String[]{"Savol 1", "a", "b", "c", "d", "A", "izoh1"},
-                new String[]{"Savol 2", "a", "b", "c", "d", "B", "izoh2"});
+        byte[] content = buildWorkbook(new String[]{"Savol 1", "a", "b", "c", "d", "e", "A", "izoh1"},
+                new String[]{"Savol 2", "a", "b", "c", "d", "e", "B", "izoh2"});
 
         ImportResultDto result = excelService.importQuestions(excelFile(content), 1L);
 
@@ -128,8 +128,8 @@ class ExcelServiceTest {
 
     @Test
     void importQuestions_invalidCorrectLetter_recordsRowErrorWithoutStoppingOtherRows() throws IOException {
-        byte[] content = buildWorkbook(new String[]{"Yaroqsiz savol", "a", "b", "c", "d", "Z", "izoh"},
-                new String[]{"Yaroqli savol", "a", "b", "c", "d", "A", "izoh"});
+        byte[] content = buildWorkbook(new String[]{"Yaroqsiz savol", "a", "b", "c", "d", "e", "Z", "izoh"},
+                new String[]{"Yaroqli savol", "a", "b", "c", "d", "e", "A", "izoh"});
 
         ImportResultDto result = excelService.importQuestions(excelFile(content), 1L);
 
@@ -142,7 +142,7 @@ class ExcelServiceTest {
     @Test
     void importQuestions_duplicateAnswersInRow_recordsError() throws IOException {
         when(excelAnswerService.isUnique(any())).thenReturn(false);
-        byte[] content = buildWorkbook(new String[]{"Savol", "a", "a", "c", "d", "A", "izoh"});
+        byte[] content = buildWorkbook(new String[]{"Savol", "a", "a", "c", "d", "e", "A", "izoh"});
 
         ImportResultDto result = excelService.importQuestions(excelFile(content), 1L);
 
@@ -155,7 +155,7 @@ class ExcelServiceTest {
     @Test
     void importQuestions_duplicateQuestionAlreadyInDb_recordsError() throws IOException {
         when(questionService.isQuestionWithAnswersExists(anyList(), any(QuestionSaveDto.class))).thenReturn(true);
-        byte[] content = buildWorkbook(new String[]{"Mavjud savol", "a", "b", "c", "d", "A", "izoh"});
+        byte[] content = buildWorkbook(new String[]{"Mavjud savol", "a", "b", "c", "d", "e", "A", "izoh"});
 
         ImportResultDto result = excelService.importQuestions(excelFile(content), 1L);
 
@@ -166,7 +166,7 @@ class ExcelServiceTest {
 
     @Test
     void importQuestions_blankQuestionText_recordsErrorViaRealValidation() throws IOException {
-        byte[] content = buildWorkbook(new String[]{"", "a", "b", "c", "d", "A", "izoh"});
+        byte[] content = buildWorkbook(new String[]{"", "a", "b", "c", "d", "e", "A", "izoh"});
 
         ImportResultDto result = excelService.importQuestions(excelFile(content), 1L);
 
@@ -203,7 +203,7 @@ class ExcelServiceTest {
 
     @Test
     void importQuestions_wrongExtension_returnsFailure() throws IOException {
-        byte[] content = buildWorkbook(new String[]{"Savol", "a", "b", "c", "d", "A", "izoh"});
+        byte[] content = buildWorkbook(new String[]{"Savol", "a", "b", "c", "d", "e", "A", "izoh"});
         MockMultipartFile file = new MockMultipartFile("file", "questions.txt", "text/plain", content);
 
         ImportResultDto result = excelService.importQuestions(file, 1L);
@@ -227,7 +227,7 @@ class ExcelServiceTest {
 
     @Test
     void importQuestions_clamAvRejects_returnsFailureWithoutParsingRows() throws IOException {
-        byte[] content = buildWorkbook(new String[]{"Savol", "a", "b", "c", "d", "A", "izoh"});
+        byte[] content = buildWorkbook(new String[]{"Savol", "a", "b", "c", "d", "e", "A", "izoh"});
         org.mockito.Mockito.doThrow(new IllegalArgumentException("❌ Fayl zararli dastur (virus) sifatida aniqlandi"))
                 .when(clamAvScanService).scan(any(), any());
 

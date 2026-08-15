@@ -1,8 +1,10 @@
 package behzoddev.testproject.service.payment;
 
 import behzoddev.testproject.dao.PaymentOrderRepository;
+import behzoddev.testproject.dao.PaymentSettingsRepository;
 import behzoddev.testproject.dto.subscription.SubscriptionDto;
 import behzoddev.testproject.entity.PaymentOrder;
+import behzoddev.testproject.entity.PaymentSettings;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.entity.enums.PaymentOrderStatus;
@@ -18,12 +20,14 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,6 +44,8 @@ class PaymentOrderServiceTest {
     @Mock
     private PaymentOrderRepository paymentOrderRepository;
     @Mock
+    private PaymentSettingsRepository paymentSettingsRepository;
+    @Mock
     private SubscriptionService subscriptionService;
 
     @InjectMocks
@@ -52,6 +58,13 @@ class PaymentOrderServiceTest {
         ReflectionTestUtils.setField(paymentOrderService, "pricePerMonthSom", 50_000L);
         Role roleUser = Role.builder().id(1L).roleName("ROLE_USER").build();
         user = User.builder().id(1L).username("student").roles(new HashSet<>(Set.of(roleUser))).build();
+
+        // createOrder() endi minimal summani tekshiradi — bu testlarning
+        // aksariyati shu tekshiruvga tegishli emas, shuning uchun lenient.
+        PaymentSettings settings = new PaymentSettings();
+        settings.setId(1L);
+        settings.setMinAmountSom(BigDecimal.valueOf(1000));
+        lenient().when(paymentSettingsRepository.findById(1L)).thenReturn(Optional.of(settings));
     }
 
     // ===== createOrder =====
@@ -74,6 +87,20 @@ class PaymentOrderServiceTest {
     }
 
     @Test
+    void createOrder_amountBelowMinimum_throws() {
+        // 1 oy = 50 000 so'm (pricePerMonthSom), minimal chegarani shundan
+        // yuqoriroq (60 000) qilib qo'yamiz — buyurtma rad etilishi kerak.
+        PaymentSettings settings = new PaymentSettings();
+        settings.setId(1L);
+        settings.setMinAmountSom(BigDecimal.valueOf(60_000));
+        when(paymentSettingsRepository.findById(1L)).thenReturn(Optional.of(settings));
+
+        assertThatThrownBy(() -> paymentOrderService.createOrder(user, 1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("minimal chegaradan");
+    }
+
+    @Test
     void createOrder_ownerUser_throws() {
         Role roleOwner = Role.builder().id(2L).roleName("ROLE_OWNER").build();
         User owner = User.builder().id(2L).username("owner").roles(new HashSet<>(Set.of(roleOwner))).build();
@@ -81,6 +108,29 @@ class PaymentOrderServiceTest {
         assertThatThrownBy(() -> paymentOrderService.createOrder(owner, 1))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("OWNER uchun ADMIN obunasi kerak emas");
+    }
+
+    // ===== minAmountSom (Click/Payme minimal tranzaksiya chegarasi) =====
+
+    @Test
+    void updateMinAmountSom_positiveValue_savesAndReturnsIt() {
+        when(paymentSettingsRepository.save(any(PaymentSettings.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        BigDecimal result = paymentOrderService.updateMinAmountSom(BigDecimal.valueOf(2000));
+
+        assertThat(result).isEqualByComparingTo("2000");
+        verify(paymentSettingsRepository).save(any(PaymentSettings.class));
+    }
+
+    @Test
+    void updateMinAmountSom_nonPositiveValue_throws() {
+        assertThatThrownBy(() -> paymentOrderService.updateMinAmountSom(BigDecimal.ZERO))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> paymentOrderService.updateMinAmountSom(BigDecimal.valueOf(-500)))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> paymentOrderService.updateMinAmountSom(null))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     // ===== markPaid =====

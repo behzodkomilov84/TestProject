@@ -16,6 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadUsers();
     loadPendingSubscriptions();
     loadRoleAudit();
+    loadMinAmount();
 });
 
 function loadUsers() {
@@ -329,6 +330,49 @@ function updateRoleColors(tr, roles) {
             label.style.color = "";
         }
     });
+}
+
+// ================= To'lov sozlamalari (minimal summa) =================
+
+function loadMinAmount() {
+    const input = document.getElementById("minAmountInput");
+    if (!input) return;
+
+    fetch("/api/payments/min-amount")
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+            if (data) input.value = data.minAmountSom;
+        })
+        .catch(err => console.error(err));
+}
+
+async function saveMinAmount() {
+    const value = Number(document.getElementById("minAmountInput").value);
+
+    if (!value || value <= 0) {
+        alert("❌ To'g'ri summa kiriting");
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/payments/min-amount", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ minAmountSom: value })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            alert(data.error || "Xatolik yuz berdi");
+            return;
+        }
+
+        alert("✅ Minimal summa saqlandi: " + data.minAmountSom + " so'm");
+    } catch (err) {
+        console.error(err);
+        alert("Network error");
+    }
 }
 
 async function unlockUser(id) {

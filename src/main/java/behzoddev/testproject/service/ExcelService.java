@@ -85,14 +85,16 @@ public class ExcelService {
             String b = cell(row, 2);
             String c = cell(row, 3);
             String d = cell(row, 4);
-            String correct = cell(row, 5);
-            String comment = cell(row, 6);
+            String e = cell(row, 5);
+            String correct = cell(row, 6);
+            String comment = cell(row, 7);
 
             validation.textFieldMustNotBeEmpty(qText);
             validation.textFieldMustNotBeEmpty(a);
             validation.textFieldMustNotBeEmpty(b);
             validation.textFieldMustNotBeEmpty(c);
             validation.textFieldMustNotBeEmpty(d);
+            validation.textFieldMustNotBeEmpty(e);
             validation.textFieldMustNotBeEmpty(correct);
             validation.textFieldMustNotBeEmpty(comment);
 
@@ -107,8 +109,9 @@ public class ExcelService {
             answerShortDtoList.add(new AnswerShortDto(b, correctIndex == 1, correctIndex == 1 ? comment : commentOfWrongAnswer, null, null, null));
             answerShortDtoList.add(new AnswerShortDto(c, correctIndex == 2, correctIndex == 2 ? comment : commentOfWrongAnswer, null, null, null));
             answerShortDtoList.add(new AnswerShortDto(d, correctIndex == 3, correctIndex == 3 ? comment : commentOfWrongAnswer, null, null, null));
+            answerShortDtoList.add(new AnswerShortDto(e, correctIndex == 4, correctIndex == 4 ? comment : commentOfWrongAnswer, null, null, null));
 
-            List<String> answersText = List.of(a, b, c, d);
+            List<String> answersText = List.of(a, b, c, d, e);
 
             boolean isUnique = answerService.isUnique(answersText); //Javoblarni bir xil masligini tekshiradi.
 
@@ -200,7 +203,8 @@ public class ExcelService {
             case "B" -> 1;
             case "C" -> 2;
             case "D" -> 3;
-            default -> throw new IllegalArgumentException("❌To'g'ri javob varianti faqat A/B/C/D dan biri bo'lishi mumkin.");
+            case "E" -> 4;
+            default -> throw new IllegalArgumentException("❌To'g'ri javob varianti faqat A/B/C/D/E dan biri bo'lishi mumkin.");
         };
     }
 

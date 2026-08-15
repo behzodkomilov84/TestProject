@@ -99,6 +99,15 @@
             <input type="text" id="manualNote" placeholder="Izoh (ixtiyoriy)">
             <button onclick="createManualSubscription()">✅ Tasdiqlash va ADMIN berish</button>
         </div>
+
+        <!-- Click/Payme'ning minimal tranzaksiya summasi — .env/redeploy'siz
+             shu yerdan o'zgartiriladi (PaymentOrderService.createOrder shu
+             chegaradan kam summali buyurtmani rad etadi). -->
+        <h2>⚙️ To'lov sozlamalari</h2>
+        <div class="manual-subscription-form">
+            <input type="number" id="minAmountInput" placeholder="Minimal summa (so'm)" min="1">
+            <button onclick="saveMinAmount()">💾 Saqlash</button>
+        </div>
     </div>
 
     <!-- Rol o'zgarishlari tarixi — kim, qachon, kimga qanday rol berdi/olib tashladi -->

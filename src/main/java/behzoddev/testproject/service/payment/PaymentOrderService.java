@@ -1,8 +1,10 @@
 package behzoddev.testproject.service.payment;
 
 import behzoddev.testproject.dao.PaymentOrderRepository;
+import behzoddev.testproject.dao.PaymentSettingsRepository;
 import behzoddev.testproject.dto.subscription.SubscriptionDto;
 import behzoddev.testproject.entity.PaymentOrder;
+import behzoddev.testproject.entity.PaymentSettings;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.entity.enums.PaymentOrderStatus;
 import behzoddev.testproject.service.SubscriptionService;
@@ -31,7 +33,10 @@ public class PaymentOrderService {
     private long pricePerMonthSom;
 
     private final PaymentOrderRepository paymentOrderRepository;
+    private final PaymentSettingsRepository paymentSettingsRepository;
     private final SubscriptionService subscriptionService;
+
+    private static final long DEFAULT_MIN_AMOUNT_SOM = 1000;
 
     @Transactional
     public PaymentOrder createOrder(User user, int durationMonths) {
@@ -44,6 +49,14 @@ public class PaymentOrderService {
         }
 
         BigDecimal amount = BigDecimal.valueOf(pricePerMonthSom).multiply(BigDecimal.valueOf(durationMonths));
+
+        // Click/Payme kabi shlyuzlar juda kichik summalarni rad etadi —
+        // OWNER /users sahifasidan sozlagan chegaradan tekshiramiz.
+        BigDecimal minAmount = getMinAmountSom();
+        if (amount.compareTo(minAmount) < 0) {
+            throw new IllegalArgumentException(
+                    "❌To'lov summasi minimal chegaradan (" + minAmount.toPlainString() + " so'm) kam bo'lishi mumkin emas");
+        }
 
         PaymentOrder order = PaymentOrder.builder()
                 .user(user)
@@ -67,6 +80,39 @@ public class PaymentOrderService {
 
     public long getPricePerMonthSom() {
         return pricePerMonthSom;
+    }
+
+    // Click/Payme'ning real minimal tranzaksiya chegarasi — OWNER buni
+    // /users sahifasidan (redeploy'siz) o'zgartira oladi. Qator hali
+    // yaratilmagan bo'lsa (masalan yangi environment), standart qiymat
+    // bilan avtomatik yaratiladi.
+    @Transactional
+    public BigDecimal getMinAmountSom() {
+        return getOrCreateSettings().getMinAmountSom();
+    }
+
+    @Transactional
+    public BigDecimal updateMinAmountSom(BigDecimal newMinAmount) {
+        if (newMinAmount == null || newMinAmount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("❌Minimal summa musbat son bo'lishi kerak");
+        }
+
+        PaymentSettings settings = getOrCreateSettings();
+        settings.setMinAmountSom(newMinAmount);
+        paymentSettingsRepository.save(settings);
+
+        log.info("To'lov minimal summasi o'zgartirildi: {}", newMinAmount);
+        return newMinAmount;
+    }
+
+    private PaymentSettings getOrCreateSettings() {
+        return paymentSettingsRepository.findById(1L)
+                .orElseGet(() -> {
+                    PaymentSettings settings = new PaymentSettings();
+                    settings.setId(1L);
+                    settings.setMinAmountSom(BigDecimal.valueOf(DEFAULT_MIN_AMOUNT_SOM));
+                    return paymentSettingsRepository.save(settings);
+                });
     }
 
     // Payme PerformTransaction / Click Complete muvaffaqiyatli bo'lganda

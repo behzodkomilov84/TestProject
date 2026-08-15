@@ -9,8 +9,12 @@ import behzoddev.testproject.service.payment.ClickService;
 import behzoddev.testproject.service.payment.PaymeService;
 import behzoddev.testproject.service.payment.PaymentOrderService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.math.BigDecimal;
+import java.util.Map;
 
 // Foydalanuvchi (USER) ROLE_ADMIN obunasini o'zi onlayn sotib olishni shu
 // yerdan boshlaydi — /profile sahifasidagi "Onlayn to'lov" blokidan.
@@ -63,5 +67,19 @@ public class PaymentOrderController {
                 .status(order.getStatus().name())
                 .checkoutUrl(checkoutUrl)
                 .build();
+    }
+
+    // Click/Payme'ning minimal tranzaksiya summasi — /users sahifasida
+    // OWNER ko'rib/o'zgartirib turishi uchun.
+    @GetMapping("/min-amount")
+    public Map<String, BigDecimal> getMinAmount() {
+        return Map.of("minAmountSom", paymentOrderService.getMinAmountSom());
+    }
+
+    @PutMapping("/min-amount")
+    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    public Map<String, BigDecimal> updateMinAmount(@RequestBody Map<String, BigDecimal> body) {
+        BigDecimal updated = paymentOrderService.updateMinAmountSom(body.get("minAmountSom"));
+        return Map.of("minAmountSom", updated);
     }
 }
