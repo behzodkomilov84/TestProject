@@ -100,6 +100,31 @@ body {
     color: #64748b;
 }
 
+/* ===== RESPONSIVE (mobile/tablet) =====
+   Tor ekranda .sidebar (260px, position:fixed) va uning natijasida
+   .workspace'ga qo'yilgan margin-left:260px deyarli butun ekranni
+   band qilib qo'yardi. Bu yerda sidebar mobil holatda ORQA FONDA
+   (overlay) ishlaydi — content'ni suriб qo'ymaydi, faqat toggle
+   tugmasi bosilganda ustidan chiqadi. `.collapsed`/`.full` klasslari
+   student.js orqali bir vaqtda qo'shilib/olib tashlanadi — shu sababli
+   bu yerda ma'nosi ATAYLAB teskari qilingan (mobil uchun default —
+   yopiq, .collapsed qo'shilganda — ochiq). */
+@media (max-width: 900px) {
+    .sidebar {
+        transform: translateX(-100%);
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .sidebar.collapsed {
+        transform: translateX(0);
+    }
+
+    .workspace,
+    .workspace.full {
+        margin-left: 0;
+    }
+}
+
 /* TABLE */
 
 .table-box {

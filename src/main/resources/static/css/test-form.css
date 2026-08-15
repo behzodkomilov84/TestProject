@@ -270,3 +270,16 @@ label {
     max-width: 130px;
     max-height: 90px;
 }
+
+/* Tor ekranda .commentary-box (position:fixed, o'ngda suzib turuvchi
+   panel) forma ustiga chiqib, uni to'sib qo'yardi — mobil/tabletda
+   oddiy oqim (static) ichiga, formadan keyin joylashadi. */
+@media (max-width: 900px) {
+    .commentary-box {
+        position: static;
+        width: 100%;
+        max-width: 100%;
+        max-height: none;
+        margin-top: 16px;
+    }
+}

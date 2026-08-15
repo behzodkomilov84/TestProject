@@ -22,7 +22,7 @@ h1 {
 
 /* Основной контейнер */
 .wrapper {
-    width: 650px;
+    width: min(650px, 94vw);
     margin: auto;
     max-height: 75vh;
 }
