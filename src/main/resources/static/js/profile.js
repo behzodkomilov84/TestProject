@@ -38,6 +38,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 function enableEditUsername() {
+    // Boshqa maydonlarda saqlanmagan tahrirlash bo'lsa, avval uni bekor qilamiz —
+    // aks holda bir vaqtda bir nechta maydon tahrirlash rejimida qolib ketardi.
+    cancelEmailEdit();
+    cancelPhoneEdit();
+
     const current = document.getElementById("username").innerText;
 
     document.getElementById("username-input").value = current;
@@ -56,6 +61,9 @@ function cancelUsernameEdit() {
 
 
 function enableEditEmail() {
+    cancelUsernameEdit();
+    cancelPhoneEdit();
+
     const current = document.getElementById("email").innerText;
     const input = document.getElementById("email-input");
 
@@ -126,6 +134,9 @@ function loadPhoneCountries() {
 }
 
 function enableEditPhone() {
+    cancelUsernameEdit();
+    cancelEmailEdit();
+
     const input = document.getElementById("phone-input");
 
     if (currentProfile && phoneCountryPicker) {
