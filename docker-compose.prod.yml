@@ -67,6 +67,20 @@ services:
       SMTP_USERNAME: ${SMTP_USERNAME:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       MAIL_FROM: ${MAIL_FROM:-no-reply@smart-test.local}
+      # Payme/Click — .env'da to'ldirilgan bo'lsa ham, bu yerda ro'yxatga
+      # kiritilmagani uchun ilgari konteynerga umuman uzatilmasdi (docker
+      # compose "environment:" bo'limida ANIQ ro'yxatlanmagan .env
+      # o'zgaruvchilari avtomatik ravishda konteynerga o'tmaydi) — natijada
+      # ClickService/PaymeService har doim "sozlanmagan" holatda ishlardi,
+      # webhook imzosi hech qachon mos kelmasdi.
+      PAYME_MERCHANT_ID: ${PAYME_MERCHANT_ID:-}
+      PAYME_KEY: ${PAYME_KEY:-}
+      PAYME_CHECKOUT_BASE_URL: ${PAYME_CHECKOUT_BASE_URL:-https://checkout.paycom.uz}
+      CLICK_SERVICE_ID: ${CLICK_SERVICE_ID:-}
+      CLICK_MERCHANT_ID: ${CLICK_MERCHANT_ID:-}
+      CLICK_SECRET_KEY: ${CLICK_SECRET_KEY:-}
+      CLICK_PAY_BASE_URL: ${CLICK_PAY_BASE_URL:-https://my.click.uz/services/pay}
+      PAYMENT_PRICE_PER_MONTH_SOM: ${PAYMENT_PRICE_PER_MONTH_SOM:-50000}
       # Nginx proksisi orqasida ekanini bilishi uchun — X-Forwarded-Proto
       # asosida https/http'ni to'g'ri aniqlaydi (redirect URL'lar,
       # "Secure" cookie va h.k. uchun muhim).
