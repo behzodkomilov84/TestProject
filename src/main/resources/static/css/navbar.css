@@ -81,7 +81,10 @@ body.menu-open::after {
 
     color: white;
     text-decoration: none;
-    text-transform: uppercase;
+    /* Ilgari UPPERCASE edi — matn HTML'da (navbar.html) allaqachon to'g'ri
+       "Bosh harf" bilan yozilgan (masalan "Bosh sahifa", "Owner Panel"),
+       shuning uchun faqat shu yozuvni buzmaslik uchun olib tashlandi. */
+    text-transform: none;
 
     padding: 8px 14px;
     border-radius: 6px;

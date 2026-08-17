@@ -64,7 +64,12 @@ body {
     background: #a2bdb9;
     box-shadow: 0 6px 24px rgba(3, 2, 2, 0.87);
     border-radius: 8px;
-    z-index: 1000;
+    /* MUHIM: navbar.css'dagi .navbar (va uning mobil menyusi .nav-items)
+       ham z-index:1000 — teng bo'lganda DOM tartibida keyingi element
+       (shu blok) ustidan bosib chiqardi, natijada mobilda menyu ochilganda
+       shu blok uning ustiga tushib, menyu punktlari ko'rinmay qolardi.
+       Navbardan past, oddiy sahifa kontentidan (z-index yo'q) yuqori. */
+    z-index: 500;
     overflow-x: hidden;
 }
 
