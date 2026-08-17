@@ -38,9 +38,9 @@
     <div class="login form">
         <header>Login</header>
         <form action="/login" method="post">
-            <input class="username" type="text" name="username" id="username" placeholder="Enter your name" required>
+            <input class="username" type="text" name="username" id="username" placeholder="Enter your name" autocomplete="username" required>
             <div class="password-box">
-            <input class="password" type="password" name="password" id="pwd" placeholder="Enter your password" required>
+            <input class="password" type="password" name="password" id="pwd" placeholder="Enter your password" autocomplete="current-password" required>
             <input class="checkbox" type="checkbox" id="showPsw" onclick="pwd.type=this.checked?'text':'password'">
                 <label for="showPsw">Show password?</label>
             </div>

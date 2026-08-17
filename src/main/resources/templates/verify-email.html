@@ -31,8 +31,8 @@
         </p>
 
         <form action="/verify-email" method="post">
-            <input type="text" name="username" th:value="${param.username}" placeholder="Username" required>
-            <input type="text" name="code" placeholder="Tasdiqlash kodi (6 xonali)" required maxlength="10">
+            <input type="text" name="username" th:value="${param.username}" placeholder="Username" autocomplete="username" required>
+            <input type="text" name="code" placeholder="Tasdiqlash kodi (6 xonali)" autocomplete="one-time-code" required maxlength="10">
 
             <input type="submit" class="button" value="Tasdiqlash">
         </form>

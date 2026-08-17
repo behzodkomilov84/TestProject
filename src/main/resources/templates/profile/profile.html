@@ -35,7 +35,7 @@
                                 </span>
 
                             <span id="username-edit" style="display:none;">
-                                    <input type="text" id="username-input"/>
+                                    <input type="text" id="username-input" autocomplete="username"/>
                                     <button id="save-username" title="Saqlash">💾</button>
                                     <button id="cancel-username" title="Bekor qilish">✖</button>
                                 </span>
@@ -51,7 +51,7 @@
                                 </span>
 
                             <span id="email-edit" style="display:none;">
-                                    <input type="email" id="email-input"/>
+                                    <input type="email" id="email-input" autocomplete="email"/>
                                     <button id="save-email" title="Saqlash">💾</button>
                                     <button id="cancel-email" title="Bekor qilish">✖</button>
                                 </span>
@@ -69,7 +69,7 @@
                             <span id="phone-edit" style="display:none;">
                                 <span style="display:inline-flex; gap:4px; vertical-align:middle;">
                                     <span id="phone-country-picker" style="display:inline-block;"></span>
-                                    <input type="tel" id="phone-input" placeholder="Telefon raqam" style="width:140px;">
+                                    <input type="tel" id="phone-input" placeholder="Telefon raqam" autocomplete="tel" style="width:140px;">
                                 </span>
                                     <button id="save-phone" title="Saqlash">💾</button>
                                     <button id="cancel-phone" title="Bekor qilish">✖</button>
@@ -91,10 +91,10 @@
                     <h3>Parolni o‘zgartirish</h3>
 
                     <label>Hozirgi parol</label>
-                    <input type="password" id="currentPassword">
+                    <input type="password" id="currentPassword" autocomplete="current-password">
 
                     <label>Yangi parol</label>
-                    <input type="password" id="newPassword">
+                    <input type="password" id="newPassword" autocomplete="new-password">
 
                     <div class="modal-actions">
                         <button id="save-password">Saqlash</button>
