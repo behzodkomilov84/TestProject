@@ -14,7 +14,7 @@ let isServerPaging = false;
 
 if (!topicId) {
     document.querySelector("#questionsTable tbody").innerHTML =
-        "<tr><td colspan='9'>❌ topicId yuborilmagan</td></tr>";
+        "<tr><td colspan='10'>❌ topicId yuborilmagan</td></tr>";
 } else {
     loadQuestions(topicId, currentPage);
 }
@@ -72,7 +72,7 @@ async function loadQuestions(topicId, page = 0) {
 
     } catch (e) {
         document.querySelector("#questionsTable tbody").innerHTML =
-            `<tr><td colspan="9">❌ ${e.message}</td></tr>`;
+            `<tr><td colspan="10">❌ ${e.message}</td></tr>`;
     }
 }
 
@@ -80,10 +80,10 @@ function renderQuestionsTable(questions) {
     const tbody = document.querySelector("#questionsTable tbody");
     tbody.innerHTML = "";
 
-    const letters = ["A", "B", "C", "D"];
+    const letters = ["A", "B", "C", "D", "E"];
 
     questions.forEach((q, index) => {
-        const answers = q.answers.slice(0, 4);
+        const answers = q.answers.slice(0, 5);
         const correctIndex = answers.findIndex(a => a.isTrue);
         const correctLetter = correctIndex !== -1 ? letters[correctIndex] : "-";
         const correctAnswer = answers.find(a => a.isTrue);
@@ -479,7 +479,7 @@ function enableInlineEdit(btn) {
 //обработчик radio (КЛЮЧЕВОЕ)
     const radios = row.querySelectorAll(".correct-radio");
     const correctLetterCell = row.querySelector(".correct-letter b");
-    const letters = ["A", "B", "C", "D"];
+    const letters = ["A", "B", "C", "D", "E"];
 
     radios.forEach((radio, index) => {
         radio.addEventListener("change", () => {
