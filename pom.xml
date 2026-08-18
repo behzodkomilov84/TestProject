@@ -71,6 +71,17 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
+        <!-- Markazlashtirilgan xato kuzatuvi (production'da). Spring Boot'ning
+             o'zining "sentry-spring-boot-starter" auto-konfiguratsiyasi emas,
+             faqat logback appender ishlatiladi (logback-spring.xml) — bu
+             Spring Boot versiyasidan mustaqil, yangi Boot 4'da ham xavfsiz
+             ishlaydi. SENTRY_DSN bo'sh bo'lsa, appender jim o'zini o'chiradi. -->
+        <dependency>
+            <groupId>io.sentry</groupId>
+            <artifactId>sentry-logback</artifactId>
+            <version>8.16.0</version>
+        </dependency>
+
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>

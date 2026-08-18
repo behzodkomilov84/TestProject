@@ -81,6 +81,10 @@ services:
       CLICK_SECRET_KEY: ${CLICK_SECRET_KEY:-}
       CLICK_PAY_BASE_URL: ${CLICK_PAY_BASE_URL:-https://my.click.uz/services/pay}
       PAYMENT_PRICE_PER_MONTH_SOM: ${PAYMENT_PRICE_PER_MONTH_SOM:-50000}
+      # Markazlashtirilgan xato kuzatuvi (Sentry) — .env'da bo'lmasa (bo'sh),
+      # logback-spring.xml'dagi SentryAppender jim o'zini o'chiradi.
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-production}
       # Nginx proksisi orqasida ekanini bilishi uchun — X-Forwarded-Proto
       # asosida https/http'ni to'g'ri aniqlaydi (redirect URL'lar,
       # "Secure" cookie va h.k. uchun muhim).

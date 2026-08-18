@@ -69,6 +69,10 @@ services:
       CLICK_SECRET_KEY: ${CLICK_SECRET_KEY:-}
       CLICK_PAY_BASE_URL: ${CLICK_PAY_BASE_URL:-https://my.click.uz/services/pay}
       PAYMENT_PRICE_PER_MONTH_SOM: ${PAYMENT_PRICE_PER_MONTH_SOM:-50000}
+      # Markazlashtirilgan xato kuzatuvi (Sentry, ixtiyoriy — .env'da
+      # bo'lmasa, SentryAppender jim o'zini o'chiradi).
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT:-development}
     volumes:
       - uploads-data:/app/uploads # Savol/javob rasmlari konteyner qayta ishga tushganda ham saqlanib qolishi uchun
     restart: unless-stopped

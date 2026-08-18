@@ -109,8 +109,13 @@ qamrab oladi.
   dump olingandan KEYIN qo'shilgan jadvallarni o'chirmas edi — endi avval
   `DROP DATABASE` qilib, dump haqiqatan ham to'liq "almashtirish" bo'lishini
   kafolatlaydi).
-- **Loglash markazlashtirilmagan** — hozir faqat konsolga/faylga yoziladi, production'da
-  xatolarni kuzatish uchun Sentry kabi xizmat ulash tavsiya etiladi.
+- ✅ **BAJARILDI — Markazlashtirilgan xato kuzatuvi (Sentry)**: `logback-spring.xml`dagi
+  `SentryAppender` orqali — ERROR va undan yuqori darajadagi barcha loglar
+  Sentry'ga yuboriladi (Spring Boot'ning o'z auto-konfiguratsiya starteri
+  emas, Boot versiyasidan mustaqil sof logback appender ishlatilgan).
+  `SENTRY_DSN` .env'da bo'sh bo'lsa (standart), appender jim o'zini
+  o'chiradi — konsolga/faylga yozish avvalgidek davom etadi, hech qanday
+  qo'shimcha sozlash shart emas. Yoqish uchun: `.env.example`'ga qarang.
 
 ## 5. Huquqiy / monetizatsiya
 

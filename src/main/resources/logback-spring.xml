@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Spring Boot'ning standart konsol loggingiga (defaults.xml/console-appender.xml)
+    qo'shimcha ravishda, ERROR darajadagi loglarni Sentry'ga ham yuboradi
+    (markazlashtirilgan xato kuzatuvi — ROADMAP.md, "4. Kod sifati va
+    infratuzilma").
+
+    SENTRY_DSN muhit o'zgaruvchisi bo'sh bo'lsa (application.yaml'dagi
+    "sentry.dsn" ${SENTRY_DSN:} orqali), SentryAppender hech narsa
+    yubormasdan jim o'zini o'chiradi — lokal/dev muhitda hech qanday
+    qo'shimcha sozlash yoki xatolik talab qilinmaydi.
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <springProperty scope="context" name="sentryDsn" source="sentry.dsn" defaultValue=""/>
+    <springProperty scope="context" name="sentryEnvironment" source="sentry.environment" defaultValue="production"/>
+
+    <appender name="SENTRY" class="io.sentry.logback.SentryAppender">
+        <options>
+            <dsn>${sentryDsn}</dsn>
+            <environment>${sentryEnvironment}</environment>
+        </options>
+        <!-- ERROR va undan yuqori — Sentry'da alohida hodisa (event) sifatida. -->
+        <minimumEventLevel>ERROR</minimumEventLevel>
+        <!-- INFO va undan yuqori — hodisaga oid "breadcrumb" (kontekst) sifatida,
+             event sifatida emas. -->
+        <minimumBreadcrumbLevel>INFO</minimumBreadcrumbLevel>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="SENTRY"/>
+    </root>
+</configuration>

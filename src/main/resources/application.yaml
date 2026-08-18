@@ -45,6 +45,14 @@ spring:
 #  jackson:
 #    deserialization:
 #      accept-float-as-int: false #2-usuli ObjectMapperConfig.java da keltirilgan. POST-Zaprosda int'ni o'rniga float kirgizilsa 400-Bad request qaytaradi.
+# Markazlashtirilgan xato kuzatuvi (Sentry) — logback-spring.xml'dagi
+# SentryAppender shu qiymatlarni o'qiydi (springProperty orqali). SENTRY_DSN
+# bo'sh bo'lsa (masalan lokal/dev muhitda), appender hech narsa yubormasdan
+# jim o'zini o'chiradi — hech qanday xatolik bermaydi.
+sentry:
+  dsn: ${SENTRY_DSN:}
+  environment: ${SENTRY_ENVIRONMENT:production}
+
 logging:
   level:
     root: INFO
