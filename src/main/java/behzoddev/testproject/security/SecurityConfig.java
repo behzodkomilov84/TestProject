@@ -40,6 +40,8 @@ public class SecurityConfig {
                                 "/privacy",
                                 "/favicon.ico",
                                 "/",
+                                // VAQTINCHALIK — Sentry sinovi uchun, tekshirilgach olib tashlanadi.
+                                "/api/sentry-test",
                                 // Payme/Click'ning o'z serverlari chaqiradi — sessiyasiz,
                                 // o'zining Basic Auth/imzo tekshiruvi orqali himoyalangan
                                 // (PaymeService.checkAuth / ClickService.verifySign).
