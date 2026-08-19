@@ -119,7 +119,11 @@ public class TelegramProfileService {
             case AWAITING_PHONE -> applyPhone(chatId, text);
             case AWAITING_CURRENT_PASSWORD -> applyCurrentPassword(chatId, text);
             case AWAITING_NEW_PASSWORD -> applyNewPassword(chatId, text);
-            case NONE -> null; // bu holat bu yerga umuman kelmasligi kerak
+            // NONE va profilga aloqasiz boshqa holatlar (masalan mustaqil test)
+            // bu yerga chaqiruvchi (TelegramBot.route) tomonidan filtrlanadi —
+            // shunga qaramay, `default` kelajakda yangi BotState qo'shilganda
+            // shu switch'ni "exhaustive emas" xatosidan asraydi.
+            default -> null;
         };
     }
 

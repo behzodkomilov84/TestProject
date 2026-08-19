@@ -14,5 +14,9 @@ public enum BotState {
     AWAITING_EMAIL,
     AWAITING_PHONE,
     AWAITING_CURRENT_PASSWORD,
-    AWAITING_NEW_PASSWORD
+    AWAITING_NEW_PASSWORD,
+
+    // ===== Mustaqil test (fan/savol soni tanlash inline tugmalar orqali,
+    // lekin bu holat "/cancel" va boshqa menyu tugmalarini bloklash uchun) =====
+    IN_PRACTICE_TEST
 }

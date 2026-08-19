@@ -164,9 +164,19 @@ botdan turib ishlatish mumkin bo'lishi.
 Test: 22 ta yangi unit test (`TelegramSessionServiceTest`,
 `TelegramProfileServiceTest`, `TelegramMenuServiceTest`).
 
-**2-bosqich — USER (o'quvchi) qo'shimcha**
-- [ ] 🎯 Mustaqil test — fan tanlab, tasodifiy savollar bilan mashq
-  (saytdagi `/testConfigPage`ning bot varianti).
+**2-bosqich — USER (o'quvchi) qo'shimcha** ✅ BAJARILDI
+- [x] 🎯 Mustaqil test — fan tanlab, tasodifiy savollar bilan mashq
+  (saytdagi `/testConfigPage`+`testSession` oqimining bot varianti).
+  `TelegramPracticeTestService`: fan -> savol soni (5/10/15/20/mavjud
+  barchasi) -> savol-javob (inline tugmalar) -> natija. Haqiqiy
+  `TestSessionService.startTest`/`finishTest` orqali — saytdagi bilan
+  bir xil ballash mantig'i. `TestSessionService.startTest()` savollarni
+  bazada saqlamagani uchun, bot davom etayotgan testning holatini
+  (savollar, joriy indeks, tanlangan javoblar) `TelegramSession.tempData`da
+  (JSON, `PracticeTestState`) o'zi saqlab boradi.
+  Test: 9 ta yangi unit test (`TelegramPracticeTestServiceTest`) — jumladan
+  to'liq oqim (2 savol, bittasi noto'g'ri) haqiqiy `TelegramSessionService`
+  bilan (JSON round-trip) tekshirilgan.
 
 **3-bosqich — ADMIN (o'qituvchi) qo'shimcha**
 - [ ] 👥 Gruppalarim — a'zolar ro'yxati, taklif yuborish.

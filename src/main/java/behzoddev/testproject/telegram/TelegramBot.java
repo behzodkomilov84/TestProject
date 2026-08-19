@@ -9,6 +9,7 @@ import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.AssignmentAttemptService;
 import behzoddev.testproject.service.NotificationService;
 import behzoddev.testproject.telegram.service.TelegramMenuService;
+import behzoddev.testproject.telegram.service.TelegramPracticeTestService;
 import behzoddev.testproject.telegram.service.TelegramProfileService;
 import behzoddev.testproject.telegram.service.TelegramQuizService;
 import behzoddev.testproject.telegram.service.TelegramSessionService;
@@ -43,6 +44,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final TelegramSessionService sessionService;
     private final TelegramMenuService menuService;
     private final TelegramProfileService profileService;
+    private final TelegramPracticeTestService practiceTestService;
 
     public TelegramBot(
             @Value("${telegram.bot.token}") String token,
@@ -54,7 +56,8 @@ public class TelegramBot extends TelegramLongPollingBot {
             NotificationService notificationService,
             TelegramSessionService sessionService,
             TelegramMenuService menuService,
-            TelegramProfileService profileService) {
+            TelegramProfileService profileService,
+            TelegramPracticeTestService practiceTestService) {
         super(token);
         this.token = token;
         this.username = username;
@@ -66,6 +69,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         this.sessionService = sessionService;
         this.menuService = menuService;
         this.profileService = profileService;
+        this.practiceTestService = practiceTestService;
     }
 
     @Override
@@ -135,6 +139,23 @@ public class TelegramBot extends TelegramLongPollingBot {
                 // ===== Obuna: Click orqali 1 oyga to'lash =====
                 if (data.equals("pay_click_1m")) {
                     execute(menuService.createClickPaymentLink(getUserByChatId(chatId)));
+                    return;
+                }
+
+                // ===== Mustaqil test (fan -> savol soni -> savol-javob) =====
+                if (data.startsWith("pt_science_")) {
+                    Long scienceId = Long.parseLong(data.replace("pt_science_", ""));
+                    execute(practiceTestService.selectScience(chatId, scienceId));
+                    return;
+                }
+                if (data.startsWith("pt_count_")) {
+                    int count = Integer.parseInt(data.replace("pt_count_", ""));
+                    execute(practiceTestService.startTest(chatId, count));
+                    return;
+                }
+                if (data.startsWith("pt_answer_")) {
+                    Long answerId = Long.parseLong(data.replace("pt_answer_", ""));
+                    execute(practiceTestService.submitAnswer(chatId, answerId));
                     return;
                 }
 
@@ -264,13 +285,21 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
 
         if (text.equals("/cancel")) {
+            if (sessionService.getState(chatId) == BotState.IN_PRACTICE_TEST) {
+                return practiceTestService.cancel(chatId);
+            }
             return profileService.cancelFlow(chatId);
         }
 
         // Foydalanuvchi ko'p bosqichli oqim o'rtasida (masalan yangi
-        // parolni kutyapmiz) — keyingi matn menyu tugmasi emas, shu
-        // oqimning davomi sifatida ishlanadi.
+        // parolni kutyapmiz, yoki mustaqil test o'rtasida) — keyingi matn
+        // menyu tugmasi emas, shu oqimning davomi sifatida ishlanadi.
         BotState state = sessionService.getState(chatId);
+        if (state == BotState.IN_PRACTICE_TEST) {
+            // Test paytida javob faqat inline tugmalar orqali tanlanadi —
+            // matn yozilsa, shunchaki eslatib qo'yamiz.
+            return practiceTestService.reminderToUseButtons(chatId);
+        }
         if (state != BotState.NONE) {
             return profileService.handleAwaitingInput(chatId, state, text);
         }
@@ -312,7 +341,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private boolean isMainMenuButton(String text) {
         return switch (text) {
             case BTN_PROFILE, BTN_NOTIFICATIONS, BTN_SUBSCRIPTION, BTN_COURSES, BTN_HELP,
-                    BTN_MY_ASSIGNMENTS, BTN_MY_RESULTS, BTN_MY_GROUPS, BTN_NEW_ASSIGNMENT,
+                    BTN_MY_ASSIGNMENTS, BTN_MY_RESULTS, BTN_PRACTICE_TEST, BTN_MY_GROUPS, BTN_NEW_ASSIGNMENT,
                     BTN_QUESTIONS, BTN_USERS, BTN_PAYMENTS, BTN_SETTINGS, BTN_BROADCAST -> true;
             default -> false;
         };
@@ -327,6 +356,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             case BTN_HELP -> menuService.help(user);
             case BTN_MY_ASSIGNMENTS -> telegramUserService.sendMyAssignments(user.getTelegramId());
             case BTN_MY_RESULTS -> telegramUserService.sendMyResults(user.getTelegramId());
+            case BTN_PRACTICE_TEST -> practiceTestService.startFlow(user.getTelegramId());
             // ROADMAP'dagi keyingi bosqichlar (ADMIN/OWNER'ga xos bo'limlar) —
             // hozircha "tez orada" javobi.
             default -> menuService.comingSoon(user.getTelegramId());
