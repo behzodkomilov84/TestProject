@@ -99,8 +99,19 @@ function renderQuestionsTable(questions) {
                 ${q.questionText}
                 ${q.imageUrl ? `<br><img class="question-thumb" src="${q.imageUrl}" alt="Savol rasmi">` : ""}
             </td>
-            ${answers.map(a => `
+            ${letters.map((letter, i) => {
+                const a = answers[i];
 
+                // Eski (5-variant qo'shilishidan OLDIN yaratilgan) savollarda
+                // faqat 4 ta javob bor — shu savol uchun "E" ustuni bo'sh
+                // qoladi. Bo'sh katakcha ham chizilishi SHART, aks holda
+                // keyingi ustunlar (✅, izoh, amallar) chapga surilib,
+                // sarlavha bilan mos kelmay qoladi.
+                if (!a) {
+                    return `<td class="answer-cell"></td>`;
+                }
+
+                return `
             <td data-editable
                 data-answer-id="${a.id}"
                 data-image-url="${a.imageUrl || ""}"
@@ -110,8 +121,8 @@ function renderQuestionsTable(questions) {
                 ${a.answerText}
                 ${a.imageUrl ? `<br><img class="answer-thumb" src="${a.imageUrl}" alt="Javob rasmi">` : ""}
             </td>
-
-            `).join("")}
+            `;
+            }).join("")}
             <td class="correct-letter"><b>${correctLetter}</b></td>
             
             <td class="comment-col hidden">
@@ -457,6 +468,12 @@ function enableInlineEdit(btn) {
     const answerCells = row.querySelectorAll(".answer-cell");
 
     answerCells.forEach((cell, index) => {
+        // Bo'sh ("padding") katakcha — bu savolda bunday variant umuman
+        // mavjud emas (masalan eski 4 variantli savolning "E" ustuni).
+        // Tahrirlash uchun input yaratilmaydi, aks holda saqlashda bo'sh
+        // matnli "javob" sifatida yuborilib, validatsiyada xatolikka olib kelardi.
+        if (!cell.dataset.answerId) return;
+
         const text = cell.innerText;
         const id = cell.dataset.answerId;
         const isCorrect = cell.classList.contains("correct");
@@ -540,6 +557,13 @@ function saveInlineEdit(btn, questionId) {
 
     answerRows.forEach((cell, i) => {
         const input = cell.querySelector(".inline-input");
+        // Bo'sh ("padding") katakcha — bu savolda bunday variant mavjud
+        // emas, hech narsa tahrirlanmagan (enableInlineEdit'da ham shu
+        // katakcha o'tkazib yuborilgan edi). Bo'sh javob sifatida
+        // yubormaymiz — aks holda backend'dagi "javob matni bo'sh
+        // bo'lmasligi kerak" tekshiruvi butun saqlashni bloklab qo'yardi.
+        if (!input) return;
+
         const radio = cell.querySelector(".correct-radio");
         const imageWidget = cell.querySelector('.inline-image-upload[data-role="answer-image"]');
 
