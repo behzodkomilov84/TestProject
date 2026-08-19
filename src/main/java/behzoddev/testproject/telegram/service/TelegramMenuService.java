@@ -45,7 +45,9 @@ public class TelegramMenuService {
     public static final String BTN_PRACTICE_TEST = "🎯 Mustaqil test";
     public static final String BTN_MY_GROUPS = "👥 Gruppalarim";
     public static final String BTN_NEW_ASSIGNMENT = "📝 Topshiriq berish";
+    public static final String BTN_STUDENT_RESULTS = "📈 O'quvchilar natijalari";
     public static final String BTN_QUESTIONS = "🗂 Savollar boshqaruvi";
+    public static final String BTN_ASSIGNMENT_CHATS = "💬 Topshiriq chatlari";
     public static final String BTN_USERS = "👑 Foydalanuvchilar";
     public static final String BTN_PAYMENTS = "💰 To'lovlar";
     public static final String BTN_SETTINGS = "⚙️ Tizim sozlamalari";
@@ -73,7 +75,8 @@ public class TelegramMenuService {
 
         if (isAdmin || isOwner) {
             rows.add(row(BTN_MY_GROUPS, BTN_NEW_ASSIGNMENT));
-            rows.add(row(BTN_QUESTIONS));
+            rows.add(row(BTN_STUDENT_RESULTS, BTN_QUESTIONS));
+            rows.add(row(BTN_ASSIGNMENT_CHATS));
         }
 
         if (isOwner) {
@@ -136,6 +139,14 @@ public class TelegramMenuService {
             sb.append("📊 Natijalarim — o'tgan testlaringiz natijalari.\n");
             sb.append("🎯 Mustaqil test — fan tanlab, tasodifiy savollar bilan mashq.\n");
             sb.append("💳 Obunam — ADMIN huquqini onlayn sotib olish.\n");
+        }
+
+        if (user.hasRole("ROLE_ADMIN") || user.hasRole("ROLE_OWNER")) {
+            sb.append("👥 Gruppalarim — o'quvchilar ro'yxati, taklif yuborish.\n");
+            sb.append("📝 Topshiriq berish — guruh + savollar paketi + muddat.\n");
+            sb.append(BTN_STUDENT_RESULTS).append(" — topshiriqlar bo'yicha statistika.\n");
+            sb.append("🗂 Savollar boshqaruvi — Excel faylni botga yuborib import qilish.\n");
+            sb.append("💬 Topshiriq chatlari — o'quvchilar bilan yozishma.\n");
         }
 
         if (!user.hasRole("ROLE_OWNER")) {

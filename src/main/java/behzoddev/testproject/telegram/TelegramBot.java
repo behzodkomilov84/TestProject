@@ -8,11 +8,14 @@ import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.AssignmentAttemptService;
 import behzoddev.testproject.service.NotificationService;
+import behzoddev.testproject.telegram.service.TelegramAssignmentChatService;
 import behzoddev.testproject.telegram.service.TelegramMenuService;
 import behzoddev.testproject.telegram.service.TelegramPracticeTestService;
 import behzoddev.testproject.telegram.service.TelegramProfileService;
+import behzoddev.testproject.telegram.service.TelegramQuestionImportService;
 import behzoddev.testproject.telegram.service.TelegramQuizService;
 import behzoddev.testproject.telegram.service.TelegramSessionService;
+import behzoddev.testproject.telegram.service.TelegramTeacherService;
 import behzoddev.testproject.telegram.service.TelegramUserService;
 import behzoddev.testproject.telegram.state.BotState;
 import lombok.extern.slf4j.Slf4j;
@@ -21,11 +24,17 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
+import org.telegram.telegrambots.meta.api.methods.GetFile;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
+import org.telegram.telegrambots.meta.api.objects.Document;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 
 import static behzoddev.testproject.telegram.service.TelegramMenuService.*;
@@ -45,6 +54,9 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final TelegramMenuService menuService;
     private final TelegramProfileService profileService;
     private final TelegramPracticeTestService practiceTestService;
+    private final TelegramTeacherService teacherService;
+    private final TelegramAssignmentChatService chatService;
+    private final TelegramQuestionImportService questionImportService;
 
     public TelegramBot(
             @Value("${telegram.bot.token}") String token,
@@ -57,7 +69,10 @@ public class TelegramBot extends TelegramLongPollingBot {
             TelegramSessionService sessionService,
             TelegramMenuService menuService,
             TelegramProfileService profileService,
-            TelegramPracticeTestService practiceTestService) {
+            TelegramPracticeTestService practiceTestService,
+            TelegramTeacherService teacherService,
+            TelegramAssignmentChatService chatService,
+            TelegramQuestionImportService questionImportService) {
         super(token);
         this.token = token;
         this.username = username;
@@ -70,6 +85,9 @@ public class TelegramBot extends TelegramLongPollingBot {
         this.menuService = menuService;
         this.profileService = profileService;
         this.practiceTestService = practiceTestService;
+        this.teacherService = teacherService;
+        this.chatService = chatService;
+        this.questionImportService = questionImportService;
     }
 
     @Override
@@ -156,6 +174,65 @@ public class TelegramBot extends TelegramLongPollingBot {
                 if (data.startsWith("pt_answer_")) {
                     Long answerId = Long.parseLong(data.replace("pt_answer_", ""));
                     execute(practiceTestService.submitAnswer(chatId, answerId));
+                    return;
+                }
+
+                // ===== ADMIN: Gruppalar =====
+                if (data.startsWith("tg_group_")) {
+                    Long groupId = Long.parseLong(data.replace("tg_group_", ""));
+                    execute(teacherService.viewGroup(chatId, groupId));
+                    return;
+                }
+                if (data.equals("tg_newgroup")) {
+                    execute(teacherService.startCreateGroup(chatId));
+                    return;
+                }
+                if (data.startsWith("tg_invite_")) {
+                    Long groupId = Long.parseLong(data.replace("tg_invite_", ""));
+                    execute(teacherService.startInvite(chatId, groupId));
+                    return;
+                }
+
+                // ===== ADMIN: Topshiriq berish =====
+                if (data.startsWith("tg_assign_group_")) {
+                    Long groupId = Long.parseLong(data.replace("tg_assign_group_", ""));
+                    execute(teacherService.selectAssignGroup(chatId, groupId));
+                    return;
+                }
+                if (data.startsWith("tg_assign_set_")) {
+                    Long setId = Long.parseLong(data.replace("tg_assign_set_", ""));
+                    execute(teacherService.selectAssignSet(chatId, setId));
+                    return;
+                }
+                if (data.startsWith("tg_assign_due_")) {
+                    int days = Integer.parseInt(data.replace("tg_assign_due_", ""));
+                    execute(teacherService.finalizeAssign(chatId, days));
+                    return;
+                }
+
+                // ===== ADMIN: Natijalar =====
+                if (data.startsWith("tg_result_")) {
+                    Long assignmentId = Long.parseLong(data.replace("tg_result_", ""));
+                    execute(teacherService.showResultDetail(chatId, assignmentId));
+                    return;
+                }
+
+                // ===== ADMIN: Topshiriq chatlari =====
+                if (data.startsWith("tg_chat_")) {
+                    Long assignmentId = Long.parseLong(data.replace("tg_chat_", ""));
+                    execute(chatService.showChat(chatId, assignmentId));
+                    return;
+                }
+
+                // ===== ADMIN: Savollar boshqaruvi (Excel import) =====
+                if (data.startsWith("tg_import_science_")) {
+                    Long scienceId = Long.parseLong(data.replace("tg_import_science_", ""));
+                    execute(questionImportService.selectScience(chatId, scienceId));
+                    return;
+                }
+                if (data.startsWith("tg_import_topic_")) {
+                    Long topicId = Long.parseLong(data.replace("tg_import_topic_", ""));
+                    execute(questionImportService.selectTopic(chatId, topicId));
                     return;
                 }
 
@@ -248,6 +325,13 @@ public class TelegramBot extends TelegramLongPollingBot {
                 return;
             }
 
+            if (update.hasMessage() && update.getMessage().hasDocument()) {
+                Long chatId = update.getMessage().getChatId();
+                SendMessage response = handleDocument(chatId, update.getMessage().getDocument());
+                if (response != null) execute(response);
+                return;
+            }
+
             if (update.hasMessage() && update.getMessage().hasText()) {
                 Message msg = update.getMessage();
                 String text = msg.getText().trim();
@@ -295,14 +379,8 @@ public class TelegramBot extends TelegramLongPollingBot {
         // parolni kutyapmiz, yoki mustaqil test o'rtasida) — keyingi matn
         // menyu tugmasi emas, shu oqimning davomi sifatida ishlanadi.
         BotState state = sessionService.getState(chatId);
-        if (state == BotState.IN_PRACTICE_TEST) {
-            // Test paytida javob faqat inline tugmalar orqali tanlanadi —
-            // matn yozilsa, shunchaki eslatib qo'yamiz.
-            return practiceTestService.reminderToUseButtons(chatId);
-        }
-        if (state != BotState.NONE) {
-            return profileService.handleAwaitingInput(chatId, state, text);
-        }
+        SendMessage flowResponse = routeAwaitingState(chatId, state, text);
+        if (flowResponse != null) return flowResponse;
 
         // Asosiy menyu tugmalari — hammasi ulangan (linklangan) akkauntni talab qiladi.
         if (isMainMenuButton(text)) {
@@ -313,6 +391,50 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         // Eski (hali menyuga aylantirilmagan) buyruqlar: /link, /pay va h.k.
         return telegramUserService.handleMessage(msg);
+    }
+
+    // "🗂 Savollar boshqaruvi" oqimida (mavzu tanlangandan keyin) foydalanuvchi
+    // .xlsx faylni to'g'ridan-to'g'ri chatga yuborsa — shu yerda ishlanadi.
+    // Boshqa har qanday holatda kelgan hujjat e'tiborsiz qoldiriladi (eslatma bilan).
+    private SendMessage handleDocument(Long chatId, Document document) {
+        if (sessionService.getState(chatId) != BotState.AWAITING_EXCEL_FILE) {
+            return questionImportService.notWaitingForFile(chatId);
+        }
+
+        java.io.File tempFile = null;
+        try {
+            org.telegram.telegrambots.meta.api.objects.File telegramFile =
+                    execute(GetFile.builder().fileId(document.getFileId()).build());
+            tempFile = downloadFile(telegramFile);
+            byte[] bytes = Files.readAllBytes(tempFile.toPath());
+            return questionImportService.importFile(chatId, bytes, document.getFileName());
+        } catch (TelegramApiException | IOException e) {
+            log.error("Excel faylni yuklab olishda xatolik", e);
+            SendMessage msg = new SendMessage();
+            msg.setChatId(chatId.toString());
+            msg.setText("❌ Faylni yuklab olishda xatolik yuz berdi. Qaytadan urinib ko'ring.");
+            return msg;
+        } finally {
+            if (tempFile != null) {
+                //noinspection ResultOfMethodCallIgnored
+                tempFile.delete();
+            }
+        }
+    }
+
+    // Joriy suhbat holatiga qarab, keyingi matnni tegishli servisga
+    // yo'naltiradi. NONE bo'lsa — null (chaqiruvchi asosiy menyu
+    // tugmalarini tekshirishga o'tadi).
+    private SendMessage routeAwaitingState(Long chatId, BotState state, String text) {
+        return switch (state) {
+            case NONE -> null;
+            case IN_PRACTICE_TEST -> practiceTestService.reminderToUseButtons(chatId);
+            case AWAITING_GROUP_NAME -> teacherService.applyGroupName(chatId, text);
+            case AWAITING_INVITE_USERNAME -> teacherService.applyInviteUsername(chatId, text);
+            case AWAITING_CHAT_MESSAGE -> chatService.sendReply(chatId, text);
+            case AWAITING_EXCEL_FILE -> questionImportService.remindToSendFile(chatId);
+            default -> profileService.handleAwaitingInput(chatId, state, text);
+        };
     }
 
     private SendMessage handleStart(Long chatId) {
@@ -342,7 +464,8 @@ public class TelegramBot extends TelegramLongPollingBot {
         return switch (text) {
             case BTN_PROFILE, BTN_NOTIFICATIONS, BTN_SUBSCRIPTION, BTN_COURSES, BTN_HELP,
                     BTN_MY_ASSIGNMENTS, BTN_MY_RESULTS, BTN_PRACTICE_TEST, BTN_MY_GROUPS, BTN_NEW_ASSIGNMENT,
-                    BTN_QUESTIONS, BTN_USERS, BTN_PAYMENTS, BTN_SETTINGS, BTN_BROADCAST -> true;
+                    BTN_STUDENT_RESULTS, BTN_QUESTIONS, BTN_ASSIGNMENT_CHATS,
+                    BTN_USERS, BTN_PAYMENTS, BTN_SETTINGS, BTN_BROADCAST -> true;
             default -> false;
         };
     }
@@ -357,7 +480,12 @@ public class TelegramBot extends TelegramLongPollingBot {
             case BTN_MY_ASSIGNMENTS -> telegramUserService.sendMyAssignments(user.getTelegramId());
             case BTN_MY_RESULTS -> telegramUserService.sendMyResults(user.getTelegramId());
             case BTN_PRACTICE_TEST -> practiceTestService.startFlow(user.getTelegramId());
-            // ROADMAP'dagi keyingi bosqichlar (ADMIN/OWNER'ga xos bo'limlar) —
+            case BTN_MY_GROUPS -> teacherService.listGroups(user);
+            case BTN_NEW_ASSIGNMENT -> teacherService.startAssignFlow(user);
+            case BTN_STUDENT_RESULTS -> teacherService.listResults(user);
+            case BTN_QUESTIONS -> questionImportService.startFlow(user.getTelegramId());
+            case BTN_ASSIGNMENT_CHATS -> chatService.listAssignments(user);
+            // ROADMAP'dagi keyingi bosqichlar (OWNER'ga xos bo'limlar) —
             // hozircha "tez orada" javobi.
             default -> menuService.comingSoon(user.getTelegramId());
         };

@@ -18,5 +18,11 @@ public enum BotState {
 
     // ===== Mustaqil test (fan/savol soni tanlash inline tugmalar orqali,
     // lekin bu holat "/cancel" va boshqa menyu tugmalarini bloklash uchun) =====
-    IN_PRACTICE_TEST
+    IN_PRACTICE_TEST,
+
+    // ===== ADMIN (o'qituvchi): gruppalar, topshiriqlar, chat, savol import =====
+    AWAITING_GROUP_NAME,
+    AWAITING_INVITE_USERNAME,
+    AWAITING_CHAT_MESSAGE,
+    AWAITING_EXCEL_FILE
 }

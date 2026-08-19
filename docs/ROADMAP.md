@@ -178,14 +178,28 @@ Test: 22 ta yangi unit test (`TelegramSessionServiceTest`,
   to'liq oqim (2 savol, bittasi noto'g'ri) haqiqiy `TelegramSessionService`
   bilan (JSON round-trip) tekshirilgan.
 
-**3-bosqich — ADMIN (o'qituvchi) qo'shimcha**
-- [ ] 👥 Gruppalarim — a'zolar ro'yxati, taklif yuborish.
-- [ ] 📝 Topshiriq berish — gruppa + savollar to'plami + muddat tanlab.
-- [ ] 📈 O'quvchilar natijalari — gruppa bo'yicha statistika.
-- [ ] 🗂 Savollar boshqaruvi — mavzu bo'yicha ko'rish; Excel faylni
-  to'g'ridan-to'g'ri botga yuborib import qilish (Telegram fayl qabul
-  qilishni qo'llab-quvvatlaydi — saytga kirish shart emas).
-- [ ] 💬 Topshiriq chatlari — o'quvchi bilan yozishma.
+**3-bosqich — ADMIN (o'qituvchi) qo'shimcha** ✅ BAJARILDI
+- [x] 👥 Gruppalarim — a'zolar ro'yxati (holat bilan: ✅/⏳/❌), yangi guruh
+  yaratish, username bo'yicha o'quvchi taklif qilish. (`TelegramTeacherService`)
+- [x] 📝 Topshiriq berish — guruh -> (o'qituvchining saytda saqlagan)
+  savollar paketi -> muddat (1/3 kun, 1/2 hafta) tanlab, butun guruhga
+  bir yo'la. Haqiqiy `TeacherService.assignQuestionSetToStudents` orqali
+  (bitta guruhga bitta topshiriq cheklovi, bildirishnoma avtomatik).
+- [x] 📈 O'quvchilar natijalari — topshiriqlar ro'yxati (bajarilgan/jami),
+  har biri bo'yicha har bir o'quvchining holati va foizi.
+- [x] 🗂 Savollar boshqaruvi — fan/mavzu tanlab, .xlsx faylni to'g'ridan-
+  to'g'ri botga yuborib import qilish (haqiqiy `ExcelService` orqali —
+  saytdagi bilan bir xil magic-byte/ClamAV validatsiyasi va qator-qator
+  xatolik izolyatsiyasi). Telegram'dan yuklab olingan fayl yangi
+  `ByteArrayMultipartFile` orqali mavjud servisga moslashtirildi —
+  HTTP so'rovisiz, kod takrorlanmasdan. (`TelegramQuestionImportService`)
+- [x] 💬 Topshiriq chatlari — har bir topshiriq uchun umumiy chat (o'qituvchi
+  + guruh o'quvchilari), saytdagi bilan bir xil `AssignmentService` orqali.
+  (`TelegramAssignmentChatService`)
+
+Test: 27 ta yangi unit test (`TelegramTeacherServiceTest`,
+`TelegramAssignmentChatServiceTest`, `TelegramQuestionImportServiceTest`).
+Yangi DB ustuni/jadval kerak bo'lmadi (mavjud entity'lar qayta ishlatildi).
 
 **4-bosqich — OWNER qo'shimcha**
 - [ ] 👑 Foydalanuvchilar — rol berish/olib tashlash, bloklash/blokdan chiqarish.
