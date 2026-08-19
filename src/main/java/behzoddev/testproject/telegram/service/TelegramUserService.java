@@ -18,9 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -42,40 +40,11 @@ public class TelegramUserService {
     public static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
-    public SendMessage handleStart(Message message) {
-
-        Long telegramId = message.getFrom().getId();
-
-        SendMessage msg = new SendMessage();
-        msg.setChatId(message.getChatId().toString());
-
-        User user = userRepository
-                .findByTelegramId(telegramId)
-                .orElse(null);
-
-        if (user == null) {
-            msg.setText("Avval sayt orqali Telegramni ulang.");
-            return msg;
-        }
-
-        msg.setText("Student paneliga xush kelibsiz 👋");
-        msg.setReplyMarkup(studentKeyboard());
-
-        return msg;
-    }
-
-    public ReplyKeyboardMarkup studentKeyboard() {
-
-        ReplyKeyboardMarkup keyboard = new ReplyKeyboardMarkup();
-        keyboard.setResizeKeyboard(true);
-
-        KeyboardRow row1 = new KeyboardRow();
-        row1.add("📚 Mening topshiriqlarim");
-        row1.add("📊 Natijalarim");
-
-        keyboard.setKeyboard(List.of(row1));
-
-        return keyboard;
+    // Akkaunt Telegramga ulanganmi — bo'lmasa null (chaqiruvchi tomon
+    // "avval ulang" xabarini ko'rsatadi). Ulangan bo'lsa, User qaytariladi —
+    // rolga qarab menyu qurish TelegramMenuService'ga tegishli.
+    public User resolveLinkedUser(Long telegramId) {
+        return userRepository.findByTelegramId(telegramId).orElse(null);
     }
 
     public SendMessage handleMessage(Message msg) {

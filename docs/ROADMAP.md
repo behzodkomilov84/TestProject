@@ -136,23 +136,33 @@ topshiriqlar, test topshirish, natijalar, `/pay` so'rovi). Maqsad: saytdagi
 deyarli barcha funksiyani, foydalanuvchi roliga (OWNER/ADMIN/USER) qarab,
 botdan turib ishlatish mumkin bo'lishi.
 
-**0-bosqich — arxitektura (fundament)**
-- [ ] Suhbat holati (conversation state) — yangi `TelegramSession` jadvali
+**0-bosqich — arxitektura (fundament)** ✅ BAJARILDI
+- [x] Suhbat holati (conversation state) — yangi `TelegramSession` jadvali
   (`chat_id`, `state`, `temp_data` JSON) — ko'p bosqichli oqimlar
   (profil tahrirlash, gruppa/topshiriq yaratish) uchun. Bazada saqlanadi
   (xotirada emas), chunki production tez-tez qayta ishga tushadi (deploy).
-- [ ] Native Telegram buyruqlar menyusi (`BotFather setMyCommands`).
-- [ ] Rolga qarab asosiy `ReplyKeyboardMarkup` menyusi (`/start`da rol
-  aniqlanib, mos menyu ko'rsatiladi).
+  (`TelegramSession`, `TelegramSessionRepository`, `TelegramSessionService`, `BotState`)
+- [x] Native Telegram buyruqlar menyusi (`BotFather setMyCommands`) —
+  `TelegramConfig.setupCommandMenu()`, bot muvaffaqiyatli ro'yxatdan
+  o'tgach avtomatik o'rnatiladi.
+- [x] Rolga qarab asosiy `ReplyKeyboardMarkup` menyusi (`/start`/`/menu`da
+  rol aniqlanib, mos menyu ko'rsatiladi) — `TelegramMenuService.buildMainMenu`.
 
-**1-bosqich — umumiy (barcha rollar)**
-- [ ] 👤 Profil: ko'rish (username/email/telefon/rol), tahrirlash.
+**1-bosqich — umumiy (barcha rollar)** ✅ BAJARILDI
+- [x] 👤 Profil: ko'rish (username/email/telefon/rol), tahrirlash.
   Parolni o'zgartirish ham — xavfsizlik ogohlantirishi bilan (Telegram
   matn tarixida qolishi haqida foydalanuvchiga eslatiladi).
-- [ ] 🔔 Bildirishnomalar: ro'yxat, o'qilgan deb belgilash (`NotificationService`).
-- [ ] 💳 Obunam: joriy ADMIN obuna holati, Click orqali to'lash.
-- [ ] 📚 Kurslar: ro'yxat, obuna bo'lish/ko'rish.
-- [ ] ℹ️ Yordam — barcha buyruqlar tavsifi bilan.
+  (`TelegramProfileService`, saytdagi bilan bir xil `ProfileService`
+  orqali — validatsiya/xatolik xabarlari ikkala joyda ham bir xil.)
+- [x] 🔔 Bildirishnomalar: ro'yxat, o'qilgan deb belgilash (`NotificationService`).
+- [x] 💳 Obunam: joriy ADMIN obuna holati, Click orqali to'lash (1 oylik,
+  saytdagi `startPayment('CLICK')` bilan bir xil oqim).
+- [x] 📚 Kurslar: ro'yxat, obuna holati (batafsil ko'rish/obuna bo'lish
+  hozircha saytga yo'naltiradi — to'liq interaktiv oqim keyingi bosqichda).
+- [x] ℹ️ Yordam — barcha buyruqlar tavsifi bilan.
+
+Test: 22 ta yangi unit test (`TelegramSessionServiceTest`,
+`TelegramProfileServiceTest`, `TelegramMenuServiceTest`).
 
 **2-bosqich — USER (o'quvchi) qo'shimcha**
 - [ ] 🎯 Mustaqil test — fan tanlab, tasodifiy savollar bilan mashq

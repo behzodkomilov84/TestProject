@@ -8,7 +8,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.telegram.telegrambots.meta.TelegramBotsApi;
+import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
+import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
 import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
+
+import java.util.List;
 
 // Bot ro'yxatdan o'tkazish (registerBot) ichida Telegram serverlariga
 // (api.telegram.org) tarmoq so'rovi (eski webhook'ni tozalash) yuboriladi —
@@ -52,9 +56,30 @@ public class TelegramConfig {
             api.registerBot(telegramBot);
             registered = true;
             log.info("Telegram bot muvaffaqiyatli ro'yxatdan o'tkazildi.");
+            setupCommandMenu();
         } catch (Exception e) {
             log.warn("Telegram botni ro'yxatdan o'tkazib bo'lmadi (internet/Telegram server vaqtincha " +
                     "ishlamayotgan bo'lishi mumkin) — 30 soniyadan keyin qayta urinib ko'riladi.", e);
+        }
+    }
+
+    // "/" bosilganda Telegram mijozida chiqadigan native buyruqlar ro'yxati.
+    // Muvaffaqiyatsiz bo'lsa ham bot ishlashda davom etadi — bu shunchaki
+    // qulaylik, funksionallik uchun shart emas.
+    private void setupCommandMenu() {
+        try {
+            List<BotCommand> commands = List.of(
+                    BotCommand.builder().command("start").description("Botni ishga tushirish / asosiy menyu").build(),
+                    BotCommand.builder().command("menu").description("Asosiy menyuni qayta ko'rsatish").build(),
+                    BotCommand.builder().command("link").description("Akkauntni ulash (masalan: /link 123456)").build(),
+                    BotCommand.builder().command("pay").description("To'lov so'rovi yuborish (masalan: /pay 50000)").build(),
+                    BotCommand.builder().command("cancel").description("Joriy amalni bekor qilish").build()
+            );
+
+            telegramBot.execute(SetMyCommands.builder().commands(commands).build());
+            log.info("Telegram bot buyruqlar menyusi o'rnatildi.");
+        } catch (Exception e) {
+            log.warn("Bot buyruqlar menyusini o'rnatib bo'lmadi (funksionallikka ta'sir qilmaydi).", e);
         }
     }
 }

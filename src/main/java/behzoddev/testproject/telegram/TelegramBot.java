@@ -8,8 +8,12 @@ import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.AssignmentAttemptService;
 import behzoddev.testproject.service.NotificationService;
+import behzoddev.testproject.telegram.service.TelegramMenuService;
+import behzoddev.testproject.telegram.service.TelegramProfileService;
 import behzoddev.testproject.telegram.service.TelegramQuizService;
+import behzoddev.testproject.telegram.service.TelegramSessionService;
 import behzoddev.testproject.telegram.service.TelegramUserService;
+import behzoddev.testproject.telegram.state.BotState;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,6 +27,8 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.List;
 
+import static behzoddev.testproject.telegram.service.TelegramMenuService.*;
+
 @Slf4j
 @Component
 public class TelegramBot extends TelegramLongPollingBot {
@@ -34,6 +40,9 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final AssignmentAttemptService assignmentAttemptService;
     private final TelegramQuizService telegramQuizService;
     private final NotificationService notificationService;
+    private final TelegramSessionService sessionService;
+    private final TelegramMenuService menuService;
+    private final TelegramProfileService profileService;
 
     public TelegramBot(
             @Value("${telegram.bot.token}") String token,
@@ -42,7 +51,10 @@ public class TelegramBot extends TelegramLongPollingBot {
             UserRepository userRepository,
             AssignmentAttemptService assignmentAttemptService,
             TelegramQuizService telegramQuizService,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            TelegramSessionService sessionService,
+            TelegramMenuService menuService,
+            TelegramProfileService profileService) {
         super(token);
         this.token = token;
         this.username = username;
@@ -51,6 +63,9 @@ public class TelegramBot extends TelegramLongPollingBot {
         this.assignmentAttemptService = assignmentAttemptService;
         this.telegramQuizService = telegramQuizService;
         this.notificationService = notificationService;
+        this.sessionService = sessionService;
+        this.menuService = menuService;
+        this.profileService = profileService;
     }
 
     @Override
@@ -67,6 +82,13 @@ public class TelegramBot extends TelegramLongPollingBot {
 
                 String data = update.getCallbackQuery().getData();
                 Long chatId = update.getCallbackQuery().getMessage().getChatId();
+
+                if (data.equals("notif_read_all")) {
+                    User user = getUserByChatId(chatId);
+                    menuService.markAllNotificationsRead(user);
+                    execute(menuService.showNotifications(user));
+                    return;
+                }
 
                 if (data.startsWith("notif_read_")) {
 
@@ -89,6 +111,30 @@ public class TelegramBot extends TelegramLongPollingBot {
                     } catch (Exception e) {
                         log.warn("Bildirishnomani o'qilgan deb belgilashda xatolik", e);
                     }
+                    return;
+                }
+
+                // ===== Profil tahrirlash (inline tugmalar) =====
+                if (data.equals("profile_edit_username")) {
+                    execute(profileService.startEditUsername(chatId));
+                    return;
+                }
+                if (data.equals("profile_edit_email")) {
+                    execute(profileService.startEditEmail(chatId));
+                    return;
+                }
+                if (data.equals("profile_edit_phone")) {
+                    execute(profileService.startEditPhone(chatId));
+                    return;
+                }
+                if (data.equals("profile_edit_password")) {
+                    execute(profileService.startEditPassword(chatId));
+                    return;
+                }
+
+                // ===== Obuna: Click orqali 1 oyga to'lash =====
+                if (data.equals("pay_click_1m")) {
+                    execute(menuService.createClickPaymentLink(getUserByChatId(chatId)));
                     return;
                 }
 
@@ -183,22 +229,9 @@ public class TelegramBot extends TelegramLongPollingBot {
 
             if (update.hasMessage() && update.getMessage().hasText()) {
                 Message msg = update.getMessage();
-                String text = msg.getText();
-                SendMessage response;
-
-                if (text.equals("/start")) {
-                    response = telegramUserService.handleStart(msg);
-
-                } else if ("📚 Mening topshiriqlarim".equals(text)) {
-                    response = telegramUserService.sendMyAssignments(msg.getChatId());
-
-                } else if ("📊 Natijalarim".equals(text)) {
-
-                    response = telegramUserService.sendMyResults(msg.getChatId());
-
-                } else {
-                    response = telegramUserService.handleMessage(msg);
-                }
+                String text = msg.getText().trim();
+                Long chatId = msg.getChatId();
+                SendMessage response = route(chatId, text, msg);
 
                 if (response != null) execute(response);
             }
@@ -212,6 +245,92 @@ public class TelegramBot extends TelegramLongPollingBot {
                 log.error("Telegram update error", e);
             }
         }
+    }
+
+    // Matnli xabarni qayerga yo'naltirish kerakligini hal qiladi: /start,
+    // /menu, /cancel maxsus buyruqlar; keyin joriy suhbat holati (masalan
+    // "yangi email kutilmoqda") tekshiriladi; keyin asosiy menyu tugmalari;
+    // aks holda eski (/link, /pay) buyruqlarga tushadi.
+    private SendMessage route(Long chatId, String text, Message msg) {
+
+        if (text.equals("/start")) {
+            return handleStart(chatId);
+        }
+
+        if (text.equals("/menu")) {
+            User user = telegramUserService.resolveLinkedUser(chatId);
+            if (user == null) return notLinkedMessage(chatId);
+            return menuMessage(user);
+        }
+
+        if (text.equals("/cancel")) {
+            return profileService.cancelFlow(chatId);
+        }
+
+        // Foydalanuvchi ko'p bosqichli oqim o'rtasida (masalan yangi
+        // parolni kutyapmiz) — keyingi matn menyu tugmasi emas, shu
+        // oqimning davomi sifatida ishlanadi.
+        BotState state = sessionService.getState(chatId);
+        if (state != BotState.NONE) {
+            return profileService.handleAwaitingInput(chatId, state, text);
+        }
+
+        // Asosiy menyu tugmalari — hammasi ulangan (linklangan) akkauntni talab qiladi.
+        if (isMainMenuButton(text)) {
+            User user = telegramUserService.resolveLinkedUser(chatId);
+            if (user == null) return notLinkedMessage(chatId);
+            return handleMenuButton(text, user);
+        }
+
+        // Eski (hali menyuga aylantirilmagan) buyruqlar: /link, /pay va h.k.
+        return telegramUserService.handleMessage(msg);
+    }
+
+    private SendMessage handleStart(Long chatId) {
+        User user = telegramUserService.resolveLinkedUser(chatId);
+        if (user == null) return notLinkedMessage(chatId);
+        return menuMessage(user);
+    }
+
+    private SendMessage notLinkedMessage(Long chatId) {
+        SendMessage msg = new SendMessage();
+        msg.setChatId(chatId.toString());
+        msg.setText("Avval sayt orqali Telegramni ulang: saytda /profile sahifasida " +
+                "\"Telegramga ulash\" tugmasini bosing va bergan kodni shu yerga " +
+                "\"/link 123456\" ko'rinishida yuboring.");
+        return msg;
+    }
+
+    private SendMessage menuMessage(User user) {
+        SendMessage msg = new SendMessage();
+        msg.setChatId(user.getTelegramId().toString());
+        msg.setText(menuService.welcomeText(user));
+        msg.setReplyMarkup(menuService.buildMainMenu(user));
+        return msg;
+    }
+
+    private boolean isMainMenuButton(String text) {
+        return switch (text) {
+            case BTN_PROFILE, BTN_NOTIFICATIONS, BTN_SUBSCRIPTION, BTN_COURSES, BTN_HELP,
+                    BTN_MY_ASSIGNMENTS, BTN_MY_RESULTS, BTN_MY_GROUPS, BTN_NEW_ASSIGNMENT,
+                    BTN_QUESTIONS, BTN_USERS, BTN_PAYMENTS, BTN_SETTINGS, BTN_BROADCAST -> true;
+            default -> false;
+        };
+    }
+
+    private SendMessage handleMenuButton(String text, User user) {
+        return switch (text) {
+            case BTN_PROFILE -> profileService.viewProfile(user.getTelegramId());
+            case BTN_NOTIFICATIONS -> menuService.showNotifications(user);
+            case BTN_SUBSCRIPTION -> menuService.showSubscription(user);
+            case BTN_COURSES -> menuService.showCourses(user);
+            case BTN_HELP -> menuService.help(user);
+            case BTN_MY_ASSIGNMENTS -> telegramUserService.sendMyAssignments(user.getTelegramId());
+            case BTN_MY_RESULTS -> telegramUserService.sendMyResults(user.getTelegramId());
+            // ROADMAP'dagi keyingi bosqichlar (ADMIN/OWNER'ga xos bo'limlar) —
+            // hozircha "tez orada" javobi.
+            default -> menuService.comingSoon(user.getTelegramId());
+        };
     }
 
     // Sabab zanjirida tarmoq bilan bog'liq xatolik bormi (ulanish vaqti
