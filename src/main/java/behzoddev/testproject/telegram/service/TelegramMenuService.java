@@ -17,6 +17,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
+import org.telegram.telegrambots.meta.api.objects.webapp.WebAppInfo;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -272,6 +273,13 @@ public class TelegramMenuService {
 
     // "💳 1 oyga to'lash" tugmasi bosilganda — 1 oylik order yaratib,
     // Click checkout havolasini yuboradi (saytdagi startPayment('CLICK') bilan bir xil oqim).
+    // Havola oddiy matn/tugma (url) sifatida emas, Telegram "Web App"
+    // tugmasi sifatida beriladi — shu orqali foydalanuvchi tashqi
+    // brauzerga chiqmasdan, to'lovni Telegram'ning o'z ichidagi (embedded)
+    // veb-oynasida yakunlaydi ("botdan chiqmasdan to'lov"). Click'ning
+    // o'z to'lov sahifasi (karta ma'lumotlari) baribir zarur — buni hech
+    // qachon o'zimiz to'plamaymiz (PCI talab) — lekin foydalanuvchiga bu
+    // alohida brauzer ilovasini ochish emas, botning bir qismidek tuyuladi.
     public SendMessage createClickPaymentLink(User user) {
         SendMessage msg = new SendMessage();
         msg.setChatId(user.getTelegramId().toString());
@@ -279,7 +287,17 @@ public class TelegramMenuService {
         try {
             PaymentOrder order = paymentOrderService.createOrder(user, 1);
             String checkoutUrl = clickService.buildPayUrl(order, "/profile");
-            msg.setText("💳 To'lovni yakunlash uchun havolani bosing:\n" + checkoutUrl);
+
+            msg.setText("💳 To'lovni yakunlash uchun quyidagi tugmani bosing " +
+                    "(botdan chiqmasdan, Telegram ichida ochiladi):");
+
+            InlineKeyboardButton payBtn = new InlineKeyboardButton();
+            payBtn.setText("💳 Click orqali to'lash");
+            payBtn.setWebApp(WebAppInfo.builder().url(checkoutUrl).build());
+
+            InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+            markup.setKeyboard(List.of(List.of(payBtn)));
+            msg.setReplyMarkup(markup);
         } catch (IllegalArgumentException | IllegalStateException e) {
             msg.setText("❌ " + e.getMessage());
         }

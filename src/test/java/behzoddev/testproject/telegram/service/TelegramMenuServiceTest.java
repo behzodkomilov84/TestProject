@@ -19,7 +19,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
 import java.math.BigDecimal;
@@ -172,7 +174,7 @@ class TelegramMenuServiceTest {
     // ===== createClickPaymentLink =====
 
     @Test
-    void createClickPaymentLink_success_returnsCheckoutUrl() {
+    void createClickPaymentLink_success_returnsWebAppButtonWithCheckoutUrl() {
         User user = student();
         PaymentOrder order = PaymentOrder.builder().id(10L).amount(BigDecimal.valueOf(50_000))
                 .durationMonths(1).status(PaymentOrderStatus.CREATED).build();
@@ -181,7 +183,14 @@ class TelegramMenuServiceTest {
 
         SendMessage msg = menuService.createClickPaymentLink(user);
 
-        assertThat(msg.getText()).contains("https://my.click.uz/pay/123");
+        // Havola endi oddiy matnda emas — "Web App" tugmasi sifatida,
+        // shu orqali foydalanuvchi tashqi brauzerga chiqmasdan Telegram
+        // ichida to'lovni yakunlaydi.
+        InlineKeyboardMarkup markup = (InlineKeyboardMarkup) msg.getReplyMarkup();
+        assertThat(markup).isNotNull();
+        InlineKeyboardButton payBtn = markup.getKeyboard().get(0).get(0);
+        assertThat(payBtn.getWebApp()).isNotNull();
+        assertThat(payBtn.getWebApp().getUrl()).isEqualTo("https://my.click.uz/pay/123");
     }
 
     @Test
