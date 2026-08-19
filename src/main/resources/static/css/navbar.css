@@ -81,10 +81,11 @@ body.menu-open::after {
 
     color: white;
     text-decoration: none;
-    /* Ilgari UPPERCASE edi — matn HTML'da (navbar.html) allaqachon to'g'ri
-       "Bosh harf" bilan yozilgan (masalan "Bosh sahifa", "Owner Panel"),
-       shuning uchun faqat shu yozuvni buzmaslik uchun olib tashlandi. */
-    text-transform: none;
+    /* Barcha menyu matnlari UPPERCASE ko'rinishida chiqishi kerak
+       (foydalanuvchi so'rovi bo'yicha) — HTML'dagi matn o'zi oddiy
+       "Bosh harf" bilan yozilgan holicha qoladi, faqat CSS orqali
+       vizual ravishda katta harflarga aylantiriladi. */
+    text-transform: uppercase;
 
     padding: 8px 14px;
     border-radius: 6px;
@@ -172,7 +173,7 @@ body.menu-open::after {
     border: none;
     padding: 10px 14px;
     cursor: pointer;
-    text-transform: none;
+    text-transform: uppercase;
     font-size: 14px;
     font-weight: 600;
 }
@@ -292,120 +293,25 @@ body.menu-open::after {
     }
 }
 
-/* ===== NOTIFICATIONS (bell) ===== */
-
-.notif-dropdown {
-    position: relative;
-}
-
-.btn-bell {
-    position: relative;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 20px;
-    padding: 5px 14px;
-    border-radius: 6px;
-    color: white;
-}
-
-.btn-bell:hover {
-    background: #60c765;
-}
+/* ===== NOTIFICATIONS (badge) =====
+   Endi alohida bell-panel yo'q — "🔔 Bildirishnomalar" Profil menyusi
+   ichidagi oddiy matnli havola, yonidagi shu belgi (badge) faqat
+   o'qilmagan sonini ko'rsatadi. */
 
 .notif-badge {
-    position: absolute;
-    top: -2px;
-    right: 4px;
+    display: none;
+    align-items: center;
+    justify-content: center;
     background: #e53935;
     color: white;
     font-size: 11px;
     font-weight: 700;
     line-height: 1;
-    padding: 3px 5px;
+    padding: 3px 6px;
+    margin-left: 6px;
     border-radius: 999px;
     min-width: 16px;
     text-align: center;
-}
-
-.notif-panel {
-    display: none;
-
-    position: absolute;
-    right: 0;
-    top: 100%;
-
-    width: 320px;
-    max-height: 420px;
-    overflow-y: auto;
-
-    background: #1f2933;
-    border-radius: 8px;
-    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
-    z-index: 999;
-}
-
-.notif-panel.open {
-    display: block;
-}
-
-.notif-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 8px;
-    padding: 12px 14px;
-    border-bottom: 1px solid #374151;
-    font-weight: 600;
-    position: sticky;
-    top: 0;
-    background: #1f2933;
-}
-
-/* Panel ichidagi 2 ta "darvoza" qatori — /notifications sahifasiga o'tish. */
-.notif-gateway-row {
-    padding: 14px;
-    font-size: 13px;
-    color: #64748b;
-    border-bottom: 1px solid #2d3748;
-    cursor: default;
-}
-
-.notif-gateway-row:last-child {
-    border-bottom: none;
-}
-
-.notif-gateway-row.active {
-    color: #f1f5f9;
-    font-weight: 600;
-    cursor: pointer;
-}
-
-.notif-gateway-row.active:hover {
-    background: #374151;
-}
-
-@media (max-width: 768px) {
-    .notif-panel {
-        position: fixed;
-        top: 72px;
-        right: 8px;
-        left: 8px;
-        width: auto;
-    }
-}
-
-.btn-telegram{
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    font-size: 20px;
-    padding: 5px 14px;
-    border-radius: 6px ;
-}
-
-.btn-telegram:hover {
-    background: #60c765;
-    color: white;
+    text-transform: none;
 }
 

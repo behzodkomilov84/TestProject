@@ -63,41 +63,10 @@ async function linkTelegram() {
 }
 
 /* ===== Bildirishnomalar (notification center) =====
-   Bell ustidagi panel endi to'liq ro'yxatni ko'rsatmaydi — u faqat qisqa
-   "kirish darvozasi": yangi bildirishnoma bo'lsa shu haqda yozadi va
-   /notifications sahifasiga o'tkazadi, bo'lmasa faol emas. To'liq
-   ro'yxat, tab'lar (Yangi/O'qilgan) va statistika — notifications.js. */
-
-function toggleNotifications(e) {
-    e.stopPropagation();
-    const panel = document.getElementById("notif-panel");
-    if (!panel) return;
-
-    const willOpen = !panel.classList.contains("open");
-    panel.classList.toggle("open", willOpen);
-
-    if (willOpen) {
-        refreshUnreadCount();
-    }
-}
-
-document.addEventListener("click", (e) => {
-    const panel = document.getElementById("notif-panel");
-    const bellBtn = document.querySelector(".btn-bell");
-    if (!panel || !panel.classList.contains("open")) return;
-
-    if (!panel.contains(e.target) && bellBtn && !bellBtn.contains(e.target)) {
-        panel.classList.remove("open");
-    }
-});
-
-function goToNotifTab(tab) {
-    if (tab === "new") {
-        const gateway = document.getElementById("notifGatewayNew");
-        if (!gateway || !gateway.classList.contains("active")) return; // yangi yo'q — bosilmaydi
-    }
-    location.href = "/notifications?tab=" + tab;
-}
+   Endi alohida ochiladigan panel yo'q — "🔔 Bildirishnomalar" Profil
+   menyusi ichidagi oddiy matnli havola (/notifications), yonida faqat
+   o'qilmagan sonini ko'rsatuvchi belgi (badge) yangilanib turadi.
+   To'liq ro'yxat, tab'lar (Yangi/O'qilgan) va statistika — notifications.js. */
 
 function refreshUnreadCount() {
     fetch("/api/notifications/unread-count")
@@ -112,24 +81,12 @@ function refreshUnreadCount() {
                     badge.style.display = "none";
                 }
             }
-
-            const gatewayNew = document.getElementById("notifGatewayNew");
-            const gatewayNewText = document.getElementById("notifGatewayNewText");
-            if (gatewayNew && gatewayNewText) {
-                if (data.count > 0) {
-                    gatewayNew.classList.add("active");
-                    gatewayNewText.textContent = `🆕 ${data.count} ta yangi bildirishnoma bor →`;
-                } else {
-                    gatewayNew.classList.remove("active");
-                    gatewayNewText.textContent = "Yangi bildirishnoma yo'q";
-                }
-            }
         })
         .catch(err => console.error(err));
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    if (document.querySelector(".btn-bell")) {
+    if (document.getElementById("notif-badge")) {
         refreshUnreadCount();
         setInterval(refreshUnreadCount, 30000);
     }

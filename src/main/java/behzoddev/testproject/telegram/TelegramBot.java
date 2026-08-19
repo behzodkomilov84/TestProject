@@ -176,6 +176,10 @@ public class TelegramBot extends TelegramLongPollingBot {
                     execute(practiceTestService.selectScience(chatId, scienceId));
                     return;
                 }
+                if (data.equals("pt_count_custom")) {
+                    execute(practiceTestService.promptCustomCount(chatId));
+                    return;
+                }
                 if (data.startsWith("pt_count_")) {
                     int count = Integer.parseInt(data.replace("pt_count_", ""));
                     execute(practiceTestService.startTest(chatId, count));
@@ -456,7 +460,8 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
 
         if (text.equals("/cancel")) {
-            if (sessionService.getState(chatId) == BotState.IN_PRACTICE_TEST) {
+            BotState currentState = sessionService.getState(chatId);
+            if (currentState == BotState.IN_PRACTICE_TEST || currentState == BotState.AWAITING_PT_CUSTOM_COUNT) {
                 return practiceTestService.cancel(chatId);
             }
             return profileService.cancelFlow(chatId);
@@ -516,6 +521,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         return switch (state) {
             case NONE -> null;
             case IN_PRACTICE_TEST -> practiceTestService.reminderToUseButtons(chatId);
+            case AWAITING_PT_CUSTOM_COUNT -> practiceTestService.applyCustomCount(chatId, text);
             case AWAITING_GROUP_NAME -> teacherService.applyGroupName(chatId, text);
             case AWAITING_INVITE_USERNAME -> teacherService.applyInviteUsername(chatId, text);
             case AWAITING_CHAT_MESSAGE -> chatService.sendReply(chatId, text);

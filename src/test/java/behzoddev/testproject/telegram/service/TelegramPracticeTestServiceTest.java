@@ -28,6 +28,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -207,5 +208,75 @@ class TelegramPracticeTestServiceTest {
         SendMessage msg = practiceTestService.reminderToUseButtons(CHAT_ID);
 
         assertThat(msg.getText()).contains("tugmalar orqali");
+    }
+
+    // ===== O'zi kiritish (custom savol soni) =====
+
+    @Test
+    void promptCustomCount_asksForNumberWithAvailableRange() {
+        when(topicService.getTopicsWithQuestionCount(1L))
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 37L)));
+        practiceTestService.selectScience(CHAT_ID, 1L);
+
+        SendMessage msg = practiceTestService.promptCustomCount(CHAT_ID);
+
+        assertThat(msg.getText()).contains("1 dan").contains("37");
+    }
+
+    @Test
+    void applyCustomCount_validNumber_startsTestWithThatCount() {
+        when(topicService.getTopicsWithQuestionCount(1L))
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 37L)));
+        practiceTestService.selectScience(CHAT_ID, 1L);
+        practiceTestService.promptCustomCount(CHAT_ID);
+
+        QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
+                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null))).build();
+        when(testSessionService.startTest(any(), eq(List.of(10L)), eq(17), eq("normal")))
+                .thenReturn(new StartTestResponseDto(999L, List.of(q1)));
+
+        SendMessage msg = practiceTestService.applyCustomCount(CHAT_ID, "17");
+
+        assertThat(msg.getText()).contains("Savol 1/1");
+        verify(testSessionService).startTest(any(), eq(List.of(10L)), eq(17), eq("normal"));
+    }
+
+    @Test
+    void applyCustomCount_notANumber_retriesWithoutStartingTest() {
+        when(topicService.getTopicsWithQuestionCount(1L))
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 37L)));
+        practiceTestService.selectScience(CHAT_ID, 1L);
+        practiceTestService.promptCustomCount(CHAT_ID);
+
+        SendMessage msg = practiceTestService.applyCustomCount(CHAT_ID, "abc");
+
+        assertThat(msg.getText()).contains("butun son");
+        verify(testSessionService, never()).startTest(any(), any(), anyInt(), any());
+    }
+
+    @Test
+    void applyCustomCount_outOfRange_retriesWithoutStartingTest() {
+        when(topicService.getTopicsWithQuestionCount(1L))
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 37L)));
+        practiceTestService.selectScience(CHAT_ID, 1L);
+        practiceTestService.promptCustomCount(CHAT_ID);
+
+        SendMessage msg = practiceTestService.applyCustomCount(CHAT_ID, "500");
+
+        assertThat(msg.getText()).contains("1 dan").contains("37");
+        verify(testSessionService, never()).startTest(any(), any(), anyInt(), any());
+    }
+
+    @Test
+    void applyCustomCount_zeroOrNegative_retriesWithoutStartingTest() {
+        when(topicService.getTopicsWithQuestionCount(1L))
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 37L)));
+        practiceTestService.selectScience(CHAT_ID, 1L);
+        practiceTestService.promptCustomCount(CHAT_ID);
+
+        SendMessage msg = practiceTestService.applyCustomCount(CHAT_ID, "0");
+
+        assertThat(msg.getText()).contains("1 dan");
+        verify(testSessionService, never()).startTest(any(), any(), anyInt(), any());
     }
 }

@@ -19,6 +19,9 @@ public enum BotState {
     // ===== Mustaqil test (fan/savol soni tanlash inline tugmalar orqali,
     // lekin bu holat "/cancel" va boshqa menyu tugmalarini bloklash uchun) =====
     IN_PRACTICE_TEST,
+    // Foydalanuvchi tayyor tugmalar o'rniga savollar sonini o'zi qo'lda
+    // yozib kiritayotgan holat ("✏️ O'zi kiritish" bosilgandan keyin).
+    AWAITING_PT_CUSTOM_COUNT,
 
     // ===== ADMIN (o'qituvchi): gruppalar, topshiriqlar, chat, savol import =====
     AWAITING_GROUP_NAME,

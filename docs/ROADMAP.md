@@ -255,6 +255,46 @@ Test: 27 ta yangi unit test (`TelegramAutoLoginServiceTest`,
 Shu bilan Telegram botni to'liq funksionallikka kengaytirish rejasining
 BARCHA bosqichlari (0-5) yakunlandi.
 
+**Qo'shimcha tuzatish — auto-login havolasi Telegram preview'i tomonidan
+"yeb qo'yilishi"**: production'da haqiqiy foydalanuvchi xabar berdi —
+`/telegram-auto-login?token=...` havolasini bosganda login sahifasi
+ochilyapti (token "eskirgan" bo'lib chiqyapti). Sabab: Telegram'ning
+o'zi xabar yuborilgan zahoti havolani preview-karta yasash uchun
+oldindan yuklab, bitta martalik tokenni "ishlatib qo'yayotgan" edi —
+production loglaridagi aniq vaqt izlari (bitta muvaffaqiyatli login,
+undan keyin 2 marta "token yaroqsiz") bilan tasdiqlandi. Yechim: barcha
+4 ta joyda (`TelegramMenuService.comingSoon`/`showCourses`,
+`TelegramQuestionImportService.selectScience`,
+`TelegramTeacherService.selectAssignGroup`) `SendMessage`ga
+`setDisableWebPagePreview(true)` qo'shildi — Telegram endi havolani
+oldindan yuklamaydi, token faqat haqiqiy foydalanuvchi bosganda
+ishlatiladi. Production'da haqiqiy ro'yxatdan o'tish (`/start` ->
+username -> email -> parol -> shartlar -> email kod) ham sinovdan
+o'tkazildi va production loglarida xatosiz yakunlangani tasdiqlandi.
+
+**Qo'shimcha funksiya — mustaqil testda savol sonini o'zi kiritish**:
+avval faqat tayyor tugmalar (5/10/15/20/barchasi) bor edi. Endi
+"✏️ O'zi kiritish" tugmasi qo'shildi — bosilganda bot istagan sonni
+(mavjud savollar chegarasida) matn sifatida yozib yuborishni so'raydi,
+noto'g'ri/chegaradan tashqari son kiritilsa qaytadan so'raydi.
+(`TelegramPracticeTestService.promptCustomCount/applyCustomCount`,
+yangi `BotState.AWAITING_PT_CUSTOM_COUNT`.) Test: 5 ta yangi unit test.
+
+## 7. Sayt navbar'i — Profil menyusini birlashtirish va UPPERCASE
+
+- ✅ **BAJARILDI**: "Telegramga ulash" (alohida ikonka tugma) va
+  "🔔 Bildirishnomalar" (alohida qo'ng'iroq ikonkasi + o'z paneli) endi
+  yagona "👤 Profil" ochiladigan menyusi ICHIDA, matnli havolalar
+  sifatida (`/profile`, "🔗 Telegramga ulash", "🔔 Bildirishnomalar" —
+  o'qilmagan soni belgisi bilan). Alohida bildirishnoma paneli
+  (gateway-panel, `notif-panel`) olib tashlandi — endi to'g'ridan-to'g'ri
+  `/notifications` sahifasiga o'tkazadi (u yerda to'liq ro'yxat/tab'lar
+  mavjud). (`fragments/navbar.html`, `navbar.js`, `navbar.css`)
+- ✅ **BAJARILDI**: Barcha navbar menyu elementlari (asosiy havolalar,
+  dropdown tugmalari, ichki/nested dropdown'lar) endi CSS orqali
+  UPPERCASE ko'rinishda chiqadi (`text-transform: uppercase`) — HTML'dagi
+  matn o'zi o'zgarishsiz qoldi, faqat vizual ko'rinish o'zgardi.
+
 ## Ustuvorlik bo'yicha tavsiya
 
 ~~Parolni tiklash~~, ~~Login urinishlarini cheklash~~, ~~Rol audit log~~,
@@ -265,7 +305,26 @@ BARCHA bosqichlari (0-5) yakunlandi.
 IP whitelist muammosi hal qilindi), ~~Avtomatik unit testlar (servis
 qatlami)~~, ~~CI/CD~~, ~~Backup strategiyasi~~, ~~Markazlashtirilgan xato
 kuzatuvi (Sentry)~~, ~~Telegram bot — to'liq funksionallik (0-5 bosqich,
-botda ro'yxatdan o'tish ham)~~ — bajarildi.
+botda ro'yxatdan o'tish ham, auto-login tuzatildi, savol sonini o'zi
+kiritish)~~, ~~Navbar — Profil menyusini birlashtirish, UPPERCASE~~ —
+bajarildi.
 
 Qolgan (tarif rejalar, refund siyosati, keng qamrovli integration
 testlar) — kattaroq va alohida rejalashtirish talab qiladigan ishlar.
+
+## Yakuniy holat (2026-08-19)
+
+Loyihaning rejalashtirilgan barcha asosiy funksional, xavfsizlik va
+infratuzilma ishlari (1-7 bo'limlar) yakunlangan va production'da
+(`https://study-grow.uz`) ishlamoqda: to'lov tizimi (Click), xavfsizlik
+choralari, bildirishnoma markazi, onlayn kurslar, email integratsiyasi,
+avtomatik testlar + CI/CD, backup, xato kuzatuvi (Sentry), va Telegram
+botning to'liq (0-5 bosqich) funksionalligi — jumladan botda
+ro'yxatdan o'tish, auto-login havolalari va mustaqil testda savol
+sonini erkin kiritish.
+
+Ataylab ochiq qoldirilgan, kattaroq alohida rejalashtirishni talab
+qiladigan ikkita band bor: **to'lov qaytarish (refund) siyosati** va
+**keng qamrovli integration/`@SpringBootTest` testlari** (hozircha
+faqat servis qatlamidagi unit testlar mavjud). Bulardan tashqari,
+loyiha ishlab chiqilishi rejalashtirilgan holatga to'liq mos.

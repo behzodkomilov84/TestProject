@@ -96,6 +96,7 @@ public class TelegramPracticeTestService {
         List<Long> topicIds = topics.stream().map(TopicWithQuestionCountDto::id).toList();
         sessionService.putTempData(chatId, "pt_scienceId", scienceId.toString());
         sessionService.putTempData(chatId, "pt_topicIds", joinIds(topicIds));
+        sessionService.putTempData(chatId, "pt_available", String.valueOf(available));
 
         Set<Integer> options = new LinkedHashSet<>();
         for (Integer candidate : COUNT_CANDIDATES) {
@@ -113,10 +114,59 @@ public class TelegramPracticeTestService {
             row.add(btn);
         }
 
+        InlineKeyboardButton customBtn = new InlineKeyboardButton();
+        customBtn.setText("✏️ O'zi kiritish");
+        customBtn.setCallbackData("pt_count_custom");
+
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        markup.setKeyboard(List.of(row));
+        markup.setKeyboard(List.of(row, List.of(customBtn)));
         msg.setReplyMarkup(markup);
         return msg;
+    }
+
+    // Foydalanuvchi "✏️ O'zi kiritish" tugmasini bosgach — istagan sonni
+    // qo'lda yozib yuborishini so'raymiz.
+    public SendMessage promptCustomCount(Long chatId) {
+        sessionService.setState(chatId, BotState.AWAITING_PT_CUSTOM_COUNT);
+
+        long available = parseAvailable(chatId);
+
+        SendMessage msg = new SendMessage();
+        msg.setChatId(chatId.toString());
+        msg.setText("✏️ Nechta savol bilan mashq qilishni xohlaysiz? Sonini yozib yuboring " +
+                "(1 dan " + available + " tagacha).");
+        return msg;
+    }
+
+    // Foydalanuvchi qo'lda yozgan sonni qabul qiladi — to'g'ri son bo'lmasa
+    // yoki mavjud savollar sonidan oshib ketsa, qaytadan so'raymiz.
+    public SendMessage applyCustomCount(Long chatId, String text) {
+        long available = parseAvailable(chatId);
+
+        int count;
+        try {
+            count = Integer.parseInt(text.trim());
+        } catch (NumberFormatException e) {
+            SendMessage msg = new SendMessage();
+            msg.setChatId(chatId.toString());
+            msg.setText("❌ Iltimos, faqat butun son kiriting (masalan: 12).");
+            return msg;
+        }
+
+        if (count < 1 || count > available) {
+            SendMessage msg = new SendMessage();
+            msg.setChatId(chatId.toString());
+            msg.setText("❌ Son 1 dan " + available + " tagacha bo'lishi kerak. Qaytadan yozing.");
+            return msg;
+        }
+
+        return startTest(chatId, count);
+    }
+
+    private long parseAvailable(Long chatId) {
+        String raw = sessionService.getTempData(chatId).get("pt_available");
+        if (raw == null || raw.isBlank()) return 0;
+        return Long.parseLong(raw);
     }
 
     private String joinIds(List<Long> ids) {
