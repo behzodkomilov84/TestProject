@@ -295,6 +295,90 @@ yangi `BotState.AWAITING_PT_CUSTOM_COUNT`.) Test: 5 ta yangi unit test.
   UPPERCASE ko'rinishda chiqadi (`text-transform: uppercase`) — HTML'dagi
   matn o'zi o'zgarishsiz qoldi, faqat vizual ko'rinish o'zgardi.
 
+## 8. Telegram bot va test tizimi — 2026-08-20 yangilanishlari
+
+- ✅ **BAJARILDI — Auto-login token xavfsizligi**: foydalanuvchi savol
+  berdi — "tokenning URL'da bo'lishi xavfli emasmi?". Ikki qattiqlashtirish
+  qilindi: (1) bazada endi tokenning o'zi emas, SHA-256 **xeshi**
+  saqlanadi (`TokenHasher`) — baza sizib chiqsa ham, undan haqiqiy login
+  havolasini tiklab bo'lmaydi; (2) `SecurityConfig`ga sayt bo'ylab
+  **Referrer-Policy: strict-origin-when-cross-origin** header'i qo'shildi
+  (avval umuman yo'q edi) — tashqi resurslarga to'liq URL (token bilan)
+  sizib ketmasligi uchun.
+- ✅ **BAJARILDI — Auto-login tokenlarni tozalash**: production'dagi eski
+  (xesh migratsiyasidan oldingi) tokenlar qo'lda tozalandi; yangi
+  `TelegramAutoLoginTokenCleanupService` har kuni 00:40'da 1 kundan ortiq
+  oldin muddati o'tgan tokenlarni avtomatik o'chiradi (1 kunlik "grace
+  period" — quyidagi bandda tasvirlangan bot-xabar funksiyasi ishlashi
+  uchun ataylab qoldirilgan).
+- ✅ **BAJARILDI — Muddati o'tgan auto-login havolasida botda xabar**:
+  avval jim `/login`ga tashlab qo'yardi. Endi token topilgan, lekin
+  muddati o'tgan bo'lsa, `TelegramAutoLoginController` foydalanuvchiga
+  botning o'zida "havola muddati tugagan, qaytadan urinib ko'ring"
+  xabarini yuboradi (`TelegramBot.execute()` orqali).
+- ✅ **BAJARILDI — Click to'lovi Telegram ichida (Web App tugmasi)**:
+  avval to'lov havolasi oddiy matn sifatida yuborilardi — tashqi
+  brauzerga chiqish kerak edi. Endi Telegram'ning "Web App" tugmasi
+  orqali (`InlineKeyboardButton.setWebApp`) — Click'ning to'lov sahifasi
+  Telegram ilovasining o'zi ichida ochiladi. Karta ma'lumotlarini
+  baribir Click'ning o'zi to'playdi (PCI talabi) — o'zgargan narsa
+  faqat sahifaning qanday ochilishi.
+- ✅ **BAJARILDI — Mustaqil testda rejim tanlash (Practice/Exam/Hard)**:
+  saytdagi bosh sahifadagi uchta tugma bilan bir xil mantiq — fan
+  tanlashdan OLDIN endi rejim so'raladi, tanlangan rejim keyingi
+  xabarda aniq ko'rsatiladi. Shu jarayonda haqiqiy bug ham topildi:
+  bot `testSessionService.startTest()`ga har doim qattiq yozilgan
+  `"normal"` rejimini yuborardi — demak **Hard rejimi botda hech qachon
+  ishlamas edi**. Endi tanlangan rejim to'g'ridan-to'g'ri uzatiladi;
+  Hard rejimida "jami mavjud" soni ham saytdagidek faqat foydalanuvchi
+  avval XATO javob bergan savollar asosida hisoblanadi
+  (`questionRepository.findHardForUser`).
+- ✅ **BAJARILDI — Exam/Hard rejimida vaqt chegarasi va jonli sanoq**:
+  saytdagi `timeSection`/jonli sekundomer bilan bir xil — savol soni
+  tanlangandan keyin umumiy vaqt (daqiqa, tayyor tugmalar yoki o'zi
+  kiritish) so'raladi. Har bir savolda taxminiy qolgan vaqt ko'rsatiladi.
+  Yangi `TelegramPracticeTestTimeoutService` (`@Scheduled`, har
+  **1 soniyada**) — saytda vaqt tugaganda test avtomatik yakunlanishini
+  (jonli sekundomer) taqlid qiladi: (1) vaqti tugagan testlarni o'zi
+  avtomatik yakunlaydi va xabar yuboradi (foydalanuvchi hech qanday
+  tugma bosmasa ham); (2) hali faol testlar uchun BITTA xabarni
+  davriy tahrirlab (`EditMessageText`) qolgan vaqtni yangilab boradi —
+  chatni yangi xabarlar bilan to'ldirmasdan. Interval boshida 30, keyin
+  10, oxiri foydalanuvchi so'rovi bo'yicha 1 soniyaga tushirildi
+  (haqiqiy real-time sanoq va vaqt tugashini deyarli darhol aniqlash
+  uchun).
+- ✅ **BAJARILDI — Natijalarim (bot) mustaqil testlarni ham ko'rsatadi**:
+  avval faqat o'qituvchi bergan topshiriqlarni (`AssignmentAttempt`)
+  ko'rsatardi — mustaqil test (`TestSession`) natijalari umuman
+  ko'rinmasdi ("Siz hali test topshirmagansiz" degan chalkash xabar
+  chiqardi). Endi ikkala manba ham birlashtirilib, sana bo'yicha eng
+  yangisidan boshlab oxirgi 10 tasi ko'rsatiladi.
+- ✅ **BAJARILDI — HAQIQIY BUG: test natijasi noto'g'ri hisoblanardi**
+  (sayt va bot ikkalasida ham): `TestSessionService.finishTest()`
+  natijadagi "jami savol soni"ni javob berilgan savollar sonidan
+  hisoblardi, testda ajratilgan haqiqiy savollar sonidan emas — vaqt
+  tugab ba'zi savollarga ulgurmagan foydalanuvchi har doim "100%"
+  ko'rardi ("1/2" o'rniga "1/1"). Yechim: yangi
+  `FinishTestRequestDto.totalQuestions` maydoni — bot va sayt (`testSession.js`)
+  ikkalasi ham endi haqiqiy sonni yuboradi (eski klient uchun himoya:
+  maydon bo'sh bo'lsa, avvalgi xatti-harakat). Shu bilan birga —
+  avtomatik yakunlashda davomiylik endi haqiqiy "hozir" emas, ANIQ
+  belgilangan deadline'ga teng hisoblanadi (poller kechikishi
+  davomiylikka qo'shilib ketmasligi uchun).
+- ✅ **BAJARILDI — Timezone xatosi (UTC → Asia/Tashkent)**: production
+  konteynerida JVM standart zonasi UTC edi, foydalanuvchilar esa
+  Toshkent vaqtida (UTC+5) — test/bildirishnoma sana-vaqtlari va barcha
+  `@Scheduled(cron=...)` vazifalari (kunlik obuna tekshiruvi, eslatmalar)
+  5 soat noto'g'ri (erta) vaqtda ishlayotgan edi. `TestApplication`da
+  statik blok orqali `TimeZone.setDefault(Asia/Tashkent)` o'rnatildi —
+  barcha muhitda (production, lokal, testlar) bir xil ishlaydi.
+
+Test: jami ~40 ta yangi/yangilangan unit test (`TokenHasherTest`,
+`TelegramAutoLoginControllerTest`, `TelegramAutoLoginTokenCleanupServiceTest`,
+`TelegramPracticeTestServiceTest` kengaytirildi, `TelegramPracticeTestTimeoutServiceTest`,
+`TelegramUserServiceTest`, `TestSessionServiceTest` kengaytirildi). Yangi
+DB o'zgarishi kerak bo'lmadi.
+
 ## Ustuvorlik bo'yicha tavsiya
 
 ~~Parolni tiklash~~, ~~Login urinishlarini cheklash~~, ~~Rol audit log~~,
@@ -306,22 +390,31 @@ IP whitelist muammosi hal qilindi), ~~Avtomatik unit testlar (servis
 qatlami)~~, ~~CI/CD~~, ~~Backup strategiyasi~~, ~~Markazlashtirilgan xato
 kuzatuvi (Sentry)~~, ~~Telegram bot — to'liq funksionallik (0-5 bosqich,
 botda ro'yxatdan o'tish ham, auto-login tuzatildi, savol sonini o'zi
-kiritish)~~, ~~Navbar — Profil menyusini birlashtirish, UPPERCASE~~ —
-bajarildi.
+kiritish)~~, ~~Navbar — Profil menyusini birlashtirish, UPPERCASE~~,
+~~Auto-login xavfsizligi va tozalash~~, ~~Click to'lovi Web App
+tugmasi orqali~~, ~~Mustaqil testda rejim tanlash + Exam/Hard vaqt
+chegarasi (jonli sanoq)~~, ~~Natijalarim — mustaqil testlarni ham
+ko'rsatish~~, ~~Test natijasi hisoblash bugi~~, ~~Timezone (UTC →
+Asia/Tashkent)~~ — bajarildi.
 
 Qolgan (tarif rejalar, refund siyosati, keng qamrovli integration
 testlar) — kattaroq va alohida rejalashtirish talab qiladigan ishlar.
 
-## Yakuniy holat (2026-08-19)
+## Yakuniy holat (2026-08-20)
 
 Loyihaning rejalashtirilgan barcha asosiy funksional, xavfsizlik va
-infratuzilma ishlari (1-7 bo'limlar) yakunlangan va production'da
-(`https://study-grow.uz`) ishlamoqda: to'lov tizimi (Click), xavfsizlik
-choralari, bildirishnoma markazi, onlayn kurslar, email integratsiyasi,
-avtomatik testlar + CI/CD, backup, xato kuzatuvi (Sentry), va Telegram
-botning to'liq (0-5 bosqich) funksionalligi — jumladan botda
-ro'yxatdan o'tish, auto-login havolalari va mustaqil testda savol
-sonini erkin kiritish.
+infratuzilma ishlari (1-8 bo'limlar) yakunlangan va production'da
+(`https://study-grow.uz`) ishlamoqda: to'lov tizimi (Click, endi
+Telegram ichida Web App orqali ham), xavfsizlik choralari (jumladan
+auto-login token xeshlash va Referrer-Policy), bildirishnoma markazi,
+onlayn kurslar, email integratsiyasi, avtomatik testlar + CI/CD,
+backup, xato kuzatuvi (Sentry), to'g'ri timezone (Asia/Tashkent), va
+Telegram botning to'liq funksionalligi — jumladan botda ro'yxatdan
+o'tish, auto-login havolalari (xavfsizlashtirilgan va muddati
+o'tganda xabar beradigan), mustaqil testda rejim tanlash (Practice/
+Exam/Hard) va Exam/Hard uchun jonli (real-time) vaqt sanog'i bilan
+avtomatik yakunlash. Test natijalarini hisoblashdagi (X/Y noto'g'ri
+chiqishi) haqiqiy bug ham (sayt+bot) tuzatildi.
 
 Ataylab ochiq qoldirilgan, kattaroq alohida rejalashtirishni talab
 qiladigan ikkita band bor: **to'lov qaytarish (refund) siyosati** va
