@@ -85,7 +85,12 @@ public class TestSessionService {
             throw new AccessDeniedException("Not your test session");
         }
 
-        int total = request.answers().size();
+        // Testda AJRATILGAN savollar soni bo'yicha hisoblanadi (javob
+        // berilganlar soni emas) — aks holda vaqt tugab, ba'zi savollarga
+        // ulgurmagan foydalanuvchi "1/1" (100%) kabi noto'g'ri natija
+        // ko'rardi, "1/2" o'rniga. Eski klient (totalQuestions yubormasa)
+        // uchun avvalgi xatti-harakat (javoblar soni) — himoya sifatida.
+        int total = request.totalQuestions() != null ? request.totalQuestions() : request.answers().size();
         int correct = 0;
 
         session.setStartedAt(

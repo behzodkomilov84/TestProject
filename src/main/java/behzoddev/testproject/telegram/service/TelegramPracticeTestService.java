@@ -440,6 +440,27 @@ public class TelegramPracticeTestService {
         return state.deadlineEpochMilli() != null && System.currentTimeMillis() >= state.deadlineEpochMilli();
     }
 
+    // ================= Jonli (real-time) qolgan vaqt sanog'i =================
+    // Telegram xabari o'zi live-yangilanmaydi — shuning uchun
+    // TelegramPracticeTestTimeoutService (@Scheduled) shu ma'lumot orqali
+    // BITTA xabarni davriy ravishda tahrirlab (EditMessageText) turadi —
+    // saytdagi jonli sekundomerga eng yaqin taqlid.
+
+    public record TickInfo(long deadlineEpochMilli, Integer timerMessageId) {}
+
+    public TickInfo getTickInfo(Long chatId) {
+        PracticeTestState state = loadState(chatId);
+        if (state == null || state.deadlineEpochMilli() == null || isExpired(state)) return null;
+
+        String rawId = sessionService.getTempData(chatId).get("pt_timerMsgId");
+        Integer timerMessageId = rawId == null || rawId.isBlank() ? null : Integer.parseInt(rawId);
+        return new TickInfo(state.deadlineEpochMilli(), timerMessageId);
+    }
+
+    public void recordTimerMessageId(Long chatId, Integer messageId) {
+        sessionService.putTempData(chatId, "pt_timerMsgId", String.valueOf(messageId));
+    }
+
     // ================= Vaqt tugagach avtomatik yakunlash =================
     // TelegramPracticeTestTimeoutService (@Scheduled) tomonidan, foydalanuvchi
     // hech qanday tugma bosmasa ham, saytdagi jonli sekundomer 0'ga
@@ -454,12 +475,22 @@ public class TelegramPracticeTestService {
 
     private SendMessage finishWithTimeoutNotice(Long chatId, PracticeTestState state,
                                                   List<PracticeTestState.AnswerPick> answers) {
-        SendMessage msg = finish(chatId, state, answers);
+        // Davomiylik ANIQ belgilangan vaqt chegarasiga teng bo'lishi kerak —
+        // haqiqiy tugallash vaqti emas (poller har necha soniyada bir marta
+        // tekshiradi, shuning uchun bir necha soniya kech "sezilishi" mumkin;
+        // agar buni hisobga olmasak, masalan 60 soniyalik testda "82 soniya"
+        // kabi noto'g'ri (haqiqatdan uzunroq) davomiylik ko'rsatilardi).
+        SendMessage msg = finish(chatId, state, answers, state.deadlineEpochMilli());
         msg.setText("⏰ Vaqt tugadi — test avtomatik yakunlandi.\n\n" + msg.getText());
         return msg;
     }
 
     private SendMessage finish(Long chatId, PracticeTestState state, List<PracticeTestState.AnswerPick> answers) {
+        return finish(chatId, state, answers, System.currentTimeMillis());
+    }
+
+    private SendMessage finish(Long chatId, PracticeTestState state, List<PracticeTestState.AnswerPick> answers,
+                                long finishedAt) {
         User user = getUserByChatId(chatId);
         String mode = currentMode(chatId); // clear()'dan OLDIN — keyin tempData yo'qoladi
 
@@ -467,10 +498,9 @@ public class TelegramPracticeTestService {
                 .map(a -> new AnswerResultDto(a.questionId(), a.answerId()))
                 .toList();
 
-        long finishedAt = System.currentTimeMillis();
-
         testSessionService.finishTest(
-                new FinishTestRequestDto(state.testSessionId(), state.startedAtEpochMilli(), finishedAt, results),
+                new FinishTestRequestDto(state.testSessionId(), state.startedAtEpochMilli(), finishedAt,
+                        results, state.questions().size()),
                 user
         );
 
@@ -501,8 +531,9 @@ public class TelegramPracticeTestService {
 
     // Telegram xabari statik (live-yangilanmaydi), shuning uchun bu —
     // xabar yuborilgan paytdagi taxminiy qolgan vaqt (saytdagi jonli
-    // sekundomerning yaqin taxminiy o'rnini bosuvchisi).
-    private String formatRemaining(long deadlineEpochMilli) {
+    // sekundomerning yaqin taxminiy o'rnini bosuvchisi). Public/static —
+    // TelegramPracticeTestTimeoutService ham bir xil formatni ishlatishi uchun.
+    public static String formatRemaining(long deadlineEpochMilli) {
         long remainingSec = Math.max(0, (deadlineEpochMilli - System.currentTimeMillis()) / 1000);
         long min = remainingSec / 60;
         long sec = remainingSec % 60;

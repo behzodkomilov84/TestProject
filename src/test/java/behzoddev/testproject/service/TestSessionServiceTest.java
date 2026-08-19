@@ -138,7 +138,7 @@ class TestSessionServiceTest {
 
         FinishTestRequestDto request = new FinishTestRequestDto(10L,
                 System.currentTimeMillis() - 60_000, System.currentTimeMillis(),
-                List.of(new AnswerResultDto(1L, 100L)));
+                List.of(new AnswerResultDto(1L, 100L)), 1);
 
         testSessionService.finishTest(request, user);
 
@@ -170,7 +170,7 @@ class TestSessionServiceTest {
 
         FinishTestRequestDto request = new FinishTestRequestDto(10L,
                 System.currentTimeMillis() - 1000, System.currentTimeMillis(),
-                List.of(new AnswerResultDto(1L, 100L)));
+                List.of(new AnswerResultDto(1L, 100L)), 1);
 
         testSessionService.finishTest(request, user);
 
@@ -180,13 +180,65 @@ class TestSessionServiceTest {
     }
 
     @Test
+    void finishTest_fewerAnswersThanTotalQuestions_computesScoreAgainstRealTotal() {
+        // Haqiqiy production bug: Exam rejimida vaqt tugab, 2 savoldan
+        // faqat 1 tasiga ulgurgan foydalanuvchi "1/1 (100%)" ko'rardi,
+        // "1/2 (50%)" o'rniga — chunki eski kod totalQuestions'ni
+        // answers.size()'dan (ya'ni JAVOB BERILGANLAR sonidan) hisoblardi.
+        user = freshUser();
+        TestSession session = TestSession.builder().id(10L).user(user).questions(new ArrayList<>()).build();
+        Question q1 = Question.builder().id(1L).questionText("Q1").build();
+        Answer correctAnswer = Answer.builder().id(100L).answerText("A").isTrue(true).build();
+
+        when(testSessionRepository.findById(10L)).thenReturn(Optional.of(session));
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(q1));
+        when(answerRepository.findById(100L)).thenReturn(Optional.of(correctAnswer));
+        when(userQuestionStatsRepository.findById(any())).thenReturn(Optional.empty());
+
+        // 2 ta savol AJRATILGAN edi (totalQuestions=2), lekin faqat 1 tasiga javob berildi.
+        FinishTestRequestDto request = new FinishTestRequestDto(10L,
+                System.currentTimeMillis() - 60_000, System.currentTimeMillis(),
+                List.of(new AnswerResultDto(1L, 100L)), 2);
+
+        testSessionService.finishTest(request, user);
+
+        assertThat(session.getTotalQuestions()).isEqualTo(2);
+        assertThat(session.getCorrectAnswers()).isEqualTo(1);
+        assertThat(session.getWrongAnswers()).isEqualTo(1); // javobsiz qolgan savol ham "noto'g'ri" hisoblanadi
+        assertThat(session.getPercent()).isEqualTo(50);
+    }
+
+    @Test
+    void finishTest_nullTotalQuestions_fallsBackToAnswersCount() {
+        // Himoya: eski klient totalQuestions yubormasa ham (masalan
+        // deploy vaqtida eski JS keshi), avvalgi xatti-harakat saqlanadi.
+        user = freshUser();
+        TestSession session = TestSession.builder().id(10L).user(user).questions(new ArrayList<>()).build();
+        Question q1 = Question.builder().id(1L).questionText("Q1").build();
+        Answer correctAnswer = Answer.builder().id(100L).answerText("A").isTrue(true).build();
+
+        when(testSessionRepository.findById(10L)).thenReturn(Optional.of(session));
+        when(questionRepository.findById(1L)).thenReturn(Optional.of(q1));
+        when(answerRepository.findById(100L)).thenReturn(Optional.of(correctAnswer));
+        when(userQuestionStatsRepository.findById(any())).thenReturn(Optional.empty());
+
+        FinishTestRequestDto request = new FinishTestRequestDto(10L,
+                System.currentTimeMillis() - 60_000, System.currentTimeMillis(),
+                List.of(new AnswerResultDto(1L, 100L)), null);
+
+        testSessionService.finishTest(request, user);
+
+        assertThat(session.getTotalQuestions()).isEqualTo(1);
+    }
+
+    @Test
     void finishTest_notOwnSession_throwsAccessDenied() {
         User owner = freshUser();
         User intruder = User.builder().id(2L).username("mallory").build();
         TestSession session = TestSession.builder().id(10L).user(owner).questions(new ArrayList<>()).build();
         when(testSessionRepository.findById(10L)).thenReturn(Optional.of(session));
 
-        FinishTestRequestDto request = new FinishTestRequestDto(10L, 1L, 2L, List.of());
+        FinishTestRequestDto request = new FinishTestRequestDto(10L, 1L, 2L, List.of(), 0);
 
         assertThatThrownBy(() -> testSessionService.finishTest(request, intruder))
                 .isInstanceOf(AccessDeniedException.class);
@@ -195,7 +247,7 @@ class TestSessionServiceTest {
     @Test
     void finishTest_sessionNotFound_throws() {
         when(testSessionRepository.findById(10L)).thenReturn(Optional.empty());
-        FinishTestRequestDto request = new FinishTestRequestDto(10L, 1L, 2L, List.of());
+        FinishTestRequestDto request = new FinishTestRequestDto(10L, 1L, 2L, List.of(), 0);
 
         assertThatThrownBy(() -> testSessionService.finishTest(request, freshUser()))
                 .isInstanceOf(IllegalArgumentException.class)

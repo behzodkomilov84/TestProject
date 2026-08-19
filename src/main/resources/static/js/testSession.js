@@ -298,6 +298,11 @@ function saveTestResult() {
         testSessionId: testState.testSessionId,
         startedAt: testState.startedAt,
         finishedAt: testState.finishedAt,
+        // Ajratilgan (mavjud) savollar soni — javob berilganlar emas.
+        // Vaqt tugab avtomatik yakunlanganda ba'zi savollarga ulgurilmagan
+        // bo'lishi mumkin, natija ("X/Y") shu haqiqiy sonlarga nisbatan
+        // hisoblanishi uchun.
+        totalQuestions: testState.allQuestions.length,
         answers: Array.from(testState.answers.entries()).map(
             ([questionId, answerId]) => ({
                 questionId,
