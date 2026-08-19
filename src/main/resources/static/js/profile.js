@@ -274,7 +274,7 @@ function changePassword() {
 }
 //=========================================================
 
-/* ===== Onlayn to'lov (Payme/Click) — ROLE_ADMIN obunasini o'zi sotib olish ===== */
+/* ===== Onlayn to'lov (Click) — ROLE_ADMIN obunasini o'zi sotib olish ===== */
 
 function loadPaymentConfig(roles) {
     if (roles.includes("ROLE_OWNER")) return; // OWNER'ga kerak emas
@@ -282,14 +282,13 @@ function loadPaymentConfig(roles) {
     fetch("/api/payments/config")
         .then(r => r.ok ? r.json() : null)
         .then(config => {
-            if (!config || (!config.paymeEnabled && !config.clickEnabled)) return;
+            if (!config || !config.clickEnabled) return;
 
             document.getElementById("onlinePaymentSection").style.display = "block";
             document.getElementById("pricePerMonthText").textContent =
                 `1 oy = ${Number(config.pricePerMonthSom).toLocaleString("uz-UZ")} so'm`;
 
-            if (config.paymeEnabled) document.getElementById("payWithPaymeBtn").style.display = "inline-block";
-            if (config.clickEnabled) document.getElementById("payWithClickBtn").style.display = "inline-block";
+            document.getElementById("payWithClickBtn").style.display = "inline-block";
         })
         .catch(err => console.error(err));
 }

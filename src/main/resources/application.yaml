@@ -107,15 +107,6 @@ app:
     # ROLE_ADMIN obunasini o'zi (OWNER ishtirokisiz) onlayn sotib olish uchun
     # bir oylik narx (so'm). Hozircha yagona, hammaga bir xil narx.
     price-per-month-som: ${PAYMENT_PRICE_PER_MONTH_SOM:50000}
-    payme:
-      # business.payme.uz'da merchant ro'yxatdan o'tgach beriladi. Ikkalasi
-      # ham bo'sh bo'lsa — Payme bloki frontend'da avtomatik yashiriladi
-      # (PaymeService.isEnabled()).
-      merchant-id: ${PAYME_MERCHANT_ID:}
-      key: ${PAYME_KEY:}
-      # Sertifikatsiya (test) bosqichida https://test.paycom.uz ga
-      # o'zgartiring, keyin production'da https://checkout.paycom.uz ga qaytaring.
-      checkout-base-url: ${PAYME_CHECKOUT_BASE_URL:https://checkout.paycom.uz}
     click:
       # merchant.click.uz'da ro'yxatdan o'tgach beriladi.
       service-id: ${CLICK_SERVICE_ID:}

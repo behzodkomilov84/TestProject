@@ -40,10 +40,9 @@ public class SecurityConfig {
                                 "/privacy",
                                 "/favicon.ico",
                                 "/",
-                                // Payme/Click'ning o'z serverlari chaqiradi — sessiyasiz,
-                                // o'zining Basic Auth/imzo tekshiruvi orqali himoyalangan
-                                // (PaymeService.checkAuth / ClickService.verifySign).
-                                "/api/payments/payme/webhook",
+                                // Click'ning o'z serverlari chaqiradi — sessiyasiz,
+                                // o'zining imzo tekshiruvi orqali himoyalangan
+                                // (ClickService.verifySign).
                                 "/api/payments/click/webhook"
                         ).permitAll()
 

@@ -6,7 +6,6 @@ import lombok.Builder;
 // shundan bilib oladi (shlyuz sozlanmagan bo'lsa — tugmalar yashirin).
 @Builder
 public record PaymentConfigDto(
-        boolean paymeEnabled,
         boolean clickEnabled,
         long pricePerMonthSom
 ) {

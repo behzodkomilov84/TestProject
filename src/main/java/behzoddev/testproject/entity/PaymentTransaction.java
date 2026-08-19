@@ -8,11 +8,11 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-// Shlyuz tomonidan yaratilgan haqiqiy tranzaksiya (Payme'ning CreateTransaction
-// yoki Click'ning Prepare chaqiruvida paydo bo'ladi). providerTransactionId —
-// shlyuzning o'zi bergan ID (Payme: params.id, Click: click_trans_id) —
-// keyingi barcha chaqiruvlar (Perform/Cancel/Complete) shu ID orqali keladi,
-// shuning uchun bu ustun amaliy kalit vazifasini o'taydi (idempotentlik).
+// Shlyuz tomonidan yaratilgan haqiqiy tranzaksiya (Click'ning Prepare
+// chaqiruvida paydo bo'ladi). providerTransactionId — shlyuzning o'zi
+// bergan ID (click_trans_id) — keyingi barcha chaqiruvlar (Complete) shu
+// ID orqali keladi, shuning uchun bu ustun amaliy kalit vazifasini
+// o'taydi (idempotentlik).
 @Entity
 @Table(name = "payment_transactions")
 @Getter
@@ -34,7 +34,7 @@ public class PaymentTransaction {
     @Column(nullable = false, length = 10)
     private PaymentProvider provider;
 
-    // Payme: params.id (24 xonali hex). Click: click_trans_id (raqam, string'ga o'girilgan).
+    // Click: click_trans_id (raqam, string'ga o'girilgan).
     @Column(name = "provider_transaction_id", nullable = false, length = 100)
     private String providerTransactionId;
 
@@ -54,7 +54,8 @@ public class PaymentTransaction {
     @Column(name = "cancel_time")
     private LocalDateTime cancelTime;
 
-    // Payme: CancelTransaction'dagi "reason" kodi. Click uchun ishlatilmaydi.
+    // Hozircha hech bir provayder (Click) to'ldirmaydi — kelajakda
+    // bekor qilish sababini saqlash uchun zaxira ustun.
     @Column(name = "cancel_reason")
     private Integer cancelReason;
 

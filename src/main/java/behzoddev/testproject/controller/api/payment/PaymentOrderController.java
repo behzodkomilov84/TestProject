@@ -6,7 +6,6 @@ import behzoddev.testproject.dto.payment.PaymentOrderDto;
 import behzoddev.testproject.entity.PaymentOrder;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.payment.ClickService;
-import behzoddev.testproject.service.payment.PaymeService;
 import behzoddev.testproject.service.payment.PaymentOrderService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,7 +23,6 @@ import java.util.Map;
 public class PaymentOrderController {
 
     private final PaymentOrderService paymentOrderService;
-    private final PaymeService paymeService;
     private final ClickService clickService;
 
     // Frontend shlyuz sozlanganmi/narxi qancha ekanini shundan bilib, "Onlayn
@@ -32,7 +30,6 @@ public class PaymentOrderController {
     @GetMapping("/config")
     public PaymentConfigDto config() {
         return PaymentConfigDto.builder()
-                .paymeEnabled(paymeService.isEnabled())
                 .clickEnabled(clickService.isEnabled())
                 .pricePerMonthSom(paymentOrderService.getPricePerMonthSom())
                 .build();
@@ -46,18 +43,13 @@ public class PaymentOrderController {
         String returnUrl = "/profile";
         String checkoutUrl;
 
-        if ("PAYME".equals(provider)) {
-            if (!paymeService.isEnabled()) {
-                throw new IllegalStateException("❌Payme hozircha ulanmagan");
-            }
-            checkoutUrl = paymeService.buildCheckoutUrl(order, returnUrl);
-        } else if ("CLICK".equals(provider)) {
+        if ("CLICK".equals(provider)) {
             if (!clickService.isEnabled()) {
                 throw new IllegalStateException("❌Click hozircha ulanmagan");
             }
             checkoutUrl = clickService.buildPayUrl(order, returnUrl);
         } else {
-            throw new IllegalArgumentException("❌To'lov tizimini tanlang (Payme yoki Click)");
+            throw new IllegalArgumentException("❌To'lov tizimini tanlang (Click)");
         }
 
         return PaymentOrderDto.builder()
@@ -69,7 +61,7 @@ public class PaymentOrderController {
                 .build();
     }
 
-    // Click/Payme'ning minimal tranzaksiya summasi — /users sahifasida
+    // Click'ning minimal tranzaksiya summasi — /users sahifasida
     // OWNER ko'rib/o'zgartirib turishi uchun.
     @GetMapping("/min-amount")
     public Map<String, BigDecimal> getMinAmount() {

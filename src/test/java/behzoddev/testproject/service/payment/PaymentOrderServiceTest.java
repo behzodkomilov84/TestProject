@@ -33,7 +33,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * PaymentOrder — Payme/Click bilan gaplashishdan oldin/keyin buyurtmaning
+ * PaymentOrder — Click bilan gaplashishdan oldin/keyin buyurtmaning
  * umumiy hayot aylanishi. markPaid/markCancelled'ning idempotentligi va
  * reversePaidOrder'ning aynan SHU order orqali yaratilgan obunani
  * nishonga olishi (avval shu yerda bug bo'lgan) — asosiy e'tibor shu yerda.
@@ -110,7 +110,7 @@ class PaymentOrderServiceTest {
                 .hasMessageContaining("OWNER uchun ADMIN obunasi kerak emas");
     }
 
-    // ===== minAmountSom (Click/Payme minimal tranzaksiya chegarasi) =====
+    // ===== minAmountSom (Click'ning minimal tranzaksiya chegarasi) =====
 
     @Test
     void updateMinAmountSom_positiveValue_savesAndReturnsIt() {

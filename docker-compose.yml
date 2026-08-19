@@ -59,11 +59,8 @@ services:
       SMTP_USERNAME: ${SMTP_USERNAME:-}
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       MAIL_FROM: ${MAIL_FROM:-no-reply@smart-test.local}
-      # Payme/Click (ixtiyoriy — .env'da bo'lmasa, PaymeService/ClickService
-      # "sozlanmagan" holatda ishlaydi, to'lov bloki frontend'da yashiriladi).
-      PAYME_MERCHANT_ID: ${PAYME_MERCHANT_ID:-}
-      PAYME_KEY: ${PAYME_KEY:-}
-      PAYME_CHECKOUT_BASE_URL: ${PAYME_CHECKOUT_BASE_URL:-https://checkout.paycom.uz}
+      # Click (ixtiyoriy — .env'da bo'lmasa, ClickService "sozlanmagan"
+      # holatda ishlaydi, to'lov bloki frontend'da yashiriladi).
       CLICK_SERVICE_ID: ${CLICK_SERVICE_ID:-}
       CLICK_MERCHANT_ID: ${CLICK_MERCHANT_ID:-}
       CLICK_SECRET_KEY: ${CLICK_SECRET_KEY:-}

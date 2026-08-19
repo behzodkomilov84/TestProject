@@ -19,9 +19,9 @@ import java.time.LocalDateTime;
 import java.util.NoSuchElementException;
 
 // PaymentOrder — foydalanuvchi "ADMIN huquqini onlayn sotib olish"ni
-// boshlaganda yaratiladigan buyurtma (Payme/Click bilan gaplashishdan oldin).
-// Provayderga qarab checkout URL PaymeService/ClickService'da tuziladi,
-// bu servis esa faqat order'ning umumiy hayot aylanishini boshqaradi.
+// boshlaganda yaratiladigan buyurtma (Click bilan gaplashishdan oldin).
+// Checkout URL ClickService'da tuziladi, bu servis esa faqat order'ning
+// umumiy hayot aylanishini boshqaradi.
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -50,7 +50,7 @@ public class PaymentOrderService {
 
         BigDecimal amount = BigDecimal.valueOf(pricePerMonthSom).multiply(BigDecimal.valueOf(durationMonths));
 
-        // Click/Payme kabi shlyuzlar juda kichik summalarni rad etadi —
+        // Click kabi shlyuzlar juda kichik summalarni rad etadi —
         // OWNER /users sahifasidan sozlagan chegaradan tekshiramiz.
         BigDecimal minAmount = getMinAmountSom();
         if (amount.compareTo(minAmount) < 0) {
@@ -82,7 +82,7 @@ public class PaymentOrderService {
         return pricePerMonthSom;
     }
 
-    // Click/Payme'ning real minimal tranzaksiya chegarasi — OWNER buni
+    // Click'ning real minimal tranzaksiya chegarasi — OWNER buni
     // /users sahifasidan (redeploy'siz) o'zgartira oladi. Qator hali
     // yaratilmagan bo'lsa (masalan yangi environment), standart qiymat
     // bilan avtomatik yaratiladi.
@@ -115,7 +115,7 @@ public class PaymentOrderService {
                 });
     }
 
-    // Payme PerformTransaction / Click Complete muvaffaqiyatli bo'lganda
+    // Click Complete muvaffaqiyatli bo'lganda
     // chaqiriladi. Idempotent — order allaqachon PAID bo'lsa jim qaytadi
     // (provayderlar bir xil so'rovni bir necha marta qayta yuborishi mumkin).
     @Transactional

@@ -14,14 +14,18 @@ qamrab oladi.
   buni `/users` sahifasida ko'rib, tasdiqlaydi yoki rad etadi.
 - Har kuni tunda (00:30) muddati o'tgan obunalar avtomatik `EXPIRED` bo'ladi va, agar
   foydalanuvchida boshqa faol obuna qolmagan bo'lsa, ADMIN roli avtomatik olib tashlanadi.
-- ✅ **BAJARILDI — Payme/Click onlayn to'lov integratsiyasi**: `ROLE_ADMIN`
+- ✅ **BAJARILDI — Click onlayn to'lov integratsiyasi**: `ROLE_ADMIN`
   obunasini foydalanuvchi o'zi (OWNER ishtirokisiz) `/profile`'dan sotib olishi
-  mumkin. To'liq JSON-RPC (Payme) va Prepare/Complete (Click) protokollari,
-  idempotentlik, chargeback/qaytarish (avtomatik ADMIN'ni bekor qilish) —
-  batafsil: `docs/PAYMENTS.md`. **Cheklov**: haqiqiy merchant akkaunt yo'qligi
-  sabab faqat sintetik (o'zim simulyatsiya qilgan) so'rovlar bilan sinaldi —
-  production'ga chiqarishdan oldin Payme/Click'ning test (sandbox) muhitida
-  sertifikatsiyadan o'tkazish shart.
+  mumkin. To'liq Prepare/Complete protokoli, idempotentlik, chargeback/qaytarish
+  (avtomatik ADMIN'ni bekor qilish) — batafsil: `docs/PAYMENTS.md`. Click
+  merchant kabinetida faollashtirilgan, imzo tekshiruvi production'da haqiqiy
+  kalitlar bilan tasdiqlangan. **Cheklov**: birinchi haqiqiy to'lov urinishida
+  Click'ning serverlari serverimizga (O'zbekiston hududidan tashqarida)
+  ulana olmadi — Click support bilan IP/domen whitelist masalasi hal
+  qilinmoguncha real to'lov to'liq sinalmagan.
+  ~~Payme integratsiyasi~~ olib tashlandi (2026) — Payme "o'zini o'zi band
+  qilgan" (SZ) maqomdagilar bilan shartnoma tuzmasligi aniqlandi, eng kami
+  yakka tartibdagi tadbirkor (YaTT) bo'lish talab qilinadi.
 - **Cheklov**: Telegram orqali yuborilgan to'lov cheki/skrinshoti hozircha avtomatik
   tekshirilmaydi — OWNER buni Telegram chatining o'zida ko'rib, keyin saytda tasdiqlaydi.
   To'liq avtomatlashtirish uchun rasmni saqlab, admin panelda ko'rsatish kerak bo'ladi.
@@ -72,14 +76,14 @@ qamrab oladi.
 ## 4. Kod sifati va infratuzilma
 
 - ✅ **BAJARILDI — Avtomatik unit testlar (servis qatlami to'liq)**: `service`
-  paketidagi BARCHA 28 ta servis JUnit 5 + Mockito bilan qoplandi (315 ta
-  test, `src/test/java/.../service/`). Ayniqsa e'tiborli qismlar:
+  paketidagi BARCHA servislar JUnit 5 + Mockito bilan qoplandi
+  (`src/test/java/.../service/`). Ayniqsa e'tiborli qismlar:
   `SubscriptionService`/`CourseSubscriptionService` (ADMIN/kurs kirish
   huquqini berish-olib tashlash, `reverseOnline`/`expireSubscriptions`dagi
-  "boshqa faol obuna bormi" tekshiruvi), `PaymentOrderService`/`PaymeService`/
-  `ClickService` (webhook idempotentligi, MD5/Basic-Auth imzo tekshiruvi,
-  chargeback/reversal oqimi — avval qo'lda sinov so'rovlari bilan
-  tekshirilgan stsenariylar endi avtomatik regressiya sifatida qulflangan),
+  "boshqa faol obuna bormi" tekshiruvi), `PaymentOrderService`/`ClickService`
+  (webhook idempotentligi, MD5 imzo tekshiruvi, chargeback/reversal oqimi —
+  avval qo'lda sinov so'rovlari bilan tekshirilgan stsenariylar endi
+  avtomatik regressiya sifatida qulflangan),
   `TeacherService`/`StudentService`/`AssignmentAttemptService` (ruxsat
   tekshiruvlari, taklif/topshiriq holat mashinasi, vaqt hisoblash),
   `CourseService` (bo'limlarning ketma-ket ochilish mantig'i),
@@ -91,8 +95,8 @@ qamrab oladi.
   integration/`@SpringBootTest` darajasidagi testlar hali yo'q.
 - ✅ **BAJARILDI — CI/CD**: GitHub Actions (`.github/workflows/ci.yml`) — `master`ga
   har push/pull request'da avtomatik ishga tushadi: MySQL 8 servis konteyner
-  ko'tariladi, JDK 17 o'rnatiladi, `mvn clean verify` orqali BARCHA 316 ta test
-  (315 unit + `TestApplicationTests`ning to'liq Spring context yuklanishi)
+  ko'tariladi, JDK 17 o'rnatiladi, `mvn clean verify` orqali BARCHA 298 ta test
+  (297 unit + `TestApplicationTests`ning to'liq Spring context yuklanishi)
   bajariladi va ilova qadoqlanadi (`.jar`). Muvaffaqiyatsiz bo'lsa ham
   surefire hisobotlari artifact sifatida saqlanadi.
 - ✅ **BAJARILDI — Backup strategiyasi**: `docker-compose.prod.yml`dagi
@@ -131,8 +135,8 @@ qamrab oladi.
 ~~Bildirishnoma markazi~~, ~~HTTPS/SSL~~, ~~Fayl antivirus tekshiruvi~~,
 ~~To'lov tarixi/hisobot~~, ~~Online kurslar~~, ~~Obuna eslatmasi~~,
 ~~Email integratsiyasi~~, ~~Foydalanish shartlari/Maxfiylik siyosati~~,
-~~Payme/Click integratsiyasi~~ (kod tayyor, sertifikatsiya kutilmoqda),
-~~Avtomatik unit testlar (servis qatlami)~~, ~~CI/CD~~,
+~~Click integratsiyasi~~ (production'da faol, real to'lov IP-whitelist
+kutmoqda), ~~Avtomatik unit testlar (servis qatlami)~~, ~~CI/CD~~,
 ~~Backup strategiyasi~~ (kod/skript tayyor, real konteynerda hali sinalmagan) — bajarildi.
 
 Qolgan (tarif rejalar, refund siyosati, keng qamrovli integration testlar,

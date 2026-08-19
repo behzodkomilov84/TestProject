@@ -10,7 +10,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 
 // Bitta qatorli (singleton, id=1) sozlamalar jadvali — hozircha faqat
-// Click/Payme uchun minimal tranzaksiya summasini saqlaydi. Kelajakda
+// Click uchun minimal tranzaksiya summasini saqlaydi. Kelajakda
 // boshqa to'lov sozlamalari ham shu yerga qo'shilishi mumkin.
 @Entity
 @Table(name = "payment_settings")

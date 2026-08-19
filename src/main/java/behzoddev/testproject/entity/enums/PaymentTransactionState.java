@@ -1,8 +1,8 @@
 package behzoddev.testproject.entity.enums;
 
-// Payme/Click'ning o'z holatlariga umumlashtirilgan mos keladi:
-// CREATED = Payme "1" / Click "0-tayyorlangan", PERFORMED = Payme "2" /
-// Click "1-tugallangan", CANCELLED = Payme "-1/-2" / Click "-9".
+// Click'ning o'z holatlariga umumlashtirilgan mos keladi:
+// CREATED = "0-tayyorlangan" (Prepare), PERFORMED = "1-tugallangan"
+// (Complete), CANCELLED = "-9" (bekor qilingan).
 public enum PaymentTransactionState {
     CREATED,
     PERFORMED,

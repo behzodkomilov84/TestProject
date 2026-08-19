@@ -7,7 +7,7 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-// Foydalanuvchi ROLE_ADMIN obunasini onlayn (Payme/Click) sotib olishni
+// Foydalanuvchi ROLE_ADMIN obunasini onlayn (Click) sotib olishni
 // boshlaganda yaratiladigan "buyurtma" — shlyuzga yuboriladigan checkout
 // link'ida shu yozuvning ID'si order_id/merchant_trans_id sifatida
 // ishlatiladi, shlyuz keyin webhook orqali shu ID bo'yicha to'lovni

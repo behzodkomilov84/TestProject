@@ -39,8 +39,8 @@ import java.util.NoSuchElementException;
  *   darhol tasdiqlaydi (naqd/karta orqali saytdan tashqarida to'langan).
  * - TELEGRAM: foydalanuvchi botga to'lov haqida xabar yuboradi, PENDING
  *   holatida yaratiladi, OWNER keyin /users sahifasida tasdiqlaydi.
- * - ONLINE: hozircha faqat enum sifatida tayyorlab qo'yilgan — Payme/Click
- *   kabi shlyuz ulanganda shu manba orqali avtomatik tasdiqlash qo'shiladi.
+ * - ONLINE: Click shlyuzi orqali avtomatik tasdiqlangan to'lovlar uchun
+ *   (foydalanuvchi o'zi, OWNER ishtirokisiz).
  */
 @Slf4j
 @Service
@@ -148,7 +148,7 @@ public class SubscriptionService {
         return toDto(subscription);
     }
 
-    // Payme/Click orqali avtomatik to'lov muvaffaqiyatli yakunlanganda
+    // Click orqali avtomatik to'lov muvaffaqiyatli yakunlanganda
     // (PaymentOrderService.markPaid) chaqiriladi — inson (OWNER) ishtirok
     // etmagani uchun confirmedBy=null, source=ONLINE.
     @Transactional
@@ -162,7 +162,7 @@ public class SubscriptionService {
                 .status(SubscriptionStatus.CONFIRMED)
                 .startDate(now)
                 .endDate(now.plusMonths(months))
-                .note("Onlayn to'lov (Payme/Click) orqali avtomatik tasdiqlandi")
+                .note("Onlayn to'lov (Click) orqali avtomatik tasdiqlandi")
                 .build();
 
         subscriptionRepository.save(subscription);
@@ -178,9 +178,11 @@ public class SubscriptionService {
         return toDto(subscription);
     }
 
-    // Payme'da PerformTransaction'dan KEYIN CancelTransaction kelsa (chargeback/
-    // qaytarish) — allaqachon berilgan ADMIN huquqini bekor qilamiz. Bu sxema
-    // bo'yicha kamdan-kam sodir bo'ladi, lekin protokol buni talab qiladi.
+    // To'lov muvaffaqiyatli yakunlangandan KEYIN shlyuz chargeback/qaytarish
+    // haqida xabar bersa — allaqachon berilgan ADMIN huquqini bekor qilamiz.
+    // Hozircha ClickService bu holatni yubormaydi (Click webhook'i shunday
+    // xabar bermaydi), lekin PaymentOrderService.reversePaidOrder shu yerga
+    // ulanadi — kelajakda kerak bo'lsa tayyor.
     // MUHIM: subscriptionId — aynan SHU to'lov orqali yaratilgan obuna ID'si
     // (PaymentOrder.subscriptionId). Avval bu parametr yo'q edi va "boshqa
     // faol obuna bormi" tekshiruvi doim shu obunaning o'zini topib, ADMIN

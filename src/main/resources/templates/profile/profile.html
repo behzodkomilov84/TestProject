@@ -114,7 +114,7 @@
          emas — /student sahifasidagi "Statistika" tugmasida ko'rsatiladi. -->
 
 
-    <!-- Onlayn to'lov (Payme/Click) — faqat shlyuz sozlangan bo'lsa ko'rinadi
+    <!-- Onlayn to'lov (Click) — faqat shlyuz sozlangan bo'lsa ko'rinadi
          (profile.js -> loadPaymentConfig), OWNER'da hech qachon ko'rinmaydi. -->
     <div id="onlinePaymentSection" class="profile-container-up" style="display:none;">
         <div class="profile-container-left" style="width:100%;">
@@ -122,7 +122,6 @@
             <p style="text-align:center; color:#666;" id="pricePerMonthText"></p>
             <div style="display:flex; gap:10px; align-items:center; justify-content:center; flex-wrap:wrap;">
                 <label>Necha oy: <input type="number" id="paymentMonths" value="1" min="1" max="24" style="width:70px;"></label>
-                <button id="payWithPaymeBtn" style="display:none;" onclick="startPayment('PAYME')">Payme orqali to'lash</button>
                 <button id="payWithClickBtn" style="display:none;" onclick="startPayment('CLICK')">Click orqali to'lash</button>
             </div>
         </div>
