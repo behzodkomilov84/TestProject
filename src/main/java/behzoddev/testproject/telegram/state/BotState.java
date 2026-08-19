@@ -24,5 +24,10 @@ public enum BotState {
     AWAITING_GROUP_NAME,
     AWAITING_INVITE_USERNAME,
     AWAITING_CHAT_MESSAGE,
-    AWAITING_EXCEL_FILE
+    AWAITING_EXCEL_FILE,
+
+    // ===== OWNER: foydalanuvchilar, sozlamalar, e'lon =====
+    AWAITING_USER_SEARCH,
+    AWAITING_MIN_AMOUNT,
+    AWAITING_BROADCAST_TEXT
 }

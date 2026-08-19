@@ -10,6 +10,7 @@ import behzoddev.testproject.service.AssignmentAttemptService;
 import behzoddev.testproject.service.NotificationService;
 import behzoddev.testproject.telegram.service.TelegramAssignmentChatService;
 import behzoddev.testproject.telegram.service.TelegramMenuService;
+import behzoddev.testproject.telegram.service.TelegramOwnerService;
 import behzoddev.testproject.telegram.service.TelegramPracticeTestService;
 import behzoddev.testproject.telegram.service.TelegramProfileService;
 import behzoddev.testproject.telegram.service.TelegramQuestionImportService;
@@ -57,6 +58,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final TelegramTeacherService teacherService;
     private final TelegramAssignmentChatService chatService;
     private final TelegramQuestionImportService questionImportService;
+    private final TelegramOwnerService ownerService;
 
     public TelegramBot(
             @Value("${telegram.bot.token}") String token,
@@ -72,7 +74,8 @@ public class TelegramBot extends TelegramLongPollingBot {
             TelegramPracticeTestService practiceTestService,
             TelegramTeacherService teacherService,
             TelegramAssignmentChatService chatService,
-            TelegramQuestionImportService questionImportService) {
+            TelegramQuestionImportService questionImportService,
+            TelegramOwnerService ownerService) {
         super(token);
         this.token = token;
         this.username = username;
@@ -88,6 +91,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         this.teacherService = teacherService;
         this.chatService = chatService;
         this.questionImportService = questionImportService;
+        this.ownerService = ownerService;
     }
 
     @Override
@@ -233,6 +237,61 @@ public class TelegramBot extends TelegramLongPollingBot {
                 if (data.startsWith("tg_import_topic_")) {
                     Long topicId = Long.parseLong(data.replace("tg_import_topic_", ""));
                     execute(questionImportService.selectTopic(chatId, topicId));
+                    return;
+                }
+
+                // ===== OWNER: Foydalanuvchilar (rol berish/olib tashlash, blokdan chiqarish) =====
+                if (data.startsWith("tg_roleadd_") || data.startsWith("tg_roledel_")) {
+                    boolean add = data.startsWith("tg_roleadd_");
+                    String rest = data.replace(add ? "tg_roleadd_" : "tg_roledel_", "");
+                    int sep = rest.indexOf('_');
+                    Long targetUserId = Long.parseLong(rest.substring(0, sep));
+                    String roleName = rest.substring(sep + 1);
+                    execute(ownerService.toggleRole(chatId, targetUserId, roleName, add));
+                    return;
+                }
+                if (data.startsWith("tg_unlock_")) {
+                    Long targetUserId = Long.parseLong(data.replace("tg_unlock_", ""));
+                    execute(ownerService.unlockUser(chatId, targetUserId));
+                    return;
+                }
+
+                // ===== OWNER: To'lovlar =====
+                if (data.startsWith("tg_paydetail_")) {
+                    Long subscriptionId = Long.parseLong(data.replace("tg_paydetail_", ""));
+                    execute(ownerService.showPaymentDetail(chatId, subscriptionId));
+                    return;
+                }
+                if (data.startsWith("tg_payok_")) {
+                    Long subscriptionId = Long.parseLong(data.replace("tg_payok_", ""));
+                    execute(ownerService.confirmPayment(chatId, subscriptionId));
+                    return;
+                }
+                if (data.startsWith("tg_payno_")) {
+                    Long subscriptionId = Long.parseLong(data.replace("tg_payno_", ""));
+                    execute(ownerService.rejectPayment(chatId, subscriptionId));
+                    return;
+                }
+
+                // ===== OWNER: Tizim sozlamalari =====
+                if (data.equals("tg_settings_edit")) {
+                    execute(ownerService.startEditMinAmount(chatId));
+                    return;
+                }
+
+                // ===== OWNER: E'lon yuborish =====
+                if (data.equals("tg_broadcast_yes")) {
+                    for (SendMessage m : ownerService.buildBroadcastMessages(chatId)) {
+                        try {
+                            execute(m);
+                        } catch (Exception e) {
+                            log.warn("E'lonni yuborib bo'lmadi: chatId={}", m.getChatId(), e);
+                        }
+                    }
+                    return;
+                }
+                if (data.equals("tg_broadcast_no")) {
+                    execute(ownerService.cancelBroadcast(chatId));
                     return;
                 }
 
@@ -433,6 +492,9 @@ public class TelegramBot extends TelegramLongPollingBot {
             case AWAITING_INVITE_USERNAME -> teacherService.applyInviteUsername(chatId, text);
             case AWAITING_CHAT_MESSAGE -> chatService.sendReply(chatId, text);
             case AWAITING_EXCEL_FILE -> questionImportService.remindToSendFile(chatId);
+            case AWAITING_USER_SEARCH -> ownerService.applyUserSearch(chatId, text);
+            case AWAITING_MIN_AMOUNT -> ownerService.applyMinAmount(chatId, text);
+            case AWAITING_BROADCAST_TEXT -> ownerService.previewBroadcast(chatId, text);
             default -> profileService.handleAwaitingInput(chatId, state, text);
         };
     }
@@ -485,8 +547,10 @@ public class TelegramBot extends TelegramLongPollingBot {
             case BTN_STUDENT_RESULTS -> teacherService.listResults(user);
             case BTN_QUESTIONS -> questionImportService.startFlow(user.getTelegramId());
             case BTN_ASSIGNMENT_CHATS -> chatService.listAssignments(user);
-            // ROADMAP'dagi keyingi bosqichlar (OWNER'ga xos bo'limlar) —
-            // hozircha "tez orada" javobi.
+            case BTN_USERS -> ownerService.startUserSearch(user.getTelegramId());
+            case BTN_PAYMENTS -> ownerService.listPendingPayments(user);
+            case BTN_SETTINGS -> ownerService.showSettings(user.getTelegramId());
+            case BTN_BROADCAST -> ownerService.startBroadcast(user.getTelegramId());
             default -> menuService.comingSoon(user.getTelegramId());
         };
     }

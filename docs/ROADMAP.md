@@ -201,11 +201,30 @@ Test: 27 ta yangi unit test (`TelegramTeacherServiceTest`,
 `TelegramAssignmentChatServiceTest`, `TelegramQuestionImportServiceTest`).
 Yangi DB ustuni/jadval kerak bo'lmadi (mavjud entity'lar qayta ishlatildi).
 
-**4-bosqich — OWNER qo'shimcha**
-- [ ] 👑 Foydalanuvchilar — rol berish/olib tashlash, bloklash/blokdan chiqarish.
-- [ ] 💰 To'lovlar — kutilayotgan to'lovlarni tasdiqlash/rad etish, hisobot.
-- [ ] ⚙️ Tizim sozlamalari — Click minimal summasi.
-- [ ] 📢 E'lon yuborish (broadcast) — barcha foydalanuvchilarga yoki bitta gruppaga.
+**4-bosqich — OWNER qo'shimcha** ✅ BAJARILDI
+- [x] 👑 Foydalanuvchilar — username bo'yicha qidirish, rol berish/olib
+  tashlash (✅/⬜ tugmalar, `UserServiceImpl.addRole/removeRole` orqali —
+  saytdagi bilan bir xil o'z-o'zini o'zgartira olmaslik cheklovi), bloklangan
+  hisobni blokdan chiqarish. (`TelegramOwnerService`)
+- [x] 💰 To'lovlar — qisqa hisobot (jami/oylik tushum, faol obunachilar) +
+  kutilayotgan so'rovlarni tasdiqlash/rad etish (`SubscriptionService`).
+- [x] ⚙️ Tizim sozlamalari — Click minimal tranzaksiya summasini ko'rish/
+  o'zgartirish (avvalgi bosqichlarda qo'shilgan `PaymentOrderService`
+  orqali, saytdagi `/users` sahifasi bilan bir xil).
+- [x] 📢 E'lon yuborish (broadcast) — matn yozib, oldindan ko'rib chiqib
+  (necha kishiga yuborilishi ko'rsatiladi) tasdiqlagach, botga ulangan
+  BARCHA foydalanuvchiga yuboriladi. Bitta yetkazib berish muvaffaqiyatsiz
+  bo'lsa ham (masalan foydalanuvchi botni bloklagan), qolganlari davom etadi.
+
+Yo'l-yo'lakay tuzatildi: pul summasini formatlash (`formatSom`) JVM standart
+lokaliga bog'liq edi (`String.format("%,.0f", ...)` ba'zi lokallarda
+vergul o'rniga boshqa belgi ishlatadi) — endi lokaldan mustaqil, qo'lda
+guruhlanadi.
+
+Test: 16 ta yangi unit test (`TelegramOwnerServiceTest`). Yangi DB
+o'zgarishi kerak bo'lmadi. Shu bilan Telegram bot rejasining barcha
+4 bosqichi (0-4) yakunlandi — 5-bosqich (botda to'g'ridan-to'g'ri
+ro'yxatdan o'tish) ixtiyoriy, alohida muhokama qilinadi.
 
 **5-bosqich (ixtiyoriy, alohida muhokama)**
 - [ ] Botda to'g'ridan-to'g'ri ro'yxatdan o'tish (saytga kirmasdan) — email
@@ -218,10 +237,12 @@ Yangi DB ustuni/jadval kerak bo'lmadi (mavjud entity'lar qayta ishlatildi).
 ~~Bildirishnoma markazi~~, ~~HTTPS/SSL~~, ~~Fayl antivirus tekshiruvi~~,
 ~~To'lov tarixi/hisobot~~, ~~Online kurslar~~, ~~Obuna eslatmasi~~,
 ~~Email integratsiyasi~~, ~~Foydalanish shartlari/Maxfiylik siyosati~~,
-~~Click integratsiyasi~~ (production'da faol, real to'lov IP-whitelist
-kutmoqda), ~~Avtomatik unit testlar (servis qatlami)~~, ~~CI/CD~~,
-~~Backup strategiyasi~~ (kod/skript tayyor, real konteynerda hali sinalmagan) — bajarildi.
+~~Click integratsiyasi~~ (production'da faol, real to'lov ham tasdiqlangan —
+IP whitelist muammosi hal qilindi), ~~Avtomatik unit testlar (servis
+qatlami)~~, ~~CI/CD~~, ~~Backup strategiyasi~~, ~~Markazlashtirilgan xato
+kuzatuvi (Sentry)~~, ~~Telegram bot — to'liq funksionallik (0-4 bosqich)~~
+— bajarildi.
 
 Qolgan (tarif rejalar, refund siyosati, keng qamrovli integration testlar,
-markazlashtirilgan loglash) — kattaroq va alohida rejalashtirish talab
+botda ro'yxatdan o'tish) — kattaroq va alohida rejalashtirish talab
 qiladigan ishlar.
