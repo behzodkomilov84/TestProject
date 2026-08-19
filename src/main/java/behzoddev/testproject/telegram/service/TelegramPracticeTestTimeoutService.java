@@ -31,11 +31,14 @@ public class TelegramPracticeTestTimeoutService {
     private final TelegramPracticeTestService practiceTestService;
     private final TelegramBot telegramBot;
 
-    // 10 soniya — saytdagi har-soniyalik sekundomerdan farqli o'laroq,
-    // Telegram'da har soniyada xabar tahrirlash o'rinsiz spam va API
-    // cheklovlariga yaqinlashish bo'lardi; 10 soniya "deyarli real vaqt"
-    // hissini beradi, vaqt tugashini aniqlashda kechikish ham qisqa bo'ladi.
-    @Scheduled(fixedDelay = 10000)
+    // Foydalanuvchi so'rovi bo'yicha — har SONIYADA (saytdagi jonli
+    // sekundomer bilan bir xil): bitta EditMessageText chaqiruvi juda
+    // yengil, va bu faqat foydalanuvchi aynan Exam/Hard testda "faol"
+    // bo'lgan (kamdan-kam, qisqa muddatli) holatlarda ishlaydi — Telegram
+    // API cheklovlariga bu miqyosda (bitta kichik bot) muammo tug'dirmaydi.
+    // Bundan tashqari — vaqt tugashini aniqlashdagi kechikish ham shu
+    // sababli 1 soniyagacha qisqaradi (avval 10 soniyagacha bo'lardi).
+    @Scheduled(fixedDelay = 1000)
     public void checkActiveTests() {
         List<TelegramSession> activeSessions =
                 telegramSessionRepository.findByState(BotState.IN_PRACTICE_TEST.name());
