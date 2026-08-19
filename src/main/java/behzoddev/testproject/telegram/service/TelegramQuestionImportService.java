@@ -67,6 +67,7 @@ public class TelegramQuestionImportService {
             User user = getUserByChatId(chatId);
             String url = autoLoginService.buildLoginUrl(user, "/science");
             msg.setText("🗂 Bu fanda hozircha mavzu yo'q. Avval saytda mavzu yarating: " + url);
+            msg.setDisableWebPagePreview(true);
             return msg;
         }
 

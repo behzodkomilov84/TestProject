@@ -125,6 +125,11 @@ public class TelegramMenuService {
         SendMessage msg = new SendMessage();
         msg.setChatId(user.getTelegramId().toString());
         msg.setText("🚧 Bu bo'lim tez orada qo'shiladi. Hozircha saytdan foydalaning: " + url);
+        // MUHIM: preview o'chirilishi shart — aks holda Telegram'ning o'zi
+        // xabar yuborilgan zahoti havolani preview-karta uchun oldindan
+        // yuklab, bitta martalik login tokenini "ishlatib qo'yardi"
+        // (foydalanuvchi bosganda "token eskirgan" ko'rinardi).
+        msg.setDisableWebPagePreview(true);
         return msg;
     }
 
@@ -306,6 +311,9 @@ public class TelegramMenuService {
 
         msg.setText(sb.toString());
         msg.setParseMode("HTML");
+        // Telegram'ning preview-fetcheri xabar yuborilishi bilan havolani
+        // o'zi ochib, bitta martalik tokenni ishlatib qo'ymasligi uchun.
+        msg.setDisableWebPagePreview(true);
         return msg;
     }
 
