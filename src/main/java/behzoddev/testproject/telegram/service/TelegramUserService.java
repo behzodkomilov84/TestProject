@@ -5,6 +5,7 @@ import behzoddev.testproject.dao.AssignmentRepository;
 import behzoddev.testproject.dao.TelegramLinkCodeRepository;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.dto.student.ResponseAssignmentsAndTaskStatusDto;
+import behzoddev.testproject.dto.testsession.TestSessionHistoryDto;
 import behzoddev.testproject.entity.Assignment;
 import behzoddev.testproject.entity.AssignmentAttempt;
 import behzoddev.testproject.entity.TelegramLinkCode;
@@ -12,7 +13,11 @@ import behzoddev.testproject.entity.User;
 import behzoddev.testproject.entity.enums.TaskStatus;
 import behzoddev.testproject.service.AssignmentAttemptService;
 import behzoddev.testproject.service.SubscriptionService;
+import behzoddev.testproject.service.TestSessionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -24,6 +29,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -37,6 +43,7 @@ public class TelegramUserService {
     private final AssignmentAttemptService assignmentAttemptService;
     private final AssignmentRepository assignmentRepository;
     private final SubscriptionService subscriptionService;
+    private final TestSessionService testSessionService;
     public static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
@@ -232,32 +239,59 @@ public class TelegramUserService {
         };
     }
 
+    // Natijalarim — o'qituvchi bergan topshiriqlar (AssignmentAttempt) VA
+    // mustaqil (bot yoki saytdagi) testlar (TestSession) birlashtirilib,
+    // eng oxirgi 10 tasi (sanaga qarab) ko'rsatiladi. Ilgari faqat
+    // topshiriqlar ko'rsatilardi — botda mustaqil test yechgan
+    // foydalanuvchi "hali test topshirmagansiz" degan chalkash xabar
+    // olardi (haqiqatda TestSession'ga saqlanган edi, shu joyda
+    // ko'rinmayotgan edi).
+    private static final int MY_RESULTS_LIMIT = 10;
+
+    private record ResultItem(String label, int percent, LocalDateTime finishedAt) {}
+
     public SendMessage sendMyResults(Long chatId) {
 
         SendMessage msg = new SendMessage();
         msg.setChatId(chatId.toString());
 
-        List<AssignmentAttempt> attempts =
-                assignmentAttemptRepository.findByPupil_TelegramId(chatId);
+        User user = userRepository.findByTelegramId(chatId).orElse(null);
 
-        if (attempts.isEmpty()) {
+        List<ResultItem> items = new ArrayList<>();
+
+        for (AssignmentAttempt a : assignmentAttemptRepository.findByPupil_TelegramId(chatId)) {
+            if (a.getFinishedAt() == null) continue;
+            items.add(new ResultItem(
+                    "📌 " + a.getAssignment().getQuestionSet().getName(),
+                    a.getPercent(),
+                    a.getFinishedAt()));
+        }
+
+        if (user != null) {
+            Pageable pageable = PageRequest.of(0, MY_RESULTS_LIMIT, Sort.by("finishedAt").descending());
+            for (TestSessionHistoryDto t : testSessionService.getHistory(user, pageable).getContent()) {
+                items.add(new ResultItem(
+                        "🎯 " + t.scienceName() + " (mustaqil test)",
+                        t.percent(),
+                        t.finishedAt()));
+            }
+        }
+
+        if (items.isEmpty()) {
             msg.setText("Siz hali test topshirmagansiz.");
             return msg;
         }
 
+        items.sort(Comparator.comparing(ResultItem::finishedAt).reversed());
+
         StringBuilder sb = new StringBuilder();
-        sb.append("📊 Sizning natijalaringiz:\n\n");
+        sb.append("📊 Sizning oxirgi ").append(Math.min(items.size(), MY_RESULTS_LIMIT)).append(" ta natijangiz:\n\n");
 
-        for (AssignmentAttempt a : attempts) {
-
-            sb.append("📌 ")
-                    .append(a.getAssignment().getQuestionSet().getName())
-                    .append("\n");
-
-            sb.append("⭐ Ball: ")
-                    .append(a.getPercent())
-                    .append("\n\n");
-        }
+        items.stream().limit(MY_RESULTS_LIMIT).forEach(item -> sb
+                .append(item.label()).append("\n")
+                .append("⭐ Ball: ").append(item.percent()).append("%")
+                .append("  •  ").append(item.finishedAt().format(DATE_TIME_FORMATTER))
+                .append("\n\n"));
 
         msg.setText(sb.toString());
 
