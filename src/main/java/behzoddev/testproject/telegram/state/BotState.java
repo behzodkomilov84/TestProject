@@ -22,6 +22,9 @@ public enum BotState {
     // Foydalanuvchi tayyor tugmalar o'rniga savollar sonini o'zi qo'lda
     // yozib kiritayotgan holat ("✏️ O'zi kiritish" bosilgandan keyin).
     AWAITING_PT_CUSTOM_COUNT,
+    // Xuddi shunday — Exam/Hard rejimida vaqt chegarasini (daqiqa) o'zi
+    // qo'lda kiritayotgan holat.
+    AWAITING_PT_CUSTOM_TIME,
 
     // ===== ADMIN (o'qituvchi): gruppalar, topshiriqlar, chat, savol import =====
     AWAITING_GROUP_NAME,

@@ -26,6 +26,7 @@ import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -372,5 +373,193 @@ class TelegramPracticeTestServiceTest {
 
         assertThat(msg.getText()).contains("1 dan");
         verify(testSessionService, never()).startTest(any(), any(), anyInt(), any());
+    }
+
+    // ===== Vaqt chegarasi (Exam/Hard) — saytdagi timeSection bilan bir xil =====
+
+    @Test
+    void chooseCount_practiceMode_startsTestImmediately_noTimePrompt() {
+        // rejim tanlanmagan (default — practice)
+        when(topicService.getTopicsWithQuestionCount(1L))
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L)));
+        practiceTestService.selectScience(CHAT_ID, 1L);
+
+        QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
+                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null))).build();
+        when(testSessionService.startTest(any(), eq(List.of(10L)), eq(3), eq("practice")))
+                .thenReturn(new StartTestResponseDto(999L, List.of(q1)));
+
+        SendMessage msg = practiceTestService.chooseCount(CHAT_ID, 3);
+
+        assertThat(msg.getText()).contains("Savol 1/1");
+        verify(testSessionService).startTest(any(), eq(List.of(10L)), eq(3), eq("practice"));
+    }
+
+    @Test
+    void chooseCount_examMode_promptsForTimeLimitInsteadOfStartingTest() {
+        when(scienceService.getSciences()).thenReturn(List.of(new ScienceIdAndNameDto(1L, "Matematika")));
+        practiceTestService.selectMode(CHAT_ID, "exam");
+        when(topicService.getTopicsWithQuestionCount(1L))
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L)));
+        practiceTestService.selectScience(CHAT_ID, 1L);
+
+        SendMessage msg = practiceTestService.chooseCount(CHAT_ID, 3);
+
+        assertThat(msg.getText()).contains("vaqtni tanlang");
+        assertThat(msg.getReplyMarkup()).isNotNull();
+        verify(testSessionService, never()).startTest(any(), any(), anyInt(), any());
+    }
+
+    @Test
+    void applyTimeLimit_examMode_startsTestWithDeadline_showsRemainingTimeInFirstQuestion() {
+        when(scienceService.getSciences()).thenReturn(List.of(new ScienceIdAndNameDto(1L, "Matematika")));
+        practiceTestService.selectMode(CHAT_ID, "exam");
+        when(topicService.getTopicsWithQuestionCount(1L))
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L)));
+        practiceTestService.selectScience(CHAT_ID, 1L);
+        practiceTestService.chooseCount(CHAT_ID, 3);
+
+        QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
+                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null))).build();
+        when(testSessionService.startTest(any(), eq(List.of(10L)), eq(3), eq("exam")))
+                .thenReturn(new StartTestResponseDto(999L, List.of(q1)));
+
+        SendMessage msg = practiceTestService.applyTimeLimit(CHAT_ID, 20);
+
+        assertThat(msg.getText()).contains("qolgan vaqt");
+    }
+
+    @Test
+    void promptCustomTimeLimit_setsAwaitingState() {
+        practiceTestService.promptCustomTimeLimit(CHAT_ID);
+
+        assertThat(stored.getState()).isEqualTo("AWAITING_PT_CUSTOM_TIME");
+    }
+
+    @Test
+    void applyCustomTimeLimit_notANumber_retriesWithoutStartingTest() {
+        SendMessage msg = practiceTestService.applyCustomTimeLimit(CHAT_ID, "abc");
+
+        assertThat(msg.getText()).contains("butun son");
+        verify(testSessionService, never()).startTest(any(), any(), anyInt(), any());
+    }
+
+    @Test
+    void applyCustomTimeLimit_outOfRange_retriesWithoutStartingTest() {
+        SendMessage msg = practiceTestService.applyCustomTimeLimit(CHAT_ID, "999");
+
+        assertThat(msg.getText()).contains("1 dan").contains("180");
+        verify(testSessionService, never()).startTest(any(), any(), anyInt(), any());
+    }
+
+    @Test
+    void applyCustomTimeLimit_valid_startsTestWithThatDeadline() {
+        when(scienceService.getSciences()).thenReturn(List.of(new ScienceIdAndNameDto(1L, "Matematika")));
+        practiceTestService.selectMode(CHAT_ID, "hard");
+        when(topicService.getTopicsWithQuestionCount(1L))
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L)));
+        when(questionRepository.findHardForUser(1L, List.of(10L)))
+                .thenReturn(List.of(new Question(), new Question()));
+        practiceTestService.selectScience(CHAT_ID, 1L);
+        practiceTestService.chooseCount(CHAT_ID, 2);
+
+        QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
+                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null))).build();
+        when(testSessionService.startTest(any(), eq(List.of(10L)), eq(2), eq("hard")))
+                .thenReturn(new StartTestResponseDto(999L, List.of(q1)));
+
+        SendMessage msg = practiceTestService.applyCustomTimeLimit(CHAT_ID, "45");
+
+        assertThat(msg.getText()).contains("qolgan vaqt");
+    }
+
+    // ===== Vaqt tugagach avtomatik yakunlash =====
+
+    @Test
+    void submitAnswer_deadlineAlreadyExpired_autoFinishesWithTimeoutNotice() {
+        startExamTestWithOneQuestion();
+        expireCurrentDeadline();
+
+        TestSession finishedSession = TestSession.builder()
+                .id(999L).totalQuestions(1).correctAnswers(0).wrongAnswers(1)
+                .percent(0).durationSec(1200L).build();
+        when(testSessionRepository.findById(999L)).thenReturn(Optional.of(finishedSession));
+
+        SendMessage msg = practiceTestService.submitAnswer(CHAT_ID, 1000L);
+
+        assertThat(msg.getText()).contains("Vaqt tugadi").contains("avtomatik yakunlandi");
+        // shu javob (1000L) hisoblanmasligi kerak — deadline allaqachon tugagan edi.
+        verify(testSessionService).finishTest(argThat(req -> req.answers().isEmpty()), any());
+    }
+
+    @Test
+    void autoFinishIfExpired_noDeadline_returnsNull() {
+        // practice rejimi — deadline yo'q
+        when(topicService.getTopicsWithQuestionCount(1L))
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L)));
+        practiceTestService.selectScience(CHAT_ID, 1L);
+        QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
+                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null))).build();
+        when(testSessionService.startTest(any(), eq(List.of(10L)), eq(1), eq("practice")))
+                .thenReturn(new StartTestResponseDto(999L, List.of(q1)));
+        practiceTestService.startTest(CHAT_ID, 1);
+
+        SendMessage msg = practiceTestService.autoFinishIfExpired(CHAT_ID);
+
+        assertThat(msg).isNull();
+    }
+
+    @Test
+    void autoFinishIfExpired_noActiveTest_returnsNull() {
+        SendMessage msg = practiceTestService.autoFinishIfExpired(CHAT_ID);
+
+        assertThat(msg).isNull();
+    }
+
+    @Test
+    void autoFinishIfExpired_deadlinePassed_autoFinishesWithTimeoutNotice() {
+        startExamTestWithOneQuestion();
+        expireCurrentDeadline();
+
+        TestSession finishedSession = TestSession.builder()
+                .id(999L).totalQuestions(1).correctAnswers(0).wrongAnswers(1)
+                .percent(0).durationSec(1200L).build();
+        when(testSessionRepository.findById(999L)).thenReturn(Optional.of(finishedSession));
+
+        SendMessage msg = practiceTestService.autoFinishIfExpired(CHAT_ID);
+
+        assertThat(msg).isNotNull();
+        assertThat(msg.getText()).contains("Vaqt tugadi").contains("avtomatik yakunlandi");
+    }
+
+    // ===== Yordamchilar =====
+
+    private void startExamTestWithOneQuestion() {
+        when(scienceService.getSciences()).thenReturn(List.of(new ScienceIdAndNameDto(1L, "Matematika")));
+        practiceTestService.selectMode(CHAT_ID, "exam");
+        when(topicService.getTopicsWithQuestionCount(1L))
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L)));
+        practiceTestService.selectScience(CHAT_ID, 1L);
+        practiceTestService.chooseCount(CHAT_ID, 1);
+
+        QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
+                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null))).build();
+        when(testSessionService.startTest(any(), eq(List.of(10L)), eq(1), eq("exam")))
+                .thenReturn(new StartTestResponseDto(999L, List.of(q1)));
+
+        practiceTestService.applyTimeLimit(CHAT_ID, 30);
+    }
+
+    // stored.tempData ichidagi "practiceTest" JSON'i ichiga kirib,
+    // deadlineEpochMilli'ni o'tmishga suradi — deadline'ning haqiqatan
+    // ham hurmat qilinishini (JSON round-trip bilan) tekshirish uchun.
+    @SuppressWarnings("unchecked")
+    private void expireCurrentDeadline() {
+        ObjectMapper mapper = JsonMapper.builder().build();
+        Map<String, String> outer = mapper.readValue(stored.getTempData(), Map.class);
+        Map<String, Object> inner = mapper.readValue(outer.get("practiceTest"), Map.class);
+        inner.put("deadlineEpochMilli", System.currentTimeMillis() - 1000);
+        outer.put("practiceTest", mapper.writeValueAsString(inner));
+        stored.setTempData(mapper.writeValueAsString(outer));
     }
 }

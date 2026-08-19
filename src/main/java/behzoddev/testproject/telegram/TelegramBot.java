@@ -187,7 +187,16 @@ public class TelegramBot extends TelegramLongPollingBot {
                 }
                 if (data.startsWith("pt_count_")) {
                     int count = Integer.parseInt(data.replace("pt_count_", ""));
-                    execute(practiceTestService.startTest(chatId, count));
+                    execute(practiceTestService.chooseCount(chatId, count));
+                    return;
+                }
+                if (data.equals("pt_time_custom")) {
+                    execute(practiceTestService.promptCustomTimeLimit(chatId));
+                    return;
+                }
+                if (data.startsWith("pt_time_")) {
+                    int minutes = Integer.parseInt(data.replace("pt_time_", ""));
+                    execute(practiceTestService.applyTimeLimit(chatId, minutes));
                     return;
                 }
                 if (data.startsWith("pt_answer_")) {
@@ -466,7 +475,8 @@ public class TelegramBot extends TelegramLongPollingBot {
 
         if (text.equals("/cancel")) {
             BotState currentState = sessionService.getState(chatId);
-            if (currentState == BotState.IN_PRACTICE_TEST || currentState == BotState.AWAITING_PT_CUSTOM_COUNT) {
+            if (currentState == BotState.IN_PRACTICE_TEST || currentState == BotState.AWAITING_PT_CUSTOM_COUNT
+                    || currentState == BotState.AWAITING_PT_CUSTOM_TIME) {
                 return practiceTestService.cancel(chatId);
             }
             return profileService.cancelFlow(chatId);
@@ -527,6 +537,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             case NONE -> null;
             case IN_PRACTICE_TEST -> practiceTestService.reminderToUseButtons(chatId);
             case AWAITING_PT_CUSTOM_COUNT -> practiceTestService.applyCustomCount(chatId, text);
+            case AWAITING_PT_CUSTOM_TIME -> practiceTestService.applyCustomTimeLimit(chatId, text);
             case AWAITING_GROUP_NAME -> teacherService.applyGroupName(chatId, text);
             case AWAITING_INVITE_USERNAME -> teacherService.applyInviteUsername(chatId, text);
             case AWAITING_CHAT_MESSAGE -> chatService.sendReply(chatId, text);

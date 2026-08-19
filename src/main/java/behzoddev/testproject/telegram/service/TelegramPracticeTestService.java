@@ -41,6 +41,8 @@ public class TelegramPracticeTestService {
 
     private static final String TEMP_KEY = "practiceTest";
     private static final List<Integer> COUNT_CANDIDATES = List.of(5, 10, 15, 20);
+    private static final List<Integer> TIME_CANDIDATES_MIN = List.of(10, 20, 30, 60);
+    private static final int MAX_TIME_LIMIT_MIN = 180;
     private static final String DEFAULT_MODE = "practice";
 
     private final ScienceService scienceService;
@@ -90,17 +92,20 @@ public class TelegramPracticeTestService {
     }
 
     private SendMessage showScienceSelection(Long chatId) {
+        String mode = currentMode(chatId);
         List<ScienceIdAndNameDto> sciences = scienceService.getSciences();
 
         SendMessage msg = new SendMessage();
         msg.setChatId(chatId.toString());
 
         if (sciences.isEmpty()) {
-            msg.setText("🎯 Hozircha fanlar mavjud emas.");
+            msg.setText(modeLabel(mode) + " rejimi tanlandi.\n\n🎯 Hozircha fanlar mavjud emas.");
             return msg;
         }
 
-        msg.setText("🎯 Mustaqil test uchun fanni tanlang:");
+        // Foydalanuvchi qaysi rejimni tanlaganini aniq ko'rishi uchun —
+        // ilgari bu xabar berilmasdi, "fanni tanlang" faqat shunday chiqardi.
+        msg.setText(modeLabel(mode) + " rejimi tanlandi.\n\n🎯 Mustaqil test uchun fanni tanlang:");
 
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         for (ScienceIdAndNameDto science : sciences) {
@@ -211,7 +216,81 @@ public class TelegramPracticeTestService {
             return msg;
         }
 
-        return startTest(chatId, count);
+        return chooseCount(chatId, count);
+    }
+
+    // Savollar soni tanlangandan keyingi qadam — Exam/Hard rejimida
+    // saytdagidek vaqt chegarasi ham so'raladi, Practice rejimida
+    // (vaqt chegarasisiz) test darhol boshlanadi.
+    public SendMessage chooseCount(Long chatId, int count) {
+        String mode = currentMode(chatId);
+
+        if (needsTimeLimit(mode)) {
+            sessionService.putTempData(chatId, "pt_count", String.valueOf(count));
+            return promptTimeLimit(chatId);
+        }
+
+        return startTest(chatId, count, null);
+    }
+
+    private boolean needsTimeLimit(String mode) {
+        return "exam".equals(mode) || "hard".equals(mode);
+    }
+
+    // ================= 2.5. Vaqt chegarasini tanlash (Exam/Hard) =================
+
+    private SendMessage promptTimeLimit(Long chatId) {
+        SendMessage msg = new SendMessage();
+        msg.setChatId(chatId.toString());
+        msg.setText("⏱ Test uchun umumiy vaqtni tanlang (daqiqa). " +
+                "Vaqt tugasa, test avtomatik yakunlanadi (saytdagi bilan bir xil):");
+
+        List<InlineKeyboardButton> row = new ArrayList<>();
+        for (Integer minutes : TIME_CANDIDATES_MIN) {
+            row.add(button(minutes + " daq", "pt_time_" + minutes));
+        }
+        InlineKeyboardButton customBtn = button("✏️ O'zi kiritish", "pt_time_custom");
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(List.of(row, List.of(customBtn)));
+        msg.setReplyMarkup(markup);
+        return msg;
+    }
+
+    public SendMessage promptCustomTimeLimit(Long chatId) {
+        sessionService.setState(chatId, BotState.AWAITING_PT_CUSTOM_TIME);
+
+        SendMessage msg = new SendMessage();
+        msg.setChatId(chatId.toString());
+        msg.setText("✏️ Necha daqiqa vaqt bermoqchisiz? Sonini yozib yuboring " +
+                "(1 dan " + MAX_TIME_LIMIT_MIN + " tagacha).");
+        return msg;
+    }
+
+    public SendMessage applyTimeLimit(Long chatId, int minutes) {
+        int count = Integer.parseInt(sessionService.getTempData(chatId).getOrDefault("pt_count", "0"));
+        return startTest(chatId, count, minutes);
+    }
+
+    public SendMessage applyCustomTimeLimit(Long chatId, String text) {
+        int minutes;
+        try {
+            minutes = Integer.parseInt(text.trim());
+        } catch (NumberFormatException e) {
+            SendMessage msg = new SendMessage();
+            msg.setChatId(chatId.toString());
+            msg.setText("❌ Iltimos, faqat butun son kiriting (masalan: 15).");
+            return msg;
+        }
+
+        if (minutes < 1 || minutes > MAX_TIME_LIMIT_MIN) {
+            SendMessage msg = new SendMessage();
+            msg.setChatId(chatId.toString());
+            msg.setText("❌ Vaqt 1 dan " + MAX_TIME_LIMIT_MIN + " daqiqagacha bo'lishi kerak. Qaytadan yozing.");
+            return msg;
+        }
+
+        return applyTimeLimit(chatId, minutes);
     }
 
     private long parseAvailable(Long chatId) {
@@ -239,7 +318,13 @@ public class TelegramPracticeTestService {
 
     // ================= 3. Testni boshlash =================
 
+    // Vaqt chegarasiz (Practice rejimi yoki to'g'ridan-to'g'ri chaqirilganda) —
+    // testlarda va boshqa ichki chaqiruvlarda qulaylik uchun.
     public SendMessage startTest(Long chatId, int count) {
+        return startTest(chatId, count, null);
+    }
+
+    public SendMessage startTest(Long chatId, int count, Integer timeLimitMinutes) {
         User user = getUserByChatId(chatId);
         List<Long> topicIds = parseIds(sessionService.getTempData(chatId).get("pt_topicIds"));
         String mode = currentMode(chatId);
@@ -250,12 +335,16 @@ public class TelegramPracticeTestService {
                 .map(this::toSnapshot)
                 .toList();
 
+        long startedAt = System.currentTimeMillis();
+        Long deadline = timeLimitMinutes == null ? null : startedAt + timeLimitMinutes * 60_000L;
+
         PracticeTestState state = new PracticeTestState(
                 response.testSessionId(),
-                System.currentTimeMillis(),
+                startedAt,
                 0,
                 snapshots,
-                new ArrayList<>()
+                new ArrayList<>(),
+                deadline
         );
 
         sessionService.setState(chatId, BotState.IN_PRACTICE_TEST);
@@ -280,8 +369,11 @@ public class TelegramPracticeTestService {
         msg.setChatId(chatId.toString());
 
         StringBuilder sb = new StringBuilder();
-        sb.append("❓ Savol ").append(state.currentIndex() + 1).append("/").append(state.questions().size())
-                .append("\n\n").append(q.questionText()).append("\n\n");
+        sb.append("❓ Savol ").append(state.currentIndex() + 1).append("/").append(state.questions().size());
+        if (state.deadlineEpochMilli() != null) {
+            sb.append(" (⏱ qolgan vaqt: ").append(formatRemaining(state.deadlineEpochMilli())).append(")");
+        }
+        sb.append("\n\n").append(q.questionText()).append("\n\n");
 
         char option = 'A';
         List<InlineKeyboardButton> row = new ArrayList<>();
@@ -319,6 +411,13 @@ public class TelegramPracticeTestService {
             return msg;
         }
 
+        // Vaqt (Exam/Hard) bosilgan javob qayta ishlanishidan OLDIN allaqachon
+        // tugagan bo'lsa — shu javobni hisobga olmasdan, mavjud javoblar
+        // bilan darhol yakunlaymiz (saytdagi avtomatik yuborishga o'xshash).
+        if (isExpired(state)) {
+            return finishWithTimeoutNotice(chatId, state, state.answers());
+        }
+
         PracticeTestState.QuestionSnapshot currentQuestion = state.questions().get(state.currentIndex());
 
         List<PracticeTestState.AnswerPick> answers = new ArrayList<>(state.answers());
@@ -330,11 +429,34 @@ public class TelegramPracticeTestService {
             return finish(chatId, state, answers);
         }
 
-        PracticeTestState next = new PracticeTestState(
-                state.testSessionId(), state.startedAtEpochMilli(), nextIndex, state.questions(), answers);
+        PracticeTestState next = new PracticeTestState(state.testSessionId(), state.startedAtEpochMilli(),
+                nextIndex, state.questions(), answers, state.deadlineEpochMilli());
         saveState(chatId, next);
 
         return showQuestion(chatId, next);
+    }
+
+    private boolean isExpired(PracticeTestState state) {
+        return state.deadlineEpochMilli() != null && System.currentTimeMillis() >= state.deadlineEpochMilli();
+    }
+
+    // ================= Vaqt tugagach avtomatik yakunlash =================
+    // TelegramPracticeTestTimeoutService (@Scheduled) tomonidan, foydalanuvchi
+    // hech qanday tugma bosmasa ham, saytdagi jonli sekundomer 0'ga
+    // yetganda avtomatik yuborilishi bilan bir xil natijani berish uchun
+    // chaqiriladi.
+    public SendMessage autoFinishIfExpired(Long chatId) {
+        PracticeTestState state = loadState(chatId);
+        if (state == null || !isExpired(state)) return null;
+
+        return finishWithTimeoutNotice(chatId, state, state.answers());
+    }
+
+    private SendMessage finishWithTimeoutNotice(Long chatId, PracticeTestState state,
+                                                  List<PracticeTestState.AnswerPick> answers) {
+        SendMessage msg = finish(chatId, state, answers);
+        msg.setText("⏰ Vaqt tugadi — test avtomatik yakunlandi.\n\n" + msg.getText());
+        return msg;
     }
 
     private SendMessage finish(Long chatId, PracticeTestState state, List<PracticeTestState.AnswerPick> answers) {
@@ -375,6 +497,16 @@ public class TelegramPracticeTestService {
     private String currentMode(Long chatId) {
         String mode = sessionService.getTempData(chatId).get("pt_mode");
         return mode == null || mode.isBlank() ? DEFAULT_MODE : mode;
+    }
+
+    // Telegram xabari statik (live-yangilanmaydi), shuning uchun bu —
+    // xabar yuborilgan paytdagi taxminiy qolgan vaqt (saytdagi jonli
+    // sekundomerning yaqin taxminiy o'rnini bosuvchisi).
+    private String formatRemaining(long deadlineEpochMilli) {
+        long remainingSec = Math.max(0, (deadlineEpochMilli - System.currentTimeMillis()) / 1000);
+        long min = remainingSec / 60;
+        long sec = remainingSec % 60;
+        return min + ":" + (sec < 10 ? "0" : "") + sec;
     }
 
     private String modeLabel(String mode) {

@@ -13,7 +13,10 @@ public record PracticeTestState(
         long startedAtEpochMilli,
         int currentIndex,
         List<QuestionSnapshot> questions,
-        List<AnswerPick> answers
+        List<AnswerPick> answers,
+        // Exam/Hard rejimlarida — saytdagi vaqt chegarasi bilan bir xil
+        // (Practice rejimida null — vaqt chegarasi yo'q).
+        Long deadlineEpochMilli
 ) {
     public record QuestionSnapshot(Long id, String questionText, String imageUrl, List<AnswerSnapshot> answers) {}
 
