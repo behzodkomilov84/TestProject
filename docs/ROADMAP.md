@@ -222,14 +222,38 @@ vergul o'rniga boshqa belgi ishlatadi) — endi lokaldan mustaqil, qo'lda
 guruhlanadi.
 
 Test: 16 ta yangi unit test (`TelegramOwnerServiceTest`). Yangi DB
-o'zgarishi kerak bo'lmadi. Shu bilan Telegram bot rejasining barcha
-4 bosqichi (0-4) yakunlandi — 5-bosqich (botda to'g'ridan-to'g'ri
-ro'yxatdan o'tish) ixtiyoriy, alohida muhokama qilinadi.
+o'zgarishi kerak bo'lmadi.
 
-**5-bosqich (ixtiyoriy, alohida muhokama)**
-- [ ] Botda to'g'ridan-to'g'ri ro'yxatdan o'tish (saytga kirmasdan) — email
-  tasdiqlash oqimi bilan qanday integratsiya qilinishi alohida
-  loyihalashtirishni talab qiladi.
+**Qo'shimcha tuzatish — "saytda ko'ring" havolalari**: `showCourses()`
+kabi joylarda matn ichida yozilgan "/courses" Telegram tomonidan
+avtomatik bot buyrug'i sifatida chizib qo'yilgan — foydalanuvchi
+bosganda "Noma'lum buyruq" javobiga olib kelgan (real production'da
+foydalanuvchi xabar berdi). Yechim: yangi `TelegramAutoLoginService` —
+bitta martalik, 2 daqiqalik (256 bit tasodifiy) token orqali haqiqiy
+HTTPS havola quradi; `TelegramAutoLoginController`
+(`/telegram-auto-login`) shu havolani qabul qilib, foydalanuvchini
+DARHOL (parolsiz) login qildiradi (Spring Security context'ni
+HttpSession'ga saqlash orqali) va so'ralgan sahifaga yo'naltiradi.
+Faqat allaqachon ulangan (tasdiqlangan) akkauntlar uchun, taxmin qilib
+bo'lmaydigan token bilan (raw Telegram ID emas — enumeratsiya xavfi).
+
+**5-bosqich** ✅ BAJARILDI
+- [x] Botda to'g'ridan-to'g'ri ro'yxatdan o'tish (saytga kirmasdan) —
+  username -> email -> telefon (ixtiyoriy) -> parol -> tasdiqlash ->
+  shartlarga rozilik -> haqiqiy `UserServiceImpl.register()` (saytdagi
+  bilan bir xil validatsiya). Email tasdiqlash kodi hamon EMAILGA
+  yuboriladi (`EmailVerificationService`, o'zgarishsiz) — bot foydalanuvchidan
+  shu kodni so'raydi. Muvaffaqiyatli tasdiqlangach, Telegram akkaunt
+  DARHOL yangi hisobga ulanadi (qo'shimcha `/link` kodi shart emas,
+  chunki foydalanuvchi aynan shu suhbatda o'z ma'lumotlarini kiritgan).
+  (`TelegramRegistrationService`)
+
+Test: 27 ta yangi unit test (`TelegramAutoLoginServiceTest`,
+`TelegramRegistrationServiceTest`). Yangi DB o'zgarishi kerak bo'lmadi
+(mavjud `User`/`EmailVerificationCode` qayta ishlatildi).
+
+Shu bilan Telegram botni to'liq funksionallikka kengaytirish rejasining
+BARCHA bosqichlari (0-5) yakunlandi.
 
 ## Ustuvorlik bo'yicha tavsiya
 
@@ -240,9 +264,8 @@ ro'yxatdan o'tish) ixtiyoriy, alohida muhokama qilinadi.
 ~~Click integratsiyasi~~ (production'da faol, real to'lov ham tasdiqlangan —
 IP whitelist muammosi hal qilindi), ~~Avtomatik unit testlar (servis
 qatlami)~~, ~~CI/CD~~, ~~Backup strategiyasi~~, ~~Markazlashtirilgan xato
-kuzatuvi (Sentry)~~, ~~Telegram bot — to'liq funksionallik (0-4 bosqich)~~
-— bajarildi.
+kuzatuvi (Sentry)~~, ~~Telegram bot — to'liq funksionallik (0-5 bosqich,
+botda ro'yxatdan o'tish ham)~~ — bajarildi.
 
-Qolgan (tarif rejalar, refund siyosati, keng qamrovli integration testlar,
-botda ro'yxatdan o'tish) — kattaroq va alohida rejalashtirish talab
-qiladigan ishlar.
+Qolgan (tarif rejalar, refund siyosati, keng qamrovli integration
+testlar) — kattaroq va alohida rejalashtirish talab qiladigan ishlar.

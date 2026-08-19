@@ -15,6 +15,7 @@ import behzoddev.testproject.telegram.service.TelegramPracticeTestService;
 import behzoddev.testproject.telegram.service.TelegramProfileService;
 import behzoddev.testproject.telegram.service.TelegramQuestionImportService;
 import behzoddev.testproject.telegram.service.TelegramQuizService;
+import behzoddev.testproject.telegram.service.TelegramRegistrationService;
 import behzoddev.testproject.telegram.service.TelegramSessionService;
 import behzoddev.testproject.telegram.service.TelegramTeacherService;
 import behzoddev.testproject.telegram.service.TelegramUserService;
@@ -31,6 +32,8 @@ import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageTe
 import org.telegram.telegrambots.meta.api.objects.Document;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.io.File;
@@ -59,6 +62,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final TelegramAssignmentChatService chatService;
     private final TelegramQuestionImportService questionImportService;
     private final TelegramOwnerService ownerService;
+    private final TelegramRegistrationService registrationService;
 
     public TelegramBot(
             @Value("${telegram.bot.token}") String token,
@@ -75,7 +79,8 @@ public class TelegramBot extends TelegramLongPollingBot {
             TelegramTeacherService teacherService,
             TelegramAssignmentChatService chatService,
             TelegramQuestionImportService questionImportService,
-            TelegramOwnerService ownerService) {
+            TelegramOwnerService ownerService,
+            TelegramRegistrationService registrationService) {
         super(token);
         this.token = token;
         this.username = username;
@@ -92,6 +97,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         this.chatService = chatService;
         this.questionImportService = questionImportService;
         this.ownerService = ownerService;
+        this.registrationService = registrationService;
     }
 
     @Override
@@ -295,6 +301,28 @@ public class TelegramBot extends TelegramLongPollingBot {
                     return;
                 }
 
+                // ===== Botda ro'yxatdan o'tish =====
+                if (data.equals("reg_start")) {
+                    execute(registrationService.start(chatId));
+                    return;
+                }
+                if (data.equals("reg_skip_phone")) {
+                    execute(registrationService.skipPhone(chatId));
+                    return;
+                }
+                if (data.equals("reg_terms_yes")) {
+                    execute(registrationService.confirmTerms(chatId));
+                    return;
+                }
+                if (data.equals("reg_terms_no")) {
+                    execute(registrationService.cancelTerms(chatId));
+                    return;
+                }
+                if (data.equals("reg_resend_code")) {
+                    execute(registrationService.resendCode(chatId));
+                    return;
+                }
+
                 if (data.startsWith("assignment_")) {
 
                     Long assignmentId =
@@ -495,6 +523,13 @@ public class TelegramBot extends TelegramLongPollingBot {
             case AWAITING_USER_SEARCH -> ownerService.applyUserSearch(chatId, text);
             case AWAITING_MIN_AMOUNT -> ownerService.applyMinAmount(chatId, text);
             case AWAITING_BROADCAST_TEXT -> ownerService.previewBroadcast(chatId, text);
+            case AWAITING_REG_USERNAME -> registrationService.applyUsername(chatId, text);
+            case AWAITING_REG_EMAIL -> registrationService.applyEmail(chatId, text);
+            case AWAITING_REG_PHONE -> registrationService.applyPhone(chatId, text);
+            case AWAITING_REG_PASSWORD -> registrationService.applyPassword(chatId, text);
+            case AWAITING_REG_CONFIRM_PASSWORD -> registrationService.applyConfirmPassword(chatId, text);
+            case AWAITING_REG_TERMS -> registrationService.remindToTapTermsButton(chatId);
+            case AWAITING_REG_EMAIL_CODE -> registrationService.applyEmailCode(chatId, text);
             default -> profileService.handleAwaitingInput(chatId, state, text);
         };
     }
@@ -508,9 +543,20 @@ public class TelegramBot extends TelegramLongPollingBot {
     private SendMessage notLinkedMessage(Long chatId) {
         SendMessage msg = new SendMessage();
         msg.setChatId(chatId.toString());
-        msg.setText("Avval sayt orqali Telegramni ulang: saytda /profile sahifasida " +
-                "\"Telegramga ulash\" tugmasini bosing va bergan kodni shu yerga " +
+        msg.setText("👋 Xush kelibsiz!\n\n" +
+                "Agar saytda hisobingiz hali yo'q bo'lsa — pastdagi tugma orqali " +
+                "to'g'ridan-to'g'ri shu yerda ro'yxatdan o'tishingiz mumkin.\n\n" +
+                "Agar hisobingiz allaqachon bor bo'lsa — saytda /profile sahifasida " +
+                "\"Telegramga ulash\" tugmasini bosib, bergan kodni shu yerga " +
                 "\"/link 123456\" ko'rinishida yuboring.");
+
+        InlineKeyboardButton registerBtn = new InlineKeyboardButton();
+        registerBtn.setText("🆕 Ro'yxatdan o'tish");
+        registerBtn.setCallbackData("reg_start");
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(List.of(List.of(registerBtn)));
+        msg.setReplyMarkup(markup);
         return msg;
     }
 

@@ -29,5 +29,14 @@ public enum BotState {
     // ===== OWNER: foydalanuvchilar, sozlamalar, e'lon =====
     AWAITING_USER_SEARCH,
     AWAITING_MIN_AMOUNT,
-    AWAITING_BROADCAST_TEXT
+    AWAITING_BROADCAST_TEXT,
+
+    // ===== Botda to'g'ridan-to'g'ri ro'yxatdan o'tish =====
+    AWAITING_REG_USERNAME,
+    AWAITING_REG_EMAIL,
+    AWAITING_REG_PHONE,
+    AWAITING_REG_PASSWORD,
+    AWAITING_REG_CONFIRM_PASSWORD,
+    AWAITING_REG_TERMS,
+    AWAITING_REG_EMAIL_CODE
 }
