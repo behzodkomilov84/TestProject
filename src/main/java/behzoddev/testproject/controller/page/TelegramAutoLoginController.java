@@ -3,6 +3,7 @@ package behzoddev.testproject.controller.page;
 import behzoddev.testproject.dao.TelegramAutoLoginTokenRepository;
 import behzoddev.testproject.entity.TelegramAutoLoginToken;
 import behzoddev.testproject.entity.User;
+import behzoddev.testproject.telegram.TelegramBot;
 import behzoddev.testproject.telegram.util.TokenHasher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -16,6 +17,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.time.LocalDateTime;
 
@@ -32,6 +35,7 @@ import java.time.LocalDateTime;
 public class TelegramAutoLoginController {
 
     private final TelegramAutoLoginTokenRepository tokenRepository;
+    private final TelegramBot telegramBot;
 
     @GetMapping("/telegram-auto-login")
     @Transactional
@@ -44,8 +48,19 @@ public class TelegramAutoLoginController {
                 .findByTokenAndUsedFalse(TokenHasher.sha256Hex(token))
                 .orElse(null);
 
-        if (entity == null || entity.getExpiresAt().isBefore(LocalDateTime.now())) {
-            log.warn("Telegram avtomatik login: token yaroqsiz yoki muddati o'tgan");
+        if (entity == null) {
+            // Token noma'lum (allaqachon ishlatilgan yoki hech qachon
+            // bo'lmagan) — kimga tegishli ekanini bilmaymiz, botga
+            // xabar yubora olmaymiz.
+            log.warn("Telegram avtomatik login: token yaroqsiz (noma'lum yoki allaqachon ishlatilgan)");
+            return "redirect:/login";
+        }
+
+        if (entity.getExpiresAt().isBefore(LocalDateTime.now())) {
+            // Muddati o'tgan (lekin kim ekani ma'lum) — foydalanuvchiga
+            // botning o'zida xabar beramiz, qaytadan urinib ko'rishi uchun.
+            log.warn("Telegram avtomatik login: token muddati o'tgan, user={}", entity.getUser().getUsername());
+            notifyExpiredToken(entity.getUser());
             return "redirect:/login";
         }
 
@@ -68,5 +83,24 @@ public class TelegramAutoLoginController {
 
         String redirect = entity.getRedirectPath() != null ? entity.getRedirectPath() : "/index";
         return "redirect:" + redirect;
+    }
+
+    // Havola muddati (2 daqiqa) o'tib ketgan bo'lsa, foydalanuvchi bunga
+    // duch kelganini sezmasligi mumkin (masalan Telegram xabari eski
+    // bo'lsa) — shuning uchun botning o'zida qaytadan urinib ko'rish
+    // haqida aniq xabar yuboramiz.
+    private void notifyExpiredToken(User user) {
+        if (user.getTelegramId() == null) return;
+
+        SendMessage msg = new SendMessage();
+        msg.setChatId(user.getTelegramId().toString());
+        msg.setText("⏰ Havola muddati tugagan (2 daqiqadan ortiq turgan edi). " +
+                "Iltimos, botda kerakli menyu tugmasini qaytadan bosib, yangi havola oling.");
+
+        try {
+            telegramBot.execute(msg);
+        } catch (TelegramApiException e) {
+            log.error("Muddati o'tgan token haqida Telegram xabarini yuborishda xatolik", e);
+        }
     }
 }
