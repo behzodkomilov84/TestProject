@@ -129,6 +129,55 @@ qamrab oladi.
 - **To'lov qaytarish (refund) siyosati** aniqlanmagan — agar ADMIN huquqi noto'g'ri
   berilgan/bekor qilinishi kerak bo'lsa, qanday tartibda pul qaytarilishi hujjatlashtirilmagan.
 
+## 6. Telegram bot — to'liq funksionallik (rejalashtirilmoqda)
+
+Hozirgi bot juda cheklangan — faqat USER (o'quvchi) uchun (akkaunt ulash,
+topshiriqlar, test topshirish, natijalar, `/pay` so'rovi). Maqsad: saytdagi
+deyarli barcha funksiyani, foydalanuvchi roliga (OWNER/ADMIN/USER) qarab,
+botdan turib ishlatish mumkin bo'lishi.
+
+**0-bosqich — arxitektura (fundament)**
+- [ ] Suhbat holati (conversation state) — yangi `TelegramSession` jadvali
+  (`chat_id`, `state`, `temp_data` JSON) — ko'p bosqichli oqimlar
+  (profil tahrirlash, gruppa/topshiriq yaratish) uchun. Bazada saqlanadi
+  (xotirada emas), chunki production tez-tez qayta ishga tushadi (deploy).
+- [ ] Native Telegram buyruqlar menyusi (`BotFather setMyCommands`).
+- [ ] Rolga qarab asosiy `ReplyKeyboardMarkup` menyusi (`/start`da rol
+  aniqlanib, mos menyu ko'rsatiladi).
+
+**1-bosqich — umumiy (barcha rollar)**
+- [ ] 👤 Profil: ko'rish (username/email/telefon/rol), tahrirlash.
+  Parolni o'zgartirish ham — xavfsizlik ogohlantirishi bilan (Telegram
+  matn tarixida qolishi haqida foydalanuvchiga eslatiladi).
+- [ ] 🔔 Bildirishnomalar: ro'yxat, o'qilgan deb belgilash (`NotificationService`).
+- [ ] 💳 Obunam: joriy ADMIN obuna holati, Click orqali to'lash.
+- [ ] 📚 Kurslar: ro'yxat, obuna bo'lish/ko'rish.
+- [ ] ℹ️ Yordam — barcha buyruqlar tavsifi bilan.
+
+**2-bosqich — USER (o'quvchi) qo'shimcha**
+- [ ] 🎯 Mustaqil test — fan tanlab, tasodifiy savollar bilan mashq
+  (saytdagi `/testConfigPage`ning bot varianti).
+
+**3-bosqich — ADMIN (o'qituvchi) qo'shimcha**
+- [ ] 👥 Gruppalarim — a'zolar ro'yxati, taklif yuborish.
+- [ ] 📝 Topshiriq berish — gruppa + savollar to'plami + muddat tanlab.
+- [ ] 📈 O'quvchilar natijalari — gruppa bo'yicha statistika.
+- [ ] 🗂 Savollar boshqaruvi — mavzu bo'yicha ko'rish; Excel faylni
+  to'g'ridan-to'g'ri botga yuborib import qilish (Telegram fayl qabul
+  qilishni qo'llab-quvvatlaydi — saytga kirish shart emas).
+- [ ] 💬 Topshiriq chatlari — o'quvchi bilan yozishma.
+
+**4-bosqich — OWNER qo'shimcha**
+- [ ] 👑 Foydalanuvchilar — rol berish/olib tashlash, bloklash/blokdan chiqarish.
+- [ ] 💰 To'lovlar — kutilayotgan to'lovlarni tasdiqlash/rad etish, hisobot.
+- [ ] ⚙️ Tizim sozlamalari — Click minimal summasi.
+- [ ] 📢 E'lon yuborish (broadcast) — barcha foydalanuvchilarga yoki bitta gruppaga.
+
+**5-bosqich (ixtiyoriy, alohida muhokama)**
+- [ ] Botda to'g'ridan-to'g'ri ro'yxatdan o'tish (saytga kirmasdan) — email
+  tasdiqlash oqimi bilan qanday integratsiya qilinishi alohida
+  loyihalashtirishni talab qiladi.
+
 ## Ustuvorlik bo'yicha tavsiya
 
 ~~Parolni tiklash~~, ~~Login urinishlarini cheklash~~, ~~Rol audit log~~,
