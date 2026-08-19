@@ -1,5 +1,6 @@
 package behzoddev.testproject.telegram.service;
 
+import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.TestSessionRepository;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.dto.answer.AnswerDto;
@@ -40,18 +41,55 @@ public class TelegramPracticeTestService {
 
     private static final String TEMP_KEY = "practiceTest";
     private static final List<Integer> COUNT_CANDIDATES = List.of(5, 10, 15, 20);
+    private static final String DEFAULT_MODE = "practice";
 
     private final ScienceService scienceService;
     private final TopicService topicService;
     private final TestSessionService testSessionService;
     private final TestSessionRepository testSessionRepository;
     private final UserRepository userRepository;
+    private final QuestionRepository questionRepository;
     private final TelegramSessionService sessionService;
     private final ObjectMapper objectMapper;
 
-    // ================= 1. Fan tanlash =================
+    // ================= 0. Rejimni tanlash =================
+    // Saytdagi bosh sahifadagi uchta tugma (Practice/Exam/Hard Mode) bilan
+    // bir xil — /testConfigPage'ga o'tishdan oldin rejim tanlanadi. Botda
+    // ham xuddi shu tartib: fan tanlashdan OLDIN rejim so'raladi.
 
     public SendMessage startFlow(Long chatId) {
+        SendMessage msg = new SendMessage();
+        msg.setChatId(chatId.toString());
+        msg.setText("🎯 Qanday rejimda mashq qilmoqchisiz?\n\n" +
+                "📝 Practice — vaqt chegarasiz, tinch mashq.\n" +
+                "⏱ Exam — imtihon rejimida sinab ko'rish.\n" +
+                "🔥 Hard — faqat avval XATO javob bergan savollaringiz.");
+
+        InlineKeyboardButton practiceBtn = button("📝 Practice", "pt_mode_practice");
+        InlineKeyboardButton examBtn = button("⏱ Exam", "pt_mode_exam");
+        InlineKeyboardButton hardBtn = button("🔥 Hard", "pt_mode_hard");
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(List.of(List.of(practiceBtn, examBtn), List.of(hardBtn)));
+        msg.setReplyMarkup(markup);
+        return msg;
+    }
+
+    private InlineKeyboardButton button(String text, String callbackData) {
+        InlineKeyboardButton btn = new InlineKeyboardButton();
+        btn.setText(text);
+        btn.setCallbackData(callbackData);
+        return btn;
+    }
+
+    // ================= 1. Fan tanlash =================
+
+    public SendMessage selectMode(Long chatId, String mode) {
+        sessionService.putTempData(chatId, "pt_mode", mode);
+        return showScienceSelection(chatId);
+    }
+
+    private SendMessage showScienceSelection(Long chatId) {
         List<ScienceIdAndNameDto> sciences = scienceService.getSciences();
 
         SendMessage msg = new SendMessage();
@@ -81,19 +119,32 @@ public class TelegramPracticeTestService {
     // ================= 2. Savollar sonini tanlash =================
 
     public SendMessage selectScience(Long chatId, Long scienceId) {
+        String mode = currentMode(chatId);
         List<TopicWithQuestionCountDto> topics = topicService.getTopicsWithQuestionCount(scienceId);
-
-        long available = topics.stream().mapToLong(TopicWithQuestionCountDto::questionCount).sum();
+        List<Long> topicIds = topics.stream().map(TopicWithQuestionCountDto::id).toList();
 
         SendMessage msg = new SendMessage();
         msg.setChatId(chatId.toString());
 
-        if (available == 0) {
-            msg.setText("🎯 Bu fanda hozircha savollar yo'q.");
-            return msg;
+        long available;
+        if ("hard".equals(mode)) {
+            // Hard rejimi — saytdagidek, faqat shu foydalanuvchi avval
+            // XATO javob bergan savollar hisobga olinadi (barcha savollar
+            // soni emas).
+            User user = getUserByChatId(chatId);
+            available = questionRepository.findHardForUser(user.getId(), topicIds).size();
+            if (available == 0) {
+                msg.setText("🔥 Bu fanda hozircha xato qilingan (hard) savollaringiz yo'q.");
+                return msg;
+            }
+        } else {
+            available = topics.stream().mapToLong(TopicWithQuestionCountDto::questionCount).sum();
+            if (available == 0) {
+                msg.setText("🎯 Bu fanda hozircha savollar yo'q.");
+                return msg;
+            }
         }
 
-        List<Long> topicIds = topics.stream().map(TopicWithQuestionCountDto::id).toList();
         sessionService.putTempData(chatId, "pt_scienceId", scienceId.toString());
         sessionService.putTempData(chatId, "pt_topicIds", joinIds(topicIds));
         sessionService.putTempData(chatId, "pt_available", String.valueOf(available));
@@ -191,8 +242,9 @@ public class TelegramPracticeTestService {
     public SendMessage startTest(Long chatId, int count) {
         User user = getUserByChatId(chatId);
         List<Long> topicIds = parseIds(sessionService.getTempData(chatId).get("pt_topicIds"));
+        String mode = currentMode(chatId);
 
-        StartTestResponseDto response = testSessionService.startTest(user, topicIds, count, "normal");
+        StartTestResponseDto response = testSessionService.startTest(user, topicIds, count, mode);
 
         List<PracticeTestState.QuestionSnapshot> snapshots = response.questions().stream()
                 .map(this::toSnapshot)
@@ -287,6 +339,7 @@ public class TelegramPracticeTestService {
 
     private SendMessage finish(Long chatId, PracticeTestState state, List<PracticeTestState.AnswerPick> answers) {
         User user = getUserByChatId(chatId);
+        String mode = currentMode(chatId); // clear()'dan OLDIN — keyin tempData yo'qoladi
 
         List<AnswerResultDto> results = answers.stream()
                 .map(a -> new AnswerResultDto(a.questionId(), a.answerId()))
@@ -311,12 +364,25 @@ public class TelegramPracticeTestService {
             return msg;
         }
 
-        msg.setText("✅ <b>Test yakunlandi!</b>\n\n" +
+        msg.setText("✅ <b>Test yakunlandi!</b> (" + modeLabel(mode) + ")\n\n" +
                 "⭐ Natija: " + session.getPercent() + "%\n" +
                 "✔ To'g'ri: " + session.getCorrectAnswers() + "/" + session.getTotalQuestions() + "\n" +
                 "⏱ Davomiylik: " + session.getDurationSec() + " soniya");
         msg.setParseMode("HTML");
         return msg;
+    }
+
+    private String currentMode(Long chatId) {
+        String mode = sessionService.getTempData(chatId).get("pt_mode");
+        return mode == null || mode.isBlank() ? DEFAULT_MODE : mode;
+    }
+
+    private String modeLabel(String mode) {
+        return switch (mode) {
+            case "exam" -> "⏱ Exam";
+            case "hard" -> "🔥 Hard";
+            default -> "📝 Practice";
+        };
     }
 
     // ================= Bekor qilish =================

@@ -1,7 +1,9 @@
 package behzoddev.testproject.telegram.service;
 
+import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.TestSessionRepository;
 import behzoddev.testproject.dao.UserRepository;
+import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.dto.answer.AnswerDto;
 import behzoddev.testproject.dto.question.QuestionDto;
 import behzoddev.testproject.dto.science.ScienceIdAndNameDto;
@@ -55,6 +57,8 @@ class TelegramPracticeTestServiceTest {
     @Mock
     private UserRepository userRepository;
     @Mock
+    private QuestionRepository questionRepository;
+    @Mock
     private TelegramSessionRepository telegramSessionRepository;
 
     private TelegramPracticeTestService practiceTestService;
@@ -74,31 +78,82 @@ class TelegramPracticeTestServiceTest {
 
         practiceTestService = new TelegramPracticeTestService(
                 scienceService, topicService, testSessionService, testSessionRepository,
-                userRepository, sessionService, objectMapper);
+                userRepository, questionRepository, sessionService, objectMapper);
 
         User user = User.builder().id(1L).username("student").telegramId(CHAT_ID).build();
         lenient().when(userRepository.findByTelegramId(CHAT_ID)).thenReturn(Optional.of(user));
     }
 
-    // ===== startFlow =====
+    // ===== startFlow (rejim tanlash) =====
 
     @Test
-    void startFlow_noSciences_saysEmpty() {
+    void startFlow_offersThreeModeButtons() {
+        SendMessage msg = practiceTestService.startFlow(CHAT_ID);
+
+        assertThat(msg.getText()).contains("rejimda mashq");
+        assertThat(msg.getReplyMarkup()).isNotNull();
+    }
+
+    // ===== selectMode (rejim tanlangandan keyin fan ro'yxati) =====
+
+    @Test
+    void selectMode_noSciences_saysEmpty() {
         when(scienceService.getSciences()).thenReturn(List.of());
 
-        SendMessage msg = practiceTestService.startFlow(CHAT_ID);
+        SendMessage msg = practiceTestService.selectMode(CHAT_ID, "practice");
 
         assertThat(msg.getText()).contains("fanlar mavjud emas");
     }
 
     @Test
-    void startFlow_listsSciencesAsButtons() {
+    void selectMode_practice_listsSciencesAsButtons() {
         when(scienceService.getSciences()).thenReturn(List.of(new ScienceIdAndNameDto(1L, "Matematika")));
 
-        SendMessage msg = practiceTestService.startFlow(CHAT_ID);
+        SendMessage msg = practiceTestService.selectMode(CHAT_ID, "practice");
 
         assertThat(msg.getText()).contains("fanni tanlang");
         assertThat(msg.getReplyMarkup()).isNotNull();
+    }
+
+    @Test
+    void selectMode_storesModeForLaterSteps() {
+        when(scienceService.getSciences()).thenReturn(List.of(new ScienceIdAndNameDto(1L, "Matematika")));
+
+        practiceTestService.selectMode(CHAT_ID, "exam");
+
+        assertThat(stored.getTempData()).contains("\"pt_mode\":\"exam\"");
+    }
+
+    // ===== Hard rejimi — faqat oldin xato qilingan savollar =====
+
+    @Test
+    void selectScience_hardMode_usesHardQuestionCount_notTotalQuestionCount() {
+        when(scienceService.getSciences()).thenReturn(List.of(new ScienceIdAndNameDto(1L, "Matematika")));
+        practiceTestService.selectMode(CHAT_ID, "hard");
+
+        when(topicService.getTopicsWithQuestionCount(1L))
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 100L)));
+        when(questionRepository.findHardForUser(1L, List.of(10L)))
+                .thenReturn(List.of(new Question(), new Question(), new Question()));
+
+        SendMessage msg = practiceTestService.selectScience(CHAT_ID, 1L);
+
+        // 100 emas — faqat 3 ta (hard) savol mavjud deb ko'rsatilishi kerak.
+        assertThat(msg.getText()).contains("jami mavjud: 3");
+    }
+
+    @Test
+    void selectScience_hardMode_noHardQuestions_saysEmptyWithHardSpecificMessage() {
+        when(scienceService.getSciences()).thenReturn(List.of(new ScienceIdAndNameDto(1L, "Matematika")));
+        practiceTestService.selectMode(CHAT_ID, "hard");
+
+        when(topicService.getTopicsWithQuestionCount(1L))
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 100L)));
+        when(questionRepository.findHardForUser(1L, List.of(10L))).thenReturn(List.of());
+
+        SendMessage msg = practiceTestService.selectScience(CHAT_ID, 1L);
+
+        assertThat(msg.getText()).contains("xato qilingan");
     }
 
     // ===== selectScience =====
@@ -154,7 +209,7 @@ class TelegramPracticeTestServiceTest {
                         new AnswerDto(1003L, "7", false, "yo'q", null, null, null)
                 )).build();
 
-        when(testSessionService.startTest(any(), eq(List.of(10L)), eq(2), eq("normal")))
+        when(testSessionService.startTest(any(), eq(List.of(10L)), eq(2), eq("practice")))
                 .thenReturn(new StartTestResponseDto(999L, List.of(q1, q2)));
 
         SendMessage firstQuestion = practiceTestService.startTest(CHAT_ID, 2);
@@ -183,7 +238,46 @@ class TelegramPracticeTestServiceTest {
                         req.answers().get(1).answerId().equals(1002L)
         ), any());
 
-        assertThat(result.getText()).contains("50%").contains("1/2").contains("30 soniya");
+        assertThat(result.getText()).contains("50%").contains("1/2").contains("30 soniya")
+                .contains("Practice"); // hech qanday rejim tanlanmagan bo'lsa, standart — practice.
+    }
+
+    @Test
+    void startTest_examMode_passesExamModeToTestSessionService() {
+        when(scienceService.getSciences()).thenReturn(List.of(new ScienceIdAndNameDto(1L, "Matematika")));
+        practiceTestService.selectMode(CHAT_ID, "exam");
+        when(topicService.getTopicsWithQuestionCount(1L))
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L)));
+        practiceTestService.selectScience(CHAT_ID, 1L);
+
+        QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
+                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null))).build();
+        when(testSessionService.startTest(any(), eq(List.of(10L)), eq(3), eq("exam")))
+                .thenReturn(new StartTestResponseDto(999L, List.of(q1)));
+
+        practiceTestService.startTest(CHAT_ID, 3);
+
+        verify(testSessionService).startTest(any(), eq(List.of(10L)), eq(3), eq("exam"));
+    }
+
+    @Test
+    void startTest_hardMode_passesHardModeToTestSessionService() {
+        when(scienceService.getSciences()).thenReturn(List.of(new ScienceIdAndNameDto(1L, "Matematika")));
+        practiceTestService.selectMode(CHAT_ID, "hard");
+        when(topicService.getTopicsWithQuestionCount(1L))
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L)));
+        when(questionRepository.findHardForUser(1L, List.of(10L)))
+                .thenReturn(List.of(new Question(), new Question()));
+        practiceTestService.selectScience(CHAT_ID, 1L);
+
+        QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
+                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null))).build();
+        when(testSessionService.startTest(any(), eq(List.of(10L)), eq(2), eq("hard")))
+                .thenReturn(new StartTestResponseDto(999L, List.of(q1)));
+
+        practiceTestService.startTest(CHAT_ID, 2);
+
+        verify(testSessionService).startTest(any(), eq(List.of(10L)), eq(2), eq("hard"));
     }
 
     @Test
@@ -232,13 +326,13 @@ class TelegramPracticeTestServiceTest {
 
         QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
                 .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null))).build();
-        when(testSessionService.startTest(any(), eq(List.of(10L)), eq(17), eq("normal")))
+        when(testSessionService.startTest(any(), eq(List.of(10L)), eq(17), eq("practice")))
                 .thenReturn(new StartTestResponseDto(999L, List.of(q1)));
 
         SendMessage msg = practiceTestService.applyCustomCount(CHAT_ID, "17");
 
         assertThat(msg.getText()).contains("Savol 1/1");
-        verify(testSessionService).startTest(any(), eq(List.of(10L)), eq(17), eq("normal"));
+        verify(testSessionService).startTest(any(), eq(List.of(10L)), eq(17), eq("practice"));
     }
 
     @Test

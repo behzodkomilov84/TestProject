@@ -170,7 +170,12 @@ public class TelegramBot extends TelegramLongPollingBot {
                     return;
                 }
 
-                // ===== Mustaqil test (fan -> savol soni -> savol-javob) =====
+                // ===== Mustaqil test (rejim -> fan -> savol soni -> savol-javob) =====
+                if (data.startsWith("pt_mode_")) {
+                    String mode = data.replace("pt_mode_", "");
+                    execute(practiceTestService.selectMode(chatId, mode));
+                    return;
+                }
                 if (data.startsWith("pt_science_")) {
                     Long scienceId = Long.parseLong(data.replace("pt_science_", ""));
                     execute(practiceTestService.selectScience(chatId, scienceId));
