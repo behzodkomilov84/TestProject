@@ -22,6 +22,10 @@ public class TelegramAutoLoginToken {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // DIQQAT: bu yerda TOKENNING O'ZI emas, uning SHA-256 xeshi saqlanadi
+    // (TokenHasher). Asl token faqat foydalanuvchiga yuborilgan URL'da
+    // bor — baza biror sabab bilan o'qilsa ham (zaxira nusxasi, o'qish
+    // huquqi bilan hujum va h.k.), undan asl tokenni tiklab bo'lmaydi.
     @Column(nullable = false, length = 64)
     private String token;
 

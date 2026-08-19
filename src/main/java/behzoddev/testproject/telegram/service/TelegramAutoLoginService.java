@@ -3,6 +3,7 @@ package behzoddev.testproject.telegram.service;
 import behzoddev.testproject.dao.TelegramAutoLoginTokenRepository;
 import behzoddev.testproject.entity.TelegramAutoLoginToken;
 import behzoddev.testproject.entity.User;
+import behzoddev.testproject.telegram.util.TokenHasher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -35,8 +36,10 @@ public class TelegramAutoLoginService {
         random.nextBytes(bytes);
         String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
 
+        // Bazaga xom token emas, uning xeshi yoziladi (TokenHasher) — asl
+        // token faqat quyida foydalanuvchiga qaytariladigan URL'da qoladi.
         TelegramAutoLoginToken entity = TelegramAutoLoginToken.builder()
-                .token(token)
+                .token(TokenHasher.sha256Hex(token))
                 .user(user)
                 .redirectPath(sanitizeRedirect(redirectPath))
                 .expiresAt(LocalDateTime.now().plusMinutes(TOKEN_VALID_MINUTES))

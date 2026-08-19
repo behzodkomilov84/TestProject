@@ -12,6 +12,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.servlet.FlashMap;
 import org.springframework.web.servlet.support.SessionFlashMapManager;
 
@@ -26,6 +27,17 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http, LoginAttemptService loginAttemptService) {
         http
                 .csrf(csrf -> csrf.disable())
+                // Referrer-Policy: brauzer boshqa domenga (yoki hatto shu
+                // domendagi boshqa sahifaga) o'tganda to'liq URL'ni (query
+                // string bilan) Referer header'i sifatida yubormasligi
+                // uchun — masalan Telegram auto-login havolasidagi bitta
+                // martalik token tashqi resurslarga (CDN, widget) sizib
+                // ketmasligi kerak. STRICT_ORIGIN_WHEN_CROSS_ORIGIN — bir
+                // xil domen ichida to'liq yo'l, boshqa domenga faqat
+                // origin (query string'siz) yuboriladi.
+                .headers(headers -> headers
+                        .referrerPolicy(referrer -> referrer
+                                .policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN)))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/css/**",

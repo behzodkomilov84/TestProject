@@ -3,6 +3,7 @@ package behzoddev.testproject.controller.page;
 import behzoddev.testproject.dao.TelegramAutoLoginTokenRepository;
 import behzoddev.testproject.entity.TelegramAutoLoginToken;
 import behzoddev.testproject.entity.User;
+import behzoddev.testproject.telegram.util.TokenHasher;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +37,12 @@ public class TelegramAutoLoginController {
     @Transactional
     public String autoLogin(@RequestParam String token, HttpServletRequest request, HttpServletResponse response) {
 
-        TelegramAutoLoginToken entity = tokenRepository.findByTokenAndUsedFalse(token).orElse(null);
+        // Bazada tokenning o'zi emas, xeshi saqlanadi — solishtirish uchun
+        // kelgan xom tokenni ham xeshlaymiz (TelegramAutoLoginService bilan
+        // bir xil algoritm).
+        TelegramAutoLoginToken entity = tokenRepository
+                .findByTokenAndUsedFalse(TokenHasher.sha256Hex(token))
+                .orElse(null);
 
         if (entity == null || entity.getExpiresAt().isBefore(LocalDateTime.now())) {
             log.warn("Telegram avtomatik login: token yaroqsiz yoki muddati o'tgan");

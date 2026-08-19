@@ -3,6 +3,7 @@ package behzoddev.testproject.telegram.service;
 import behzoddev.testproject.dao.TelegramAutoLoginTokenRepository;
 import behzoddev.testproject.entity.TelegramAutoLoginToken;
 import behzoddev.testproject.entity.User;
+import behzoddev.testproject.telegram.util.TokenHasher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -65,6 +66,27 @@ class TelegramAutoLoginServiceTest {
         // Qisqa muddatli — 5 daqiqadan oshmasligi kerak.
         assertThat(saved.getExpiresAt()).isBefore(LocalDateTime.now().plusMinutes(5));
         assertThat(saved.getExpiresAt()).isAfter(LocalDateTime.now());
+    }
+
+    // ===== Baza faqat xeshni saqlaydi, xom tokenni emas =====
+
+    @Test
+    void buildLoginUrl_storesHashedToken_notRawTokenFromUrl() {
+        ArgumentCaptor<TelegramAutoLoginToken> captor = ArgumentCaptor.forClass(TelegramAutoLoginToken.class);
+        when(repository.save(captor.capture())).thenAnswer(inv -> inv.getArgument(0));
+
+        String url = service.buildLoginUrl(user, "/courses");
+        String rawTokenFromUrl = url.substring(url.indexOf("token=") + "token=".length());
+
+        String storedToken = captor.getValue().getToken();
+
+        // Bazadagi qiymat URL'dagi xom token bilan bir xil bo'lmasligi kerak —
+        // agar biror kishi bazani (masalan zaxira nusxasini) o'qisa ham,
+        // undan haqiqiy login havolasini tiklab bo'lmasin.
+        assertThat(storedToken).isNotEqualTo(rawTokenFromUrl);
+        // Lekin xom tokenni xeshlasak, xuddi shu qiymat chiqishi kerak —
+        // shu orqali TelegramAutoLoginController tekshiruvni bajara oladi.
+        assertThat(storedToken).isEqualTo(TokenHasher.sha256Hex(rawTokenFromUrl));
     }
 
     @Test
