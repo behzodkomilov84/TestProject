@@ -3,7 +3,6 @@ package behzoddev.testproject.telegram.entity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -32,8 +31,10 @@ public class TelegramSession {
     // Oqim davomida vaqtincha saqlanadigan ma'lumot (masalan parolni
     // o'zgartirishda 1-bosqichda kiritilgan "hozirgi parol") — JSON
     // (Map<String,String>) ko'rinishida.
-    @Lob
-    @Column(name = "temp_data")
+    // @Lob ISHLATILMAYDI — Hibernate uni MySQL'da TINYTEXT deb kutadi
+    // (schema-validate xato beradi), Liquibase migratsiyasi esa aniq
+    // TEXT yaratadi. Shu column bevosita mos kelishi uchun columnDefinition.
+    @Column(name = "temp_data", columnDefinition = "TEXT")
     private String tempData;
 
     @Column(name = "updated_at", nullable = false)
