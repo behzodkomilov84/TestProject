@@ -26,6 +26,7 @@
     <include file="/db/changelog/phone-number.sql"/>
     <include file="/db/changelog/payment-settings.sql"/>
     <include file="/db/changelog/telegram-session.sql"/>
+    <include file="/db/changelog/telegram-auto-login.sql"/>
 
 
 </databaseChangeLog>

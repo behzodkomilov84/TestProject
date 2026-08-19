@@ -1,12 +1,15 @@
 package behzoddev.testproject.telegram.service;
 
+import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.dto.excel.ImportResultDto;
 import behzoddev.testproject.dto.science.ScienceIdAndNameDto;
 import behzoddev.testproject.dto.topic.TopicWithQuestionCountDto;
+import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.ExcelService;
 import behzoddev.testproject.service.ScienceService;
 import behzoddev.testproject.service.TopicService;
 import behzoddev.testproject.telegram.state.BotState;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -41,9 +44,21 @@ class TelegramQuestionImportServiceTest {
     private ExcelService excelService;
     @Mock
     private TelegramSessionService sessionService;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private TelegramAutoLoginService autoLoginService;
 
     @InjectMocks
     private TelegramQuestionImportService importService;
+
+    @BeforeEach
+    void setUp() {
+        User teacher = User.builder().id(1L).username("teacher1").telegramId(CHAT_ID).build();
+        lenient().when(userRepository.findByTelegramId(CHAT_ID)).thenReturn(java.util.Optional.of(teacher));
+        lenient().when(autoLoginService.buildLoginUrl(any(), any()))
+                .thenReturn("https://study-grow.uz/telegram-auto-login?token=stub");
+    }
 
     @Test
     void startFlow_noSciences_saysEmpty() {
@@ -70,6 +85,10 @@ class TelegramQuestionImportServiceTest {
         SendMessage msg = importService.selectScience(CHAT_ID, 1L);
 
         assertThat(msg.getText()).contains("mavzu yo'q");
+        // "(/science)" kabi yalang'och buyruq matni Telegram tomonidan
+        // noma'lum bot buyrug'i sifatida talqin qilinardi.
+        assertThat(msg.getText()).doesNotContain("(/science)");
+        verify(autoLoginService).buildLoginUrl(any(), eq("/science"));
     }
 
     @Test

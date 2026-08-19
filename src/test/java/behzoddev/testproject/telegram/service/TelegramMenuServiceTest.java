@@ -31,6 +31,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -50,9 +51,17 @@ class TelegramMenuServiceTest {
     private PaymentOrderService paymentOrderService;
     @Mock
     private ClickService clickService;
+    @Mock
+    private TelegramAutoLoginService autoLoginService;
 
     @InjectMocks
     private TelegramMenuService menuService;
+
+    @BeforeEach
+    void setUp() {
+        org.mockito.Mockito.lenient().when(autoLoginService.buildLoginUrl(any(), any()))
+                .thenReturn("https://study-grow.uz/telegram-auto-login?token=stub");
+    }
 
     private User student() {
         Role role = Role.builder().id(1L).roleName("ROLE_USER").build();
@@ -246,5 +255,10 @@ class TelegramMenuServiceTest {
         SendMessage msg = menuService.showCourses(user);
 
         assertThat(msg.getText()).contains("Java Asoslari").contains("5 bo'lim");
+        // /courses kabi "yalang'och" buyruq matni Telegram tomonidan noma'lum
+        // bot buyrug'i sifatida talqin qilinardi — endi haqiqiy avtomatik
+        // login havolasi qo'yiladi.
+        assertThat(msg.getText()).doesNotContain("sahifasidan foydalaning");
+        verify(autoLoginService).buildLoginUrl(user, "/courses");
     }
 }

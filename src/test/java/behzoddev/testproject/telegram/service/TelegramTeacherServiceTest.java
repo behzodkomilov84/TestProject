@@ -55,6 +55,8 @@ class TelegramTeacherServiceTest {
     private UserRepository userRepository;
     @Mock
     private TelegramSessionService sessionService;
+    @Mock
+    private TelegramAutoLoginService autoLoginService;
 
     @InjectMocks
     private TelegramTeacherService telegramTeacherService;
@@ -66,6 +68,8 @@ class TelegramTeacherServiceTest {
         Role role = Role.builder().id(1L).roleName("ROLE_ADMIN").build();
         teacher = User.builder().id(1L).username("teacher1").telegramId(CHAT_ID)
                 .roles(new HashSet<>(Set.of(role))).build();
+        lenient().when(autoLoginService.buildLoginUrl(any(), any()))
+                .thenReturn("https://study-grow.uz/telegram-auto-login?token=stub");
     }
 
     // ===== Gruppalar =====
@@ -184,6 +188,8 @@ class TelegramTeacherServiceTest {
         SendMessage msg = telegramTeacherService.selectAssignGroup(CHAT_ID, 5L);
 
         assertThat(msg.getText()).contains("savollar paketi");
+        assertThat(msg.getText()).doesNotContain("(/teacher)");
+        verify(autoLoginService).buildLoginUrl(teacher, "/teacher");
     }
 
     @Test

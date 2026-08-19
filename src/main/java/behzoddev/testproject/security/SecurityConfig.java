@@ -40,6 +40,10 @@ public class SecurityConfig {
                                 "/privacy",
                                 "/favicon.ico",
                                 "/",
+                                // Botdagi "saytda ko'ring" havolasi — hali login
+                                // qilinmagan holatda keladi (o'zi bitta martalik
+                                // tokenni tekshirib, login qildiradi).
+                                "/telegram-auto-login",
                                 // Click'ning o'z serverlari chaqiradi — sessiyasiz,
                                 // o'zining imzo tekshiruvi orqali himoyalangan
                                 // (ClickService.verifySign).

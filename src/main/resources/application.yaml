@@ -88,6 +88,10 @@ telegram:
     token: ${TELEGRAM_BOT_TOKEN}
     username: ${TELEGRAM_BOT_USERNAME:study_grow_bot}
 app:
+  # Ilovaning o'z ommaviy (tashqi) manzili — botdagi havolalar
+  # (masalan avtomatik login) shu bazaga qo'shib quriladi. Ilova o'zi
+  # nginx orqasida ishlagani uchun o'z domenini bilmaydi.
+  public-base-url: ${APP_PUBLIC_BASE_URL:https://study-grow.uz}
   upload:
     # Yuklangan rasmlar (savol/javob uchun geometrik chizmalar va h.k.) shu
     # papkaga saqlanadi. Jar ichida emas — jar tashqarisida, doimiy joyda

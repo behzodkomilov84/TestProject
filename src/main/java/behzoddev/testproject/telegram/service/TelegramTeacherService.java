@@ -44,6 +44,7 @@ public class TelegramTeacherService {
     private final QuestionSetRepository questionSetRepository;
     private final UserRepository userRepository;
     private final TelegramSessionService sessionService;
+    private final TelegramAutoLoginService autoLoginService;
 
     // ================= Gruppalar =================
 
@@ -184,7 +185,8 @@ public class TelegramTeacherService {
         msg.setChatId(chatId.toString());
 
         if (sets.isEmpty()) {
-            msg.setText("📝 Sizda hali savollar paketi (question set) yo'q. Avval saytda (/teacher) yarating.");
+            String url = autoLoginService.buildLoginUrl(teacher, "/teacher");
+            msg.setText("📝 Sizda hali savollar paketi (question set) yo'q. Avval saytda yarating: " + url);
             return msg;
         }
 

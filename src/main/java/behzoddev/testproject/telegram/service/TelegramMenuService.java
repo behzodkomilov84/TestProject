@@ -58,6 +58,7 @@ public class TelegramMenuService {
     private final CourseService courseService;
     private final PaymentOrderService paymentOrderService;
     private final ClickService clickService;
+    private final TelegramAutoLoginService autoLoginService;
 
     // ================= Asosiy menyu (ReplyKeyboardMarkup) =================
 
@@ -118,10 +119,12 @@ public class TelegramMenuService {
     }
 
     // Hali qo'shilmagan (ROADMAP'dagi keyingi bosqich) bo'limlar uchun.
-    public SendMessage comingSoon(Long chatId) {
+    public SendMessage comingSoon(User user) {
+        String url = autoLoginService.buildLoginUrl(user, "/index");
+
         SendMessage msg = new SendMessage();
-        msg.setChatId(chatId.toString());
-        msg.setText("🚧 Bu bo'lim tez orada qo'shiladi. Hozircha saytdan (study-grow.uz) foydalaning.");
+        msg.setChatId(user.getTelegramId().toString());
+        msg.setText("🚧 Bu bo'lim tez orada qo'shiladi. Hozircha saytdan foydalaning: " + url);
         return msg;
     }
 
@@ -297,7 +300,9 @@ public class TelegramMenuService {
             sb.append(c.subscribed() ? "✅ " : "🔒 ").append(escape(c.title()))
                     .append(" (").append(c.sectionCount()).append(" bo'lim)\n");
         }
-        sb.append("\nBatafsil va obuna bo'lish uchun saytdagi /courses sahifasidan foydalaning.");
+
+        String url = autoLoginService.buildLoginUrl(user, "/courses");
+        sb.append("\nBatafsil va obuna bo'lish uchun: ").append(url);
 
         msg.setText(sb.toString());
         msg.setParseMode("HTML");

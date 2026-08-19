@@ -1,8 +1,10 @@
 package behzoddev.testproject.telegram.service;
 
+import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.dto.excel.ImportResultDto;
 import behzoddev.testproject.dto.science.ScienceIdAndNameDto;
 import behzoddev.testproject.dto.topic.TopicWithQuestionCountDto;
+import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.ExcelService;
 import behzoddev.testproject.service.ScienceService;
 import behzoddev.testproject.service.TopicService;
@@ -29,6 +31,8 @@ public class TelegramQuestionImportService {
     private final TopicService topicService;
     private final ExcelService excelService;
     private final TelegramSessionService sessionService;
+    private final UserRepository userRepository;
+    private final TelegramAutoLoginService autoLoginService;
 
     public SendMessage startFlow(Long chatId) {
         List<ScienceIdAndNameDto> sciences = scienceService.getSciences();
@@ -60,7 +64,9 @@ public class TelegramQuestionImportService {
         msg.setChatId(chatId.toString());
 
         if (topics.isEmpty()) {
-            msg.setText("🗂 Bu fanda hozircha mavzu yo'q. Avval saytda (/science) mavzu yarating.");
+            User user = getUserByChatId(chatId);
+            String url = autoLoginService.buildLoginUrl(user, "/science");
+            msg.setText("🗂 Bu fanda hozircha mavzu yo'q. Avval saytda mavzu yarating: " + url);
             return msg;
         }
 
@@ -132,6 +138,11 @@ public class TelegramQuestionImportService {
         msg.setChatId(chatId.toString());
         msg.setText("📄 Iltimos, .xlsx faylning o'zini (hujjat sifatida) yuboring, yoki /cancel yozing.");
         return msg;
+    }
+
+    private User getUserByChatId(Long chatId) {
+        return userRepository.findByTelegramId(chatId)
+                .orElseThrow(() -> new RuntimeException("Foydalanuvchi topilmadi"));
     }
 
     private InlineKeyboardButton button(String text, String callbackData) {

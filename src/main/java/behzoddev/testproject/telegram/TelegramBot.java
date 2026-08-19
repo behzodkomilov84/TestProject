@@ -551,7 +551,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             case BTN_PAYMENTS -> ownerService.listPendingPayments(user);
             case BTN_SETTINGS -> ownerService.showSettings(user.getTelegramId());
             case BTN_BROADCAST -> ownerService.startBroadcast(user.getTelegramId());
-            default -> menuService.comingSoon(user.getTelegramId());
+            default -> menuService.comingSoon(user);
         };
     }
 
