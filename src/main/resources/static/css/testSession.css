@@ -173,20 +173,6 @@ ul {
 }
 
 
-.question-block input[type="radio"] {
-    transform: scale(1.3);
-    cursor: pointer;
-}
-
-.question-block input[type="radio"]:checked + span {
-    font-weight: 600;
-}
-
-/* если текст без span — применяем к label */
-.question-block input[type="radio"]:checked {
-    accent-color: #4e8cff;
-}
-
 .question-block label:has(input:checked) {
     background-color: #eaf0ff;
     border-color: #4e8cff;
@@ -407,41 +393,11 @@ body[data-mode="hard"] .mode-label {
     color: #c62828;
 }
 
-/* скрываем стандартный radio */
+/* Variant belgisi (A/B/C/D/E) qo'shilgandan keyin bu katakcha ortiqcha
+   bo'lib qoldi — endi butunlay yashirilgan. Tanlangan variant hamon
+   labelning o'zi orqali (label:has(input:checked) — yuqorida, fon/border
+   o'zgarishi bilan) ko'rinadi, label input'ni o'rab turgani uchun input
+   yashirin bo'lsa ham bosish (klik) ishlayveradi. */
 input[type="radio"] {
-    appearance: none;
-    -webkit-appearance: none;
-
-    width: 20px;
-    height: 20px;
-
-    border: 2px solid #6c757d;
-    border-radius: 4px; /* квадрат */
-
-    display: inline-grid;
-    place-content: center;
-
-    cursor: pointer;
-    margin-right: 10px;
-
-    transition: all 0.2s ease;
-}
-
-/* hover */
-input[type="radio"]:hover {
-    border-color: #198754;
-}
-
-/* выбранный */
-input[type="radio"]:checked {
-    border-color: #198754;
-    background: #198754;
-}
-
-/* галочка */
-input[type="radio"]:checked::before {
-    content: "✓";
-    color: white;
-    font-size: 14px;
-    font-weight: bold;
+    display: none;
 }

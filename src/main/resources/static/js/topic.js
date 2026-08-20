@@ -29,6 +29,12 @@ function getScienceId() {
     return element ? element.value : null;
 }
 
+function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text ?? "";
+    return div.innerHTML;
+}
+
 function afterStartPage(mapping) {
         reloadFromDb(mapping).then(r => {
             focusIndex = 0;// выбрать первый элемент
@@ -90,12 +96,11 @@ function render() {
             onkeydown="onViewKeyDown(event, ${i})"
             title="Enter — Саволларни очиш | ↑ ↓ — навигация"
         >
-            <input
+            <div
                 id="input-${i}"
-                class="${inputClass}"
-                readonly
-                value="${s.name}"
-            >
+                class="topic-name ${inputClass}"
+                tabindex="-1"
+            >${escapeHtml(s.name)}</div>
         </div>
             `
                 : `
