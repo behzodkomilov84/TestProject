@@ -1,3 +1,7 @@
+// Javob variantlari uchun A/B/C/D/E belgilari — question.js'dagi admin
+// jadvali bilan bir xil ko'rinish (savol yaratishda ham shu tartibda).
+const ANSWER_LETTERS = ["A", "B", "C", "D", "E"];
+
 //==============================================================
 //            Состояние теста
 //==============================================================
@@ -142,11 +146,11 @@ function renderQuestions(questions) {
             <h3>${index + 1}. ${q.questionText}</h3>
             ${q.imageUrl ? `<img class="question-image" src="${q.imageUrl}" alt="Savol rasmi">` : ""}
             <ul>
-                ${q.answers.map(a => `
+                ${q.answers.map((a, i) => `
                     <li>
                         <label>
                             <input type="radio" name="q-${q.id}" data-answer-id="${a.id}">
-                            ${a.answerText}
+                            <b>${ANSWER_LETTERS[i] || ""}) </b>${a.answerText}
                             ${a.imageUrl ? `<br><img class="answer-image" src="${a.imageUrl}" alt="Javob rasmi">` : ""}
                         </label>
                     </li>
