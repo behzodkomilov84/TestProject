@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +23,7 @@ public class TopicService {
     private final ScienceRepository scienceRepository;
     private final Validation validation;
 
-    public Set<TopicIdAndNameDto> getTopicsByScienceId(Long scienceId) {
+    public List<TopicIdAndNameDto> getTopicsByScienceId(Long scienceId) {
         return topicRepository.findTopicsByScienceId(scienceId);
     }
 

@@ -9,12 +9,14 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
-import java.util.Set;
 
 public interface TopicRepository extends JpaRepository<Topic, Long> {
 
-    @Query("select new behzoddev.testproject.dto.topic.TopicIdAndNameDto(t.id, t.name) from Topic t where t.science.id = :id")
-    Set<TopicIdAndNameDto> findTopicsByScienceId(@Param("id") Long id);
+    // ORDER BY t.id — aks holda mavzular tartibi bazaning ichki
+    // qidiruv rejasiga bog'liq bo'lib qolardi (haqiqiy production bug:
+    // Kimyo fanining 1-45 tartibli mavzulari aralashib chiqib qolgan edi).
+    @Query("select new behzoddev.testproject.dto.topic.TopicIdAndNameDto(t.id, t.name) from Topic t where t.science.id = :id order by t.id")
+    List<TopicIdAndNameDto> findTopicsByScienceId(@Param("id") Long id);
 
     @Query("select new behzoddev.testproject.dto.topic.TopicIdAndNameDto(t.id, t.name) from Topic t where t.science.id = :scienceId and t.id = :topicId")
     TopicIdAndNameDto findTopicByIds(@Param("scienceId") Long scienceId, @Param("topicId") Long topicId);

@@ -45,34 +45,37 @@ public class CourseSectionController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
     public CourseSectionSummaryDto add(
             @PathVariable Long courseId,
-            @RequestBody CourseSectionSaveDto dto
+            @RequestBody CourseSectionSaveDto dto,
+            @AuthenticationPrincipal User user
     ) {
-        return courseService.addSection(courseId, dto);
+        return courseService.addSection(courseId, dto, user);
     }
 
     @PutMapping("/{sectionId}")
-    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
     public void update(
             @PathVariable Long courseId,
             @PathVariable Long sectionId,
-            @RequestBody CourseSectionSaveDto dto
+            @RequestBody CourseSectionSaveDto dto,
+            @AuthenticationPrincipal User user
     ) {
-        courseService.updateSection(courseId, sectionId, dto);
+        courseService.updateSection(courseId, sectionId, dto, user);
     }
 
     @DeleteMapping("/{sectionId}")
-    @PreAuthorize("hasAuthority('ROLE_OWNER')")
-    public void delete(@PathVariable Long courseId, @PathVariable Long sectionId) {
-        courseService.deleteSection(courseId, sectionId);
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public void delete(@PathVariable Long courseId, @PathVariable Long sectionId,
+                        @AuthenticationPrincipal User user) {
+        courseService.deleteSection(courseId, sectionId, user);
     }
 
     // Bo'lim uchun video (UPLOAD manba) yuklash — qaytgan URL
     // CourseSectionSaveDto.videoUrl'ga qo'yiladi (videoSourceType=UPLOAD bilan).
     @PostMapping("/upload-video")
-    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
     public Map<String, String> uploadVideo(
             @PathVariable Long courseId,
             @RequestParam("video") MultipartFile video

@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Controller
 @RequiredArgsConstructor
@@ -20,8 +19,8 @@ public class TopicController {
     private final TopicService topicService;
 
     @GetMapping("/api/topic")
-    public ResponseEntity<Set<TopicIdAndNameDto>> getTopicsByScience(@RequestParam Long scienceId) {
-        Set<TopicIdAndNameDto> topicIdAndNameDtos = topicService.getTopicsByScienceId(scienceId);
+    public ResponseEntity<List<TopicIdAndNameDto>> getTopicsByScience(@RequestParam Long scienceId) {
+        List<TopicIdAndNameDto> topicIdAndNameDtos = topicService.getTopicsByScienceId(scienceId);
 
         return ResponseEntity.ok(topicIdAndNameDtos);
     }

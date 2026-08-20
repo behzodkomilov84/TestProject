@@ -12,6 +12,12 @@ let newName = ""; //for EDIT uses
 
 afterStartPage("/api/science");
 
+function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text ?? "";
+    return div.innerHTML;
+}
+
 
 // ========================================================================
 //                      Functions
@@ -86,12 +92,11 @@ function render() {
             onkeydown="onViewKeyDown(event, ${i})"
             title="Enter — Мавзуларни очиш | ↑ ↓ — навигация"
         >
-            <input
+            <div
                 id="input-${i}"
-                class="${inputClass}"
-                readonly
-                value="${s.name}"
-            >
+                class="topic-name ${inputClass}"
+                tabindex="-1"
+            >${escapeHtml(s.name)}</div>
         </div>
             `
                 : `

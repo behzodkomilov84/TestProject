@@ -1,6 +1,7 @@
 package behzoddev.testproject.controller.advice;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -44,6 +45,18 @@ public class GlobalRestExceptionHandler {
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<Void> handleNotFound(NoSuchElementException ex) {
         return ResponseEntity.notFound().build();
+    }
+
+    // Ma'lumotlar bazasidagi foreign key/unique cheklovi buzilishi (masalan
+    // bog'liq yozuvlari bor ota-obyektni o'chirishga urinish) — xom SQL
+    // xato matnini ("could not execute statement [Cannot delete or update
+    // a parent row...]") to'g'ridan-to'g'ri foydalanuvchiga ko'rsatish
+    // o'rniga, tushunarli xabar bilan 409 CONFLICT qaytariladi.
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, String>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        log.warn("Ma'lumotlar bazasi cheklovi buzildi: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", "Bu amalni bajarib bo'lmadi — bog'liq ma'lumotlar mavjud."));
     }
 
     // Qolgan barcha xatolar (biznes-validatsiya RuntimeException'lari va h.k.)

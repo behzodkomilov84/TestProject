@@ -27,4 +27,9 @@ public interface CourseSubscriptionRepository extends JpaRepository<CourseSubscr
     // Muddati o'tgan, lekin hali EXPIRED deb belgilanmagan kurs obunalari
     // (kunlik scheduled job shularni topib yopadi).
     List<CourseSubscription> findByStatusAndEndDateBefore(CourseSubscriptionStatus status, LocalDateTime time);
+
+    // Kursni o'chirishdan oldin — foreign key RESTRICT bo'lgani uchun,
+    // avval shu kursga tegishli barcha obunalarni o'chirish kerak
+    // (CourseService.deleteCourse).
+    void deleteByCourse_Id(Long courseId);
 }

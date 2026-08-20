@@ -17,7 +17,10 @@ import java.util.Map;
 
 // Kurs katalogi barcha login qilgan foydalanuvchilarga ochiq
 // (SecurityConfig'da "/api/courses" GET so'rovlari authenticated() sifatida
-// ruxsat berilgan) — CRUD amallari faqat OWNER uchun @PreAuthorize orqali.
+// ruxsat berilgan) — CRUD amallari OWNER va ADMIN uchun ochiq
+// (@PreAuthorize), lekin tahrirlash/o'chirishda CourseService.checkCanManage
+// qo'shimcha tekshiradi: ADMIN faqat O'ZI yaratgan kursni, OWNER esa
+// barcha kurslarni boshqara oladi.
 @RestController
 @RequestMapping("/api/courses")
 @RequiredArgsConstructor
@@ -37,26 +40,27 @@ public class CourseController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
     public CourseDto create(@RequestBody CourseSaveDto dto, @AuthenticationPrincipal User owner) {
         return courseService.createCourse(dto, owner);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_OWNER')")
-    public CourseDto update(@PathVariable Long id, @RequestBody CourseSaveDto dto) {
-        return courseService.updateCourse(id, dto);
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public CourseDto update(@PathVariable Long id, @RequestBody CourseSaveDto dto,
+                             @AuthenticationPrincipal User user) {
+        return courseService.updateCourse(id, dto, user);
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAuthority('ROLE_OWNER')")
-    public void delete(@PathVariable Long id) {
-        courseService.deleteCourse(id);
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public void delete(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        courseService.deleteCourse(id, user);
     }
 
     // Kurs muqova rasmini yuklash — qaytgan URL CourseSaveDto.coverImageUrl'ga qo'yiladi.
     @PostMapping("/upload-cover")
-    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
     public Map<String, String> uploadCover(@RequestParam("image") MultipartFile image) {
         return Map.of("url", fileStorageService.storeCourseCoverImage(image));
     }

@@ -16,4 +16,9 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
 
     // Kursning eng katta tartib raqami — yangi bo'lim qo'shishda "oxiriga qo'shish" uchun.
     Optional<CourseSection> findTopByCourse_IdOrderByOrderIndexDesc(Long courseId);
+
+    // Kursni o'chirishdan oldin — foreign key RESTRICT bo'lgani uchun,
+    // avval shu kursning barcha bo'limlarini o'chirish kerak
+    // (CourseService.deleteCourse).
+    void deleteByCourse_Id(Long courseId);
 }

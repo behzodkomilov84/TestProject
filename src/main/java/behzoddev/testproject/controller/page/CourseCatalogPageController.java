@@ -37,11 +37,17 @@ public class CourseCatalogPageController {
         return "courseSectionView";
     }
 
+    // ADMIN endi o'zi yaratgan kurslarni yarata/boshqara oladi (OWNER esa —
+    // barchasini), shuning uchun frontend'ga ROLE_ADMIN ekanini ham bilish
+    // kerak (masalan "+ Yangi kurs" tugmasini ko'rsatish uchun). OWNER
+    // ustuvor — ikkalasi ham bo'lsa, OWNER qaytariladi.
     private String primaryRole(Authentication authentication) {
-        return authentication.getAuthorities().stream()
+        var authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
-                .filter("ROLE_OWNER"::equals)
-                .findFirst()
-                .orElse("UNKNOWN");
+                .toList();
+
+        if (authorities.contains("ROLE_OWNER")) return "ROLE_OWNER";
+        if (authorities.contains("ROLE_ADMIN")) return "ROLE_ADMIN";
+        return "UNKNOWN";
     }
 }

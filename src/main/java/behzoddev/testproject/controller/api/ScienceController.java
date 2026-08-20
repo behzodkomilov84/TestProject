@@ -113,7 +113,7 @@ public class ScienceController {
             @PathVariable Long scienceId,
             @Valid @RequestBody TopicNameDto topicNameDto
     ) {
-        Set<TopicIdAndNameDto> existingTopics =
+        List<TopicIdAndNameDto> existingTopics =
                 topicService.getTopicsByScienceId(scienceId);
 
         boolean exists = existingTopics.stream()

@@ -5,6 +5,7 @@ import behzoddev.testproject.dao.CourseSectionProgressRepository;
 import behzoddev.testproject.dao.CourseSectionRepository;
 import behzoddev.testproject.dao.CourseSubscriptionRepository;
 import behzoddev.testproject.dto.course.CourseDetailDto;
+import behzoddev.testproject.dto.course.CourseSaveDto;
 import behzoddev.testproject.dto.course.CourseSectionContentDto;
 import behzoddev.testproject.dto.course.CourseSectionSaveDto;
 import behzoddev.testproject.dto.course.CourseSectionSummaryDto;
@@ -237,7 +238,7 @@ class CourseServiceTest {
 
         CourseSectionSaveDto dto = new CourseSectionSaveDto(" ", "TEXT", "matn", null, null, null);
 
-        assertThatThrownBy(() -> courseService.addSection(1L, dto))
+        assertThatThrownBy(() -> courseService.addSection(1L, dto, owner()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Bo'lim nomi bo'sh");
     }
@@ -249,7 +250,7 @@ class CourseServiceTest {
 
         CourseSectionSaveDto dto = new CourseSectionSaveDto("Sarlavha", "TEXT", null, null, null, null);
 
-        assertThatThrownBy(() -> courseService.addSection(1L, dto))
+        assertThatThrownBy(() -> courseService.addSection(1L, dto, owner()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Matn kontenti bo'sh");
     }
@@ -261,7 +262,7 @@ class CourseServiceTest {
 
         CourseSectionSaveDto dto = new CourseSectionSaveDto("Sarlavha", "VIDEO", null, "YOUTUBE", null, null);
 
-        assertThatThrownBy(() -> courseService.addSection(1L, dto))
+        assertThatThrownBy(() -> courseService.addSection(1L, dto, owner()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("Video manba va URL");
     }
@@ -275,7 +276,7 @@ class CourseServiceTest {
         when(courseSectionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         CourseSectionSaveDto dto = new CourseSectionSaveDto("3-bo'lim", "TEXT", "matn", null, null, null);
-        CourseSectionSummaryDto result = courseService.addSection(1L, dto);
+        CourseSectionSummaryDto result = courseService.addSection(1L, dto, owner());
 
         assertThat(result.orderIndex()).isEqualTo(3);
     }
@@ -288,7 +289,7 @@ class CourseServiceTest {
         when(courseSectionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         CourseSectionSaveDto dto = new CourseSectionSaveDto("1-bo'lim", "TEXT", "matn", null, null, null);
-        CourseSectionSummaryDto result = courseService.addSection(1L, dto);
+        CourseSectionSummaryDto result = courseService.addSection(1L, dto, owner());
 
         assertThat(result.orderIndex()).isEqualTo(1);
     }
@@ -303,8 +304,80 @@ class CourseServiceTest {
 
         when(courseSectionRepository.findById(1L)).thenReturn(Optional.of(section));
 
-        assertThatThrownBy(() -> courseService.deleteSection(1L, 1L))
+        assertThatThrownBy(() -> courseService.deleteSection(1L, 1L, owner()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("bu kursga tegishli emas");
+    }
+
+    // ===== deleteCourse =====
+    // Haqiqiy production bug: course_sections/course_subscriptions FK
+    // RESTRICT bo'lgani uchun (ON DELETE CASCADE emas), bog'liq yozuvlar
+    // avval o'chirilmasa, kursning o'zini o'chirish "Cannot delete or
+    // update a parent row: a foreign key constraint fails" xatosi bilan
+    // muvaffaqiyatsiz tugardi.
+
+    @Test
+    void deleteCourse_deletesDependentRecordsBeforeCourseItself() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        courseService.deleteCourse(1L, owner());
+
+        var inOrder = org.mockito.Mockito.inOrder(
+                courseSectionProgressRepository, courseSubscriptionRepository,
+                courseSectionRepository, courseRepository);
+        inOrder.verify(courseSectionProgressRepository).deleteBySection_Course_Id(1L);
+        inOrder.verify(courseSubscriptionRepository).deleteByCourse_Id(1L);
+        inOrder.verify(courseSectionRepository).deleteByCourse_Id(1L);
+        inOrder.verify(courseRepository).delete(course);
+    }
+
+    @Test
+    void deleteCourse_courseNotFound_throws() {
+        when(courseRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> courseService.deleteCourse(1L, owner()))
+                .isInstanceOf(NoSuchElementException.class);
+    }
+
+    // ===== ADMIN faqat o'zi yaratgan kursni boshqara oladi =====
+
+    private User admin() {
+        return User.builder().id(2L).username("teacher").roles(new HashSet<>(Set.of(
+                Role.builder().id(2L).roleName("ROLE_ADMIN").build()))).build();
+    }
+
+    @Test
+    void updateCourse_adminIsCreator_allowed() {
+        User admin = admin();
+        Course course = Course.builder().id(1L).title("Eski nom").createdBy(admin).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null);
+        courseService.updateCourse(1L, dto, admin);
+
+        assertThat(course.getTitle()).isEqualTo("Yangi nom");
+    }
+
+    @Test
+    void updateCourse_adminIsNotCreator_throwsAccessDenied() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null);
+
+        assertThatThrownBy(() -> courseService.updateCourse(1L, dto, admin()))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
+                .hasMessageContaining("o'zingiz yaratgan");
+    }
+
+    @Test
+    void deleteCourse_ownerDeletesOtherUsersCourse_allowed() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(admin()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        courseService.deleteCourse(1L, owner());
+
+        org.mockito.Mockito.verify(courseRepository).delete(course);
     }
 }

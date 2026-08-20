@@ -1,13 +1,7 @@
-const ROLE = document.body.dataset.role;
-const IS_OWNER = ROLE === "ROLE_OWNER";
-
 let cachedCourse = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     loadCourse();
-    if (IS_OWNER) {
-        document.getElementById("manageCoursePanel").style.display = "block";
-    }
 });
 
 function loadCourse() {
@@ -44,6 +38,11 @@ function renderCourse(course) {
             btn.style.display = "";
         }
     }
+
+    // Boshqarish paneli (tahrirlash/chop etish/bo'lim qo'shish) — OWNER
+    // uchun HAR DOIM, ADMIN uchun faqat O'ZI yaratgan kursda (backend
+    // shu logikani hisoblab, canManage sifatida qaytaradi).
+    document.getElementById("manageCoursePanel").style.display = course.canManage ? "block" : "none";
 
     if (course.canManage) {
         document.getElementById("togglePublishBtn").textContent =
@@ -90,7 +89,7 @@ function renderSections(sections) {
             ? `<span>${escapeHtml(s.title)}</span>`
             : `<a href="/courses/${COURSE_ID}/sections/${s.id}">${escapeHtml(s.title)}</a>`;
 
-        const manageActions = IS_OWNER
+        const manageActions = cachedCourse && cachedCourse.canManage
             ? `<div class="section-manage-actions">
                    <button onclick="deleteSection(${s.id})" title="O'chirish">🗑️</button>
                </div>`

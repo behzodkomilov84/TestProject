@@ -44,7 +44,9 @@ public class CourseService {
 
         List<Course> courses = isOwner
                 ? courseRepository.findAllByOrderByCreatedAtDesc()
-                : courseRepository.findByPublishedTrueOrderByCreatedAtDesc();
+                // ADMIN — chop etilganlar + o'zi yaratgan qoralamalar ham
+                // (aks holda hali chop etilmagan o'z kursini topolmasdi).
+                : courseRepository.findByPublishedTrueOrCreatedBy_IdOrderByCreatedAtDesc(currentUser.getId());
 
         return courses.stream().map(c -> toDto(c, currentUser)).toList();
     }
@@ -52,9 +54,12 @@ public class CourseService {
     @Transactional(readOnly = true)
     public CourseDetailDto getDetail(Long courseId, User currentUser) {
         Course course = getCourseOrThrow(courseId);
-        boolean isOwner = currentUser.hasRole("ROLE_OWNER");
+        // ADMIN o'zi yaratgan kursni OWNER kabi to'liq boshqara olishi kerak —
+        // qoralama (unpublished) holatida ham ko'rishi, bo'lim qulflarisiz
+        // ko'rishi va tahrirlashi mumkin bo'lishi uchun.
+        boolean canManage = canManageCourse(course, currentUser);
 
-        if (!course.isPublished() && !isOwner) {
+        if (!course.isPublished() && !canManage) {
             throw new NoSuchElementException("Kurs topilmadi");
         }
 
@@ -70,7 +75,7 @@ public class CourseService {
                         .title(s.getTitle())
                         .orderIndex(s.getOrderIndex())
                         .type(s.getType().name())
-                        .locked(!isOwner && !isSectionUnlocked(currentUser, s, subscribed))
+                        .locked(!canManage && !isSectionUnlocked(currentUser, s, subscribed))
                         .completed(courseSectionProgressRepository
                                 .existsByUser_IdAndSection_Id(currentUser.getId(), s.getId()))
                         .build())
@@ -82,9 +87,9 @@ public class CourseService {
                 .description(course.getDescription())
                 .coverImageUrl(course.getCoverImageUrl())
                 .published(course.isPublished())
-                .subscribed(subscribed || isOwner)
+                .subscribed(subscribed || canManage)
                 .requestPending(requestPending)
-                .canManage(isOwner)
+                .canManage(canManage)
                 .sections(sectionDtos)
                 .build();
     }
@@ -94,9 +99,9 @@ public class CourseService {
         Course course = getCourseOrThrow(courseId);
         CourseSection section = getSectionOrThrow(sectionId, courseId);
         boolean subscribed = isSubscribed(currentUser, course);
-        boolean isOwner = currentUser.hasRole("ROLE_OWNER");
+        boolean canManage = canManageCourse(course, currentUser);
 
-        if (!isOwner && !isSectionUnlocked(currentUser, section, subscribed)) {
+        if (!canManage && !isSectionUnlocked(currentUser, section, subscribed)) {
             throw new AccessDeniedException("⛔ Bu bo'lim hali ochilmagan. Avval oldingi bo'limni tugatish kerak.");
         }
 
@@ -123,7 +128,7 @@ public class CourseService {
                         ? section.getLinkedTopic().getScience().getId() : null)
                 .completed(completed)
                 .nextSectionId(next != null ? next.getId() : null)
-                .nextUnlocked(next != null && (isOwner || completed))
+                .nextUnlocked(next != null && (canManage || completed))
                 .build();
     }
 
@@ -132,10 +137,10 @@ public class CourseService {
     public void markSectionCompleted(Long courseId, Long sectionId, User currentUser) {
         Course course = getCourseOrThrow(courseId);
         CourseSection section = getSectionOrThrow(sectionId, courseId);
-        boolean isOwner = currentUser.hasRole("ROLE_OWNER");
+        boolean canManage = canManageCourse(course, currentUser);
         boolean subscribed = isSubscribed(currentUser, course);
 
-        if (!isOwner && !isSectionUnlocked(currentUser, section, subscribed)) {
+        if (!canManage && !isSectionUnlocked(currentUser, section, subscribed)) {
             throw new AccessDeniedException("⛔ Bu bo'limni tugatish uchun avval ochilgan bo'lishi kerak.");
         }
 
@@ -184,8 +189,9 @@ public class CourseService {
     }
 
     @Transactional
-    public CourseDto updateCourse(Long courseId, CourseSaveDto dto) {
+    public CourseDto updateCourse(Long courseId, CourseSaveDto dto, User currentUser) {
         Course course = getCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
         validateTitle(dto.title());
 
         course.setTitle(dto.title().trim());
@@ -199,15 +205,40 @@ public class CourseService {
         return toDto(course, course.getCreatedBy());
     }
 
+    // Kursni o'chirish — bo'limlar, obunalar va bo'lim-progress yozuvlari
+    // FK RESTRICT bilan bog'langani uchun (courses.sql'da ON DELETE CASCADE
+    // yo'q), avval ULARNI, keyin kursning o'zini o'chiramiz. Aks holda
+    // "Cannot delete or update a parent row: a foreign key constraint
+    // fails" xatosi chiqib, kurs umuman o'chmasdi (frontend'dagi tasdiqlash
+    // xabari "Barcha bo'limlar ham o'chadi" deb va'da bergani kabi).
     @Transactional
-    public void deleteCourse(Long courseId) {
+    public void deleteCourse(Long courseId, User currentUser) {
         Course course = getCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
+        courseSectionProgressRepository.deleteBySection_Course_Id(courseId);
+        courseSubscriptionRepository.deleteByCourse_Id(courseId);
+        courseSectionRepository.deleteByCourse_Id(courseId);
         courseRepository.delete(course);
     }
 
+    // ADMIN faqat O'ZI yaratgan kursni boshqarishi (ko'rish/tahrirlash/
+    // o'chirish, qulflardan xoli) mumkin; OWNER — barcha kurslarni
+    // (kim yaratganidan qat'i nazar).
+    private boolean canManageCourse(Course course, User user) {
+        return user.hasRole("ROLE_OWNER")
+                || (course.getCreatedBy() != null && course.getCreatedBy().getId().equals(user.getId()));
+    }
+
+    private void checkCanManage(Course course, User currentUser) {
+        if (!canManageCourse(course, currentUser)) {
+            throw new AccessDeniedException("⛔ Faqat o'zingiz yaratgan kursni tahrirlashingiz yoki o'chirishingiz mumkin.");
+        }
+    }
+
     @Transactional
-    public CourseSectionSummaryDto addSection(Long courseId, CourseSectionSaveDto dto) {
+    public CourseSectionSummaryDto addSection(Long courseId, CourseSectionSaveDto dto, User currentUser) {
         Course course = getCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
         validateSectionDto(dto);
 
         int nextOrder = courseSectionRepository.findTopByCourse_IdOrderByOrderIndexDesc(courseId)
@@ -228,8 +259,9 @@ public class CourseService {
     }
 
     @Transactional
-    public void updateSection(Long courseId, Long sectionId, CourseSectionSaveDto dto) {
+    public void updateSection(Long courseId, Long sectionId, CourseSectionSaveDto dto, User currentUser) {
         CourseSection section = getSectionOrThrow(sectionId, courseId);
+        checkCanManage(section.getCourse(), currentUser);
         validateSectionDto(dto);
 
         section.setTitle(dto.title().trim());
@@ -243,8 +275,9 @@ public class CourseService {
     }
 
     @Transactional
-    public void deleteSection(Long courseId, Long sectionId) {
+    public void deleteSection(Long courseId, Long sectionId, User currentUser) {
         CourseSection section = getSectionOrThrow(sectionId, courseId);
+        checkCanManage(section.getCourse(), currentUser);
         courseSectionRepository.delete(section);
     }
 

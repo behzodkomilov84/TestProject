@@ -10,4 +10,9 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     List<Course> findByPublishedTrueOrderByCreatedAtDesc();
 
     List<Course> findAllByOrderByCreatedAtDesc();
+
+    // ADMIN uchun katalog — chop etilgan barcha kurslar + o'zi yaratgan
+    // qoralamalar ham (aks holda ADMIN o'zi hali chop etmagan kursini
+    // katalogda topa olmay qolardi).
+    List<Course> findByPublishedTrueOrCreatedBy_IdOrderByCreatedAtDesc(Long createdById);
 }

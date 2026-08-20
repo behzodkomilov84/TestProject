@@ -1,8 +1,11 @@
 const ROLE = document.body.dataset.role;
-const IS_OWNER = ROLE === "ROLE_OWNER";
+// OWNER barcha kurslarni, ADMIN esa faqat o'zi yaratgan kurslarni
+// boshqara oladi — ikkalasi ham "+ Yangi kurs yaratish" tugmasini
+// ko'rishi kerak (aks holda ADMIN kurs yarata olmaydi).
+const CAN_CREATE_COURSE = ROLE === "ROLE_OWNER" || ROLE === "ROLE_ADMIN";
 
 document.addEventListener("DOMContentLoaded", () => {
-    if (IS_OWNER) {
+    if (CAN_CREATE_COURSE) {
         document.querySelectorAll(".owner-only-el").forEach(el => el.style.display = "");
     }
     loadCourses();
