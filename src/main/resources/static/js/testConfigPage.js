@@ -1,3 +1,14 @@
+// Kurs bo'limidagi "🎯 Mavzuga oid testlarni yechish" tugmasidan kelinganda —
+// URL'da ?scienceId=&topicId= beriladi, shu fan/mavzu avtomatik tanlanadi
+// (Practice rejimida — vaqt chegarasisiz, sodda oqim).
+const urlParams = new URLSearchParams(window.location.search);
+const preselectScienceId = urlParams.get("scienceId");
+const preselectTopicId = urlParams.get("topicId");
+
+if (preselectTopicId) {
+    sessionStorage.setItem("testMode", "practice");
+}
+
 const testMode = sessionStorage.getItem("testMode");
 let hardTopicIds = [];
 
@@ -29,6 +40,11 @@ fetch("/api/tests/sciences")
             opt.textContent = s.name;
             select.appendChild(opt);
         });
+
+        if (preselectScienceId) {
+            select.value = preselectScienceId;
+            loadTopicsFromSelect();
+        }
     });
 
 function loadTopicsFromSelect() {
@@ -101,6 +117,10 @@ function loadTopics(id) {
 
                 const checkbox = label.querySelector("input");
 
+                if (preselectTopicId && Number(t.id) === Number(preselectTopicId)) {
+                    checkbox.checked = true;
+                }
+
                 checkbox.addEventListener("change", () => {
                     updateMax();
                     updateTopicLabel();
@@ -108,6 +128,14 @@ function loadTopics(id) {
 
                 box.appendChild(label);
             });
+
+            // Kurs bo'limidan kelib, mavzu avtomatik belgilangan bo'lsa —
+            // "necha ta test bor" va label ham darhol yangilanishi kerak
+            // (odatda faqat checkbox o'zgarganda ishga tushardi).
+            if (preselectTopicId) {
+                updateMax();
+                updateTopicLabel();
+            }
 
         });
 }

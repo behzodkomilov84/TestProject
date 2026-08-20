@@ -50,13 +50,16 @@
                 </button>
 
                 <div class="dropdown-content">
-                    <a href="/users"
-                       sec:authorize="hasAuthority('ROLE_OWNER')"
-                       class="owner-link">Owner Panel</a>
-
-                    <a href="/payments"
-                       sec:authorize="hasAuthority('ROLE_OWNER')"
-                       class="owner-link">To'lov tarixi</a>
+                    <!-- Owner Panel — ichki (nested) dropdown, bosilganda ochiladi
+                         (Admin/Student Panel bilan bir xil andoza). To'lov tarixi
+                         ham shu ichida. -->
+                    <div class="sub-dropdown" sec:authorize="hasAuthority('ROLE_OWNER')">
+                        <button class="dropbtn sub-dropbtn owner-link" type="button">Owner Panel ▾</button>
+                        <div class="sub-dropdown-content">
+                            <a href="/users">Foydalanuvchilar</a>
+                            <a href="/payments">To'lov tarixi</a>
+                        </div>
+                    </div>
 
                     <!-- Admin Panel — ichki (nested) dropdown, bosilganda ochiladi -->
                     <div class="sub-dropdown" sec:authorize="hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')">

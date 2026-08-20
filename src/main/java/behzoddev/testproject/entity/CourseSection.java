@@ -58,6 +58,14 @@ public class CourseSection {
     @Column(name = "video_duration_seconds")
     private Integer videoDurationSeconds;
 
+    // Shu bo'lim aynan bitta mavzuga (Topic) bog'liq bo'lsa — bo'lim
+    // ko'rinishida "🎯 Mavzuga oid testlarni yechish" tugmasi chiqadi
+    // (saytning haqiqiy test tizimiga, shu mavzu tanlangan holda). Ixtiyoriy —
+    // hamma bo'lim ham biror mavzuga bog'liq bo'lishi shart emas.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "linked_topic_id")
+    private Topic linkedTopic;
+
     @Column(name = "created_at", nullable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

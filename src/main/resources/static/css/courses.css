@@ -333,6 +333,16 @@ body {
     white-space: pre-wrap;
 }
 
+.section-content a {
+    color: #2563eb;
+    text-decoration: underline;
+    word-break: break-all;
+}
+
+.section-content a:hover {
+    color: #1d4ed8;
+}
+
 /* Responsive video embed — har qanday manba (YouTube/upload/external) uchun
    16:9 nisbatda, to'liq width/height bilan ko'rinadi. */
 /* MIXED bo'lim — matn video ustida, orasida bo'shliq bilan. */
@@ -357,6 +367,27 @@ body {
     width: 100%;
     height: 100%;
     border: none;
+}
+
+/* Bo'lim mavzusiga bog'langan haqiqiy test tizimiga o'tuvchi tugma. */
+.topic-test-link {
+    margin-bottom: 20px;
+}
+
+.topic-test-btn {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.topic-test-btn:hover {
+    background: #1d4ed8;
 }
 
 .section-nav-actions {

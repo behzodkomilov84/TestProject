@@ -33,7 +33,10 @@ function renderSection(data) {
     const content = document.getElementById("sectionContent");
 
     if (data.type === "TEXT") {
-        content.textContent = data.textContent || "";
+        // Matn ichidagi http(s) havolalar (masalan kitobni yuklab olish
+        // manzillari) bosiladigan qilib ko'rsatiladi — oddiy textContent
+        // bilan URL faqat matn sifatida ko'rinib, bosib bo'lmasdi.
+        content.innerHTML = linkify(data.textContent || "");
         // Matn bo'lim — ochilgan zahoti "tugatilgan" deb belgilanadi.
         markCompleted();
     } else if (data.type === "VIDEO") {
@@ -44,18 +47,52 @@ function renderSection(data) {
         // video oxirigacha ko'rilganda (matn kabi darhol emas — video
         // ko'rilishini majburlash uchun).
         content.innerHTML =
-            `<div class="section-text-block">${escapeHtml(data.textContent || "")}</div>` +
+            `<div class="section-text-block">${linkify(data.textContent || "")}</div>` +
             buildVideoEmbed(data);
         setupVideoCompletionTracking(data);
     }
 
+    renderTopicTestLink(data);
     updateNextButton(data);
 }
 
-function escapeHtml(text) {
+// Faqat shu mavzuga bog'langan bo'limlarda — saytning haqiqiy test
+// tizimiga (/testConfigPage) shu fan/mavzu avtomatik tanlangan holda
+// o'tkazuvchi tugma. DOM API orqali yaratiladi (innerHTML emas) —
+// xavfsizroq va bu yerda dinamik qism faqat butun son (topicId).
+function renderTopicTestLink(data) {
+    const container = document.getElementById("topicTestLink");
+    container.innerHTML = "";
+
+    if (!data.linkedTopicId) return;
+
+    const btn = document.createElement("button");
+    btn.textContent = "🎯 Mavzuga oid testlarni yechish";
+    btn.className = "topic-test-btn";
+    btn.onclick = () => {
+        const params = new URLSearchParams({
+            scienceId: data.linkedScienceId,
+            topicId: data.linkedTopicId
+        });
+        location.href = "/testConfigPage?" + params.toString();
+    };
+
+    container.appendChild(btn);
+}
+
+// Avval xavfsiz escape qilinadi (XSS'dan himoya — matn hech qachon
+// ishonchli manba emas deb qaraladi), keyin http(s) havolalar bosiladigan
+// <a> teglariga aylantiriladi. Qatorlar orasidagi bo'shliq uchun <br>
+// shart emas — .section-content'da white-space:pre-wrap bor, xom "\n"
+// belgisi o'zi qator ko'chirish sifatida chiziladi.
+function linkify(text) {
     const div = document.createElement("div");
     div.textContent = text;
-    return div.innerHTML.replace(/\n/g, "<br>");
+    const escaped = div.innerHTML;
+    return escaped.replace(
+        /(https?:\/\/[^\s<]+)/g,
+        (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`
+    );
 }
 
 function buildVideoEmbed(data) {

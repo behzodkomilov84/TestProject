@@ -118,6 +118,9 @@ public class CourseService {
                 .videoSourceType(section.getVideoSourceType() != null ? section.getVideoSourceType().name() : null)
                 .videoUrl(section.getVideoUrl())
                 .videoDurationSeconds(section.getVideoDurationSeconds())
+                .linkedTopicId(section.getLinkedTopic() != null ? section.getLinkedTopic().getId() : null)
+                .linkedScienceId(section.getLinkedTopic() != null
+                        ? section.getLinkedTopic().getScience().getId() : null)
                 .completed(completed)
                 .nextSectionId(next != null ? next.getId() : null)
                 .nextUnlocked(next != null && (isOwner || completed))
