@@ -4,6 +4,8 @@ import behzoddev.testproject.dao.CourseRepository;
 import behzoddev.testproject.dao.CourseSectionProgressRepository;
 import behzoddev.testproject.dao.CourseSectionRepository;
 import behzoddev.testproject.dao.CourseSubscriptionRepository;
+import behzoddev.testproject.dao.ScienceRepository;
+import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dto.course.CourseDetailDto;
 import behzoddev.testproject.dto.course.CourseSaveDto;
 import behzoddev.testproject.dto.course.CourseSectionContentDto;
@@ -51,6 +53,10 @@ class CourseServiceTest {
     private CourseSubscriptionRepository courseSubscriptionRepository;
     @Mock
     private CourseSectionProgressRepository courseSectionProgressRepository;
+    @Mock
+    private ScienceRepository scienceRepository;
+    @Mock
+    private TopicRepository topicRepository;
 
     @InjectMocks
     private CourseService courseService;
@@ -236,7 +242,7 @@ class CourseServiceTest {
         Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
 
-        CourseSectionSaveDto dto = new CourseSectionSaveDto(" ", "TEXT", "matn", null, null, null);
+        CourseSectionSaveDto dto = new CourseSectionSaveDto(" ", "TEXT", "matn", null, null, null, null, null);
 
         assertThatThrownBy(() -> courseService.addSection(1L, dto, owner()))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -248,7 +254,7 @@ class CourseServiceTest {
         Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
 
-        CourseSectionSaveDto dto = new CourseSectionSaveDto("Sarlavha", "TEXT", null, null, null, null);
+        CourseSectionSaveDto dto = new CourseSectionSaveDto("Sarlavha", "TEXT", null, null, null, null, null, null);
 
         assertThatThrownBy(() -> courseService.addSection(1L, dto, owner()))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -260,7 +266,7 @@ class CourseServiceTest {
         Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
 
-        CourseSectionSaveDto dto = new CourseSectionSaveDto("Sarlavha", "VIDEO", null, "YOUTUBE", null, null);
+        CourseSectionSaveDto dto = new CourseSectionSaveDto("Sarlavha", "VIDEO", null, "YOUTUBE", null, null, null, null);
 
         assertThatThrownBy(() -> courseService.addSection(1L, dto, owner()))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -275,7 +281,7 @@ class CourseServiceTest {
         when(courseSectionRepository.findTopByCourse_IdOrderByOrderIndexDesc(1L)).thenReturn(Optional.of(last));
         when(courseSectionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        CourseSectionSaveDto dto = new CourseSectionSaveDto("3-bo'lim", "TEXT", "matn", null, null, null);
+        CourseSectionSaveDto dto = new CourseSectionSaveDto("3-bo'lim", "TEXT", "matn", null, null, null, null, null);
         CourseSectionSummaryDto result = courseService.addSection(1L, dto, owner());
 
         assertThat(result.orderIndex()).isEqualTo(3);
@@ -288,7 +294,7 @@ class CourseServiceTest {
         when(courseSectionRepository.findTopByCourse_IdOrderByOrderIndexDesc(1L)).thenReturn(Optional.empty());
         when(courseSectionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        CourseSectionSaveDto dto = new CourseSectionSaveDto("1-bo'lim", "TEXT", "matn", null, null, null);
+        CourseSectionSaveDto dto = new CourseSectionSaveDto("1-bo'lim", "TEXT", "matn", null, null, null, null, null);
         CourseSectionSummaryDto result = courseService.addSection(1L, dto, owner());
 
         assertThat(result.orderIndex()).isEqualTo(1);
@@ -379,5 +385,134 @@ class CourseServiceTest {
         courseService.deleteCourse(1L, owner());
 
         org.mockito.Mockito.verify(courseRepository).delete(course);
+    }
+
+    // ===== deleteSection: bo'limga tegishli progress yozuvlari avval o'chishi kerak =====
+    // Haqiqiy production bug: course_section_progress.section_id FK RESTRICT
+    // bo'lgani uchun, foydalanuvchi bo'limni "tugatilgan" deb belgilagan
+    // bo'lsa, bo'limni o'chirish "Bu amalni bajarib bo'lmadi — bog'liq
+    // ma'lumotlar mavjud" (409) xatosi bilan muvaffaqiyatsiz tugardi.
+
+    @Test
+    void deleteSection_deletesProgressBeforeSectionItself() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseSection section = CourseSection.builder().id(5L).course(course).orderIndex(1).build();
+        when(courseSectionRepository.findById(5L)).thenReturn(Optional.of(section));
+
+        courseService.deleteSection(1L, 5L, owner());
+
+        var inOrder = org.mockito.Mockito.inOrder(courseSectionProgressRepository, courseSectionRepository);
+        inOrder.verify(courseSectionProgressRepository).deleteBySection_Id(5L);
+        inOrder.verify(courseSectionRepository).delete(section);
+    }
+
+    // ===== TEST BOSHQARUVI bilan bog'lash: Fan/Mavzu autocreate =====
+
+    @Test
+    void addSection_withNewScienceAndTopicNames_autocreatesAndLinksThem() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findTopByCourse_IdOrderByOrderIndexDesc(1L)).thenReturn(Optional.empty());
+        when(courseSectionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        behzoddev.testproject.entity.Science newScience =
+                behzoddev.testproject.entity.Science.builder().id(10L).name("Kimyo").build();
+        when(scienceRepository.findByName("Kimyo")).thenReturn(Optional.empty());
+        when(scienceRepository.save(any())).thenReturn(newScience);
+
+        behzoddev.testproject.entity.Topic newTopic =
+                behzoddev.testproject.entity.Topic.builder().id(20L).name("Atom tuzilishi").science(newScience).build();
+        when(topicRepository.findByScience_IdAndName(10L, "Atom tuzilishi")).thenReturn(Optional.empty());
+        when(topicRepository.save(any())).thenReturn(newTopic);
+
+        CourseSectionSaveDto dto = new CourseSectionSaveDto(
+                "1-bo'lim", "TEXT", "matn", null, null, null, "Kimyo", "Atom tuzilishi");
+        courseService.addSection(1L, dto, owner());
+
+        var sectionCaptor = org.mockito.ArgumentCaptor.forClass(CourseSection.class);
+        org.mockito.Mockito.verify(courseSectionRepository).save(sectionCaptor.capture());
+        assertThat(sectionCaptor.getValue().getLinkedTopic()).isEqualTo(newTopic);
+        org.mockito.Mockito.verify(scienceRepository).save(any());
+        org.mockito.Mockito.verify(topicRepository).save(any());
+    }
+
+    @Test
+    void addSection_withExistingScienceAndTopicNames_reusesThemWithoutCreating() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findTopByCourse_IdOrderByOrderIndexDesc(1L)).thenReturn(Optional.empty());
+        when(courseSectionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        behzoddev.testproject.entity.Science existingScience =
+                behzoddev.testproject.entity.Science.builder().id(10L).name("Kimyo").build();
+        when(scienceRepository.findByName("Kimyo")).thenReturn(Optional.of(existingScience));
+
+        behzoddev.testproject.entity.Topic existingTopic =
+                behzoddev.testproject.entity.Topic.builder().id(20L).name("Atom tuzilishi").science(existingScience).build();
+        when(topicRepository.findByScience_IdAndName(10L, "Atom tuzilishi")).thenReturn(Optional.of(existingTopic));
+
+        CourseSectionSaveDto dto = new CourseSectionSaveDto(
+                "1-bo'lim", "TEXT", "matn", null, null, null, "Kimyo", "Atom tuzilishi");
+        courseService.addSection(1L, dto, owner());
+
+        org.mockito.Mockito.verify(scienceRepository, org.mockito.Mockito.never()).save(any());
+        org.mockito.Mockito.verify(topicRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void addSection_withoutScienceOrTopicName_leavesSectionUnlinked() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findTopByCourse_IdOrderByOrderIndexDesc(1L)).thenReturn(Optional.empty());
+        when(courseSectionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        CourseSectionSaveDto dto = new CourseSectionSaveDto("1-bo'lim", "TEXT", "matn", null, null, null, null, null);
+        courseService.addSection(1L, dto, owner());
+
+        var sectionCaptor = org.mockito.ArgumentCaptor.forClass(CourseSection.class);
+        org.mockito.Mockito.verify(courseSectionRepository).save(sectionCaptor.capture());
+        assertThat(sectionCaptor.getValue().getLinkedTopic()).isNull();
+        org.mockito.Mockito.verifyNoInteractions(scienceRepository, topicRepository);
+    }
+
+    // ===== reorderSections: yuqoriga/pastga ko'chirish va A-Z/Z-A saralash =====
+
+    @Test
+    void reorderSections_validIds_reassignsOrderIndexSequentially() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseSection s1 = CourseSection.builder().id(1L).course(course).orderIndex(1).build();
+        CourseSection s2 = CourseSection.builder().id(2L).course(course).orderIndex(2).build();
+        CourseSection s3 = CourseSection.builder().id(3L).course(course).orderIndex(3).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(s1, s2, s3));
+
+        courseService.reorderSections(1L, List.of(3L, 1L, 2L), owner());
+
+        assertThat(s3.getOrderIndex()).isEqualTo(1);
+        assertThat(s1.getOrderIndex()).isEqualTo(2);
+        assertThat(s2.getOrderIndex()).isEqualTo(3);
+        org.mockito.Mockito.verify(courseSectionRepository).saveAll(List.of(s1, s2, s3));
+    }
+
+    @Test
+    void reorderSections_idListDoesNotMatchCourseSections_throws() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseSection s1 = CourseSection.builder().id(1L).course(course).orderIndex(1).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(s1));
+
+        assertThatThrownBy(() -> courseService.reorderSections(1L, List.of(1L, 99L), owner()))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void reorderSections_notCreatorAdmin_throwsAccessDenied() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> courseService.reorderSections(1L, List.of(1L), admin()))
+                .isInstanceOf(AccessDeniedException.class);
     }
 }

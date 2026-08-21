@@ -80,20 +80,72 @@
                 <input type="number" id="newSectionVideoDuration" placeholder="Video davomiyligi (soniya) — faqat 'Boshqa manba' uchun" style="display:none;">
             </div>
 
+            <!-- Mavzuni TEST BOSHQARUVI'dagi Fan/Mavzu bilan bog'lash — ixtiyoriy.
+                 Kiritilgan nom mavjud bo'lmasa, avtomatik yaratiladi. -->
+            <label class="content-toggle-label">🎯 Mavzuga oid testlar bilan bog'lash (ixtiyoriy)</label>
+            <input type="text" id="newSectionScienceName" placeholder="Fan nomi (masalan: Kimyo)" list="scienceNamesList">
+            <input type="text" id="newSectionTopicName" placeholder="Mavzu nomi (mavjud bo'lmasa, avtomatik yaratiladi)">
+
             <div class="course-form-actions">
                 <button onclick="submitAddSection()">✅ Bo'limni qo'shish</button>
                 <button onclick="closeAddSectionForm()">Bekor qilish</button>
             </div>
         </div>
 
+        <!-- Bo'limni tahrirlash — "✏️" tugmasi bosilganda shu bitta forma
+             tanlangan bo'lim ma'lumotlari bilan to'ldirilib ochiladi. -->
+        <div id="editSectionForm" class="section-form" style="display:none;">
+            <input type="text" id="editSectionTitle" placeholder="Bo'lim nomi">
+
+            <label class="content-toggle-label">
+                <input type="checkbox" id="editIncludeText" onchange="onEditContentToggle(this)"> 📄 Matn qo'shish
+            </label>
+            <div id="editTextFields">
+                <textarea id="editSectionText" placeholder="Matn kontenti" rows="5"></textarea>
+            </div>
+
+            <label class="content-toggle-label">
+                <input type="checkbox" id="editIncludeVideo" onchange="onEditContentToggle(this)"> 🎬 Video qo'shish
+            </label>
+            <div id="editVideoFields" style="display:none;">
+                <select id="editSectionVideoSource" onchange="onEditVideoSourceChange()">
+                    <option value="YOUTUBE">YouTube</option>
+                    <option value="UPLOAD">Fayl yuklash</option>
+                    <option value="EXTERNAL">Boshqa manba (link)</option>
+                </select>
+                <input type="text" id="editSectionVideoUrl" placeholder="YouTube video ID (masalan: dQw4w9WgXcQ)">
+                <input type="file" id="editSectionVideoFile" accept="video/*" style="display:none;">
+                <input type="number" id="editSectionVideoDuration" placeholder="Video davomiyligi (soniya) — faqat 'Boshqa manba' uchun" style="display:none;">
+            </div>
+
+            <label class="content-toggle-label">🎯 Mavzuga oid testlar bilan bog'lash (ixtiyoriy)</label>
+            <input type="text" id="editSectionScienceName" placeholder="Fan nomi (masalan: Kimyo)" list="scienceNamesList">
+            <input type="text" id="editSectionTopicName" placeholder="Mavzu nomi (mavjud bo'lmasa, avtomatik yaratiladi)">
+
+            <div class="course-form-actions">
+                <button onclick="submitEditSection()">✅ Saqlash</button>
+                <button onclick="closeEditSectionForm()">Bekor qilish</button>
+            </div>
+        </div>
+
+        <datalist id="scienceNamesList"></datalist>
+
         <!-- Obuna berish/tasdiqlash/bekor qilish — endi barcha kurslar uchun
              yagona "Kursga obuna berish" sahifasida (navbar > 🎓 Kurslar). -->
-        <button onclick="location.href='/courses/subscriptions?courseId=' + COURSE_ID">
+        <button id="manageSubscriptionsBtn" onclick="location.href='/courses/subscriptions?courseId=' + COURSE_ID">
             💳 Bu kurs uchun obunalarni boshqarish
         </button>
     </div>
 
-    <h2 class="curriculum-title">📋 Dastur</h2>
+    <h2 class="curriculum-title">📋 Mavzular</h2>
+
+    <!-- OWNER/ADMIN uchun — bo'limlarni saralash. -->
+    <div id="sectionsSortBar" class="sections-sort-bar" style="display:none;">
+        <span>Saralash:</span>
+        <button onclick="sortSections('AZ')">A→Z</button>
+        <button onclick="sortSections('ZA')">Z→A</button>
+    </div>
+
     <div id="sectionsList" class="sections-list">
         <div class="courses-empty">Yuklanmoqda...</div>
     </div>

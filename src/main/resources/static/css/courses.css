@@ -243,8 +243,38 @@ body {
     margin-bottom: 24px;
 }
 
+/* "➕ Yangi bo'lim qo'shish" va "💳 obunalarni boshqarish" tugmalari
+   yuqoridagi bloklarga yopishib turmasligi uchun. */
+#openAddSectionBtn,
+#manageSubscriptionsBtn {
+    margin-top: 16px;
+}
+
 .curriculum-title {
     margin-bottom: 12px;
+}
+
+.sections-sort-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.sections-sort-bar button {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #d5dde8;
+    background: white;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.sections-sort-bar button:hover {
+    background: #f1f5f9;
 }
 
 .sections-list {
@@ -319,6 +349,11 @@ body {
     border: none;
     cursor: pointer;
     font-size: 16px;
+}
+
+.section-manage-actions button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
 }
 
 /* ===== Bo'lim ko'rish sahifasi ===== */

@@ -18,6 +18,10 @@ public record CourseSectionContentDto(
         // shu fan/mavzu avtomatik tanlangan holda o'tkazadi).
         Long linkedTopicId,
         Long linkedScienceId,
+        // Tahrirlash formasini oldindan to'ldirish uchun — foydalanuvchi
+        // ID'larni emas, fan/mavzu NOMINI ko'radi va o'zgartiradi.
+        String linkedTopicName,
+        String linkedScienceName,
         boolean completed,
         Long nextSectionId, // null bo'lsa — bu oxirgi bo'lim
         boolean nextUnlocked

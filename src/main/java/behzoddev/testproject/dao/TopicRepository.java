@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface TopicRepository extends JpaRepository<Topic, Long> {
 
@@ -20,6 +21,10 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
 
     @Query("select new behzoddev.testproject.dto.topic.TopicIdAndNameDto(t.id, t.name) from Topic t where t.science.id = :scienceId and t.id = :topicId")
     TopicIdAndNameDto findTopicByIds(@Param("scienceId") Long scienceId, @Param("topicId") Long topicId);
+
+    // Kurs bo'limini TEST BOSHQARUVI'dagi mavzuga bog'lashda — mavjud
+    // mavzuni topish uchun (CourseService.resolveLinkedTopic).
+    Optional<Topic> findByScience_IdAndName(Long scienceId, String name);
 
     @Query("select t.science.id from Topic t where t.id = :topicId")
     Long getScienceIdByTopicId(@Param("topicId") Long topicId);

@@ -12,6 +12,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -70,6 +71,15 @@ public class CourseSectionController {
     public void delete(@PathVariable Long courseId, @PathVariable Long sectionId,
                         @AuthenticationPrincipal User user) {
         courseService.deleteSection(courseId, sectionId, user);
+    }
+
+    // Bo'limlar tartibini qayta belgilash (yuqoriga/pastga ko'chirish,
+    // A-Z/Z-A saralash) — to'liq yangi tartibdagi bo'lim ID ro'yxati.
+    @PutMapping("/reorder")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public void reorder(@PathVariable Long courseId, @RequestBody List<Long> sectionIds,
+                         @AuthenticationPrincipal User user) {
+        courseService.reorderSections(courseId, sectionIds, user);
     }
 
     // Bo'lim uchun video (UPLOAD manba) yuklash — qaytgan URL

@@ -15,4 +15,10 @@ public interface CourseSectionProgressRepository extends JpaRepository<CourseSec
     // avval shu kursning istalgan bo'limiga tegishli barcha progress
     // yozuvlarini o'chirish kerak (CourseService.deleteCourse).
     void deleteBySection_Course_Id(Long courseId);
+
+    // Bitta bo'limni o'chirishdan oldin — xuddi shunday FK RESTRICT sababli
+    // (CourseService.deleteSection). Aks holda "Cannot delete or update a
+    // parent row" xatosi bilan muvaffaqiyatsiz tugardi (foydalanuvchi shu
+    // bo'limni "tugatilgan" deb belgilagan bo'lsa).
+    void deleteBySection_Id(Long sectionId);
 }

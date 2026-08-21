@@ -7,6 +7,12 @@ public record CourseSectionSaveDto(
         String textContent,
         String videoSourceType, // UPLOAD | YOUTUBE | EXTERNAL
         String videoUrl,
-        Integer videoDurationSeconds
+        Integer videoDurationSeconds,
+        // Ixtiyoriy — TEST BOSHQARUVI'dagi Fan/Mavzu bilan bog'lash uchun.
+        // Ikkalasi ham berilsa: shu nomli Fan/Mavzu mavjud bo'lmasa avtomatik
+        // yaratiladi (CourseService.resolveLinkedTopic). Bo'sh qoldirilsa —
+        // bog'lanish olib tashlanadi (unlink).
+        String scienceName,
+        String topicName
 ) {
 }

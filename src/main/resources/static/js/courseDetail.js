@@ -2,7 +2,21 @@ let cachedCourse = null;
 
 document.addEventListener("DOMContentLoaded", () => {
     loadCourse();
+    loadScienceNamesList();
 });
+
+// "Fan nomi" maydonlariga (qo'shish/tahrirlash) mavjud fanlarni <datalist>
+// orqali taklif qilish — yozish paytida mos nom bo'lsa, avtomatik yaratish
+// o'rniga o'shaning ustiga bog'lanadi.
+function loadScienceNamesList() {
+    fetch("/api/science")
+        .then(r => r.ok ? r.json() : [])
+        .then(sciences => {
+            const list = document.getElementById("scienceNamesList");
+            list.innerHTML = sciences.map(s => `<option value="${escapeHtml(s.name)}">`).join("");
+        })
+        .catch(err => console.error(err));
+}
 
 function loadCourse() {
     fetch(`/api/courses/${COURSE_ID}`)
@@ -43,6 +57,7 @@ function renderCourse(course) {
     // uchun HAR DOIM, ADMIN uchun faqat O'ZI yaratgan kursda (backend
     // shu logikani hisoblab, canManage sifatida qaytaradi).
     document.getElementById("manageCoursePanel").style.display = course.canManage ? "block" : "none";
+    document.getElementById("sectionsSortBar").style.display = course.canManage ? "flex" : "none";
 
     if (course.canManage) {
         document.getElementById("togglePublishBtn").textContent =
@@ -80,7 +95,7 @@ function renderSections(sections) {
         return;
     }
 
-    list.innerHTML = sections.map(s => {
+    list.innerHTML = sections.map((s, i) => {
         const indexClass = s.completed ? "section-index completed" : "section-index";
         const indexIcon = s.completed ? "✓" : s.orderIndex;
         const typeIcon = s.type === "VIDEO" ? "🎬" : s.type === "MIXED" ? "📄🎬" : "📄";
@@ -91,6 +106,9 @@ function renderSections(sections) {
 
         const manageActions = cachedCourse && cachedCourse.canManage
             ? `<div class="section-manage-actions">
+                   <button onclick="moveSectionUp(${s.id})" title="Yuqoriga" ${i === 0 ? "disabled" : ""}>⬆️</button>
+                   <button onclick="moveSectionDown(${s.id})" title="Pastga" ${i === sections.length - 1 ? "disabled" : ""}>⬇️</button>
+                   <button onclick="openEditSectionForm(${s.id})" title="Tahrirlash">✏️</button>
                    <button onclick="deleteSection(${s.id})" title="O'chirish">🗑️</button>
                </div>`
             : "";
@@ -259,7 +277,11 @@ async function submitAddSection() {
     }
 
     const type = includeText && includeVideo ? "MIXED" : includeText ? "TEXT" : "VIDEO";
-    const payload = { title, type, textContent: null, videoSourceType: null, videoUrl: null, videoDurationSeconds: null };
+    const payload = {
+        title, type, textContent: null, videoSourceType: null, videoUrl: null, videoDurationSeconds: null,
+        scienceName: document.getElementById("newSectionScienceName").value.trim() || null,
+        topicName: document.getElementById("newSectionTopicName").value.trim() || null
+    };
 
     if (includeText) {
         payload.textContent = document.getElementById("newSectionText").value.trim();
@@ -325,11 +347,14 @@ async function submitAddSection() {
         document.getElementById("newSectionTitle").value = "";
         document.getElementById("newSectionText").value = "";
         document.getElementById("newSectionVideoUrl").value = "";
+        document.getElementById("newSectionScienceName").value = "";
+        document.getElementById("newSectionTopicName").value = "";
         document.getElementById("includeText").checked = true;
         document.getElementById("includeVideo").checked = false;
         onContentToggle(document.getElementById("includeText"));
         closeAddSectionForm();
         loadCourse();
+        loadScienceNamesList();
     } catch (err) {
         console.error(err);
         alert("Tarmoq xatoligi");
@@ -337,6 +362,9 @@ async function submitAddSection() {
 }
 
 async function deleteSection(sectionId) {
+    // Backend 409 (bog'liq ma'lumotlar — progress yozuvlari) qaytarishi
+    // mumkin edi, lekin CourseService.deleteSection endi ularni avtomatik
+    // o'chiradi (kursni o'chirishdagi FK bug bilan bir xil sabab/tuzatish).
     if (!confirm("Bo'limni o'chirmoqchimisiz?")) return;
 
     try {
@@ -351,6 +379,216 @@ async function deleteSection(sectionId) {
         console.error(err);
         alert("Tarmoq xatoligi");
     }
+}
+
+/* ===== OWNER/ADMIN: bo'limni tahrirlash ===== */
+
+let editingSectionId = null;
+
+async function openEditSectionForm(sectionId) {
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/sections/${sectionId}`);
+        if (!res.ok) {
+            alert("Bo'lim ma'lumotlarini yuklab bo'lmadi");
+            return;
+        }
+        const section = await res.json();
+        editingSectionId = sectionId;
+
+        document.getElementById("editSectionTitle").value = section.title;
+
+        const hasText = section.type === "TEXT" || section.type === "MIXED";
+        const hasVideo = section.type === "VIDEO" || section.type === "MIXED";
+        document.getElementById("editIncludeText").checked = hasText;
+        document.getElementById("editIncludeVideo").checked = hasVideo;
+        document.getElementById("editSectionText").value = section.textContent || "";
+        onEditContentToggle(document.getElementById("editIncludeText"));
+
+        if (hasVideo) {
+            document.getElementById("editSectionVideoSource").value = section.videoSourceType || "YOUTUBE";
+            document.getElementById("editSectionVideoUrl").value = section.videoUrl || "";
+            document.getElementById("editSectionVideoDuration").value = section.videoDurationSeconds || "";
+            onEditVideoSourceChange();
+        }
+
+        document.getElementById("editSectionScienceName").value = section.linkedScienceName || "";
+        document.getElementById("editSectionTopicName").value = section.linkedTopicName || "";
+
+        document.getElementById("editSectionForm").style.display = "flex";
+        document.getElementById("editSectionForm").scrollIntoView({ behavior: "smooth", block: "center" });
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+function closeEditSectionForm() {
+    editingSectionId = null;
+    document.getElementById("editSectionForm").style.display = "none";
+}
+
+function onEditContentToggle(changedCheckbox) {
+    const includeText = document.getElementById("editIncludeText");
+    const includeVideo = document.getElementById("editIncludeVideo");
+
+    if (!includeText.checked && !includeVideo.checked) {
+        (changedCheckbox || includeText).checked = true;
+    }
+
+    document.getElementById("editTextFields").style.display = includeText.checked ? "block" : "none";
+    document.getElementById("editVideoFields").style.display = includeVideo.checked ? "block" : "none";
+}
+
+function onEditVideoSourceChange() {
+    const source = document.getElementById("editSectionVideoSource").value;
+    document.getElementById("editSectionVideoUrl").style.display = source === "UPLOAD" ? "none" : "block";
+    document.getElementById("editSectionVideoFile").style.display = source === "UPLOAD" ? "block" : "none";
+    document.getElementById("editSectionVideoDuration").style.display = source === "EXTERNAL" ? "block" : "none";
+
+    document.getElementById("editSectionVideoUrl").placeholder =
+        source === "YOUTUBE" ? "YouTube video ID (masalan: dQw4w9WgXcQ)" : "Video URL";
+}
+
+async function submitEditSection() {
+    if (!editingSectionId) return;
+
+    const title = document.getElementById("editSectionTitle").value.trim();
+    const includeText = document.getElementById("editIncludeText").checked;
+    const includeVideo = document.getElementById("editIncludeVideo").checked;
+
+    if (!title) {
+        alert("❌ Bo'lim nomini kiriting");
+        return;
+    }
+
+    if (!includeText && !includeVideo) {
+        alert("❌ Kamida bittasini tanlang: Matn yoki Video");
+        return;
+    }
+
+    const type = includeText && includeVideo ? "MIXED" : includeText ? "TEXT" : "VIDEO";
+    const payload = {
+        title, type, textContent: null, videoSourceType: null, videoUrl: null, videoDurationSeconds: null,
+        scienceName: document.getElementById("editSectionScienceName").value.trim() || null,
+        topicName: document.getElementById("editSectionTopicName").value.trim() || null
+    };
+
+    if (includeText) {
+        payload.textContent = document.getElementById("editSectionText").value.trim();
+        if (!payload.textContent) {
+            alert("❌ Matn kontentini kiriting");
+            return;
+        }
+    }
+
+    if (includeVideo) {
+        const source = document.getElementById("editSectionVideoSource").value;
+        payload.videoSourceType = source;
+
+        if (source === "UPLOAD") {
+            const fileInput = document.getElementById("editSectionVideoFile");
+            if (fileInput.files[0]) {
+                try {
+                    const formData = new FormData();
+                    formData.append("video", fileInput.files[0]);
+                    const uploadRes = await fetch(`/api/courses/${COURSE_ID}/sections/upload-video`, {
+                        method: "POST", body: formData
+                    });
+                    const uploadData = await uploadRes.json().catch(() => ({}));
+                    if (!uploadRes.ok) {
+                        alert(uploadData.error || "Video yuklashda xatolik");
+                        return;
+                    }
+                    payload.videoUrl = uploadData.url;
+                } catch (err) {
+                    console.error(err);
+                    alert("Video yuklashda tarmoq xatoligi");
+                    return;
+                }
+            } else {
+                // Yangi fayl tanlanmagan — eski video URL saqlanib qoladi.
+                payload.videoUrl = document.getElementById("editSectionVideoUrl").value.trim();
+            }
+        } else {
+            payload.videoUrl = document.getElementById("editSectionVideoUrl").value.trim();
+            if (!payload.videoUrl) {
+                alert("❌ Video URL/ID ni kiriting");
+                return;
+            }
+            if (source === "EXTERNAL") {
+                payload.videoDurationSeconds = Number(document.getElementById("editSectionVideoDuration").value) || null;
+            }
+        }
+    }
+
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/sections/${editingSectionId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            alert(data.error || "Bo'limni saqlashda xatolik");
+            return;
+        }
+
+        closeEditSectionForm();
+        loadCourse();
+        loadScienceNamesList();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+/* ===== OWNER/ADMIN: bo'limlarni saralash ===== */
+
+async function reorderTo(sectionIds) {
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/sections/reorder`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(sectionIds)
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "Tartibni saqlashda xatolik");
+            return;
+        }
+        loadCourse();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+function moveSectionUp(sectionId) {
+    if (!cachedCourse) return;
+    const ids = cachedCourse.sections.map(s => s.id);
+    const i = ids.indexOf(sectionId);
+    if (i <= 0) return;
+    [ids[i - 1], ids[i]] = [ids[i], ids[i - 1]];
+    reorderTo(ids);
+}
+
+function moveSectionDown(sectionId) {
+    if (!cachedCourse) return;
+    const ids = cachedCourse.sections.map(s => s.id);
+    const i = ids.indexOf(sectionId);
+    if (i === -1 || i >= ids.length - 1) return;
+    [ids[i], ids[i + 1]] = [ids[i + 1], ids[i]];
+    reorderTo(ids);
+}
+
+// dir: "AZ" | "ZA" — bo'lim nomlari bo'yicha to'liq qayta saralash.
+function sortSections(dir) {
+    if (!cachedCourse) return;
+    const sorted = [...cachedCourse.sections].sort((a, b) =>
+        dir === "AZ" ? a.title.localeCompare(b.title, "uz") : b.title.localeCompare(a.title, "uz"));
+    reorderTo(sorted.map(s => s.id));
 }
 
 /* Obuna berish/tasdiqlash/bekor qilish — endi /courses/subscriptions

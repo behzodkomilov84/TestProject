@@ -4,10 +4,14 @@ import behzoddev.testproject.dao.CourseRepository;
 import behzoddev.testproject.dao.CourseSectionProgressRepository;
 import behzoddev.testproject.dao.CourseSectionRepository;
 import behzoddev.testproject.dao.CourseSubscriptionRepository;
+import behzoddev.testproject.dao.ScienceRepository;
+import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dto.course.*;
 import behzoddev.testproject.entity.Course;
 import behzoddev.testproject.entity.CourseSection;
 import behzoddev.testproject.entity.CourseSectionProgress;
+import behzoddev.testproject.entity.Science;
+import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.entity.enums.CourseSectionType;
 import behzoddev.testproject.entity.enums.CourseSubscriptionStatus;
@@ -18,7 +22,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 /**
@@ -35,6 +41,8 @@ public class CourseService {
     private final CourseSectionRepository courseSectionRepository;
     private final CourseSubscriptionRepository courseSubscriptionRepository;
     private final CourseSectionProgressRepository courseSectionProgressRepository;
+    private final ScienceRepository scienceRepository;
+    private final TopicRepository topicRepository;
 
     /* ================= KATALOG / KO'RISH ================= */
 
@@ -126,6 +134,9 @@ public class CourseService {
                 .linkedTopicId(section.getLinkedTopic() != null ? section.getLinkedTopic().getId() : null)
                 .linkedScienceId(section.getLinkedTopic() != null
                         ? section.getLinkedTopic().getScience().getId() : null)
+                .linkedTopicName(section.getLinkedTopic() != null ? section.getLinkedTopic().getName() : null)
+                .linkedScienceName(section.getLinkedTopic() != null
+                        ? section.getLinkedTopic().getScience().getName() : null)
                 .completed(completed)
                 .nextSectionId(next != null ? next.getId() : null)
                 .nextUnlocked(next != null && (canManage || completed))
@@ -246,6 +257,7 @@ public class CourseService {
                 .orElse(1);
 
         CourseSection section = buildSectionFromDto(dto, course, nextOrder);
+        section.setLinkedTopic(resolveLinkedTopic(dto.scienceName(), dto.topicName()));
         courseSectionRepository.save(section);
 
         return CourseSectionSummaryDto.builder()
@@ -270,15 +282,68 @@ public class CourseService {
         section.setVideoSourceType(dto.videoSourceType() != null ? VideoSourceType.valueOf(dto.videoSourceType()) : null);
         section.setVideoUrl(dto.videoUrl());
         section.setVideoDurationSeconds(dto.videoDurationSeconds());
+        section.setLinkedTopic(resolveLinkedTopic(dto.scienceName(), dto.topicName()));
 
         courseSectionRepository.save(section);
     }
 
+    // Bo'limni o'chirishdan oldin unga tegishli progress yozuvlarini ham
+    // o'chiramiz — aks holda course_section_progress.section_id FK RESTRICT
+    // bo'lgani uchun (biror foydalanuvchi shu bo'limni "tugatilgan" deb
+    // belgilagan bo'lsa) "Cannot delete or update a parent row" xatosi bilan
+    // muvaffaqiyatsiz tugaydi (deleteCourse'dagi xuddi shu turdagi bug bilan bir xil).
     @Transactional
     public void deleteSection(Long courseId, Long sectionId, User currentUser) {
         CourseSection section = getSectionOrThrow(sectionId, courseId);
         checkCanManage(section.getCourse(), currentUser);
+        courseSectionProgressRepository.deleteBySection_Id(sectionId);
         courseSectionRepository.delete(section);
+    }
+
+    // Bo'limlar tartibini qayta belgilash — "yuqoriga/pastga" ko'chirish va
+    // A→Z/Z→A saralash bir xil endpoint orqali ishlaydi: frontend yangi
+    // tartibdagi ID ro'yxatini yuboradi, biz orderIndex'larni 1'dan qayta
+    // hisoblaymiz.
+    @Transactional
+    public void reorderSections(Long courseId, List<Long> orderedSectionIds, User currentUser) {
+        Course course = getCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
+
+        List<CourseSection> sections = courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(courseId);
+        Map<Long, CourseSection> byId = new LinkedHashMap<>();
+        for (CourseSection s : sections) {
+            byId.put(s.getId(), s);
+        }
+
+        if (orderedSectionIds.size() != sections.size() || !byId.keySet().containsAll(orderedSectionIds)) {
+            throw new IllegalArgumentException("❌Bo'limlar ro'yxati kursning bo'limlariga mos kelmayapti.");
+        }
+
+        int index = 1;
+        for (Long id : orderedSectionIds) {
+            byId.get(id).setOrderIndex(index++);
+        }
+        courseSectionRepository.saveAll(sections);
+    }
+
+    // ADMIN/OWNER bo'lim qo'shayotganda/tahrirlayotganda fan+mavzu nomini
+    // kiritsa — TEST BOSHQARUVI'da ular hali mavjud bo'lmasa avtomatik
+    // yaratiladi (alohida TEST BOSHQARUVI sahifasiga o'tib, mos ID qidirib
+    // yurishga hojat qolmaydi). Ikkalasi ham bo'sh bo'lsa — bog'lanish
+    // olib tashlanadi (unlink).
+    private Topic resolveLinkedTopic(String scienceName, String topicName) {
+        if (scienceName == null || scienceName.isBlank() || topicName == null || topicName.isBlank()) {
+            return null;
+        }
+
+        String trimmedScience = scienceName.trim();
+        String trimmedTopic = topicName.trim();
+
+        Science science = scienceRepository.findByName(trimmedScience)
+                .orElseGet(() -> scienceRepository.save(Science.builder().name(trimmedScience).build()));
+
+        return topicRepository.findByScience_IdAndName(science.getId(), trimmedTopic)
+                .orElseGet(() -> topicRepository.save(Topic.builder().name(trimmedTopic).science(science).build()));
     }
 
     private CourseSection buildSectionFromDto(CourseSectionSaveDto dto, Course course, int orderIndex) {
