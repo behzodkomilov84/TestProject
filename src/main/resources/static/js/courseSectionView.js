@@ -31,12 +31,14 @@ function renderSection(data) {
     document.getElementById("sectionTitle").textContent = data.title;
 
     const content = document.getElementById("sectionContent");
+    // HTML — .docx'dan mammoth.js orqali import qilingan, formatlash
+    // (abzatslar, qalin/kursiv, sarlavhalar, ro'yxatlar) saqlangan kontent —
+    // o'zgartirmasdan ko'rsatiladi. PLAIN (eski/qo'lda yozilgan) — xavfsiz
+    // escape qilinib, http(s) havolalar bosiladigan qilinadi (linkify).
+    content.classList.toggle("html-content", data.textContentFormat === "HTML");
 
     if (data.type === "TEXT") {
-        // Matn ichidagi http(s) havolalar (masalan kitobni yuklab olish
-        // manzillari) bosiladigan qilib ko'rsatiladi — oddiy textContent
-        // bilan URL faqat matn sifatida ko'rinib, bosib bo'lmasdi.
-        content.innerHTML = linkify(data.textContent || "");
+        content.innerHTML = renderTextContent(data);
         // Matn bo'lim — ochilgan zahoti "tugatilgan" deb belgilanadi.
         markCompleted();
     } else if (data.type === "VIDEO") {
@@ -47,7 +49,7 @@ function renderSection(data) {
         // video oxirigacha ko'rilganda (matn kabi darhol emas — video
         // ko'rilishini majburlash uchun).
         content.innerHTML =
-            `<div class="section-text-block">${linkify(data.textContent || "")}</div>` +
+            `<div class="section-text-block">${renderTextContent(data)}</div>` +
             buildVideoEmbed(data);
         setupVideoCompletionTracking(data);
     }
@@ -78,6 +80,16 @@ function renderTopicTestLink(data) {
     };
 
     container.appendChild(btn);
+}
+
+// HTML formatdagi kontent (.docx'dan import qilingan) o'zgartirmasdan,
+// PLAIN (qo'lda yozilgan yoki eski bo'limlar) esa xavfsiz escape+linkify
+// qilingan holda qaytariladi.
+function renderTextContent(data) {
+    if (data.textContentFormat === "HTML") {
+        return data.textContent || "";
+    }
+    return linkify(data.textContent || "");
 }
 
 // Avval xavfsiz escape qilinadi (XSS'dan himoya — matn hech qachon

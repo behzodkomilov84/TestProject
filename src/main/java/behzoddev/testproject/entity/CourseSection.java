@@ -1,5 +1,6 @@
 package behzoddev.testproject.entity;
 
+import behzoddev.testproject.entity.enums.CourseSectionContentFormat;
 import behzoddev.testproject.entity.enums.CourseSectionType;
 import behzoddev.testproject.entity.enums.VideoSourceType;
 import jakarta.persistence.*;
@@ -39,8 +40,15 @@ public class CourseSection {
     private CourseSectionType type;
 
     // type=TEXT bo'lsa to'ldiriladi.
-    @Column(name = "text_content", columnDefinition = "TEXT")
+    @Column(name = "text_content", columnDefinition = "MEDIUMTEXT")
     private String textContent;
+
+    // PLAIN (qo'lda yozilgan) yoki HTML (.docx'dan import qilingan,
+    // formatlash saqlangan) — CourseSectionView.js shunga qarab ko'rsatadi.
+    @Enumerated(EnumType.STRING)
+    @Column(name = "text_content_format", nullable = false, length = 10)
+    @Builder.Default
+    private CourseSectionContentFormat textContentFormat = CourseSectionContentFormat.PLAIN;
 
     // type=VIDEO bo'lsa quyidagilar to'ldiriladi.
     @Enumerated(EnumType.STRING)

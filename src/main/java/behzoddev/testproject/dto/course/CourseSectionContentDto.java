@@ -10,6 +10,10 @@ public record CourseSectionContentDto(
         int orderIndex,
         String type, // TEXT | VIDEO
         String textContent,
+        // PLAIN | HTML — frontend (courseSectionView.js) shunga qarab yo
+        // escape+linkify qiladi (PLAIN), yo to'g'ridan-to'g'ri, o'zgartirmasdan
+        // ko'rsatadi (HTML — .docx'dan import qilingan, formatlash saqlangan).
+        String textContentFormat,
         String videoSourceType, // UPLOAD | YOUTUBE | EXTERNAL
         String videoUrl,
         Integer videoDurationSeconds,

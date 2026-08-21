@@ -1,0 +1,21 @@
+<!-- Google Translate — kurs va test sahifalarida sayt tilini (o'zbekcha)
+     boshqa tilga o'girish uchun. Faqat shu fragment qo'shilgan sahifalarda
+     ko'rinadi (courseDetail, courseSectionView, testConfigPage, testSession) —
+     butun sayt uchun emas. -->
+<div th:fragment="googleTranslateWidget" xmlns:th="http://www.thymeleaf.org">
+    <link rel="stylesheet" th:href="@{/css/googleTranslate.css}">
+
+    <div id="google_translate_element" class="google-translate-widget"></div>
+
+    <script>
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({
+                pageLanguage: 'uz',
+                includedLanguages: 'uz,ru,en,kk,tr,ar,zh-CN',
+                layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                autoDisplay: false
+            }, 'google_translate_element');
+        }
+    </script>
+    <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async></script>
+</div>

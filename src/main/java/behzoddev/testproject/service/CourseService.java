@@ -13,6 +13,7 @@ import behzoddev.testproject.entity.CourseSectionProgress;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.entity.User;
+import behzoddev.testproject.entity.enums.CourseSectionContentFormat;
 import behzoddev.testproject.entity.enums.CourseSectionType;
 import behzoddev.testproject.entity.enums.CourseSubscriptionStatus;
 import behzoddev.testproject.entity.enums.VideoSourceType;
@@ -128,6 +129,8 @@ public class CourseService {
                 .orderIndex(section.getOrderIndex())
                 .type(section.getType().name())
                 .textContent(section.getTextContent())
+                .textContentFormat(section.getTextContentFormat() != null
+                        ? section.getTextContentFormat().name() : CourseSectionContentFormat.PLAIN.name())
                 .videoSourceType(section.getVideoSourceType() != null ? section.getVideoSourceType().name() : null)
                 .videoUrl(section.getVideoUrl())
                 .videoDurationSeconds(section.getVideoDurationSeconds())
@@ -279,6 +282,7 @@ public class CourseService {
         section.setTitle(dto.title().trim());
         section.setType(CourseSectionType.valueOf(dto.type()));
         section.setTextContent(dto.textContent());
+        section.setTextContentFormat(parseContentFormat(dto.textContentFormat()));
         section.setVideoSourceType(dto.videoSourceType() != null ? VideoSourceType.valueOf(dto.videoSourceType()) : null);
         section.setVideoUrl(dto.videoUrl());
         section.setVideoDurationSeconds(dto.videoDurationSeconds());
@@ -353,10 +357,25 @@ public class CourseService {
                 .orderIndex(orderIndex)
                 .type(CourseSectionType.valueOf(dto.type()))
                 .textContent(dto.textContent())
+                .textContentFormat(parseContentFormat(dto.textContentFormat()))
                 .videoSourceType(dto.videoSourceType() != null ? VideoSourceType.valueOf(dto.videoSourceType()) : null)
                 .videoUrl(dto.videoUrl())
                 .videoDurationSeconds(dto.videoDurationSeconds())
                 .build();
+    }
+
+    // Frontend "PLAIN" (qo'lda yozilgan) yoki "HTML" (.docx'dan mammoth.js
+    // orqali import qilingan, formatlash saqlangan) qiymatini yuboradi;
+    // bo'sh/noto'g'ri qiymat — orqaga moslik uchun PLAIN deb qabul qilinadi.
+    private CourseSectionContentFormat parseContentFormat(String format) {
+        if (format == null || format.isBlank()) {
+            return CourseSectionContentFormat.PLAIN;
+        }
+        try {
+            return CourseSectionContentFormat.valueOf(format);
+        } catch (IllegalArgumentException e) {
+            return CourseSectionContentFormat.PLAIN;
+        }
     }
 
     private void validateTitle(String title) {

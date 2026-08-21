@@ -28,6 +28,7 @@
     <include file="/db/changelog/telegram-session.sql"/>
     <include file="/db/changelog/telegram-auto-login.sql"/>
     <include file="/db/changelog/course-section-linked-topic.sql"/>
+    <include file="/db/changelog/course-section-content-format.sql"/>
 
 
 </databaseChangeLog>

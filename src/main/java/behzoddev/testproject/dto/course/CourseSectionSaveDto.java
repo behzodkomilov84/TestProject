@@ -13,6 +13,10 @@ public record CourseSectionSaveDto(
         // yaratiladi (CourseService.resolveLinkedTopic). Bo'sh qoldirilsa —
         // bog'lanish olib tashlanadi (unlink).
         String scienceName,
-        String topicName
+        String topicName,
+        // PLAIN (qo'lda yozilgan) | HTML (.docx'dan import qilingan —
+        // frontend mammoth.js orqali fayldan HTML olib, textContent'ga shu
+        // holicha yuboradi). null/bo'sh bo'lsa — PLAIN deb qabul qilinadi.
+        String textContentFormat
 ) {
 }

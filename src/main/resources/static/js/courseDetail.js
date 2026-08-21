@@ -1,9 +1,73 @@
 let cachedCourse = null;
 
+// Bo'lim matni PLAIN (qo'lda yozilgan) yoki HTML (.docx'dan import
+// qilingan, formatlash saqlangan) bo'lishi mumkin — qaysi forma (qo'shish/
+// tahrirlash) hozir qaysi rejimda ekanini shu ikkita o'zgaruvchi kuzatadi.
+let newSectionContentFormat = "PLAIN";
+let editSectionContentFormat = "PLAIN";
+
 document.addEventListener("DOMContentLoaded", () => {
     loadCourse();
     loadScienceNamesList();
 });
+
+// .docx faylni mammoth.js orqali HTML'ga aylantiradi — abzatslar,
+// qalin/kursiv, sarlavhalar, ro'yxatlar kabi formatlash saqlanadi (fayl
+// ichidagi shriftlar/uslublar o'zgartirilmaydi, faqat saytning umumiy
+// dizayniga moslashtiriladi). Natija to'g'ridan-to'g'ri matn maydoniga
+// qo'yiladi — kerak bo'lsa qo'lda ham tahrirlash mumkin.
+async function importDocxFile(fileInput, textareaId, mode) {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    if (typeof mammoth === "undefined") {
+        alert("❌ Import kutubxonasi yuklanmadi. Internet aloqasini tekshirib, sahifani qayta yuklang.");
+        fileInput.value = "";
+        return;
+    }
+
+    try {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        document.getElementById(textareaId).value = result.value;
+
+        if (mode === "add") {
+            newSectionContentFormat = "HTML";
+            document.getElementById("includeText").checked = true;
+            onContentToggle(document.getElementById("includeText"));
+        } else {
+            editSectionContentFormat = "HTML";
+            document.getElementById("editIncludeText").checked = true;
+            onEditContentToggle(document.getElementById("editIncludeText"));
+        }
+        updateFormatBadge(mode);
+    } catch (err) {
+        console.error(err);
+        alert("❌ Faylni import qilishda xatolik: " + err.message);
+    } finally {
+        fileInput.value = "";
+    }
+}
+
+function updateFormatBadge(mode) {
+    const badge = document.getElementById(mode === "add" ? "newSectionFormatBadge" : "editSectionFormatBadge");
+    const format = mode === "add" ? newSectionContentFormat : editSectionContentFormat;
+
+    badge.innerHTML = format === "HTML"
+        ? `✅ Fayldan import qilindi — <a href="#" onclick="resetContentFormat('${mode}'); return false;">qo'lda yozishga qaytarish</a>`
+        : "";
+}
+
+function resetContentFormat(mode) {
+    if (mode === "add") {
+        newSectionContentFormat = "PLAIN";
+        document.getElementById("newSectionText").value = "";
+    } else {
+        editSectionContentFormat = "PLAIN";
+        document.getElementById("editSectionText").value = "";
+    }
+    updateFormatBadge(mode);
+}
 
 // "Fan nomi" maydonlariga (qo'shish/tahrirlash) mavjud fanlarni <datalist>
 // orqali taklif qilish — yozish paytida mos nom bo'lsa, avtomatik yaratish
@@ -226,6 +290,8 @@ async function deleteCourse() {
 /* ===== OWNER: bo'lim qo'shish ===== */
 
 function openAddSectionForm() {
+    newSectionContentFormat = "PLAIN";
+    updateFormatBadge("add");
     document.getElementById("addSectionForm").style.display = "flex";
     document.getElementById("openAddSectionBtn").style.display = "none";
 }
@@ -280,7 +346,8 @@ async function submitAddSection() {
     const payload = {
         title, type, textContent: null, videoSourceType: null, videoUrl: null, videoDurationSeconds: null,
         scienceName: document.getElementById("newSectionScienceName").value.trim() || null,
-        topicName: document.getElementById("newSectionTopicName").value.trim() || null
+        topicName: document.getElementById("newSectionTopicName").value.trim() || null,
+        textContentFormat: newSectionContentFormat
     };
 
     if (includeText) {
@@ -349,6 +416,8 @@ async function submitAddSection() {
         document.getElementById("newSectionVideoUrl").value = "";
         document.getElementById("newSectionScienceName").value = "";
         document.getElementById("newSectionTopicName").value = "";
+        newSectionContentFormat = "PLAIN";
+        updateFormatBadge("add");
         document.getElementById("includeText").checked = true;
         document.getElementById("includeVideo").checked = false;
         onContentToggle(document.getElementById("includeText"));
@@ -402,6 +471,8 @@ async function openEditSectionForm(sectionId) {
         document.getElementById("editIncludeText").checked = hasText;
         document.getElementById("editIncludeVideo").checked = hasVideo;
         document.getElementById("editSectionText").value = section.textContent || "";
+        editSectionContentFormat = section.textContentFormat === "HTML" ? "HTML" : "PLAIN";
+        updateFormatBadge("edit");
         onEditContentToggle(document.getElementById("editIncludeText"));
 
         if (hasVideo) {
@@ -424,6 +495,8 @@ async function openEditSectionForm(sectionId) {
 
 function closeEditSectionForm() {
     editingSectionId = null;
+    editSectionContentFormat = "PLAIN";
+    updateFormatBadge("edit");
     document.getElementById("editSectionForm").style.display = "none";
 }
 
@@ -470,7 +543,8 @@ async function submitEditSection() {
     const payload = {
         title, type, textContent: null, videoSourceType: null, videoUrl: null, videoDurationSeconds: null,
         scienceName: document.getElementById("editSectionScienceName").value.trim() || null,
-        topicName: document.getElementById("editSectionTopicName").value.trim() || null
+        topicName: document.getElementById("editSectionTopicName").value.trim() || null,
+        textContentFormat: editSectionContentFormat
     };
 
     if (includeText) {

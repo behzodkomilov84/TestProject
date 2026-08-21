@@ -12,6 +12,10 @@
     <script th:inline="javascript">
         const COURSE_ID = /*[[${courseId}]]*/ 0;
     </script>
+    <!-- .docx faylni HTML'ga aylantirish uchun (formatlash — abzatslar,
+         qalin/kursiv, sarlavhalar, ro'yxatlar — saqlangan holda), bo'lim
+         matnini fayldan import qilishda ishlatiladi. -->
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
     <script src="/js/courseDetail.js" defer></script>
     <script src="/js/navbar.js" defer></script>
 </head>
@@ -19,6 +23,7 @@
 <body th:attr="data-role=${role}">
 
 <div th:replace="~{fragments/navbar :: navbar}"></div>
+<div th:replace="~{fragments/googleTranslate :: googleTranslateWidget}"></div>
 
 <div class="courses-container">
     <header class="courses-top-bar">
@@ -64,6 +69,11 @@
             </label>
             <div id="textFields">
                 <textarea id="newSectionText" placeholder="Matn kontenti" rows="5"></textarea>
+                <div class="import-file-row">
+                    <label for="newSectionImportFile">📁 yoki fayldan import qilish (.docx) — formatlash saqlanadi:</label>
+                    <input type="file" id="newSectionImportFile" accept=".docx" onchange="importDocxFile(this, 'newSectionText', 'add')">
+                    <span id="newSectionFormatBadge" class="format-badge"></span>
+                </div>
             </div>
 
             <label class="content-toggle-label">
@@ -102,6 +112,11 @@
             </label>
             <div id="editTextFields">
                 <textarea id="editSectionText" placeholder="Matn kontenti" rows="5"></textarea>
+                <div class="import-file-row">
+                    <label for="editSectionImportFile">📁 yoki fayldan import qilish (.docx) — formatlash saqlanadi:</label>
+                    <input type="file" id="editSectionImportFile" accept=".docx" onchange="importDocxFile(this, 'editSectionText', 'edit')">
+                    <span id="editSectionFormatBadge" class="format-badge"></span>
+                </div>
             </div>
 
             <label class="content-toggle-label">

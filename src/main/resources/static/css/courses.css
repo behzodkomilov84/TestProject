@@ -203,6 +203,34 @@ body {
     width: auto;
 }
 
+/* Bo'lim matnini .docx fayldan import qilish — matn maydoni ostida. */
+.import-file-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.import-file-row input[type="file"] {
+    width: auto;
+    padding: 4px;
+    font-size: 13px;
+}
+
+.format-badge {
+    font-size: 13px;
+    color: #16a34a;
+    font-weight: 600;
+}
+
+.format-badge a {
+    color: #2563eb;
+    font-weight: 600;
+}
+
 /* ===== Kurs sahifasi (detail) ===== */
 
 .course-description {
@@ -376,6 +404,58 @@ body {
 
 .section-content a:hover {
     color: #1d4ed8;
+}
+
+/* .docx'dan import qilingan (mammoth.js) HTML kontent — asl abzats/sarlavha/
+   ro'yxat formatlashini saqlaydi, shuning uchun PLAIN matn uchun mo'ljallangan
+   white-space:pre-wrap bu yerda kerak emas (HTML o'z abzatslarini o'zi
+   boshqaradi). */
+.section-content.html-content {
+    white-space: normal;
+}
+
+.section-content.html-content p {
+    margin: 0 0 14px;
+}
+
+.section-content.html-content h1,
+.section-content.html-content h2,
+.section-content.html-content h3,
+.section-content.html-content h4 {
+    margin: 22px 0 12px;
+    line-height: 1.3;
+}
+
+.section-content.html-content h1 { font-size: 26px; }
+.section-content.html-content h2 { font-size: 22px; }
+.section-content.html-content h3 { font-size: 19px; }
+.section-content.html-content h4 { font-size: 16px; }
+
+.section-content.html-content ul,
+.section-content.html-content ol {
+    margin: 0 0 14px;
+    padding-left: 28px;
+}
+
+.section-content.html-content li {
+    margin-bottom: 6px;
+}
+
+.section-content.html-content table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 0 0 14px;
+}
+
+.section-content.html-content table td,
+.section-content.html-content table th {
+    border: 1px solid #e2e8f0;
+    padding: 8px 10px;
+}
+
+.section-content.html-content img {
+    max-width: 100%;
+    height: auto;
 }
 
 /* Responsive video embed — har qanday manba (YouTube/upload/external) uchun
