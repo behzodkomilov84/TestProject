@@ -188,6 +188,15 @@ body {
     gap: 8px;
     font-size: 13px;
     color: #64748b;
+    flex-wrap: wrap;
+}
+
+.course-cover-preview {
+    width: 100px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #d5dde8;
 }
 
 .content-toggle-label {
@@ -271,11 +280,36 @@ body {
     margin-bottom: 24px;
 }
 
-/* "➕ Yangi bo'lim qo'shish" va "💳 obunalarni boshqarish" tugmalari
-   yuqoridagi bloklarga yopishib turmasligi uchun. */
+/* "➕ Yangi bo'lim qo'shish" va "💳 obunalarni boshqarish" tugmalari —
+   standart brauzer ko'rinishi o'rniga chiroyli rangli tugmalar, yuqoridagi
+   bloklarga yopishib turmasligi uchun bo'shliq bilan. */
 #openAddSectionBtn,
 #manageSubscriptionsBtn {
+    display: block;
     margin-top: 16px;
+    padding: 11px 20px;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+#openAddSectionBtn {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    box-shadow: 0 3px 10px rgba(22, 163, 74, 0.3);
+}
+
+#manageSubscriptionsBtn {
+    background: linear-gradient(135deg, #7c3aed, #a855f7);
+    box-shadow: 0 3px 10px rgba(124, 58, 237, 0.3);
+}
+
+#openAddSectionBtn:hover,
+#manageSubscriptionsBtn:hover {
+    transform: translateY(-1px);
 }
 
 .curriculum-title {
@@ -311,10 +345,12 @@ body {
     gap: 8px;
 }
 
+/* Mavzu nomi tepada, boshqarish (Action) tugmalari — ostida, grid ko'rinishida. */
 .section-item {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
     background: white;
     border-radius: 10px;
     padding: 14px 18px;
@@ -367,16 +403,27 @@ body {
     margin-left: 8px;
 }
 
+/* Mavzu nomi ostida, alohida qatorda — kichik grid ko'rinishida. */
 .section-manage-actions {
-    display: flex;
-    gap: 6px;
+    display: grid;
+    grid-template-columns: repeat(4, auto);
+    justify-content: start;
+    gap: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #f1f5f9;
 }
 
 .section-manage-actions button {
-    background: transparent;
-    border: none;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
     cursor: pointer;
     font-size: 16px;
+    padding: 6px 10px;
+}
+
+.section-manage-actions button:hover:not(:disabled) {
+    background: #f1f5f9;
 }
 
 .section-manage-actions button:disabled {

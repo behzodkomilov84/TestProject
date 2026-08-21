@@ -228,11 +228,33 @@ async function togglePublish() {
 }
 
 function openEditCourseForm() {
+    const preview = document.getElementById("editCourseCoverPreview");
+    document.getElementById("editCourseCoverFile").value = "";
+    document.getElementById("editCourseCoverStatus").textContent = "";
+
+    if (cachedCourse && cachedCourse.coverImageUrl) {
+        preview.src = cachedCourse.coverImageUrl;
+        preview.style.display = "block";
+    } else {
+        preview.style.display = "none";
+    }
+
     document.getElementById("editCourseForm").style.display = "flex";
 }
 
 function closeEditCourseForm() {
     document.getElementById("editCourseForm").style.display = "none";
+}
+
+// Fayl tanlanganda darhol ko'rinadi (yuklashdan oldin) — hozirgi
+// rasm o'rniga qaysi rasm tanlanganini ko'rish uchun.
+function previewEditCourseCover(fileInput) {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const preview = document.getElementById("editCourseCoverPreview");
+    preview.src = URL.createObjectURL(file);
+    preview.style.display = "block";
 }
 
 async function submitEditCourse() {
@@ -244,13 +266,30 @@ async function submitEditCourse() {
         return;
     }
 
+    let coverImageUrl = cachedCourse.coverImageUrl;
+    const fileInput = document.getElementById("editCourseCoverFile");
+
     try {
+        if (fileInput.files[0]) {
+            document.getElementById("editCourseCoverStatus").textContent = "Yuklanmoqda...";
+            const formData = new FormData();
+            formData.append("image", fileInput.files[0]);
+            const uploadRes = await fetch("/api/courses/upload-cover", { method: "POST", body: formData });
+            const uploadData = await uploadRes.json().catch(() => ({}));
+            if (!uploadRes.ok) {
+                alert(uploadData.error || "Rasm yuklashda xatolik");
+                document.getElementById("editCourseCoverStatus").textContent = "";
+                return;
+            }
+            coverImageUrl = uploadData.url;
+            document.getElementById("editCourseCoverStatus").textContent = "";
+        }
+
         const res = await fetch(`/api/courses/${COURSE_ID}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                title, description,
-                coverImageUrl: cachedCourse.coverImageUrl,
+                title, description, coverImageUrl,
                 published: cachedCourse.published
             })
         });
