@@ -27,6 +27,7 @@ public record CourseSectionContentDto(
         String linkedTopicName,
         String linkedScienceName,
         boolean completed,
+        Long prevSectionId, // null bo'lsa — bu birinchi bo'lim
         Long nextSectionId, // null bo'lsa — bu oxirgi bo'lim
         boolean nextUnlocked
 ) {

@@ -177,6 +177,14 @@ function renderSections(sections) {
                </div>`
             : "";
 
+        // Shu mavzu haqiqiy test tizimidagi bir mavzuga bog'langan bo'lsa —
+        // ro'yxatdan turib ham, bo'limni ochmasdan, testlarni yechish tugmasi
+        // (faqat ochilgan/qulflanmagan mavzularda — qulflangan bo'lsa
+        // bo'limning o'zini ham ko'rib bo'lmaydi).
+        const testLink = (!s.locked && s.linkedTopicId)
+            ? `<button class="topic-test-btn-inline" onclick="location.href='/testConfigPage?scienceId=${s.linkedScienceId}&topicId=${s.linkedTopicId}'">🎯 Mavzuga oid testlarni yechish</button>`
+            : "";
+
         return `
             <div class="section-item ${s.locked ? "locked" : ""}">
                 <div class="section-item-left">
@@ -185,6 +193,7 @@ function renderSections(sections) {
                     <span class="section-type-icon">${typeIcon}</span>
                     ${s.locked ? '<span class="section-type-icon">🔒</span>' : ""}
                 </div>
+                ${testLink}
                 ${manageActions}
             </div>
         `;

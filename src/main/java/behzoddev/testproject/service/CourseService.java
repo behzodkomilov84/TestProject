@@ -87,6 +87,8 @@ public class CourseService {
                         .locked(!canManage && !isSectionUnlocked(currentUser, s, subscribed))
                         .completed(courseSectionProgressRepository
                                 .existsByUser_IdAndSection_Id(currentUser.getId(), s.getId()))
+                        .linkedTopicId(s.getLinkedTopic() != null ? s.getLinkedTopic().getId() : null)
+                        .linkedScienceId(s.getLinkedTopic() != null ? s.getLinkedTopic().getScience().getId() : null)
                         .build())
                 .toList();
 
@@ -117,6 +119,9 @@ public class CourseService {
         boolean completed = courseSectionProgressRepository
                 .existsByUser_IdAndSection_Id(currentUser.getId(), section.getId());
 
+        CourseSection prev = courseSectionRepository
+                .findByCourse_IdAndOrderIndex(courseId, section.getOrderIndex() - 1)
+                .orElse(null);
         CourseSection next = courseSectionRepository
                 .findByCourse_IdAndOrderIndex(courseId, section.getOrderIndex() + 1)
                 .orElse(null);
@@ -141,6 +146,7 @@ public class CourseService {
                 .linkedScienceName(section.getLinkedTopic() != null
                         ? section.getLinkedTopic().getScience().getName() : null)
                 .completed(completed)
+                .prevSectionId(prev != null ? prev.getId() : null)
                 .nextSectionId(next != null ? next.getId() : null)
                 .nextUnlocked(next != null && (canManage || completed))
                 .build();
@@ -270,6 +276,9 @@ public class CourseService {
                 .type(section.getType().name())
                 .locked(false)
                 .completed(false)
+                .linkedTopicId(section.getLinkedTopic() != null ? section.getLinkedTopic().getId() : null)
+                .linkedScienceId(section.getLinkedTopic() != null
+                        ? section.getLinkedTopic().getScience().getId() : null)
                 .build();
     }
 

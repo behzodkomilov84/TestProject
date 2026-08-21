@@ -403,6 +403,24 @@ body {
     margin-left: 8px;
 }
 
+/* Kurs dasturi (mavzular) ro'yxatidagi qatorda — bo'limni ochmasdan
+   to'g'ridan-to'g'ri shu mavzuga oid testlarga o'tish tugmasi. */
+.topic-test-btn-inline {
+    align-self: flex-start;
+    background: #eff6ff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.topic-test-btn-inline:hover {
+    background: #dbeafe;
+}
+
 /* Mavzu nomi ostida, alohida qatorda — kichik grid ko'rinishida. */
 .section-manage-actions {
     display: grid;
@@ -571,6 +589,27 @@ body {
 
 #nextSectionBtn:disabled {
     background: #cbd5e1;
+    cursor: not-allowed;
+}
+
+.prev-section-btn {
+    padding: 12px 24px;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    background: white;
+    color: #334155;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.prev-section-btn:hover:not(:disabled) {
+    background: #f1f5f9;
+}
+
+.prev-section-btn:disabled {
+    color: #cbd5e1;
+    border-color: #e2e8f0;
     cursor: not-allowed;
 }
 

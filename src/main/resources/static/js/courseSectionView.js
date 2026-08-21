@@ -55,7 +55,26 @@ function renderSection(data) {
     }
 
     renderTopicTestLink(data);
+    updatePrevButton(data);
     updateNextButton(data);
+}
+
+// Oldingi mavzuga qaytish — ketma-ket ochilish tartibida oldingi bo'lim
+// har doim ko'rish uchun ochiq bo'ladi (foydalanuvchi shu bo'limga
+// yetib kelgan bo'lsa, undan oldingisini allaqachon ko'rgan/tugatgan),
+// shuning uchun qulflash tekshiruvi shart emas — nextSectionBtn'dan farqli.
+function updatePrevButton(data) {
+    const btn = document.getElementById("prevSectionBtn");
+
+    if (!data.prevSectionId) {
+        btn.disabled = true;
+        return;
+    }
+
+    btn.disabled = false;
+    btn.onclick = () => {
+        location.href = `/courses/${COURSE_ID}/sections/${data.prevSectionId}`;
+    };
 }
 
 // Faqat shu mavzuga bog'langan bo'limlarda — saytning haqiqiy test

@@ -85,6 +85,7 @@ class CourseServiceTest {
         when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
                 eq(1L), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(true);
         when(courseSectionProgressRepository.existsByUser_IdAndSection_Id(1L, 1L)).thenReturn(false);
+        when(courseSectionRepository.findByCourse_IdAndOrderIndex(1L, 0)).thenReturn(Optional.empty());
         when(courseSectionRepository.findByCourse_IdAndOrderIndex(1L, 2)).thenReturn(Optional.empty());
 
         CourseSectionContentDto result = courseService.getSectionContent(1L, 1L, user);
@@ -161,6 +162,7 @@ class CourseServiceTest {
         when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
                 eq(99L), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(false);
         when(courseSectionProgressRepository.existsByUser_IdAndSection_Id(99L, 2L)).thenReturn(false);
+        when(courseSectionRepository.findByCourse_IdAndOrderIndex(1L, 1)).thenReturn(Optional.empty());
         when(courseSectionRepository.findByCourse_IdAndOrderIndex(1L, 3)).thenReturn(Optional.empty());
 
         CourseSectionContentDto result = courseService.getSectionContent(1L, 2L, owner);
