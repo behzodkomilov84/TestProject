@@ -503,14 +503,19 @@ body {
     color: white;
 }
 
+/* Kesilmaydi (line-clamp yo'q) — nom qancha uzun bo'lsa, karta shuncha
+   o'sadi (.section-item min-height, qattiq height emas). Shrift biroz
+   kichraytirildi, uzun nomlar ham qulayroq sig'sin deb. Native "title"
+   atributi (renderSections()'da qo'shiladi) — hover qilganda to'liq
+   nomni ko'rsatib turuvchi qo'shimcha "wrapper" sifatida. */
 .section-title-text {
+    flex: 1;
+    min-width: 0;
     color: #1e293b;
     font-weight: 600;
+    font-size: 14px;
     line-height: 1.4;
-    overflow: hidden;
-    display: -webkit-box;
-    -webkit-line-clamp: 4;
-    -webkit-box-orient: vertical;
+    word-break: break-word;
 }
 
 .section-item.locked .section-title-text {

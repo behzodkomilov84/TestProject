@@ -145,7 +145,7 @@ function renderSections(sections) {
         // Butun karta bosiladigan qilindi (kurslar katalogidagi kartalar
         // bilan bir xil uslub) — shuning uchun sarlavha endi alohida <a>
         // emas, oddiy matn; hover effekti ham shu tashqi kartada.
-        const titleEl = `<span class="section-title-text">${escapeHtml(s.title)}</span>`;
+        const titleEl = `<span class="section-title-text" title="${escapeHtml(s.title)}">${escapeHtml(s.title)}</span>`;
         const cardClick = s.locked ? "" : ` onclick="location.href='/courses/${COURSE_ID}/sections/${s.id}'"`;
 
         // Ichidagi tugmalar (boshqarish, test) bosilganda kartaning o'zi
