@@ -98,17 +98,86 @@ async function importDocxFile(fileInput, editorId) {
     }
 }
 
-// "Fan nomi" maydonlariga (qo'shish/tahrirlash) mavjud fanlarni <datalist>
-// orqali taklif qilish — yozish paytida mos nom bo'lsa, avtomatik yaratish
-// o'rniga o'shaning ustiga bog'lanadi.
+// "Fan nomi" endi tanlov (select) — mavjud fanlar ro'yxati + "➕ Boshqa..."
+// (erkin nom kiritish uchun, agar kerakli fan ro'yxatda bo'lmasa).
+let cachedSciences = [];
+const OTHER_SCIENCE_VALUE = "__other__";
+
 function loadScienceNamesList() {
     fetch("/api/science")
         .then(r => r.ok ? r.json() : [])
         .then(sciences => {
-            const list = document.getElementById("scienceNamesList");
-            list.innerHTML = sciences.map(s => `<option value="${escapeHtml(s.name)}">`).join("");
+            cachedSciences = sciences;
+            populateScienceSelect("newSectionScienceSelect");
+            populateScienceSelect("editSectionScienceSelect");
         })
         .catch(err => console.error(err));
+}
+
+function populateScienceSelect(selectId) {
+    const select = document.getElementById(selectId);
+    const currentValue = select.value; // qayta to'ldirilganda joriy tanlov yo'qolmasin
+    select.innerHTML = cachedSciences.map(s => `<option value="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`).join("")
+        + `<option value="${OTHER_SCIENCE_VALUE}">➕ Boshqa...</option>`;
+    if (currentValue) select.value = currentValue;
+}
+
+function onScienceSelectChange(mode) {
+    const select = document.getElementById(mode === "new" ? "newSectionScienceSelect" : "editSectionScienceSelect");
+    const otherInput = document.getElementById(mode === "new" ? "newSectionScienceOther" : "editSectionScienceOther");
+    otherInput.style.display = select.value === OTHER_SCIENCE_VALUE ? "block" : "none";
+}
+
+// Formani ochishda chaqiriladi — agar berilgan nom (masalan shu kursning
+// o'zi nomi, yoki bo'limga allaqachon bog'langan fan) ro'yxatda mavjud
+// bo'lsa, o'sha tanlanadi; aks holda "Boshqa" tanlanib, erkin maydonga
+// o'sha nom qo'yiladi (foydalanuvchi kerak bo'lsa o'zgartirishi mumkin).
+function applyScienceSelection(mode, preferredName) {
+    const select = document.getElementById(mode === "new" ? "newSectionScienceSelect" : "editSectionScienceSelect");
+    const otherInput = document.getElementById(mode === "new" ? "newSectionScienceOther" : "editSectionScienceOther");
+
+    const trimmed = (preferredName || "").trim();
+    const match = trimmed && cachedSciences.find(s => s.name.toLowerCase() === trimmed.toLowerCase());
+
+    if (match) {
+        select.value = match.name;
+        otherInput.style.display = "none";
+        otherInput.value = "";
+    } else {
+        select.value = OTHER_SCIENCE_VALUE;
+        otherInput.style.display = "block";
+        otherInput.value = trimmed;
+    }
+}
+
+function getSelectedScienceName(mode) {
+    const select = document.getElementById(mode === "new" ? "newSectionScienceSelect" : "editSectionScienceSelect");
+    const otherInput = document.getElementById(mode === "new" ? "newSectionScienceOther" : "editSectionScienceOther");
+    if (select.value === OTHER_SCIENCE_VALUE) {
+        return otherInput.value.trim() || null;
+    }
+    return select.value || null;
+}
+
+// Mavzu nomi — default sifatida bo'lim nomi bilan bir xil bo'lib turadi,
+// foydalanuvchi maydonni o'zi qo'lda tahrirlagunga qadar (shundan keyin
+// bo'lim nomi o'zgarsa ham, mavzu nomi endi avtomatik qayta yozilmaydi).
+let newTopicNameManuallyEdited = false;
+let editTopicNameManuallyEdited = false;
+
+function onSectionTitleInput(mode) {
+    const titleField = document.getElementById(mode === "new" ? "newSectionTitle" : "editSectionTitle");
+    const topicField = document.getElementById(mode === "new" ? "newSectionTopicName" : "editSectionTopicName");
+    const manuallyEdited = mode === "new" ? newTopicNameManuallyEdited : editTopicNameManuallyEdited;
+
+    if (!manuallyEdited) {
+        topicField.value = titleField.value;
+    }
+}
+
+function onTopicNameInput(mode) {
+    if (mode === "new") newTopicNameManuallyEdited = true;
+    else editTopicNameManuallyEdited = true;
 }
 
 function loadCourse() {
@@ -436,6 +505,10 @@ async function deleteCourse() {
 
 function openAddSectionForm() {
     document.getElementById("newSectionTextEditor").innerHTML = "";
+    document.getElementById("newSectionTopicName").value = "";
+    newTopicNameManuallyEdited = false;
+    // Default — shu kursning o'zi nomi (odatda kurs mavzusi = fan nomi).
+    applyScienceSelection("new", cachedCourse ? cachedCourse.title : "");
     document.getElementById("addSectionForm").style.display = "flex";
     document.getElementById("openAddSectionBtn").style.display = "none";
 }
@@ -489,7 +562,7 @@ async function submitAddSection() {
     const type = includeText && includeVideo ? "MIXED" : includeText ? "TEXT" : "VIDEO";
     const payload = {
         title, type, textContent: null, videoSourceType: null, videoUrl: null, videoDurationSeconds: null,
-        scienceName: document.getElementById("newSectionScienceName").value.trim() || null,
+        scienceName: getSelectedScienceName("new"),
         topicName: document.getElementById("newSectionTopicName").value.trim() || null,
         textContentFormat: "HTML"
     };
@@ -559,8 +632,9 @@ async function submitAddSection() {
         document.getElementById("newSectionTitle").value = "";
         document.getElementById("newSectionTextEditor").innerHTML = "";
         document.getElementById("newSectionVideoUrl").value = "";
-        document.getElementById("newSectionScienceName").value = "";
+        document.getElementById("newSectionScienceOther").value = "";
         document.getElementById("newSectionTopicName").value = "";
+        newTopicNameManuallyEdited = false;
         document.getElementById("includeText").checked = true;
         document.getElementById("includeVideo").checked = false;
         onContentToggle(document.getElementById("includeText"));
@@ -633,8 +707,14 @@ async function openEditSectionForm(sectionId) {
             onEditVideoSourceChange();
         }
 
-        document.getElementById("editSectionScienceName").value = section.linkedScienceName || "";
-        document.getElementById("editSectionTopicName").value = section.linkedTopicName || "";
+        // Fan — allaqachon bog'langan bo'lsa o'sha, aks holda kurs nomi
+        // default sifatida tanlanadi. Mavzu nomi — bog'langan bo'lsa o'sha
+        // (endi "qo'lda kiritilgan" deb hisoblanadi, bo'lim nomi keyinroq
+        // o'zgarsa ham qayta yozilmaydi); aks holda bo'lim nomining o'zi
+        // (bo'lim nomi o'zgarsa, bu ham birga yangilanaveradi).
+        applyScienceSelection("edit", section.linkedScienceName || (cachedCourse ? cachedCourse.title : ""));
+        editTopicNameManuallyEdited = !!section.linkedTopicName;
+        document.getElementById("editSectionTopicName").value = section.linkedTopicName || section.title || "";
 
         document.getElementById("editSectionForm").style.display = "flex";
         document.getElementById("editSectionForm").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -691,7 +771,7 @@ async function submitEditSection() {
     const type = includeText && includeVideo ? "MIXED" : includeText ? "TEXT" : "VIDEO";
     const payload = {
         title, type, textContent: null, videoSourceType: null, videoUrl: null, videoDurationSeconds: null,
-        scienceName: document.getElementById("editSectionScienceName").value.trim() || null,
+        scienceName: getSelectedScienceName("edit"),
         topicName: document.getElementById("editSectionTopicName").value.trim() || null,
         textContentFormat: "HTML"
     };

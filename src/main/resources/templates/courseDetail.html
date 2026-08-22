@@ -74,7 +74,7 @@
         <button id="openAddSectionBtn" onclick="openAddSectionForm()">➕ Yangi bo'lim qo'shish</button>
 
         <div id="addSectionForm" class="section-form" style="display:none;">
-            <input type="text" id="newSectionTitle" placeholder="Bo'lim nomi" maxlength="500">
+            <input type="text" id="newSectionTitle" placeholder="Bo'lim nomi" maxlength="500" oninput="onSectionTitleInput('new')">
 
             <!-- Matn va video bir vaqtning o'zida ham qo'shilishi mumkin —
                  kamida bittasi belgilangan bo'lishi shart. -->
@@ -115,11 +115,17 @@
             </div>
 
             <!-- Mavzuni TEST BOSHQARUVI'dagi Fan/Mavzu bilan bog'lash — ixtiyoriy.
-                 Kiritilgan nom mavjud bo'lmasa, avtomatik yaratiladi. -->
+                 Kiritilgan nom mavjud bo'lmasa, avtomatik yaratiladi. Fan —
+                 tanlov (default — shu kurs nomi), "Boshqa" tanlansa erkin
+                 nom kiritish maydoni chiqadi. Mavzu nomi — default sifatida
+                 bo'lim nomi bilan bir xil (bo'lim nomi o'zgarsa, u ham
+                 qo'lda tahrirlanmagan bo'lsa, avtomatik yangilanadi).
+            -->
             <label class="content-toggle-label">🎯 Mavzuga oid testlar bilan bog'lash (ixtiyoriy)</label>
-            <input type="text" id="newSectionScienceName" placeholder="Fan nomi" list="scienceNamesList">
+            <select id="newSectionScienceSelect" onchange="onScienceSelectChange('new')"></select>
+            <input type="text" id="newSectionScienceOther" placeholder="Fan nomi" style="display:none;">
             <div class="field-hint">Masalan: Kimyo</div>
-            <input type="text" id="newSectionTopicName" placeholder="Mavzu nomi">
+            <input type="text" id="newSectionTopicName" placeholder="Mavzu nomi" oninput="onTopicNameInput('new')">
             <div class="field-hint">Mavjud bo'lmasa, avtomatik yaratiladi</div>
 
             <div class="course-form-actions">
@@ -131,7 +137,7 @@
         <!-- Bo'limni tahrirlash — "✏️" tugmasi bosilganda shu bitta forma
              tanlangan bo'lim ma'lumotlari bilan to'ldirilib ochiladi. -->
         <div id="editSectionForm" class="section-form" style="display:none;">
-            <input type="text" id="editSectionTitle" placeholder="Bo'lim nomi" maxlength="500">
+            <input type="text" id="editSectionTitle" placeholder="Bo'lim nomi" maxlength="500" oninput="onSectionTitleInput('edit')">
 
             <label class="content-toggle-label">
                 <input type="checkbox" id="editIncludeText" onchange="onEditContentToggle(this)"> 📄 Matn qo'shish
@@ -170,9 +176,10 @@
             </div>
 
             <label class="content-toggle-label">🎯 Mavzuga oid testlar bilan bog'lash (ixtiyoriy)</label>
-            <input type="text" id="editSectionScienceName" placeholder="Fan nomi" list="scienceNamesList">
+            <select id="editSectionScienceSelect" onchange="onScienceSelectChange('edit')"></select>
+            <input type="text" id="editSectionScienceOther" placeholder="Fan nomi" style="display:none;">
             <div class="field-hint">Masalan: Kimyo</div>
-            <input type="text" id="editSectionTopicName" placeholder="Mavzu nomi">
+            <input type="text" id="editSectionTopicName" placeholder="Mavzu nomi" oninput="onTopicNameInput('edit')">
             <div class="field-hint">Mavjud bo'lmasa, avtomatik yaratiladi</div>
 
             <div class="course-form-actions">
@@ -180,8 +187,6 @@
                 <button onclick="closeEditSectionForm()">Bekor qilish</button>
             </div>
         </div>
-
-        <datalist id="scienceNamesList"></datalist>
 
         <!-- Obuna berish/tasdiqlash/bekor qilish — endi barcha kurslar uchun
              yagona "Kursga obuna berish" sahifasida (navbar > 🎓 Kurslar). -->
