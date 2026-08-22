@@ -503,6 +503,16 @@ class TelegramCourseReaderServiceTest {
     }
 
     @Test
+    void toTelegramHtml_htmlFormat_keepsStrikeAndDelTags() {
+        // Chrome'da execCommand('strikeThrough') <s> emas, <strike> tegini
+        // chiqaradi — Telegram HTML rejimi ikkalasini ham qo'llab-quvvatlaydi.
+        String result = courseReaderService.toTelegramHtml("HTML",
+                "<strike>Eski</strike> <del>narx</del>");
+
+        assertThat(result).isEqualTo("<strike>Eski</strike> <del>narx</del>");
+    }
+
+    @Test
     void toTelegramHtml_htmlFormat_convertsHeadingToBold() {
         String result = courseReaderService.toTelegramHtml("HTML", "<h2>Sarlavha</h2><p>Matn</p>");
 

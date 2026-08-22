@@ -92,4 +92,16 @@ public class CourseSectionController {
     ) {
         return Map.of("url", fileStorageService.storeCourseVideo(video));
     }
+
+    // Bo'lim matni (rich-toolbar "🖼 Rasm qo'shish") ichiga qo'yiladigan rasm —
+    // qaytgan URL to'g'ridan-to'g'ri contentEditable ichiga <img> sifatida
+    // qo'yiladi (frontend tomonida, richInsertImage()).
+    @PostMapping("/upload-image")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public Map<String, String> uploadImage(
+            @PathVariable Long courseId,
+            @RequestParam("image") MultipartFile image
+    ) {
+        return Map.of("url", fileStorageService.storeCourseSectionImage(image));
+    }
 }

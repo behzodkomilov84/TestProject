@@ -100,6 +100,16 @@ public class FileStorageService {
                 "❌Faqat rasm fayllari (PNG, JPEG, WEBP, GIF) yuklash mumkin.");
     }
 
+    /**
+     * Kurs bo'limi matni (rich-toolbar) ichiga qo'shiladigan rasm —
+     * "courses" ostki papkasiga saqlanadi.
+     */
+    public String storeCourseSectionImage(MultipartFile file) {
+        return store(file, "courses", ALLOWED_IMAGE_TYPES, ALLOWED_IMAGE_EXTENSIONS,
+                MAX_IMAGE_SIZE_BYTES, "❌Rasm hajmi 5MB dan katta bo'lishi mumkin emas.",
+                "❌Faqat rasm fayllari (PNG, JPEG, WEBP, GIF) yuklash mumkin.");
+    }
+
     private String store(
             MultipartFile file,
             String subDir,

@@ -292,6 +292,31 @@ body {
     margin: 0 4px;
 }
 
+/* Shrift/o'lcham/qator oralig'i tanlovlari — ".section-form select"
+   umumiy qoidasidan (width:100%) chiqarib, tugmalar bilan bir qatorda
+   ixcham joylashishi uchun aniq kenglik beriladi. */
+.rich-toolbar-select {
+    width: auto !important;
+    height: 32px;
+    padding: 0 6px !important;
+    border: 1px solid #d5dde8;
+    border-radius: 6px;
+    background: white;
+    color: #1e293b;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.rich-toolbar-color {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 1px solid #d5dde8;
+    border-radius: 6px;
+    cursor: pointer;
+    background: white;
+}
+
 .rich-text-editor {
     width: 100%;
     min-height: 140px;

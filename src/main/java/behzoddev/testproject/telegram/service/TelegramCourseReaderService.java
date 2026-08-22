@@ -480,8 +480,13 @@ public class TelegramCourseReaderService {
     private static final Pattern TABLE_CELL_CLOSE = Pattern.compile("(?i)</t[dh]>");
     private static final Pattern TABLE_ROW_CLOSE = Pattern.compile("(?i)</tr>");
     private static final Pattern TABLE_STRUCTURE = Pattern.compile("(?i)</?(table|thead|tbody|tr|td|th)[^>]*>");
+    // "strike"/"del" ham qo'shildi — kurs matni tahrirlagichidagi yangi
+    // "S̶ (chizib o'tish)" tugmasi Chrome'da execCommand('strikeThrough')
+    // orqali <strike> tegini chiqaradi (<s> emas); Telegram HTML rejimi
+    // <s>/<strike>/<del> uchligini bab-baravar chizib o'tilgan matn
+    // sifatida qo'llab-quvvatlaydi, shuning uchun ikkalasi ham saqlanadi.
     private static final Pattern UNSUPPORTED_TAG = Pattern.compile(
-            "(?i)</?(?!b\\b|strong\\b|i\\b|em\\b|u\\b|s\\b|a\\b|code\\b|pre\\b)[a-z][^>]*>");
+            "(?i)</?(?!b\\b|strong\\b|i\\b|em\\b|u\\b|s\\b|strike\\b|del\\b|a\\b|code\\b|pre\\b)[a-z][^>]*>");
     private static final Pattern MULTI_BLANK_LINES = Pattern.compile("\n{3,}");
 
     String toTelegramHtml(String textContentFormat, String rawContent) {

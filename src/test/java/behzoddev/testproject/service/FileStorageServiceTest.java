@@ -148,4 +148,17 @@ class FileStorageServiceTest {
 
         assertThat(path).startsWith("/uploads/courses/");
     }
+
+    @Test
+    void storeCourseSectionImage_validPng_savesFileUnderCoursesSubdir() {
+        // Bo'lim matni tahrirlagichidagi "🖼 Rasm qo'shish" tugmasi shu
+        // metodni chaqiradi — muqova rasmi bilan bir xil "courses" papkasi
+        // va tekshiruvlardan foydalanadi.
+        MockMultipartFile file = new MockMultipartFile("file", "diagram.png", "image/png", PNG_HEADER);
+
+        String path = fileStorageService.storeCourseSectionImage(file);
+
+        assertThat(path).startsWith("/uploads/courses/").endsWith(".png");
+        verify(clamAvScanService).scan(any(byte[].class), anyString());
+    }
 }

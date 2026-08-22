@@ -71,6 +71,105 @@ function richExec(editorId, command) {
     document.execCommand(command, false, null);
 }
 
+// ================= Rich-toolbar: shrift, rang, tekislash, rasm =================
+
+function richFontName(editorId, fontName) {
+    if (!fontName) return;
+    document.getElementById(editorId).focus();
+    document.execCommand('fontName', false, fontName);
+}
+
+// execCommand('fontSize', ...) haqiqiy piksel emas, faqat shartli 1-7
+// oralig'idagi o'lchamlarni qabul qiladi — shuning uchun standart hiyla
+// qo'llanadi: eng katta shartli o'lcham (7) qo'yiladi, so'ng natijadagi
+// <font size="7"> teglari haqiqiy piksel o'lchamli <span>ga almashtiriladi.
+function richFontSize(editorId, sizePx) {
+    if (!sizePx) return;
+    const editor = document.getElementById(editorId);
+    editor.focus();
+    document.execCommand('fontSize', false, '7');
+    editor.querySelectorAll('font[size="7"]').forEach(el => {
+        const span = document.createElement('span');
+        span.style.fontSize = sizePx + 'px';
+        span.innerHTML = el.innerHTML;
+        el.replaceWith(span);
+    });
+}
+
+function richForeColor(editorId, color) {
+    document.getElementById(editorId).focus();
+    document.execCommand('foreColor', false, color);
+}
+
+// Fon (bo'yash) rangi — ba'zi brauzerlar 'hiliteColor'ni qo'llab-
+// quvvatlamaydi, shu sabab muvaffaqiyatsiz bo'lsa 'backColor'ga o'tiladi.
+function richHiliteColor(editorId, color) {
+    const editor = document.getElementById(editorId);
+    editor.focus();
+    if (!document.execCommand('hiliteColor', false, color)) {
+        document.execCommand('backColor', false, color);
+    }
+}
+
+function isBlockElement(el) {
+    return ['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'BLOCKQUOTE'].includes(el.tagName);
+}
+
+// Qator oralig'i — bunday funksiya uchun tayyor execCommand yo'q, shuning
+// uchun tanlangan matnga eng yaqin blok elementi (paragraf, ro'yxat band
+// va h.k.) qidirib topilib, unga line-height qo'yiladi. Hech narsa
+// tanlanmagan bo'lsa (yoki blok topilmasa) — butun matnga qo'llanadi.
+function richLineSpacing(editorId, value) {
+    if (!value) return;
+    const editor = document.getElementById(editorId);
+    editor.focus();
+
+    const selection = window.getSelection();
+    let node = selection.rangeCount ? selection.getRangeAt(0).commonAncestorContainer : null;
+    if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+
+    while (node && node !== editor && !isBlockElement(node)) {
+        node = node.parentElement;
+    }
+
+    if (!node || node === editor) {
+        editor.querySelectorAll('p, li, div, h1, h2, h3, h4, blockquote').forEach(el => el.style.lineHeight = value);
+        editor.style.lineHeight = value;
+    } else {
+        node.style.lineHeight = value;
+    }
+}
+
+// "🖼 Rasm qo'shish" — fayl tanlangach serverga yuklanadi (virus/tur
+// tekshiruvi bilan, boshqa fayl yuklashlar kabi), qaytgan URL kursor
+// turgan joyga <img> sifatida qo'yiladi.
+async function richInsertImage(editorId, fileInput) {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const editor = document.getElementById(editorId);
+    editor.focus();
+
+    try {
+        const formData = new FormData();
+        formData.append("image", file);
+        const res = await fetch(`/api/courses/${COURSE_ID}/sections/upload-image`, {
+            method: "POST", body: formData
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || "❌ Rasm yuklashda xatolik");
+            return;
+        }
+        document.execCommand('insertImage', false, data.url);
+    } catch (err) {
+        console.error(err);
+        alert("❌ Rasm yuklashda tarmoq xatoligi");
+    } finally {
+        fileInput.value = "";
+    }
+}
+
 // .docx faylni mammoth.js orqali HTML'ga aylantiradi — abzatslar,
 // qalin/kursiv, sarlavhalar, ro'yxatlar kabi formatlash saqlanadi (fayl
 // ichidagi shriftlar/uslublar o'zgartirilmaydi, faqat saytning umumiy
