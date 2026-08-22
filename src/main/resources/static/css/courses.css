@@ -252,6 +252,10 @@ body {
     border: 1px solid #d5dde8;
     border-radius: 6px;
     background: white;
+    /* .section-form button (umumiy qoida) matnni oq rangga bo'yaydi —
+       shu yerda aniq qora rangga qaytariladi, aks holda oq fonda oq
+       matn (B/I/U/... belgilar) butunlay ko'rinmay qolardi. */
+    color: #1e293b;
     cursor: pointer;
     font-size: 14px;
     line-height: 1;
