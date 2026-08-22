@@ -33,6 +33,12 @@
             <button class="dropbtn lang-btn" type="button" title="Tilni tanlash">🌐</button>
             <div class="dropdown-content lang-dropdown-content">
                 <a href="#" onclick="setSiteLanguage('uz'); return false;">🇺🇿 O'zbekcha</a>
+                <!-- "O'zbekcha (kirill)" — Google Translate'ning o'zida
+                     alohida kirill nishoni yo'q (faqat lotin "uz"), shuning
+                     uchun bu alohida yo'l: avval lotincha o'zbekchaga
+                     tarjima qilinadi, so'ng natija JS orqali (navbar.js,
+                     transliterateToCyrillic) kirillga o'giriladi. -->
+                <a href="#" onclick="setSiteLanguage('uz-cyrl'); return false;">🇺🇿 Ўзбекча (кирилл)</a>
                 <a href="#" onclick="setSiteLanguage('ru'); return false;">🇷🇺 Русский</a>
                 <a href="#" onclick="setSiteLanguage('en'); return false;">🇬🇧 English</a>
                 <a href="#" onclick="setSiteLanguage('tr'); return false;">🇹🇷 Türkçe</a>

@@ -62,9 +62,20 @@ document.querySelectorAll(".dropbtn").forEach(btn => {
    ko'pincha boshqa tildan (masalan ruscha PDF/Word'dan) copy-paste
    qilib joylashtiriladi, shuning uchun sahifada aralash til bo'lishi
    mumkin; "auto" bilan Google har bir matn bo'lagining haqiqiy tilini
-   alohida aniqlab, tanlangan tilga tarjima qiladi. */
+   alohida aniqlab, tanlangan tilga tarjima qiladi.
+
+   "uz-cyrl" (Ўзбекча, кирилл) — Google Translate'ning o'zida bunday
+   maqsad til yo'q (faqat lotin "uz"). Shuning uchun avval oddiy
+   lotincha o'zbekchaga tarjima qilinadi, so'ng natija JS orqali
+   (transliterateToCyrillic) kirillga o'giriladi — bu tarjima emas,
+   oddiy harf almashtirish (lotin-kirill orasida so'zma-so'z, tartibli
+   moslik bor). Tarjima async (natija birozdan keyin DOM'ga qo'shiladi),
+   shuning uchun kirillashtirish biroz kutib (setTimeout) ishga
+   tushiriladi — combo orqali darhol o'zgartirilganda shu yerning
+   o'zida, reload orqali bo'lsa DOMContentLoaded'da (pastda). */
 function setSiteLanguage(lang) {
     const host = location.hostname;
+    const targetLang = lang === 'uz-cyrl' ? 'uz' : lang;
 
     function clearCookie(name) {
         document.cookie = name + "=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC";
@@ -72,17 +83,97 @@ function setSiteLanguage(lang) {
     }
 
     clearCookie("googtrans");
-    document.cookie = "googtrans=/auto/" + lang + "; path=/";
-    document.cookie = "googtrans=/auto/" + lang + "; domain=." + host + "; path=/";
+    document.cookie = "googtrans=/auto/" + targetLang + "; path=/";
+    document.cookie = "googtrans=/auto/" + targetLang + "; domain=." + host + "; path=/";
+
+    if (lang === 'uz-cyrl') {
+        sessionStorage.setItem('pendingCyrillicTransliteration', '1');
+    } else {
+        sessionStorage.removeItem('pendingCyrillicTransliteration');
+    }
 
     const combo = document.querySelector('#google_translate_element select.goog-te-combo');
     if (combo) {
-        combo.value = lang;
+        combo.value = targetLang;
         combo.dispatchEvent(new Event('change'));
+        if (lang === 'uz-cyrl') {
+            setTimeout(() => {
+                transliteratePageToCyrillic();
+                sessionStorage.removeItem('pendingCyrillicTransliteration');
+            }, 1200);
+        }
         return;
     }
 
     location.reload();
+}
+
+// Sahifa qayta yuklangandan keyin (combo hali skript yuklanmagani
+// sabab topilmagan holatda) — kirill navbatda qolgan bo'lsa, Google
+// tarjimasi tugashiga biroz vaqt berib, keyin qo'llaniladi.
+document.addEventListener('DOMContentLoaded', () => {
+    if (sessionStorage.getItem('pendingCyrillicTransliteration') === '1') {
+        setTimeout(() => {
+            transliteratePageToCyrillic();
+            sessionStorage.removeItem('pendingCyrillicTransliteration');
+        }, 1500);
+    }
+});
+
+/* ===== Lotin -> Kirill transliteratsiya (o'zbekcha) =====
+   Bu TARJIMA emas — ikki alifbo orasida deyarli bir-biriga to'g'ridan-
+   to'g'ri mos keladigan, standart almashtirish jadvali (ko'p harfli
+   birikmalar — "sh","ch","yo','yu","ya","o'","g'" — eng uzunidan
+   boshlab, keyin bitta harflar tekshiriladi). */
+const CYRILLIC_MAP = {
+    "o'": "ў", "oʻ": "ў", "o‘": "ў",
+    "g'": "ғ", "gʻ": "ғ", "g‘": "ғ",
+    "sh": "ш", "ch": "ч", "yo": "ё", "yu": "ю", "ya": "я", "ts": "ц",
+    "a": "а", "b": "б", "d": "д", "e": "е", "f": "ф", "g": "г", "h": "ҳ",
+    "i": "и", "j": "ж", "k": "к", "l": "л", "m": "м", "n": "н", "o": "о",
+    "p": "п", "q": "қ", "r": "р", "s": "с", "t": "т", "u": "у", "v": "в",
+    "x": "х", "y": "й", "z": "з", "'": "ъ", "’": "ъ"
+};
+const CYRILLIC_KEYS = Object.keys(CYRILLIC_MAP).sort((a, b) => b.length - a.length);
+const CYRILLIC_REGEX = new RegExp(CYRILLIC_KEYS.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'gi');
+
+function transliterateToCyrillic(text) {
+    return text.replace(CYRILLIC_REGEX, (match) => {
+        const cyr = CYRILLIC_MAP[match.toLowerCase()];
+        if (!cyr) return match;
+        if (match === match.toUpperCase() && match !== match.toLowerCase()) {
+            return cyr.toUpperCase();
+        }
+        if (match[0] === match[0].toUpperCase() && match[0] !== match[0].toLowerCase()) {
+            return cyr[0].toUpperCase() + cyr.slice(1);
+        }
+        return cyr;
+    });
+}
+
+// Sahifadagi barcha ko'rinadigan matn tugunlarini (script/style/forma
+// maydonlari va Google Translate'ning o'z yashirin konteyneri bundan
+// mustasno) kirillga o'giradi.
+function transliteratePageToCyrillic(root) {
+    root = root || document.body;
+    const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'INPUT', 'TEXTAREA', 'SELECT']);
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+            const parent = node.parentElement;
+            if (!parent || SKIP_TAGS.has(parent.tagName)) return NodeFilter.FILTER_REJECT;
+            if (parent.closest('#google_translate_element')) return NodeFilter.FILTER_REJECT;
+            if (!node.nodeValue || !node.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+            return NodeFilter.FILTER_ACCEPT;
+        }
+    });
+
+    const nodes = [];
+    let n;
+    while ((n = walker.nextNode())) nodes.push(n);
+    nodes.forEach(node => {
+        node.nodeValue = transliterateToCyrillic(node.nodeValue);
+    });
 }
 
 async function linkTelegram() {
