@@ -11,7 +11,12 @@ body {
 .courses-container {
     max-width: 1000px;
     margin: 90px auto 40px;
-    padding: 0 16px;
+    padding: 0 16px 1px;
+    /* padding-bottom: 1px — konteynerning oxirgi farzandi (masalan
+       .section-nav-actions)'ning margin-bottom'i konteyner bilan
+       "qo'shilib" (margin collapse) yo'q bo'lib ketmasligi uchun
+       standart usul (deyarli sezilmaydi, lekin margin haqiqiy bo'shliq
+       sifatida chiqishini kafolatlaydi). */
 }
 
 /* Katta ekranlarda mavzular grid'i ko'proq ustunga (col6) chiqishi uchun
