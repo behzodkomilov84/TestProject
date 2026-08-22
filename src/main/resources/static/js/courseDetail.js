@@ -142,13 +142,17 @@ function richLineSpacing(editorId, value) {
 
 // "🖼 Rasm qo'shish" — fayl tanlangach serverga yuklanadi (virus/tur
 // tekshiruvi bilan, boshqa fayl yuklashlar kabi), qaytgan URL kursor
-// turgan joyga <img> sifatida qo'yiladi.
+// turgan joyga qo'yiladi. Oddiy <img> emas — "rich-img-wrap" ichiga
+// pastki-o'ng burchakdagi sudraladigan tutqich (handle) bilan birga
+// qo'yiladi, shu orqali rasm katta bo'lsa ham kichraytirish mumkin
+// (attachImageResizeHandlers() shu tutqichni ushlaydi).
 async function richInsertImage(editorId, fileInput) {
     const file = fileInput.files[0];
     if (!file) return;
 
     const editor = document.getElementById(editorId);
     editor.focus();
+    attachImageResizeHandlers(editorId);
 
     try {
         const formData = new FormData();
@@ -161,7 +165,12 @@ async function richInsertImage(editorId, fileInput) {
             alert(data.error || "❌ Rasm yuklashda xatolik");
             return;
         }
-        document.execCommand('insertImage', false, data.url);
+        const url = escapeHtml(data.url);
+        const html = `<span class="rich-img-wrap" contenteditable="false">`
+            + `<img src="${url}">`
+            + `<span class="rich-img-handle" title="Sudrab o'lchamini o'zgartiring"></span>`
+            + `</span>&nbsp;`;
+        document.execCommand('insertHTML', false, html);
     } catch (err) {
         console.error(err);
         alert("❌ Rasm yuklashda tarmoq xatoligi");
@@ -169,6 +178,63 @@ async function richInsertImage(editorId, fileInput) {
         fileInput.value = "";
     }
 }
+
+// ================= Rasm o'lchamini sudrab o'zgartirish =================
+// Kontenteditable'ning o'z (native) rasm resize funksiyasi ko'p
+// brauzerlarda ishonchli ishlamaydi (eski execCommand asosidagi
+// standart, asta-sekin olib tashlanmoqda) — shuning uchun oddiy, o'zimiz
+// yozgan JS orqali ishlaydigan sudrash amalga oshirilgan. Holat bitta
+// global o'zgaruvchida saqlanadi — bir vaqtning o'zida faqat bitta rasm
+// sudralishi mumkin.
+let richResizeState = null;
+
+function attachImageResizeHandlers(editorId) {
+    const editor = document.getElementById(editorId);
+    if (!editor || editor.dataset.resizeAttached) return;
+    editor.dataset.resizeAttached = "1";
+
+    editor.addEventListener('mousedown', (e) => startImageResize(e, e.clientX));
+    editor.addEventListener('touchstart', (e) => {
+        if (!e.touches[0]) return;
+        startImageResize(e, e.touches[0].clientX);
+    }, { passive: true });
+}
+
+function startImageResize(e, clientX) {
+    if (!e.target.classList || !e.target.classList.contains('rich-img-handle')) return;
+    const wrap = e.target.closest('.rich-img-wrap');
+    const img = wrap ? wrap.querySelector('img') : null;
+    const editor = e.currentTarget;
+    if (!img) return;
+
+    if (e.cancelable) e.preventDefault();
+    const rect = img.getBoundingClientRect();
+    richResizeState = {
+        img,
+        editor,
+        startX: clientX,
+        startWidth: rect.width,
+        ratio: rect.height / rect.width
+    };
+}
+
+function updateImageResize(clientX) {
+    if (!richResizeState) return;
+    const { img, editor, startX, startWidth, ratio } = richResizeState;
+    const delta = clientX - startX;
+    const maxWidth = editor.getBoundingClientRect().width;
+    const newWidth = Math.min(maxWidth, Math.max(40, startWidth + delta));
+    img.style.width = newWidth + 'px';
+    img.style.height = (newWidth * ratio) + 'px';
+}
+
+document.addEventListener('mousemove', (e) => updateImageResize(e.clientX));
+document.addEventListener('mouseup', () => { richResizeState = null; });
+document.addEventListener('touchmove', (e) => {
+    if (!richResizeState || !e.touches[0]) return;
+    updateImageResize(e.touches[0].clientX);
+}, { passive: true });
+document.addEventListener('touchend', () => { richResizeState = null; });
 
 // .docx faylni mammoth.js orqali HTML'ga aylantiradi — abzatslar,
 // qalin/kursiv, sarlavhalar, ro'yxatlar kabi formatlash saqlanadi (fayl
@@ -606,6 +672,7 @@ function openAddSectionForm() {
     document.getElementById("newSectionTextEditor").innerHTML = "";
     document.getElementById("newSectionTopicName").value = "";
     newTopicNameManuallyEdited = false;
+    attachImageResizeHandlers("newSectionTextEditor");
     // Default — shu kursning o'zi nomi (odatda kurs mavzusi = fan nomi).
     applyScienceSelection("new", cachedCourse ? cachedCourse.title : "");
     document.getElementById("addSectionForm").style.display = "flex";
@@ -796,6 +863,7 @@ async function openEditSectionForm(sectionId) {
         editor.innerHTML = section.textContentFormat === "HTML"
             ? (section.textContent || "")
             : escapeHtml(section.textContent || "").replace(/\n/g, "<br>");
+        attachImageResizeHandlers("editSectionTextEditor");
 
         onEditContentToggle(document.getElementById("editIncludeText"));
 

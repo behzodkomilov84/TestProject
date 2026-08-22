@@ -358,6 +358,51 @@ body {
     margin: 0 0 10px;
 }
 
+/* Rasm — kattaligidan qat'i nazar tahrirlagich enidan chiqib ketmasligi
+   uchun avtomatik moslashadi (max-width:100%). "🖼 Rasm qo'shish" orqali
+   qo'shilgan rasmlar bitta "rich-img-wrap" ichida, pastki-o'ng burchakda
+   sudrab o'lchamini o'zgartirish uchun kichik tutqich (handle) bilan
+   birga keladi — richInsertImage()/attachImageResizeHandlers()
+   (courseDetail.js) shu tutqichni sudrashni ushlab, eni/bo'yini
+   (nisbatini saqlagan holda) o'zgartiradi. */
+.rich-text-editor img {
+    max-width: 100%;
+    height: auto;
+}
+
+.rich-img-wrap {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    vertical-align: bottom;
+}
+
+.rich-img-wrap img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+/* O'qish (read-only) sahifasida ham xuddi shu HTML saqlanadi — u yerda
+   tutqich hech qanday ma'noga ega emas, shuning uchun standart holatda
+   yashirin, faqat tahrirlagich ichida ko'rinadi. */
+.rich-img-handle {
+    display: none;
+}
+
+.rich-text-editor .rich-img-handle {
+    display: block;
+    position: absolute;
+    right: -5px;
+    bottom: -5px;
+    width: 12px;
+    height: 12px;
+    background: #2563eb;
+    border: 2px solid white;
+    border-radius: 3px;
+    cursor: nwse-resize;
+}
+
 .rich-text-editor ul,
 .rich-text-editor ol {
     margin: 0 0 10px;

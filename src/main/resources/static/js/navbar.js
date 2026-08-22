@@ -45,7 +45,17 @@ document.querySelectorAll(".dropbtn").forEach(btn => {
    Google'ning o'zi chizadigan (katta) select o'rniga, navbar'dagi kichik
    🌐 dropdown orqali "googtrans" cookie'sini to'g'ridan-to'g'ri o'zimiz
    o'rnatamiz va sahifani qayta yuklaymiz — Google Translate skripti shu
-   cookie'ni o'qib, sahifani avtomatik tarjima qiladi. */
+   cookie'ni o'qib, sahifani avtomatik tarjima qiladi.
+
+   MUHIM: manba tili har doim "auto" qilib beriladi ("uz" emas) — kurs
+   matnlari ko'pincha boshqa tildan (masalan ruscha PDF/Word'dan) copy-
+   paste qilib joylashtiriladi, shuning uchun sahifada aralash til
+   bo'lishi mumkin. Ilgari "O'zbekcha" tanlanganda cookie butunlay
+   tozalanardi ("sahifa allaqachon o'zbekcha" deb hisoblab) — bu esa
+   joylashtirilgan ruscha matnni umuman tarjima qilmay, o'zgarishsiz
+   qoldirardi. "auto" bilan Google har bir matn bo'lagining haqiqiy
+   tilini alohida aniqlab, tanlangan tilga tarjima qiladi (allaqachon
+   o'zbekcha bo'lgan qismlarga tegmaydi). */
 function setSiteLanguage(lang) {
     const host = location.hostname;
 
@@ -56,10 +66,8 @@ function setSiteLanguage(lang) {
 
     clearCookie("googtrans");
 
-    if (lang !== "uz") {
-        document.cookie = "googtrans=/uz/" + lang + "; path=/";
-        document.cookie = "googtrans=/uz/" + lang + "; domain=." + host + "; path=/";
-    }
+    document.cookie = "googtrans=/auto/" + lang + "; path=/";
+    document.cookie = "googtrans=/auto/" + lang + "; domain=." + host + "; path=/";
 
     location.reload();
 }
