@@ -195,6 +195,18 @@ public class TelegramBot extends TelegramLongPollingBot {
                     execute(courseReaderService.openCourse(getUserByChatId(chatId), courseId));
                     return;
                 }
+                // ===== Kursga Click orqali onlayn to'lash (OWNER tasdig'ini kutmasdan) =====
+                if (data.startsWith("course_pay_")) {
+                    Long courseId = Long.parseLong(data.replace("course_pay_", ""));
+                    execute(courseReaderService.payWithClick(getUserByChatId(chatId), courseId));
+                    return;
+                }
+                // ===== Kursga obuna so'rovi (OWNER qo'lda tasdiqlaydi) — botning o'zidan =====
+                if (data.startsWith("course_request_")) {
+                    Long courseId = Long.parseLong(data.replace("course_request_", ""));
+                    execute(courseReaderService.requestSubscription(getUserByChatId(chatId), courseId));
+                    return;
+                }
                 if (data.startsWith("course_secs_")) {
                     String rest = data.replace("course_secs_", "");
                     int sep = rest.lastIndexOf('_');

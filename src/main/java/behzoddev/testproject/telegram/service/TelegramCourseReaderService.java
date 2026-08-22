@@ -4,8 +4,12 @@ import behzoddev.testproject.dto.course.CourseDetailDto;
 import behzoddev.testproject.dto.course.CourseDto;
 import behzoddev.testproject.dto.course.CourseSectionContentDto;
 import behzoddev.testproject.dto.course.CourseSectionSummaryDto;
+import behzoddev.testproject.entity.PaymentOrder;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.CourseService;
+import behzoddev.testproject.service.CourseSubscriptionService;
+import behzoddev.testproject.service.payment.ClickService;
+import behzoddev.testproject.service.payment.PaymentOrderService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,6 +20,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.webapp.WebAppInfo;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,7 +55,9 @@ public class TelegramCourseReaderService {
     private static final int MAX_MESSAGE_LENGTH = 3500;
 
     private final CourseService courseService;
-    private final TelegramAutoLoginService autoLoginService;
+    private final PaymentOrderService paymentOrderService;
+    private final ClickService clickService;
+    private final CourseSubscriptionService courseSubscriptionService;
 
     /* ================= 1. Kurslar ro'yxati ================= */
 
@@ -119,16 +126,86 @@ public class TelegramCourseReaderService {
         SendMessage msg = new SendMessage();
         msg.setChatId(user.getTelegramId().toString());
 
-        String url = autoLoginService.buildLoginUrl(user, "/courses/" + course.id());
         String priceText = course.price() != null ? " Narxi: " + formatPrice(course.price()) + " so'm." : "";
-        msg.setText("🔒 <b>" + escape(course.title()) + "</b>\n\n" +
-                "Bu kursni botda o'qish uchun obuna kerak." + priceText + " Saytda batafsil ko'rib, " +
-                "obuna so'rovi yuborishingiz mumkin: " + url);
+        StringBuilder text = new StringBuilder("🔒 <b>" + escape(course.title()) + "</b>\n\n" +
+                "Bu kursni botda o'qish uchun obuna kerak." + priceText);
+
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        // Saytdagi "💳 Click orqali to'lash" bilan bir xil — narx belgilangan
+        // va Click ulangan bo'lsa, to'lov muvaffaqiyatli bo'lishi bilanoq
+        // (OWNER kutmasdan) kursga kirish avtomatik ochiladi.
+        if (clickService.isEnabled() && course.price() != null) {
+            InlineKeyboardButton payBtn = new InlineKeyboardButton();
+            payBtn.setText("💳 Click orqali to'lash");
+            payBtn.setCallbackData("course_pay_" + course.id());
+            rows.add(List.of(payBtn));
+        }
+
+        // Obuna so'rovi endi saytga o'tkazuvchi havola emas — to'g'ridan-
+        // to'g'ri botning o'zida yuboriladi (CourseSubscriptionService.
+        // requestSubscription), OWNER buni "Kursga obuna berish"
+        // sahifasida ko'rib, qo'lda tasdiqlaydi.
+        if (course.requestPending()) {
+            text.append("\n\n⏳ Obunaga so'rovingiz allaqachon yuborilgan — administrator (OWNER) javobini kuting.");
+        } else {
+            InlineKeyboardButton requestBtn = new InlineKeyboardButton();
+            requestBtn.setText("📩 Obunaga so'rov yuborish");
+            requestBtn.setCallbackData("course_request_" + course.id());
+            rows.add(List.of(requestBtn));
+        }
+
+        rows.add(List.of(button("🔙 Kurslar ro'yxati", "course_list")));
+
+        msg.setText(text.toString());
         msg.setParseMode("HTML");
-        // Telegram'ning preview-fetcheri xabar yuborilishi bilan havolani
-        // o'zi ochib, bitta martalik autologin tokenini ishlatib qo'ymasligi uchun.
-        msg.setDisableWebPagePreview(true);
-        msg.setReplyMarkup(backToCoursesMarkup());
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(rows);
+        msg.setReplyMarkup(markup);
+        return msg;
+    }
+
+    // "📩 Obunaga so'rov yuborish" tugmasi bosilganda — saytdagi
+    // requestSubscription() bilan bir xil (CourseSubscriptionService orqali),
+    // faqat botning o'zida, saytga o'tishga hojatsiz.
+    public SendMessage requestSubscription(User user, Long courseId) {
+        try {
+            courseSubscriptionService.requestSubscription(courseId, user);
+            return simpleMessage(user,
+                    "✅ So'rovingiz yuborildi. Administrator (OWNER) ko'rib chiqib, obunani tasdiqlaydi.");
+        } catch (IllegalArgumentException | NoSuchElementException e) {
+            return simpleMessage(user, "❌ " + e.getMessage());
+        }
+    }
+
+    // "💳 Click orqali to'lash" tugmasi bosilganda — TelegramMenuService.
+    // createClickPaymentLink bilan bir xil g'oya: checkout link Telegram
+    // "Web App" tugmasi sifatida beriladi, botdan chiqmasdan (o'zining
+    // ichki brauzerida) to'lov yakunlanadi.
+    public SendMessage payWithClick(User user, Long courseId) {
+        SendMessage msg = new SendMessage();
+        msg.setChatId(user.getTelegramId().toString());
+
+        try {
+            PaymentOrder order = paymentOrderService.createCourseOrder(user, courseId, 1);
+            String checkoutUrl = clickService.buildPayUrl(order, "/courses/" + courseId);
+
+            msg.setText("💳 To'lovni yakunlash uchun quyidagi tugmani bosing " +
+                    "(botdan chiqmasdan, Telegram ichida ochiladi):");
+
+            InlineKeyboardButton payBtn = new InlineKeyboardButton();
+            payBtn.setText("💳 Click orqali to'lash");
+            payBtn.setWebApp(WebAppInfo.builder().url(checkoutUrl).build());
+
+            InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+            markup.setKeyboard(List.of(List.of(payBtn)));
+            msg.setReplyMarkup(markup);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            msg.setText("❌ " + e.getMessage());
+            msg.setReplyMarkup(backToCoursesMarkup());
+        }
+
         return msg;
     }
 

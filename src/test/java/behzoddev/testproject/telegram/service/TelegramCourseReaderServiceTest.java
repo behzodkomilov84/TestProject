@@ -4,9 +4,14 @@ import behzoddev.testproject.dto.course.CourseDetailDto;
 import behzoddev.testproject.dto.course.CourseDto;
 import behzoddev.testproject.dto.course.CourseSectionContentDto;
 import behzoddev.testproject.dto.course.CourseSectionSummaryDto;
+import behzoddev.testproject.entity.PaymentOrder;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.User;
+import behzoddev.testproject.entity.enums.PaymentOrderStatus;
 import behzoddev.testproject.service.CourseService;
+import behzoddev.testproject.service.CourseSubscriptionService;
+import behzoddev.testproject.service.payment.ClickService;
+import behzoddev.testproject.service.payment.PaymentOrderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,7 +49,11 @@ class TelegramCourseReaderServiceTest {
     @Mock
     private CourseService courseService;
     @Mock
-    private TelegramAutoLoginService autoLoginService;
+    private PaymentOrderService paymentOrderService;
+    @Mock
+    private ClickService clickService;
+    @Mock
+    private CourseSubscriptionService courseSubscriptionService;
 
     @InjectMocks
     private TelegramCourseReaderService courseReaderService;
@@ -60,12 +69,13 @@ class TelegramCourseReaderServiceTest {
 
     @BeforeEach
     void setUp() {
-        org.mockito.Mockito.lenient().when(autoLoginService.buildLoginUrl(any(), any()))
-                .thenReturn("https://study-grow.uz/telegram-auto-login?token=stub");
         // Bot faylni Telegram'ga havoladan emas, diskdan o'qib yuboradi
         // (production'dagi "failed to get HTTP URL content" xatosining
         // tuzatilishi) — shuning uchun testda ham haqiqiy faylga ehtiyoj bor.
         ReflectionTestUtils.setField(courseReaderService, "uploadDir", tempUploadDir.toString());
+        // Aksariyat testlar to'lov bilan bog'liq emas — standart holatda
+        // Click o'chirilgan deb hisoblanadi ("💳 to'lash" tugmasi chiqmaydi).
+        org.mockito.Mockito.lenient().when(clickService.isEnabled()).thenReturn(false);
     }
 
     private void createUploadedFile(String relativePath) {
@@ -137,7 +147,7 @@ class TelegramCourseReaderServiceTest {
     // ===== openCourse (ruxsat tekshiruvi) =====
 
     @Test
-    void openCourse_notSubscribedAndNotFree_showsAccessDeniedWithLoginLink() {
+    void openCourse_notSubscribedAndNotFree_showsAccessDeniedWithRequestButton() {
         User user = student();
         CourseDetailDto course = CourseDetailDto.builder().id(5L).title("Kimyo").published(true)
                 .free(false).subscribed(false).canManage(false).sections(List.of()).build();
@@ -145,8 +155,66 @@ class TelegramCourseReaderServiceTest {
 
         SendMessage msg = courseReaderService.openCourse(user, 5L);
 
-        assertThat(msg.getText()).contains("obuna kerak").contains("study-grow.uz");
-        org.mockito.Mockito.verify(autoLoginService).buildLoginUrl(user, "/courses/5");
+        // Endi saytga o'tkazuvchi havola emas — so'rov to'g'ridan-to'g'ri
+        // botning o'zidan (tugma bilan) yuboriladi.
+        assertThat(msg.getText()).contains("obuna kerak").doesNotContain("study-grow.uz");
+        InlineKeyboardMarkup markup = (InlineKeyboardMarkup) msg.getReplyMarkup();
+        boolean hasRequestButton = markup.getKeyboard().stream()
+                .flatMap(List::stream)
+                .anyMatch(b -> "course_request_5".equals(b.getCallbackData()));
+        assertThat(hasRequestButton).isTrue();
+    }
+
+    @Test
+    void openCourse_requestAlreadyPending_showsWaitingMessageWithoutRequestButton() {
+        User user = student();
+        CourseDetailDto course = CourseDetailDto.builder().id(5L).title("Kimyo").published(true)
+                .free(false).subscribed(false).canManage(false).requestPending(true).sections(List.of()).build();
+        when(courseService.getDetail(5L, user)).thenReturn(course);
+
+        SendMessage msg = courseReaderService.openCourse(user, 5L);
+
+        assertThat(msg.getText()).contains("so'rovingiz allaqachon yuborilgan");
+        InlineKeyboardMarkup markup = (InlineKeyboardMarkup) msg.getReplyMarkup();
+        boolean hasRequestButton = markup.getKeyboard().stream()
+                .flatMap(List::stream)
+                .anyMatch(b -> "course_request_5".equals(b.getCallbackData()));
+        assertThat(hasRequestButton).isFalse();
+    }
+
+    @Test
+    void openCourse_clickEnabledWithPrice_showsPayButton() {
+        User user = student();
+        CourseDetailDto course = CourseDetailDto.builder().id(5L).title("Kimyo").published(true)
+                .free(false).subscribed(false).canManage(false)
+                .price(new java.math.BigDecimal("50000")).sections(List.of()).build();
+        when(courseService.getDetail(5L, user)).thenReturn(course);
+        when(clickService.isEnabled()).thenReturn(true);
+
+        SendMessage msg = courseReaderService.openCourse(user, 5L);
+
+        InlineKeyboardMarkup markup = (InlineKeyboardMarkup) msg.getReplyMarkup();
+        boolean hasPayButton = markup.getKeyboard().stream()
+                .flatMap(List::stream)
+                .anyMatch(b -> "course_pay_5".equals(b.getCallbackData()));
+        assertThat(hasPayButton).isTrue();
+    }
+
+    @Test
+    void openCourse_clickDisabled_hidesPayButtonEvenWithPrice() {
+        User user = student();
+        CourseDetailDto course = CourseDetailDto.builder().id(5L).title("Kimyo").published(true)
+                .free(false).subscribed(false).canManage(false)
+                .price(new java.math.BigDecimal("50000")).sections(List.of()).build();
+        when(courseService.getDetail(5L, user)).thenReturn(course);
+
+        SendMessage msg = courseReaderService.openCourse(user, 5L);
+
+        InlineKeyboardMarkup markup = (InlineKeyboardMarkup) msg.getReplyMarkup();
+        boolean hasPayButton = markup.getKeyboard().stream()
+                .flatMap(List::stream)
+                .anyMatch(b -> b.getCallbackData() != null && b.getCallbackData().startsWith("course_pay_"));
+        assertThat(hasPayButton).isFalse();
     }
 
     @Test
@@ -460,5 +528,56 @@ class TelegramCourseReaderServiceTest {
             assertThat(messages.get(i).getReplyMarkup()).isNull();
         }
         assertThat(messages.get(messages.size() - 1).getReplyMarkup()).isNotNull();
+    }
+
+    // ===== requestSubscription ("📩 Obunaga so'rov yuborish" — botning o'zidan) =====
+
+    @Test
+    void requestSubscription_success_showsConfirmation() {
+        User user = student();
+
+        SendMessage msg = courseReaderService.requestSubscription(user, 5L);
+
+        org.mockito.Mockito.verify(courseSubscriptionService).requestSubscription(5L, user);
+        assertThat(msg.getText()).contains("So'rovingiz yuborildi");
+    }
+
+    @Test
+    void requestSubscription_alreadySubscribedOrPending_showsErrorMessage() {
+        User user = student();
+        org.mockito.Mockito.doThrow(new IllegalArgumentException("❌Siz allaqachon shu kursga obuna bo'lgansiz"))
+                .when(courseSubscriptionService).requestSubscription(5L, user);
+
+        SendMessage msg = courseReaderService.requestSubscription(user, 5L);
+
+        assertThat(msg.getText()).contains("allaqachon shu kursga obuna bo'lgansiz");
+    }
+
+    // ===== payWithClick ("💳 Click orqali to'lash" — botning o'zidan) =====
+
+    @Test
+    void payWithClick_success_showsWebAppPayButton() {
+        User user = student();
+        PaymentOrder order = PaymentOrder.builder().id(30L).amount(new java.math.BigDecimal("50000"))
+                .durationMonths(1).status(PaymentOrderStatus.CREATED).courseId(5L).build();
+        when(paymentOrderService.createCourseOrder(user, 5L, 1)).thenReturn(order);
+        when(clickService.buildPayUrl(order, "/courses/5")).thenReturn("https://my.click.uz/services/pay?x=1");
+
+        SendMessage msg = courseReaderService.payWithClick(user, 5L);
+
+        InlineKeyboardMarkup markup = (InlineKeyboardMarkup) msg.getReplyMarkup();
+        assertThat(markup.getKeyboard().get(0).get(0).getWebApp().getUrl())
+                .isEqualTo("https://my.click.uz/services/pay?x=1");
+    }
+
+    @Test
+    void payWithClick_orderCreationFails_showsErrorMessage() {
+        User user = student();
+        when(paymentOrderService.createCourseOrder(user, 5L, 1))
+                .thenThrow(new IllegalStateException("❌Kurs narxi hali belgilanmagan — OWNER bilan bog'laning"));
+
+        SendMessage msg = courseReaderService.payWithClick(user, 5L);
+
+        assertThat(msg.getText()).contains("narxi hali belgilanmagan");
     }
 }
