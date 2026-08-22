@@ -140,6 +140,28 @@ public class SecurityConfig {
                                 );
                             }
                         })
+                        // Sessiya tugab qolgan (yoki umuman login qilinmagan) holatda
+                        // "/api/**"ga so'rov kelsa — standart xulq-atvor (sendRedirect
+                        // "/login", 302) o'rniga to'g'ridan-to'g'ri 401 JSON qaytariladi.
+                        // Sabab — haqiqiy production bug: foydalanuvchi uzoq vaqt
+                        // (masalan katta matn tahrirlab) formani ochiq turgach PUT/POST
+                        // so'rov yuborsa, sessiya allaqachon tugagan bo'lar edi; brauzer
+                        // 302 redirect'ni PUT/DELETE kabi metodlarni SAQLAB qolgan holda
+                        // bajaradi (POST'dan farqli), natijada "/login" (faqat GET/POST
+                        // qabul qiladi) "Request method 'PUT' is not supported" xatosini
+                        // qaytarardi — foydalanuvchiga sessiya tugaganini emas, shu
+                        // chalg'ituvchi texnik xatoni ko'rsatardi.
+                        .authenticationEntryPoint((request, response, authEx) -> {
+                            if (request.getRequestURI().startsWith("/api/")) {
+                                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                                response.setContentType("application/json");
+                                response.getWriter().write(
+                                        "{\"error\":\"Sessiyangiz tugagan. Iltimos, sahifani yangilab, qayta kiring.\"}"
+                                );
+                            } else {
+                                response.sendRedirect("/login");
+                            }
+                        })
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
