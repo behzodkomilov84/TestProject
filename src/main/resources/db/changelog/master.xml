@@ -30,6 +30,7 @@
     <include file="/db/changelog/course-section-linked-topic.sql"/>
     <include file="/db/changelog/course-section-content-format.sql"/>
     <include file="/db/changelog/course-free.sql"/>
+    <include file="/db/changelog/course-section-title-length.sql"/>
 
 
 </databaseChangeLog>

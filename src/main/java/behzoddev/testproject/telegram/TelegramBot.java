@@ -28,7 +28,9 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.GetFile;
+import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.Document;
 import org.telegram.telegrambots.meta.api.objects.Message;
@@ -175,12 +177,21 @@ public class TelegramBot extends TelegramLongPollingBot {
                 }
 
                 // ===== Kurslarni botda o'qish (obuna bor yoki bepul bo'lsa) =====
+                // Har bir navigatsiya qadamida (ro'yxat -> kurs -> mavzular ->
+                // mavzu -> keyingi mavzu) OLDINGI xabar o'chiriladi — aks holda
+                // "Keyingi mavzu" bosilgan sayin chatda o'nlab eski xabar
+                // to'planib qolardi. Yangi xabar xuddi shu o'rinda ochilgandek
+                // tuyuladi.
+                Integer courseMsgId = update.getCallbackQuery().getMessage().getMessageId();
+
                 if (data.equals("course_list")) {
+                    deleteMessageSafely(chatId, courseMsgId);
                     execute(courseReaderService.showCourseList(getUserByChatId(chatId)));
                     return;
                 }
                 if (data.startsWith("course_open_")) {
                     Long courseId = Long.parseLong(data.replace("course_open_", ""));
+                    deleteMessageSafely(chatId, courseMsgId);
                     execute(courseReaderService.openCourse(getUserByChatId(chatId), courseId));
                     return;
                 }
@@ -189,6 +200,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                     int sep = rest.lastIndexOf('_');
                     Long courseId = Long.parseLong(rest.substring(0, sep));
                     int page = Integer.parseInt(rest.substring(sep + 1));
+                    deleteMessageSafely(chatId, courseMsgId);
                     execute(courseReaderService.showSectionsPage(getUserByChatId(chatId), courseId, page));
                     return;
                 }
@@ -197,8 +209,13 @@ public class TelegramBot extends TelegramLongPollingBot {
                     int sep = rest.indexOf('_');
                     Long courseId = Long.parseLong(rest.substring(0, sep));
                     Long sectionId = Long.parseLong(rest.substring(sep + 1));
-                    for (SendMessage m : courseReaderService.openSection(getUserByChatId(chatId), courseId, sectionId)) {
+                    User sectionUser = getUserByChatId(chatId);
+                    deleteMessageSafely(chatId, courseMsgId);
+                    for (SendMessage m : courseReaderService.openSection(sectionUser, courseId, sectionId)) {
                         execute(m);
+                    }
+                    for (SendDocument d : courseReaderService.documentsForSection(sectionUser, courseId, sectionId)) {
+                        execute(d);
                     }
                     return;
                 }
@@ -207,9 +224,16 @@ public class TelegramBot extends TelegramLongPollingBot {
                     int sep = rest.indexOf('_');
                     Long courseId = Long.parseLong(rest.substring(0, sep));
                     Long sectionId = Long.parseLong(rest.substring(sep + 1));
+                    deleteMessageSafely(chatId, courseMsgId);
                     for (SendMessage m : courseReaderService.completeAndAdvance(getUserByChatId(chatId), courseId, sectionId)) {
                         execute(m);
                     }
+                    return;
+                }
+                // ===== Kurs bo'limidagi mavzuga oid testni botning o'zida yechish =====
+                if (data.startsWith("course_test_")) {
+                    Long topicId = Long.parseLong(data.replace("course_test_", ""));
+                    execute(practiceTestService.startForTopic(chatId, topicId));
                     return;
                 }
 
@@ -678,6 +702,19 @@ public class TelegramBot extends TelegramLongPollingBot {
             cause = cause.getCause();
         }
         return false;
+    }
+
+    // Kurs bo'limlarini o'qishda navigatsiya qadamlarida oldingi xabarni
+    // olib tashlash uchun. Xato bo'lsa (masalan xabar 48 soatdan eski —
+    // Telegram bunday xabarlarni o'chirishga ruxsat bermaydi, yoki
+    // foydalanuvchi allaqachon o'chirib yuborgan) — jim o'tkazib yuboramiz,
+    // bu funksional emas, faqat estetik tozalik uchun.
+    private void deleteMessageSafely(Long chatId, Integer messageId) {
+        try {
+            execute(new DeleteMessage(chatId.toString(), messageId));
+        } catch (Exception e) {
+            log.debug("Eski xabarni o'chirib bo'lmadi: chatId={}, messageId={}", chatId, messageId, e);
+        }
     }
 
     private User getUserByChatId(Long chatId) {

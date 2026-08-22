@@ -9,7 +9,46 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
         document.execCommand("defaultParagraphSeparator", false, "p");
     } catch (e) { /* eski brauzerlarda yo'q bo'lishi mumkin — muhim emas */ }
+
+    setupPasteSanitizer("newSectionTextEditor");
+    setupPasteSanitizer("editSectionTextEditor");
 });
+
+// PDF/Word/Google Docs'dan joylashtirilgan (paste) matn ko'pincha o'z
+// rangini (masalan qora fonli hujjatlarda oq matn) olib keladi —
+// saytning oq foniga tushganda matn butunlay ko'rinmay qolardi. Shuning
+// uchun paste hodisasi to'xtatilib, brauzer taqdim etgan HTML tozalanadi:
+// abzats/qalin/kursiv/ro'yxat/jadval kabi FORMAT saqlanadi, faqat
+// rang (color/background) bilan bog'liq inline uslublar olib tashlanadi
+// — matn har doim saytning o'z ranglarida, lekin formatlash bilan ko'rinadi.
+function setupPasteSanitizer(editorId) {
+    const editor = document.getElementById(editorId);
+    if (!editor) return;
+
+    editor.addEventListener("paste", (e) => {
+        e.preventDefault();
+        const html = e.clipboardData.getData("text/html");
+        const content = html
+            ? sanitizePastedHtml(html)
+            : escapeHtml(e.clipboardData.getData("text/plain")).replace(/\n/g, "<br>");
+        document.execCommand("insertHTML", false, content);
+    });
+}
+
+function sanitizePastedHtml(html) {
+    const container = document.createElement("div");
+    container.innerHTML = html;
+
+    container.querySelectorAll("*").forEach(el => {
+        el.style.removeProperty("color");
+        el.style.removeProperty("background");
+        el.style.removeProperty("background-color");
+        el.removeAttribute("color");
+        el.removeAttribute("bgcolor");
+    });
+
+    return container.innerHTML;
+}
 
 // Matn maydoni oddiy <textarea> emas, contenteditable ("rich-text-editor")
 // — shuning uchun PDF/Word'dan Ctrl+C/Ctrl+V qilinganda qalin matn,

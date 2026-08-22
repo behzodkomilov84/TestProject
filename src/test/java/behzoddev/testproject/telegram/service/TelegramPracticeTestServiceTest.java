@@ -157,6 +157,45 @@ class TelegramPracticeTestServiceTest {
         assertThat(msg.getText()).contains("xato qilingan");
     }
 
+    // ===== startForTopic (kurs bo'limidagi "🎯 Mavzuga oid testlarni
+    // yechish" tugmasidan — rejim/fan tanlashni o'tkazib yuborib,
+    // to'g'ridan-to'g'ri savol soni tanlashga o'tadi) =====
+
+    @Test
+    void startForTopic_noQuestions_saysEmpty() {
+        when(questionRepository.countByTopicIds(List.of(10L))).thenReturn(0);
+
+        SendMessage msg = practiceTestService.startForTopic(CHAT_ID, 10L);
+
+        assertThat(msg.getText()).contains("savollar yo'q");
+    }
+
+    @Test
+    void startForTopic_hasQuestions_offersCountSelectionDirectly() {
+        when(questionRepository.countByTopicIds(List.of(10L))).thenReturn(30);
+
+        SendMessage msg = practiceTestService.startForTopic(CHAT_ID, 10L);
+
+        // Fan tanlash bosqichi o'tkazib yuborilgan — darhol savol soni so'raladi.
+        assertThat(msg.getText()).contains("jami mavjud: 30");
+        assertThat(msg.getReplyMarkup()).isNotNull();
+    }
+
+    @Test
+    void startForTopic_thenChooseCount_startsPracticeTestForThatTopicOnly() {
+        when(questionRepository.countByTopicIds(List.of(10L))).thenReturn(5);
+        practiceTestService.startForTopic(CHAT_ID, 10L);
+
+        QuestionDto question = new QuestionDto(1L, "Savol?", null,
+                List.of(new AnswerDto(1L, "Javob", true, null, null, null, null)));
+        when(testSessionService.startTest(any(), eq(List.of(10L)), eq(5), eq("practice")))
+                .thenReturn(new StartTestResponseDto(99L, List.of(question)));
+
+        SendMessage msg = practiceTestService.chooseCount(CHAT_ID, 5);
+
+        assertThat(msg.getText()).contains("Savol?");
+    }
+
     // ===== selectScience =====
 
     @Test

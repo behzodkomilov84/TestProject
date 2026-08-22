@@ -163,9 +163,12 @@ class TelegramCourseReaderServiceTest {
         SendMessage page0 = courseReaderService.showSectionsPage(user, 5L, 0);
 
         // 8 tadan sahifalanadi — 10 ta bo'lim = 2 sahifa, 0-sahifada faqat "▶️" bo'lishi kerak.
+        // Tugmalar endi yonma-yon (4 tadan bir qatorda): 8 ta mavzu = 2 qator.
         InlineKeyboardMarkup markup = (InlineKeyboardMarkup) page0.getReplyMarkup();
         List<List<InlineKeyboardButton>> rows = markup.getKeyboard();
-        assertThat(rows).hasSize(8 + 1 + 1); // 8 ta mavzu + navigatsiya qatori + "orqaga"
+        assertThat(rows).hasSize(2 + 1 + 1); // 2 qator mavzu tugmasi + navigatsiya qatori + "orqaga"
+        assertThat(rows.get(0)).hasSize(4);
+        assertThat(rows.get(1)).hasSize(4);
         assertThat(page0.getText()).contains("1/2-sahifa");
     }
 
@@ -239,7 +242,7 @@ class TelegramCourseReaderServiceTest {
     }
 
     @Test
-    void openSection_linkedTopic_showsTestUrlButton() {
+    void openSection_linkedTopic_showsInBotTestButton() {
         User user = student();
         CourseSectionContentDto section = CourseSectionContentDto.builder()
                 .id(10L).courseId(5L).title("Mavzu").orderIndex(1).type("TEXT")
@@ -249,10 +252,11 @@ class TelegramCourseReaderServiceTest {
 
         List<SendMessage> messages = courseReaderService.openSection(user, 5L, 10L);
 
+        // Saytga o'tkazuvchi URL emas — botning o'zida testni boshlaydigan callback.
         InlineKeyboardMarkup markup = (InlineKeyboardMarkup) messages.get(0).getReplyMarkup();
         boolean hasTestButton = markup.getKeyboard().stream()
                 .flatMap(List::stream)
-                .anyMatch(b -> b.getUrl() != null && b.getUrl().contains("scienceId=3") && b.getUrl().contains("topicId=7"));
+                .anyMatch(b -> "course_test_7".equals(b.getCallbackData()));
         assertThat(hasTestButton).isTrue();
     }
 
@@ -269,6 +273,55 @@ class TelegramCourseReaderServiceTest {
         courseReaderService.completeAndAdvance(user, 5L, 10L);
 
         org.mockito.Mockito.verify(courseService).markSectionCompleted(5L, 10L, user);
+    }
+
+    // ===== documentsForSection ("📥 Kitobni to'liq yuklab olish" kabi
+    // PDF/DOCX havolalari — bosilganda tashqi brauzerga o'tkazish o'rniga,
+    // fayl to'g'ridan-to'g'ri botning o'zida hujjat sifatida yuboriladi) =====
+
+    @Test
+    void documentsForSection_pdfAndDocxLinksInContent_sendsBothAsDocuments() {
+        User user = student();
+        CourseSectionContentDto section = CourseSectionContentDto.builder()
+                .id(10L).courseId(5L).title("Kirish").orderIndex(1).type("TEXT")
+                .textContent("📥 KITOBNI TO'LIQ YUKLAB OLISH\n" +
+                        "PDF: https://study-grow.uz/uploads/courses/kimyo-qollanma-toliq.pdf\n" +
+                        "Word: https://study-grow.uz/uploads/courses/kimyo-qollanma-toliq.docx")
+                .textContentFormat("PLAIN").completed(true).build();
+        when(courseService.getSectionContent(5L, 10L, user)).thenReturn(section);
+
+        List<org.telegram.telegrambots.meta.api.methods.send.SendDocument> documents =
+                courseReaderService.documentsForSection(user, 5L, 10L);
+
+        assertThat(documents).hasSize(2);
+        assertThat(documents.get(0).getChatId()).isEqualTo("100");
+    }
+
+    @Test
+    void documentsForSection_noFileLinks_returnsEmpty() {
+        User user = student();
+        CourseSectionContentDto section = CourseSectionContentDto.builder()
+                .id(10L).courseId(5L).title("Oddiy mavzu").orderIndex(1).type("TEXT")
+                .textContent("Bu yerda hech qanday fayl havolasi yo'q.")
+                .textContentFormat("PLAIN").completed(true).build();
+        when(courseService.getSectionContent(5L, 10L, user)).thenReturn(section);
+
+        List<org.telegram.telegrambots.meta.api.methods.send.SendDocument> documents =
+                courseReaderService.documentsForSection(user, 5L, 10L);
+
+        assertThat(documents).isEmpty();
+    }
+
+    @Test
+    void documentsForSection_sectionNotAccessible_returnsEmptyInsteadOfThrowing() {
+        User user = student();
+        when(courseService.getSectionContent(5L, 10L, user))
+                .thenThrow(new AccessDeniedException("⛔ Bu bo'lim hali ochilmagan."));
+
+        List<org.telegram.telegrambots.meta.api.methods.send.SendDocument> documents =
+                courseReaderService.documentsForSection(user, 5L, 10L);
+
+        assertThat(documents).isEmpty();
     }
 
     // ===== toTelegramHtml (HTML -> Telegram HTML konvertatsiyasi) =====

@@ -121,6 +121,47 @@ public class TelegramPracticeTestService {
         return msg;
     }
 
+    // Kurs bo'limidagi "🎯 Mavzuga oid testlarni yechish" tugmasidan —
+    // rejim/fan tanlashni o'tkazib yuborib, to'g'ridan-to'g'ri shu BITTA
+    // mavzu bo'yicha (Practice rejimida, vaqt chegarasisiz — tezda yechish
+    // uchun qulay) savol sonini tanlashga o'tadi.
+    public SendMessage startForTopic(Long chatId, Long topicId) {
+        sessionService.putTempData(chatId, "pt_mode", DEFAULT_MODE);
+
+        List<Long> topicIds = List.of(topicId);
+        long available = questionRepository.countByTopicIds(topicIds);
+
+        SendMessage msg = new SendMessage();
+        msg.setChatId(chatId.toString());
+
+        if (available == 0) {
+            msg.setText("🎯 Bu mavzuda hozircha savollar yo'q.");
+            return msg;
+        }
+
+        sessionService.putTempData(chatId, "pt_topicIds", joinIds(topicIds));
+        sessionService.putTempData(chatId, "pt_available", String.valueOf(available));
+
+        Set<Integer> options = new LinkedHashSet<>();
+        for (Integer candidate : COUNT_CANDIDATES) {
+            if (candidate <= available) options.add(candidate);
+        }
+        options.add((int) Math.min(available, Integer.MAX_VALUE));
+
+        msg.setText("🎯 Mavzuga oid testlar — nechta savol bilan mashq qilmoqchisiz? (jami mavjud: " + available + " ta)");
+
+        List<InlineKeyboardButton> row = new ArrayList<>();
+        for (Integer count : options) {
+            row.add(button(count + " ta", "pt_count_" + count));
+        }
+        InlineKeyboardButton customBtn = button("✏️ O'zi kiritish", "pt_count_custom");
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(List.of(row, List.of(customBtn)));
+        msg.setReplyMarkup(markup);
+        return msg;
+    }
+
     // ================= 2. Savollar sonini tanlash =================
 
     public SendMessage selectScience(Long chatId, Long scienceId) {

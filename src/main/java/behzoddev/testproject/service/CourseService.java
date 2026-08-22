@@ -403,9 +403,22 @@ public class CourseService {
         }
     }
 
+    // Haqiqiy production bug: nom 200 belgidan (eski ustun uzunligi) oshib
+    // ketsa, DB "Data too long for column 'title'" xatosi berardi va
+    // GlobalRestExceptionHandler buni FK xatolariga mo'ljallangan umumiy
+    // "bog'liq ma'lumotlar mavjud" xabari bilan chalg'ituvchi tarzda
+    // qaytarardi. Ustun 500 belgigacha kengaytirildi, lekin baribir aniq
+    // chegara va tushunarli xabar bilan oldindan tekshiramiz.
+    private static final int SECTION_TITLE_MAX_LENGTH = 500;
+
     private void validateSectionDto(CourseSectionSaveDto dto) {
         if (dto.title() == null || dto.title().isBlank()) {
             throw new IllegalArgumentException("❌Bo'lim nomi bo'sh bo'lishi mumkin emas.");
+        }
+
+        if (dto.title().trim().length() > SECTION_TITLE_MAX_LENGTH) {
+            throw new IllegalArgumentException("❌Bo'lim nomi juda uzun (ko'pi bilan "
+                    + SECTION_TITLE_MAX_LENGTH + " ta belgi bo'lishi kerak).");
         }
 
         CourseSectionType type;

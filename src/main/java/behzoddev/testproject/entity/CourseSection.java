@@ -28,7 +28,7 @@ public class CourseSection {
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
-    @Column(nullable = false, length = 200)
+    @Column(nullable = false, length = 500)
     private String title;
 
     // Kurs ichidagi tartib raqami (1, 2, 3, ...) — ketma-ket ochilish shu bo'yicha.

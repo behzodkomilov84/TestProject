@@ -47,14 +47,25 @@ public class GlobalRestExceptionHandler {
         return ResponseEntity.notFound().build();
     }
 
-    // Ma'lumotlar bazasidagi foreign key/unique cheklovi buzilishi (masalan
-    // bog'liq yozuvlari bor ota-obyektni o'chirishga urinish) — xom SQL
-    // xato matnini ("could not execute statement [Cannot delete or update
-    // a parent row...]") to'g'ridan-to'g'ri foydalanuvchiga ko'rsatish
-    // o'rniga, tushunarli xabar bilan 409 CONFLICT qaytariladi.
+    // Ma'lumotlar bazasidagi cheklov buzilishi — ikki xil bo'lishi mumkin:
+    // 1) foreign key/unique (masalan bog'liq yozuvlari bor ota-obyektni
+    //    o'chirishga urinish) — "bog'liq ma'lumotlar mavjud" to'g'ri.
+    // 2) "Data truncation" (qiymat ustun uzunligidan oshib ketgan) — bu
+    //    holatda "bog'liq ma'lumotlar mavjud" xabari MUTLAQO NOTO'G'RI va
+    //    chalg'ituvchi edi (haqiqiy production bug: bo'lim nomini
+    //    tahrirlashda uzun nom kiritilganda shu noto'g'ri xabar chiqardi).
+    // Xom SQL xato matnini to'g'ridan-to'g'ri foydalanuvchiga ko'rsatish
+    // o'rniga, har biriga mos tushunarli xabar bilan qaytariladi.
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, String>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
         log.warn("Ma'lumotlar bazasi cheklovi buzildi: {}", ex.getMessage());
+
+        String rootMessage = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : "";
+        if (rootMessage != null && rootMessage.toLowerCase().contains("data truncation")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "❌Kiritilgan matn juda uzun — qisqartirib qayta kiriting."));
+        }
+
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of("error", "Bu amalni bajarib bo'lmadi — bog'liq ma'lumotlar mavjud."));
     }

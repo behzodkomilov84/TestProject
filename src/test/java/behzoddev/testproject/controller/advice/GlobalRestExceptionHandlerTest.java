@@ -37,6 +37,22 @@ class GlobalRestExceptionHandlerTest {
         assertThat(response.getBody().get("error")).doesNotContain("could not execute statement");
     }
 
+    // Haqiqiy production bug: bo'lim nomi ustun uzunligidan (avval 200
+    // belgi) oshib ketganda "Data truncation" xatosi chiqardi, lekin
+    // FK xatolariga mo'ljallangan "bog'liq ma'lumotlar mavjud" xabari
+    // bilan chalg'ituvchi tarzda qaytarilardi.
+    @Test
+    void handleDataIntegrityViolation_dataTruncation_returnsBadRequestWithAccurateMessage() {
+        DataIntegrityViolationException ex = new DataIntegrityViolationException(
+                "could not execute statement [Data truncation: Data too long for column 'title' at row 1]");
+
+        ResponseEntity<Map<String, String>> response = handler.handleDataIntegrityViolation(ex);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().get("error")).doesNotContain("bog'liq ma'lumotlar");
+        assertThat(response.getBody().get("error")).contains("uzun");
+    }
+
     @Test
     void handleAccessDenied_returnsForbidden() {
         ResponseEntity<Map<String, String>> response =

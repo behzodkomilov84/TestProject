@@ -68,7 +68,7 @@
         <button id="openAddSectionBtn" onclick="openAddSectionForm()">➕ Yangi bo'lim qo'shish</button>
 
         <div id="addSectionForm" class="section-form" style="display:none;">
-            <input type="text" id="newSectionTitle" placeholder="Bo'lim nomi">
+            <input type="text" id="newSectionTitle" placeholder="Bo'lim nomi" maxlength="500">
 
             <!-- Matn va video bir vaqtning o'zida ham qo'shilishi mumkin —
                  kamida bittasi belgilangan bo'lishi shart. -->
@@ -125,7 +125,7 @@
         <!-- Bo'limni tahrirlash — "✏️" tugmasi bosilganda shu bitta forma
              tanlangan bo'lim ma'lumotlari bilan to'ldirilib ochiladi. -->
         <div id="editSectionForm" class="section-form" style="display:none;">
-            <input type="text" id="editSectionTitle" placeholder="Bo'lim nomi">
+            <input type="text" id="editSectionTitle" placeholder="Bo'lim nomi" maxlength="500">
 
             <label class="content-toggle-label">
                 <input type="checkbox" id="editIncludeText" onchange="onEditContentToggle(this)"> 📄 Matn qo'shish

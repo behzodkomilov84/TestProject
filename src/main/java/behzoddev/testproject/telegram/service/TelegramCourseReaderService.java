@@ -9,13 +9,18 @@ import behzoddev.testproject.service.CourseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 // Botda "📚 Kurslar" — kurslarni to'g'ridan-to'g'ri Telegram ichida o'qish
@@ -29,6 +34,9 @@ import java.util.regex.Pattern;
 public class TelegramCourseReaderService {
 
     private static final int SECTIONS_PER_PAGE = 8;
+    // Kurs/mavzu tanlash tugmalari endi yonma-yon (avval har biri alohida
+    // qatorda, ustma-ust turardi).
+    private static final int BUTTONS_PER_ROW = 4;
     // Telegram xabar chegarasi 4096 belgi — ehtiyot uchun pastroq chegara
     // bilan bo'laklaymiz (HTML teglar ham hisobga kirgani uchun).
     private static final int MAX_MESSAGE_LENGTH = 3500;
@@ -57,13 +65,13 @@ public class TelegramCourseReaderService {
         }
 
         StringBuilder sb = new StringBuilder("📚 <b>Mavjud kurslar</b>\n\nO'qish uchun raqamini tanlang:\n\n");
-        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        List<InlineKeyboardButton> buttons = new ArrayList<>();
 
         int i = 1;
         for (CourseDto c : courses) {
             String icon = !c.published() ? "📝" : c.free() ? "🆓" : c.subscribed() ? "✅" : "🔒";
             sb.append(icon).append(" ").append(i).append(". ").append(escape(c.title())).append("\n");
-            rows.add(List.of(button(icon + " " + i, "course_open_" + c.id())));
+            buttons.add(button(icon + " " + i, "course_open_" + c.id()));
             i++;
         }
 
@@ -71,7 +79,7 @@ public class TelegramCourseReaderService {
         msg.setParseMode("HTML");
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        markup.setKeyboard(rows);
+        markup.setKeyboard(chunkIntoRows(buttons));
         msg.setReplyMarkup(markup);
         return msg;
     }
@@ -152,15 +160,18 @@ public class TelegramCourseReaderService {
         StringBuilder sb = new StringBuilder("📋 <b>" + escape(course.title()) + "</b>\n\nMavzuni tanlang (" +
                 (safePage + 1) + "/" + totalPages + "-sahifa):\n\n");
 
-        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        List<InlineKeyboardButton> buttons = new ArrayList<>();
         for (CourseSectionSummaryDto s : sections.subList(from, to)) {
             String icon = s.completed() ? "✅" : s.locked() ? "🔒" : "▫️";
             sb.append(icon).append(" ").append(s.orderIndex()).append(". ").append(escape(s.title())).append("\n");
-            rows.add(List.of(button(icon + " " + s.orderIndex(),
-                    "course_sec_" + course.id() + "_" + s.id())));
+            buttons.add(button(icon + " " + s.orderIndex(), "course_sec_" + course.id() + "_" + s.id()));
         }
 
         msg.setText(sb.toString());
+
+        // Tugmalar yonma-yon (4 tadan bir qatorda) — avval har biri alohida
+        // qatorda ustma-ust turardi.
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>(chunkIntoRows(buttons));
 
         List<InlineKeyboardButton> navRow = new ArrayList<>();
         if (safePage > 0) {
@@ -207,6 +218,45 @@ public class TelegramCourseReaderService {
             return List.of(simpleMessage(user, "⛔ " + e.getMessage()));
         }
         return openSection(user, courseId, sectionId);
+    }
+
+    // "📥 Kitobni to'liq yuklab olish" kabi PDF/DOCX/ZIP havolalari bo'lim
+    // matnida bo'lsa — ularni oddiy matn linki sifatida qoldirish o'rniga
+    // (bosilganda tashqi brauzerga o'tkazadi), fayl to'g'ridan-to'g'ri
+    // botning o'zida (hujjat sifatida) yuboriladi. Telegram serveri
+    // havoladan faylni o'zi yuklab oladi — bizga faylni qayta yuklash
+    // shart emas.
+    private static final Pattern FILE_LINK = Pattern.compile(
+            "(?i)https?://[^\\s\"'<>]+\\.(?:pdf|docx?|zip)");
+
+    public List<SendDocument> documentsForSection(User user, Long courseId, Long sectionId) {
+        CourseSectionContentDto section;
+        try {
+            section = courseService.getSectionContent(courseId, sectionId, user);
+        } catch (Exception e) {
+            return List.of();
+        }
+
+        List<String> links = extractFileLinks(section.textContent());
+        List<SendDocument> documents = new ArrayList<>();
+        for (String link : links) {
+            SendDocument doc = new SendDocument();
+            doc.setChatId(user.getTelegramId().toString());
+            doc.setDocument(new InputFile(link));
+            documents.add(doc);
+        }
+        return documents;
+    }
+
+    private List<String> extractFileLinks(String rawContent) {
+        if (rawContent == null) return List.of();
+
+        Set<String> links = new LinkedHashSet<>();
+        Matcher m = FILE_LINK.matcher(rawContent);
+        while (m.find()) {
+            links.add(m.group());
+        }
+        return new ArrayList<>(links);
     }
 
     private List<SendMessage> buildSectionMessages(User user, CourseSectionContentDto section) {
@@ -266,12 +316,11 @@ public class TelegramCourseReaderService {
                     "course_complete_" + section.courseId() + "_" + section.id())));
         }
 
+        // Saytga o'tkazuvchi havola o'rniga — to'g'ridan-to'g'ri botning
+        // o'zida (TelegramPracticeTestService.startForTopic orqali) shu
+        // mavzu bo'yicha testni yechish imkoniyati.
         if (section.linkedTopicId() != null) {
-            InlineKeyboardButton testBtn = new InlineKeyboardButton();
-            testBtn.setText("🎯 Mavzuga oid testlarni yechish");
-            testBtn.setUrl("https://study-grow.uz/testConfigPage?scienceId=" + section.linkedScienceId()
-                    + "&topicId=" + section.linkedTopicId());
-            rows.add(List.of(testBtn));
+            rows.add(List.of(button("🎯 Mavzuga oid testlarni yechish", "course_test_" + section.linkedTopicId())));
         }
 
         List<InlineKeyboardButton> navRow = new ArrayList<>();
@@ -380,6 +429,16 @@ public class TelegramCourseReaderService {
         btn.setText(text);
         btn.setCallbackData(callbackData);
         return btn;
+    }
+
+    // Tekis tugmalar ro'yxatini BUTTONS_PER_ROW tadan qatorlarga bo'ladi
+    // (kurslar/mavzular ro'yxatida yonma-yon ko'rinishi uchun).
+    private List<List<InlineKeyboardButton>> chunkIntoRows(List<InlineKeyboardButton> buttons) {
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        for (int i = 0; i < buttons.size(); i += BUTTONS_PER_ROW) {
+            rows.add(new ArrayList<>(buttons.subList(i, Math.min(i + BUTTONS_PER_ROW, buttons.size()))));
+        }
+        return rows;
     }
 
     private String escape(String s) {

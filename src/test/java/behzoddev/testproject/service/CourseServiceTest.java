@@ -252,6 +252,40 @@ class CourseServiceTest {
                 .hasMessageContaining("Bo'lim nomi bo'sh");
     }
 
+    // Haqiqiy production bug: bo'lim nomi 200 belgidan (eski ustun
+    // uzunligi) oshib ketganda "Data too long for column 'title'" DB
+    // xatosi chiqib, foydalanuvchiga FK xatolariga mo'ljallangan
+    // chalg'ituvchi "bog'liq ma'lumotlar mavjud" xabari ko'rsatilardi.
+    // Ustun 500 belgigacha kengaytirildi, endi aniq validatsiya bilan
+    // oldindan tekshiriladi.
+    @Test
+    void addSection_titleTooLong_throwsWithAccurateMessage() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        String tooLongTitle = "a".repeat(501);
+        CourseSectionSaveDto dto = new CourseSectionSaveDto(tooLongTitle, "TEXT", "matn", null, null, null, null, null, null);
+
+        assertThatThrownBy(() -> courseService.addSection(1L, dto, owner()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("juda uzun");
+    }
+
+    @Test
+    void addSection_titleExactly500Chars_isAllowed() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findTopByCourse_IdOrderByOrderIndexDesc(1L)).thenReturn(Optional.empty());
+        when(courseSectionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        String maxTitle = "a".repeat(500);
+        CourseSectionSaveDto dto = new CourseSectionSaveDto(maxTitle, "TEXT", "matn", null, null, null, null, null, null);
+
+        CourseSectionSummaryDto result = courseService.addSection(1L, dto, owner());
+
+        assertThat(result.title()).isEqualTo(maxTitle);
+    }
+
     @Test
     void addSection_textTypeWithoutTextContent_throws() {
         Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
