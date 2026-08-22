@@ -279,6 +279,16 @@ body {
     cursor: pointer;
     font-size: 14px;
     line-height: 1;
+    /* Tekislash/chekinish tugmalaridagi SVG belgilar aniq markazda
+       turishi uchun (matnli tugmalarga ham zarar bermaydi). */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rich-toolbar button svg {
+    width: 16px;
+    height: 16px;
 }
 
 .rich-toolbar button:hover {
@@ -308,9 +318,13 @@ body {
 }
 
 .rich-toolbar-color {
-    width: 28px;
-    height: 28px;
-    padding: 0;
+    /* ".section-form input" umumiy qoidasi (width:100%) rangni butun
+       qatorga cho'zib yuborgan edi — boshqa rich-toolbar tugmalari bilan
+       bir xil o'lchamda bo'lishi uchun !important bilan qayta belgilanadi
+       (xuddi ".rich-toolbar-select" kabi). */
+    width: 32px !important;
+    height: 32px !important;
+    padding: 2px !important;
     border: 1px solid #d5dde8;
     border-radius: 6px;
     cursor: pointer;
