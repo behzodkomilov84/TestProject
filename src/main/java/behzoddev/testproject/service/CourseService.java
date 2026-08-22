@@ -98,6 +98,7 @@ public class CourseService {
                 .description(course.getDescription())
                 .coverImageUrl(course.getCoverImageUrl())
                 .published(course.isPublished())
+                .free(course.isFree())
                 .subscribed(subscribed || canManage)
                 .requestPending(requestPending)
                 .canManage(canManage)
@@ -174,8 +175,13 @@ public class CourseService {
                 .build());
     }
 
+    // "Bepul" (free) kurs — obunasiz ham (site'da HAM, Telegram bot'da HAM)
+    // hammaga to'liq ochiq, shuning uchun bunday kursda foydalanuvchi har
+    // doim "obunasi bor"dek hisoblanadi (haqiqiy CourseSubscription
+    // yozuvisiz ham). Shu bitta joydagi o'zgarish butun ilova bo'ylab
+    // (bo'lim qulflari, obuna banneri, katalog belgisi, bot) to'g'ri ishlaydi.
     private boolean isSubscribed(User user, Course course) {
-        return courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+        return course.isFree() || courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
                 user.getId(), course.getId(), CourseSubscriptionStatus.CONFIRMED, LocalDateTime.now());
     }
 
@@ -201,6 +207,7 @@ public class CourseService {
                 .description(dto.description())
                 .coverImageUrl(dto.coverImageUrl())
                 .published(dto.published() != null && dto.published())
+                .free(dto.free() != null && dto.free())
                 .createdBy(owner)
                 .build();
 
@@ -219,6 +226,9 @@ public class CourseService {
         course.setCoverImageUrl(dto.coverImageUrl());
         if (dto.published() != null) {
             course.setPublished(dto.published());
+        }
+        if (dto.free() != null) {
+            course.setFree(dto.free());
         }
 
         courseRepository.save(course);
@@ -450,6 +460,7 @@ public class CourseService {
                 .description(course.getDescription())
                 .coverImageUrl(course.getCoverImageUrl())
                 .published(course.isPublished())
+                .free(course.isFree())
                 .sectionCount(sectionCount)
                 .subscribed(subscribed)
                 .createdAt(course.getCreatedAt())

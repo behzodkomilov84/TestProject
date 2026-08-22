@@ -34,6 +34,12 @@ public class Course {
     @Builder.Default
     private boolean published = false;
 
+    // true bo'lsa — obunasiz ham (site'da HAM, Telegram bot'da HAM) hammaga
+    // to'liq ochiq (CourseService.isSubscribed() shuni tekshiradi).
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean free = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;

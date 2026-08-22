@@ -34,6 +34,8 @@ function renderCourses(courses) {
         let badge;
         if (!c.published) {
             badge = `<span class="course-badge draft">Qoralama</span>`;
+        } else if (c.free) {
+            badge = `<span class="course-badge free">🆓 Bepul</span>`;
         } else if (c.subscribed) {
             badge = `<span class="course-badge subscribed">✅ Obuna bor</span>`;
         } else {
@@ -102,10 +104,12 @@ async function submitCreateCourse() {
             coverImageUrl = uploadData.url;
         }
 
+        const free = document.getElementById("newCourseFree").checked;
+
         const res = await fetch("/api/courses", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title, description, coverImageUrl, published: false })
+            body: JSON.stringify({ title, description, coverImageUrl, published: false, free })
         });
 
         const data = await res.json().catch(() => ({}));

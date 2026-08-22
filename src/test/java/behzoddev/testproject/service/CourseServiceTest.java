@@ -7,6 +7,7 @@ import behzoddev.testproject.dao.CourseSubscriptionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dto.course.CourseDetailDto;
+import behzoddev.testproject.dto.course.CourseDto;
 import behzoddev.testproject.dto.course.CourseSaveDto;
 import behzoddev.testproject.dto.course.CourseSectionContentDto;
 import behzoddev.testproject.dto.course.CourseSectionSaveDto;
@@ -361,7 +362,7 @@ class CourseServiceTest {
         Course course = Course.builder().id(1L).title("Eski nom").createdBy(admin).build();
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
 
-        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null);
+        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null);
         courseService.updateCourse(1L, dto, admin);
 
         assertThat(course.getTitle()).isEqualTo("Yangi nom");
@@ -372,7 +373,7 @@ class CourseServiceTest {
         Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
 
-        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null);
+        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null);
 
         assertThatThrownBy(() -> courseService.updateCourse(1L, dto, admin()))
                 .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
@@ -516,5 +517,73 @@ class CourseServiceTest {
 
         assertThatThrownBy(() -> courseService.reorderSections(1L, List.of(1L), admin()))
                 .isInstanceOf(AccessDeniedException.class);
+    }
+
+    // ===== "Bepul" (free) kurs — obunasiz ham hammaga to'liq ochiq =====
+    // (site'da HAM, Telegram bot'da HAM — CourseService.isSubscribed()
+    // orqali umumiy mantiq).
+
+    @Test
+    void getSectionContent_freeCourse_unlockedWithoutRealSubscription() {
+        User user = subscriber();
+        Course course = Course.builder().id(1L).title("Bepul kurs").free(true).createdBy(owner()).build();
+        CourseSection section2 = CourseSection.builder().id(2L).course(course).title("2-bo'lim")
+                .orderIndex(2).type(CourseSectionType.TEXT).textContent("matn").build();
+        CourseSection section1 = CourseSection.builder().id(1L).course(course).orderIndex(1).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findById(2L)).thenReturn(Optional.of(section2));
+        // E'tibor bering: courseSubscriptionRepository haqiqiy obunani
+        // TEKSHIRISH UCHUN HECH QACHON chaqirilmaydi — free=true bo'lgani
+        // uchun isSubscribed() qisqa yo'l bilan true qaytaradi.
+        when(courseSectionRepository.findByCourse_IdAndOrderIndex(1L, 1)).thenReturn(Optional.of(section1));
+        when(courseSectionProgressRepository.existsByUser_IdAndSection_Id(1L, 1L)).thenReturn(true);
+        when(courseSectionProgressRepository.existsByUser_IdAndSection_Id(1L, 2L)).thenReturn(false);
+        when(courseSectionRepository.findByCourse_IdAndOrderIndex(1L, 3)).thenReturn(Optional.empty());
+
+        CourseSectionContentDto result = courseService.getSectionContent(1L, 2L, user);
+
+        assertThat(result.title()).isEqualTo("2-bo'lim");
+        org.mockito.Mockito.verifyNoInteractions(courseSubscriptionRepository);
+    }
+
+    @Test
+    void getDetail_freeCourse_subscribedTrueWithoutRealSubscription() {
+        User user = subscriber();
+        Course course = Course.builder().id(1L).title("Bepul kurs").published(true).free(true).createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        // E'tibor bering: existsByUser_IdAndCourse_IdAndStatus (PENDING so'rov
+        // bormi tekshiruvi) HECH QACHON chaqirilmaydi — subscribed=true
+        // (free=true tufayli) bo'lgani uchun requestPending'ning "&&" qisqa
+        // yo'l bilan to'xtaydi, shuning uchun bu yerda stub kerak emas.
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of());
+
+        CourseDetailDto result = courseService.getDetail(1L, user);
+
+        assertThat(result.free()).isTrue();
+        assertThat(result.subscribed()).isTrue();
+        org.mockito.Mockito.verify(courseSubscriptionRepository, org.mockito.Mockito.never())
+                .existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(any(), any(), any(), any());
+    }
+
+    @Test
+    void createCourse_freeTrue_setsFreeFlag() {
+        when(courseRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        CourseSaveDto dto = new CourseSaveDto("Kurs", null, null, null, true);
+        CourseDto result = courseService.createCourse(dto, owner());
+
+        assertThat(result.free()).isTrue();
+    }
+
+    @Test
+    void updateCourse_freeNull_leavesExistingFreeUnchanged() {
+        Course course = Course.builder().id(1L).title("Kurs").free(true).createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null);
+        courseService.updateCourse(1L, dto, owner());
+
+        assertThat(course.isFree()).isTrue();
     }
 }

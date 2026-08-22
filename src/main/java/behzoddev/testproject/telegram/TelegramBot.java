@@ -9,6 +9,7 @@ import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.AssignmentAttemptService;
 import behzoddev.testproject.service.NotificationService;
 import behzoddev.testproject.telegram.service.TelegramAssignmentChatService;
+import behzoddev.testproject.telegram.service.TelegramCourseReaderService;
 import behzoddev.testproject.telegram.service.TelegramMenuService;
 import behzoddev.testproject.telegram.service.TelegramOwnerService;
 import behzoddev.testproject.telegram.service.TelegramPracticeTestService;
@@ -63,6 +64,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final TelegramQuestionImportService questionImportService;
     private final TelegramOwnerService ownerService;
     private final TelegramRegistrationService registrationService;
+    private final TelegramCourseReaderService courseReaderService;
 
     public TelegramBot(
             @Value("${telegram.bot.token}") String token,
@@ -80,7 +82,8 @@ public class TelegramBot extends TelegramLongPollingBot {
             TelegramAssignmentChatService chatService,
             TelegramQuestionImportService questionImportService,
             TelegramOwnerService ownerService,
-            TelegramRegistrationService registrationService) {
+            TelegramRegistrationService registrationService,
+            TelegramCourseReaderService courseReaderService) {
         super(token);
         this.token = token;
         this.username = username;
@@ -98,6 +101,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         this.questionImportService = questionImportService;
         this.ownerService = ownerService;
         this.registrationService = registrationService;
+        this.courseReaderService = courseReaderService;
     }
 
     @Override
@@ -167,6 +171,45 @@ public class TelegramBot extends TelegramLongPollingBot {
                 // ===== Obuna: Click orqali 1 oyga to'lash =====
                 if (data.equals("pay_click_1m")) {
                     execute(menuService.createClickPaymentLink(getUserByChatId(chatId)));
+                    return;
+                }
+
+                // ===== Kurslarni botda o'qish (obuna bor yoki bepul bo'lsa) =====
+                if (data.equals("course_list")) {
+                    execute(courseReaderService.showCourseList(getUserByChatId(chatId)));
+                    return;
+                }
+                if (data.startsWith("course_open_")) {
+                    Long courseId = Long.parseLong(data.replace("course_open_", ""));
+                    execute(courseReaderService.openCourse(getUserByChatId(chatId), courseId));
+                    return;
+                }
+                if (data.startsWith("course_secs_")) {
+                    String rest = data.replace("course_secs_", "");
+                    int sep = rest.lastIndexOf('_');
+                    Long courseId = Long.parseLong(rest.substring(0, sep));
+                    int page = Integer.parseInt(rest.substring(sep + 1));
+                    execute(courseReaderService.showSectionsPage(getUserByChatId(chatId), courseId, page));
+                    return;
+                }
+                if (data.startsWith("course_sec_")) {
+                    String rest = data.replace("course_sec_", "");
+                    int sep = rest.indexOf('_');
+                    Long courseId = Long.parseLong(rest.substring(0, sep));
+                    Long sectionId = Long.parseLong(rest.substring(sep + 1));
+                    for (SendMessage m : courseReaderService.openSection(getUserByChatId(chatId), courseId, sectionId)) {
+                        execute(m);
+                    }
+                    return;
+                }
+                if (data.startsWith("course_complete_")) {
+                    String rest = data.replace("course_complete_", "");
+                    int sep = rest.indexOf('_');
+                    Long courseId = Long.parseLong(rest.substring(0, sep));
+                    Long sectionId = Long.parseLong(rest.substring(sep + 1));
+                    for (SendMessage m : courseReaderService.completeAndAdvance(getUserByChatId(chatId), courseId, sectionId)) {
+                        execute(m);
+                    }
                     return;
                 }
 
@@ -605,7 +648,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             case BTN_PROFILE -> profileService.viewProfile(user.getTelegramId());
             case BTN_NOTIFICATIONS -> menuService.showNotifications(user);
             case BTN_SUBSCRIPTION -> menuService.showSubscription(user);
-            case BTN_COURSES -> menuService.showCourses(user);
+            case BTN_COURSES -> courseReaderService.showCourseList(user);
             case BTN_HELP -> menuService.help(user);
             case BTN_MY_ASSIGNMENTS -> telegramUserService.sendMyAssignments(user.getTelegramId());
             case BTN_MY_RESULTS -> telegramUserService.sendMyResults(user.getTelegramId());

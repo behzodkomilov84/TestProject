@@ -51,6 +51,9 @@
         <div id="editCourseForm" class="course-form" style="display:none;">
             <input type="text" id="editCourseTitle" placeholder="Kurs nomi">
             <textarea id="editCourseDescription" placeholder="Kurs tavsifi" rows="3"></textarea>
+            <label class="content-toggle-label">
+                <input type="checkbox" id="editCourseFree"> 🆓 Bepul kurs (obunasiz ham hammaga ochiq — botda ham)
+            </label>
             <div class="course-form-cover">
                 <img id="editCourseCoverPreview" class="course-cover-preview" style="display:none;" alt="Kurs rasmi">
                 <input type="file" id="editCourseCoverFile" accept="image/*" onchange="previewEditCourseCover(this)">

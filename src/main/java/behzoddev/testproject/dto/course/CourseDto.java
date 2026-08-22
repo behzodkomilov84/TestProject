@@ -12,8 +12,9 @@ public record CourseDto(
         String description,
         String coverImageUrl,
         boolean published,
+        boolean free,
         int sectionCount,
-        boolean subscribed, // joriy foydalanuvchi obuna bo'lganmi
+        boolean subscribed, // joriy foydalanuvchi obuna bo'lganmi (yoki kurs bepul/canManage)
         LocalDateTime createdAt
 ) {
 }

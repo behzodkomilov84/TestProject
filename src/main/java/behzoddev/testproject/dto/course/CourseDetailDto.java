@@ -12,6 +12,7 @@ public record CourseDetailDto(
         String description,
         String coverImageUrl,
         boolean published,
+        boolean free,
         boolean subscribed,
         boolean requestPending, // foydalanuvchi obunaga so'rov yuborgan, OWNER hali ko'rib chiqmagan
         boolean canManage, // OWNER uchun tahrirlash tugmalarini ko'rsatish

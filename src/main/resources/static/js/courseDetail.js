@@ -142,12 +142,17 @@ function renderSections(sections) {
         const indexIcon = s.completed ? "✓" : s.orderIndex;
         const typeIcon = s.type === "VIDEO" ? "🎬" : s.type === "MIXED" ? "📄🎬" : "📄";
 
-        const link = s.locked
-            ? `<span>${escapeHtml(s.title)}</span>`
-            : `<a href="/courses/${COURSE_ID}/sections/${s.id}">${escapeHtml(s.title)}</a>`;
+        // Butun karta bosiladigan qilindi (kurslar katalogidagi kartalar
+        // bilan bir xil uslub) — shuning uchun sarlavha endi alohida <a>
+        // emas, oddiy matn; hover effekti ham shu tashqi kartada.
+        const titleEl = `<span class="section-title-text">${escapeHtml(s.title)}</span>`;
+        const cardClick = s.locked ? "" : ` onclick="location.href='/courses/${COURSE_ID}/sections/${s.id}'"`;
 
+        // Ichidagi tugmalar (boshqarish, test) bosilganda kartaning o'zi
+        // ham navigatsiya qilib yubormasligi uchun — shu wrapper'larga
+        // event.stopPropagation() qo'yiladi.
         const manageActions = cachedCourse && cachedCourse.canManage
-            ? `<div class="section-manage-actions">
+            ? `<div class="section-manage-actions" onclick="event.stopPropagation()">
                    <button onclick="moveSectionUp(${s.id})" title="Yuqoriga" ${i === 0 ? "disabled" : ""}>⬆️</button>
                    <button onclick="moveSectionDown(${s.id})" title="Pastga" ${i === sections.length - 1 ? "disabled" : ""}>⬇️</button>
                    <button onclick="openEditSectionForm(${s.id})" title="Tahrirlash">✏️</button>
@@ -160,18 +165,20 @@ function renderSections(sections) {
         // (faqat ochilgan/qulflanmagan mavzularda — qulflangan bo'lsa
         // bo'limning o'zini ham ko'rib bo'lmaydi).
         const testLink = (!s.locked && s.linkedTopicId)
-            ? `<button class="topic-test-btn-inline" onclick="location.href='/testConfigPage?scienceId=${s.linkedScienceId}&topicId=${s.linkedTopicId}'">🎯 Mavzuga oid testlarni yechish</button>`
+            ? `<button class="topic-test-btn-inline" onclick="event.stopPropagation(); location.href='/testConfigPage?scienceId=${s.linkedScienceId}&topicId=${s.linkedTopicId}'">🎯 Mavzuga oid testlarni yechish</button>`
             : "";
 
         return `
-            <div class="section-item ${s.locked ? "locked" : ""}">
-                <div class="section-item-left">
-                    <div class="${indexClass}">${indexIcon}</div>
-                    ${link}
-                    <span class="section-type-icon">${typeIcon}</span>
-                    ${s.locked ? '<span class="section-type-icon">🔒</span>' : ""}
+            <div class="section-item ${s.locked ? "locked" : ""}"${cardClick}>
+                <div class="section-item-top">
+                    <div class="section-item-left">
+                        <div class="${indexClass}">${indexIcon}</div>
+                        ${titleEl}
+                        <span class="section-type-icon">${typeIcon}</span>
+                        ${s.locked ? '<span class="section-type-icon">🔒</span>' : ""}
+                    </div>
+                    ${testLink}
                 </div>
-                ${testLink}
                 ${manageActions}
             </div>
         `;
@@ -196,7 +203,8 @@ async function togglePublish() {
             body: JSON.stringify({
                 title: cachedCourse.title,
                 description: cachedCourse.description,
-                coverImageUrl: null,
+                coverImageUrl: cachedCourse.coverImageUrl,
+                free: cachedCourse.free,
                 published: !cachedCourse.published
             })
         });
@@ -218,6 +226,7 @@ function openEditCourseForm() {
     const preview = document.getElementById("editCourseCoverPreview");
     document.getElementById("editCourseCoverFile").value = "";
     document.getElementById("editCourseCoverStatus").textContent = "";
+    document.getElementById("editCourseFree").checked = !!(cachedCourse && cachedCourse.free);
 
     if (cachedCourse && cachedCourse.coverImageUrl) {
         preview.src = cachedCourse.coverImageUrl;
@@ -272,11 +281,13 @@ async function submitEditCourse() {
             document.getElementById("editCourseCoverStatus").textContent = "";
         }
 
+        const free = document.getElementById("editCourseFree").checked;
+
         const res = await fetch(`/api/courses/${COURSE_ID}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                title, description, coverImageUrl,
+                title, description, coverImageUrl, free,
                 published: cachedCourse.published
             })
         });
