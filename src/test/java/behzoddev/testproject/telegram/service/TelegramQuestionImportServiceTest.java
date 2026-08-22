@@ -16,7 +16,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
+import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 import java.util.List;
 import java.util.Map;
@@ -98,6 +100,22 @@ class TelegramQuestionImportServiceTest {
         verify(sessionService).putTempData(CHAT_ID, "tg_importTopicId", "42");
         verify(sessionService).setState(CHAT_ID, BotState.AWAITING_EXCEL_FILE);
         assertThat(msg.getText()).contains(".xlsx");
+
+        // Shablonni saytga chiqmasdan, shu yerning o'zida yuklab olish tugmasi.
+        InlineKeyboardMarkup markup = (InlineKeyboardMarkup) msg.getReplyMarkup();
+        assertThat(markup.getKeyboard().get(0).get(0).getCallbackData()).isEqualTo("tg_import_template");
+    }
+
+    // ===== sendTemplate ("📄 Shablonni yuklab olish" — jar ichidagi
+    // classpath resursini hujjat sifatida yuboradi) =====
+
+    @Test
+    void sendTemplate_readsClasspathResourceAndAttachesAsDocument() {
+        SendDocument doc = importService.sendTemplate(CHAT_ID);
+
+        assertThat(doc.getChatId()).isEqualTo(CHAT_ID.toString());
+        assertThat(doc.getDocument()).isNotNull();
+        assertThat(doc.getDocument().isNew()).isTrue();
     }
 
     @Test

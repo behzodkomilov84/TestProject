@@ -11,11 +11,17 @@ import behzoddev.testproject.service.TopicService;
 import behzoddev.testproject.telegram.state.BotState;
 import behzoddev.testproject.telegram.util.ByteArrayMultipartFile;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,9 +29,16 @@ import java.util.List;
 // (saytga kirmasdan): fan -> mavzu tanlab, .xlsx faylni botga yuborish
 // yetarli. Haqiqiy ExcelService orqali — saytdagi bilan bir xil
 // validatsiya (magic-byte, ClamAV, qator-qator xatolik izolyatsiyasi).
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TelegramQuestionImportService {
+
+    // Saytdagi "Test yaratish" sahifasidagi "📄 Shablon" tugmasi bilan
+    // bir xil fayl (ExcelImportController.downloadTemplate) — jar ichida
+    // paketlangan classpath resursi.
+    private static final String TEMPLATE_CLASSPATH = "templates/template_For_Import.xlsx";
+    private static final String TEMPLATE_FILE_NAME = "template_For_Import.xlsx";
 
     private final ScienceService scienceService;
     private final TopicService topicService;
@@ -91,9 +104,37 @@ public class TelegramQuestionImportService {
         SendMessage msg = new SendMessage();
         msg.setChatId(chatId.toString());
         msg.setText("📄 Endi .xlsx faylni shu chatga yuboring.\n\n" +
-                "Shablon kerak bo'lsa, saytdagi \"Test yaratish\" sahifasidan (\"📄 Shablon\" tugmasi) yuklab oling.\n\n" +
+                "Shablon kerak bo'lsa, pastdagi tugma orqali shu yerning o'zida yuklab oling.\n\n" +
                 "(Bekor qilish uchun /cancel)");
+
+        InlineKeyboardButton templateBtn = button("📄 Shablonni yuklab olish", "tg_import_template");
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(List.of(List.of(templateBtn)));
+        msg.setReplyMarkup(markup);
         return msg;
+    }
+
+    // "📄 Shablonni yuklab olish" tugmasi — saytga o'tishga hojatsiz,
+    // shablon fayli to'g'ridan-to'g'ri botning o'zida hujjat sifatida
+    // yuboriladi (kurs kitobini yuklab olish bilan bir xil g'oya —
+    // TelegramCourseReaderService.buildDocument). E'tibor bering: fayl
+    // baytlari OLDINDAN o'qib olinadi (ByteArrayInputStream'ga) — jar
+    // ichidagi classpath resursini File sifatida ololmaymiz, InputStream
+    // esa Telegram kutubxonasi so'rovni haqiqatan yuborayotganda (bu
+    // metod tugagandan KEYIN) o'qiydi, shuning uchun try-with-resources
+    // bilan darhol yopib bo'lmaydi.
+    public SendDocument sendTemplate(Long chatId) {
+        SendDocument doc = new SendDocument();
+        doc.setChatId(chatId.toString());
+
+        try {
+            byte[] bytes = new ClassPathResource(TEMPLATE_CLASSPATH).getInputStream().readAllBytes();
+            doc.setDocument(new InputFile(new ByteArrayInputStream(bytes), TEMPLATE_FILE_NAME));
+        } catch (IOException e) {
+            log.error("Excel shablon faylini o'qishda xatolik", e);
+        }
+
+        return doc;
     }
 
     public SendMessage importFile(Long chatId, byte[] fileBytes, String fileName) {

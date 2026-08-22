@@ -330,6 +330,10 @@ public class TelegramBot extends TelegramLongPollingBot {
                     execute(questionImportService.selectTopic(chatId, topicId));
                     return;
                 }
+                if (data.equals("tg_import_template")) {
+                    execute(questionImportService.sendTemplate(chatId));
+                    return;
+                }
 
                 // ===== OWNER: Foydalanuvchilar (rol berish/olib tashlash, blokdan chiqarish) =====
                 if (data.startsWith("tg_roleadd_") || data.startsWith("tg_roledel_")) {
