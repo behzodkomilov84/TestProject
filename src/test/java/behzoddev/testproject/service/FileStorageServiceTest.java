@@ -74,13 +74,13 @@ class FileStorageServiceTest {
 
     @Test
     void storeQuestionImage_tooLarge_throwsWithoutScanning() {
-        byte[] tooLarge = new byte[6 * 1024 * 1024]; // 6MB > 5MB limit
+        byte[] tooLarge = new byte[11 * 1024 * 1024]; // 11MB > 10MB limit
         System.arraycopy(PNG_HEADER, 0, tooLarge, 0, PNG_HEADER.length);
         MockMultipartFile file = new MockMultipartFile("file", "test.png", "image/png", tooLarge);
 
         assertThatThrownBy(() -> fileStorageService.storeQuestionImage(file))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("5MB");
+                .hasMessageContaining("10MB");
 
         verify(clamAvScanService, never()).scan(any(), any());
     }

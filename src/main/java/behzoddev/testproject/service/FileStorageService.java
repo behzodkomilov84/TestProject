@@ -39,7 +39,7 @@ public class FileStorageService {
     );
     private static final List<String> ALLOWED_IMAGE_EXTENSIONS =
             List.of(".png", ".jpg", ".jpeg", ".webp", ".gif");
-    private static final long MAX_IMAGE_SIZE_BYTES = 5L * 1024 * 1024; // 5MB
+    private static final long MAX_IMAGE_SIZE_BYTES = 10L * 1024 * 1024; // 10MB
 
     private static final Set<String> ALLOWED_VIDEO_TYPES = Set.of(
             "video/mp4", "video/webm", "video/ogg",
@@ -60,7 +60,7 @@ public class FileStorageService {
      */
     public String storeQuestionImage(MultipartFile file) {
         return store(file, "questions", ALLOWED_IMAGE_TYPES, ALLOWED_IMAGE_EXTENSIONS,
-                MAX_IMAGE_SIZE_BYTES, "❌Rasm hajmi 5MB dan katta bo'lishi mumkin emas.",
+                MAX_IMAGE_SIZE_BYTES, "❌Rasm hajmi 10MB dan katta bo'lishi mumkin emas.",
                 "❌Faqat rasm fayllari (PNG, JPEG, WEBP, GIF) yuklash mumkin.");
     }
 
@@ -69,7 +69,7 @@ public class FileStorageService {
      */
     public String storeCommentaryImage(MultipartFile file) {
         return store(file, "commentary", ALLOWED_IMAGE_TYPES, ALLOWED_IMAGE_EXTENSIONS,
-                MAX_IMAGE_SIZE_BYTES, "❌Rasm hajmi 5MB dan katta bo'lishi mumkin emas.",
+                MAX_IMAGE_SIZE_BYTES, "❌Rasm hajmi 10MB dan katta bo'lishi mumkin emas.",
                 "❌Faqat rasm fayllari (PNG, JPEG, WEBP, GIF) yuklash mumkin.");
     }
 
@@ -96,7 +96,7 @@ public class FileStorageService {
      */
     public String storeCourseCoverImage(MultipartFile file) {
         return store(file, "courses", ALLOWED_IMAGE_TYPES, ALLOWED_IMAGE_EXTENSIONS,
-                MAX_IMAGE_SIZE_BYTES, "❌Rasm hajmi 5MB dan katta bo'lishi mumkin emas.",
+                MAX_IMAGE_SIZE_BYTES, "❌Rasm hajmi 10MB dan katta bo'lishi mumkin emas.",
                 "❌Faqat rasm fayllari (PNG, JPEG, WEBP, GIF) yuklash mumkin.");
     }
 
@@ -106,7 +106,7 @@ public class FileStorageService {
      */
     public String storeCourseSectionImage(MultipartFile file) {
         return store(file, "courses", ALLOWED_IMAGE_TYPES, ALLOWED_IMAGE_EXTENSIONS,
-                MAX_IMAGE_SIZE_BYTES, "❌Rasm hajmi 5MB dan katta bo'lishi mumkin emas.",
+                MAX_IMAGE_SIZE_BYTES, "❌Rasm hajmi 10MB dan katta bo'lishi mumkin emas.",
                 "❌Faqat rasm fayllari (PNG, JPEG, WEBP, GIF) yuklash mumkin.");
     }
 
