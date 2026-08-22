@@ -291,6 +291,55 @@ body.menu-open::after {
     .dropdown.active .dropdown-content {
         display: block;
     }
+
+    /* "🌐" til tanlash — #nav-menu (burger sidebar)dan tashqarida,
+       .nav-actions ichida joylashgan, shuning uchun yuqoridagi umumiy
+       ".dropdown { width:100% }" va ".dropdown-content { position:static }"
+       qoidalari (sidebar elementlari uchun mo'ljallangan) bu yerda
+       navbar joylashuvini buzib qo'yardi — qayta belgilanadi. */
+    .lang-switcher {
+        width: auto;
+    }
+
+    .lang-dropdown-content {
+        position: absolute;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        border-radius: 8px;
+    }
+}
+
+/* ===== TIL TANLASH (🌐 bayroqli dropdown) =====
+   .dropdown/.dropbtn/.dropdown-content umumiy andozasidan foydalanadi —
+   desktopda hover, mobilda bosish orqali ochiladi (navbar.js'dagi umumiy
+   ".dropbtn" click-toggle handleri qo'shimcha JS talab qilmaydi). */
+.lang-btn {
+    font-size: 18px;
+    padding: 6px 10px;
+}
+
+.lang-dropdown-content {
+    min-width: 170px;
+}
+
+.lang-dropdown-content a {
+    text-transform: none;
+    font-size: 14px;
+}
+
+/* Google'ning o'zi qo'shadigan sahifa yuqorisidagi banner/reklama
+   satrini yashiramiz — biz faqat yuqoridagi kichik 🌐 dropdown'ni
+   ishlatamiz, Google'ning katta select elementi hech qachon ko'rinmasligi
+   kerak. */
+body {
+    top: 0 !important;
+}
+
+.goog-te-banner-frame {
+    display: none !important;
+}
+
+.goog-te-gadget {
+    font-size: 0 !important;
 }
 
 /* ===== NOTIFICATIONS (badge) =====

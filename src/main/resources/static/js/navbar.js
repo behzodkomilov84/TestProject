@@ -41,6 +41,29 @@ document.querySelectorAll(".dropbtn").forEach(btn => {
     });
 });
 
+/* ===== Til tanlash (Google Translate, "googtrans" cookie orqali) =====
+   Google'ning o'zi chizadigan (katta) select o'rniga, navbar'dagi kichik
+   🌐 dropdown orqali "googtrans" cookie'sini to'g'ridan-to'g'ri o'zimiz
+   o'rnatamiz va sahifani qayta yuklaymiz — Google Translate skripti shu
+   cookie'ni o'qib, sahifani avtomatik tarjima qiladi. */
+function setSiteLanguage(lang) {
+    const host = location.hostname;
+
+    function clearCookie(name) {
+        document.cookie = name + "=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC";
+        document.cookie = name + "=; domain=." + host + "; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC";
+    }
+
+    clearCookie("googtrans");
+
+    if (lang !== "uz") {
+        document.cookie = "googtrans=/uz/" + lang + "; path=/";
+        document.cookie = "googtrans=/uz/" + lang + "; domain=." + host + "; path=/";
+    }
+
+    location.reload();
+}
+
 async function linkTelegram() {
 
     try {

@@ -25,6 +25,32 @@
     </div> <!-- ☰ burger -->
 
     <div class="nav-actions">
+        <!-- Til tanlash — Google Translate'ga tayanadi, lekin uning o'z
+             (katta) select elementi o'rniga faqat kichik 🌐 belgili
+             dropdown ko'rsatiladi (bayroqlar bilan: uz/ru/en/tr).
+             Burger menyudan tashqarida — mobil holatda ham doim ko'rinadi. -->
+        <div class="dropdown lang-switcher">
+            <button class="dropbtn lang-btn" type="button" title="Tilni tanlash">🌐</button>
+            <div class="dropdown-content lang-dropdown-content">
+                <a href="#" onclick="setSiteLanguage('uz'); return false;">🇺🇿 O'zbekcha</a>
+                <a href="#" onclick="setSiteLanguage('ru'); return false;">🇷🇺 Русский</a>
+                <a href="#" onclick="setSiteLanguage('en'); return false;">🇬🇧 English</a>
+                <a href="#" onclick="setSiteLanguage('tr'); return false;">🇹🇷 Türkçe</a>
+            </div>
+        </div>
+        <div id="google_translate_element" style="display:none;"></div>
+        <script>
+            function googleTranslateElementInit() {
+                new google.translate.TranslateElement({
+                    pageLanguage: 'uz',
+                    includedLanguages: 'uz,ru,en,tr',
+                    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+                    autoDisplay: false
+                }, 'google_translate_element');
+            }
+        </script>
+        <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async></script>
+
         <button class="burger" onclick="toggleMenu()">☰</button>
         <nav id="nav-menu" class="nav-items">
             <a href="/index">Bosh sahifa</a>
