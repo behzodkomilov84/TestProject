@@ -334,7 +334,21 @@ body {
     top: 0 !important;
 }
 
-.goog-te-banner-frame {
+/* Google'ning "Переведено на .../Показать исходный текст/Настройки"
+   banneri sahifa yuqorisiga navbar ustiga tushib, uni to'sib qo'yardi.
+   ".goog-te-banner-frame" — Google'ning ESKI, endi ishlatilmaydigan
+   klass nomi edi (production'da tekshirilganda hozir o'rniga
+   "VIpgJd-ZVi9od-ORHb-OEVmcd" kabi versiyalanadigan/obfuskatsiya
+   qilingan hash klasslar ishlatilishi aniqlandi — shu sabab qoida
+   hech narsaga mos kelmay qolgan edi). Google bu turdagi barcha o'z
+   UI elementlariga (banner, til menyusi popup'i) doimiy "skiptranslate"
+   klassini qo'shadi — shu barqaror belgidan foydalanilmoqda. Bizning
+   o'z "#google_translate_element" konteynerimiz allaqachon ekrandan
+   tashqarida (navbar.js), shuning uchun bu Google o'zi qo'shadigan
+   qo'shimcha iframe'larni butunlay yashirish tarjima ishlashiga
+   ta'sir qilmaydi (ular faqat vizual "chrome", tarjima motorining
+   o'zi emas). */
+iframe.skiptranslate {
     display: none !important;
 }
 
