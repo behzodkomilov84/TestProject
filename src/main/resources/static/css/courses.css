@@ -229,15 +229,90 @@ body {
     font-size: 13px;
 }
 
-.format-badge {
-    font-size: 13px;
-    color: #16a34a;
-    font-weight: 600;
+/* Bo'lim matni uchun oddiy WYSIWYG (qalin/kursiv/ro'yxat) — shu bilan
+   birga PDF/Word'dan copy-paste qilinganda formatlash (jadval, qalin
+   matn) endi yo'qolmaydi, chunki oddiy <textarea> emas, contenteditable
+   qabul qiladi. */
+.rich-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 6px;
 }
 
-.format-badge a {
-    color: #2563eb;
-    font-weight: 600;
+.rich-toolbar button {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #d5dde8;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.rich-toolbar button:hover {
+    background: #f1f5f9;
+}
+
+.rich-toolbar-sep {
+    width: 1px;
+    height: 20px;
+    background: #e2e8f0;
+    margin: 0 4px;
+}
+
+.rich-text-editor {
+    width: 100%;
+    min-height: 140px;
+    max-height: 420px;
+    overflow-y: auto;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid #d5dde8;
+    font-size: 14px;
+    font-family: inherit;
+    line-height: 1.6;
+}
+
+.rich-text-editor:focus {
+    outline: 2px solid #bfdbfe;
+    outline-offset: -1px;
+}
+
+.rich-text-editor:empty::before {
+    content: attr(data-placeholder);
+    color: #94a3b8;
+}
+
+.rich-text-editor p {
+    margin: 0 0 10px;
+}
+
+.rich-text-editor ul,
+.rich-text-editor ol {
+    margin: 0 0 10px;
+    padding-left: 24px;
+}
+
+.rich-text-editor table {
+    border-collapse: collapse;
+}
+
+.rich-text-editor table td,
+.rich-text-editor table th {
+    border: 1px solid #e2e8f0;
+    padding: 6px 8px;
+}
+
+/* Placeholder o'rniga — kichik ekranlarda ham to'liq ko'rinadigan,
+   qatorga sig'maganda o'rab ketadigan yordamchi matn (placeholder
+   matni uzun bo'lsa tor ekranlarda kesilib qolardi). */
+.field-hint {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: -4px;
 }
 
 /* ===== Kurs sahifasi (detail) ===== */

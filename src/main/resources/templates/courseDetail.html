@@ -73,11 +73,21 @@
                 <input type="checkbox" id="includeText" checked onchange="onContentToggle(this)"> 📄 Matn qo'shish
             </label>
             <div id="textFields">
-                <textarea id="newSectionText" placeholder="Matn kontenti" rows="5"></textarea>
+                <div class="rich-toolbar">
+                    <button type="button" onclick="richExec('newSectionTextEditor','bold')" title="Qalin (Ctrl+B)"><b>B</b></button>
+                    <button type="button" onclick="richExec('newSectionTextEditor','italic')" title="Kursiv (Ctrl+I)"><i>I</i></button>
+                    <button type="button" onclick="richExec('newSectionTextEditor','underline')" title="Tagi chizilgan (Ctrl+U)"><u>U</u></button>
+                    <span class="rich-toolbar-sep"></span>
+                    <button type="button" onclick="richExec('newSectionTextEditor','insertUnorderedList')" title="Ro'yxat">☰•</button>
+                    <button type="button" onclick="richExec('newSectionTextEditor','insertOrderedList')" title="Raqamlangan ro'yxat">☰1</button>
+                    <span class="rich-toolbar-sep"></span>
+                    <button type="button" onclick="richExec('newSectionTextEditor','removeFormat')" title="Formatni tozalash">🧹</button>
+                </div>
+                <div id="newSectionTextEditor" class="rich-text-editor" contenteditable="true"
+                     data-placeholder="Matn kontenti — yozing yoki PDF/Word'dan joylashtiring (formatlash saqlanadi)"></div>
                 <div class="import-file-row">
-                    <label for="newSectionImportFile">📁 yoki fayldan import qilish (.docx) — formatlash saqlanadi:</label>
-                    <input type="file" id="newSectionImportFile" accept=".docx" onchange="importDocxFile(this, 'newSectionText', 'add')">
-                    <span id="newSectionFormatBadge" class="format-badge"></span>
+                    <label for="newSectionImportFile">📁 yoki .docx faylni import qilish:</label>
+                    <input type="file" id="newSectionImportFile" accept=".docx" onchange="importDocxFile(this, 'newSectionTextEditor')">
                 </div>
             </div>
 
@@ -98,8 +108,10 @@
             <!-- Mavzuni TEST BOSHQARUVI'dagi Fan/Mavzu bilan bog'lash — ixtiyoriy.
                  Kiritilgan nom mavjud bo'lmasa, avtomatik yaratiladi. -->
             <label class="content-toggle-label">🎯 Mavzuga oid testlar bilan bog'lash (ixtiyoriy)</label>
-            <input type="text" id="newSectionScienceName" placeholder="Fan nomi (masalan: Kimyo)" list="scienceNamesList">
-            <input type="text" id="newSectionTopicName" placeholder="Mavzu nomi (mavjud bo'lmasa, avtomatik yaratiladi)">
+            <input type="text" id="newSectionScienceName" placeholder="Fan nomi" list="scienceNamesList">
+            <div class="field-hint">Masalan: Kimyo</div>
+            <input type="text" id="newSectionTopicName" placeholder="Mavzu nomi">
+            <div class="field-hint">Mavjud bo'lmasa, avtomatik yaratiladi</div>
 
             <div class="course-form-actions">
                 <button onclick="submitAddSection()">✅ Bo'limni qo'shish</button>
@@ -116,11 +128,21 @@
                 <input type="checkbox" id="editIncludeText" onchange="onEditContentToggle(this)"> 📄 Matn qo'shish
             </label>
             <div id="editTextFields">
-                <textarea id="editSectionText" placeholder="Matn kontenti" rows="5"></textarea>
+                <div class="rich-toolbar">
+                    <button type="button" onclick="richExec('editSectionTextEditor','bold')" title="Qalin (Ctrl+B)"><b>B</b></button>
+                    <button type="button" onclick="richExec('editSectionTextEditor','italic')" title="Kursiv (Ctrl+I)"><i>I</i></button>
+                    <button type="button" onclick="richExec('editSectionTextEditor','underline')" title="Tagi chizilgan (Ctrl+U)"><u>U</u></button>
+                    <span class="rich-toolbar-sep"></span>
+                    <button type="button" onclick="richExec('editSectionTextEditor','insertUnorderedList')" title="Ro'yxat">☰•</button>
+                    <button type="button" onclick="richExec('editSectionTextEditor','insertOrderedList')" title="Raqamlangan ro'yxat">☰1</button>
+                    <span class="rich-toolbar-sep"></span>
+                    <button type="button" onclick="richExec('editSectionTextEditor','removeFormat')" title="Formatni tozalash">🧹</button>
+                </div>
+                <div id="editSectionTextEditor" class="rich-text-editor" contenteditable="true"
+                     data-placeholder="Matn kontenti — yozing yoki PDF/Word'dan joylashtiring (formatlash saqlanadi)"></div>
                 <div class="import-file-row">
-                    <label for="editSectionImportFile">📁 yoki fayldan import qilish (.docx) — formatlash saqlanadi:</label>
-                    <input type="file" id="editSectionImportFile" accept=".docx" onchange="importDocxFile(this, 'editSectionText', 'edit')">
-                    <span id="editSectionFormatBadge" class="format-badge"></span>
+                    <label for="editSectionImportFile">📁 yoki .docx faylni import qilish:</label>
+                    <input type="file" id="editSectionImportFile" accept=".docx" onchange="importDocxFile(this, 'editSectionTextEditor')">
                 </div>
             </div>
 
@@ -139,8 +161,10 @@
             </div>
 
             <label class="content-toggle-label">🎯 Mavzuga oid testlar bilan bog'lash (ixtiyoriy)</label>
-            <input type="text" id="editSectionScienceName" placeholder="Fan nomi (masalan: Kimyo)" list="scienceNamesList">
-            <input type="text" id="editSectionTopicName" placeholder="Mavzu nomi (mavjud bo'lmasa, avtomatik yaratiladi)">
+            <input type="text" id="editSectionScienceName" placeholder="Fan nomi" list="scienceNamesList">
+            <div class="field-hint">Masalan: Kimyo</div>
+            <input type="text" id="editSectionTopicName" placeholder="Mavzu nomi">
+            <div class="field-hint">Mavjud bo'lmasa, avtomatik yaratiladi</div>
 
             <div class="course-form-actions">
                 <button onclick="submitEditSection()">✅ Saqlash</button>

@@ -1,22 +1,31 @@
 let cachedCourse = null;
 
-// Bo'lim matni PLAIN (qo'lda yozilgan) yoki HTML (.docx'dan import
-// qilingan, formatlash saqlangan) bo'lishi mumkin — qaysi forma (qo'shish/
-// tahrirlash) hozir qaysi rejimda ekanini shu ikkita o'zgaruvchi kuzatadi.
-let newSectionContentFormat = "PLAIN";
-let editSectionContentFormat = "PLAIN";
-
 document.addEventListener("DOMContentLoaded", () => {
     loadCourse();
     loadScienceNamesList();
+    // Enter bosilganda <div> o'rniga <p> hosil bo'lishi uchun — brauzerlar
+    // orasida bir xil natija beradi va courses.css'dagi
+    // .rich-text-editor p qoidasi to'g'ri ishlaydi.
+    try {
+        document.execCommand("defaultParagraphSeparator", false, "p");
+    } catch (e) { /* eski brauzerlarda yo'q bo'lishi mumkin — muhim emas */ }
 });
+
+// Matn maydoni oddiy <textarea> emas, contenteditable ("rich-text-editor")
+// — shuning uchun PDF/Word'dan Ctrl+C/Ctrl+V qilinganda qalin matn,
+// ro'yxat va (imkon qadar) jadval formatlashi saqlanib qoladi (avval
+// <textarea> hamma narsani oddiy matnga aylantirib, formatni yo'qotardi).
+function richExec(editorId, command) {
+    document.getElementById(editorId).focus();
+    document.execCommand(command, false, null);
+}
 
 // .docx faylni mammoth.js orqali HTML'ga aylantiradi — abzatslar,
 // qalin/kursiv, sarlavhalar, ro'yxatlar kabi formatlash saqlanadi (fayl
 // ichidagi shriftlar/uslublar o'zgartirilmaydi, faqat saytning umumiy
-// dizayniga moslashtiriladi). Natija to'g'ridan-to'g'ri matn maydoniga
-// qo'yiladi — kerak bo'lsa qo'lda ham tahrirlash mumkin.
-async function importDocxFile(fileInput, textareaId, mode) {
+// dizayniga moslashtiriladi). Natija to'g'ridan-to'g'ri tahrirlash
+// maydoniga qo'yiladi — kerak bo'lsa qo'lda ham tahrirlash mumkin.
+async function importDocxFile(fileInput, editorId) {
     const file = fileInput.files[0];
     if (!file) return;
 
@@ -29,44 +38,13 @@ async function importDocxFile(fileInput, textareaId, mode) {
     try {
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.convertToHtml({ arrayBuffer });
-        document.getElementById(textareaId).value = result.value;
-
-        if (mode === "add") {
-            newSectionContentFormat = "HTML";
-            document.getElementById("includeText").checked = true;
-            onContentToggle(document.getElementById("includeText"));
-        } else {
-            editSectionContentFormat = "HTML";
-            document.getElementById("editIncludeText").checked = true;
-            onEditContentToggle(document.getElementById("editIncludeText"));
-        }
-        updateFormatBadge(mode);
+        document.getElementById(editorId).innerHTML = result.value;
     } catch (err) {
         console.error(err);
         alert("❌ Faylni import qilishda xatolik: " + err.message);
     } finally {
         fileInput.value = "";
     }
-}
-
-function updateFormatBadge(mode) {
-    const badge = document.getElementById(mode === "add" ? "newSectionFormatBadge" : "editSectionFormatBadge");
-    const format = mode === "add" ? newSectionContentFormat : editSectionContentFormat;
-
-    badge.innerHTML = format === "HTML"
-        ? `✅ Fayldan import qilindi — <a href="#" onclick="resetContentFormat('${mode}'); return false;">qo'lda yozishga qaytarish</a>`
-        : "";
-}
-
-function resetContentFormat(mode) {
-    if (mode === "add") {
-        newSectionContentFormat = "PLAIN";
-        document.getElementById("newSectionText").value = "";
-    } else {
-        editSectionContentFormat = "PLAIN";
-        document.getElementById("editSectionText").value = "";
-    }
-    updateFormatBadge(mode);
 }
 
 // "Fan nomi" maydonlariga (qo'shish/tahrirlash) mavjud fanlarni <datalist>
@@ -338,8 +316,7 @@ async function deleteCourse() {
 /* ===== OWNER: bo'lim qo'shish ===== */
 
 function openAddSectionForm() {
-    newSectionContentFormat = "PLAIN";
-    updateFormatBadge("add");
+    document.getElementById("newSectionTextEditor").innerHTML = "";
     document.getElementById("addSectionForm").style.display = "flex";
     document.getElementById("openAddSectionBtn").style.display = "none";
 }
@@ -395,15 +372,16 @@ async function submitAddSection() {
         title, type, textContent: null, videoSourceType: null, videoUrl: null, videoDurationSeconds: null,
         scienceName: document.getElementById("newSectionScienceName").value.trim() || null,
         topicName: document.getElementById("newSectionTopicName").value.trim() || null,
-        textContentFormat: newSectionContentFormat
+        textContentFormat: "HTML"
     };
 
     if (includeText) {
-        payload.textContent = document.getElementById("newSectionText").value.trim();
-        if (!payload.textContent) {
+        const editor = document.getElementById("newSectionTextEditor");
+        if (!editor.innerText.trim()) {
             alert("❌ Matn kontentini kiriting");
             return;
         }
+        payload.textContent = editor.innerHTML;
     }
 
     if (includeVideo) {
@@ -460,12 +438,10 @@ async function submitAddSection() {
         }
 
         document.getElementById("newSectionTitle").value = "";
-        document.getElementById("newSectionText").value = "";
+        document.getElementById("newSectionTextEditor").innerHTML = "";
         document.getElementById("newSectionVideoUrl").value = "";
         document.getElementById("newSectionScienceName").value = "";
         document.getElementById("newSectionTopicName").value = "";
-        newSectionContentFormat = "PLAIN";
-        updateFormatBadge("add");
         document.getElementById("includeText").checked = true;
         document.getElementById("includeVideo").checked = false;
         onContentToggle(document.getElementById("includeText"));
@@ -518,9 +494,17 @@ async function openEditSectionForm(sectionId) {
         const hasVideo = section.type === "VIDEO" || section.type === "MIXED";
         document.getElementById("editIncludeText").checked = hasText;
         document.getElementById("editIncludeVideo").checked = hasVideo;
-        document.getElementById("editSectionText").value = section.textContent || "";
-        editSectionContentFormat = section.textContentFormat === "HTML" ? "HTML" : "PLAIN";
-        updateFormatBadge("edit");
+
+        // Eski PLAIN (qo'lda yozilgan, hali WYSIWYG'gacha) bo'limlar xom
+        // matn sifatida saqlangan — tahrirlash oynasida to'g'ri ko'rinishi
+        // uchun xavfsiz escape qilib, qatorlarni <br>'ga aylantiramiz.
+        // Saqlashda esa hammasi HTML formatga o'tadi (orqaga qaytish shart
+        // emas — bu shunchaki bir martalik yaxshilanish).
+        const editor = document.getElementById("editSectionTextEditor");
+        editor.innerHTML = section.textContentFormat === "HTML"
+            ? (section.textContent || "")
+            : escapeHtml(section.textContent || "").replace(/\n/g, "<br>");
+
         onEditContentToggle(document.getElementById("editIncludeText"));
 
         if (hasVideo) {
@@ -543,8 +527,6 @@ async function openEditSectionForm(sectionId) {
 
 function closeEditSectionForm() {
     editingSectionId = null;
-    editSectionContentFormat = "PLAIN";
-    updateFormatBadge("edit");
     document.getElementById("editSectionForm").style.display = "none";
 }
 
@@ -592,15 +574,16 @@ async function submitEditSection() {
         title, type, textContent: null, videoSourceType: null, videoUrl: null, videoDurationSeconds: null,
         scienceName: document.getElementById("editSectionScienceName").value.trim() || null,
         topicName: document.getElementById("editSectionTopicName").value.trim() || null,
-        textContentFormat: editSectionContentFormat
+        textContentFormat: "HTML"
     };
 
     if (includeText) {
-        payload.textContent = document.getElementById("editSectionText").value.trim();
-        if (!payload.textContent) {
+        const editor = document.getElementById("editSectionTextEditor");
+        if (!editor.innerText.trim()) {
             alert("❌ Matn kontentini kiriting");
             return;
         }
+        payload.textContent = editor.innerHTML;
     }
 
     if (includeVideo) {
