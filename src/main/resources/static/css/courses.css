@@ -14,6 +14,21 @@ body {
     padding: 0 16px;
 }
 
+/* Katta ekranlarda mavzular grid'i ko'proq ustunga (col6) chiqishi uchun
+   konteyner ham kengroq bo'lishi kerak — aks holda 6 ustun juda tor
+   kartalarga siqilib qolardi. */
+@media (min-width: 1200px) {
+    .courses-container {
+        max-width: 1300px;
+    }
+}
+
+@media (min-width: 1600px) {
+    .courses-container {
+        max-width: 1700px;
+    }
+}
+
 .courses-top-bar {
     display: flex;
     justify-content: space-between;
@@ -425,22 +440,38 @@ body {
 
 /* Mavzular — kurslar katalogidagi kartalar kabi, bitta qatorda 3 tadan
    (tor ekranlarda kamayadi). Sahifaning eng tagida ham bo'shliq qoladi. */
+/* Mobile-first: ekran kattalashgan sayin ustunlar soni oshib boradi
+   (1 -> 2 -> 3 -> 4 -> 6), shrift esa har bosqichda mos ravishda
+   moslashadi (kichik ekranda kattaroq, zich (6 ustunli) grid'da
+   ixchamroq). Ro'yxatning eng tagida doim bo'shliq qoladi. */
 .sections-list {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: 1fr;
     gap: 16px;
     margin-bottom: 48px;
 }
 
-@media (max-width: 900px) {
+@media (min-width: 600px) {
     .sections-list {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
-@media (max-width: 600px) {
+@media (min-width: 900px) {
     .sections-list {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1200px) {
+    .sections-list {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+@media (min-width: 1600px) {
+    .sections-list {
+        grid-template-columns: repeat(6, 1fr);
     }
 }
 
@@ -517,9 +548,29 @@ body {
     min-width: 0;
     color: #1e293b;
     font-weight: 600;
-    font-size: 14px;
+    /* Mobil (1 ustun) — kattaroq, o'qish qulay bo'lsin. Grid zichlashgan
+       sayin (600/900/1200/1600px'da) kichraytiriladi (pastda). */
+    font-size: 15px;
     line-height: 1.4;
     word-break: break-word;
+}
+
+@media (min-width: 600px) {
+    .section-title-text {
+        font-size: 14px;
+    }
+}
+
+@media (min-width: 1200px) {
+    .section-title-text {
+        font-size: 13px;
+    }
+}
+
+@media (min-width: 1600px) {
+    .section-title-text {
+        font-size: 12px;
+    }
 }
 
 .section-item.locked .section-title-text {
@@ -589,6 +640,22 @@ body {
     margin-bottom: 20px;
     line-height: 1.7;
     white-space: pre-wrap;
+    /* Mavzu matni (kontent) shrifti ham ekran kattaligiga qarab moslashadi
+       — .courses-container katta ekranlarda kengroq bo'lgani uchun (pastda
+       media query'lar), matn ham shunga mos, o'qish qulay bo'lishi uchun. */
+    font-size: 15px;
+}
+
+@media (min-width: 1200px) {
+    .section-content {
+        font-size: 16px;
+    }
+}
+
+@media (min-width: 1600px) {
+    .section-content {
+        font-size: 17px;
+    }
 }
 
 .section-content a {
