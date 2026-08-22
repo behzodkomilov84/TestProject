@@ -38,6 +38,13 @@ public class TelegramCourseReaderService {
 
     /* ================= 1. Kurslar ro'yxati ================= */
 
+    // Inline tugma matni Telegram tomonidan HAR DOIM markazlashtirilgan va
+    // bitta qatorga sig'diriladi (uzun bo'lsa, Telegram o'zi "..." bilan
+    // kesib qo'yadi) — bu bot API orqali o'zgartirib bo'lmaydigan, mijoz
+    // ilovasi (Android/iOS/Desktop) darajasidagi cheklov. Shuning uchun
+    // to'liq nom oddiy xabar MATNI sifatida (chapga tekislangan, o'zi
+    // kerakli qatorlarga bo'linadigan) ko'rsatiladi, tugmalar esa faqat
+    // kichik raqam/belgi bilan tanlash uchun ishlatiladi.
     public SendMessage showCourseList(User user) {
         List<CourseDto> courses = courseService.listCatalog(user);
 
@@ -49,14 +56,19 @@ public class TelegramCourseReaderService {
             return msg;
         }
 
-        msg.setText("📚 <b>Mavjud kurslar</b>\n\nO'qish uchun kursni tanlang:");
-        msg.setParseMode("HTML");
-
+        StringBuilder sb = new StringBuilder("📚 <b>Mavjud kurslar</b>\n\nO'qish uchun raqamini tanlang:\n\n");
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        int i = 1;
         for (CourseDto c : courses) {
             String icon = !c.published() ? "📝" : c.free() ? "🆓" : c.subscribed() ? "✅" : "🔒";
-            rows.add(List.of(button(icon + " " + truncate(c.title(), 60), "course_open_" + c.id())));
+            sb.append(icon).append(" ").append(i).append(". ").append(escape(c.title())).append("\n");
+            rows.add(List.of(button(icon + " " + i, "course_open_" + c.id())));
+            i++;
         }
+
+        msg.setText(sb.toString());
+        msg.setParseMode("HTML");
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(rows);
@@ -132,15 +144,23 @@ public class TelegramCourseReaderService {
         int from = safePage * SECTIONS_PER_PAGE;
         int to = Math.min(from + SECTIONS_PER_PAGE, sections.size());
 
-        msg.setText("📋 <b>" + escape(course.title()) + "</b>\n\nMavzuni tanlang (" +
-                (safePage + 1) + "/" + totalPages + "-sahifa):");
+        // To'liq mavzu nomi — chapga tekislangan, o'zi kerakli qatorlarga
+        // bo'linadigan oddiy xabar matni sifatida (inline tugma matni
+        // Telegram tomonidan markazlashtiriladi va bitta qatorga
+        // kesiladi — uzun nomlar to'liq ko'rinmasdi). Tugmalar endi faqat
+        // raqam bilan tanlash uchun.
+        StringBuilder sb = new StringBuilder("📋 <b>" + escape(course.title()) + "</b>\n\nMavzuni tanlang (" +
+                (safePage + 1) + "/" + totalPages + "-sahifa):\n\n");
 
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         for (CourseSectionSummaryDto s : sections.subList(from, to)) {
             String icon = s.completed() ? "✅" : s.locked() ? "🔒" : "▫️";
-            rows.add(List.of(button(icon + " " + s.orderIndex() + ". " + truncate(s.title(), 50),
+            sb.append(icon).append(" ").append(s.orderIndex()).append(". ").append(escape(s.title())).append("\n");
+            rows.add(List.of(button(icon + " " + s.orderIndex(),
                     "course_sec_" + course.id() + "_" + s.id())));
         }
+
+        msg.setText(sb.toString());
 
         List<InlineKeyboardButton> navRow = new ArrayList<>();
         if (safePage > 0) {
@@ -360,11 +380,6 @@ public class TelegramCourseReaderService {
         btn.setText(text);
         btn.setCallbackData(callbackData);
         return btn;
-    }
-
-    private String truncate(String s, int max) {
-        if (s == null) return "";
-        return s.length() <= max ? s : s.substring(0, max - 1) + "…";
     }
 
     private String escape(String s) {

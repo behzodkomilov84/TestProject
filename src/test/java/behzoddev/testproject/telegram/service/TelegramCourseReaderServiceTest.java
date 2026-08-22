@@ -77,8 +77,13 @@ class TelegramCourseReaderServiceTest {
 
         SendMessage msg = courseReaderService.showCourseList(user);
 
+        // To'liq nom xabar MATNIDA (chapga tekislangan, o'zi qatorlarga
+        // bo'linadigan) ko'rinadi; tugma esa faqat kichik belgi+raqam —
+        // Telegram tugma matnini markazlashtirib, bitta qatorga
+        // kesib qo'yishi (uzun nomlar to'liq ko'rinmasligi) shu bilan oldini olinadi.
+        assertThat(msg.getText()).contains("🆓 1. Bepul kurs");
         InlineKeyboardMarkup markup = (InlineKeyboardMarkup) msg.getReplyMarkup();
-        assertThat(markup.getKeyboard().get(0).get(0).getText()).startsWith("🆓");
+        assertThat(markup.getKeyboard().get(0).get(0).getText()).isEqualTo("🆓 1");
         assertThat(markup.getKeyboard().get(0).get(0).getCallbackData()).isEqualTo("course_open_1");
     }
 
@@ -92,7 +97,7 @@ class TelegramCourseReaderServiceTest {
         SendMessage msg = courseReaderService.showCourseList(user);
 
         InlineKeyboardMarkup markup = (InlineKeyboardMarkup) msg.getReplyMarkup();
-        assertThat(markup.getKeyboard().get(0).get(0).getText()).startsWith("🔒");
+        assertThat(markup.getKeyboard().get(0).get(0).getText()).isEqualTo("🔒 1");
     }
 
     // ===== openCourse (ruxsat tekshiruvi) =====
@@ -113,16 +118,20 @@ class TelegramCourseReaderServiceTest {
     @Test
     void openCourse_free_showsSectionsListDirectly() {
         User user = student();
+        String longTitle = "Juda uzun mavzu nomi — bu nom bitta inline tugmaga sig'may qolishi mumkin bo'lgan uzunlikda";
         CourseSectionSummaryDto section = CourseSectionSummaryDto.builder()
-                .id(10L).title("1-mavzu").orderIndex(1).type("TEXT").locked(false).completed(false).build();
+                .id(10L).title(longTitle).orderIndex(1).type("TEXT").locked(false).completed(false).build();
         CourseDetailDto course = CourseDetailDto.builder().id(5L).title("Bepul kurs").published(true)
                 .free(true).subscribed(true).canManage(false).sections(List.of(section)).build();
         when(courseService.getDetail(5L, user)).thenReturn(course);
 
         SendMessage msg = courseReaderService.openCourse(user, 5L);
 
-        assertThat(msg.getText()).contains("Bepul kurs").contains("Mavzuni tanlang");
+        // To'liq (uzun) nom xabar matnida butunligicha ko'rinadi.
+        assertThat(msg.getText()).contains("Bepul kurs").contains("Mavzuni tanlang").contains(longTitle);
         InlineKeyboardMarkup markup = (InlineKeyboardMarkup) msg.getReplyMarkup();
+        // Tugma matni endi faqat kompakt belgi+raqam — uzun nomni o'zida saqlamaydi.
+        assertThat(markup.getKeyboard().get(0).get(0).getText()).isEqualTo("▫️ 1");
         assertThat(markup.getKeyboard().get(0).get(0).getCallbackData()).isEqualTo("course_sec_5_10");
     }
 
