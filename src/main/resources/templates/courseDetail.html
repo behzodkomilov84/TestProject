@@ -87,7 +87,7 @@
                     <button type="button" onclick="richExec('newSectionTextEditor','underline')" title="Tagi chizilgan (Ctrl+U)"><u>U</u></button>
                     <button type="button" onclick="richExec('newSectionTextEditor','strikeThrough')" title="Chizib o'tilgan"><s>S</s></button>
                     <span class="rich-toolbar-sep"></span>
-                    <select class="rich-toolbar-select" title="Shrift turi" onchange="richFontName('newSectionTextEditor', this.value); this.selectedIndex=0;">
+                    <select class="rich-toolbar-select" title="Shrift turi" onmousedown="saveRichSelection('newSectionTextEditor')" onchange="richFontName('newSectionTextEditor', this.value); this.selectedIndex=0;">
                         <option value="" selected disabled>🔤 Shrift</option>
                         <option value="Arial">Arial</option>
                         <option value="Georgia">Georgia</option>
@@ -95,7 +95,7 @@
                         <option value="Courier New">Courier New</option>
                         <option value="Verdana">Verdana</option>
                     </select>
-                    <select class="rich-toolbar-select" title="Shrift o'lchami" onchange="richFontSize('newSectionTextEditor', this.value); this.selectedIndex=0;">
+                    <select class="rich-toolbar-select" title="Shrift o'lchami" onmousedown="saveRichSelection('newSectionTextEditor')" onchange="richFontSize('newSectionTextEditor', this.value); this.selectedIndex=0;">
                         <option value="" selected disabled>🔠 O'lcham</option>
                         <option value="12">12</option>
                         <option value="14">14</option>
@@ -107,8 +107,8 @@
                         <option value="32">32</option>
                     </select>
                     <span class="rich-toolbar-sep"></span>
-                    <input type="color" class="rich-toolbar-color" title="🎨 Harf rangi" value="#000000" onchange="richForeColor('newSectionTextEditor', this.value)">
-                    <input type="color" class="rich-toolbar-color" title="🖊️ Fon (bo'yash) rangi" value="#fff59d" onchange="richHiliteColor('newSectionTextEditor', this.value)">
+                    <input type="color" class="rich-toolbar-color" title="🎨 Harf rangi" value="#000000" onmousedown="saveRichSelection('newSectionTextEditor')" onchange="richForeColor('newSectionTextEditor', this.value)">
+                    <input type="color" class="rich-toolbar-color" title="🖊️ Fon (bo'yash) rangi" value="#fff59d" onmousedown="saveRichSelection('newSectionTextEditor')" onchange="richHiliteColor('newSectionTextEditor', this.value)">
                     <span class="rich-toolbar-sep"></span>
                     <button type="button" onclick="richExec('newSectionTextEditor','justifyLeft')" title="Chapga tekislash"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="2"/><rect x="0" y="5" width="10" height="2"/><rect x="0" y="9" width="16" height="2"/><rect x="0" y="13" width="10" height="2"/></svg></button>
                     <button type="button" onclick="richExec('newSectionTextEditor','justifyCenter')" title="Markazga tekislash"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="2"/><rect x="3" y="5" width="10" height="2"/><rect x="0" y="9" width="16" height="2"/><rect x="3" y="13" width="10" height="2"/></svg></button>
@@ -117,7 +117,7 @@
                     <span class="rich-toolbar-sep"></span>
                     <button type="button" onclick="richExec('newSectionTextEditor','outdent')" title="Chekinishni kamaytirish"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="7" y="1" width="9" height="2"/><rect x="7" y="7" width="9" height="2"/><rect x="7" y="13" width="9" height="2"/><path d="M5 4 L1 8 L5 12 Z"/></svg></button>
                     <button type="button" onclick="richExec('newSectionTextEditor','indent')" title="Chekinishni oshirish"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="7" y="1" width="9" height="2"/><rect x="7" y="7" width="9" height="2"/><rect x="7" y="13" width="9" height="2"/><path d="M1 4 L5 8 L1 12 Z"/></svg></button>
-                    <select class="rich-toolbar-select" title="Qator oralig'i" onchange="richLineSpacing('newSectionTextEditor', this.value); this.selectedIndex=0;">
+                    <select class="rich-toolbar-select" title="Qator oralig'i" onmousedown="saveRichSelection('newSectionTextEditor')" onchange="richLineSpacing('newSectionTextEditor', this.value); this.selectedIndex=0;">
                         <option value="" selected disabled>↕️ Oraliq</option>
                         <option value="1">1.0</option>
                         <option value="1.15">1.15</option>
@@ -189,7 +189,7 @@
                     <button type="button" onclick="richExec('editSectionTextEditor','underline')" title="Tagi chizilgan (Ctrl+U)"><u>U</u></button>
                     <button type="button" onclick="richExec('editSectionTextEditor','strikeThrough')" title="Chizib o'tilgan"><s>S</s></button>
                     <span class="rich-toolbar-sep"></span>
-                    <select class="rich-toolbar-select" title="Shrift turi" onchange="richFontName('editSectionTextEditor', this.value); this.selectedIndex=0;">
+                    <select class="rich-toolbar-select" title="Shrift turi" onmousedown="saveRichSelection('editSectionTextEditor')" onchange="richFontName('editSectionTextEditor', this.value); this.selectedIndex=0;">
                         <option value="" selected disabled>🔤 Shrift</option>
                         <option value="Arial">Arial</option>
                         <option value="Georgia">Georgia</option>
@@ -197,7 +197,7 @@
                         <option value="Courier New">Courier New</option>
                         <option value="Verdana">Verdana</option>
                     </select>
-                    <select class="rich-toolbar-select" title="Shrift o'lchami" onchange="richFontSize('editSectionTextEditor', this.value); this.selectedIndex=0;">
+                    <select class="rich-toolbar-select" title="Shrift o'lchami" onmousedown="saveRichSelection('editSectionTextEditor')" onchange="richFontSize('editSectionTextEditor', this.value); this.selectedIndex=0;">
                         <option value="" selected disabled>🔠 O'lcham</option>
                         <option value="12">12</option>
                         <option value="14">14</option>
@@ -209,8 +209,8 @@
                         <option value="32">32</option>
                     </select>
                     <span class="rich-toolbar-sep"></span>
-                    <input type="color" class="rich-toolbar-color" title="🎨 Harf rangi" value="#000000" onchange="richForeColor('editSectionTextEditor', this.value)">
-                    <input type="color" class="rich-toolbar-color" title="🖊️ Fon (bo'yash) rangi" value="#fff59d" onchange="richHiliteColor('editSectionTextEditor', this.value)">
+                    <input type="color" class="rich-toolbar-color" title="🎨 Harf rangi" value="#000000" onmousedown="saveRichSelection('editSectionTextEditor')" onchange="richForeColor('editSectionTextEditor', this.value)">
+                    <input type="color" class="rich-toolbar-color" title="🖊️ Fon (bo'yash) rangi" value="#fff59d" onmousedown="saveRichSelection('editSectionTextEditor')" onchange="richHiliteColor('editSectionTextEditor', this.value)">
                     <span class="rich-toolbar-sep"></span>
                     <button type="button" onclick="richExec('editSectionTextEditor','justifyLeft')" title="Chapga tekislash"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="2"/><rect x="0" y="5" width="10" height="2"/><rect x="0" y="9" width="16" height="2"/><rect x="0" y="13" width="10" height="2"/></svg></button>
                     <button type="button" onclick="richExec('editSectionTextEditor','justifyCenter')" title="Markazga tekislash"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="2"/><rect x="3" y="5" width="10" height="2"/><rect x="0" y="9" width="16" height="2"/><rect x="3" y="13" width="10" height="2"/></svg></button>
@@ -219,7 +219,7 @@
                     <span class="rich-toolbar-sep"></span>
                     <button type="button" onclick="richExec('editSectionTextEditor','outdent')" title="Chekinishni kamaytirish"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="7" y="1" width="9" height="2"/><rect x="7" y="7" width="9" height="2"/><rect x="7" y="13" width="9" height="2"/><path d="M5 4 L1 8 L5 12 Z"/></svg></button>
                     <button type="button" onclick="richExec('editSectionTextEditor','indent')" title="Chekinishni oshirish"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="7" y="1" width="9" height="2"/><rect x="7" y="7" width="9" height="2"/><rect x="7" y="13" width="9" height="2"/><path d="M1 4 L5 8 L1 12 Z"/></svg></button>
-                    <select class="rich-toolbar-select" title="Qator oralig'i" onchange="richLineSpacing('editSectionTextEditor', this.value); this.selectedIndex=0;">
+                    <select class="rich-toolbar-select" title="Qator oralig'i" onmousedown="saveRichSelection('editSectionTextEditor')" onchange="richLineSpacing('editSectionTextEditor', this.value); this.selectedIndex=0;">
                         <option value="" selected disabled>↕️ Oraliq</option>
                         <option value="1">1.0</option>
                         <option value="1.15">1.15</option>

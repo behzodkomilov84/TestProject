@@ -73,9 +73,37 @@ function richExec(editorId, command) {
 
 // ================= Rich-toolbar: shrift, rang, tekislash, rasm =================
 
+// <input type="color"> yoki <select> bosilganda brauzer o'z (native)
+// rang tanlash oynasi/dropdown'ini ochadi — bu FOKUSNI contenteditable'dan
+// olib qo'yadi va shu bilan birga tanlangan matn (selection/Range) ham
+// yo'qoladi. Natijada "onchange" ishga tushganda (rang/qiymat
+// tanlangandan keyin) execCommand'ga berish uchun HECH QANDAY tanlangan
+// matn qolmaydi — shuning uchun rang/shrift o'zgarishi ko'rinmas edi.
+// Yechim: shu boshqaruv elementi hali fokusni OLMASDAN turib ("mousedown"
+// paytida), joriy selection'ni saqlab qo'yamiz, so'ng "onchange"da
+// (editor.focus()'dan KEYIN) uni qayta tiklaymiz — shundagina execCommand
+// haqiqatan tanlangan matnga qo'llanadi.
+let savedRichSelection = { editorId: null, range: null };
+
+function saveRichSelection(editorId) {
+    const editor = document.getElementById(editorId);
+    const sel = window.getSelection();
+    if (sel.rangeCount > 0 && editor.contains(sel.anchorNode)) {
+        savedRichSelection = { editorId, range: sel.getRangeAt(0).cloneRange() };
+    }
+}
+
+function restoreRichSelection(editorId) {
+    if (savedRichSelection.editorId !== editorId || !savedRichSelection.range) return;
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedRichSelection.range);
+}
+
 function richFontName(editorId, fontName) {
     if (!fontName) return;
     document.getElementById(editorId).focus();
+    restoreRichSelection(editorId);
     document.execCommand('fontName', false, fontName);
 }
 
@@ -87,6 +115,7 @@ function richFontSize(editorId, sizePx) {
     if (!sizePx) return;
     const editor = document.getElementById(editorId);
     editor.focus();
+    restoreRichSelection(editorId);
     document.execCommand('fontSize', false, '7');
     editor.querySelectorAll('font[size="7"]').forEach(el => {
         const span = document.createElement('span');
@@ -98,6 +127,7 @@ function richFontSize(editorId, sizePx) {
 
 function richForeColor(editorId, color) {
     document.getElementById(editorId).focus();
+    restoreRichSelection(editorId);
     document.execCommand('foreColor', false, color);
 }
 
@@ -106,6 +136,7 @@ function richForeColor(editorId, color) {
 function richHiliteColor(editorId, color) {
     const editor = document.getElementById(editorId);
     editor.focus();
+    restoreRichSelection(editorId);
     if (!document.execCommand('hiliteColor', false, color)) {
         document.execCommand('backColor', false, color);
     }
@@ -123,6 +154,7 @@ function richLineSpacing(editorId, value) {
     if (!value) return;
     const editor = document.getElementById(editorId);
     editor.focus();
+    restoreRichSelection(editorId);
 
     const selection = window.getSelection();
     let node = selection.rangeCount ? selection.getRangeAt(0).commonAncestorContainer : null;
