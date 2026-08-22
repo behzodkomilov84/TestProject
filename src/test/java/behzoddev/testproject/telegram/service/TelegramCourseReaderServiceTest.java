@@ -122,6 +122,18 @@ class TelegramCourseReaderServiceTest {
         assertThat(markup.getKeyboard().get(0).get(0).getText()).isEqualTo("🔒 1");
     }
 
+    @Test
+    void showCourseList_lockedCourseWithPrice_showsPriceInText() {
+        User user = student();
+        CourseDto course = CourseDto.builder().id(2L).title("Pullik kurs").published(true)
+                .free(false).subscribed(false).price(new java.math.BigDecimal("150000")).sectionCount(3).build();
+        when(courseService.listCatalog(user)).thenReturn(List.of(course));
+
+        SendMessage msg = courseReaderService.showCourseList(user);
+
+        assertThat(msg.getText()).contains("150 000 so'm");
+    }
+
     // ===== openCourse (ruxsat tekshiruvi) =====
 
     @Test
@@ -135,6 +147,19 @@ class TelegramCourseReaderServiceTest {
 
         assertThat(msg.getText()).contains("obuna kerak").contains("study-grow.uz");
         org.mockito.Mockito.verify(autoLoginService).buildLoginUrl(user, "/courses/5");
+    }
+
+    @Test
+    void openCourse_notSubscribedWithPrice_showsPriceInAccessDeniedMessage() {
+        User user = student();
+        CourseDetailDto course = CourseDetailDto.builder().id(5L).title("Kimyo").published(true)
+                .free(false).subscribed(false).canManage(false)
+                .price(new java.math.BigDecimal("200000")).sections(List.of()).build();
+        when(courseService.getDetail(5L, user)).thenReturn(course);
+
+        SendMessage msg = courseReaderService.openCourse(user, 5L);
+
+        assertThat(msg.getText()).contains("200 000 so'm");
     }
 
     @Test

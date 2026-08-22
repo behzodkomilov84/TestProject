@@ -39,7 +39,10 @@ function renderCourses(courses) {
         } else if (c.subscribed) {
             badge = `<span class="course-badge subscribed">✅ Obuna bor</span>`;
         } else {
-            badge = `<span class="course-badge locked">🔒 Obuna kerak</span>`;
+            // Narxi belgilangan bo'lsa — foydalanuvchi obuna so'rovini
+            // yuborishdan oldin qancha to'lashini ko'rib turishi uchun.
+            const priceText = c.price ? ` — ${formatPrice(c.price)} so'm` : "";
+            badge = `<span class="course-badge locked">🔒 Obuna kerak${priceText}</span>`;
         }
 
         const cover = c.coverImageUrl
@@ -68,14 +71,27 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// "150000" -> "150 000" — minglik ajratkichi doim bo'shliq bo'lishi uchun
+// (toLocaleString brauzer/OS lokaliga qarab boshqa belgi ishlatishi mumkin).
+function formatPrice(price) {
+    return String(Math.round(Number(price))).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
 /* ===== OWNER: kurs yaratish ===== */
 
 function openCreateCourseForm() {
     document.getElementById("createCourseForm").style.display = "flex";
+    onNewCourseFreeToggle();
 }
 
 function closeCreateCourseForm() {
     document.getElementById("createCourseForm").style.display = "none";
+}
+
+// "🆓 Bepul kurs" belgilansa — narx maydoni keraksiz, yashiriladi.
+function onNewCourseFreeToggle() {
+    const free = document.getElementById("newCourseFree").checked;
+    document.getElementById("newCoursePriceField").style.display = free ? "none" : "block";
 }
 
 async function submitCreateCourse() {
@@ -105,11 +121,13 @@ async function submitCreateCourse() {
         }
 
         const free = document.getElementById("newCourseFree").checked;
+        const priceValue = document.getElementById("newCoursePrice").value;
+        const price = !free && priceValue ? Number(priceValue) : null;
 
         const res = await fetch("/api/courses", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title, description, coverImageUrl, published: false, free })
+            body: JSON.stringify({ title, description, coverImageUrl, published: false, free, price })
         });
 
         const data = await res.json().catch(() => ({}));

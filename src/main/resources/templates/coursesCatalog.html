@@ -28,8 +28,11 @@
         <input type="text" id="newCourseTitle" placeholder="Kurs nomi">
         <textarea id="newCourseDescription" placeholder="Kurs tavsifi" rows="3"></textarea>
         <label class="content-toggle-label">
-            <input type="checkbox" id="newCourseFree"> 🆓 Bepul kurs (obunasiz ham hammaga ochiq — botda ham)
+            <input type="checkbox" id="newCourseFree" onchange="onNewCourseFreeToggle()"> 🆓 Bepul kurs (obunasiz ham hammaga ochiq — botda ham)
         </label>
+        <div id="newCoursePriceField">
+            <input type="number" id="newCoursePrice" placeholder="Kurs narxi (so'm)" min="0" step="1000">
+        </div>
         <div class="course-form-cover">
             <input type="file" id="newCourseCoverFile" accept="image/*">
             <span id="newCourseCoverStatus"></span>

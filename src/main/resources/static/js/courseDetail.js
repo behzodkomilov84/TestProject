@@ -128,8 +128,9 @@ function renderCourse(course) {
                 "⏳ Obunaga so'rovingiz yuborilgan — administrator (OWNER) javobini kuting.";
             btn.style.display = "none";
         } else {
+            const priceText = course.price ? ` Narxi: ${formatPrice(course.price)} so'm.` : "";
             document.getElementById("subscribeBannerText").textContent =
-                "🔒 Bu kursning to'liq mazmuniga kirish uchun obuna kerak.";
+                "🔒 Bu kursning to'liq mazmuniga kirish uchun obuna kerak." + priceText;
             btn.style.display = "";
         }
     }
@@ -230,6 +231,12 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// "150000" -> "150 000" — minglik ajratkichi doim bo'shliq bo'lishi uchun
+// (toLocaleString brauzer/OS lokaliga qarab boshqa belgi ishlatishi mumkin).
+function formatPrice(price) {
+    return String(Math.round(Number(price))).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+}
+
 /* ===== OWNER: kursni boshqarish ===== */
 
 async function togglePublish() {
@@ -244,6 +251,7 @@ async function togglePublish() {
                 description: cachedCourse.description,
                 coverImageUrl: cachedCourse.coverImageUrl,
                 free: cachedCourse.free,
+                price: cachedCourse.price,
                 published: !cachedCourse.published
             })
         });
@@ -266,6 +274,8 @@ function openEditCourseForm() {
     document.getElementById("editCourseCoverFile").value = "";
     document.getElementById("editCourseCoverStatus").textContent = "";
     document.getElementById("editCourseFree").checked = !!(cachedCourse && cachedCourse.free);
+    document.getElementById("editCoursePrice").value = (cachedCourse && cachedCourse.price) || "";
+    onEditCourseFreeToggle();
 
     if (cachedCourse && cachedCourse.coverImageUrl) {
         preview.src = cachedCourse.coverImageUrl;
@@ -279,6 +289,12 @@ function openEditCourseForm() {
 
 function closeEditCourseForm() {
     document.getElementById("editCourseForm").style.display = "none";
+}
+
+// "🆓 Bepul kurs" belgilansa — narx maydoni keraksiz, yashiriladi.
+function onEditCourseFreeToggle() {
+    const free = document.getElementById("editCourseFree").checked;
+    document.getElementById("editCoursePriceField").style.display = free ? "none" : "block";
 }
 
 // Fayl tanlanganda darhol ko'rinadi (yuklashdan oldin) — hozirgi
@@ -321,12 +337,14 @@ async function submitEditCourse() {
         }
 
         const free = document.getElementById("editCourseFree").checked;
+        const priceValue = document.getElementById("editCoursePrice").value;
+        const price = !free && priceValue ? Number(priceValue) : null;
 
         const res = await fetch(`/api/courses/${COURSE_ID}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                title, description, coverImageUrl, free,
+                title, description, coverImageUrl, free, price,
                 published: cachedCourse.published
             })
         });

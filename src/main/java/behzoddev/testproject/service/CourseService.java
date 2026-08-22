@@ -99,6 +99,7 @@ public class CourseService {
                 .coverImageUrl(course.getCoverImageUrl())
                 .published(course.isPublished())
                 .free(course.isFree())
+                .price(course.getPrice())
                 .subscribed(subscribed || canManage)
                 .requestPending(requestPending)
                 .canManage(canManage)
@@ -208,6 +209,7 @@ public class CourseService {
                 .coverImageUrl(dto.coverImageUrl())
                 .published(dto.published() != null && dto.published())
                 .free(dto.free() != null && dto.free())
+                .price(dto.price())
                 .createdBy(owner)
                 .build();
 
@@ -224,6 +226,7 @@ public class CourseService {
         course.setTitle(dto.title().trim());
         course.setDescription(dto.description());
         course.setCoverImageUrl(dto.coverImageUrl());
+        course.setPrice(dto.price());
         if (dto.published() != null) {
             course.setPublished(dto.published());
         }
@@ -474,6 +477,7 @@ public class CourseService {
                 .coverImageUrl(course.getCoverImageUrl())
                 .published(course.isPublished())
                 .free(course.isFree())
+                .price(course.getPrice())
                 .sectionCount(sectionCount)
                 .subscribed(subscribed)
                 .createdAt(course.getCreatedAt())

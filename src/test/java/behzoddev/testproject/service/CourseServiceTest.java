@@ -396,7 +396,7 @@ class CourseServiceTest {
         Course course = Course.builder().id(1L).title("Eski nom").createdBy(admin).build();
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
 
-        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null);
+        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null, null);
         courseService.updateCourse(1L, dto, admin);
 
         assertThat(course.getTitle()).isEqualTo("Yangi nom");
@@ -407,7 +407,7 @@ class CourseServiceTest {
         Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
 
-        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null);
+        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null, null);
 
         assertThatThrownBy(() -> courseService.updateCourse(1L, dto, admin()))
                 .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
@@ -604,7 +604,7 @@ class CourseServiceTest {
     void createCourse_freeTrue_setsFreeFlag() {
         when(courseRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        CourseSaveDto dto = new CourseSaveDto("Kurs", null, null, null, true);
+        CourseSaveDto dto = new CourseSaveDto("Kurs", null, null, null, true, null);
         CourseDto result = courseService.createCourse(dto, owner());
 
         assertThat(result.free()).isTrue();
@@ -615,9 +615,35 @@ class CourseServiceTest {
         Course course = Course.builder().id(1L).title("Kurs").free(true).createdBy(owner()).build();
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
 
-        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null);
+        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null, null);
         courseService.updateCourse(1L, dto, owner());
 
         assertThat(course.isFree()).isTrue();
+    }
+
+    // ===== Pullik kurs narxi (price) =====
+
+    @Test
+    void createCourse_withPrice_savesPrice() {
+        when(courseRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        CourseSaveDto dto = new CourseSaveDto("Kurs", null, null, null, false,
+                new java.math.BigDecimal("150000"));
+        CourseDto result = courseService.createCourse(dto, owner());
+
+        assertThat(result.price()).isEqualByComparingTo("150000");
+    }
+
+    @Test
+    void updateCourse_withNewPrice_overwritesExistingPrice() {
+        Course course = Course.builder().id(1L).title("Kurs")
+                .price(new java.math.BigDecimal("100000")).createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        CourseSaveDto dto = new CourseSaveDto("Kurs", null, null, null, null,
+                new java.math.BigDecimal("200000"));
+        courseService.updateCourse(1L, dto, owner());
+
+        assertThat(course.getPrice()).isEqualByComparingTo("200000");
     }
 }

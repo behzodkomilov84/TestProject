@@ -31,6 +31,7 @@
     <include file="/db/changelog/course-section-content-format.sql"/>
     <include file="/db/changelog/course-free.sql"/>
     <include file="/db/changelog/course-section-title-length.sql"/>
+    <include file="/db/changelog/course-price.sql"/>
 
 
 </databaseChangeLog>

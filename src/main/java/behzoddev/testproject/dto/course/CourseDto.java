@@ -2,6 +2,7 @@ package behzoddev.testproject.dto.course;
 
 import lombok.Builder;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 // Kurs katalogi (ro'yxat) uchun — bo'lim kontentisiz, umumiy ma'lumot.
@@ -13,6 +14,7 @@ public record CourseDto(
         String coverImageUrl,
         boolean published,
         boolean free,
+        BigDecimal price,
         int sectionCount,
         boolean subscribed, // joriy foydalanuvchi obuna bo'lganmi (yoki kurs bepul/canManage)
         LocalDateTime createdAt

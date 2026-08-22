@@ -3,6 +3,7 @@ package behzoddev.testproject.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 // JavaRush uslubidagi online kurs — OWNER tomonidan yaratiladi, ADMIN/USER
@@ -39,6 +40,13 @@ public class Course {
     @Column(nullable = false)
     @Builder.Default
     private boolean free = false;
+
+    // Pullik kursning ko'rsatiladigan (ma'lumot uchun) narxi — free=false
+    // bo'lganda mazmunli. Haqiqiy obuna summasi baribir OWNER tomonidan
+    // qo'lda kiritiladi (CourseSubscription.amount) — bu shunchaki katalog/
+    // kurs sahifasida "narxi qancha" ko'rsatish uchun.
+    @Column(precision = 12, scale = 2)
+    private BigDecimal price;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)

@@ -78,7 +78,13 @@ public class TelegramCourseReaderService {
         int i = 1;
         for (CourseDto c : courses) {
             String icon = !c.published() ? "📝" : c.free() ? "🆓" : c.subscribed() ? "✅" : "🔒";
-            sb.append(icon).append(" ").append(i).append(". ").append(escape(c.title())).append("\n");
+            // Narxi belgilangan bo'lsa — foydalanuvchi obunaga so'rov
+            // yuborishdan oldin qancha to'lashini ko'rib turishi uchun
+            // (saytdagi katalog belgisi bilan bir xil g'oya).
+            String priceText = (!c.free() && !c.subscribed() && c.price() != null)
+                    ? " — " + formatPrice(c.price()) + " so'm"
+                    : "";
+            sb.append(icon).append(" ").append(i).append(". ").append(escape(c.title())).append(priceText).append("\n");
             buttons.add(button(icon + " " + i, "course_open_" + c.id()));
             i++;
         }
@@ -114,8 +120,9 @@ public class TelegramCourseReaderService {
         msg.setChatId(user.getTelegramId().toString());
 
         String url = autoLoginService.buildLoginUrl(user, "/courses/" + course.id());
+        String priceText = course.price() != null ? " Narxi: " + formatPrice(course.price()) + " so'm." : "";
         msg.setText("🔒 <b>" + escape(course.title()) + "</b>\n\n" +
-                "Bu kursni botda o'qish uchun obuna kerak. Saytda batafsil ko'rib, " +
+                "Bu kursni botda o'qish uchun obuna kerak." + priceText + " Saytda batafsil ko'rib, " +
                 "obuna so'rovi yuborishingiz mumkin: " + url);
         msg.setParseMode("HTML");
         // Telegram'ning preview-fetcheri xabar yuborilishi bilan havolani
@@ -482,5 +489,14 @@ public class TelegramCourseReaderService {
     private String escape(String s) {
         if (s == null) return "";
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    // "150000" -> "150 000" — minglik ajratkichli, saytdagi formatPrice()
+    // bilan bir xil ko'rinish. Locale.US aniq ko'rsatilgan — aks holda
+    // "%,d" JVM standart lokaliga qarab vergul o'rniga boshqa (masalan
+    // uzilmaydigan bo'shliq) belgi ishlatishi mumkin edi, va keyingi
+    // replace(",", " ") hech narsa qilmay qolardi.
+    private String formatPrice(java.math.BigDecimal price) {
+        return String.format(java.util.Locale.US, "%,d", price.longValue()).replace(",", " ");
     }
 }

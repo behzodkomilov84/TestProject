@@ -2,6 +2,7 @@ package behzoddev.testproject.dto.course;
 
 import lombok.Builder;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 // Kurs sahifasi (dastur/curriculum) — bo'limlar sarlavhalari + holati.
@@ -13,6 +14,7 @@ public record CourseDetailDto(
         String coverImageUrl,
         boolean published,
         boolean free,
+        BigDecimal price,
         boolean subscribed,
         boolean requestPending, // foydalanuvchi obunaga so'rov yuborgan, OWNER hali ko'rib chiqmagan
         boolean canManage, // OWNER uchun tahrirlash tugmalarini ko'rsatish
