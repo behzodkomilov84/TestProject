@@ -126,6 +126,65 @@ public class CourseSubscriptionService {
         return toDto(subscription);
     }
 
+    // PaymentOrderService.markPaid() dan chaqiriladi (Click Complete
+    // muvaffaqiyatli bo'lganda) — subscribe() bilan bir xil g'oyada, lekin
+    // OWNER emas, tizimning o'zi tasdiqlaydi ("Onlayn to'lov" izohi bilan).
+    @Transactional
+    public CourseSubscriptionDto confirmOnline(User user, Long courseId, BigDecimal amount, int months) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new NoSuchElementException("Kurs topilmadi"));
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // Agar oldindan PENDING so'rov bo'lsa — o'shani tasdiqlaymiz
+        // (subscribe() bilan bir xil — yangi qator yaratib, eskisini
+        // "yetim" qoldirmaymiz).
+        CourseSubscription subscription = courseSubscriptionRepository
+                .findByUser_IdAndCourse_IdAndStatus(user.getId(), courseId, CourseSubscriptionStatus.PENDING)
+                .orElseGet(() -> CourseSubscription.builder().user(user).course(course).build());
+
+        subscription.setAmount(amount);
+        subscription.setStatus(CourseSubscriptionStatus.CONFIRMED);
+        subscription.setStartDate(now);
+        subscription.setEndDate(now.plusMonths(months));
+        subscription.setNote("Onlayn to'lov (Click) orqali avtomatik tasdiqlandi");
+
+        courseSubscriptionRepository.save(subscription);
+
+        notificationService.create(user,
+                "✅ \"" + course.getTitle() + "\" kursiga onlayn to'lov orqali obuna bo'ldingiz (" + months +
+                        " oy)! Endi 1-bo'lim ochiq.",
+                "/courses/" + courseId);
+
+        log.info("Kurs obunasi (ONLINE) tasdiqlandi: user={}, course={}, muddat={} oy",
+                user.getUsername(), course.getTitle(), months);
+
+        return toDto(subscription);
+    }
+
+    // Click chargeback/qaytarish (Complete'dan KEYIN "error<0" bilan
+    // qayta kelsa) — SubscriptionService.reverseOnline bilan bir xil g'oya:
+    // aynan shu to'lov bilan tasdiqlangan obunani bekor qiladi.
+    @Transactional
+    public void reverseOnline(Long courseSubscriptionId) {
+        if (courseSubscriptionId == null) return;
+
+        courseSubscriptionRepository.findById(courseSubscriptionId).ifPresent(s -> {
+            if (s.getStatus() != CourseSubscriptionStatus.CONFIRMED) return;
+
+            s.setStatus(CourseSubscriptionStatus.CANCELLED);
+            courseSubscriptionRepository.save(s);
+
+            notificationService.create(s.getUser(),
+                    "⚠️ \"" + s.getCourse().getTitle() + "\" kursiga onlayn to'lovingiz bekor qilindi (qaytarildi), " +
+                            "shunga ko'ra kursga kirish huquqi ham bekor qilindi.",
+                    "/courses/" + s.getCourse().getId());
+
+            log.info("Kurs obunasi (ONLINE) bekor qilindi: user={}, course={}",
+                    s.getUser().getUsername(), s.getCourse().getTitle());
+        });
+    }
+
     @Transactional
     public void cancel(Long subscriptionId) {
         CourseSubscription subscription = courseSubscriptionRepository.findById(subscriptionId)

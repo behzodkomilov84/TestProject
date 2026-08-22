@@ -1,8 +1,20 @@
 let cachedCourse = null;
+let clickPaymentEnabled = false;
 
 document.addEventListener("DOMContentLoaded", () => {
     loadCourse();
     loadScienceNamesList();
+    fetch("/api/payments/config")
+        .then(r => r.ok ? r.json() : { clickEnabled: false })
+        .then(cfg => {
+            clickPaymentEnabled = !!cfg.clickEnabled;
+            // Kurs ma'lumoti bu vaqtga qadar allaqachon kelib, banner
+            // chizilgan bo'lishi mumkin (ikkala fetch parallel ketadi) —
+            // "💳 Click orqali to'lash" tugmasi ko'rinishini shu payt
+            // aniq bo'lgan clickPaymentEnabled bilan qayta hisoblaymiz.
+            if (cachedCourse) updateSubscribeBanner(cachedCourse);
+        })
+        .catch(() => { clickPaymentEnabled = false; });
     // Enter bosilganda <div> o'rniga <p> hosil bo'lishi uchun — brauzerlar
     // orasida bir xil natija beradi va courses.css'dagi
     // .rich-text-editor p qoidasi to'g'ri ishlaydi.
@@ -118,22 +130,7 @@ function renderCourse(course) {
     document.getElementById("courseTitle").textContent = course.title;
     document.getElementById("courseDescription").textContent = course.description || "";
 
-    const showBanner = !course.subscribed && !course.canManage;
-    document.getElementById("subscribeBanner").style.display = showBanner ? "flex" : "none";
-
-    if (showBanner) {
-        const btn = document.getElementById("requestSubscriptionBtn");
-        if (course.requestPending) {
-            document.getElementById("subscribeBannerText").textContent =
-                "⏳ Obunaga so'rovingiz yuborilgan — administrator (OWNER) javobini kuting.";
-            btn.style.display = "none";
-        } else {
-            const priceText = course.price ? ` Narxi: ${formatPrice(course.price)} so'm.` : "";
-            document.getElementById("subscribeBannerText").textContent =
-                "🔒 Bu kursning to'liq mazmuniga kirish uchun obuna kerak." + priceText;
-            btn.style.display = "";
-        }
-    }
+    updateSubscribeBanner(course);
 
     // Boshqarish paneli (tahrirlash/chop etish/bo'lim qo'shish) — OWNER
     // uchun HAR DOIM, ADMIN uchun faqat O'ZI yaratgan kursda (backend
@@ -149,6 +146,60 @@ function renderCourse(course) {
     }
 
     renderSections(course.sections);
+}
+
+// Obuna banner'i ("🔒 ... obuna kerak" / "⏳ so'rov yuborilgan") — alohida
+// funksiyaga chiqarilgan, chunki uni ikki joydan (kurs yuklanganda VA
+// to'lov config'i keyinroq kelganda) qayta chizish kerak bo'ladi.
+function updateSubscribeBanner(course) {
+    const showBanner = !course.subscribed && !course.canManage;
+    document.getElementById("subscribeBanner").style.display = showBanner ? "flex" : "none";
+
+    if (!showBanner) return;
+
+    const requestBtn = document.getElementById("requestSubscriptionBtn");
+    const payBtn = document.getElementById("payWithClickBtn");
+
+    if (course.requestPending) {
+        document.getElementById("subscribeBannerText").textContent =
+            "⏳ Obunaga so'rovingiz yuborilgan — administrator (OWNER) javobini kuting.";
+        requestBtn.style.display = "none";
+        payBtn.style.display = "none";
+        return;
+    }
+
+    const priceText = course.price ? ` Narxi: ${formatPrice(course.price)} so'm.` : "";
+    document.getElementById("subscribeBannerText").textContent =
+        "🔒 Bu kursning to'liq mazmuniga kirish uchun obuna kerak." + priceText;
+    requestBtn.style.display = "";
+
+    // Onlayn to'lov faqat Click ulangan VA kurs narxi belgilangan bo'lsa
+    // ko'rinadi (narxsiz kursda avtomatik summani hisoblab bo'lmaydi —
+    // bunday holda faqat "so'rov yuborish" orqali, OWNER summani qo'lda
+    // belgilaydi).
+    payBtn.style.display = (clickPaymentEnabled && course.price) ? "" : "none";
+}
+
+async function payWithClick() {
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/subscriptions/pay`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ durationMonths: 1, provider: "CLICK" })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            alert(data.error || "To'lovni boshlashda xatolik");
+            return;
+        }
+
+        location.href = data.checkoutUrl;
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
 }
 
 async function requestSubscription() {

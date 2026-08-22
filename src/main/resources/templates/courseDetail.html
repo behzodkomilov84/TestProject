@@ -35,7 +35,10 @@
 
     <div id="subscribeBanner" class="subscribe-banner" style="display:none;">
         <div id="subscribeBannerText">🔒 Bu kursning to'liq mazmuniga kirish uchun obuna kerak.</div>
-        <button id="requestSubscriptionBtn" onclick="requestSubscription()">📩 Obunaga so'rov yuborish</button>
+        <div class="subscribe-banner-actions">
+            <button id="payWithClickBtn" onclick="payWithClick()" style="display:none;">💳 Click orqali to'lash</button>
+            <button id="requestSubscriptionBtn" onclick="requestSubscription()">📩 Obunaga so'rov yuborish</button>
+        </div>
     </div>
 
     <!-- OWNER uchun — kursni boshqarish paneli -->

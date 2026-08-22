@@ -54,4 +54,10 @@ public class PaymentOrder {
     // obunaning o'zini topib, hech qachon haqiqatda bekor qilinmagan bo'lib chiqardi).
     @Column(name = "subscription_id")
     private Long subscriptionId;
+
+    // NULL bo'lsa — ADMIN-rol obunasi uchun to'lov (avvalgi xulq-atvor).
+    // Belgilangan bo'lsa — shu ID'li kursga bevosita (OWNER tasdig'ini
+    // kutmasdan) onlayn to'lov.
+    @Column(name = "course_id")
+    private Long courseId;
 }

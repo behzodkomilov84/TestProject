@@ -272,4 +272,84 @@ class CourseSubscriptionServiceTest {
 
         verify(notificationService, never()).create(any(), anyString(), anyString());
     }
+
+    // ===== confirmOnline (PaymentOrderService.markPaid'dan chaqiriladi) =====
+
+    @Test
+    void confirmOnline_newRequest_createsConfirmedSubscription() {
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSubscriptionRepository.findByUser_IdAndCourse_IdAndStatus(
+                1L, 1L, CourseSubscriptionStatus.PENDING)).thenReturn(Optional.empty());
+
+        CourseSubscriptionDto result =
+                courseSubscriptionService.confirmOnline(student, 1L, BigDecimal.valueOf(100_000), 2);
+
+        assertThat(result.status()).isEqualTo("CONFIRMED");
+        ArgumentCaptor<CourseSubscription> captor = ArgumentCaptor.forClass(CourseSubscription.class);
+        verify(courseSubscriptionRepository).save(captor.capture());
+        assertThat(captor.getValue().getAmount()).isEqualByComparingTo("100000");
+        assertThat(Period.between(captor.getValue().getStartDate().toLocalDate(),
+                captor.getValue().getEndDate().toLocalDate()).toTotalMonths()).isEqualTo(2);
+        verify(notificationService).create(eq(student), anyString(), eq("/courses/1"));
+    }
+
+    @Test
+    void confirmOnline_existingPendingRequest_confirmsSameRowInsteadOfCreatingNew() {
+        CourseSubscription pending = CourseSubscription.builder().id(5L).user(student).course(course)
+                .amount(BigDecimal.ZERO).status(CourseSubscriptionStatus.PENDING).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSubscriptionRepository.findByUser_IdAndCourse_IdAndStatus(
+                1L, 1L, CourseSubscriptionStatus.PENDING)).thenReturn(Optional.of(pending));
+
+        CourseSubscriptionDto result =
+                courseSubscriptionService.confirmOnline(student, 1L, BigDecimal.valueOf(50_000), 1);
+
+        assertThat(result.id()).isEqualTo(5L);
+        assertThat(pending.getStatus()).isEqualTo(CourseSubscriptionStatus.CONFIRMED);
+        verify(courseSubscriptionRepository, times(1)).save(pending);
+    }
+
+    @Test
+    void confirmOnline_courseNotFound_throws() {
+        when(courseRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> courseSubscriptionService.confirmOnline(student, 1L, BigDecimal.TEN, 1))
+                .isInstanceOf(NoSuchElementException.class);
+    }
+
+    // ===== reverseOnline (chargeback/qaytarish) =====
+
+    @Test
+    void reverseOnline_confirmedSubscription_cancelsAndNotifiesUser() {
+        CourseSubscription confirmed = CourseSubscription.builder().id(88L).user(student).course(course)
+                .amount(BigDecimal.valueOf(100_000)).status(CourseSubscriptionStatus.CONFIRMED).build();
+        when(courseSubscriptionRepository.findById(88L)).thenReturn(Optional.of(confirmed));
+
+        courseSubscriptionService.reverseOnline(88L);
+
+        assertThat(confirmed.getStatus()).isEqualTo(CourseSubscriptionStatus.CANCELLED);
+        verify(courseSubscriptionRepository).save(confirmed);
+        verify(notificationService).create(eq(student), anyString(), eq("/courses/1"));
+    }
+
+    @Test
+    void reverseOnline_nullId_doesNothing() {
+        courseSubscriptionService.reverseOnline(null);
+
+        verify(courseSubscriptionRepository, never()).findById(any());
+        verify(courseSubscriptionRepository, never()).save(any());
+    }
+
+    @Test
+    void reverseOnline_alreadyCancelled_isNoOp() {
+        CourseSubscription cancelled = CourseSubscription.builder().id(88L).user(student).course(course)
+                .amount(BigDecimal.valueOf(100_000)).status(CourseSubscriptionStatus.CANCELLED).build();
+        when(courseSubscriptionRepository.findById(88L)).thenReturn(Optional.of(cancelled));
+
+        courseSubscriptionService.reverseOnline(88L);
+
+        verify(courseSubscriptionRepository, never()).save(any());
+        verify(notificationService, never()).create(any(), anyString(), anyString());
+    }
 }

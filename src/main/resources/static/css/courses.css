@@ -365,11 +365,28 @@ body {
     flex-wrap: wrap;
 }
 
+.subscribe-banner-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 #requestSubscriptionBtn {
     padding: 8px 16px;
     border-radius: 8px;
     border: none;
     background: #d97706;
+    color: white;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+#payWithClickBtn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    background: #16a34a;
     color: white;
     font-weight: 700;
     cursor: pointer;

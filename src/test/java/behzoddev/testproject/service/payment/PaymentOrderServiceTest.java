@@ -1,13 +1,18 @@
 package behzoddev.testproject.service.payment;
 
+import behzoddev.testproject.dao.CourseRepository;
+import behzoddev.testproject.dao.CourseSubscriptionRepository;
 import behzoddev.testproject.dao.PaymentOrderRepository;
 import behzoddev.testproject.dao.PaymentSettingsRepository;
+import behzoddev.testproject.dto.course.CourseSubscriptionDto;
 import behzoddev.testproject.dto.subscription.SubscriptionDto;
+import behzoddev.testproject.entity.Course;
 import behzoddev.testproject.entity.PaymentOrder;
 import behzoddev.testproject.entity.PaymentSettings;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.entity.enums.PaymentOrderStatus;
+import behzoddev.testproject.service.CourseSubscriptionService;
 import behzoddev.testproject.service.SubscriptionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -47,6 +53,12 @@ class PaymentOrderServiceTest {
     private PaymentSettingsRepository paymentSettingsRepository;
     @Mock
     private SubscriptionService subscriptionService;
+    @Mock
+    private CourseRepository courseRepository;
+    @Mock
+    private CourseSubscriptionRepository courseSubscriptionRepository;
+    @Mock
+    private CourseSubscriptionService courseSubscriptionService;
 
     @InjectMocks
     private PaymentOrderService paymentOrderService;
@@ -203,5 +215,103 @@ class PaymentOrderServiceTest {
         paymentOrderService.reversePaidOrder(order);
 
         verify(subscriptionService).reverseOnline(user, 77L);
+        verify(courseSubscriptionService, never()).reverseOnline(any());
+    }
+
+    // ===== createCourseOrder =====
+
+    private Course paidCourse() {
+        return Course.builder().id(5L).title("Kimyo").free(false).price(BigDecimal.valueOf(100_000)).build();
+    }
+
+    @Test
+    void createCourseOrder_success_computesAmountFromCoursePriceAndDuration() {
+        when(courseRepository.findById(5L)).thenReturn(Optional.of(paidCourse()));
+
+        PaymentOrder order = paymentOrderService.createCourseOrder(user, 5L, 2);
+
+        assertThat(order.getAmount()).isEqualByComparingTo("200000");
+        assertThat(order.getDurationMonths()).isEqualTo(2);
+        assertThat(order.getCourseId()).isEqualTo(5L);
+        assertThat(order.getStatus()).isEqualTo(PaymentOrderStatus.CREATED);
+    }
+
+    @Test
+    void createCourseOrder_nullDuration_defaultsToOneMonth() {
+        when(courseRepository.findById(5L)).thenReturn(Optional.of(paidCourse()));
+
+        PaymentOrder order = paymentOrderService.createCourseOrder(user, 5L, null);
+
+        assertThat(order.getDurationMonths()).isEqualTo(1);
+        assertThat(order.getAmount()).isEqualByComparingTo("100000");
+    }
+
+    @Test
+    void createCourseOrder_freeCourse_throws() {
+        Course free = Course.builder().id(6L).title("Bepul kurs").free(true).build();
+        when(courseRepository.findById(6L)).thenReturn(Optional.of(free));
+
+        assertThatThrownBy(() -> paymentOrderService.createCourseOrder(user, 6L, 1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("bepul");
+    }
+
+    @Test
+    void createCourseOrder_priceNotSet_throws() {
+        Course noPrice = Course.builder().id(7L).title("Narxsiz kurs").free(false).price(null).build();
+        when(courseRepository.findById(7L)).thenReturn(Optional.of(noPrice));
+
+        assertThatThrownBy(() -> paymentOrderService.createCourseOrder(user, 7L, 1))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("narxi hali belgilanmagan");
+    }
+
+    @Test
+    void createCourseOrder_alreadySubscribed_throws() {
+        when(courseRepository.findById(5L)).thenReturn(Optional.of(paidCourse()));
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+                eq(user.getId()), eq(5L), eq(behzoddev.testproject.entity.enums.CourseSubscriptionStatus.CONFIRMED), any()))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> paymentOrderService.createCourseOrder(user, 5L, 1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("allaqachon shu kursga obuna");
+    }
+
+    @Test
+    void createCourseOrder_amountBelowMinimum_throws() {
+        Course cheap = Course.builder().id(8L).title("Arzon kurs").free(false).price(BigDecimal.valueOf(500)).build();
+        when(courseRepository.findById(8L)).thenReturn(Optional.of(cheap));
+
+        assertThatThrownBy(() -> paymentOrderService.createCourseOrder(user, 8L, 1))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("minimal chegaradan");
+    }
+
+    // ===== markPaid / reversePaidOrder — kurs to'lovi (courseId belgilangan) =====
+
+    @Test
+    void markPaid_courseOrder_confirmsViaCourseSubscriptionServiceNotSiteWideSubscription() {
+        PaymentOrder order = PaymentOrder.builder().id(20L).user(user).amount(BigDecimal.valueOf(100_000))
+                .durationMonths(1).status(PaymentOrderStatus.CREATED).courseId(5L).build();
+        when(courseSubscriptionService.confirmOnline(user, 5L, order.getAmount(), 1))
+                .thenReturn(CourseSubscriptionDto.builder().id(88L).courseId(5L).status("CONFIRMED").build());
+
+        paymentOrderService.markPaid(order);
+
+        assertThat(order.getStatus()).isEqualTo(PaymentOrderStatus.PAID);
+        assertThat(order.getSubscriptionId()).isEqualTo(88L);
+        verify(subscriptionService, never()).confirmOnline(any(), any(), anyInt());
+    }
+
+    @Test
+    void reversePaidOrder_courseOrder_delegatesToCourseSubscriptionService() {
+        PaymentOrder order = PaymentOrder.builder().id(20L).user(user).amount(BigDecimal.valueOf(100_000))
+                .durationMonths(1).status(PaymentOrderStatus.PAID).subscriptionId(88L).courseId(5L).build();
+
+        paymentOrderService.reversePaidOrder(order);
+
+        verify(courseSubscriptionService).reverseOnline(88L);
+        verify(subscriptionService, never()).reverseOnline(any(), any());
     }
 }
