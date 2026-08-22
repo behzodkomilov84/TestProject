@@ -7,6 +7,8 @@ import behzoddev.testproject.dto.course.CourseSectionSummaryDto;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.CourseService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
@@ -15,6 +17,8 @@ import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -29,9 +33,13 @@ import java.util.regex.Pattern;
 // canManage kurslar to'liq ochiladi — CourseService.isSubscribed() shu
 // mantiqni allaqachon hisoblaydi (free kurs uchun har doim true), shuning
 // uchun bu servis saytdagi bilan bir xil ruxsat qoidalariga amal qiladi.
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TelegramCourseReaderService {
+
+    @Value("${app.upload.dir}")
+    private String uploadDir;
 
     private static final int SECTIONS_PER_PAGE = 8;
     // Kurs/mavzu tanlash tugmalari endi yonma-yon (avval har biri alohida
@@ -240,12 +248,42 @@ public class TelegramCourseReaderService {
         List<String> links = extractFileLinks(section.textContent());
         List<SendDocument> documents = new ArrayList<>();
         for (String link : links) {
-            SendDocument doc = new SendDocument();
-            doc.setChatId(user.getTelegramId().toString());
-            doc.setDocument(new InputFile(link));
-            documents.add(doc);
+            SendDocument doc = buildDocument(user, link);
+            if (doc != null) documents.add(doc);
         }
         return documents;
+    }
+
+    // Havoladan Telegram serverining o'zi yuklab olishiga ishonib
+    // bo'lmaydi — production'da "[400] Bad Request: failed to get HTTP
+    // URL content" xatosi bilan muvaffaqiyatsiz tugadi (Telegram fetcher
+    // ba'zan saytga yeta olmaydi/ SSL yoki User-Agent bilan bog'liq
+    // muammolar). Fayl saytning o'z /uploads/ papkasida (WebConfig —
+    // /uploads/** -> {app.upload.dir}/**) va bot xuddi shu serverda
+    // ishlaydi, shuning uchun faylni diskdan to'g'ridan-to'g'ri o'qib,
+    // multipart sifatida Telegram'ga yuklaymiz — tashqi HTTP so'rovga
+    // umuman hojat yo'q, bir yo'la ancha ishonchli.
+    private SendDocument buildDocument(User user, String link) {
+        int idx = link.indexOf("/uploads/");
+        if (idx < 0) {
+            log.warn("Bot: kurs faylining havolasi /uploads/ ichida emas, o'tkazib yuborildi: {}", link);
+            return null;
+        }
+
+        String relativePath = link.substring(idx + "/uploads/".length());
+        Path baseDir = Path.of(uploadDir).toAbsolutePath().normalize();
+        Path filePath = baseDir.resolve(relativePath).normalize();
+
+        // Path traversal'dan himoya — fayl haqiqatan ham upload papkasi ichida ekanligini tekshiramiz.
+        if (!filePath.startsWith(baseDir) || !Files.isRegularFile(filePath)) {
+            log.warn("Bot: kurs faylini diskdan topib bo'lmadi: {}", filePath);
+            return null;
+        }
+
+        SendDocument doc = new SendDocument();
+        doc.setChatId(user.getTelegramId().toString());
+        doc.setDocument(new InputFile(filePath.toFile(), filePath.getFileName().toString()));
+        return doc;
     }
 
     private List<String> extractFileLinks(String rawContent) {

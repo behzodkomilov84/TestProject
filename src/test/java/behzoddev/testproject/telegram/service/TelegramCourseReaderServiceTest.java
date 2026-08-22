@@ -10,14 +10,19 @@ import behzoddev.testproject.service.CourseService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +49,9 @@ class TelegramCourseReaderServiceTest {
     @InjectMocks
     private TelegramCourseReaderService courseReaderService;
 
+    @TempDir
+    private Path tempUploadDir;
+
     private User student() {
         Role role = Role.builder().id(1L).roleName("ROLE_USER").build();
         return User.builder().id(1L).username("student").telegramId(100L)
@@ -54,6 +62,20 @@ class TelegramCourseReaderServiceTest {
     void setUp() {
         org.mockito.Mockito.lenient().when(autoLoginService.buildLoginUrl(any(), any()))
                 .thenReturn("https://study-grow.uz/telegram-auto-login?token=stub");
+        // Bot faylni Telegram'ga havoladan emas, diskdan o'qib yuboradi
+        // (production'dagi "failed to get HTTP URL content" xatosining
+        // tuzatilishi) — shuning uchun testda ham haqiqiy faylga ehtiyoj bor.
+        ReflectionTestUtils.setField(courseReaderService, "uploadDir", tempUploadDir.toString());
+    }
+
+    private void createUploadedFile(String relativePath) {
+        try {
+            Path file = tempUploadDir.resolve(relativePath);
+            Files.createDirectories(file.getParent());
+            Files.writeString(file, "stub content");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     // ===== showCourseList =====
@@ -281,6 +303,9 @@ class TelegramCourseReaderServiceTest {
 
     @Test
     void documentsForSection_pdfAndDocxLinksInContent_sendsBothAsDocuments() {
+        createUploadedFile("courses/kimyo-qollanma-toliq.pdf");
+        createUploadedFile("courses/kimyo-qollanma-toliq.docx");
+
         User user = student();
         CourseSectionContentDto section = CourseSectionContentDto.builder()
                 .id(10L).courseId(5L).title("Kirish").orderIndex(1).type("TEXT")
@@ -293,8 +318,29 @@ class TelegramCourseReaderServiceTest {
         List<org.telegram.telegrambots.meta.api.methods.send.SendDocument> documents =
                 courseReaderService.documentsForSection(user, 5L, 10L);
 
+        // Fayl endi havoladan (Telegram serveri o'zi yuklab olishiga
+        // ishonib) emas, diskdan to'g'ridan-to'g'ri o'qib yuboriladi.
         assertThat(documents).hasSize(2);
         assertThat(documents.get(0).getChatId()).isEqualTo("100");
+        assertThat(documents.get(0).getDocument().isNew()).isTrue();
+    }
+
+    @Test
+    void documentsForSection_fileMissingOnDisk_skipsItInsteadOfFailing() {
+        // Fayl diskda yo'q — production'dagi "failed to get HTTP URL
+        // content" kabi Telegram xatosini oldindan tutib, shu havolani
+        // shunchaki o'tkazib yuborishi kerak (butun so'rovni buzmasdan).
+        User user = student();
+        CourseSectionContentDto section = CourseSectionContentDto.builder()
+                .id(10L).courseId(5L).title("Kirish").orderIndex(1).type("TEXT")
+                .textContent("PDF: https://study-grow.uz/uploads/courses/yoq-fayl.pdf")
+                .textContentFormat("PLAIN").completed(true).build();
+        when(courseService.getSectionContent(5L, 10L, user)).thenReturn(section);
+
+        List<org.telegram.telegrambots.meta.api.methods.send.SendDocument> documents =
+                courseReaderService.documentsForSection(user, 5L, 10L);
+
+        assertThat(documents).isEmpty();
     }
 
     @Test
