@@ -142,6 +142,100 @@ function richHiliteColor(editorId, color) {
     }
 }
 
+// ================= Rang palette (Word'dagi kabi tayyor ranglar) =================
+// <input type="color"> har safar tasodifiy (oxirgi tanlangan bo'lmagan)
+// holatdan ochilib, bir xil rangni qayta-qayta tanlashni noqulay qilardi
+// — endi Word/Google Docs'dagi kabi tayyor ranglar to'plami (grid)
+// chiqadi, tagida esa istalgan boshqa rang uchun native tanlovchi ham bor.
+const FORE_COLOR_PRESETS = ['#000000', '#FFFFFF', '#7F7F7F', '#C00000', '#FF0000', '#FFC000',
+    '#FFFF00', '#92D050', '#00B050', '#00B0F0', '#0070C0', '#7030A0'];
+const HILITE_COLOR_PRESETS = ['#FFFF00', '#00FF00', '#00FFFF', '#FF00FF', '#0000FF', '#FF0000',
+    '#C00000', '#FFC000', '#92D050', '#ADD8E6', '#7030A0', '#FFFFFF'];
+
+let colorPaletteEl = null;
+let colorPaletteState = null; // { editorId, mode, triggerBtn }
+
+function toggleColorPalette(triggerBtn, editorId, mode) {
+    if (!colorPaletteEl) {
+        colorPaletteEl = document.createElement('div');
+        colorPaletteEl.className = 'rich-color-palette';
+        colorPaletteEl.style.display = 'none';
+        document.body.appendChild(colorPaletteEl);
+    }
+
+    const alreadyOpenForThis = colorPaletteEl.style.display === 'block'
+        && colorPaletteState && colorPaletteState.triggerBtn === triggerBtn;
+    if (alreadyOpenForThis) {
+        closeColorPalette();
+        return;
+    }
+
+    // Palette hali biror boshqa elementga fokus o'tkazmasdan turib,
+    // joriy tanlangan matnni saqlab qo'yamiz (aks holda rang tanlanganda
+    // qo'llash uchun hech narsa qolmaydi — xuddi native <input type="color">
+    // bilan bo'lgani kabi).
+    saveRichSelection(editorId);
+    colorPaletteState = { editorId, mode, triggerBtn };
+
+    const presets = mode === 'fore' ? FORE_COLOR_PRESETS : HILITE_COLOR_PRESETS;
+    colorPaletteEl.innerHTML = '';
+
+    const grid = document.createElement('div');
+    grid.className = 'rich-color-grid';
+    presets.forEach(color => {
+        const sw = document.createElement('button');
+        sw.type = 'button';
+        sw.className = 'rich-color-swatch-btn';
+        sw.style.background = color;
+        sw.title = color;
+        sw.onclick = () => applyColorFromPalette(color);
+        grid.appendChild(sw);
+    });
+    colorPaletteEl.appendChild(grid);
+
+    const customLabel = document.createElement('label');
+    customLabel.className = 'rich-color-custom-label';
+    customLabel.appendChild(document.createTextNode('🎨 Boshqa rang...'));
+    const customInput = document.createElement('input');
+    customInput.type = 'color';
+    customInput.onmousedown = () => saveRichSelection(editorId);
+    customInput.onchange = (e) => applyColorFromPalette(e.target.value);
+    customLabel.appendChild(customInput);
+    colorPaletteEl.appendChild(customLabel);
+
+    const rect = triggerBtn.getBoundingClientRect();
+    colorPaletteEl.style.top = (rect.bottom + 4) + 'px';
+    colorPaletteEl.style.left = rect.left + 'px';
+    colorPaletteEl.style.display = 'block';
+}
+
+function applyColorFromPalette(color) {
+    if (!colorPaletteState) return;
+    const { editorId, mode, triggerBtn } = colorPaletteState;
+
+    if (mode === 'fore') {
+        richForeColor(editorId, color);
+    } else {
+        richHiliteColor(editorId, color);
+    }
+
+    const preview = triggerBtn.querySelector('.rich-color-preview');
+    if (preview) preview.style.background = color;
+    closeColorPalette();
+}
+
+function closeColorPalette() {
+    if (colorPaletteEl) colorPaletteEl.style.display = 'none';
+    colorPaletteState = null;
+}
+
+document.addEventListener('click', (e) => {
+    if (!colorPaletteEl || colorPaletteEl.style.display === 'none') return;
+    if (colorPaletteEl.contains(e.target)) return;
+    if (colorPaletteState && colorPaletteState.triggerBtn.contains(e.target)) return;
+    closeColorPalette();
+});
+
 function isBlockElement(el) {
     return ['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'BLOCKQUOTE'].includes(el.tagName);
 }

@@ -38,7 +38,16 @@
                 <a href="#" onclick="setSiteLanguage('tr'); return false;">🇹🇷 Türkçe</a>
             </div>
         </div>
-        <div id="google_translate_element" style="display:none;"></div>
+        <!-- MUHIM: display:none ISHLATILMAYDI — Google Translate skripti
+             o'zining ichki iframe/widget'ini shu div render qilinganda
+             (haqiqiy o'lchamga ega bo'lganda) to'g'ri ishga tushiradi;
+             display:none bilan butunlay yashirilsa, skript to'liq
+             ishga tushmasdan, cookie orqali berilgan tarjima buyrug'i
+             (googtrans) e'tiborga olinmay qolishi mumkin edi — aynan
+             shu sabab ruscha joylashtirilgan matn tarjima qilinmasdi.
+             Shuning uchun ekrandan tashqariga chiqarib (haqiqiy
+             o'lchamlar bilan) vizual jihatdan yashiriladi. -->
+        <div id="google_translate_element" style="position:absolute; top:-1000px; left:-1000px; width:1px; height:1px; overflow:hidden;"></div>
         <script>
             function googleTranslateElementInit() {
                 new google.translate.TranslateElement({

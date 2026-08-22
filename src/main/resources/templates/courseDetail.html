@@ -107,8 +107,8 @@
                         <option value="32">32</option>
                     </select>
                     <span class="rich-toolbar-sep"></span>
-                    <input type="color" class="rich-toolbar-color" title="🎨 Harf rangi" value="#000000" onmousedown="saveRichSelection('newSectionTextEditor')" onchange="richForeColor('newSectionTextEditor', this.value)">
-                    <input type="color" class="rich-toolbar-color" title="🖊️ Fon (bo'yash) rangi" value="#fff59d" onmousedown="saveRichSelection('newSectionTextEditor')" onchange="richHiliteColor('newSectionTextEditor', this.value)">
+                    <button type="button" class="rich-color-trigger" title="🎨 Harf rangi" onclick="toggleColorPalette(this, 'newSectionTextEditor', 'fore')"><span class="rich-color-preview" style="background:#000000"></span></button>
+                    <button type="button" class="rich-color-trigger" title="🖊️ Fon (bo'yash) rangi" onclick="toggleColorPalette(this, 'newSectionTextEditor', 'hilite')"><span class="rich-color-preview" style="background:#fff59d"></span></button>
                     <span class="rich-toolbar-sep"></span>
                     <button type="button" onclick="richExec('newSectionTextEditor','justifyLeft')" title="Chapga tekislash"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="2"/><rect x="0" y="5" width="10" height="2"/><rect x="0" y="9" width="16" height="2"/><rect x="0" y="13" width="10" height="2"/></svg></button>
                     <button type="button" onclick="richExec('newSectionTextEditor','justifyCenter')" title="Markazga tekislash"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="2"/><rect x="3" y="5" width="10" height="2"/><rect x="0" y="9" width="16" height="2"/><rect x="3" y="13" width="10" height="2"/></svg></button>
@@ -209,8 +209,8 @@
                         <option value="32">32</option>
                     </select>
                     <span class="rich-toolbar-sep"></span>
-                    <input type="color" class="rich-toolbar-color" title="🎨 Harf rangi" value="#000000" onmousedown="saveRichSelection('editSectionTextEditor')" onchange="richForeColor('editSectionTextEditor', this.value)">
-                    <input type="color" class="rich-toolbar-color" title="🖊️ Fon (bo'yash) rangi" value="#fff59d" onmousedown="saveRichSelection('editSectionTextEditor')" onchange="richHiliteColor('editSectionTextEditor', this.value)">
+                    <button type="button" class="rich-color-trigger" title="🎨 Harf rangi" onclick="toggleColorPalette(this, 'editSectionTextEditor', 'fore')"><span class="rich-color-preview" style="background:#000000"></span></button>
+                    <button type="button" class="rich-color-trigger" title="🖊️ Fon (bo'yash) rangi" onclick="toggleColorPalette(this, 'editSectionTextEditor', 'hilite')"><span class="rich-color-preview" style="background:#fff59d"></span></button>
                     <span class="rich-toolbar-sep"></span>
                     <button type="button" onclick="richExec('editSectionTextEditor','justifyLeft')" title="Chapga tekislash"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="2"/><rect x="0" y="5" width="10" height="2"/><rect x="0" y="9" width="16" height="2"/><rect x="0" y="13" width="10" height="2"/></svg></button>
                     <button type="button" onclick="richExec('editSectionTextEditor','justifyCenter')" title="Markazga tekislash"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="2"/><rect x="3" y="5" width="10" height="2"/><rect x="0" y="9" width="16" height="2"/><rect x="3" y="13" width="10" height="2"/></svg></button>
