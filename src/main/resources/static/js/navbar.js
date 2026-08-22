@@ -41,21 +41,28 @@ document.querySelectorAll(".dropbtn").forEach(btn => {
     });
 });
 
-/* ===== Til tanlash (Google Translate, "googtrans" cookie orqali) =====
+/* ===== Til tanlash (Google Translate) =====
    Google'ning o'zi chizadigan (katta) select o'rniga, navbar'dagi kichik
-   🌐 dropdown orqali "googtrans" cookie'sini to'g'ridan-to'g'ri o'zimiz
-   o'rnatamiz va sahifani qayta yuklaymiz — Google Translate skripti shu
-   cookie'ni o'qib, sahifani avtomatik tarjima qiladi.
+   🌐 dropdown ishlatiladi, lekin OSTIDA baribir Google'ning haqiqiy
+   tarjima motori (<select class="goog-te-combo">, googleTranslateElementInit
+   — navbar.html) ishlaydi.
 
-   MUHIM: manba tili har doim "auto" qilib beriladi ("uz" emas) — kurs
-   matnlari ko'pincha boshqa tildan (masalan ruscha PDF/Word'dan) copy-
-   paste qilib joylashtiriladi, shuning uchun sahifada aralash til
-   bo'lishi mumkin. Ilgari "O'zbekcha" tanlanganda cookie butunlay
-   tozalanardi ("sahifa allaqachon o'zbekcha" deb hisoblab) — bu esa
-   joylashtirilgan ruscha matnni umuman tarjima qilmay, o'zgarishsiz
-   qoldirardi. "auto" bilan Google har bir matn bo'lagining haqiqiy
-   tilini alohida aniqlab, tanlangan tilga tarjima qiladi (allaqachon
-   o'zbekcha bo'lgan qismlarga tegmaydi). */
+   MUHIM: faqat "googtrans" cookie o'rnatib sahifani qayta yuklash
+   YETARLI EMAS EDI — Google'ning widget'i har doim ham cookie'ni o'qib
+   avtomatik tarjima qilmaydi (ayniqsa birinchi marta). Eng ishonchli
+   usul — widget skripti allaqachon yuklangan bo'lsa, uning o'z ichki
+   <select class="goog-te-combo"> elementini TO'G'RIDAN-TO'G'RI
+   boshqarib (qiymatini o'zgartirib, "change" hodisasini yuborib),
+   Google'ning tarjima funksiyasini o'zini chaqirtirish — bu darhol
+   ishlaydi, sahifani qayta yuklash ham shart emas. Skript hali
+   ulgurmagan bo'lsa (juda tez bosilsa) — cookie + reload'ga tayaniladi
+   (skript yuklangach cookie'ni o'qib, avtomatik tarjima qiladi).
+
+   Manba tili har doim "auto" qilib beriladi ("uz" emas) — kurs matnlari
+   ko'pincha boshqa tildan (masalan ruscha PDF/Word'dan) copy-paste
+   qilib joylashtiriladi, shuning uchun sahifada aralash til bo'lishi
+   mumkin; "auto" bilan Google har bir matn bo'lagining haqiqiy tilini
+   alohida aniqlab, tanlangan tilga tarjima qiladi. */
 function setSiteLanguage(lang) {
     const host = location.hostname;
 
@@ -65,9 +72,15 @@ function setSiteLanguage(lang) {
     }
 
     clearCookie("googtrans");
-
     document.cookie = "googtrans=/auto/" + lang + "; path=/";
     document.cookie = "googtrans=/auto/" + lang + "; domain=." + host + "; path=/";
+
+    const combo = document.querySelector('#google_translate_element select.goog-te-combo');
+    if (combo) {
+        combo.value = lang;
+        combo.dispatchEvent(new Event('change'));
+        return;
+    }
 
     location.reload();
 }

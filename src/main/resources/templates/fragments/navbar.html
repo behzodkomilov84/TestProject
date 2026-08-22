@@ -49,11 +49,19 @@
              o'lchamlar bilan) vizual jihatdan yashiriladi. -->
         <div id="google_translate_element" style="position:absolute; top:-1000px; left:-1000px; width:1px; height:1px; overflow:hidden;"></div>
         <script>
+            // MUHIM: "layout: ...SIMPLE" ISHLATILMAYDI — u faqat bosilganda
+            // ochiladigan popup-havola (<a>Выбрать язык</a>) yaratadi, ichida
+            // haqiqiy <select class="goog-te-combo"> bo'lmaydi (u faqat popup
+            // ochilganda dinamik yaratiladi). Aynan shu sabab "googtrans"
+            // cookie'si to'g'ri o'rnatilgan bo'lsa ham, avtomatik tarjima
+            // ishga tushmasdi. Standart (layout ko'rsatilmagan) andoza esa
+            // to'g'ridan-to'g'ri <select class="goog-te-combo"> yaratadi —
+            // shu orqali setSiteLanguage() (navbar.js) uni to'g'ridan-to'g'ri
+            // boshqarib, sahifani qayta yuklamasdan tarjima qila oladi.
             function googleTranslateElementInit() {
                 new google.translate.TranslateElement({
                     pageLanguage: 'uz',
                     includedLanguages: 'uz,ru,en,tr',
-                    layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
                     autoDisplay: false
                 }, 'google_translate_element');
             }
