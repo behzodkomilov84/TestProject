@@ -284,6 +284,18 @@ public class TelegramBot extends TelegramLongPollingBot {
                     return;
                 }
 
+                // ===== O'quvchi: Guruh takliflari (qabul/rad etish) =====
+                if (data.startsWith("group_invite_accept_")) {
+                    Long inviteId = Long.parseLong(data.replace("group_invite_accept_", ""));
+                    execute(telegramUserService.respondToGroupInvite(chatId, inviteId, true));
+                    return;
+                }
+                if (data.startsWith("group_invite_reject_")) {
+                    Long inviteId = Long.parseLong(data.replace("group_invite_reject_", ""));
+                    execute(telegramUserService.respondToGroupInvite(chatId, inviteId, false));
+                    return;
+                }
+
                 // ===== ADMIN: Gruppalar =====
                 if (data.startsWith("tg_group_")) {
                     Long groupId = Long.parseLong(data.replace("tg_group_", ""));
@@ -676,7 +688,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private boolean isMainMenuButton(String text) {
         return switch (text) {
             case BTN_PROFILE, BTN_NOTIFICATIONS, BTN_SUBSCRIPTION, BTN_COURSES, BTN_HELP,
-                    BTN_MY_ASSIGNMENTS, BTN_MY_RESULTS, BTN_PRACTICE_TEST, BTN_MY_GROUPS, BTN_NEW_ASSIGNMENT,
+                    BTN_MY_ASSIGNMENTS, BTN_MY_RESULTS, BTN_PRACTICE_TEST, BTN_MY_GROUPS, BTN_MY_INVITES, BTN_NEW_ASSIGNMENT,
                     BTN_STUDENT_RESULTS, BTN_QUESTIONS, BTN_ASSIGNMENT_CHATS,
                     BTN_USERS, BTN_PAYMENTS, BTN_SETTINGS, BTN_BROADCAST -> true;
             default -> false;
@@ -693,6 +705,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             case BTN_MY_ASSIGNMENTS -> telegramUserService.sendMyAssignments(user.getTelegramId());
             case BTN_MY_RESULTS -> telegramUserService.sendMyResults(user.getTelegramId());
             case BTN_PRACTICE_TEST -> practiceTestService.startFlow(user.getTelegramId());
+            case BTN_MY_INVITES -> telegramUserService.sendMyGroupInvites(user.getTelegramId());
             case BTN_MY_GROUPS -> teacherService.listGroups(user);
             case BTN_NEW_ASSIGNMENT -> teacherService.startAssignFlow(user);
             case BTN_STUDENT_RESULTS -> teacherService.listResults(user);

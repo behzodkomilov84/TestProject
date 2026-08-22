@@ -5,12 +5,14 @@ import behzoddev.testproject.dao.AssignmentRepository;
 import behzoddev.testproject.dao.TelegramLinkCodeRepository;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.dto.PageResponseDto;
+import behzoddev.testproject.dto.student.GroupInviteDto;
 import behzoddev.testproject.dto.testsession.TestSessionHistoryDto;
 import behzoddev.testproject.entity.Assignment;
 import behzoddev.testproject.entity.AssignmentAttempt;
 import behzoddev.testproject.entity.QuestionSet;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.AssignmentAttemptService;
+import behzoddev.testproject.service.StudentService;
 import behzoddev.testproject.service.SubscriptionService;
 import behzoddev.testproject.service.TestSessionService;
 import org.junit.jupiter.api.Test;
@@ -19,6 +21,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,6 +30,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -55,6 +59,8 @@ class TelegramUserServiceTest {
     private SubscriptionService subscriptionService;
     @Mock
     private TestSessionService testSessionService;
+    @Mock
+    private StudentService studentService;
 
     @InjectMocks
     private TelegramUserService telegramUserService;
@@ -123,5 +129,59 @@ class TelegramUserServiceTest {
         SendMessage msg = telegramUserService.sendMyResults(CHAT_ID);
 
         assertThat(msg.getText()).contains("hali test topshirmagansiz");
+    }
+
+    // ===== sendMyGroupInvites / respondToGroupInvite =====
+
+    @Test
+    void sendMyGroupInvites_noInvites_saysNone() {
+        User user = User.builder().id(1L).username("student").telegramId(CHAT_ID).build();
+        when(userRepository.findByTelegramId(CHAT_ID)).thenReturn(Optional.of(user));
+        when(studentService.getInvites(user)).thenReturn(List.of());
+
+        SendMessage msg = telegramUserService.sendMyGroupInvites(CHAT_ID);
+
+        assertThat(msg.getText()).contains("hozircha guruh taklifi yo'q");
+    }
+
+    @Test
+    void sendMyGroupInvites_pendingInvite_showsAcceptRejectButtons() {
+        User user = User.builder().id(1L).username("student").telegramId(CHAT_ID).build();
+        when(userRepository.findByTelegramId(CHAT_ID)).thenReturn(Optional.of(user));
+        when(studentService.getInvites(user)).thenReturn(
+                List.of(new GroupInviteDto(9L, "Guruh A", "PENDING")));
+
+        SendMessage msg = telegramUserService.sendMyGroupInvites(CHAT_ID);
+
+        assertThat(msg.getText()).contains("Guruh A");
+        assertThat(msg.getReplyMarkup()).isNotNull();
+        InlineKeyboardMarkup markup = (InlineKeyboardMarkup) msg.getReplyMarkup();
+        assertThat(markup.getKeyboard().get(0)).hasSize(2);
+        assertThat(markup.getKeyboard().get(0).get(0).getCallbackData()).isEqualTo("group_invite_accept_9");
+        assertThat(markup.getKeyboard().get(0).get(1).getCallbackData()).isEqualTo("group_invite_reject_9");
+    }
+
+    @Test
+    void respondToGroupInvite_accept_delegatesAndShowsUpdatedList() {
+        User user = User.builder().id(1L).username("student").telegramId(CHAT_ID).build();
+        when(userRepository.findByTelegramId(CHAT_ID)).thenReturn(Optional.of(user));
+        when(studentService.getInvites(user)).thenReturn(List.of());
+
+        SendMessage msg = telegramUserService.respondToGroupInvite(CHAT_ID, 9L, true);
+
+        verify(studentService).acceptInvite(9L, user);
+        assertThat(msg.getText()).contains("qabul qilindi");
+    }
+
+    @Test
+    void respondToGroupInvite_serviceThrows_returnsErrorMessage() {
+        User user = User.builder().id(1L).username("student").telegramId(CHAT_ID).build();
+        when(userRepository.findByTelegramId(CHAT_ID)).thenReturn(Optional.of(user));
+        org.mockito.Mockito.doThrow(new RuntimeException("Bu taklif allaqachon rad etilgan."))
+                .when(studentService).rejectInvite(9L, user);
+
+        SendMessage msg = telegramUserService.respondToGroupInvite(CHAT_ID, 9L, false);
+
+        assertThat(msg.getText()).contains("allaqachon rad etilgan");
     }
 }

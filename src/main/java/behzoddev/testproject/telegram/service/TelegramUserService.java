@@ -4,6 +4,7 @@ import behzoddev.testproject.dao.AssignmentAttemptRepository;
 import behzoddev.testproject.dao.AssignmentRepository;
 import behzoddev.testproject.dao.TelegramLinkCodeRepository;
 import behzoddev.testproject.dao.UserRepository;
+import behzoddev.testproject.dto.student.GroupInviteDto;
 import behzoddev.testproject.dto.student.ResponseAssignmentsAndTaskStatusDto;
 import behzoddev.testproject.dto.testsession.TestSessionHistoryDto;
 import behzoddev.testproject.entity.Assignment;
@@ -12,6 +13,7 @@ import behzoddev.testproject.entity.TelegramLinkCode;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.entity.enums.TaskStatus;
 import behzoddev.testproject.service.AssignmentAttemptService;
+import behzoddev.testproject.service.StudentService;
 import behzoddev.testproject.service.SubscriptionService;
 import behzoddev.testproject.service.TestSessionService;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +46,7 @@ public class TelegramUserService {
     private final AssignmentRepository assignmentRepository;
     private final SubscriptionService subscriptionService;
     private final TestSessionService testSessionService;
+    private final StudentService studentService;
     public static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
@@ -326,5 +329,97 @@ public class TelegramUserService {
         msg.setReplyMarkup(markup);
 
         return msg;
+    }
+
+    // ================= Guruh takliflari (o'quvchi) =================
+    // O'qituvchi/ADMIN o'quvchini guruhga taklif qilganda (saytda yoki
+    // botda "tg_invite_" orqali), o'quvchi buni ilgari faqat saytdagi
+    // "Mening topshiriqlarim" bo'limida ko'ra olardi — botda umuman
+    // ko'rinmasdi. Endi bot menyusida alohida tugma bilan ko'rsatiladi.
+    public SendMessage sendMyGroupInvites(Long chatId) {
+        SendMessage msg = new SendMessage();
+        msg.setChatId(chatId.toString());
+
+        User pupil = userRepository.findByTelegramId(chatId)
+                .orElseThrow(() -> new RuntimeException("Foydalanuvchi topilmadi"));
+
+        List<GroupInviteDto> invites = studentService.getInvites(pupil);
+
+        List<GroupInviteDto> pending = invites.stream()
+                .filter(i -> "PENDING".equals(i.status()))
+                .toList();
+        List<GroupInviteDto> accepted = invites.stream()
+                .filter(i -> "ACCEPTED".equals(i.status()))
+                .toList();
+
+        if (invites.isEmpty()) {
+            msg.setText("📭 Sizga hozircha guruh taklifi yo'q.");
+            return msg;
+        }
+
+        StringBuilder sb = new StringBuilder("👥 <b>Guruh takliflari</b>\n\n");
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+
+        if (!pending.isEmpty()) {
+            sb.append("📨 Yangi takliflar — quyidagi tugmalar orqali javob bering:\n\n");
+            for (GroupInviteDto inv : pending) {
+                sb.append("• ").append(inv.groupName()).append("\n");
+
+                InlineKeyboardButton acceptBtn = new InlineKeyboardButton();
+                acceptBtn.setText("✅ " + inv.groupName());
+                acceptBtn.setCallbackData("group_invite_accept_" + inv.id());
+
+                InlineKeyboardButton rejectBtn = new InlineKeyboardButton();
+                rejectBtn.setText("❌ " + inv.groupName());
+                rejectBtn.setCallbackData("group_invite_reject_" + inv.id());
+
+                rows.add(List.of(acceptBtn, rejectBtn));
+            }
+            sb.append("\n");
+        }
+
+        if (!accepted.isEmpty()) {
+            sb.append("✅ A'zo bo'lgan guruhlaringiz:\n");
+            for (GroupInviteDto inv : accepted) {
+                sb.append("• ").append(inv.groupName()).append("\n");
+            }
+        }
+
+        msg.setText(sb.toString());
+        msg.setParseMode("HTML");
+
+        if (!rows.isEmpty()) {
+            InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+            markup.setKeyboard(rows);
+            msg.setReplyMarkup(markup);
+        }
+
+        return msg;
+    }
+
+    // "✅ Qabul qilish" / "❌ Rad etish" tugmasi bosilganda — taklifga javob
+    // beriladi, so'ng ro'yxat yangilangan holda qayta ko'rsatiladi (xuddi
+    // qabul qilingan/rad etilgan taklif ro'yxatdan chiqib ketgandek tuyuladi).
+    public SendMessage respondToGroupInvite(Long chatId, Long inviteId, boolean accept) {
+        User pupil = userRepository.findByTelegramId(chatId)
+                .orElseThrow(() -> new RuntimeException("Foydalanuvchi topilmadi"));
+
+        try {
+            if (accept) {
+                studentService.acceptInvite(inviteId, pupil);
+            } else {
+                studentService.rejectInvite(inviteId, pupil);
+            }
+        } catch (RuntimeException e) {
+            SendMessage err = new SendMessage();
+            err.setChatId(chatId.toString());
+            err.setText("❌ " + e.getMessage());
+            return err;
+        }
+
+        SendMessage result = sendMyGroupInvites(chatId);
+        String prefix = accept ? "✅ Taklif qabul qilindi!\n\n" : "❌ Taklif rad etildi.\n\n";
+        result.setText(prefix + result.getText());
+        return result;
     }
 }

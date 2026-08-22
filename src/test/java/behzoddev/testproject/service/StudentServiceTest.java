@@ -125,13 +125,32 @@ class StudentServiceTest {
     // ===== rejectInvite =====
 
     @Test
-    void rejectInvite_pendingInvite_rejectsAndRemovesMembership() {
+    void rejectInvite_pendingInvite_rejectsWithoutTouchingMembership() {
+        // Hali qabul qilinmagan (PENDING) taklifni rad etishda GroupMember
+        // yozuvi umuman mavjud emas — o'chirishga urinmasligi va shu sabab
+        // (ilgari mavjud bo'lgan) "gruppada yo'q" xatosini bermasligi kerak.
         User pupil = User.builder().id(1L).username("pupil").build();
         TeacherGroup group = TeacherGroup.builder().id(1L).name("Guruh A").build();
         GroupInvite invite = GroupInvite.builder().id(9L).group(group).pupil(pupil).status(InviteStatus.PENDING).build();
 
         when(groupInviteRepository.findById(9L)).thenReturn(Optional.of(invite));
-        when(groupMemberRepository.existsByGroupIdAndPupil(1L, pupil)).thenReturn(true);
+
+        studentService.rejectInvite(9L, pupil);
+
+        assertThat(invite.getStatus()).isEqualTo(InviteStatus.REJECTED);
+        verify(groupMemberRepository, never()).existsByGroupIdAndPupil(any(), any());
+        verify(groupMemberRepository, never()).deleteByGroupIdAndPupil(any(), any());
+    }
+
+    @Test
+    void rejectInvite_acceptedInvite_rejectsAndRemovesMembership() {
+        // Avval ACCEPTED bo'lgan taklifni rad etish — bu "guruhdan chiqish"
+        // ma'nosida, shuning uchun mavjud GroupMember yozuvi o'chirilishi kerak.
+        User pupil = User.builder().id(1L).username("pupil").build();
+        TeacherGroup group = TeacherGroup.builder().id(1L).name("Guruh A").build();
+        GroupInvite invite = GroupInvite.builder().id(9L).group(group).pupil(pupil).status(InviteStatus.ACCEPTED).build();
+
+        when(groupInviteRepository.findById(9L)).thenReturn(Optional.of(invite));
 
         studentService.rejectInvite(9L, pupil);
 
@@ -150,22 +169,6 @@ class StudentServiceTest {
         assertThatThrownBy(() -> studentService.rejectInvite(9L, pupil))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("allaqachon rad etilgan");
-    }
-
-    @Test
-    void rejectInvite_notAMember_throwsAndDoesNotDelete() {
-        User pupil = User.builder().id(1L).username("pupil").build();
-        TeacherGroup group = TeacherGroup.builder().id(1L).name("Guruh A").build();
-        GroupInvite invite = GroupInvite.builder().id(9L).group(group).pupil(pupil).status(InviteStatus.PENDING).build();
-
-        when(groupInviteRepository.findById(9L)).thenReturn(Optional.of(invite));
-        when(groupMemberRepository.existsByGroupIdAndPupil(1L, pupil)).thenReturn(false);
-
-        assertThatThrownBy(() -> studentService.rejectInvite(9L, pupil))
-                .isInstanceOf(RuntimeException.class)
-                .hasMessageContaining("gruppada yo'q");
-
-        verify(groupMemberRepository, never()).deleteByGroupIdAndPupil(any(), any());
     }
 
     @Test

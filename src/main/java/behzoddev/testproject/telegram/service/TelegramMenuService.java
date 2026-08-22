@@ -45,6 +45,7 @@ public class TelegramMenuService {
     public static final String BTN_MY_RESULTS = "📊 Natijalarim";
     public static final String BTN_PRACTICE_TEST = "🎯 Mustaqil test";
     public static final String BTN_MY_GROUPS = "👥 Gruppalarim";
+    public static final String BTN_MY_INVITES = "📨 Guruh takliflari";
     public static final String BTN_NEW_ASSIGNMENT = "📝 Topshiriq berish";
     public static final String BTN_STUDENT_RESULTS = "📈 O'quvchilar natijalari";
     public static final String BTN_QUESTIONS = "🗂 Savollar boshqaruvi";
@@ -72,7 +73,7 @@ public class TelegramMenuService {
 
         if (isStudent) {
             rows.add(row(BTN_MY_ASSIGNMENTS, BTN_MY_RESULTS));
-            rows.add(row(BTN_PRACTICE_TEST));
+            rows.add(row(BTN_PRACTICE_TEST, BTN_MY_INVITES));
         }
 
         if (isAdmin || isOwner) {
@@ -147,6 +148,7 @@ public class TelegramMenuService {
             sb.append("📚 Mening topshiriqlarim — sizga berilgan testlar.\n");
             sb.append("📊 Natijalarim — o'tgan testlaringiz natijalari.\n");
             sb.append("🎯 Mustaqil test — fan tanlab, tasodifiy savollar bilan mashq.\n");
+            sb.append("📨 Guruh takliflari — sizga yuborilgan guruh takliflarini qabul/rad etish.\n");
             sb.append("💳 Obunam — ADMIN huquqini onlayn sotib olish.\n");
         }
 

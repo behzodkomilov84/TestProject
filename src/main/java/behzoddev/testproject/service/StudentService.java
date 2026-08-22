@@ -85,16 +85,21 @@ public class StudentService {
         if (invite.getStatus().equals(InviteStatus.REJECTED)) {
             throw new RuntimeException("Bu taklif allaqachon rad etilgan.");
         }
+
+        // Hali PENDING (hech qachon qabul qilinmagan) taklifni rad etishda
+        // a'zolik umuman mavjud emas — faqat oldin ACCEPTED bo'lgan (ya'ni
+        // o'quvchi guruhga a'zo bo'lib, keyin undan chiqmoqchi bo'lgan)
+        // holatda GroupMember yozuvi o'chiriladi. Avval bu tekshiruv
+        // PENDING taklif uchun ham ishlatilib, "Bu o'quvchi gruppada yo'q"
+        // xatosini qaytarardi — taklif ACCEPTED bo'lganidan keyin ham.
+        boolean wasAccepted = invite.getStatus().equals(InviteStatus.ACCEPTED);
+
         invite.setStatus(InviteStatus.REJECTED);
         groupInviteRepository.save(invite);
 
-        //Gruppa a'zoligidan ham chiqarvorish kerak.
-        if (!groupMemberRepository.existsByGroupIdAndPupil(invite.getGroup().getId(), pupil)) {
-            throw new RuntimeException("Bu o'quvchi gruppada yo'q");
+        if (wasAccepted) {
+            groupMemberRepository.deleteByGroupIdAndPupil(invite.getGroup().getId(), pupil);
         }
-
-        groupMemberRepository
-                .deleteByGroupIdAndPupil(invite.getGroup().getId(), pupil);
     }
 
     @Transactional(readOnly = true)
