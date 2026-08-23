@@ -42,7 +42,7 @@ function loadSection() {
     fetch(`/api/courses/${COURSE_ID}/sections/${SECTION_ID}`)
         .then(r => {
             if (!r.ok) {
-                return r.json().then(data => { throw new Error(data.error || "Bo'lim topilmadi yoki hali ochilmagan"); });
+                return r.json().then(data => { throw new Error(data.error || "Mavzu topilmadi yoki hali ochilmagan"); });
             }
             return r.json();
         })

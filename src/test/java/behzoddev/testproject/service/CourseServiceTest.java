@@ -1,5 +1,6 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.CourseChapterRepository;
 import behzoddev.testproject.dao.CourseRepository;
 import behzoddev.testproject.dao.CourseSectionProgressRepository;
 import behzoddev.testproject.dao.CourseSectionRepository;
@@ -50,6 +51,8 @@ class CourseServiceTest {
     private CourseRepository courseRepository;
     @Mock
     private CourseSectionRepository courseSectionRepository;
+    @Mock
+    private CourseChapterRepository courseChapterRepository;
     @Mock
     private CourseSubscriptionRepository courseSubscriptionRepository;
     @Mock
@@ -245,11 +248,11 @@ class CourseServiceTest {
         Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
 
-        CourseSectionSaveDto dto = new CourseSectionSaveDto(" ", "TEXT", "matn", null, null, null, null, null, null);
+        CourseSectionSaveDto dto = new CourseSectionSaveDto(" ", "TEXT", "matn", null, null, null, null, null, null, null);
 
         assertThatThrownBy(() -> courseService.addSection(1L, dto, owner()))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Bo'lim nomi bo'sh");
+                .hasMessageContaining("Mavzu nomi bo'sh");
     }
 
     // Haqiqiy production bug: bo'lim nomi 200 belgidan (eski ustun
@@ -264,7 +267,7 @@ class CourseServiceTest {
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
 
         String tooLongTitle = "a".repeat(501);
-        CourseSectionSaveDto dto = new CourseSectionSaveDto(tooLongTitle, "TEXT", "matn", null, null, null, null, null, null);
+        CourseSectionSaveDto dto = new CourseSectionSaveDto(tooLongTitle, "TEXT", "matn", null, null, null, null, null, null, null);
 
         assertThatThrownBy(() -> courseService.addSection(1L, dto, owner()))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -279,7 +282,7 @@ class CourseServiceTest {
         when(courseSectionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         String maxTitle = "a".repeat(500);
-        CourseSectionSaveDto dto = new CourseSectionSaveDto(maxTitle, "TEXT", "matn", null, null, null, null, null, null);
+        CourseSectionSaveDto dto = new CourseSectionSaveDto(maxTitle, "TEXT", "matn", null, null, null, null, null, null, null);
 
         CourseSectionSummaryDto result = courseService.addSection(1L, dto, owner());
 
@@ -291,7 +294,7 @@ class CourseServiceTest {
         Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
 
-        CourseSectionSaveDto dto = new CourseSectionSaveDto("Sarlavha", "TEXT", null, null, null, null, null, null, null);
+        CourseSectionSaveDto dto = new CourseSectionSaveDto("Sarlavha", "TEXT", null, null, null, null, null, null, null, null);
 
         assertThatThrownBy(() -> courseService.addSection(1L, dto, owner()))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -303,7 +306,7 @@ class CourseServiceTest {
         Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
 
-        CourseSectionSaveDto dto = new CourseSectionSaveDto("Sarlavha", "VIDEO", null, "YOUTUBE", null, null, null, null, null);
+        CourseSectionSaveDto dto = new CourseSectionSaveDto("Sarlavha", "VIDEO", null, "YOUTUBE", null, null, null, null, null, null);
 
         assertThatThrownBy(() -> courseService.addSection(1L, dto, owner()))
                 .isInstanceOf(IllegalArgumentException.class)
@@ -318,7 +321,7 @@ class CourseServiceTest {
         when(courseSectionRepository.findTopByCourse_IdOrderByOrderIndexDesc(1L)).thenReturn(Optional.of(last));
         when(courseSectionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        CourseSectionSaveDto dto = new CourseSectionSaveDto("3-bo'lim", "TEXT", "matn", null, null, null, null, null, null);
+        CourseSectionSaveDto dto = new CourseSectionSaveDto("3-bo'lim", "TEXT", "matn", null, null, null, null, null, null, null);
         CourseSectionSummaryDto result = courseService.addSection(1L, dto, owner());
 
         assertThat(result.orderIndex()).isEqualTo(3);
@@ -331,7 +334,7 @@ class CourseServiceTest {
         when(courseSectionRepository.findTopByCourse_IdOrderByOrderIndexDesc(1L)).thenReturn(Optional.empty());
         when(courseSectionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        CourseSectionSaveDto dto = new CourseSectionSaveDto("1-bo'lim", "TEXT", "matn", null, null, null, null, null, null);
+        CourseSectionSaveDto dto = new CourseSectionSaveDto("1-bo'lim", "TEXT", "matn", null, null, null, null, null, null, null);
         CourseSectionSummaryDto result = courseService.addSection(1L, dto, owner());
 
         assertThat(result.orderIndex()).isEqualTo(1);
@@ -463,7 +466,7 @@ class CourseServiceTest {
         when(topicRepository.save(any())).thenReturn(newTopic);
 
         CourseSectionSaveDto dto = new CourseSectionSaveDto(
-                "1-bo'lim", "TEXT", "matn", null, null, null, "Kimyo", "Atom tuzilishi", null);
+                "1-bo'lim", "TEXT", "matn", null, null, null, "Kimyo", "Atom tuzilishi", null, null);
         courseService.addSection(1L, dto, owner());
 
         var sectionCaptor = org.mockito.ArgumentCaptor.forClass(CourseSection.class);
@@ -489,7 +492,7 @@ class CourseServiceTest {
         when(topicRepository.findByScience_IdAndName(10L, "Atom tuzilishi")).thenReturn(Optional.of(existingTopic));
 
         CourseSectionSaveDto dto = new CourseSectionSaveDto(
-                "1-bo'lim", "TEXT", "matn", null, null, null, "Kimyo", "Atom tuzilishi", null);
+                "1-bo'lim", "TEXT", "matn", null, null, null, "Kimyo", "Atom tuzilishi", null, null);
         courseService.addSection(1L, dto, owner());
 
         org.mockito.Mockito.verify(scienceRepository, org.mockito.Mockito.never()).save(any());
@@ -503,7 +506,7 @@ class CourseServiceTest {
         when(courseSectionRepository.findTopByCourse_IdOrderByOrderIndexDesc(1L)).thenReturn(Optional.empty());
         when(courseSectionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        CourseSectionSaveDto dto = new CourseSectionSaveDto("1-bo'lim", "TEXT", "matn", null, null, null, null, null, null);
+        CourseSectionSaveDto dto = new CourseSectionSaveDto("1-bo'lim", "TEXT", "matn", null, null, null, null, null, null, null);
         courseService.addSection(1L, dto, owner());
 
         var sectionCaptor = org.mockito.ArgumentCaptor.forClass(CourseSection.class);

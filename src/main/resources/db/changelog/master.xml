@@ -34,6 +34,7 @@
     <include file="/db/changelog/course-price.sql"/>
     <include file="/db/changelog/course-payment.sql"/>
     <include file="/db/changelog/topic-sections.sql"/>
+    <include file="/db/changelog/course-chapters.sql"/>
 
 
 </databaseChangeLog>

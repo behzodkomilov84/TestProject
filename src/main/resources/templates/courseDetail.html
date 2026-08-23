@@ -25,23 +25,10 @@
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
 <div class="courses-container">
-    <header class="courses-top-bar">
-        <h1 id="courseTitle">Yuklanmoqda...</h1>
-        <button class="back-btn" onclick="location.href='/courses'">← Kurslar</button>
-    </header>
-
-    <p id="courseDescription" class="course-description"></p>
-
-    <div id="subscribeBanner" class="subscribe-banner" style="display:none;">
-        <div id="subscribeBannerText">🔒 Bu kursning to'liq mazmuniga kirish uchun obuna kerak.</div>
-        <div class="subscribe-banner-actions">
-            <button id="payWithClickBtn" onclick="payWithClick()" style="display:none;">💳 Click orqali to'lash</button>
-            <button id="requestSubscriptionBtn" onclick="requestSubscription()">📩 Obunaga so'rov yuborish</button>
-        </div>
-    </div>
-
-    <!-- OWNER uchun — kursni boshqarish paneli. Ekranning katta qismini
-         band qilib qo'ymasligi uchun sarlavha bosilganda yig'iladi
+    <!-- OWNER uchun — kursni boshqarish paneli. Sahifaning ENG TEPASIDA
+         (navbar tagida, .courses-container'ning standart top-margin'i
+         orqali navbarga yopishmaydi) — tez topish uchun. Ekranning katta
+         qismini band qilib qo'ymasligi uchun sarlavha bosilganda yig'iladi
          (collapsible) — sahifa ochilganda avvalgi holati (ochiq/yopiq)
          localStorage'dan tiklanadi (toggleManagePanel, courseDetail.js). -->
     <div id="manageCoursePanel" class="course-manage-panel owner-only-el collapsed" style="display:none;">
@@ -55,7 +42,7 @@
                 <button onclick="togglePublish()" id="togglePublishBtn">—</button>
                 <button onclick="openEditCourseForm()">✏️ Tahrirlash</button>
                 <button class="danger-btn" onclick="deleteCourse()">🗑️ O'chirish</button>
-                <button id="openAddSectionBtn" onclick="openAddSectionForm()">➕ Bo'lim qo'shish</button>
+                <button id="openAddSectionBtn" onclick="openAddSectionForm()">➕ Mavzu qo'shish</button>
                 <button id="manageSubscriptionsBtn" onclick="location.href='/courses/subscriptions?courseId=' + COURSE_ID">
                     💳 Obunalarni boshqarish
                 </button>
@@ -82,7 +69,16 @@
         </div>
 
         <div id="addSectionForm" class="section-form" style="display:none;">
-            <input type="text" id="newSectionTitle" placeholder="Bo'lim nomi" maxlength="500" oninput="onSectionTitleInput('new')">
+            <input type="text" id="newSectionTitle" placeholder="Mavzu nomi" maxlength="500" oninput="onSectionTitleInput('new')">
+
+            <!-- Kurs ICHIDAGI Bo'lim (bob) — ixtiyoriy: mavzular shu nom
+                 bo'yicha guruhlanib, kurs sahifasida alohida "box"da
+                 ko'rsatiladi. Mavjud bo'limlar ro'yxati (datalist) —
+                 tanlansa o'shanga, aks holda yangi bo'lim avtomatik
+                 yaratiladi (CourseService.resolveChapter). Bo'sh
+                 qoldirilsa — "Bo'limsiz mavzular"da qoladi. -->
+            <input type="text" id="newSectionChapterName" list="chapterNamesList"
+                   placeholder="📂 Bo'lim nomi (ixtiyoriy — masalan: 1-BOB)" maxlength="255">
 
             <!-- Matn va video bir vaqtning o'zida ham qo'shilishi mumkin —
                  kamida bittasi belgilangan bo'lishi shart. -->
@@ -190,15 +186,20 @@
             </div>
 
             <div class="course-form-actions">
-                <button onclick="submitAddSection()">✅ Bo'limni qo'shish</button>
+                <button onclick="submitAddSection()">✅ Mavzuni qo'shish</button>
                 <button onclick="closeAddSectionForm()">Bekor qilish</button>
             </div>
         </div>
 
-        <!-- Bo'limni tahrirlash — "✏️" tugmasi bosilganda shu bitta forma
+        <!-- Mavzuni tahrirlash — "✏️" tugmasi bosilganda shu bitta forma
              tanlangan bo'lim ma'lumotlari bilan to'ldirilib ochiladi. -->
         <div id="editSectionForm" class="section-form" style="display:none;">
-            <input type="text" id="editSectionTitle" placeholder="Bo'lim nomi" maxlength="500" oninput="onSectionTitleInput('edit')">
+            <input type="text" id="editSectionTitle" placeholder="Mavzu nomi" maxlength="500" oninput="onSectionTitleInput('edit')">
+
+            <!-- Bo'lim tanlansa — saqlagach mavzu darhol o'sha bo'limga
+                 "o'tib qoladi" (foydalanuvchi so'rovi bo'yicha). -->
+            <input type="text" id="editSectionChapterName" list="chapterNamesList"
+                   placeholder="📂 Bo'lim nomi (ixtiyoriy — masalan: 1-BOB)" maxlength="255">
 
             <label class="content-toggle-label">
                 <input type="checkbox" id="editIncludeText" onchange="onEditContentToggle(this)"> 📄 Matn qo'shish
@@ -304,6 +305,21 @@
         </div>
     </div>
 
+    <header class="courses-top-bar">
+        <h1 id="courseTitle">Yuklanmoqda...</h1>
+        <button class="back-btn" onclick="location.href='/courses'">← Kurslar</button>
+    </header>
+
+    <p id="courseDescription" class="course-description"></p>
+
+    <div id="subscribeBanner" class="subscribe-banner" style="display:none;">
+        <div id="subscribeBannerText">🔒 Bu kursning to'liq mazmuniga kirish uchun obuna kerak.</div>
+        <div class="subscribe-banner-actions">
+            <button id="payWithClickBtn" onclick="payWithClick()" style="display:none;">💳 Click orqali to'lash</button>
+            <button id="requestSubscriptionBtn" onclick="requestSubscription()">📩 Obunaga so'rov yuborish</button>
+        </div>
+    </div>
+
     <h2 class="curriculum-title">📋 Mavzular</h2>
 
     <!-- OWNER/ADMIN uchun — bo'limlarni saralash. -->
@@ -313,9 +329,22 @@
         <button onclick="sortSections('ZA')">Z→A</button>
     </div>
 
+    <!-- Bo'lim nomlarini avtomatik taklif qilish uchun (newSectionChapterName/
+         editSectionChapterName input'lari, list="chapterNamesList") —
+         mavjud bo'limlar ro'yxati bilan JS to'ldiradi (updateChapterDatalist). -->
+    <datalist id="chapterNamesList"></datalist>
+
+    <!-- Kursda kamida bitta mavzu biror Bo'limga biriktirilgan bo'lsa —
+         mavzular shu bo'limlar bo'yicha alohida "box"larga guruhlanadi
+         (har birida o'z sahifalash tugmalari bilan). Hech qaysi mavzu
+         hech qanday bo'limga biriktirilmagan bo'lsa (standart holat) —
+         hammasi eskidek, bitta tekis grid + bitta umumiy sahifalash bilan
+         ko'rsatiladi (renderSections, courseDetail.js). -->
     <div id="sectionsList" class="sections-list">
         <div class="courses-empty">Yuklanmoqda...</div>
     </div>
+
+    <div id="sectionsPagination" class="sections-pagination" style="display:none;"></div>
 </div>
 
 <!-- "🎬 Video qo'shish" oynasi — bitta umumiy modal, ikkala forma (yangi

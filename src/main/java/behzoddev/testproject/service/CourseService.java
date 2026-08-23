@@ -1,5 +1,6 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.CourseChapterRepository;
 import behzoddev.testproject.dao.CourseRepository;
 import behzoddev.testproject.dao.CourseSectionProgressRepository;
 import behzoddev.testproject.dao.CourseSectionRepository;
@@ -8,6 +9,7 @@ import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dto.course.*;
 import behzoddev.testproject.entity.Course;
+import behzoddev.testproject.entity.CourseChapter;
 import behzoddev.testproject.entity.CourseSection;
 import behzoddev.testproject.entity.CourseSectionProgress;
 import behzoddev.testproject.entity.Science;
@@ -40,6 +42,7 @@ public class CourseService {
 
     private final CourseRepository courseRepository;
     private final CourseSectionRepository courseSectionRepository;
+    private final CourseChapterRepository courseChapterRepository;
     private final CourseSubscriptionRepository courseSubscriptionRepository;
     private final CourseSectionProgressRepository courseSectionProgressRepository;
     private final ScienceRepository scienceRepository;
@@ -89,6 +92,9 @@ public class CourseService {
                                 .existsByUser_IdAndSection_Id(currentUser.getId(), s.getId()))
                         .linkedTopicId(s.getLinkedTopic() != null ? s.getLinkedTopic().getId() : null)
                         .linkedScienceId(s.getLinkedTopic() != null ? s.getLinkedTopic().getScience().getId() : null)
+                        .chapterId(s.getChapter() != null ? s.getChapter().getId() : null)
+                        .chapterName(s.getChapter() != null ? s.getChapter().getName() : null)
+                        .chapterOrderIndex(s.getChapter() != null ? s.getChapter().getOrderIndex() : null)
                         .build())
                 .toList();
 
@@ -115,7 +121,7 @@ public class CourseService {
         boolean canManage = canManageCourse(course, currentUser);
 
         if (!canManage && !isSectionUnlocked(currentUser, section, subscribed)) {
-            throw new AccessDeniedException("⛔ Bu bo'lim hali ochilmagan. Avval oldingi bo'limni tugatish kerak.");
+            throw new AccessDeniedException("⛔ Bu mavzu hali ochilmagan. Avval oldingi mavzuni tugatish kerak.");
         }
 
         boolean completed = courseSectionProgressRepository
@@ -147,6 +153,7 @@ public class CourseService {
                 .linkedTopicName(section.getLinkedTopic() != null ? section.getLinkedTopic().getName() : null)
                 .linkedScienceName(section.getLinkedTopic() != null
                         ? section.getLinkedTopic().getScience().getName() : null)
+                .chapterName(section.getChapter() != null ? section.getChapter().getName() : null)
                 .completed(completed)
                 .prevSectionId(prev != null ? prev.getId() : null)
                 .nextSectionId(next != null ? next.getId() : null)
@@ -163,7 +170,7 @@ public class CourseService {
         boolean subscribed = isSubscribed(currentUser, course);
 
         if (!canManage && !isSectionUnlocked(currentUser, section, subscribed)) {
-            throw new AccessDeniedException("⛔ Bu bo'limni tugatish uchun avval ochilgan bo'lishi kerak.");
+            throw new AccessDeniedException("⛔ Bu mavzuni tugatish uchun avval ochilgan bo'lishi kerak.");
         }
 
         if (courseSectionProgressRepository.existsByUser_IdAndSection_Id(currentUser.getId(), section.getId())) {
@@ -251,6 +258,7 @@ public class CourseService {
         courseSectionProgressRepository.deleteBySection_Course_Id(courseId);
         courseSubscriptionRepository.deleteByCourse_Id(courseId);
         courseSectionRepository.deleteByCourse_Id(courseId);
+        courseChapterRepository.deleteByCourse_Id(courseId);
         courseRepository.delete(course);
     }
 
@@ -280,6 +288,7 @@ public class CourseService {
 
         CourseSection section = buildSectionFromDto(dto, course, nextOrder);
         section.setLinkedTopic(resolveLinkedTopic(dto.scienceName(), dto.topicName()));
+        section.setChapter(resolveChapter(course, dto.chapterName()));
         courseSectionRepository.save(section);
 
         return CourseSectionSummaryDto.builder()
@@ -292,6 +301,9 @@ public class CourseService {
                 .linkedTopicId(section.getLinkedTopic() != null ? section.getLinkedTopic().getId() : null)
                 .linkedScienceId(section.getLinkedTopic() != null
                         ? section.getLinkedTopic().getScience().getId() : null)
+                .chapterId(section.getChapter() != null ? section.getChapter().getId() : null)
+                .chapterName(section.getChapter() != null ? section.getChapter().getName() : null)
+                .chapterOrderIndex(section.getChapter() != null ? section.getChapter().getOrderIndex() : null)
                 .build();
     }
 
@@ -309,6 +321,10 @@ public class CourseService {
         section.setVideoUrl(dto.videoUrl());
         section.setVideoDurationSeconds(dto.videoDurationSeconds());
         section.setLinkedTopic(resolveLinkedTopic(dto.scienceName(), dto.topicName()));
+        // Bo'lim tanlansa/o'zgartirilsa — mavzu darhol o'sha bo'limga
+        // "o'tib qoladi" (foydalanuvchi so'rovi bo'yicha); bo'sh
+        // qoldirilsa — "Bo'limsiz"ga qaytadi (unlink).
+        section.setChapter(resolveChapter(section.getCourse(), dto.chapterName()));
 
         courseSectionRepository.save(section);
     }
@@ -342,7 +358,7 @@ public class CourseService {
         }
 
         if (orderedSectionIds.size() != sections.size() || !byId.keySet().containsAll(orderedSectionIds)) {
-            throw new IllegalArgumentException("❌Bo'limlar ro'yxati kursning bo'limlariga mos kelmayapti.");
+            throw new IllegalArgumentException("❌Mavzular ro'yxati kursning mavzulariga mos kelmayapti.");
         }
 
         int index = 1;
@@ -370,6 +386,31 @@ public class CourseService {
 
         return topicRepository.findByScience_IdAndName(science.getId(), trimmedTopic)
                 .orElseGet(() -> topicRepository.save(Topic.builder().name(trimmedTopic).science(science).build()));
+    }
+
+    // Bo'lim (CourseChapter) nomi kiritilsa — shu KURSDA shu nomli bo'lim
+    // mavjud bo'lmasa avtomatik yaratiladi (oxiriga qo'shiladi), mavjud
+    // bo'lsa o'shanga biriktiriladi (nom katta-kichik harfga sezgir emas —
+    // "1-BOB" va "1-bob" bir xil bo'lim deb hisoblanadi). Bo'sh/null —
+    // "Bo'limsiz" (unlink).
+    private CourseChapter resolveChapter(Course course, String chapterName) {
+        if (chapterName == null || chapterName.isBlank()) {
+            return null;
+        }
+
+        String trimmed = chapterName.trim();
+
+        return courseChapterRepository.findByCourse_IdAndNameIgnoreCase(course.getId(), trimmed)
+                .orElseGet(() -> {
+                    int nextOrder = courseChapterRepository.findTopByCourse_IdOrderByOrderIndexDesc(course.getId())
+                            .map(c -> c.getOrderIndex() + 1)
+                            .orElse(1);
+                    return courseChapterRepository.save(CourseChapter.builder()
+                            .course(course)
+                            .name(trimmed)
+                            .orderIndex(nextOrder)
+                            .build());
+                });
     }
 
     private CourseSection buildSectionFromDto(CourseSectionSaveDto dto, Course course, int orderIndex) {
@@ -416,11 +457,11 @@ public class CourseService {
 
     private void validateSectionDto(CourseSectionSaveDto dto) {
         if (dto.title() == null || dto.title().isBlank()) {
-            throw new IllegalArgumentException("❌Bo'lim nomi bo'sh bo'lishi mumkin emas.");
+            throw new IllegalArgumentException("❌Mavzu nomi bo'sh bo'lishi mumkin emas.");
         }
 
         if (dto.title().trim().length() > SECTION_TITLE_MAX_LENGTH) {
-            throw new IllegalArgumentException("❌Bo'lim nomi juda uzun (ko'pi bilan "
+            throw new IllegalArgumentException("❌Mavzu nomi juda uzun (ko'pi bilan "
                     + SECTION_TITLE_MAX_LENGTH + " ta belgi bo'lishi kerak).");
         }
 
@@ -428,7 +469,7 @@ public class CourseService {
         try {
             type = CourseSectionType.valueOf(dto.type());
         } catch (Exception e) {
-            throw new IllegalArgumentException("❌Bo'lim turi noto'g'ri (TEXT, VIDEO yoki MIXED bo'lishi kerak).");
+            throw new IllegalArgumentException("❌Mavzu turi noto'g'ri (TEXT, VIDEO yoki MIXED bo'lishi kerak).");
         }
 
         // MIXED — bo'limda ham matn, ham video bo'lgani uchun ikkala tekshiruv
@@ -457,10 +498,10 @@ public class CourseService {
 
     private CourseSection getSectionOrThrow(Long sectionId, Long courseId) {
         CourseSection section = courseSectionRepository.findById(sectionId)
-                .orElseThrow(() -> new NoSuchElementException("Bo'lim topilmadi"));
+                .orElseThrow(() -> new NoSuchElementException("Mavzu topilmadi"));
 
         if (!section.getCourse().getId().equals(courseId)) {
-            throw new IllegalArgumentException("❌Bo'lim bu kursga tegishli emas.");
+            throw new IllegalArgumentException("❌Mavzu bu kursga tegishli emas.");
         }
 
         return section;

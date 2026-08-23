@@ -14,6 +14,11 @@ public record CourseSectionSaveDto(
         // bog'lanish olib tashlanadi (unlink).
         String scienceName,
         String topicName,
+        // Ixtiyoriy — kurs ICHIDAGI Bo'lim (CourseChapter) nomi: shu nomli
+        // bo'lim (shu kursda) mavjud bo'lmasa avtomatik yaratiladi
+        // (CourseService.resolveChapter). Bo'sh qoldirilsa — "Bo'limsiz"
+        // (unlink).
+        String chapterName,
         // PLAIN (qo'lda yozilgan) | HTML (.docx'dan import qilingan —
         // frontend mammoth.js orqali fayldan HTML olib, textContent'ga shu
         // holicha yuboradi). null/bo'sh bo'lsa — PLAIN deb qabul qilinadi.

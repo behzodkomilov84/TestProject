@@ -16,6 +16,12 @@ public record CourseSectionSummaryDto(
         // dasturi ro'yxatida ham "🎯 Mavzuga oid testlarni yechish"
         // tugmasini ko'rsatish uchun (avval faqat bo'limni ochgach ko'rinardi).
         Long linkedTopicId,
-        Long linkedScienceId
+        Long linkedScienceId,
+        // Kurs ICHIDAGI Bo'lim (CourseChapter) — null bo'lsa "Bo'limsiz",
+        // frontend'da (courseDetail.js) shu bo'yicha alohida "box"larga
+        // guruhlanadi.
+        Long chapterId,
+        String chapterName,
+        Integer chapterOrderIndex
 ) {
 }

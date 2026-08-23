@@ -74,6 +74,13 @@ public class CourseSection {
     @JoinColumn(name = "linked_topic_id")
     private Topic linkedTopic;
 
+    // Kurs ICHIDAGI Bo'lim (CourseChapter) — bir nechta shunday
+    // CourseSection'ni kurs sahifasida bitta "box"ga guruhlaydi. Ixtiyoriy
+    // (NULL = "Bo'limsiz mavzular", hozirgidek tekis ro'yxatda ko'rinadi).
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "chapter_id")
+    private CourseChapter chapter;
+
     @Column(name = "created_at", nullable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

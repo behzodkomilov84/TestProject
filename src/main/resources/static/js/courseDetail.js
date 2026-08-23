@@ -1,6 +1,19 @@
 let cachedCourse = null;
 let clickPaymentEnabled = false;
 
+// Mavzular ro'yxati sahifalanadi — bitta sahifada shuncha karta ko'rsatiladi
+// (renderSections/changeSectionsPage). Sahifa raqami 0'dan boshlanadi. Bu —
+// hech qaysi mavzu biror Bo'limga biriktirilmagan (eski/oddiy) kurslar
+// uchun — bitta tekis grid + bitta umumiy sahifalash.
+const SECTIONS_PER_PAGE = 12;
+let sectionsPage = 0;
+
+// Kursda Bo'lim(lar) bo'lsa — har bir Bo'lim o'z alohida "box"ida, o'z
+// sahifalash tugmalari bilan ko'rsatiladi (renderGroupedSections). Har bir
+// Bo'lim uchun joriy sahifa alohida saqlanadi: chapterPages[chapterKey].
+const CHAPTER_SECTIONS_PER_PAGE = 8;
+let chapterPages = {};
+
 // YouTube pleyeri (courseSectionView.js) "videoId" sifatida FAQAT xom
 // ID'ni qabul qiladi, to'liq URL emas — shu sabab o'qituvchi to'liq
 // havolani joylashtirsa ham, saqlashdan oldin shu yerda tozalab olamiz
@@ -971,60 +984,220 @@ async function requestSubscription() {
     }
 }
 
-function renderSections(sections) {
-    const list = document.getElementById("sectionsList");
+// "sections" — HAR DOIM kursning TO'LIQ (sahifalanmagan) mavzular ro'yxati.
+// Joriy sahifa (sectionsPage) shu funksiya ichida keyingi chaqiruvlargacha
+// eslab qolinadi (loadCourse() -> renderCourse() har safar to'liq
+// ro'yxatni qayta beradi, lekin foydalanuvchi qaysi sahifada turgani
+// o'zgarmasligi kerak — masalan bo'lim tahrirlangandan keyin).
+let allSections = [];
 
-    if (!sections.length) {
-        list.innerHTML = `<div class="courses-empty">Hali bo'lim yo'q</div>`;
+function renderSections(sections) {
+    allSections = sections;
+    updateChapterDatalist();
+
+    // Kursda kamida bitta mavzu biror Bo'limga biriktirilgan bo'lsagina
+    // guruhlangan ("box"li) ko'rinishga o'tiladi — aks holda (standart,
+    // hozirgi barcha kurslar) 100% eskidek, bitta tekis grid.
+    const hasAnyChapter = sections.some(s => s.chapterId != null);
+
+    if (hasAnyChapter) {
+        renderGroupedSections();
+    } else {
+        renderFlatSections();
+    }
+}
+
+// Har bir mavzu-tugmalar-karta shablonini bir joyda ushlab turadi — flat
+// va guruhlangan (bo'limli) ko'rinishlar ikkalasi ham shundan foydalanadi.
+// globalIndexById — ⬆️/⬇️ chegaralarini (birinchi/oxirgi) TO'LIQ (allSections)
+// ro'yxatdagi haqiqiy o'rniga qarab hisoblash uchun (guruhlangan ko'rinishda
+// bitta bo'lim ichidagi tartib to'liq ro'yxatdagi tartibning bir qismi,
+// xolos — chegara tekshiruvi baribir GLOBAL bo'lishi kerak).
+function renderSectionCard(s, globalIndexById) {
+    const i = globalIndexById.get(s.id);
+    const indexClass = s.completed ? "section-index completed" : "section-index";
+    const indexIcon = s.completed ? "✓" : s.orderIndex;
+    const typeIcon = s.type === "VIDEO" ? "🎬" : s.type === "MIXED" ? "📄🎬" : "📄";
+
+    // Butun karta bosiladigan qilindi (kurslar katalogidagi kartalar
+    // bilan bir xil uslub) — shuning uchun sarlavha endi alohida <a>
+    // emas, oddiy matn; hover effekti ham shu tashqi kartada.
+    const titleEl = `<span class="section-title-text" title="${escapeHtml(s.title)}">${escapeHtml(s.title)}</span>`;
+    const cardClick = s.locked ? "" : ` onclick="location.href='/courses/${COURSE_ID}/sections/${s.id}'"`;
+
+    // Shu mavzu haqiqiy test tizimidagi bir mavzuga bog'langan bo'lsa —
+    // ro'yxatdan turib ham, mavzuni ochmasdan, testlarni yechish tugmasi
+    // (faqat ochilgan/qulflanmagan mavzularda — qulflangan bo'lsa
+    // mavzuning o'zini ham ko'rib bo'lmaydi).
+    const testLink = (!s.locked && s.linkedTopicId)
+        ? `<button class="topic-test-btn-inline" onclick="event.stopPropagation(); location.href='/testConfigPage?scienceId=${s.linkedScienceId}&topicId=${s.linkedTopicId}'">🎯 Mavzuga oid testlarni yechish</button>`
+        : "";
+
+    // Ichidagi tugmalar (test, boshqarish) bosilganda kartaning o'zi
+    // ham navigatsiya qilib yubormasligi uchun — shu wrapper'larga
+    // event.stopPropagation() qo'yiladi.
+    const manageActions = cachedCourse && cachedCourse.canManage
+        ? `<div class="section-manage-actions" onclick="event.stopPropagation()">
+               <button onclick="moveSectionUp(${s.id})" title="Yuqoriga" ${i === 0 ? "disabled" : ""}>⬆️</button>
+               <button onclick="moveSectionDown(${s.id})" title="Pastga" ${i === allSections.length - 1 ? "disabled" : ""}>⬇️</button>
+               <button onclick="openEditSectionForm(${s.id})" title="Tahrirlash">✏️</button>
+               <button onclick="deleteSection(${s.id})" title="O'chirish">🗑️</button>
+           </div>`
+        : "";
+
+    // Test tugmasi va boshqarish tugmalari — kartaning ENG PASTIGA
+    // (test tugmasi boshqarish tugmalarining USTIGA) yig'ilgan, sarlavha
+    // qatoridan alohida. Bo'sh joy bo'lsa (.section-item flex-column),
+    // shu blok margin-top:auto orqali pastga "yopishadi".
+    const bottomGroup = (testLink || manageActions)
+        ? `<div class="section-item-bottom" onclick="event.stopPropagation()">
+               ${testLink}
+               ${manageActions}
+           </div>`
+        : "";
+
+    return `
+        <div class="section-item ${s.locked ? "locked" : ""}"${cardClick}>
+            <div class="section-item-top">
+                <div class="section-item-left">
+                    <div class="${indexClass}">${indexIcon}</div>
+                    ${titleEl}
+                    <span class="section-type-icon">${typeIcon}</span>
+                    ${s.locked ? '<span class="section-type-icon">🔒</span>' : ""}
+                </div>
+            </div>
+            ${bottomGroup}
+        </div>
+    `;
+}
+
+function buildGlobalIndexMap() {
+    const map = new Map();
+    allSections.forEach((s, idx) => map.set(s.id, idx));
+    return map;
+}
+
+/* ===== Bo'limsiz (standart) — bitta tekis grid + bitta umumiy sahifalash ===== */
+
+function renderFlatSections() {
+    const list = document.getElementById("sectionsList");
+    const pagination = document.getElementById("sectionsPagination");
+
+    if (!allSections.length) {
+        list.innerHTML = `<div class="courses-empty">Hali mavzu yo'q</div>`;
+        pagination.style.display = "none";
         return;
     }
 
-    list.innerHTML = sections.map((s, i) => {
-        const indexClass = s.completed ? "section-index completed" : "section-index";
-        const indexIcon = s.completed ? "✓" : s.orderIndex;
-        const typeIcon = s.type === "VIDEO" ? "🎬" : s.type === "MIXED" ? "📄🎬" : "📄";
+    const totalPages = Math.max(1, Math.ceil(allSections.length / SECTIONS_PER_PAGE));
+    if (sectionsPage >= totalPages) sectionsPage = totalPages - 1;
+    if (sectionsPage < 0) sectionsPage = 0;
 
-        // Butun karta bosiladigan qilindi (kurslar katalogidagi kartalar
-        // bilan bir xil uslub) — shuning uchun sarlavha endi alohida <a>
-        // emas, oddiy matn; hover effekti ham shu tashqi kartada.
-        const titleEl = `<span class="section-title-text" title="${escapeHtml(s.title)}">${escapeHtml(s.title)}</span>`;
-        const cardClick = s.locked ? "" : ` onclick="location.href='/courses/${COURSE_ID}/sections/${s.id}'"`;
+    const from = sectionsPage * SECTIONS_PER_PAGE;
+    const pageSections = allSections.slice(from, from + SECTIONS_PER_PAGE);
+    const globalIndexById = buildGlobalIndexMap();
 
-        // Ichidagi tugmalar (boshqarish, test) bosilganda kartaning o'zi
-        // ham navigatsiya qilib yubormasligi uchun — shu wrapper'larga
-        // event.stopPropagation() qo'yiladi.
-        const manageActions = cachedCourse && cachedCourse.canManage
-            ? `<div class="section-manage-actions" onclick="event.stopPropagation()">
-                   <button onclick="moveSectionUp(${s.id})" title="Yuqoriga" ${i === 0 ? "disabled" : ""}>⬆️</button>
-                   <button onclick="moveSectionDown(${s.id})" title="Pastga" ${i === sections.length - 1 ? "disabled" : ""}>⬇️</button>
-                   <button onclick="openEditSectionForm(${s.id})" title="Tahrirlash">✏️</button>
-                   <button onclick="deleteSection(${s.id})" title="O'chirish">🗑️</button>
-               </div>`
-            : "";
+    list.innerHTML = `<div class="sections-grid">
+        ${pageSections.map(s => renderSectionCard(s, globalIndexById)).join("")}
+    </div>`;
 
-        // Shu mavzu haqiqiy test tizimidagi bir mavzuga bog'langan bo'lsa —
-        // ro'yxatdan turib ham, bo'limni ochmasdan, testlarni yechish tugmasi
-        // (faqat ochilgan/qulflanmagan mavzularda — qulflangan bo'lsa
-        // bo'limning o'zini ham ko'rib bo'lmaydi).
-        const testLink = (!s.locked && s.linkedTopicId)
-            ? `<button class="topic-test-btn-inline" onclick="event.stopPropagation(); location.href='/testConfigPage?scienceId=${s.linkedScienceId}&topicId=${s.linkedTopicId}'">🎯 Mavzuga oid testlarni yechish</button>`
-            : "";
+    renderPaginationInto(pagination, totalPages, sectionsPage, (p) => `changeSectionsPage(${p})`);
+}
 
-        return `
-            <div class="section-item ${s.locked ? "locked" : ""}"${cardClick}>
-                <div class="section-item-top">
-                    <div class="section-item-left">
-                        <div class="${indexClass}">${indexIcon}</div>
-                        ${titleEl}
-                        <span class="section-type-icon">${typeIcon}</span>
-                        ${s.locked ? '<span class="section-type-icon">🔒</span>' : ""}
-                    </div>
-                    ${testLink}
-                </div>
-                ${manageActions}
-            </div>
-        `;
-    }).join("");
+function changeSectionsPage(page) {
+    sectionsPage = page;
+    renderFlatSections();
+    document.getElementById("sectionsList").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/* ===== Bo'limlar bo'yicha guruhlangan — har biri alohida "box", o'z sahifalashi bilan ===== */
+
+function renderGroupedSections() {
+    const list = document.getElementById("sectionsList");
+    document.getElementById("sectionsPagination").style.display = "none";
+
+    // chapterKey -> {chapterId, name, orderIndex, items[]}. "none" —
+    // hali hech qanday Bo'limga biriktirilmagan mavzular (bo'lsa, ro'yxat
+    // OXIRIDA, "— Bo'limsiz mavzular —" nomi bilan).
+    const groups = new Map();
+    for (const s of allSections) {
+        const key = s.chapterId != null ? String(s.chapterId) : "none";
+        if (!groups.has(key)) {
+            groups.set(key, {
+                key,
+                chapterId: s.chapterId,
+                name: s.chapterId != null ? s.chapterName : "— Bo'limsiz mavzular —",
+                orderIndex: s.chapterId != null ? s.chapterOrderIndex : Number.MAX_SAFE_INTEGER,
+                items: []
+            });
+        }
+        groups.get(key).items.push(s);
+    }
+
+    const sortedGroups = [...groups.values()].sort((a, b) => a.orderIndex - b.orderIndex);
+    const globalIndexById = buildGlobalIndexMap();
+
+    list.innerHTML = sortedGroups.map(group => renderChapterBox(group, globalIndexById)).join("");
+}
+
+function renderChapterBox(group, globalIndexById) {
+    const totalPages = Math.max(1, Math.ceil(group.items.length / CHAPTER_SECTIONS_PER_PAGE));
+    let page = chapterPages[group.key] || 0;
+    if (page >= totalPages) page = totalPages - 1;
+    if (page < 0) page = 0;
+    chapterPages[group.key] = page;
+
+    const from = page * CHAPTER_SECTIONS_PER_PAGE;
+    const pageItems = group.items.slice(from, from + CHAPTER_SECTIONS_PER_PAGE);
+
+    const cardsHtml = pageItems.map(s => renderSectionCard(s, globalIndexById)).join("");
+    const paginationHtml = totalPages > 1
+        ? buildPaginationHtml(totalPages, page, (p) => `changeChapterPage('${group.key}', ${p})`)
+        : "";
+
+    return `
+        <div class="chapter-box">
+            <h3 class="chapter-box-title">📂 ${escapeHtml(group.name)} <span class="chapter-box-count">(${group.items.length})</span></h3>
+            <div class="sections-grid">${cardsHtml}</div>
+            ${paginationHtml ? `<div class="sections-pagination chapter-box-pagination">${paginationHtml}</div>` : ""}
+        </div>
+    `;
+}
+
+function changeChapterPage(chapterKey, page) {
+    chapterPages[chapterKey] = page;
+    renderGroupedSections();
+}
+
+/* ===== Sahifalash tugmalari — flat va guruhlangan ko'rinishlar bir xil ishlatadi ===== */
+
+function buildPaginationHtml(totalPages, currentPage, onClickFor) {
+    const buttons = [];
+    buttons.push(`<button ${currentPage === 0 ? "disabled" : ""} onclick="${onClickFor(currentPage - 1)}">‹ Oldingi</button>`);
+    for (let p = 0; p < totalPages; p++) {
+        buttons.push(`<button class="${p === currentPage ? "active" : ""}" onclick="${onClickFor(p)}">${p + 1}</button>`);
+    }
+    buttons.push(`<button ${currentPage === totalPages - 1 ? "disabled" : ""} onclick="${onClickFor(currentPage + 1)}">Keyingi ›</button>`);
+    return buttons.join("");
+}
+
+function renderPaginationInto(container, totalPages, currentPage, onClickFor) {
+    if (totalPages <= 1) {
+        container.style.display = "none";
+        container.innerHTML = "";
+        return;
+    }
+    container.innerHTML = buildPaginationHtml(totalPages, currentPage, onClickFor);
+    container.style.display = "flex";
+}
+
+// "📂 Bo'lim nomi" maydonlarining (newSectionChapterName/editSectionChapterName)
+// avtomatik taklif ro'yxati — kursdagi mavjud Bo'lim nomlaridan (takrorsiz).
+function updateChapterDatalist() {
+    const names = [...new Set(allSections.filter(s => s.chapterName).map(s => s.chapterName))];
+    const datalist = document.getElementById("chapterNamesList");
+    if (!datalist) return;
+    datalist.innerHTML = names.map(n => `<option value="${escapeHtml(n)}"></option>`).join("");
 }
 
 function escapeHtml(text) {
@@ -1167,7 +1340,7 @@ async function submitEditCourse() {
 }
 
 async function deleteCourse() {
-    if (!confirm("Kursni butunlay o'chirmoqchimisiz? Barcha bo'limlar ham o'chadi.")) return;
+    if (!confirm("Kursni butunlay o'chirmoqchimisiz? Barcha mavzular ham o'chadi.")) return;
 
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}`, { method: "DELETE" });
@@ -1254,7 +1427,7 @@ async function submitAddSection() {
     const includeVideo = document.getElementById("includeVideo").checked;
 
     if (!title) {
-        alert("❌ Bo'lim nomini kiriting");
+        alert("❌ Mavzu nomini kiriting");
         return;
     }
 
@@ -1269,6 +1442,7 @@ async function submitAddSection() {
         title, type, textContent: null, videoSourceType: null, videoUrl: null, videoDurationSeconds: null,
         scienceName: linkTopic ? getSelectedScienceName("new") : null,
         topicName: linkTopic ? (document.getElementById("newSectionTopicName").value.trim() || null) : null,
+        chapterName: document.getElementById("newSectionChapterName").value.trim() || null,
         textContentFormat: "HTML"
     };
 
@@ -1334,7 +1508,7 @@ async function submitAddSection() {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-            alert(data.error || "Bo'lim qo'shishda xatolik");
+            alert(data.error || "Mavzu qo'shishda xatolik");
             return;
         }
 
@@ -1343,6 +1517,7 @@ async function submitAddSection() {
         document.getElementById("newSectionVideoUrl").value = "";
         document.getElementById("newSectionScienceOther").value = "";
         document.getElementById("newSectionTopicName").value = "";
+        document.getElementById("newSectionChapterName").value = "";
         newTopicNameManuallyEdited = false;
         document.getElementById("newSectionLinkTopic").checked = false;
         onTopicLinkToggle("new");
@@ -1362,7 +1537,7 @@ async function deleteSection(sectionId) {
     // Backend 409 (bog'liq ma'lumotlar — progress yozuvlari) qaytarishi
     // mumkin edi, lekin CourseService.deleteSection endi ularni avtomatik
     // o'chiradi (kursni o'chirishdagi FK bug bilan bir xil sabab/tuzatish).
-    if (!confirm("Bo'limni o'chirmoqchimisiz?")) return;
+    if (!confirm("Mavzuni o'chirmoqchimisiz?")) return;
 
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/sections/${sectionId}`, { method: "DELETE" });
@@ -1386,7 +1561,7 @@ async function openEditSectionForm(sectionId) {
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/sections/${sectionId}`);
         if (!res.ok) {
-            alert("Bo'lim ma'lumotlarini yuklab bo'lmadi");
+            alert("Mavzu ma'lumotlarini yuklab bo'lmadi");
             return;
         }
         const section = await res.json();
@@ -1434,6 +1609,8 @@ async function openEditSectionForm(sectionId) {
         // (bog'lash hamon ixtiyoriy bo'lib qoladi).
         document.getElementById("editSectionLinkTopic").checked = !!section.linkedTopicName;
         onTopicLinkToggle("edit");
+
+        document.getElementById("editSectionChapterName").value = section.chapterName || "";
 
         document.getElementById("editSectionForm").style.display = "flex";
         document.getElementById("editSectionForm").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1491,7 +1668,7 @@ async function submitEditSection() {
     const includeVideo = document.getElementById("editIncludeVideo").checked;
 
     if (!title) {
-        alert("❌ Bo'lim nomini kiriting");
+        alert("❌ Mavzu nomini kiriting");
         return;
     }
 
@@ -1506,6 +1683,7 @@ async function submitEditSection() {
         title, type, textContent: null, videoSourceType: null, videoUrl: null, videoDurationSeconds: null,
         scienceName: linkTopic ? getSelectedScienceName("edit") : null,
         topicName: linkTopic ? (document.getElementById("editSectionTopicName").value.trim() || null) : null,
+        chapterName: document.getElementById("editSectionChapterName").value.trim() || null,
         textContentFormat: "HTML"
     };
 
@@ -1572,7 +1750,7 @@ async function submitEditSection() {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-            alert(data.error || "Bo'limni saqlashda xatolik");
+            alert(data.error || "Mavzuni saqlashda xatolik");
             return;
         }
 

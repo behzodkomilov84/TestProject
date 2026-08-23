@@ -773,8 +773,10 @@ body {
 }
 
 .manage-panel-chevron {
-    font-size: 14px;
+    font-size: 28px;
+    line-height: 1;
     color: #64748b;
+    font-weight: 700;
     transition: transform 0.15s ease;
 }
 
@@ -849,41 +851,84 @@ body {
     background: #f1f5f9;
 }
 
+/* #sectionsList — endi shunchaki VERTIKAL konteyner: Bo'limi yo'q kursda
+   to'g'ridan-to'g'ri bitta .sections-grid'ni, Bo'limli kursda esa bir
+   nechta .chapter-box'ni (har birida o'z .sections-grid'i) ushlab turadi. */
+.sections-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
 /* Mavzular — kurslar katalogidagi kartalar kabi, bitta qatorda 3 tadan
    (tor ekranlarda kamayadi). Sahifaning eng tagida ham bo'shliq qoladi. */
 /* Mobile-first: ekran kattalashgan sayin ustunlar soni oshib boradi
    (1 -> 2 -> 3 -> 4 -> 6), shrift esa har bosqichda mos ravishda
    moslashadi (kichik ekranda kattaroq, zich (6 ustunli) grid'da
-   ixchamroq). Ro'yxatning eng tagida doim bo'shliq qoladi. */
-.sections-list {
+   ixchamroq). */
+.sections-grid {
     display: grid;
     grid-template-columns: 1fr;
     gap: 16px;
-    margin-bottom: 48px;
 }
 
 @media (min-width: 600px) {
-    .sections-list {
+    .sections-grid {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
 @media (min-width: 900px) {
-    .sections-list {
+    .sections-grid {
         grid-template-columns: repeat(3, 1fr);
     }
 }
 
 @media (min-width: 1200px) {
-    .sections-list {
+    .sections-grid {
         grid-template-columns: repeat(4, 1fr);
     }
 }
 
 @media (min-width: 1600px) {
-    .sections-list {
+    .sections-grid {
         grid-template-columns: repeat(6, 1fr);
     }
+}
+
+/* Bo'lim (bob) "box"i — guruhlangan ko'rinishda (renderGroupedSections,
+   courseDetail.js) har bir Bo'lim shu qutida, boshqalaridan ajralib
+   turadigan fon/chegara bilan. */
+.chapter-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 18px;
+}
+
+.chapter-box-title {
+    margin: 0 0 14px;
+    font-size: 17px;
+    color: #1e293b;
+}
+
+.chapter-box-count {
+    font-weight: 400;
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+/* Bo'lim ichidagi sahifalash — umumiy .sections-pagination uslubidan
+   foydalanadi, faqat tashqi margin (u tepadagi umumiy sahifalash uchun
+   mo'ljallangan edi) shu yerda kerak emas — box ichida allaqachon padding
+   bor. Descendant selektor ataylab (".chapter-box .sections-pagination")
+   — oddiy ".chapter-box-pagination" bo'lsa, pastroqdagi ".sections-pagination"
+   qoidasi bilan bir xil specificity tufayli, fayl tartibiga qarab yutqazib
+   qo'yishi mumkin edi. */
+.chapter-box .sections-pagination {
+    margin-top: 14px;
+    margin-bottom: 0;
 }
 
 /* Har bir mavzu — standart o'lcham (kenglik grid ustunidan, balandlik
@@ -893,7 +938,6 @@ body {
 .section-item {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
     align-items: stretch;
     gap: 10px;
     width: 100%;
@@ -995,8 +1039,24 @@ body {
     flex-shrink: 0;
 }
 
+/* Test tugmasi + boshqarish tugmalari — kartaning ENG PASTIGA (sarlavha
+   qatoridan ajratib) yig'ilgan blok. margin-top:auto tufayli, karta
+   .section-item flex-column bo'lgani uchun, bu blok har doim kartaning
+   tagiga "yopishadi" (matn qisqa bo'lsa ham, uzun bo'lib kartani
+   cho'zib yuborgan bo'lsa ham). */
+.section-item-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid #f1f5f9;
+}
+
 /* Kurs dasturi (mavzular) ro'yxatidagi qatorda — bo'limni ochmasdan
-   to'g'ridan-to'g'ri shu mavzuga oid testlarga o'tish tugmasi. */
+   to'g'ridan-to'g'ri shu mavzuga oid testlarga o'tish tugmasi.
+   Boshqarish tugmalarining USTIDA (.section-item-bottom ichida, HTML
+   tartibi bo'yicha birinchi). */
 .topic-test-btn-inline {
     align-self: flex-start;
     background: #eff6ff;
@@ -1013,14 +1073,12 @@ body {
     background: #dbeafe;
 }
 
-/* Mavzu nomi ostida, alohida qatorda — kichik grid ko'rinishida. */
+/* Test tugmasidan pastda, kichik grid ko'rinishida. */
 .section-manage-actions {
     display: grid;
     grid-template-columns: repeat(4, auto);
     justify-content: start;
     gap: 10px;
-    padding-top: 10px;
-    border-top: 1px solid #f1f5f9;
 }
 
 .section-manage-actions button {
@@ -1038,6 +1096,45 @@ body {
 
 .section-manage-actions button:disabled {
     opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Mavzular ro'yxati sahifalanadi — "‹ Oldingi", raqamli sahifalar,
+   "Keyingi ›" (renderSectionsPagination, courseDetail.js). */
+.sections-pagination {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 48px;
+}
+
+.sections-pagination button {
+    min-width: 36px;
+    padding: 7px 12px;
+    border-radius: 8px;
+    border: 1px solid #d5dde8;
+    background: white;
+    color: #334155;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.sections-pagination button:hover:not(:disabled):not(.active) {
+    background: #f1f5f9;
+}
+
+.sections-pagination button.active {
+    background: #2563eb;
+    border-color: #2563eb;
+    color: white;
+    cursor: default;
+}
+
+.sections-pagination button:disabled {
+    opacity: 0.4;
     cursor: not-allowed;
 }
 
