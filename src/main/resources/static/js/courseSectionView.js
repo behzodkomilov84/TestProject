@@ -172,16 +172,23 @@ function buildVideoEmbed(data) {
 }
 
 function setupVideoCompletionTracking(data) {
+    // YouTube pleyeri — <video>/<iframe>'dan farqli, buildVideoEmbed()
+    // uni to'ldirmaydi, faqat bo'sh <div id="ytPlayer"> qoldiradi. Pleyer
+    // FAQAT shu funksiya orqali ishga tushadi, shuning uchun "allaqachon
+    // tugatilgan" tekshiruvidan OLDIN, har doim chaqirilishi shart —
+    // aks holda talaba avval ko'rib bo'lgan videoni qayta ochganda doim
+    // bo'sh (qora) joy ko'radi. "Tugatilgan" holat pastdagi qoidaga
+    // (avtomatik belgilash/eslatma) tegishli, pleyerning o'ziga emas.
+    if (data.videoSourceType === "YOUTUBE") {
+        initYouTubePlayer(extractYouTubeId(data.videoUrl));
+        return;
+    }
+
     if (data.completed) return; // Allaqachon tugatilgan — qayta kuzatish shart emas.
 
     if (data.videoSourceType === "UPLOAD") {
         const video = document.getElementById("uploadedVideo");
         video.addEventListener("ended", () => markCompleted());
-        return;
-    }
-
-    if (data.videoSourceType === "YOUTUBE") {
-        initYouTubePlayer(extractYouTubeId(data.videoUrl));
         return;
     }
 
