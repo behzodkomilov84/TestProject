@@ -129,8 +129,7 @@
                     <button type="button" onclick="richExec('newSectionTextEditor','insertOrderedList')" title="Raqamlangan ro'yxat">☰1</button>
                     <button type="button" onclick="document.getElementById('newSectionImageInput').click()" title="Rasm qo'shish">🖼</button>
                     <input type="file" id="newSectionImageInput" accept="image/*" style="display:none;" onchange="richInsertImage('newSectionTextEditor', this)">
-                    <button type="button" onclick="richInsertVideoPrompt('newSectionTextEditor')" title="Video qo'shish (matn ichiga, xohlagan joyga)">🎬</button>
-                    <input type="file" id="newSectionVideoInsertInput" accept="video/*" style="display:none;" onchange="richInsertUploadedVideo('newSectionTextEditor', this)">
+                    <button type="button" onclick="openVideoInsertModal('newSectionTextEditor')" title="Video qo'shish (matn ichiga, xohlagan joyga)">🎬</button>
                     <span class="rich-toolbar-sep"></span>
                     <button type="button" onclick="richExec('newSectionTextEditor','removeFormat')" title="Formatni tozalash">🧹</button>
                 </div>
@@ -237,8 +236,7 @@
                     <button type="button" onclick="richExec('editSectionTextEditor','insertOrderedList')" title="Raqamlangan ro'yxat">☰1</button>
                     <button type="button" onclick="document.getElementById('editSectionImageInput').click()" title="Rasm qo'shish">🖼</button>
                     <input type="file" id="editSectionImageInput" accept="image/*" style="display:none;" onchange="richInsertImage('editSectionTextEditor', this)">
-                    <button type="button" onclick="richInsertVideoPrompt('editSectionTextEditor')" title="Video qo'shish (matn ichiga, xohlagan joyga)">🎬</button>
-                    <input type="file" id="editSectionVideoInsertInput" accept="video/*" style="display:none;" onchange="richInsertUploadedVideo('editSectionTextEditor', this)">
+                    <button type="button" onclick="openVideoInsertModal('editSectionTextEditor')" title="Video qo'shish (matn ichiga, xohlagan joyga)">🎬</button>
                     <span class="rich-toolbar-sep"></span>
                     <button type="button" onclick="richExec('editSectionTextEditor','removeFormat')" title="Formatni tozalash">🧹</button>
                 </div>
@@ -299,6 +297,32 @@
 
     <div id="sectionsList" class="sections-list">
         <div class="courses-empty">Yuklanmoqda...</div>
+    </div>
+</div>
+
+<!-- "🎬 Video qo'shish" oynasi — bitta umumiy modal, ikkala forma (yangi
+     bo'lim qo'shish/tahrirlash) ham shundan foydalanadi; qaysi tahrirlagichga
+     qo'yilishi videoInsertTargetEditorId orqali eslab qolinadi
+     (openVideoInsertModal/confirmVideoInsert, courseDetail.js). -->
+<div id="videoInsertModal" class="video-insert-modal hidden">
+    <div class="video-insert-modal-box">
+        <h4>🎬 Video qo'shish</h4>
+
+        <label class="video-insert-label" for="videoInsertUrlInput">YouTube havolasi yoki ID si</label>
+        <input type="text" id="videoInsertUrlInput" placeholder="https://youtu.be/... yoki dQw4w9WgXcQ">
+
+        <div class="video-insert-or">— yoki —</div>
+
+        <label class="video-insert-label" for="videoInsertFileInput">Kompyuterdan video fayl</label>
+        <input type="file" id="videoInsertFileInput" accept="video/*">
+
+        <label class="video-insert-label" for="videoInsertWidthInput">Kengligi (piksel yoki foiz)</label>
+        <input type="text" id="videoInsertWidthInput" value="480" placeholder="masalan: 480 yoki 100%">
+
+        <div class="video-insert-modal-actions">
+            <button type="button" onclick="confirmVideoInsert()">✅ Qo'shish</button>
+            <button type="button" onclick="closeVideoInsertModal()">Bekor qilish</button>
+        </div>
     </div>
 </div>
 

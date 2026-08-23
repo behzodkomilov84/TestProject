@@ -8,6 +8,67 @@ body {
     margin: 0;
 }
 
+.hidden {
+    display: none !important;
+}
+
+/* "🎬 Video qo'shish" oynasi (courseDetail.html) — window.prompt() o'rniga
+   ishlatiladi: ba'zi muhitlarda (masalan avtomatlashtirilgan brauzerlar)
+   prompt() umuman qo'llab-quvvatlanmaydi, bundan tashqari oddiy input
+   maydonlari ko'rinishi jihatidan ham qulayroq. */
+.video-insert-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.video-insert-modal-box {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px 24px;
+    width: 90%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.video-insert-modal-box h4 {
+    margin: 0 0 10px;
+}
+
+.video-insert-label {
+    font-size: 13px;
+    color: #555;
+    margin-top: 10px;
+}
+
+.video-insert-modal-box input[type="text"],
+.video-insert-modal-box input[type="file"] {
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.video-insert-or {
+    text-align: center;
+    color: #999;
+    font-size: 12px;
+    margin: 6px 0;
+}
+
+.video-insert-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+}
+
 .courses-container {
     max-width: 1000px;
     margin: 90px auto 40px;
@@ -434,7 +495,7 @@ body {
    / "🎬 Video qo'shish" orqali qo'shilgan rasm/video bitta "rich-img-wrap"
    ichida, pastki-o'ng burchakda sudrab o'lchamini o'zgartirish uchun kichik
    tutqich (handle) bilan birga keladi — richInsertImage()/
-   richInsertVideoPrompt()/attachImageResizeHandlers() (courseDetail.js)
+   openVideoInsertModal()/attachImageResizeHandlers() (courseDetail.js)
    shu tutqichni sudrashni ushlab, eni/bo'yini (nisbatini saqlagan holda)
    o'zgartiradi. Nomi "rich-img-wrap" bo'lsa-da, video (<video>/<iframe>)
    uchun ham ishlatiladi. */

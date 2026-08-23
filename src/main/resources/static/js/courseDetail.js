@@ -341,27 +341,46 @@ async function richInsertImage(editorId, fileInput) {
 // "ko'rib chiqilganda avtomatik tugatiladigan" rasmiy videodan MUSTAQIL —
 // shu sabab bu yerdagi videolar tugatish (completion) holatiga ta'sir
 // qilmaydi, xuddi rasm kabi shunchaki kontent hisoblanadi.
-function richInsertVideoPrompt(editorId) {
-    const source = prompt(
-        "YouTube video havolasi yoki ID sini kiriting.\n" +
-        "Kompyuterdan video fayl yuklamoqchi bo'lsangiz — bo'sh qoldirib OK bosing."
-    );
-    if (source === null) return; // Bekor qilindi
+// window.prompt() o'rniga — ba'zi muhitlarda (masalan avtomatlashtirilgan
+// brauzerlar) umuman qo'llab-quvvatlanmaydi, bundan tashqari bir nechta
+// ketma-ket prompt() oynasi qulay emas. Shu sabab oddiy modal ishlatiladi:
+// qaysi tahrirlagichga qo'yilishi videoInsertTargetEditorId'da eslab qolinadi.
+let videoInsertTargetEditorId = null;
 
-    const widthRaw = prompt(
-        "Video kengligi (piksel yoki foiz, masalan 480 yoki 100%):",
-        "480"
-    );
-    if (widthRaw === null) return;
-    const width = normalizeVideoWidth(widthRaw);
+function openVideoInsertModal(editorId) {
+    videoInsertTargetEditorId = editorId;
+    document.getElementById("videoInsertUrlInput").value = "";
+    document.getElementById("videoInsertFileInput").value = "";
+    document.getElementById("videoInsertWidthInput").value = "480";
+    document.getElementById("videoInsertModal").classList.remove("hidden");
+}
 
-    if (source.trim()) {
-        insertYouTubeEmbedHtml(editorId, source.trim(), width);
+function closeVideoInsertModal() {
+    document.getElementById("videoInsertModal").classList.add("hidden");
+    videoInsertTargetEditorId = null;
+}
+
+function confirmVideoInsert() {
+    const editorId = videoInsertTargetEditorId;
+    if (!editorId) return;
+
+    const url = document.getElementById("videoInsertUrlInput").value.trim();
+    const fileInput = document.getElementById("videoInsertFileInput");
+    const hasFile = fileInput.files && fileInput.files.length > 0;
+    const width = normalizeVideoWidth(document.getElementById("videoInsertWidthInput").value);
+
+    if (!url && !hasFile) {
+        alert("❌ YouTube havolasini kiriting yoki video fayl tanlang");
+        return;
+    }
+
+    closeVideoInsertModal();
+
+    if (url) {
+        insertYouTubeEmbedHtml(editorId, url, width);
     } else {
-        const fileInputId = editorId === "newSectionTextEditor" ? "newSectionVideoInsertInput" : "editSectionVideoInsertInput";
-        const fileInput = document.getElementById(fileInputId);
         fileInput.dataset.pendingWidth = width;
-        fileInput.click();
+        richInsertUploadedVideo(editorId, fileInput);
     }
 }
 
@@ -446,7 +465,7 @@ function attachImageResizeHandlers(editorId) {
 }
 
 // "rich-img-wrap" nomiga qaramay — rasm bilan bir qatorda video
-// (<iframe>/<video>, richInsertVideoPrompt orqali qo'shilgan) ham shu
+// (<iframe>/<video>, openVideoInsertModal orqali qo'shilgan) ham shu
 // tutqich orqali sudrab o'lchamini o'zgartirishi mumkin.
 function startImageResize(e, clientX) {
     if (!e.target.classList || !e.target.classList.contains('rich-img-handle')) return;
