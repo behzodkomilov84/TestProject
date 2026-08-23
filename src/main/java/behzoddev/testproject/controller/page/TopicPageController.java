@@ -17,5 +17,13 @@ public class TopicPageController {
         return "topics"; // topics.html
     }
 
+    // "Bo'lim" (TopicSection) boshqaruvi — Fan ichida mavzularni guruhlash.
+    @GetMapping("/topic-sections")
+    public String getTopicSectionsPage(@RequestParam("scienceId") Long scienceId,
+                                        Model model) {
+        model.addAttribute("scienceId", scienceId);
+
+        return "topicSections"; // topicSections.html
+    }
 
 }

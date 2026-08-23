@@ -202,6 +202,43 @@ select {
     background: #f1f6fb;
 }
 
+/* Mavzular Bo'lim (masalan "I. UMUMIY KIMYO") bo'yicha guruhlanganda —
+   yig'iladigan sarlavha + ostidagi checkboxlar (testConfigPage.js,
+   loadTopics()). Bo'limi yo'q fanlar uchun bu qoidalar ishlatilmaydi —
+   ko'rinish avvalgidek tekis (sarlavhasiz) qoladi. */
+.section-group {
+    border-bottom: 1px solid #e8edf3;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 14px;
+    font-weight: 600;
+    font-size: 13px;
+    color: #334155;
+    background: #f8fafc;
+    cursor: pointer;
+    user-select: none;
+}
+
+.section-header:hover {
+    background: #eef2f7;
+}
+
+.section-chevron {
+    transition: transform 0.15s ease;
+}
+
+.section-group.collapsed .section-chevron {
+    transform: rotate(-90deg);
+}
+
+.section-group.collapsed .section-topics {
+    display: none;
+}
+
 .error-text {
     color: #dc2626;
     font-size: 14px;

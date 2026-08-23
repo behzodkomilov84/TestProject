@@ -8,6 +8,10 @@ let focusIndex = null;//для курсора
 
 let oldName = ""; //for EDIT uses
 let newName = ""; //for EDIT uses
+
+// Fan ichidagi Bo'limlar ro'yxati — "— Bo'limsiz —" varianti bilan
+// birga tanlash dropdown'ini to'ldirish uchun (loadSections()).
+let sectionList = [];
 // ========================================================================
 
 const scienceId = getScienceId();
@@ -15,7 +19,35 @@ const scienceId = getScienceId();
 if (!scienceId) {
     alert("❌ scienceId topilmadi (HTML dan)");
 } else {
-    afterStartPage(`/api/topic?scienceId=${scienceId}`);
+    loadSections().then(() => {
+        afterStartPage(`/api/topic?scienceId=${scienceId}`);
+    });
+}
+
+async function loadSections() {
+    try {
+        const response = await fetch(`/api/topic-section?scienceId=${scienceId}`);
+        if (!response.ok) throw new Error(`Server error: ${response.status}`);
+        sectionList = await response.json();
+    } catch (err) {
+        console.error("Bo'limlarni yuklashda xatolik:", err);
+        sectionList = [];
+    }
+}
+
+function sectionOptionsHtml(selectedSectionId) {
+    let options = `<option value="" ${!selectedSectionId ? "selected" : ""}>— Bo'limsiz —</option>`;
+    sectionList.forEach(sec => {
+        const selected = Number(selectedSectionId) === Number(sec.id) ? "selected" : "";
+        options += `<option value="${sec.id}" ${selected}>${escapeHtml(sec.name)}</option>`;
+    });
+    return options;
+}
+
+function sectionNameById(sectionId) {
+    if (!sectionId) return null;
+    const found = sectionList.find(sec => Number(sec.id) === Number(sectionId));
+    return found ? found.name : null;
 }
 
 
@@ -60,6 +92,8 @@ async function reloadFromDb(mapping) {
         id: s.id,
         name: s.name,
         original: s.name,
+        sectionId: s.sectionId || null,
+        originalSectionId: s.sectionId || null,
         mode: "VIEW"
     }));
 
@@ -85,6 +119,14 @@ function render() {
                                     ${isLink ? 'link' : ''} 
                                     ${hasDup ? 'duplicate' : ''}
                                     `;
+        // VIEW rejimida joriy bo'lim nomi qator boshida kichik belgi
+        // (badge) sifatida ko'rsatiladi — bo'limsiz bo'lsa hech narsa
+        // chiqmaydi.
+        const sectionName = sectionNameById(s.sectionId);
+        const sectionBadge = sectionName
+            ? `<span class="topic-section-badge">${escapeHtml(sectionName)}</span> `
+            : '';
+
         row.innerHTML = `
     ${
             isView
@@ -100,7 +142,7 @@ function render() {
                 id="input-${i}"
                 class="topic-name ${inputClass}"
                 tabindex="-1"
-            >${escapeHtml(s.name)}</div>
+            >${sectionBadge}${escapeHtml(s.name)}</div>
         </div>
             `
                 : `
@@ -112,6 +154,9 @@ function render() {
                 onkeydown="onClickKey(event, ${i})"
                 id="input-${i}"
             >
+            <select onchange="itemBlock[${i}].sectionId=this.value?Number(this.value):null" title="Bo'lim">
+                ${sectionOptionsHtml(s.sectionId)}
+            </select>
             `
         }
     ${buttons(s, i)}
@@ -211,6 +256,7 @@ function cancel(i) {
             itemBlock.splice(i, 1);
         }
         s.name = s.original;
+        s.sectionId = s.originalSectionId; // Bo'lim tanlovi ham bekor qilinadi
         s.mode = "VIEW";
         showToast('info', 'Amaliyot bekor qilindi', 2000);
     }
@@ -319,6 +365,8 @@ function add() {
         id: tempId, // Временный ID
         name: "",
         original: "",
+        sectionId: null,
+        originalSectionId: null,
         mode: "NEW"
     });
 
@@ -392,12 +440,15 @@ async function saveToDb() {
         new: itemBlock
             .filter(s => s.id < 0)
             .map(s => (
-                {science_id: scienceId, name: s.name})),
+                {science_id: scienceId, name: s.name, sectionId: s.sectionId || null})),
 
+        // E'tibor bering: nom o'zgarmagan, faqat Bo'lim o'zgargan bo'lsa
+        // ham "updated"ga tushishi kerak — shu sabab shart ikkalasini
+        // ham tekshiradi (avval faqat nom tekshirilardi).
         updated: itemBlock
-            .filter(s => s.id > 0 && s.name !== s.original)
+            .filter(s => s.id > 0 && (s.name !== s.original || s.sectionId !== s.originalSectionId))
             .map(s => (
-                {id: s.id, name: s.name}
+                {id: s.id, name: s.name, sectionId: s.sectionId || null}
             )),
 
         deletedIds: deletedTopicIds

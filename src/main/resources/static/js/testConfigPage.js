@@ -106,32 +106,72 @@ function loadTopics(id) {
             // ==============================
             // NORMAL MODES
             // ==============================
+            // Mavzular Bo'lim bo'yicha guruhlanadi (masalan "I. UMUMIY
+            // KIMYO"), yig'iladigan (collapsible) sarlavha ostida.
+            // Bo'limi yo'q mavzular ("sectionId" NULL) — sarlavhasiz,
+            // hozirgidek tekis ro'yxatda, oxirida (backend'dan shu tartibda
+            // keladi — TopicRepository.getTopicsWithQuestionCount). Bo'lim
+            // umuman bo'lmagan fan uchun bu ko'rinish 100% avvalgidek qoladi.
+            const groups = new Map(); // sectionId (yoki null) -> {name, topics: []}
             data.forEach(t => {
-
-                const label = document.createElement("label");
-
-                label.innerHTML = `
-                    <input type="checkbox" value="${t.id}">
-                    ${t.name} (${t.questionCount} ta test)
-                `;
-
-                const checkbox = label.querySelector("input");
-
-                if (preselectTopicId && Number(t.id) === Number(preselectTopicId)) {
-                    checkbox.checked = true;
+                const key = t.sectionId || "__none__";
+                if (!groups.has(key)) {
+                    groups.set(key, {name: t.sectionName, topics: []});
                 }
+                groups.get(key).topics.push(t);
+            });
 
-                checkbox.addEventListener("change", () => {
-                    updateMax();
-                    updateTopicLabel();
+            groups.forEach((group, key) => {
+                const topicsContainer = document.createElement("div");
+                topicsContainer.className = "section-topics";
+
+                group.topics.forEach(t => {
+                    const label = document.createElement("label");
+
+                    label.innerHTML = `
+                        <input type="checkbox" value="${t.id}">
+                        ${t.name} (${t.questionCount} ta test)
+                    `;
+
+                    const checkbox = label.querySelector("input");
+
+                    if (preselectTopicId && Number(t.id) === Number(preselectTopicId)) {
+                        checkbox.checked = true;
+                    }
+
+                    checkbox.addEventListener("change", () => {
+                        updateMax();
+                        updateTopicLabel();
+                    });
+
+                    topicsContainer.appendChild(label);
                 });
 
-                box.appendChild(label);
+                if (key === "__none__") {
+                    // Bo'limsiz — sarlavhasiz, to'g'ridan-to'g'ri qo'yiladi.
+                    box.appendChild(topicsContainer);
+                } else {
+                    const groupDiv = document.createElement("div");
+                    groupDiv.className = "section-group";
+
+                    const header = document.createElement("div");
+                    header.className = "section-header";
+                    header.innerHTML = `<span>${group.name}</span> <span class="section-chevron">▾</span>`;
+                    header.addEventListener("click", () => {
+                        groupDiv.classList.toggle("collapsed");
+                    });
+
+                    groupDiv.appendChild(header);
+                    groupDiv.appendChild(topicsContainer);
+                    box.appendChild(groupDiv);
+                }
             });
 
             // Kurs bo'limidan kelib, mavzu avtomatik belgilangan bo'lsa —
-            // "necha ta test bor" va label ham darhol yangilanishi kerak
-            // (odatda faqat checkbox o'zgarganda ishga tushardi).
+            // uning guruhini ochib qo'yamiz (aks holda collapsed holatda
+            // "belgilangan" checkbox ko'zga ko'rinmay qolishi mumkin) va
+            // "necha ta test bor"/label darhol yangilanadi (odatda faqat
+            // checkbox o'zgarganda ishga tushardi).
             if (preselectTopicId) {
                 updateMax();
                 updateTopicLabel();

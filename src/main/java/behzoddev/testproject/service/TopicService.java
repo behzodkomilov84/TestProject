@@ -3,12 +3,14 @@ package behzoddev.testproject.service;
 import behzoddev.testproject.dao.CourseSectionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
+import behzoddev.testproject.dao.TopicSectionRepository;
 import behzoddev.testproject.dto.topic.TopicCourseLinkDto;
 import behzoddev.testproject.dto.topic.TopicIdAndNameDto;
 import behzoddev.testproject.dto.topic.TopicNameDto;
 import behzoddev.testproject.dto.topic.TopicWithQuestionCountDto;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Topic;
+import behzoddev.testproject.entity.TopicSection;
 import behzoddev.testproject.mapper.TopicMapper;
 import behzoddev.testproject.validation.Validation;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,7 @@ public class TopicService {
     private final TopicRepository topicRepository;
     private final TopicMapper topicMapper;
     private final ScienceRepository scienceRepository;
+    private final TopicSectionRepository topicSectionRepository;
     private final CourseSectionRepository courseSectionRepository;
     private final Validation validation;
 
@@ -37,6 +40,14 @@ public class TopicService {
 
     @Transactional
     public Topic saveTopic(Long scienceId, TopicNameDto topicNameDto) {
+        return saveTopic(scienceId, topicNameDto, null);
+    }
+
+    // sectionId — ixtiyoriy, yangi mavzu darhol shu Bo'limga biriktiriladi
+    // (topics.html'dagi Bo'lim tanlash dropdown'idan keladi). NULL —
+    // bo'limsiz (eski xulq-atvor).
+    @Transactional
+    public Topic saveTopic(Long scienceId, TopicNameDto topicNameDto, Long sectionId) {
         validation.textFieldMustNotBeEmpty(topicNameDto.name());
 
         Topic topic = topicMapper.mapTopicNameDtoToTopic(topicNameDto);
@@ -47,6 +58,15 @@ public class TopicService {
             }
         }
         topic.setScience(scienceRepository.findById(scienceId).orElse(null));
+
+        if (sectionId != null) {
+            TopicSection section = topicSectionRepository.findById(sectionId).orElse(null);
+            topic.setSection(section);
+        }
+
+        Integer maxOrder = topicRepository.findMaxOrderIndexByScienceId(scienceId);
+        topic.setOrderIndex(maxOrder != null ? maxOrder + 1 : 1);
+
         return topicRepository.save(topic);
     }
 

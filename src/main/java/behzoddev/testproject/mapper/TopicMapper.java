@@ -11,6 +11,8 @@ public interface TopicMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "questions", ignore = true)
     @Mapping(target = "science", ignore = true)
+    @Mapping(target = "section", ignore = true)
+    @Mapping(target = "orderIndex", ignore = true)
     Topic mapTopicNameDtoToTopic(TopicNameDto topicNameDto);
 
 

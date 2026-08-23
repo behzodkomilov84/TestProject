@@ -84,6 +84,21 @@ h1 {
         cursor: pointer;
     }
 
+    /* Mavzu qaysi Bo'limga (masalan "I. UMUMIY KIMYO") biriktirilganini
+       ko'rsatuvchi kichik belgi — bo'limsiz mavzularda chiqmaydi
+       (topic.js render()). */
+    .topic-section-badge {
+        display: inline-block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #00695c;
+        background: #e8f5f3;
+        border-radius: 4px;
+        padding: 2px 8px;
+        margin-right: 6px;
+        vertical-align: middle;
+    }
+
     .row-link {
         text-decoration: none;
         display: flex;

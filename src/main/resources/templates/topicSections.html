@@ -1,68 +1,46 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
 <head>
-    <!-- Основные метатеги -->
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <!-- SEO и описание страницы -->
     <meta name="description" content="Описание страницы">
     <meta name="author" content="Автор">
 
-    <!-- Заголовок страницы -->
-    <title>Topics</title>
+    <title>Bo'limlar</title>
 
-    <!-- Подключение CSS, jS -->
     <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/science.css">
 
     <script src="/js/navbar.js" defer></script>
-    <script src="/js/topic.js" defer></script>
+    <script src="/js/topicSection.js" defer></script>
 
-        <!-- Favicon -->
     <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
-
-
-    <style>
-
-    </style>
 </head>
 
 <body>
 
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-<h1>Mavzular</h1>
+<h1>Bo'limlar</h1>
 <input type="hidden" id="scienceId" th:value="${scienceId}">
-<!-- ОСНОВНОЙ КОНТЕЙНЕР -->
 <div class="wrapper">
-    <button id="btnSections" onclick="location.href='/topic-sections?scienceId=' + getScienceId()">📂 Bo'limlar</button>
 
-    <!--
-        БЛОК ДЛЯ ОТОБРАЖЕНИЯ СООБЩЕНИЙ ОБ ОШИБКАХ
-        Скрыт, так как используем Toast-уведомления
-    -->
     <div class="error" id="error"></div>
 
-    <!-- КОНТЕЙНЕР СПИСКА ПРЕДМЕТОВ -->
     <div class="list" id="list"></div>
 
-    <!-- НИЖНЯЯ ПАНЕЛЬ С КНОПКАМИ УПРАВЛЕНИЯ -->
     <div class="fixed-bar">
         <div>
-            <!-- КНОПКА ДОБАВЛЕНИЯ НОВОГО ПРЕДМЕТА -->
             <button onclick="add()">➕ Add</button>
             <button id="btnBack">🔙 Back</button>
-
         </div>
 
-        <!-- КНОПКА СОХРАНЕНИЯ В БАЗУ ДАННЫХ -->
         <button onclick="saveToDb()">💾 Save to DB</button>
     </div>
 </div>
 
-<!-- Контейнер для Toast-уведомлений (добавлено) -->
 <div id="toast-container"></div>
 </body>
 </html>

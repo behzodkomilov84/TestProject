@@ -3,6 +3,7 @@ package behzoddev.testproject.controller.api;
 import behzoddev.testproject.dto.topic.TopicCourseLinkDto;
 import behzoddev.testproject.dto.topic.TopicIdAndNameDto;
 import behzoddev.testproject.dto.topic.TopicNameDto;
+import behzoddev.testproject.service.TopicSectionService;
 import behzoddev.testproject.service.TopicService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +19,7 @@ import java.util.Map;
 
 public class TopicController {
     private final TopicService topicService;
+    private final TopicSectionService topicSectionService;
 
     @GetMapping("/api/topic")
     public ResponseEntity<List<TopicIdAndNameDto>> getTopicsByScience(@RequestParam Long scienceId) {
@@ -46,7 +48,9 @@ public class TopicController {
             Long scienceId = Long.parseLong(item.get("science_id").toString());
 
             String name = (String) item.get("name");
-            topicService.saveTopic(scienceId, new TopicNameDto(name));
+            Long sectionId = item.get("sectionId") != null
+                    ? ((Number) item.get("sectionId")).longValue() : null;
+            topicService.saveTopic(scienceId, new TopicNameDto(name), sectionId);
         }
 
         // Обновляем существующие
@@ -54,6 +58,11 @@ public class TopicController {
             Long id = ((Number) item.get("id")).longValue();
             String name = (String) item.get("name");
             topicService.updateTopic(id, name);
+            if (item.containsKey("sectionId")) {
+                Long sectionId = item.get("sectionId") != null
+                        ? ((Number) item.get("sectionId")).longValue() : null;
+                topicSectionService.assignTopicToSection(id, sectionId);
+            }
         }
 
         // Удаление

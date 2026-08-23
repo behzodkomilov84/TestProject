@@ -3,6 +3,7 @@ package behzoddev.testproject.service;
 import behzoddev.testproject.dao.CourseSectionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
+import behzoddev.testproject.dao.TopicSectionRepository;
 import behzoddev.testproject.dto.topic.TopicNameDto;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
@@ -35,6 +36,8 @@ class TopicServiceTest {
     @Mock
     private ScienceRepository scienceRepository;
     @Mock
+    private TopicSectionRepository topicSectionRepository;
+    @Mock
     private CourseSectionRepository courseSectionRepository;
     @Mock
     private AnswerService answerService;
@@ -44,7 +47,7 @@ class TopicServiceTest {
     @BeforeEach
     void setUp() {
         Validation validation = new Validation(answerService);
-        topicService = new TopicService(topicRepository, topicMapper, scienceRepository, courseSectionRepository, validation);
+        topicService = new TopicService(topicRepository, topicMapper, scienceRepository, topicSectionRepository, courseSectionRepository, validation);
     }
 
     @Test

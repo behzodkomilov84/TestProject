@@ -133,7 +133,7 @@ class TelegramPracticeTestServiceTest {
         practiceTestService.selectMode(CHAT_ID, "hard");
 
         when(topicService.getTopicsWithQuestionCount(1L))
-                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 100L)));
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 100L, null, null, null)));
         when(questionRepository.findHardForUser(1L, List.of(10L)))
                 .thenReturn(List.of(new Question(), new Question(), new Question()));
 
@@ -149,7 +149,7 @@ class TelegramPracticeTestServiceTest {
         practiceTestService.selectMode(CHAT_ID, "hard");
 
         when(topicService.getTopicsWithQuestionCount(1L))
-                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 100L)));
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 100L, null, null, null)));
         when(questionRepository.findHardForUser(1L, List.of(10L))).thenReturn(List.of());
 
         SendMessage msg = practiceTestService.selectScience(CHAT_ID, 1L);
@@ -210,7 +210,7 @@ class TelegramPracticeTestServiceTest {
     @Test
     void selectScience_fewQuestions_offersOnlyAvailableCount() {
         when(topicService.getTopicsWithQuestionCount(1L))
-                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 3L)));
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 3L, null, null, null)));
 
         SendMessage msg = practiceTestService.selectScience(CHAT_ID, 1L);
 
@@ -221,7 +221,7 @@ class TelegramPracticeTestServiceTest {
     @Test
     void selectScience_manyQuestions_offersStandardCandidates() {
         when(topicService.getTopicsWithQuestionCount(1L))
-                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 30L)));
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 30L, null, null, null)));
 
         SendMessage msg = practiceTestService.selectScience(CHAT_ID, 1L);
 
@@ -234,7 +234,7 @@ class TelegramPracticeTestServiceTest {
     void fullFlow_twoQuestions_answeredCorrectlyAndIncorrectly_showsFinalResult() {
         // 1) fan tanlangan, topicIds saqlangan
         when(topicService.getTopicsWithQuestionCount(1L))
-                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 2L)));
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 2L, null, null, null)));
         practiceTestService.selectScience(CHAT_ID, 1L);
 
         // 2) savol soni tanlanadi -> testSessionService.startTest chaqiriladi
@@ -287,7 +287,7 @@ class TelegramPracticeTestServiceTest {
         when(scienceService.getSciences()).thenReturn(List.of(new ScienceIdAndNameDto(1L, "Matematika")));
         practiceTestService.selectMode(CHAT_ID, "exam");
         when(topicService.getTopicsWithQuestionCount(1L))
-                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L)));
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L, null, null, null)));
         practiceTestService.selectScience(CHAT_ID, 1L);
 
         QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
@@ -305,7 +305,7 @@ class TelegramPracticeTestServiceTest {
         when(scienceService.getSciences()).thenReturn(List.of(new ScienceIdAndNameDto(1L, "Matematika")));
         practiceTestService.selectMode(CHAT_ID, "hard");
         when(topicService.getTopicsWithQuestionCount(1L))
-                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L)));
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L, null, null, null)));
         when(questionRepository.findHardForUser(1L, List.of(10L)))
                 .thenReturn(List.of(new Question(), new Question()));
         practiceTestService.selectScience(CHAT_ID, 1L);
@@ -349,7 +349,7 @@ class TelegramPracticeTestServiceTest {
     @Test
     void promptCustomCount_asksForNumberWithAvailableRange() {
         when(topicService.getTopicsWithQuestionCount(1L))
-                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 37L)));
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 37L, null, null, null)));
         practiceTestService.selectScience(CHAT_ID, 1L);
 
         SendMessage msg = practiceTestService.promptCustomCount(CHAT_ID);
@@ -360,7 +360,7 @@ class TelegramPracticeTestServiceTest {
     @Test
     void applyCustomCount_validNumber_startsTestWithThatCount() {
         when(topicService.getTopicsWithQuestionCount(1L))
-                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 37L)));
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 37L, null, null, null)));
         practiceTestService.selectScience(CHAT_ID, 1L);
         practiceTestService.promptCustomCount(CHAT_ID);
 
@@ -378,7 +378,7 @@ class TelegramPracticeTestServiceTest {
     @Test
     void applyCustomCount_notANumber_retriesWithoutStartingTest() {
         when(topicService.getTopicsWithQuestionCount(1L))
-                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 37L)));
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 37L, null, null, null)));
         practiceTestService.selectScience(CHAT_ID, 1L);
         practiceTestService.promptCustomCount(CHAT_ID);
 
@@ -391,7 +391,7 @@ class TelegramPracticeTestServiceTest {
     @Test
     void applyCustomCount_outOfRange_retriesWithoutStartingTest() {
         when(topicService.getTopicsWithQuestionCount(1L))
-                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 37L)));
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 37L, null, null, null)));
         practiceTestService.selectScience(CHAT_ID, 1L);
         practiceTestService.promptCustomCount(CHAT_ID);
 
@@ -404,7 +404,7 @@ class TelegramPracticeTestServiceTest {
     @Test
     void applyCustomCount_zeroOrNegative_retriesWithoutStartingTest() {
         when(topicService.getTopicsWithQuestionCount(1L))
-                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 37L)));
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 37L, null, null, null)));
         practiceTestService.selectScience(CHAT_ID, 1L);
         practiceTestService.promptCustomCount(CHAT_ID);
 
@@ -420,7 +420,7 @@ class TelegramPracticeTestServiceTest {
     void chooseCount_practiceMode_startsTestImmediately_noTimePrompt() {
         // rejim tanlanmagan (default — practice)
         when(topicService.getTopicsWithQuestionCount(1L))
-                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L)));
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L, null, null, null)));
         practiceTestService.selectScience(CHAT_ID, 1L);
 
         QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
@@ -439,7 +439,7 @@ class TelegramPracticeTestServiceTest {
         when(scienceService.getSciences()).thenReturn(List.of(new ScienceIdAndNameDto(1L, "Matematika")));
         practiceTestService.selectMode(CHAT_ID, "exam");
         when(topicService.getTopicsWithQuestionCount(1L))
-                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L)));
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L, null, null, null)));
         practiceTestService.selectScience(CHAT_ID, 1L);
 
         SendMessage msg = practiceTestService.chooseCount(CHAT_ID, 3);
@@ -454,7 +454,7 @@ class TelegramPracticeTestServiceTest {
         when(scienceService.getSciences()).thenReturn(List.of(new ScienceIdAndNameDto(1L, "Matematika")));
         practiceTestService.selectMode(CHAT_ID, "exam");
         when(topicService.getTopicsWithQuestionCount(1L))
-                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L)));
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L, null, null, null)));
         practiceTestService.selectScience(CHAT_ID, 1L);
         practiceTestService.chooseCount(CHAT_ID, 3);
 
@@ -496,7 +496,7 @@ class TelegramPracticeTestServiceTest {
         when(scienceService.getSciences()).thenReturn(List.of(new ScienceIdAndNameDto(1L, "Matematika")));
         practiceTestService.selectMode(CHAT_ID, "hard");
         when(topicService.getTopicsWithQuestionCount(1L))
-                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L)));
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L, null, null, null)));
         when(questionRepository.findHardForUser(1L, List.of(10L)))
                 .thenReturn(List.of(new Question(), new Question()));
         practiceTestService.selectScience(CHAT_ID, 1L);
@@ -535,7 +535,7 @@ class TelegramPracticeTestServiceTest {
     void autoFinishIfExpired_noDeadline_returnsNull() {
         // practice rejimi — deadline yo'q
         when(topicService.getTopicsWithQuestionCount(1L))
-                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L)));
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L, null, null, null)));
         practiceTestService.selectScience(CHAT_ID, 1L);
         QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
                 .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null))).build();
@@ -577,7 +577,7 @@ class TelegramPracticeTestServiceTest {
         when(scienceService.getSciences()).thenReturn(List.of(new ScienceIdAndNameDto(1L, "Matematika")));
         practiceTestService.selectMode(CHAT_ID, "exam");
         when(topicService.getTopicsWithQuestionCount(1L))
-                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L)));
+                .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L, null, null, null)));
         practiceTestService.selectScience(CHAT_ID, 1L);
         practiceTestService.chooseCount(CHAT_ID, 1);
 

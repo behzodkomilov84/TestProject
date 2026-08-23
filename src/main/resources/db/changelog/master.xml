@@ -33,6 +33,7 @@
     <include file="/db/changelog/course-section-title-length.sql"/>
     <include file="/db/changelog/course-price.sql"/>
     <include file="/db/changelog/course-payment.sql"/>
+    <include file="/db/changelog/topic-sections.sql"/>
 
 
 </databaseChangeLog>
