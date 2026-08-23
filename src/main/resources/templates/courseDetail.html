@@ -127,7 +127,7 @@
                     <span class="rich-toolbar-sep"></span>
                     <button type="button" onclick="richExec('newSectionTextEditor','insertUnorderedList')" title="Ro'yxat">☰•</button>
                     <button type="button" onclick="richExec('newSectionTextEditor','insertOrderedList')" title="Raqamlangan ro'yxat">☰1</button>
-                    <button type="button" onclick="document.getElementById('newSectionImageInput').click()" title="Rasm qo'shish">🖼</button>
+                    <button type="button" onclick="triggerImageInsert('newSectionTextEditor')" title="Rasm qo'shish">🖼</button>
                     <input type="file" id="newSectionImageInput" accept="image/*" style="display:none;" onchange="richInsertImage('newSectionTextEditor', this)">
                     <button type="button" onclick="openVideoInsertModal('newSectionTextEditor')" title="Video qo'shish (matn ichiga, xohlagan joyga)">🎬</button>
                     <span class="rich-toolbar-sep"></span>
@@ -234,7 +234,7 @@
                     <span class="rich-toolbar-sep"></span>
                     <button type="button" onclick="richExec('editSectionTextEditor','insertUnorderedList')" title="Ro'yxat">☰•</button>
                     <button type="button" onclick="richExec('editSectionTextEditor','insertOrderedList')" title="Raqamlangan ro'yxat">☰1</button>
-                    <button type="button" onclick="document.getElementById('editSectionImageInput').click()" title="Rasm qo'shish">🖼</button>
+                    <button type="button" onclick="triggerImageInsert('editSectionTextEditor')" title="Rasm qo'shish">🖼</button>
                     <input type="file" id="editSectionImageInput" accept="image/*" style="display:none;" onchange="richInsertImage('editSectionTextEditor', this)">
                     <button type="button" onclick="openVideoInsertModal('editSectionTextEditor')" title="Video qo'shish (matn ichiga, xohlagan joyga)">🎬</button>
                     <span class="rich-toolbar-sep"></span>

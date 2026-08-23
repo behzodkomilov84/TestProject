@@ -291,6 +291,45 @@ function richLineSpacing(editorId, value) {
     }
 }
 
+// Fayl tanlash oynasi (native, 🖼) yoki video-qo'shish modali ochilganda
+// kursor tahrirlagichdan "chiqib ketadi" — keyin oddiy editor.focus()
+// chaqirilsa, brauzer avvalgi joyni ESLAB QOLMAYDI, balki kursorni
+// tahrirlagich BOSHIGA qo'yadi (shu sabab video har doim matn boshida
+// paydo bo'lardi). Yechim: fayl tanlash/modal ochilishidan OLDIN joriy
+// kursor o'rnini (Range) saqlab qo'yamiz, keyin insert vaqtida O'SHA
+// joyga qaytaramiz.
+let richInsertSavedRange = null;
+
+function captureEditorSelection(editorId) {
+    const editor = document.getElementById(editorId);
+    const sel = window.getSelection();
+    if (!editor || !sel || sel.rangeCount === 0) return null;
+    const range = sel.getRangeAt(0);
+    if (!editor.contains(range.commonAncestorContainer)) return null;
+    return range.cloneRange();
+}
+
+// Saqlangan joyga kursorni qaytaradi; agar hech narsa saqlanmagan bo'lsa
+// (masalan tahrirlagich hali bo'sh edi) — kontent oxiriga qo'yiladi.
+function restoreEditorSelection(editorId, savedRange) {
+    const editor = document.getElementById(editorId);
+    editor.focus();
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    const range = savedRange ? savedRange.cloneRange() : document.createRange();
+    if (!savedRange) {
+        range.selectNodeContents(editor);
+        range.collapse(false);
+    }
+    sel.addRange(range);
+}
+
+function triggerImageInsert(editorId) {
+    richInsertSavedRange = captureEditorSelection(editorId);
+    const inputId = editorId === "newSectionTextEditor" ? "newSectionImageInput" : "editSectionImageInput";
+    document.getElementById(inputId).click();
+}
+
 // "🖼 Rasm qo'shish" — fayl tanlangach serverga yuklanadi (virus/tur
 // tekshiruvi bilan, boshqa fayl yuklashlar kabi), qaytgan URL kursor
 // turgan joyga qo'yiladi. Oddiy <img> emas — "rich-img-wrap" ichiga
@@ -301,8 +340,6 @@ async function richInsertImage(editorId, fileInput) {
     const file = fileInput.files[0];
     if (!file) return;
 
-    const editor = document.getElementById(editorId);
-    editor.focus();
     attachImageResizeHandlers(editorId);
 
     try {
@@ -321,6 +358,10 @@ async function richInsertImage(editorId, fileInput) {
             + `<img src="${url}">`
             + `<span class="rich-img-handle" title="Sudrab o'lchamini o'zgartiring"></span>`
             + `</span>&nbsp;`;
+        // Yuklash tugagach — endi kursorni saqlangan joyga qaytaramiz
+        // (yuklash paytida boshqa joy bosilmagan bo'lsa deb umid qilib
+        // emas, aynan shu payt uchun saqlangan Range'ni ishlatamiz).
+        restoreEditorSelection(editorId, richInsertSavedRange);
         document.execCommand('insertHTML', false, html);
         injectAlignBars(editorId);
     } catch (err) {
@@ -350,6 +391,7 @@ let videoInsertTargetEditorId = null;
 
 function openVideoInsertModal(editorId) {
     videoInsertTargetEditorId = editorId;
+    richInsertSavedRange = captureEditorSelection(editorId);
     document.getElementById("videoInsertUrlInput").value = "";
     document.getElementById("videoInsertFileInput").value = "";
     document.getElementById("videoInsertWidthInput").value = "480";
@@ -393,8 +435,7 @@ function normalizeVideoWidth(raw) {
 }
 
 function insertYouTubeEmbedHtml(editorId, source, width) {
-    const editor = document.getElementById(editorId);
-    editor.focus();
+    restoreEditorSelection(editorId, richInsertSavedRange);
     attachImageResizeHandlers(editorId);
 
     // E'tibor bering: kenglik WRAP'ga emas, to'g'ridan-to'g'ri <iframe>'ga
@@ -416,8 +457,6 @@ async function richInsertUploadedVideo(editorId, fileInput) {
     const width = fileInput.dataset.pendingWidth || "480px";
     delete fileInput.dataset.pendingWidth;
 
-    const editor = document.getElementById(editorId);
-    editor.focus();
     attachImageResizeHandlers(editorId);
 
     try {
@@ -436,6 +475,7 @@ async function richInsertUploadedVideo(editorId, fileInput) {
             + `<video src="${url}" controls style="width:${width};max-width:100%;display:block"></video>`
             + `<span class="rich-img-handle" title="Sudrab o'lchamini o'zgartiring"></span>`
             + `</span>&nbsp;`;
+        restoreEditorSelection(editorId, richInsertSavedRange);
         document.execCommand('insertHTML', false, html);
         injectAlignBars(editorId);
     } catch (err) {
