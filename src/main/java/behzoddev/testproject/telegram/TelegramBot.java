@@ -42,7 +42,9 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static behzoddev.testproject.telegram.service.TelegramMenuService.*;
 
@@ -193,20 +195,26 @@ public class TelegramBot extends TelegramLongPollingBot {
 
                 // ===== Kurslarni botda o'qish (obuna bor yoki bepul bo'lsa) =====
                 // Har bir navigatsiya qadamida (ro'yxat -> kurs -> mavzular ->
-                // mavzu -> keyingi mavzu) OLDINGI xabar o'chiriladi — aks holda
-                // "Keyingi mavzu" bosilgan sayin chatda o'nlab eski xabar
-                // to'planib qolardi. Yangi xabar xuddi shu o'rinda ochilgandek
-                // tuyuladi.
+                // mavzu -> keyingi mavzu) OLDINGI ekranning BARCHA xabarlari
+                // o'chiriladi — aks holda "Keyingi mavzu" bosilgan sayin
+                // chatda o'nlab eski xabar to'planib qolardi. DIQQAT: bitta
+                // mavzu matni uzun bo'lsa, Telegram xabar chegarasi (~4096
+                // belgi) tufayli 2-3 xabarga bo'linib yuboriladi — faqat
+                // OXIRGISIDA tugmalar bo'ladi. Shuning uchun oddiy
+                // deleteMessageSafely(callbackMsgId) yetarli emas (faqat
+                // oxirgi bo'lakni o'chirar, avvalgi bo'lak(lar) chatda
+                // qolib ketardi) — barcha yuborilgan xabar id'lari
+                // deleteTrackedCourseMessages() orqali kuzatiladi/o'chiriladi.
 
                 if (data.equals("course_list")) {
-                    deleteMessageSafely(chatId, callbackMsgId);
-                    execute(courseReaderService.showCourseList(getUserByChatId(chatId)));
+                    deleteTrackedCourseMessages(chatId);
+                    trackCourseMessage(chatId, execute(courseReaderService.showCourseList(getUserByChatId(chatId))));
                     return;
                 }
                 if (data.startsWith("course_open_")) {
                     Long courseId = Long.parseLong(data.replace("course_open_", ""));
-                    deleteMessageSafely(chatId, callbackMsgId);
-                    execute(courseReaderService.openCourse(getUserByChatId(chatId), courseId));
+                    deleteTrackedCourseMessages(chatId);
+                    trackCourseMessage(chatId, execute(courseReaderService.openCourse(getUserByChatId(chatId), courseId)));
                     return;
                 }
                 // ===== Kursga Click orqali onlayn to'lash (OWNER tasdig'ini kutmasdan) =====
@@ -218,7 +226,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 // ===== Kursga obuna so'rovi (OWNER qo'lda tasdiqlaydi) — botning o'zidan =====
                 if (data.startsWith("course_request_")) {
                     Long courseId = Long.parseLong(data.replace("course_request_", ""));
-                    deleteMessageSafely(chatId, callbackMsgId);
+                    deleteTrackedCourseMessages(chatId);
                     execute(courseReaderService.requestSubscription(getUserByChatId(chatId), courseId));
                     return;
                 }
@@ -227,8 +235,8 @@ public class TelegramBot extends TelegramLongPollingBot {
                     int sep = rest.lastIndexOf('_');
                     Long courseId = Long.parseLong(rest.substring(0, sep));
                     int page = Integer.parseInt(rest.substring(sep + 1));
-                    deleteMessageSafely(chatId, callbackMsgId);
-                    execute(courseReaderService.showSectionsPage(getUserByChatId(chatId), courseId, page));
+                    deleteTrackedCourseMessages(chatId);
+                    trackCourseMessage(chatId, execute(courseReaderService.showSectionsPage(getUserByChatId(chatId), courseId, page)));
                     return;
                 }
                 if (data.startsWith("course_sec_")) {
@@ -237,13 +245,15 @@ public class TelegramBot extends TelegramLongPollingBot {
                     Long courseId = Long.parseLong(rest.substring(0, sep));
                     Long sectionId = Long.parseLong(rest.substring(sep + 1));
                     User sectionUser = getUserByChatId(chatId);
-                    deleteMessageSafely(chatId, callbackMsgId);
+                    deleteTrackedCourseMessages(chatId);
+                    List<Integer> sentIds = new ArrayList<>();
                     for (SendMessage m : courseReaderService.openSection(sectionUser, courseId, sectionId)) {
-                        execute(m);
+                        sentIds.add(execute(m).getMessageId());
                     }
                     for (SendDocument d : courseReaderService.documentsForSection(sectionUser, courseId, sectionId)) {
-                        execute(d);
+                        sentIds.add(execute(d).getMessageId());
                     }
+                    trackCourseMessages(chatId, sentIds);
                     return;
                 }
                 if (data.startsWith("course_complete_")) {
@@ -251,16 +261,18 @@ public class TelegramBot extends TelegramLongPollingBot {
                     int sep = rest.indexOf('_');
                     Long courseId = Long.parseLong(rest.substring(0, sep));
                     Long sectionId = Long.parseLong(rest.substring(sep + 1));
-                    deleteMessageSafely(chatId, callbackMsgId);
+                    deleteTrackedCourseMessages(chatId);
+                    List<Integer> sentIds = new ArrayList<>();
                     for (SendMessage m : courseReaderService.completeAndAdvance(getUserByChatId(chatId), courseId, sectionId)) {
-                        execute(m);
+                        sentIds.add(execute(m).getMessageId());
                     }
+                    trackCourseMessages(chatId, sentIds);
                     return;
                 }
                 // ===== Kurs bo'limidagi mavzuga oid testni botning o'zida yechish =====
                 if (data.startsWith("course_test_")) {
                     Long topicId = Long.parseLong(data.replace("course_test_", ""));
-                    deleteMessageSafely(chatId, callbackMsgId);
+                    deleteTrackedCourseMessages(chatId);
                     execute(practiceTestService.startForTopic(chatId, topicId));
                     return;
                 }
@@ -882,6 +894,38 @@ public class TelegramBot extends TelegramLongPollingBot {
         } catch (Exception e) {
             log.debug("Eski xabarni o'chirib bo'lmadi: chatId={}, messageId={}", chatId, messageId, e);
         }
+    }
+
+    // Kurs mavzusi (bo'lim) matni uzun bo'lsa, Telegram xabar chegarasi
+    // tufayli bir necha (2-3) xabarga bo'linib yuboriladi — tugmalar esa
+    // faqat ENG OXIRGISIDA bo'ladi. Shuning uchun keyingi navigatsiyada
+    // (callback'ning o'zi qaysi xabarda bosilganidan qat'iy nazar) OLDINGI
+    // ekranning HAMMA bo'lak(lar)i o'chirilishi kerak — aks holda faqat
+    // oxirgi bo'lak o'chib, avvalgi 1-2 bo'lak chatda "qolib ketardi" (shu
+    // muammo bo'yicha foydalanuvchi murojaati bilan qo'shildi). Yuborilgan
+    // xabar id'lari TelegramSessionService.tempData'da CSV sifatida
+    // saqlanadi (chat holati DB'da, shuning uchun bot qayta ishga tushsa
+    // ham yo'qolmaydi).
+    private static final String COURSE_MSG_IDS_KEY = "course_msg_ids";
+
+    private void deleteTrackedCourseMessages(Long chatId) {
+        String raw = sessionService.getTempData(chatId).get(COURSE_MSG_IDS_KEY);
+        if (raw == null || raw.isBlank()) return;
+
+        for (String idStr : raw.split(",")) {
+            if (!idStr.isBlank()) {
+                deleteMessageSafely(chatId, Integer.valueOf(idStr.trim()));
+            }
+        }
+    }
+
+    private void trackCourseMessage(Long chatId, Message sent) {
+        trackCourseMessages(chatId, List.of(sent.getMessageId()));
+    }
+
+    private void trackCourseMessages(Long chatId, List<Integer> messageIds) {
+        String csv = messageIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+        sessionService.putTempData(chatId, COURSE_MSG_IDS_KEY, csv);
     }
 
     private User getUserByChatId(Long chatId) {
