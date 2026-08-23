@@ -44,6 +44,12 @@ public class TelegramPracticeTestService {
     private static final List<Integer> TIME_CANDIDATES_MIN = List.of(10, 20, 30, 60);
     private static final int MAX_TIME_LIMIT_MIN = 180;
     private static final String DEFAULT_MODE = "practice";
+    // Fan/Bo'lim/Mavzu ro'yxatlari endi RAQAMLI tugmalar bilan, gorizontal
+    // (yonma-yon) katakcha ko'rinishida — to'liq nomlar xabar MATNIDA
+    // ko'rsatiladi (TelegramCourseReaderService'dagi bilan bir xil g'oya,
+    // uzun ro'yxatda tugmalar bir-birining ustiga chiqib, bir qismi
+    // ko'rinmay qolish muammosini oldini oladi).
+    private static final int BUTTONS_PER_ROW = 4;
 
     private final ScienceService scienceService;
     private final TopicService topicService;
@@ -84,6 +90,16 @@ public class TelegramPracticeTestService {
         return btn;
     }
 
+    // Tekis tugmalar ro'yxatini BUTTONS_PER_ROW tadan qatorlarga bo'ladi
+    // (TelegramCourseReaderService'dagi bilan bir xil g'oya).
+    private List<List<InlineKeyboardButton>> chunkIntoRows(List<InlineKeyboardButton> buttons) {
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        for (int i = 0; i < buttons.size(); i += BUTTONS_PER_ROW) {
+            rows.add(new ArrayList<>(buttons.subList(i, Math.min(i + BUTTONS_PER_ROW, buttons.size()))));
+        }
+        return rows;
+    }
+
     // ================= 1. Fan tanlash =================
 
     public SendMessage selectMode(Long chatId, String mode) {
@@ -105,20 +121,31 @@ public class TelegramPracticeTestService {
 
         // Foydalanuvchi qaysi rejimni tanlaganini aniq ko'rishi uchun —
         // ilgari bu xabar berilmasdi, "fanni tanlang" faqat shunday chiqardi.
-        msg.setText(modeLabel(mode) + " rejimi tanlandi.\n\n🎯 Mustaqil test uchun fanni tanlang:");
-
-        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        // To'liq fan nomlari matnda RAQAMLANGAN ro'yxat sifatida, tugmalar
+        // esa faqat mos raqam bilan (gorizontal katakcha).
+        StringBuilder sb = new StringBuilder(modeLabel(mode) + " rejimi tanlandi.\n\n🎯 Mustaqil test uchun fanni tanlang:\n\n");
+        List<InlineKeyboardButton> buttons = new ArrayList<>();
+        int i = 1;
         for (ScienceIdAndNameDto science : sciences) {
-            InlineKeyboardButton btn = new InlineKeyboardButton();
-            btn.setText(science.name());
-            btn.setCallbackData("pt_science_" + science.id());
-            rows.add(List.of(btn));
+            sb.append(i).append(". ").append(science.name()).append("\n");
+            buttons.add(button(String.valueOf(i), "pt_science_" + science.id()));
+            i++;
         }
+
+        msg.setText(sb.toString());
+
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>(chunkIntoRows(buttons));
+        rows.add(List.of(button("🔙 Orqaga", "pt_back_mode")));
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(rows);
         msg.setReplyMarkup(markup);
         return msg;
+    }
+
+    // "🔙 Orqaga" tugmasi — rejim tanlash (fan ro'yxatidan bir qadam orqaga).
+    public SendMessage backToScienceSelection(Long chatId) {
+        return showScienceSelection(chatId);
     }
 
     // Kurs bo'limidagi "🎯 Mavzuga oid testlarni yechish" tugmasidan —
@@ -202,20 +229,36 @@ public class TelegramPracticeTestService {
             }
         }
 
-        SendMessage msg = new SendMessage();
-        msg.setChatId(chatId.toString());
-        msg.setText("📂 Bo'limni tanlang (yoki fanning barcha mavzulari bilan mashq qiling):");
-
-        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-        sectionsById.values().stream()
+        List<SectionInfo> sorted = sectionsById.values().stream()
                 .sorted(java.util.Comparator.comparing(SectionInfo::orderIndex,
                         java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
-                .forEach(sec -> rows.add(List.of(button(sec.name(), "pt_section_" + scienceId + "_" + sec.id()))));
+                .toList();
 
-        if (hasUnassigned) {
-            rows.add(List.of(button("— Bo'limsiz mavzular —", "pt_section_" + scienceId + "_none")));
+        // Bo'lim nomlari matnda raqamlangan ro'yxat sifatida, tugmalar esa
+        // faqat mos raqam bilan (gorizontal katakcha) — "Bo'limsiz
+        // mavzular" va "Barchasi" ham ketma-ket raqamga qo'shiladi.
+        StringBuilder sb = new StringBuilder("📂 Bo'limni tanlang:\n\n");
+        List<InlineKeyboardButton> buttons = new ArrayList<>();
+        int i = 1;
+        for (SectionInfo sec : sorted) {
+            sb.append(i).append(". ").append(sec.name()).append("\n");
+            buttons.add(button(String.valueOf(i), "pt_section_" + scienceId + "_" + sec.id()));
+            i++;
         }
-        rows.add(List.of(button("🔷 Barchasi (shu fan bo'yicha)", "pt_section_" + scienceId + "_all")));
+        if (hasUnassigned) {
+            sb.append(i).append(". — Bo'limsiz mavzular —\n");
+            buttons.add(button(String.valueOf(i), "pt_section_" + scienceId + "_none"));
+            i++;
+        }
+        sb.append(i).append(". 🔷 Barchasi (shu fan bo'yicha)\n");
+        buttons.add(button(String.valueOf(i), "pt_section_" + scienceId + "_all"));
+
+        SendMessage msg = new SendMessage();
+        msg.setChatId(chatId.toString());
+        msg.setText(sb.toString());
+
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>(chunkIntoRows(buttons));
+        rows.add(List.of(button("🔙 Orqaga", "pt_back_science")));
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(rows);
@@ -256,20 +299,39 @@ public class TelegramPracticeTestService {
 
     private SendMessage showTopicSelection(Long chatId, Long scienceId, String sectionValue, String sectionLabel,
                                             List<TopicWithQuestionCountDto> topics) {
+        // Mavzu nomlari matnda raqamlangan ro'yxat sifatida, tugmalar
+        // faqat mos raqam bilan (gorizontal katakcha) — avval har bir
+        // mavzu to'liq nomi bilan alohida qatorda edi, uzun ro'yxatlarda
+        // (masalan 15+ mavzu) bir qismi ko'rinmay qolardi.
+        StringBuilder sb = new StringBuilder("📖 " + sectionLabel + " — mavzuni tanlang:\n\n");
+        sb.append("🔷 — Barcha mavzular (shu bo'limda)\n");
+        List<InlineKeyboardButton> buttons = new ArrayList<>();
+        buttons.add(button("🔷", "pt_topicgroup_" + scienceId + "_" + sectionValue));
+
+        int i = 1;
+        for (TopicWithQuestionCountDto t : topics) {
+            sb.append(i).append(". ").append(t.name()).append(" (").append(t.questionCount()).append(" ta)\n");
+            buttons.add(button(String.valueOf(i), "pt_topic_" + t.id()));
+            i++;
+        }
+
         SendMessage msg = new SendMessage();
         msg.setChatId(chatId.toString());
-        msg.setText("📖 " + sectionLabel + " — mavzuni tanlang (yoki bo'limning barcha mavzulari bilan mashq qiling):");
+        msg.setText(sb.toString());
 
-        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-        rows.add(List.of(button("🔷 Barcha mavzular (shu bo'limda)", "pt_topicgroup_" + scienceId + "_" + sectionValue)));
-        for (TopicWithQuestionCountDto t : topics) {
-            rows.add(List.of(button(t.name() + " (" + t.questionCount() + " ta)", "pt_topic_" + t.id())));
-        }
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>(chunkIntoRows(buttons));
+        rows.add(List.of(button("🔙 Orqaga", "pt_back_section_" + scienceId)));
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(rows);
         msg.setReplyMarkup(markup);
         return msg;
+    }
+
+    // "🔙 Orqaga" tugmasi — mavzu ro'yxatidan bo'lim ro'yxatiga qaytish.
+    public SendMessage backToSectionSelection(Long chatId, Long scienceId) {
+        List<TopicWithQuestionCountDto> topics = topicService.getTopicsWithQuestionCount(scienceId);
+        return showSectionSelection(chatId, scienceId, topics);
     }
 
     // "🔷 Barcha mavzular (shu bo'limda)" tugmasi — selectSection bilan bir

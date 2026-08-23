@@ -121,9 +121,19 @@ public class TelegramBot extends TelegramLongPollingBot {
                 String data = update.getCallbackQuery().getData();
                 Long chatId = update.getCallbackQuery().getMessage().getChatId();
 
+                // Har bir tugma bosilganda ESKI xabar o'chiriladi, so'ng
+                // yangisi yuboriladi — chatda eski qadamlar to'planib
+                // qolmasligi uchun (foydalanuvchi so'rovi bo'yicha, bot
+                // bo'ylab yagona qoida). Faqat allaqachon EditMessageText
+                // orqali JOYIDA yangilanadigan xabarlar (masalan
+                // notif_read_, savol-javob ketma-ketligi) bundan mustasno —
+                // ular allaqachon "eski xabar yo'qoladi" talabini bajaradi.
+                Integer callbackMsgId = update.getCallbackQuery().getMessage().getMessageId();
+
                 if (data.equals("notif_read_all")) {
                     User user = getUserByChatId(chatId);
                     menuService.markAllNotificationsRead(user);
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(menuService.showNotifications(user));
                     return;
                 }
@@ -154,24 +164,29 @@ public class TelegramBot extends TelegramLongPollingBot {
 
                 // ===== Profil tahrirlash (inline tugmalar) =====
                 if (data.equals("profile_edit_username")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(profileService.startEditUsername(chatId));
                     return;
                 }
                 if (data.equals("profile_edit_email")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(profileService.startEditEmail(chatId));
                     return;
                 }
                 if (data.equals("profile_edit_phone")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(profileService.startEditPhone(chatId));
                     return;
                 }
                 if (data.equals("profile_edit_password")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(profileService.startEditPassword(chatId));
                     return;
                 }
 
                 // ===== Obuna: Click orqali 1 oyga to'lash =====
                 if (data.equals("pay_click_1m")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(menuService.createClickPaymentLink(getUserByChatId(chatId)));
                     return;
                 }
@@ -182,16 +197,15 @@ public class TelegramBot extends TelegramLongPollingBot {
                 // "Keyingi mavzu" bosilgan sayin chatda o'nlab eski xabar
                 // to'planib qolardi. Yangi xabar xuddi shu o'rinda ochilgandek
                 // tuyuladi.
-                Integer courseMsgId = update.getCallbackQuery().getMessage().getMessageId();
 
                 if (data.equals("course_list")) {
-                    deleteMessageSafely(chatId, courseMsgId);
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(courseReaderService.showCourseList(getUserByChatId(chatId)));
                     return;
                 }
                 if (data.startsWith("course_open_")) {
                     Long courseId = Long.parseLong(data.replace("course_open_", ""));
-                    deleteMessageSafely(chatId, courseMsgId);
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(courseReaderService.openCourse(getUserByChatId(chatId), courseId));
                     return;
                 }
@@ -204,6 +218,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 // ===== Kursga obuna so'rovi (OWNER qo'lda tasdiqlaydi) — botning o'zidan =====
                 if (data.startsWith("course_request_")) {
                     Long courseId = Long.parseLong(data.replace("course_request_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(courseReaderService.requestSubscription(getUserByChatId(chatId), courseId));
                     return;
                 }
@@ -212,7 +227,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                     int sep = rest.lastIndexOf('_');
                     Long courseId = Long.parseLong(rest.substring(0, sep));
                     int page = Integer.parseInt(rest.substring(sep + 1));
-                    deleteMessageSafely(chatId, courseMsgId);
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(courseReaderService.showSectionsPage(getUserByChatId(chatId), courseId, page));
                     return;
                 }
@@ -222,7 +237,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                     Long courseId = Long.parseLong(rest.substring(0, sep));
                     Long sectionId = Long.parseLong(rest.substring(sep + 1));
                     User sectionUser = getUserByChatId(chatId);
-                    deleteMessageSafely(chatId, courseMsgId);
+                    deleteMessageSafely(chatId, callbackMsgId);
                     for (SendMessage m : courseReaderService.openSection(sectionUser, courseId, sectionId)) {
                         execute(m);
                     }
@@ -236,7 +251,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                     int sep = rest.indexOf('_');
                     Long courseId = Long.parseLong(rest.substring(0, sep));
                     Long sectionId = Long.parseLong(rest.substring(sep + 1));
-                    deleteMessageSafely(chatId, courseMsgId);
+                    deleteMessageSafely(chatId, callbackMsgId);
                     for (SendMessage m : courseReaderService.completeAndAdvance(getUserByChatId(chatId), courseId, sectionId)) {
                         execute(m);
                     }
@@ -245,18 +260,39 @@ public class TelegramBot extends TelegramLongPollingBot {
                 // ===== Kurs bo'limidagi mavzuga oid testni botning o'zida yechish =====
                 if (data.startsWith("course_test_")) {
                     Long topicId = Long.parseLong(data.replace("course_test_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(practiceTestService.startForTopic(chatId, topicId));
                     return;
                 }
 
-                // ===== Mustaqil test (rejim -> fan -> savol soni -> savol-javob) =====
+                // ===== Mustaqil test (rejim -> fan -> bo'lim -> mavzu -> savol soni -> savol-javob) =====
                 if (data.startsWith("pt_mode_")) {
                     String mode = data.replace("pt_mode_", "");
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(practiceTestService.selectMode(chatId, mode));
+                    return;
+                }
+                // "🔙 Orqaga" tugmalari — bosqichma-bosqich orqaga qaytish
+                // (rejim tanlash -> fan ro'yxati -> bo'lim ro'yxati).
+                if (data.equals("pt_back_mode")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
+                    execute(practiceTestService.startFlow(chatId));
+                    return;
+                }
+                if (data.equals("pt_back_science")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
+                    execute(practiceTestService.backToScienceSelection(chatId));
+                    return;
+                }
+                if (data.startsWith("pt_back_section_")) {
+                    Long scienceId = Long.parseLong(data.replace("pt_back_section_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
+                    execute(practiceTestService.backToSectionSelection(chatId, scienceId));
                     return;
                 }
                 if (data.startsWith("pt_science_")) {
                     Long scienceId = Long.parseLong(data.replace("pt_science_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(practiceTestService.selectScience(chatId, scienceId));
                     return;
                 }
@@ -267,6 +303,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                     int sep = rest.indexOf('_');
                     Long scienceId = Long.parseLong(rest.substring(0, sep));
                     String sectionValue = rest.substring(sep + 1);
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(practiceTestService.selectSection(chatId, scienceId, sectionValue));
                     return;
                 }
@@ -275,29 +312,35 @@ public class TelegramBot extends TelegramLongPollingBot {
                     int sep = rest.indexOf('_');
                     Long scienceId = Long.parseLong(rest.substring(0, sep));
                     String sectionValue = rest.substring(sep + 1);
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(practiceTestService.selectTopicGroup(chatId, scienceId, sectionValue));
                     return;
                 }
                 if (data.startsWith("pt_topic_")) {
                     Long topicId = Long.parseLong(data.replace("pt_topic_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(practiceTestService.selectTopic(chatId, topicId));
                     return;
                 }
                 if (data.equals("pt_count_custom")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(practiceTestService.promptCustomCount(chatId));
                     return;
                 }
                 if (data.startsWith("pt_count_")) {
                     int count = Integer.parseInt(data.replace("pt_count_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(practiceTestService.chooseCount(chatId, count));
                     return;
                 }
                 if (data.equals("pt_time_custom")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(practiceTestService.promptCustomTimeLimit(chatId));
                     return;
                 }
                 if (data.startsWith("pt_time_")) {
                     int minutes = Integer.parseInt(data.replace("pt_time_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(practiceTestService.applyTimeLimit(chatId, minutes));
                     return;
                 }
@@ -310,11 +353,13 @@ public class TelegramBot extends TelegramLongPollingBot {
                 // ===== O'quvchi: Guruh takliflari (qabul/rad etish) =====
                 if (data.startsWith("group_invite_accept_")) {
                     Long inviteId = Long.parseLong(data.replace("group_invite_accept_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(telegramUserService.respondToGroupInvite(chatId, inviteId, true));
                     return;
                 }
                 if (data.startsWith("group_invite_reject_")) {
                     Long inviteId = Long.parseLong(data.replace("group_invite_reject_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(telegramUserService.respondToGroupInvite(chatId, inviteId, false));
                     return;
                 }
@@ -322,15 +367,18 @@ public class TelegramBot extends TelegramLongPollingBot {
                 // ===== ADMIN: Gruppalar =====
                 if (data.startsWith("tg_group_")) {
                     Long groupId = Long.parseLong(data.replace("tg_group_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(teacherService.viewGroup(chatId, groupId));
                     return;
                 }
                 if (data.equals("tg_newgroup")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(teacherService.startCreateGroup(chatId));
                     return;
                 }
                 if (data.startsWith("tg_invite_")) {
                     Long groupId = Long.parseLong(data.replace("tg_invite_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(teacherService.startInvite(chatId, groupId));
                     return;
                 }
@@ -338,16 +386,19 @@ public class TelegramBot extends TelegramLongPollingBot {
                 // ===== ADMIN: Topshiriq berish =====
                 if (data.startsWith("tg_assign_group_")) {
                     Long groupId = Long.parseLong(data.replace("tg_assign_group_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(teacherService.selectAssignGroup(chatId, groupId));
                     return;
                 }
                 if (data.startsWith("tg_assign_set_")) {
                     Long setId = Long.parseLong(data.replace("tg_assign_set_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(teacherService.selectAssignSet(chatId, setId));
                     return;
                 }
                 if (data.startsWith("tg_assign_due_")) {
                     int days = Integer.parseInt(data.replace("tg_assign_due_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(teacherService.finalizeAssign(chatId, days));
                     return;
                 }
@@ -355,6 +406,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                 // ===== ADMIN: Natijalar =====
                 if (data.startsWith("tg_result_")) {
                     Long assignmentId = Long.parseLong(data.replace("tg_result_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(teacherService.showResultDetail(chatId, assignmentId));
                     return;
                 }
@@ -362,30 +414,65 @@ public class TelegramBot extends TelegramLongPollingBot {
                 // ===== ADMIN: Topshiriq chatlari =====
                 if (data.startsWith("tg_chat_")) {
                     Long assignmentId = Long.parseLong(data.replace("tg_chat_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(chatService.showChat(chatId, assignmentId));
                     return;
                 }
 
-                // ===== ADMIN: Savollar boshqaruvi (Excel import) =====
+                // ===== ADMIN: Savollar boshqaruvi (Excel import) — Fan -> Bo'lim -> Mavzu =====
                 if (data.startsWith("tg_import_science_")) {
                     Long scienceId = Long.parseLong(data.replace("tg_import_science_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(questionImportService.selectScience(chatId, scienceId));
                     return;
                 }
+                // "tg_import_section_<scienceId>_<sectionValue>" — practice
+                // test oqimidagi "pt_section_" bilan bir xil qoida.
+                if (data.startsWith("tg_import_section_")) {
+                    String rest = data.replace("tg_import_section_", "");
+                    int sep = rest.indexOf('_');
+                    Long scienceId = Long.parseLong(rest.substring(0, sep));
+                    String sectionValue = rest.substring(sep + 1);
+                    deleteMessageSafely(chatId, callbackMsgId);
+                    execute(questionImportService.selectSection(chatId, scienceId, sectionValue));
+                    return;
+                }
+                // "tg_import_back_science" — Fan ro'yxatiga qaytish.
+                if (data.equals("tg_import_back_science")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
+                    execute(questionImportService.startFlow(chatId));
+                    return;
+                }
+                // "tg_import_back_section_<scienceId>" — Bo'lim ro'yxatiga qaytish.
+                if (data.startsWith("tg_import_back_section_")) {
+                    Long scienceId = Long.parseLong(data.replace("tg_import_back_section_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
+                    execute(questionImportService.selectScience(chatId, scienceId));
+                    return;
+                }
+                // "tg_import_topicspage_<scienceId>_<sectionValue>_<page>"
                 if (data.startsWith("tg_import_topicspage_")) {
                     String rest = data.replace("tg_import_topicspage_", "");
-                    int sep = rest.lastIndexOf('_');
-                    Long scienceId = Long.parseLong(rest.substring(0, sep));
-                    int page = Integer.parseInt(rest.substring(sep + 1));
-                    execute(questionImportService.selectSciencePage(chatId, scienceId, page));
+                    int firstSep = rest.indexOf('_');
+                    int lastSep = rest.lastIndexOf('_');
+                    Long scienceId = Long.parseLong(rest.substring(0, firstSep));
+                    String sectionValue = rest.substring(firstSep + 1, lastSep);
+                    int page = Integer.parseInt(rest.substring(lastSep + 1));
+                    deleteMessageSafely(chatId, callbackMsgId);
+                    execute(questionImportService.selectSciencePage(chatId, scienceId, sectionValue, page));
                     return;
                 }
                 if (data.startsWith("tg_import_topic_")) {
                     Long topicId = Long.parseLong(data.replace("tg_import_topic_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(questionImportService.selectTopic(chatId, topicId));
                     return;
                 }
                 if (data.equals("tg_import_template")) {
+                    // Bu yerda ESKI xabar (".xlsx faylni yuboring" yo'riqnomasi)
+                    // ATAYLAB o'chirilmaydi — foydalanuvchiga hali kerak
+                    // (shablonni yuklab olgach, xuddi shu xabar ostiga faylni
+                    // yuborishi kerak).
                     execute(questionImportService.sendTemplate(chatId));
                     return;
                 }
@@ -397,11 +484,13 @@ public class TelegramBot extends TelegramLongPollingBot {
                     int sep = rest.indexOf('_');
                     Long targetUserId = Long.parseLong(rest.substring(0, sep));
                     String roleName = rest.substring(sep + 1);
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(ownerService.toggleRole(chatId, targetUserId, roleName, add));
                     return;
                 }
                 if (data.startsWith("tg_unlock_")) {
                     Long targetUserId = Long.parseLong(data.replace("tg_unlock_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(ownerService.unlockUser(chatId, targetUserId));
                     return;
                 }
@@ -409,28 +498,33 @@ public class TelegramBot extends TelegramLongPollingBot {
                 // ===== OWNER: To'lovlar =====
                 if (data.startsWith("tg_paydetail_")) {
                     Long subscriptionId = Long.parseLong(data.replace("tg_paydetail_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(ownerService.showPaymentDetail(chatId, subscriptionId));
                     return;
                 }
                 if (data.startsWith("tg_payok_")) {
                     Long subscriptionId = Long.parseLong(data.replace("tg_payok_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(ownerService.confirmPayment(chatId, subscriptionId));
                     return;
                 }
                 if (data.startsWith("tg_payno_")) {
                     Long subscriptionId = Long.parseLong(data.replace("tg_payno_", ""));
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(ownerService.rejectPayment(chatId, subscriptionId));
                     return;
                 }
 
                 // ===== OWNER: Tizim sozlamalari =====
                 if (data.equals("tg_settings_edit")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(ownerService.startEditMinAmount(chatId));
                     return;
                 }
 
                 // ===== OWNER: E'lon yuborish =====
                 if (data.equals("tg_broadcast_yes")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
                     for (SendMessage m : ownerService.buildBroadcastMessages(chatId)) {
                         try {
                             execute(m);
@@ -441,28 +535,34 @@ public class TelegramBot extends TelegramLongPollingBot {
                     return;
                 }
                 if (data.equals("tg_broadcast_no")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(ownerService.cancelBroadcast(chatId));
                     return;
                 }
 
                 // ===== Botda ro'yxatdan o'tish =====
                 if (data.equals("reg_start")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(registrationService.start(chatId));
                     return;
                 }
                 if (data.equals("reg_skip_phone")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(registrationService.skipPhone(chatId));
                     return;
                 }
                 if (data.equals("reg_terms_yes")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(registrationService.confirmTerms(chatId));
                     return;
                 }
                 if (data.equals("reg_terms_no")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(registrationService.cancelTerms(chatId));
                     return;
                 }
                 if (data.equals("reg_resend_code")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(registrationService.resendCode(chatId));
                     return;
                 }
@@ -475,6 +575,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                     SendMessage msg =
                             telegramUserService.showAssignmentInfo(chatId, assignmentId);
 
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(msg);
                 }
 
@@ -490,6 +591,7 @@ public class TelegramBot extends TelegramLongPollingBot {
 
                     SendMessage msg = getSendMessage(chatId, attempt);
 
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(msg);
                 }
 
