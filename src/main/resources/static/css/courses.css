@@ -581,7 +581,13 @@ body {
 .rich-img-wrap.align-left,
 .rich-img-wrap.align-center,
 .rich-img-wrap.align-right {
+    /* width:auto (standart) — block elementni konteyner enigacha
+       cho'zib yuboradi, shu sabab margin:auto hech qanday bo'sh joy
+       qoldirmay ishlamay qoladi. fit-content — wrap'ni ichidagi
+       rasm/video eniga qisadi, shundagina margin orqali chap/markaz/
+       o'ngga surish ko'rinadi. */
     display: block;
+    width: fit-content;
 }
 
 .rich-img-wrap.align-left {
