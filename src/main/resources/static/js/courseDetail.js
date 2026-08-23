@@ -374,7 +374,8 @@ async function richInsertImage(editorId, fileInput) {
 }
 
 // "🎬 Video qo'shish" (rich-toolbar, matn ICHIGA) — rasm bilan bir xil
-// tamoyilda ishlaydi: video havolasi (YouTube, Vimeo va h.k.) YOKI
+// tamoyilda ishlaydi: video havolasi (YouTube, Vimeo, Instagram, Facebook
+// va h.k.) YOKI
 // kompyuterdan fayl, kursor
 // turgan joyga qo'yiladi (matndan oldin/o'rtasida/keyin — cursor qayerda
 // bo'lsa, shu yerga; xohlagancha marta chaqirib bir nechta video
@@ -449,20 +450,59 @@ function isYouTubeSource(source) {
     return !trimmed.includes("/") && !trimmed.includes(".") && !trimmed.includes(" ");
 }
 
-// "🎬 Video qo'shish" oynasiga nafaqat YouTube, balki boshqa manbalardan
-// (Vimeo va h.k. — umumiy iframe embed sifatida, yoki CDN'dagi to'g'ridan-
-// to'g'ri .mp4 kabi video fayl havolasi) ham video qo'yish mumkin.
+// Instagram (post/reels) ODDIY <iframe> orqali ko'rsatilmaydi — Instagram
+// buni maxsus xavfsizlik siyosati bilan bloklaydi ("www.instagram.com не
+// позволяет установить соединение" xatosi shundan). Ko'rsatish uchun
+// Instagram'ning RASMIY embed usuli kerak: <blockquote class="instagram-
+// media" data-instgrm-permalink="..."> + ularning "embed.js" skripti, u
+// keyin shu blockquote'ni haqiqiy pleyerga almashtiradi. API kalit shart
+// emas — faqat OMMAVIY (public) postlar uchun ishlaydi.
+let instagramEmbedScriptState = "idle"; // idle | loading | loaded
+
+function ensureInstagramEmbedProcessed() {
+    if (instagramEmbedScriptState === "loaded") {
+        if (window.instgrm && window.instgrm.Embeds) window.instgrm.Embeds.process();
+        return;
+    }
+    if (instagramEmbedScriptState === "loading") return; // skript yuklangach o'zi process() chaqiradi (pastda)
+    instagramEmbedScriptState = "loading";
+    const script = document.createElement("script");
+    script.src = "https://www.instagram.com/embed.js";
+    script.async = true;
+    script.onload = () => {
+        instagramEmbedScriptState = "loaded";
+        if (window.instgrm && window.instgrm.Embeds) window.instgrm.Embeds.process();
+    };
+    document.body.appendChild(script);
+}
+
+// "🎬 Video qo'shish" oynasiga YouTube, Vimeo, Facebook, Instagram va
+// CDN'dagi to'g'ridan-to'g'ri video fayl (.mp4 va h.k.) havolalarini
+// qo'yish mumkin — manba turiga qarab boshqacha ishlov beriladi.
 function insertVideoEmbedHtml(editorId, source, width) {
     restoreEditorSelection(editorId, richInsertSavedRange);
     attachImageResizeHandlers(editorId);
 
     const trimmed = source.trim();
     let mediaHtml;
+    let isInstagram = false;
 
     if (isYouTubeSource(trimmed)) {
         // YouTube — bare ID kerak (extractYouTubeId orqali).
         const videoId = escapeHtml(extractYouTubeId(trimmed));
         mediaHtml = `<iframe src="https://www.youtube.com/embed/${videoId}" style="width:${width};max-width:100%;aspect-ratio:16/9;border:0;display:block" allowfullscreen></iframe>`;
+    } else if (/facebook\.com|fb\.watch/i.test(trimmed)) {
+        // Facebook — o'zining "video plugin"i orqali (API kalit shart
+        // emas): oddiy iframe, faqat manzil ularning plugin URL'iga
+        // ulanadi (href sifatida asl havola beriladi).
+        const encodedUrl = encodeURIComponent(trimmed);
+        mediaHtml = `<iframe src="https://www.facebook.com/plugins/video.php?href=${encodedUrl}&show_text=false" style="width:${width};max-width:100%;aspect-ratio:16/9;border:0;display:block" allowfullscreen></iframe>`;
+    } else if (/instagram\.com/i.test(trimmed)) {
+        // Instagram — oddiy iframe ishlamaydi (yuqoridagi izohga qarang),
+        // rasmiy blockquote+embed.js usuli ishlatiladi.
+        isInstagram = true;
+        const url = escapeHtml(trimmed);
+        mediaHtml = `<blockquote class="instagram-media" data-instgrm-permalink="${url}" data-instgrm-version="14" style="width:${width};max-width:100%;min-width:220px;margin:0 auto;"></blockquote>`;
     } else if (/\.(mp4|webm|ogg|ogv|mov)(\?|$)/i.test(trimmed)) {
         // To'g'ridan-to'g'ri video fayl havolasi (masalan CDN'dan .mp4).
         const url = escapeHtml(trimmed);
@@ -487,6 +527,7 @@ function insertVideoEmbedHtml(editorId, source, width) {
     document.execCommand('insertHTML', false, html);
     injectAlignBars(editorId);
     injectCaptions(editorId);
+    if (isInstagram) ensureInstagramEmbedProcessed();
 }
 
 async function richInsertUploadedVideo(editorId, fileInput) {

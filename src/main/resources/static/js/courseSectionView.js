@@ -53,6 +53,31 @@ function loadSection() {
         });
 }
 
+// Matn ichiga Instagram posti/reels qo'yilgan bo'lishi mumkin (courseDetail.js,
+// insertVideoEmbedHtml) — bu oddiy <iframe> emas, Instagram'ning rasmiy
+// blockquote+embed.js usuli, shuning uchun o'qish sahifasida ham xuddi
+// shu skript yuklanib, process() chaqirilishi kerak, aks holda bo'sh
+// blockquote ko'rinib qoladi.
+let instagramEmbedScriptState = "idle"; // idle | loading | loaded
+
+function ensureInstagramEmbedProcessed() {
+    if (!document.querySelector(".instagram-media")) return; // Kontentda Instagram embed yo'q — shart emas.
+    if (instagramEmbedScriptState === "loaded") {
+        if (window.instgrm && window.instgrm.Embeds) window.instgrm.Embeds.process();
+        return;
+    }
+    if (instagramEmbedScriptState === "loading") return;
+    instagramEmbedScriptState = "loading";
+    const script = document.createElement("script");
+    script.src = "https://www.instagram.com/embed.js";
+    script.async = true;
+    script.onload = () => {
+        instagramEmbedScriptState = "loaded";
+        if (window.instgrm && window.instgrm.Embeds) window.instgrm.Embeds.process();
+    };
+    document.body.appendChild(script);
+}
+
 function renderSection(data) {
     sectionData = data;
 
@@ -82,6 +107,7 @@ function renderSection(data) {
         setupVideoCompletionTracking(data);
     }
 
+    ensureInstagramEmbedProcessed();
     renderTopicTestLink(data);
     updatePrevButton(data);
     updateNextButton(data);
