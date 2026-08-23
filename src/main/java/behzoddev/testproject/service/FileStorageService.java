@@ -46,7 +46,13 @@ public class FileStorageService {
             // Tika magic-byte tekshiruvida video konteynerlar ba'zan shu
             // muqobil (lekin haqiqiy) turlar sifatida aniqlanadi — WebM
             // texnik jihatdan Matroska profili, OGG esa umumiy konteyner.
-            "application/ogg", "video/x-matroska"
+            // video/quicktime — telefon/Instagram'dan yuklab olingan ko'plab
+            // ".mp4" fayllar ichida QuickTime uslubidagi "ftyp" belgisidan
+            // foydalanadi (garchi kengaytmasi .mp4 va oddiy pleyerlarda
+            // muammosiz ijro etilsa ham), shuning uchun Tika ularni
+            // "video/mp4" emas, "video/quicktime" deb aniqlaydi — ruxsat
+            // berilmasa, mutlaqo yaroqli .mp4 fayllar rad etiladi.
+            "application/ogg", "video/x-matroska", "video/quicktime"
     );
     private static final List<String> ALLOWED_VIDEO_EXTENSIONS =
             List.of(".mp4", ".webm", ".ogg", ".ogv");
