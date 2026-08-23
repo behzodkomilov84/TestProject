@@ -86,6 +86,8 @@
                     <button type="button" onclick="richExec('newSectionTextEditor','italic')" title="Kursiv (Ctrl+I)"><i>I</i></button>
                     <button type="button" onclick="richExec('newSectionTextEditor','underline')" title="Tagi chizilgan (Ctrl+U)"><u>U</u></button>
                     <button type="button" onclick="richExec('newSectionTextEditor','strikeThrough')" title="Chizib o'tilgan"><s>S</s></button>
+                    <button type="button" onclick="richExec('newSectionTextEditor','subscript')" title="Indeks (pastki, masalan H₂O)">X<sub>2</sub></button>
+                    <button type="button" onclick="richExec('newSectionTextEditor','superscript')" title="Daraja (yuqori, masalan x²)">X<sup>2</sup></button>
                     <span class="rich-toolbar-sep"></span>
                     <select class="rich-toolbar-select" title="Shrift turi" onmousedown="saveRichSelection('newSectionTextEditor')" onchange="richFontName('newSectionTextEditor', this.value); this.selectedIndex=0;">
                         <option value="" selected disabled>🔤 Shrift</option>
@@ -193,6 +195,8 @@
                     <button type="button" onclick="richExec('editSectionTextEditor','italic')" title="Kursiv (Ctrl+I)"><i>I</i></button>
                     <button type="button" onclick="richExec('editSectionTextEditor','underline')" title="Tagi chizilgan (Ctrl+U)"><u>U</u></button>
                     <button type="button" onclick="richExec('editSectionTextEditor','strikeThrough')" title="Chizib o'tilgan"><s>S</s></button>
+                    <button type="button" onclick="richExec('editSectionTextEditor','subscript')" title="Indeks (pastki, masalan H₂O)">X<sub>2</sub></button>
+                    <button type="button" onclick="richExec('editSectionTextEditor','superscript')" title="Daraja (yuqori, masalan x²)">X<sup>2</sup></button>
                     <span class="rich-toolbar-sep"></span>
                     <select class="rich-toolbar-select" title="Shrift turi" onmousedown="saveRichSelection('editSectionTextEditor')" onchange="richFontName('editSectionTextEditor', this.value); this.selectedIndex=0;">
                         <option value="" selected disabled>🔤 Shrift</option>

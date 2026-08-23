@@ -364,6 +364,7 @@ async function richInsertImage(editorId, fileInput) {
         restoreEditorSelection(editorId, richInsertSavedRange);
         document.execCommand('insertHTML', false, html);
         injectAlignBars(editorId);
+        injectCaptions(editorId);
     } catch (err) {
         console.error(err);
         alert("❌ Rasm yuklashda tarmoq xatoligi");
@@ -448,6 +449,7 @@ function insertYouTubeEmbedHtml(editorId, source, width) {
         + `</span>&nbsp;`;
     document.execCommand('insertHTML', false, html);
     injectAlignBars(editorId);
+    injectCaptions(editorId);
 }
 
 async function richInsertUploadedVideo(editorId, fileInput) {
@@ -478,6 +480,7 @@ async function richInsertUploadedVideo(editorId, fileInput) {
         restoreEditorSelection(editorId, richInsertSavedRange);
         document.execCommand('insertHTML', false, html);
         injectAlignBars(editorId);
+        injectCaptions(editorId);
     } catch (err) {
         console.error(err);
         alert("❌ Video yuklashda tarmoq xatoligi");
@@ -520,6 +523,41 @@ function setMediaAlign(evt, align) {
     if (!wrap) return;
     wrap.classList.remove('align-left', 'align-center', 'align-right');
     wrap.classList.add('align-' + align);
+}
+
+// ================= Rasm/video ostiga (ixtiyoriy) sarlavha =================
+// Har bir "rich-img-wrap" ichiga rasm/video OSTIDA kichik, ALOHIDA
+// tahrirlanadigan (contenteditable="true") matn qatori qo'shiladi — o'zi
+// contenteditable="false" bo'lgan wrap ICHIDA shu bitta joy yana
+// tahrirlanadigan qilib qo'yilgan ("orol" texnikasi, brauzerlar qo'llab-
+// quvvatlaydi). Bo'sh bo'lsa — tahrirlashda kulrang "Sarlavha (ixtiyoriy)"
+// ko'rinadi, o'qish sahifasida esa umuman ko'rinmaydi (courses.css).
+// Majburiy emas — foydalanuvchi yozmasa, saqlashda butunlay olib
+// tashlanadi (cleanupEmptyCaptions, submitAddSection/submitEditSection).
+function injectCaptions(editorId) {
+    const editor = document.getElementById(editorId);
+    if (!editor) return;
+    editor.querySelectorAll('.rich-img-wrap').forEach((wrap) => {
+        if (wrap.querySelector('.rich-img-caption')) return; // Allaqachon bor
+        const caption = document.createElement('div');
+        caption.className = 'rich-img-caption';
+        caption.setAttribute('contenteditable', 'true');
+        caption.setAttribute('data-placeholder', 'Sarlavha (ixtiyoriy)');
+        wrap.appendChild(caption);
+    });
+}
+
+// Saqlashdan oldin chaqiriladi — foydalanuvchi yozmagan (bo'sh) sarlavha
+// qatorlarini butunlay olib tashlaydi, shunda bazada keraksiz bo'sh
+// "<div class=rich-img-caption></div>" saqlanib qolmaydi.
+function cleanupEmptyCaptions(editorId) {
+    const editor = document.getElementById(editorId);
+    if (!editor) return;
+    editor.querySelectorAll('.rich-img-caption').forEach((caption) => {
+        if (!caption.textContent.trim()) {
+            caption.remove();
+        }
+    });
 }
 
 // ================= Rasm o'lchamini sudrab o'zgartirish =================
@@ -600,7 +638,15 @@ async function importDocxFile(fileInput, editorId) {
     try {
         const arrayBuffer = await file.arrayBuffer();
         const result = await mammoth.convertToHtml({ arrayBuffer });
-        document.getElementById(editorId).innerHTML = result.value;
+        // Word faylida muallif Shift+Enter bilan qo'ygan qator ko'chirishlar
+        // (haqiqiy abzats emas — ko'pincha shunchaki Word'ning O'Z sahifa
+        // enida chiroyli ko'rinishi uchun qo'yilgan) mammoth tomonidan
+        // <br> qilib saqlanadi. Bu yerda saqlansa, matn hali QATOR
+        // TO'LMASDAN erta ko'chib ketadi. Shu sabab olib tashlanadi —
+        // matn endi shu tahrirlagichning o'z enida tabiiy ravishda,
+        // qator to'lgach avtomatik ko'chadi (haqiqiy abzatslar — <p>
+        // teglari — bunga taalluqli emas, ular saqlanadi).
+        document.getElementById(editorId).innerHTML = result.value.replace(/<br\s*\/?>/gi, ' ');
     } catch (err) {
         console.error(err);
         alert("❌ Faylni import qilishda xatolik: " + err.message);
@@ -1101,6 +1147,7 @@ async function submitAddSection() {
             alert("❌ Matn kontentini kiriting");
             return;
         }
+        cleanupEmptyCaptions("newSectionTextEditor");
         payload.textContent = editor.innerHTML;
     }
 
@@ -1232,6 +1279,7 @@ async function openEditSectionForm(sectionId) {
             : escapeHtml(section.textContent || "").replace(/\n/g, "<br>");
         attachImageResizeHandlers("editSectionTextEditor");
         injectAlignBars("editSectionTextEditor");
+        injectCaptions("editSectionTextEditor");
 
         onEditContentToggle(document.getElementById("editIncludeText"));
 
@@ -1323,6 +1371,7 @@ async function submitEditSection() {
             alert("❌ Matn kontentini kiriting");
             return;
         }
+        cleanupEmptyCaptions("editSectionTextEditor");
         payload.textContent = editor.innerHTML;
     }
 

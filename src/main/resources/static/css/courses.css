@@ -465,6 +465,12 @@ body {
 
 .rich-text-editor {
     width: 100%;
+    /* A4 sahifa kengligi (~21sm, 96dpi) — katta ekranlarda matn haddan
+       tashqari cho'zilib, o'qishga noqulay bo'lmasligi uchun. Kichik
+       ekranlarda width:100% ustun keladi (max-width shunchaki yuqori
+       chegara). */
+    max-width: 794px;
+    margin: 0 auto;
     min-height: 140px;
     max-height: 420px;
     overflow-y: auto;
@@ -605,13 +611,54 @@ body {
     margin-right: 0;
 }
 
+/* Rasm/video ostidagi ixtiyoriy sarlavha (injectCaptions, courseDetail.js).
+   Tahrirlashda: har doim ko'rinadi, bo'sh bo'lsa kulrang placeholder bilan
+   (pastki qoida — yuqoridagi umumiy :empty{display:none}dan ko'ra aniqroq
+   selektor bo'lgani uchun ustun keladi). O'qish sahifasida: agar
+   yozilmagan bo'lsa (saqlashda ham olib tashlanadi, lekin eski/qo'lda
+   tahrirlangan HTML uchun ehtiyot chorasi sifatida) umuman ko'rinmaydi. */
+.rich-img-caption {
+    display: block;
+    font-size: 13px;
+    color: #64748b;
+    text-align: center;
+    margin-top: 4px;
+    padding: 2px 4px;
+    outline: none;
+}
+
+.rich-img-caption:empty {
+    display: none;
+}
+
+.rich-text-editor .rich-img-caption:empty {
+    display: block;
+}
+
+.rich-text-editor .rich-img-caption:empty::before {
+    content: attr(data-placeholder);
+    color: #b7c0cc;
+    font-style: italic;
+}
+
 .rich-text-editor ul,
 .rich-text-editor ol {
     margin: 0 0 10px;
     padding-left: 24px;
 }
 
+/* Jadval o'z tabiiy (ustunlariga mos) enida chiziladi — 100% ga cho'zib
+   yoki torroq konteynerga sig'dirish uchun katakchalarni siqib
+   qo'yilmaydi. Agar jadvalning tabiiy eni tahrirlagichning A4 enidan
+   (yuqoridagi max-width:794px) katta bo'lsa — butun forma emas, faqat
+   shu jadvalning O'ZI ichida (display:block+overflow-x:auto, GitHub'ning
+   jadval renderi bilan bir xil usul) gorizontal aylantiriladi, hech
+   narsa yo'qolmaydi/qirqilmaydi. */
 .rich-text-editor table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
     border-collapse: collapse;
 }
 
@@ -945,7 +992,11 @@ body {
     border-radius: 12px;
     box-shadow: 0 4px 14px rgba(0,0,0,0.08);
     padding: 24px;
-    margin-bottom: 20px;
+    /* A4 sahifa kengligi (~21sm, 96dpi) — tahrirlash oynasidagi kabi,
+       o'qish sahifasida ham matn haddan tashqari cho'zilib ketmasin
+       uchun; margin:0 auto o'rtaga tekislaydi. */
+    max-width: 794px;
+    margin: 0 auto 20px;
     line-height: 1.7;
     white-space: pre-wrap;
     /* Mavzu matni (kontent) shrifti ham ekran kattaligiga qarab moslashadi
@@ -1011,9 +1062,16 @@ body {
     margin-bottom: 6px;
 }
 
+/* width:100% emas — jadval o'z tabiiy (ustunlariga mos) enida chiziladi;
+   agar A4 enidan (yuqoridagi .section-content max-width:794px) katta
+   bo'lsa, faqat shu jadvalning o'zi gorizontal aylantiriladi (tahrirlash
+   oynasidagi bilan bir xil qoida). */
 .section-content.html-content table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
     border-collapse: collapse;
-    width: 100%;
     margin: 0 0 14px;
 }
 
