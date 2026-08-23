@@ -1,7 +1,9 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.CourseSectionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
+import behzoddev.testproject.dto.topic.TopicCourseLinkDto;
 import behzoddev.testproject.dto.topic.TopicIdAndNameDto;
 import behzoddev.testproject.dto.topic.TopicNameDto;
 import behzoddev.testproject.dto.topic.TopicWithQuestionCountDto;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +24,7 @@ public class TopicService {
     private final TopicRepository topicRepository;
     private final TopicMapper topicMapper;
     private final ScienceRepository scienceRepository;
+    private final CourseSectionRepository courseSectionRepository;
     private final Validation validation;
 
     public List<TopicIdAndNameDto> getTopicsByScienceId(Long scienceId) {
@@ -62,5 +66,17 @@ public class TopicService {
     @Transactional
     public List<TopicWithQuestionCountDto> getTopicsWithQuestionCount(Long scienceId) {
         return topicRepository.getTopicsWithQuestionCount(scienceId);
+    }
+
+    // Test yaratish formasidagi "🔗 Mavzuga havola qo'shish" tugmasi uchun —
+    // shu mavzuga bog'langan kurs bo'limi bo'lmasa, bo'sh Optional qaytadi
+    // (tugma frontendda shunda yashiriladi/o'chirilgan holatda qoladi).
+    @Transactional(readOnly = true)
+    public Optional<TopicCourseLinkDto> getCourseLinkForTopic(Long topicId) {
+        return courseSectionRepository.findByLinkedTopic_Id(topicId)
+                .map(section -> new TopicCourseLinkDto(
+                        section.getCourse().getId(),
+                        section.getId(),
+                        section.getLinkedTopic().getName()));
     }
 }

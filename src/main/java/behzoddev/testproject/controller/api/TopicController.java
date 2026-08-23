@@ -1,5 +1,6 @@
 package behzoddev.testproject.controller.api;
 
+import behzoddev.testproject.dto.topic.TopicCourseLinkDto;
 import behzoddev.testproject.dto.topic.TopicIdAndNameDto;
 import behzoddev.testproject.dto.topic.TopicNameDto;
 import behzoddev.testproject.service.TopicService;
@@ -68,6 +69,16 @@ public class TopicController {
         TopicIdAndNameDto topicIdAndNameDto = topicService.getTopicByIds(scienceId, topicId);
 
         return ResponseEntity.ok(topicIdAndNameDto);
+    }
+
+    // Test yaratish formasidagi "🔗 Mavzuga havola qo'shish" tugmasi shu
+    // orqali joriy mavzu qaysi kurs bo'limiga bog'langanini bilib oladi.
+    // Bog'lanmagan bo'lsa — 404 (frontend tugmani yashiradi).
+    @GetMapping("/api/topic/{topicId}/course-link")
+    public ResponseEntity<TopicCourseLinkDto> getCourseLink(@PathVariable Long topicId) {
+        return topicService.getCourseLinkForTopic(topicId)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
 }

@@ -158,12 +158,60 @@ function resetVideoUpload(container) {
     removeBtn.classList.add("hidden");
 }
 
+// ================= "🔗 Mavzuga havola qo'shish" =================
+// Izohga qo'lda <a href="..."> yozish o'rniga — bitta tugma bosilsa,
+// joriy savol tegishli bo'lgan mavzuning kursdagi bo'limiga to'g'ri
+// havola cursor turgan joyga qo'yiladi. Mavzu hech qaysi kurs bo'limiga
+// bog'lanmagan bo'lsa (topicCourseLink == null), tugma yashirin qoladi.
+let topicCourseLink = null;
+
+async function loadTopicCourseLink() {
+    const topicId = document.getElementById("topicId").value;
+    if (!topicId) return;
+
+    try {
+        const res = await fetch(`/api/topic/${topicId}/course-link`);
+        if (!res.ok) return; // 404 — bu mavzu hech qaysi bo'limga bog'lanmagan, tugma yashirin qoladi
+
+        topicCourseLink = await res.json();
+        document.querySelectorAll(".link-btn").forEach(btn => btn.classList.remove("hidden"));
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+function insertAtCursor(textarea, text) {
+    const start = textarea.selectionStart ?? textarea.value.length;
+    const end = textarea.selectionEnd ?? textarea.value.length;
+
+    textarea.value = textarea.value.slice(0, start) + text + textarea.value.slice(end);
+
+    const pos = start + text.length;
+    textarea.focus();
+    textarea.setSelectionRange(pos, pos);
+}
+
+document.addEventListener("click", (e) => {
+    if (!e.target.classList.contains("link-btn") || !topicCourseLink) return;
+
+    const textarea = e.target.closest(".commentary-box")?.querySelector(".commentary");
+    if (!textarea) return;
+
+    // Izoh talabaga innerHTML sifatida ko'rsatiladi (testSession.js), shu
+    // sabab bu yerda HAQIQIY <a> tegi qo'yiladi — o'qituvchi esa uni
+    // qo'lda yozmaydi, faqat tugmani bosadi.
+    const url = `/courses/${topicCourseLink.courseId}/sections/${topicCourseLink.sectionId}`;
+    const title = topicCourseLink.topicName.replace(/"/g, "&quot;");
+    insertAtCursor(textarea, ` <a href="${url}">📖 "${title}" mavzusini kursda o'qish</a>`);
+});
+
 document.addEventListener("DOMContentLoaded", () => {
 
     const form = document.getElementById("testForm");
 
     document.querySelectorAll(".image-upload").forEach(setupImageUpload);
     document.querySelectorAll(".video-upload").forEach(setupVideoUpload);
+    loadTopicCourseLink();
 
     // автоподбор высоты textarea
     document.querySelectorAll(".auto-textarea").forEach(t => {

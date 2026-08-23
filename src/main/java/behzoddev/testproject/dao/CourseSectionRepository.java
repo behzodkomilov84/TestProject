@@ -21,4 +21,9 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     // avval shu kursning barcha bo'limlarini o'chirish kerak
     // (CourseService.deleteCourse).
     void deleteByCourse_Id(Long courseId);
+
+    // Berilgan mavzuga (Topic) bog'langan bo'lim — test yaratish formasida
+    // "🔗 Mavzuga havola qo'shish" tugmasi shu orqali to'g'ri course/section
+    // ID'larini topadi (TopicService.getCourseLinkForTopic).
+    Optional<CourseSection> findByLinkedTopic_Id(Long topicId);
 }

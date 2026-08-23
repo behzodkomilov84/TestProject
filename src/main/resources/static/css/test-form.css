@@ -202,6 +202,12 @@ label {
     color: #fff;
 }
 
+.link-btn {
+    background: #00796b;
+    color: #fff;
+    align-self: flex-start;
+}
+
 .remove-image-btn {
     background: #c62828;
     color: #fff;
