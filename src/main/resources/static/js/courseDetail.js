@@ -330,6 +330,100 @@ async function richInsertImage(editorId, fileInput) {
     }
 }
 
+// "🎬 Video qo'shish" (rich-toolbar, matn ICHIGA) — rasm bilan bir xil
+// tamoyilda ishlaydi: YouTube havola/ID YOKI kompyuterdan fayl, kursor
+// turgan joyga qo'yiladi (matndan oldin/o'rtasida/keyin — cursor qayerda
+// bo'lsa, shu yerga; xohlagancha marta chaqirib bir nechta video
+// qo'shish mumkin). Kenglik qo'shishda so'raladi, keyin esa — rasm kabi
+// — pastki-o'ng burchakdagi tutqichni sudrab ham o'zgartirish mumkin
+// (attachImageResizeHandlers umumiy, img/video/iframe barchasini qamrab
+// oladi). Bu — "🎬 Video qo'shish" checkbox orqali qo'shiladigan YAGONA,
+// "ko'rib chiqilganda avtomatik tugatiladigan" rasmiy videodan MUSTAQIL —
+// shu sabab bu yerdagi videolar tugatish (completion) holatiga ta'sir
+// qilmaydi, xuddi rasm kabi shunchaki kontent hisoblanadi.
+function richInsertVideoPrompt(editorId) {
+    const source = prompt(
+        "YouTube video havolasi yoki ID sini kiriting.\n" +
+        "Kompyuterdan video fayl yuklamoqchi bo'lsangiz — bo'sh qoldirib OK bosing."
+    );
+    if (source === null) return; // Bekor qilindi
+
+    const widthRaw = prompt(
+        "Video kengligi (piksel yoki foiz, masalan 480 yoki 100%):",
+        "480"
+    );
+    if (widthRaw === null) return;
+    const width = normalizeVideoWidth(widthRaw);
+
+    if (source.trim()) {
+        insertYouTubeEmbedHtml(editorId, source.trim(), width);
+    } else {
+        const fileInputId = editorId === "newSectionTextEditor" ? "newSectionVideoInsertInput" : "editSectionVideoInsertInput";
+        const fileInput = document.getElementById(fileInputId);
+        fileInput.dataset.pendingWidth = width;
+        fileInput.click();
+    }
+}
+
+function normalizeVideoWidth(raw) {
+    const trimmed = (raw || "").trim();
+    if (!trimmed) return "480px";
+    if (trimmed.endsWith("%") || trimmed.endsWith("px")) return trimmed;
+    return trimmed + "px";
+}
+
+function insertYouTubeEmbedHtml(editorId, source, width) {
+    const editor = document.getElementById(editorId);
+    editor.focus();
+    attachImageResizeHandlers(editorId);
+
+    // E'tibor bering: kenglik WRAP'ga emas, to'g'ridan-to'g'ri <iframe>'ga
+    // qo'yiladi — xuddi rasmdagi kabi, shunda tutqichni sudrash ham
+    // (startImageResize/updateImageResize) o'zgarishsiz ishlayveradi.
+    const videoId = escapeHtml(extractYouTubeId(source));
+    const html = `<span class="rich-img-wrap" contenteditable="false">`
+        + `<iframe src="https://www.youtube.com/embed/${videoId}" style="width:${width};max-width:100%;aspect-ratio:16/9;border:0;display:block" allowfullscreen></iframe>`
+        + `<span class="rich-img-handle" title="Sudrab o'lchamini o'zgartiring"></span>`
+        + `</span>&nbsp;`;
+    document.execCommand('insertHTML', false, html);
+}
+
+async function richInsertUploadedVideo(editorId, fileInput) {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const width = fileInput.dataset.pendingWidth || "480px";
+    delete fileInput.dataset.pendingWidth;
+
+    const editor = document.getElementById(editorId);
+    editor.focus();
+    attachImageResizeHandlers(editorId);
+
+    try {
+        const formData = new FormData();
+        formData.append("video", file);
+        const res = await fetch(`/api/courses/${COURSE_ID}/sections/upload-video`, {
+            method: "POST", body: formData
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || "❌ Video yuklashda xatolik");
+            return;
+        }
+        const url = escapeHtml(data.url);
+        const html = `<span class="rich-img-wrap" contenteditable="false">`
+            + `<video src="${url}" controls style="width:${width};max-width:100%;display:block"></video>`
+            + `<span class="rich-img-handle" title="Sudrab o'lchamini o'zgartiring"></span>`
+            + `</span>&nbsp;`;
+        document.execCommand('insertHTML', false, html);
+    } catch (err) {
+        console.error(err);
+        alert("❌ Video yuklashda tarmoq xatoligi");
+    } finally {
+        fileInput.value = "";
+    }
+}
+
 // ================= Rasm o'lchamini sudrab o'zgartirish =================
 // Kontenteditable'ning o'z (native) rasm resize funksiyasi ko'p
 // brauzerlarda ishonchli ishlamaydi (eski execCommand asosidagi
@@ -351,17 +445,20 @@ function attachImageResizeHandlers(editorId) {
     }, { passive: true });
 }
 
+// "rich-img-wrap" nomiga qaramay — rasm bilan bir qatorda video
+// (<iframe>/<video>, richInsertVideoPrompt orqali qo'shilgan) ham shu
+// tutqich orqali sudrab o'lchamini o'zgartirishi mumkin.
 function startImageResize(e, clientX) {
     if (!e.target.classList || !e.target.classList.contains('rich-img-handle')) return;
     const wrap = e.target.closest('.rich-img-wrap');
-    const img = wrap ? wrap.querySelector('img') : null;
+    const media = wrap ? wrap.querySelector('img, video, iframe') : null;
     const editor = e.currentTarget;
-    if (!img) return;
+    if (!media) return;
 
     if (e.cancelable) e.preventDefault();
-    const rect = img.getBoundingClientRect();
+    const rect = media.getBoundingClientRect();
     richResizeState = {
-        img,
+        media,
         editor,
         startX: clientX,
         startWidth: rect.width,
@@ -371,12 +468,12 @@ function startImageResize(e, clientX) {
 
 function updateImageResize(clientX) {
     if (!richResizeState) return;
-    const { img, editor, startX, startWidth, ratio } = richResizeState;
+    const { media, editor, startX, startWidth, ratio } = richResizeState;
     const delta = clientX - startX;
     const maxWidth = editor.getBoundingClientRect().width;
     const newWidth = Math.min(maxWidth, Math.max(40, startWidth + delta));
-    img.style.width = newWidth + 'px';
-    img.style.height = (newWidth * ratio) + 'px';
+    media.style.width = newWidth + 'px';
+    media.style.height = (newWidth * ratio) + 'px';
 }
 
 document.addEventListener('mousemove', (e) => updateImageResize(e.clientX));

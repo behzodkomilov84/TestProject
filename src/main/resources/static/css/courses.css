@@ -429,14 +429,18 @@ body {
     margin: 0 0 10px;
 }
 
-/* Rasm — kattaligidan qat'i nazar tahrirlagich enidan chiqib ketmasligi
-   uchun avtomatik moslashadi (max-width:100%). "🖼 Rasm qo'shish" orqali
-   qo'shilgan rasmlar bitta "rich-img-wrap" ichida, pastki-o'ng burchakda
-   sudrab o'lchamini o'zgartirish uchun kichik tutqich (handle) bilan
-   birga keladi — richInsertImage()/attachImageResizeHandlers()
-   (courseDetail.js) shu tutqichni sudrashni ushlab, eni/bo'yini
-   (nisbatini saqlagan holda) o'zgartiradi. */
-.rich-text-editor img {
+/* Rasm (va video) — kattaligidan qat'i nazar tahrirlagich enidan chiqib
+   ketmasligi uchun avtomatik moslashadi (max-width:100%). "🖼 Rasm qo'shish"
+   / "🎬 Video qo'shish" orqali qo'shilgan rasm/video bitta "rich-img-wrap"
+   ichida, pastki-o'ng burchakda sudrab o'lchamini o'zgartirish uchun kichik
+   tutqich (handle) bilan birga keladi — richInsertImage()/
+   richInsertVideoPrompt()/attachImageResizeHandlers() (courseDetail.js)
+   shu tutqichni sudrashni ushlab, eni/bo'yini (nisbatini saqlagan holda)
+   o'zgartiradi. Nomi "rich-img-wrap" bo'lsa-da, video (<video>/<iframe>)
+   uchun ham ishlatiladi. */
+.rich-text-editor img,
+.rich-text-editor video,
+.rich-text-editor iframe {
     max-width: 100%;
     height: auto;
 }
@@ -448,7 +452,9 @@ body {
     vertical-align: bottom;
 }
 
-.rich-img-wrap img {
+.rich-img-wrap img,
+.rich-img-wrap video,
+.rich-img-wrap iframe {
     display: block;
     max-width: 100%;
     height: auto;

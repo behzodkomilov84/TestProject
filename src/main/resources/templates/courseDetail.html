@@ -129,6 +129,8 @@
                     <button type="button" onclick="richExec('newSectionTextEditor','insertOrderedList')" title="Raqamlangan ro'yxat">☰1</button>
                     <button type="button" onclick="document.getElementById('newSectionImageInput').click()" title="Rasm qo'shish">🖼</button>
                     <input type="file" id="newSectionImageInput" accept="image/*" style="display:none;" onchange="richInsertImage('newSectionTextEditor', this)">
+                    <button type="button" onclick="richInsertVideoPrompt('newSectionTextEditor')" title="Video qo'shish (matn ichiga, xohlagan joyga)">🎬</button>
+                    <input type="file" id="newSectionVideoInsertInput" accept="video/*" style="display:none;" onchange="richInsertUploadedVideo('newSectionTextEditor', this)">
                     <span class="rich-toolbar-sep"></span>
                     <button type="button" onclick="richExec('newSectionTextEditor','removeFormat')" title="Formatni tozalash">🧹</button>
                 </div>
@@ -235,6 +237,8 @@
                     <button type="button" onclick="richExec('editSectionTextEditor','insertOrderedList')" title="Raqamlangan ro'yxat">☰1</button>
                     <button type="button" onclick="document.getElementById('editSectionImageInput').click()" title="Rasm qo'shish">🖼</button>
                     <input type="file" id="editSectionImageInput" accept="image/*" style="display:none;" onchange="richInsertImage('editSectionTextEditor', this)">
+                    <button type="button" onclick="richInsertVideoPrompt('editSectionTextEditor')" title="Video qo'shish (matn ichiga, xohlagan joyga)">🎬</button>
+                    <input type="file" id="editSectionVideoInsertInput" accept="video/*" style="display:none;" onchange="richInsertUploadedVideo('editSectionTextEditor', this)">
                     <span class="rich-toolbar-sep"></span>
                     <button type="button" onclick="richExec('editSectionTextEditor','removeFormat')" title="Formatni tozalash">🧹</button>
                 </div>
