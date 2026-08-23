@@ -1370,6 +1370,20 @@ function toggleManagePanel() {
     localStorage.setItem(MANAGE_PANEL_COLLAPSED_KEY, collapsed ? "1" : "0");
 }
 
+// "✏️ Tahrirlash" tugmasi HAR BIR mavzu kartasida (panel TASHQARISIDA)
+// turadi, lekin tahrirlash formasi (editSectionForm) panel ICHIDA. Panel
+// yig'ilgan bo'lsa (standart holat), forma "display:flex" qilinsa ham
+// yig'ilgan ota-element (.manage-panel-body{display:none}) uni baribir
+// yashirib turaverardi — tashqaridan bosilganda hech narsa ko'rinmasdi.
+// Shuning uchun forma ko'rsatilishidan OLDIN panel avtomatik ochiladi.
+function expandManagePanel() {
+    const panel = document.getElementById("manageCoursePanel");
+    if (panel && panel.classList.contains("collapsed")) {
+        panel.classList.remove("collapsed");
+        localStorage.setItem(MANAGE_PANEL_COLLAPSED_KEY, "0");
+    }
+}
+
 function openAddSectionForm() {
     document.getElementById("newSectionTextEditor").innerHTML = "";
     document.getElementById("newSectionTopicName").value = "";
@@ -1612,6 +1626,7 @@ async function openEditSectionForm(sectionId) {
 
         document.getElementById("editSectionChapterName").value = section.chapterName || "";
 
+        expandManagePanel();
         document.getElementById("editSectionForm").style.display = "flex";
         document.getElementById("editSectionForm").scrollIntoView({ behavior: "smooth", block: "center" });
     } catch (err) {
