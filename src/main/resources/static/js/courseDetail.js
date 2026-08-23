@@ -374,7 +374,8 @@ async function richInsertImage(editorId, fileInput) {
 }
 
 // "🎬 Video qo'shish" (rich-toolbar, matn ICHIGA) — rasm bilan bir xil
-// tamoyilda ishlaydi: YouTube havola/ID YOKI kompyuterdan fayl, kursor
+// tamoyilda ishlaydi: video havolasi (YouTube, Vimeo va h.k.) YOKI
+// kompyuterdan fayl, kursor
 // turgan joyga qo'yiladi (matndan oldin/o'rtasida/keyin — cursor qayerda
 // bo'lsa, shu yerga; xohlagancha marta chaqirib bir nechta video
 // qo'shish mumkin). Kenglik qo'shishda so'raladi, keyin esa — rasm kabi
@@ -414,14 +415,14 @@ function confirmVideoInsert() {
     const width = normalizeVideoWidth(document.getElementById("videoInsertWidthInput").value);
 
     if (!url && !hasFile) {
-        alert("❌ YouTube havolasini kiriting yoki video fayl tanlang");
+        alert("❌ Video havolasini kiriting yoki video fayl tanlang");
         return;
     }
 
     closeVideoInsertModal();
 
     if (url) {
-        insertYouTubeEmbedHtml(editorId, url, width);
+        insertVideoEmbedHtml(editorId, url, width);
     } else {
         fileInput.dataset.pendingWidth = width;
         richInsertUploadedVideo(editorId, fileInput);
@@ -435,16 +436,52 @@ function normalizeVideoWidth(raw) {
     return trimmed + "px";
 }
 
-function insertYouTubeEmbedHtml(editorId, source, width) {
+// Havola YouTube'gami yoki boshqa manbagami — shunga qarab boshqacha
+// ishlov beriladi (pastda, insertVideoEmbedHtml). YouTube uchun bare ID
+// kerak (youtube.com/embed/{id}), boshqa manbalar esa o'z holicha (yoki
+// to'g'ridan-to'g'ri video fayl bo'lsa <video> orqali) qo'yiladi.
+function isYouTubeSource(source) {
+    const trimmed = (source || "").trim();
+    if (!trimmed) return false;
+    if (/youtube\.com|youtu\.be/i.test(trimmed)) return true;
+    // Havola/nuqta/probel yo'q qisqa satr — ehtimol xom YouTube ID
+    // (masalan "dQw4w9WgXcQ").
+    return !trimmed.includes("/") && !trimmed.includes(".") && !trimmed.includes(" ");
+}
+
+// "🎬 Video qo'shish" oynasiga nafaqat YouTube, balki boshqa manbalardan
+// (Vimeo va h.k. — umumiy iframe embed sifatida, yoki CDN'dagi to'g'ridan-
+// to'g'ri .mp4 kabi video fayl havolasi) ham video qo'yish mumkin.
+function insertVideoEmbedHtml(editorId, source, width) {
     restoreEditorSelection(editorId, richInsertSavedRange);
     attachImageResizeHandlers(editorId);
 
-    // E'tibor bering: kenglik WRAP'ga emas, to'g'ridan-to'g'ri <iframe>'ga
-    // qo'yiladi — xuddi rasmdagi kabi, shunda tutqichni sudrash ham
-    // (startImageResize/updateImageResize) o'zgarishsiz ishlayveradi.
-    const videoId = escapeHtml(extractYouTubeId(source));
+    const trimmed = source.trim();
+    let mediaHtml;
+
+    if (isYouTubeSource(trimmed)) {
+        // YouTube — bare ID kerak (extractYouTubeId orqali).
+        const videoId = escapeHtml(extractYouTubeId(trimmed));
+        mediaHtml = `<iframe src="https://www.youtube.com/embed/${videoId}" style="width:${width};max-width:100%;aspect-ratio:16/9;border:0;display:block" allowfullscreen></iframe>`;
+    } else if (/\.(mp4|webm|ogg|ogv|mov)(\?|$)/i.test(trimmed)) {
+        // To'g'ridan-to'g'ri video fayl havolasi (masalan CDN'dan .mp4).
+        const url = escapeHtml(trimmed);
+        mediaHtml = `<video src="${url}" controls style="width:${width};max-width:100%;display:block"></video>`;
+    } else {
+        // Boshqa manba (Vimeo va h.k.) — umumiy iframe embed sifatida
+        // qo'yiladi. E'tibor bering: havola aynan "embed" uchun mo'ljallangan
+        // bo'lishi kerak (masalan Vimeo uchun oddiy vimeo.com/XXXXX emas,
+        // https://player.vimeo.com/video/XXXXX ko'rinishida) — aks holda
+        // ba'zi saytlar iframe orqali ko'rsatishni bloklashi mumkin.
+        const url = escapeHtml(trimmed);
+        mediaHtml = `<iframe src="${url}" style="width:${width};max-width:100%;aspect-ratio:16/9;border:0;display:block" allowfullscreen></iframe>`;
+    }
+
+    // E'tibor bering: kenglik WRAP'ga emas, to'g'ridan-to'g'ri media
+    // elementga qo'yiladi — xuddi rasmdagi kabi, shunda tutqichni sudrash
+    // ham (startImageResize/updateImageResize) o'zgarishsiz ishlayveradi.
     const html = `<span class="rich-img-wrap" contenteditable="false">`
-        + `<iframe src="https://www.youtube.com/embed/${videoId}" style="width:${width};max-width:100%;aspect-ratio:16/9;border:0;display:block" allowfullscreen></iframe>`
+        + mediaHtml
         + `<span class="rich-img-handle" title="Sudrab o'lchamini o'zgartiring"></span>`
         + `</span>&nbsp;`;
     document.execCommand('insertHTML', false, html);
@@ -496,7 +533,7 @@ async function richInsertUploadedVideo(editorId, fileInput) {
 // display:block qilib, margin orqali chap/markaz/o'ngga suradi — hech
 // qanday klass bo'lmasa standart holat: matn bilan bir qatorda, chapdan
 // boshlanadi). Yangi qo'shilgan rasm/video uchun ham (richInsertImage/
-// insertYouTubeEmbedHtml/richInsertUploadedVideo — insertHTML'dan keyin),
+// insertVideoEmbedHtml/richInsertUploadedVideo — insertHTML'dan keyin),
 // oldin saqlangan (bazadan yuklangan eski) rasm/video uchun ham
 // (openEditSectionForm — kontent yuklangandan keyin) chaqiriladi, shu
 // sabab ESKI rasmlarga ham bu imkoniyat qo'shiladi.
