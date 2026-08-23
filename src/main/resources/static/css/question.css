@@ -597,6 +597,19 @@ td{
     padding: 10px 15px;
 }
 
+.modalLinkBtn {
+    background: #00796b;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.modalLinkBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .modal-h2 {
     text-align: center;
 }

@@ -692,11 +692,30 @@ const modal = document.getElementById("commentModal");
 const textarea = document.getElementById("modalComment");
 const editBtn = document.getElementById("modalEdit");
 const saveBtn = document.getElementById("modalSaveBtn");
+const linkBtn = document.getElementById("modalLinkBtn");
 const closeBtn = modal.querySelector("button[onclick*='closeCommentModal']");
 
 let currentAnswerId = null;
 let currentQuestionId = null;
 let originalText = "";
+
+// "🔗 Mavzuga havola qo'shish" — joriy sahifadagi barcha savollar bitta
+// mavzuga tegishli bo'lgani uchun (URL'dagi topicId), bir marta
+// yuklanadi (fetchTopicCourseLink / buildTopicLinkHtml / insertTextAtCursor
+// — topicLinkButton.js'da, test-form.js bilan umumiy).
+let modalTopicCourseLink = null;
+fetchTopicCourseLink(topicId).then(link => {
+    modalTopicCourseLink = link;
+    if (link && linkBtn) linkBtn.classList.remove("hidden");
+});
+
+if (linkBtn) {
+    linkBtn.onclick = () => {
+        if (!modalTopicCourseLink || textarea.readOnly) return;
+        insertTextAtCursor(textarea, buildTopicLinkHtml(modalTopicCourseLink));
+        saveBtn.disabled = textarea.value === originalText;
+    };
+}
 
 function openCommentModal(btn) {
     const modal = document.getElementById("commentModal");
@@ -728,6 +747,7 @@ function openCommentModal(btn) {
     textarea.value = commentary;
     textarea.readOnly = true;
     saveBtn.disabled = true;
+    if (linkBtn) linkBtn.disabled = true;
 
     // Rasm/video faqat ko'rish uchun (bu sahifada tahrirlanmaydi)
     if (commentImageUrl) {
@@ -755,6 +775,7 @@ document.addEventListener("DOMContentLoaded", () => {
         textarea.value = "";
         textarea.readOnly = true;
         saveBtn.disabled = true;
+        if (linkBtn) linkBtn.disabled = true;
 
         const commentImage = document.getElementById("modalCommentImage");
         const commentVideo = document.getElementById("modalCommentVideo");
@@ -768,6 +789,7 @@ document.addEventListener("DOMContentLoaded", () => {
         editBtn.onclick = () => {
             textarea.readOnly = false;
             textarea.focus();
+            if (linkBtn && modalTopicCourseLink) linkBtn.disabled = false;
         };
     }
 
