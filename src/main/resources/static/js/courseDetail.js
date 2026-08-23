@@ -471,6 +471,17 @@ function onTopicNameInput(mode) {
     else editTopicNameManuallyEdited = true;
 }
 
+// "🎯 Mavzuga oid testlar bilan bog'lash" — checkbox belgilanmagan bo'lsa
+// fan/mavzu maydonlari yashirin turadi VA saqlashda umuman yuborilmaydi
+// (getSelectedScienceName/topicName checkbox holatini submitAddSection /
+// submitEditSection'da tekshiradi) — shunda tasodifan (checkbox
+// belgilanmasdan) bo'lim boshqa fan/mavzuga bog'lanib qolmaydi.
+function onTopicLinkToggle(mode) {
+    const checkbox = document.getElementById(mode === "new" ? "newSectionLinkTopic" : "editSectionLinkTopic");
+    const fields = document.getElementById(mode === "new" ? "newSectionTopicFields" : "editSectionTopicFields");
+    fields.style.display = checkbox.checked ? "block" : "none";
+}
+
 function loadCourse() {
     fetch(`/api/courses/${COURSE_ID}`)
         .then(r => {
@@ -799,8 +810,12 @@ function openAddSectionForm() {
     document.getElementById("newSectionTopicName").value = "";
     newTopicNameManuallyEdited = false;
     attachImageResizeHandlers("newSectionTextEditor");
-    // Default — shu kursning o'zi nomi (odatda kurs mavzusi = fan nomi).
+    // Default — shu kursning o'zi nomi (odatda kurs mavzusi = fan nomi) —
+    // checkbox belgilansa shu tayyor turadi, lekin checkbox o'zi
+    // boshlanishda O'CHIRILGAN (bog'lash ixtiyoriy, avtomatik emas).
     applyScienceSelection("new", cachedCourse ? cachedCourse.title : "");
+    document.getElementById("newSectionLinkTopic").checked = false;
+    onTopicLinkToggle("new");
     document.getElementById("addSectionForm").style.display = "flex";
     document.getElementById("openAddSectionBtn").style.display = "none";
 }
@@ -851,11 +866,12 @@ async function submitAddSection() {
         return;
     }
 
+    const linkTopic = document.getElementById("newSectionLinkTopic").checked;
     const type = includeText && includeVideo ? "MIXED" : includeText ? "TEXT" : "VIDEO";
     const payload = {
         title, type, textContent: null, videoSourceType: null, videoUrl: null, videoDurationSeconds: null,
-        scienceName: getSelectedScienceName("new"),
-        topicName: document.getElementById("newSectionTopicName").value.trim() || null,
+        scienceName: linkTopic ? getSelectedScienceName("new") : null,
+        topicName: linkTopic ? (document.getElementById("newSectionTopicName").value.trim() || null) : null,
         textContentFormat: "HTML"
     };
 
@@ -927,6 +943,8 @@ async function submitAddSection() {
         document.getElementById("newSectionScienceOther").value = "";
         document.getElementById("newSectionTopicName").value = "";
         newTopicNameManuallyEdited = false;
+        document.getElementById("newSectionLinkTopic").checked = false;
+        onTopicLinkToggle("new");
         document.getElementById("includeText").checked = true;
         document.getElementById("includeVideo").checked = false;
         onContentToggle(document.getElementById("includeText"));
@@ -1008,6 +1026,11 @@ async function openEditSectionForm(sectionId) {
         applyScienceSelection("edit", section.linkedScienceName || (cachedCourse ? cachedCourse.title : ""));
         editTopicNameManuallyEdited = !!section.linkedTopicName;
         document.getElementById("editSectionTopicName").value = section.linkedTopicName || section.title || "";
+        // Checkbox — bo'lim ALLAQACHON biror mavzuga bog'langan bo'lsagina
+        // boshlanishda belgilangan holda ochiladi; aks holda o'chirilgan
+        // (bog'lash hamon ixtiyoriy bo'lib qoladi).
+        document.getElementById("editSectionLinkTopic").checked = !!section.linkedTopicName;
+        onTopicLinkToggle("edit");
 
         document.getElementById("editSectionForm").style.display = "flex";
         document.getElementById("editSectionForm").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1061,11 +1084,12 @@ async function submitEditSection() {
         return;
     }
 
+    const linkTopic = document.getElementById("editSectionLinkTopic").checked;
     const type = includeText && includeVideo ? "MIXED" : includeText ? "TEXT" : "VIDEO";
     const payload = {
         title, type, textContent: null, videoSourceType: null, videoUrl: null, videoDurationSeconds: null,
-        scienceName: getSelectedScienceName("edit"),
-        topicName: document.getElementById("editSectionTopicName").value.trim() || null,
+        scienceName: linkTopic ? getSelectedScienceName("edit") : null,
+        topicName: linkTopic ? (document.getElementById("editSectionTopicName").value.trim() || null) : null,
         textContentFormat: "HTML"
     };
 

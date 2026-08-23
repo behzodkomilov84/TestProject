@@ -161,12 +161,16 @@
                  bo'lim nomi bilan bir xil (bo'lim nomi o'zgarsa, u ham
                  qo'lda tahrirlanmagan bo'lsa, avtomatik yangilanadi).
             -->
-            <label class="content-toggle-label">🎯 Mavzuga oid testlar bilan bog'lash (ixtiyoriy)</label>
-            <select id="newSectionScienceSelect" onchange="onScienceSelectChange('new')"></select>
-            <input type="text" id="newSectionScienceOther" placeholder="Fan nomi" style="display:none;">
-            <div class="field-hint">Masalan: Kimyo</div>
-            <input type="text" id="newSectionTopicName" placeholder="Mavzu nomi" oninput="onTopicNameInput('new')">
-            <div class="field-hint">Mavjud bo'lmasa, avtomatik yaratiladi</div>
+            <label class="content-toggle-label">
+                <input type="checkbox" id="newSectionLinkTopic" onchange="onTopicLinkToggle('new')"> 🎯 Mavzuga oid testlar bilan bog'lash (ixtiyoriy)
+            </label>
+            <div id="newSectionTopicFields" style="display:none;">
+                <select id="newSectionScienceSelect" onchange="onScienceSelectChange('new')"></select>
+                <input type="text" id="newSectionScienceOther" placeholder="Fan nomi" style="display:none;">
+                <div class="field-hint">Masalan: Kimyo</div>
+                <input type="text" id="newSectionTopicName" placeholder="Mavzu nomi" oninput="onTopicNameInput('new')">
+                <div class="field-hint">Mavjud bo'lmasa, avtomatik yaratiladi</div>
+            </div>
 
             <div class="course-form-actions">
                 <button onclick="submitAddSection()">✅ Bo'limni qo'shish</button>
@@ -256,12 +260,16 @@
                 <input type="number" id="editSectionVideoDuration" placeholder="Video davomiyligi (soniya) — faqat 'Boshqa manba' uchun" style="display:none;">
             </div>
 
-            <label class="content-toggle-label">🎯 Mavzuga oid testlar bilan bog'lash (ixtiyoriy)</label>
-            <select id="editSectionScienceSelect" onchange="onScienceSelectChange('edit')"></select>
-            <input type="text" id="editSectionScienceOther" placeholder="Fan nomi" style="display:none;">
-            <div class="field-hint">Masalan: Kimyo</div>
-            <input type="text" id="editSectionTopicName" placeholder="Mavzu nomi" oninput="onTopicNameInput('edit')">
-            <div class="field-hint">Mavjud bo'lmasa, avtomatik yaratiladi</div>
+            <label class="content-toggle-label">
+                <input type="checkbox" id="editSectionLinkTopic" onchange="onTopicLinkToggle('edit')"> 🎯 Mavzuga oid testlar bilan bog'lash (ixtiyoriy)
+            </label>
+            <div id="editSectionTopicFields" style="display:none;">
+                <select id="editSectionScienceSelect" onchange="onScienceSelectChange('edit')"></select>
+                <input type="text" id="editSectionScienceOther" placeholder="Fan nomi" style="display:none;">
+                <div class="field-hint">Masalan: Kimyo</div>
+                <input type="text" id="editSectionTopicName" placeholder="Mavzu nomi" oninput="onTopicNameInput('edit')">
+                <div class="field-hint">Mavjud bo'lmasa, avtomatik yaratiladi</div>
+            </div>
 
             <div class="course-form-actions">
                 <button onclick="submitEditSection()">✅ Saqlash</button>
