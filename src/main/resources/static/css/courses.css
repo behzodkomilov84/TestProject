@@ -329,6 +329,9 @@ body {
     border-radius: 6px;
     border: 1px solid #d5dde8;
     background: #f8fafc;
+    /* Aniq belgilanmasa, saytning boshqa joyidagi umumiy tugma uslubidan
+       oq (white) rang meros bo'lib qolib, matn oq fonda ko'rinmay qolardi. */
+    color: #1e293b;
     cursor: pointer;
 }
 
