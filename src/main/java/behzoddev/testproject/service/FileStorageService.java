@@ -14,6 +14,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Savol, javob va izoh (commentary)ga rasm/video biriktirish uchun
@@ -34,11 +35,17 @@ public class FileStorageService {
     private final ClamAvScanService clamAvScanService;
     private final Tika tika = new Tika();
 
+    // HEIC/HEIF — iPhone'ning standart rasm formati. Ko'pchilik brauzer
+    // (Chrome, Firefox, Edge) buni <img> orqali UMUMAN ko'rsata olmaydi
+    // (faqat Safari/iOS qo'llab-quvvatlaydi) — shu sabab shunchaki ruxsat
+    // berish YETARLI EMAS, fayl haqiqatan ko'rinishi uchun yuklashda avval
+    // JPEG'ga o'girib olinishi shart (pastda, convertHeicToJpegIfNeeded()).
     private static final Set<String> ALLOWED_IMAGE_TYPES = Set.of(
-            "image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif"
+            "image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif",
+            "image/heic", "image/heif"
     );
     private static final List<String> ALLOWED_IMAGE_EXTENSIONS =
-            List.of(".png", ".jpg", ".jpeg", ".webp", ".gif");
+            List.of(".png", ".jpg", ".jpeg", ".webp", ".gif", ".heic", ".heif");
     private static final long MAX_IMAGE_SIZE_BYTES = 10L * 1024 * 1024; // 10MB
 
     private static final Set<String> ALLOWED_VIDEO_TYPES = Set.of(
@@ -134,8 +141,16 @@ public class FileStorageService {
             throw new IllegalArgumentException(sizeErrorMessage);
         }
 
+        // Windows'da .heic fayllar uchun MIME turi ko'pincha operatsion
+        // tizim darajasida ro'yxatdan o'tmagan (faqat Apple qurilmalarida
+        // "image/heic" to'g'ri aniqlanadi) — brauzer bunday holda generik
+        // "application/octet-stream" yuboradi. Bu holatda darhol rad
+        // etmasdan, pastdagi Tika (haqiqiy magic-byte) tekshiruviga
+        // ishonamiz — u baribir yagona ISHONCHLI manba (shu sababdan
+        // "client Content-Type header'iga ishonib bo'lmaydi" izohi bor).
         String contentType = file.getContentType();
-        if (contentType == null || !allowedContentTypes.contains(contentType.toLowerCase())) {
+        boolean declaredTypeUnknown = contentType == null || contentType.equalsIgnoreCase("application/octet-stream");
+        if (!declaredTypeUnknown && !allowedContentTypes.contains(contentType.toLowerCase())) {
             throw new IllegalArgumentException(typeErrorMessage);
         }
 
@@ -158,14 +173,30 @@ public class FileStorageService {
             throw new IllegalArgumentException(typeErrorMessage);
         }
 
-        // 2) Virus/zararli kod tekshiruvi (ClamAV yoqilgan bo'lsa).
+        // 2) Virus/zararli kod tekshiruvi (ClamAV yoqilgan bo'lsa) — HEIC/HEIF
+        // konvertatsiyasidan OLDIN, hali xom (o'girishga yuborilishi mumkin
+        // bo'lgan) baytlar ustida, chunki konvertatsiya vositasi ham
+        // ishonchsiz kirish ma'lumotini qayta ishlaydi.
         clamAvScanService.scan(content, file.getOriginalFilename());
+
+        // HEIC/HEIF -> JPEG: ko'pchilik brauzer HEIC'ni ko'rsata olmagani
+        // uchun, saqlashdan oldin albatta JPEG'ga o'giramiz (kengaytma ham
+        // shunga qarab ".jpg"ga almashtiriladi, aks holda extractExtension()
+        // ham HEIC kengaytmasini saqlab qo'yardi-yu, lekin fayl ichi JPEG
+        // bo'lardi — nomi bilan mazmuni mos kelmasdi).
+        String extensionOverride = null;
+        if (detectedType.equalsIgnoreCase("image/heic") || detectedType.equalsIgnoreCase("image/heif")) {
+            content = convertHeicToJpeg(content);
+            extensionOverride = ".jpg";
+        }
 
         try {
             Path targetDir = Path.of(uploadDir, subDir).toAbsolutePath().normalize();
             Files.createDirectories(targetDir);
 
-            String extension = extractExtension(file.getOriginalFilename(), allowedExtensions);
+            String extension = extensionOverride != null
+                    ? extensionOverride
+                    : extractExtension(file.getOriginalFilename(), allowedExtensions);
             String newFileName = UUID.randomUUID() + extension;
 
             Path targetFile = targetDir.resolve(newFileName).normalize();
@@ -182,6 +213,51 @@ public class FileStorageService {
         } catch (IOException e) {
             log.error("Faylni saqlashda xatolik", e);
             throw new IllegalStateException("❌Faylni saqlab bo'lmadi.", e);
+        }
+    }
+
+    // HEIC/HEIF -> JPEG konvertatsiyasi — Java'ning o'zida HEIC dekoderi
+    // yo'q (HEVC kodek litsenziyasi sababli), shu sabab tizimga o'rnatilgan
+    // "heif-convert" (libheif-examples, Dockerfile'da o'rnatiladi) buyrug'i
+    // orqali, alohida jarayon sifatida chaqiriladi.
+    private byte[] convertHeicToJpeg(byte[] content) {
+        Path tempInput = null;
+        Path tempOutput = null;
+        try {
+            tempInput = Files.createTempFile("heic-in-", ".heic");
+            tempOutput = Files.createTempFile("heic-out-", ".jpg");
+            Files.write(tempInput, content);
+
+            Process process = new ProcessBuilder("heif-convert", tempInput.toString(), tempOutput.toString())
+                    .redirectErrorStream(true)
+                    .start();
+            boolean finished = process.waitFor(30, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                throw new IllegalStateException("❌HEIC/HEIF rasmni o'girish vaqti tugadi.");
+            }
+            if (process.exitValue() != 0) {
+                throw new IllegalStateException("❌HEIC/HEIF rasmni JPEG'ga o'girishda xatolik.");
+            }
+            return Files.readAllBytes(tempOutput);
+        } catch (IOException e) {
+            log.error("HEIC->JPEG konvertatsiyasida xatolik", e);
+            throw new IllegalStateException("❌HEIC/HEIF rasmni o'girishda xatolik.", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("❌HEIC/HEIF rasmni o'girish to'xtatildi.", e);
+        } finally {
+            deleteQuietly(tempInput);
+            deleteQuietly(tempOutput);
+        }
+    }
+
+    private void deleteQuietly(Path path) {
+        if (path == null) return;
+        try {
+            Files.deleteIfExists(path);
+        } catch (IOException e) {
+            log.warn("Vaqtinchalik faylni o'chirib bo'lmadi: {}", path, e);
         }
     }
 
