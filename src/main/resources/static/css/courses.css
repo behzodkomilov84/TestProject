@@ -315,6 +315,29 @@ body {
     font-size: 13px;
 }
 
+/* Fayl tanlangach darhol import bo'lmaydi — shu tugmalar ko'rinadi, faqat
+   "📥 Import qilish" bosilgach haqiqiy import boshlanadi (onImportFileSelected/
+   importDocxFile, courseDetail.js). */
+.import-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.import-actions button {
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid #d5dde8;
+    background: #f8fafc;
+    cursor: pointer;
+}
+
+.import-actions button:first-child {
+    background: #2563eb;
+    color: white;
+    border-color: #2563eb;
+}
+
 /* Bo'lim matni uchun oddiy WYSIWYG (qalin/kursiv/ro'yxat) — shu bilan
    birga PDF/Word'dan copy-paste qilinganda formatlash (jadval, qalin
    matn) endi yo'qolmaydi, chunki oddiy <textarea> emas, contenteditable

@@ -139,13 +139,18 @@
                      data-placeholder="Matn kontenti — yozing yoki PDF/Word'dan joylashtiring (formatlash saqlanadi)"></div>
                 <div class="import-file-row">
                     <label for="newSectionImportFile">📁 yoki .docx faylni import qilish:</label>
-                    <input type="file" id="newSectionImportFile" accept=".docx" onchange="importDocxFile(this, 'newSectionTextEditor')">
+                    <input type="file" id="newSectionImportFile" accept=".docx" onchange="onImportFileSelected(this, 'newSectionImportActions')">
+                    <span id="newSectionImportActions" class="import-actions hidden">
+                        <button type="button" onclick="importDocxFile(document.getElementById('newSectionImportFile'), 'newSectionTextEditor')">📥 Import qilish</button>
+                        <button type="button" onclick="cancelDocxImport('newSectionImportFile', 'newSectionImportActions')">Bekor qilish</button>
+                    </span>
                 </div>
             </div>
 
             <label class="content-toggle-label">
                 <input type="checkbox" id="includeVideo" onchange="onContentToggle(this)"> 🎬 Video qo'shish
             </label>
+            <div class="field-hint">Bu — bo'limning ASOSIY videosi: talaba uni oxirigacha ko'rmaguncha keyingi mavzu ochilmaydi. (Matn ichiga, xohlagan joyga, ko'rish shart bo'lmagan qo'shimcha video qo'yish uchun esa yuqoridagi rich-toolbardagi 🎬 tugmasidan foydalaning.)</div>
             <div id="videoFields" style="display:none;">
                 <select id="newSectionVideoSource" onchange="onVideoSourceChange()">
                     <option value="YOUTUBE">YouTube</option>
@@ -248,13 +253,18 @@
                      data-placeholder="Matn kontenti — yozing yoki PDF/Word'dan joylashtiring (formatlash saqlanadi)"></div>
                 <div class="import-file-row">
                     <label for="editSectionImportFile">📁 yoki .docx faylni import qilish:</label>
-                    <input type="file" id="editSectionImportFile" accept=".docx" onchange="importDocxFile(this, 'editSectionTextEditor')">
+                    <input type="file" id="editSectionImportFile" accept=".docx" onchange="onImportFileSelected(this, 'editSectionImportActions')">
+                    <span id="editSectionImportActions" class="import-actions hidden">
+                        <button type="button" onclick="importDocxFile(document.getElementById('editSectionImportFile'), 'editSectionTextEditor')">📥 Import qilish</button>
+                        <button type="button" onclick="cancelDocxImport('editSectionImportFile', 'editSectionImportActions')">Bekor qilish</button>
+                    </span>
                 </div>
             </div>
 
             <label class="content-toggle-label">
                 <input type="checkbox" id="editIncludeVideo" onchange="onEditContentToggle(this)"> 🎬 Video qo'shish
             </label>
+            <div class="field-hint">Bu — bo'limning ASOSIY videosi: talaba uni oxirigacha ko'rmaguncha keyingi mavzu ochilmaydi. (Matn ichiga, xohlagan joyga, ko'rish shart bo'lmagan qo'shimcha video qo'yish uchun esa yuqoridagi rich-toolbardagi 🎬 tugmasidan foydalaning.)</div>
             <div id="editVideoFields" style="display:none;">
                 <select id="editSectionVideoSource" onchange="onEditVideoSourceChange()">
                     <option value="YOUTUBE">YouTube</option>

@@ -620,6 +620,26 @@ document.addEventListener('touchmove', (e) => {
 }, { passive: true });
 document.addEventListener('touchend', () => { richResizeState = null; });
 
+// Fayl tanlanishi bilan DARHOL import qilinmaydi — foydalanuvchi avval
+// qaysi faylni tanlaganini ko'rishi (brauzerning o'zi nomini ko'rsatadi),
+// keyin "📥 Import qilish"ni bosishi (yoki "Bekor qilish" bilan tanlovni
+// bekor qilishi) kerak. Shu sabab bu yerda faqat import/bekor qilish
+// tugmalarini ko'rsatish/yashirish bilan cheklanamiz — haqiqiy import
+// faqat importDocxFile() chaqirilganda (tugma bosilganda) sodir bo'ladi.
+function onImportFileSelected(fileInput, actionsId) {
+    const actions = document.getElementById(actionsId);
+    if (fileInput.files && fileInput.files[0]) {
+        actions.classList.remove('hidden');
+    } else {
+        actions.classList.add('hidden');
+    }
+}
+
+function cancelDocxImport(fileInputId, actionsId) {
+    document.getElementById(fileInputId).value = "";
+    document.getElementById(actionsId).classList.add('hidden');
+}
+
 // .docx faylni mammoth.js orqali HTML'ga aylantiradi — abzatslar,
 // qalin/kursiv, sarlavhalar, ro'yxatlar kabi formatlash saqlanadi (fayl
 // ichidagi shriftlar/uslublar o'zgartirilmaydi, faqat saytning umumiy
@@ -629,9 +649,12 @@ async function importDocxFile(fileInput, editorId) {
     const file = fileInput.files[0];
     if (!file) return;
 
+    const actionsId = editorId === "newSectionTextEditor" ? "newSectionImportActions" : "editSectionImportActions";
+
     if (typeof mammoth === "undefined") {
         alert("❌ Import kutubxonasi yuklanmadi. Internet aloqasini tekshirib, sahifani qayta yuklang.");
         fileInput.value = "";
+        document.getElementById(actionsId).classList.add('hidden');
         return;
     }
 
@@ -652,6 +675,7 @@ async function importDocxFile(fileInput, editorId) {
         alert("❌ Faylni import qilishda xatolik: " + err.message);
     } finally {
         fileInput.value = "";
+        document.getElementById(actionsId).classList.add('hidden');
     }
 }
 
