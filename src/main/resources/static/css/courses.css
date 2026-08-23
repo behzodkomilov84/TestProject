@@ -760,16 +760,46 @@ body {
     margin-bottom: 24px;
 }
 
-/* "➕ Yangi bo'lim qo'shish" va "💳 obunalarni boshqarish" tugmalari —
-   standart brauzer ko'rinishi o'rniga chiroyli rangli tugmalar, yuqoridagi
-   bloklarga yopishib turmasligi uchun bo'shliq bilan. */
+/* Sarlavha bosilsa panel yig'iladi/ochiladi (toggleManagePanel,
+   courseDetail.js) — ekranning katta qismini band qilib qo'ymasligi
+   uchun. Yopiq holatda h2'dan boshqa hech narsa ko'rinmaydi. */
+.manage-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    margin: 0;
+    user-select: none;
+}
+
+.manage-panel-chevron {
+    font-size: 14px;
+    color: #64748b;
+    transition: transform 0.15s ease;
+}
+
+.course-manage-panel.collapsed .manage-panel-chevron {
+    transform: rotate(-90deg);
+}
+
+.manage-panel-body {
+    margin-top: 14px;
+}
+
+.course-manage-panel.collapsed .manage-panel-body {
+    display: none;
+}
+
+/* "➕ Bo'lim qo'shish" va "💳 Obunalarni boshqarish" tugmalari — endi
+   yuqoridagi 3 tasi bilan BIRGA, bitta gorizontal (siqiq) qatorda
+   (.manage-actions-row, flex-wrap) — avval alohida, to'liq kenglikdagi
+   "blok" tugmalar sifatida pastda joylashib, panelni keraksiz uzun qilib
+   qo'yardi. */
 #openAddSectionBtn,
 #manageSubscriptionsBtn {
-    display: block;
-    margin-top: 16px;
-    padding: 11px 20px;
+    padding: 9px 16px;
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     color: white;
     font-weight: 600;
     font-size: 14px;

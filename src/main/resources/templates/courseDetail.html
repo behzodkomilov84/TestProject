@@ -40,15 +40,26 @@
         </div>
     </div>
 
-    <!-- OWNER uchun — kursni boshqarish paneli -->
-    <div id="manageCoursePanel" class="course-manage-panel owner-only-el" style="display:none;">
-        <h2>⚙️ Kursni boshqarish</h2>
+    <!-- OWNER uchun — kursni boshqarish paneli. Ekranning katta qismini
+         band qilib qo'ymasligi uchun sarlavha bosilganda yig'iladi
+         (collapsible) — sahifa ochilganda avvalgi holati (ochiq/yopiq)
+         localStorage'dan tiklanadi (toggleManagePanel, courseDetail.js). -->
+    <div id="manageCoursePanel" class="course-manage-panel owner-only-el collapsed" style="display:none;">
+        <h2 class="manage-panel-header" onclick="toggleManagePanel()">
+            ⚙️ Kursni boshqarish
+            <span class="manage-panel-chevron">▾</span>
+        </h2>
 
-        <div class="manage-actions-row">
-            <button onclick="togglePublish()" id="togglePublishBtn">—</button>
-            <button onclick="openEditCourseForm()">✏️ Kursni tahrirlash</button>
-            <button class="danger-btn" onclick="deleteCourse()">🗑️ Kursni o'chirish</button>
-        </div>
+        <div id="managePanelBody" class="manage-panel-body">
+            <div class="manage-actions-row">
+                <button onclick="togglePublish()" id="togglePublishBtn">—</button>
+                <button onclick="openEditCourseForm()">✏️ Tahrirlash</button>
+                <button class="danger-btn" onclick="deleteCourse()">🗑️ O'chirish</button>
+                <button id="openAddSectionBtn" onclick="openAddSectionForm()">➕ Bo'lim qo'shish</button>
+                <button id="manageSubscriptionsBtn" onclick="location.href='/courses/subscriptions?courseId=' + COURSE_ID">
+                    💳 Obunalarni boshqarish
+                </button>
+            </div>
 
         <div id="editCourseForm" class="course-form" style="display:none;">
             <input type="text" id="editCourseTitle" placeholder="Kurs nomi">
@@ -69,8 +80,6 @@
                 <button onclick="closeEditCourseForm()">Bekor qilish</button>
             </div>
         </div>
-
-        <button id="openAddSectionBtn" onclick="openAddSectionForm()">➕ Yangi bo'lim qo'shish</button>
 
         <div id="addSectionForm" class="section-form" style="display:none;">
             <input type="text" id="newSectionTitle" placeholder="Bo'lim nomi" maxlength="500" oninput="onSectionTitleInput('new')">
@@ -292,12 +301,7 @@
                 <button onclick="closeEditSectionForm()">Bekor qilish</button>
             </div>
         </div>
-
-        <!-- Obuna berish/tasdiqlash/bekor qilish — endi barcha kurslar uchun
-             yagona "Kursga obuna berish" sahifasida (navbar > 🎓 Kurslar). -->
-        <button id="manageSubscriptionsBtn" onclick="location.href='/courses/subscriptions?courseId=' + COURSE_ID">
-            💳 Bu kurs uchun obunalarni boshqarish
-        </button>
+        </div>
     </div>
 
     <h2 class="curriculum-title">📋 Mavzular</h2>

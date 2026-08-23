@@ -874,8 +874,20 @@ function renderCourse(course) {
     // Boshqarish paneli (tahrirlash/chop etish/bo'lim qo'shish) — OWNER
     // uchun HAR DOIM, ADMIN uchun faqat O'ZI yaratgan kursda (backend
     // shu logikani hisoblab, canManage sifatida qaytaradi).
-    document.getElementById("manageCoursePanel").style.display = course.canManage ? "block" : "none";
+    const managePanel = document.getElementById("manageCoursePanel");
+    managePanel.style.display = course.canManage ? "block" : "none";
     document.getElementById("sectionsSortBar").style.display = course.canManage ? "flex" : "none";
+
+    // Panel yig'ilgan/ochiq holati — saqlangan tanlov bo'lsa o'shanga
+    // qarab, aks holda HTML'dagi standart (yig'ilgan) holatda qoladi.
+    if (course.canManage) {
+        const savedCollapsed = localStorage.getItem(MANAGE_PANEL_COLLAPSED_KEY);
+        if (savedCollapsed === "0") {
+            managePanel.classList.remove("collapsed");
+        } else if (savedCollapsed === "1") {
+            managePanel.classList.add("collapsed");
+        }
+    }
 
     if (course.canManage) {
         document.getElementById("togglePublishBtn").textContent =
@@ -1172,6 +1184,18 @@ async function deleteCourse() {
 }
 
 /* ===== OWNER: bo'lim qo'shish ===== */
+
+// "⚙️ Kursni boshqarish" paneli — sarlavha bosilganda yig'iladi/ochiladi
+// (ekranning katta qismini band qilib qo'ymasligi uchun). Holati
+// localStorage'da saqlanadi — admin panelni ochiq qoldirib qayta
+// kirsa, har safar qayta ochish shart bo'lmaydi.
+const MANAGE_PANEL_COLLAPSED_KEY = "courseManagePanelCollapsed";
+
+function toggleManagePanel() {
+    const panel = document.getElementById("manageCoursePanel");
+    const collapsed = panel.classList.toggle("collapsed");
+    localStorage.setItem(MANAGE_PANEL_COLLAPSED_KEY, collapsed ? "1" : "0");
+}
 
 function openAddSectionForm() {
     document.getElementById("newSectionTextEditor").innerHTML = "";
