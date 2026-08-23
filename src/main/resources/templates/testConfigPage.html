@@ -36,6 +36,17 @@
         </select>
     </div>
 
+    <!-- Fan Bo'limlarga ega bo'lsagina ko'rinadi (masalan Kimyo) — avval
+         Bo'lim tanlanadi, keyingina o'sha bo'limdagi mavzular chiqadi.
+         Bo'limi yo'q fanlarda bu qadam butunlay o'tkazib yuboriladi
+         (bo'limSection.js#loadTopics — hidden class bilan yashiriladi). -->
+    <div class="section hidden" id="bolimSection">
+        <div class="section-title">Bo'limni tanlang</div>
+        <select id="sectionSelect" onchange="onSectionSelectChange()">
+            <option value="">-- Bo'limni tanlang --</option>
+        </select>
+    </div>
+
     <div class="section" id="topicSection">
         <div class="section-title">Mavzularni tanlang</div>
         <div class="multiselect" id="topicMultiselect">

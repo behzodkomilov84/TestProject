@@ -138,7 +138,8 @@ function openTopics(sectionId) {
         alert("❗ Avval bo'limni bazaga saqlang");
         return;
     }
-    window.location.href = `/topics?scienceId=${scienceId}`;
+    // Faqat shu bo'limga tegishli mavzularni ko'rsatadigan holatda ochiladi.
+    window.location.href = `/topics?scienceId=${scienceId}&sectionId=${sectionId}`;
 }
 
 function hasDuplicate(currentIndex, name) {
@@ -435,14 +436,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!btnBack) return;
 
     btnBack.onclick = () => {
+        // Bo'limlar sahifasi endi Fan va Mavzular o'rtasida turadi
+        // (Fan -> Bo'lim -> Mavzu) — shu sabab "Orqaga" Fanlar ro'yxatiga
+        // qaytaradi.
         const scienceId =
             new URLSearchParams(window.location.search).get("scienceId");
 
-        if (!scienceId) {
-            window.location.href = "/science";
-            return;
-        }
-
-        window.location.href = `/topics?scienceId=${scienceId}`;
+        window.location.href = scienceId ? `/science?focus=${scienceId}` : "/science";
     };
 });

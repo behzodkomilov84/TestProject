@@ -143,7 +143,9 @@ function openTopics(scienceId) {
         // return;
     }
 
-    window.location.href = `/topics?scienceId=${scienceId}`;
+    // Endi to'g'ridan-to'g'ri mavzular emas, avval Bo'limlar sahifasiga
+    // o'tiladi (Fan -> Bo'lim -> Mavzu ierarxiyasi).
+    window.location.href = `/topic-sections?scienceId=${scienceId}`;
 }
 
 function hasDuplicate(currentIndex, name) {

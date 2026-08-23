@@ -12,6 +12,13 @@ let newName = ""; //for EDIT uses
 // Fan ichidagi Bo'limlar ro'yxati — "— Bo'limsiz —" varianti bilan
 // birga tanlash dropdown'ini to'ldirish uchun (loadSections()).
 let sectionList = [];
+
+// Bo'limlar sahifasidan (Fan -> Bo'lim -> Mavzu) kelinganda URL'da
+// "sectionId" beriladi — shu bo'limga tegishli mavzular bo'lim ustida
+// FAQAT KO'RSATILADI (itemBlock'ning o'zi to'liq qoladi — dublikat
+// nom tekshiruvi butun fan bo'yicha bo'lishi kerak, faqat bitta
+// bo'lim ichida emas, chunki DB'da unique(science_id, name)).
+const filterSectionId = new URLSearchParams(window.location.search).get("sectionId");
 // ========================================================================
 
 const scienceId = getScienceId();
@@ -20,8 +27,21 @@ if (!scienceId) {
     alert("❌ scienceId topilmadi (HTML dan)");
 } else {
     loadSections().then(() => {
+        showSectionFilterBanner();
         afterStartPage(`/api/topic?scienceId=${scienceId}`);
     });
+}
+
+function showSectionFilterBanner() {
+    const banner = document.getElementById("sectionFilterBanner");
+    if (!filterSectionId) {
+        banner.classList.add("hidden");
+        return;
+    }
+    const name = sectionNameById(filterSectionId) || "Bo'lim";
+    banner.innerHTML = `🔎 <b>${escapeHtml(name)}</b> mavzulari ko'rsatilmoqda — ` +
+        `<a href="/topics?scienceId=${scienceId}">barcha mavzularni ko'rish</a>`;
+    banner.classList.remove("hidden");
 }
 
 async function loadSections() {
@@ -104,6 +124,14 @@ function render() {
     list.innerHTML = "";
 
     itemBlock.forEach((s, i) => {
+        // Bo'lim ustidan kelingan bo'lsa — faqat shu bo'limga tegishli
+        // (yoki hali saqlanmagan NEW) qatorlar ko'rsatiladi. itemBlock'ning
+        // o'zi to'liq qoladi (dublikat nom tekshiruvi butun fan bo'yicha
+        // ishlashi kerak), shu sabab faqat CHIZISHDA o'tkazib yuboriladi.
+        if (filterSectionId && s.mode === "VIEW" && Number(s.sectionId) !== Number(filterSectionId)) {
+            return;
+        }
+
         const row = document.createElement("div");
         row.className = "row";
 
@@ -361,11 +389,14 @@ function add() {
     // ИЗМЕНЕНИЕ: Увеличиваем временный ID
     const tempId = Date.now() * -1; // Отрицательный ID для временных записей
 
+    // Bo'lim ustidan kelingan bo'lsa (filterSectionId) — yangi mavzu
+    // avtomatik o'sha bo'limga tanlangan holda ochiladi (teacher har safar
+    // qo'lda tanlamasin uchun).
     itemBlock.push({
         id: tempId, // Временный ID
         name: "",
         original: "",
-        sectionId: null,
+        sectionId: filterSectionId ? Number(filterSectionId) : null,
         originalSectionId: null,
         mode: "NEW"
     });
@@ -531,7 +562,11 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        window.location.href = `/science?focus=${scienceId}`;
+        // Bo'lim ichidan kelingan bo'lsa (Fan -> Bo'lim -> Mavzu) — Bo'limlar
+        // ro'yxatiga qaytariladi, aks holda to'g'ridan-to'g'ri Fanlarga.
+        window.location.href = filterSectionId
+            ? `/topic-sections?scienceId=${scienceId}`
+            : `/science?focus=${scienceId}`;
     };
 });
 //===========================================================================

@@ -59,12 +59,21 @@ function loadTopicsFromSelect() {
     loadTopics(scienceId);
 }
 
+// Fan tanlangach yuklangan to'liq mavzular ro'yxati (sectionId/sectionName
+// bilan) — Bo'lim tanlanganda qayta so'rov yubormasdan shu yerdan
+// filtrlanadi (onSectionSelectChange).
+let currentTopicsData = [];
+
 function resetTestConfig() {
     // Topic dropdownni tozalash
     document.getElementById("topicDropdown").innerHTML = "";
 
     // Labelni qayta tiklash
     document.getElementById("topicLabel").innerText = "Mavzularni tanlang";
+
+    // Bo'lim tanlash qadamini yashirish/tozalash
+    document.getElementById("bolimSection").classList.add("hidden");
+    document.getElementById("sectionSelect").innerHTML = '<option value="">-- Bo\'limni tanlang --</option>';
 
     // Max testlarni 0 qilish
     document.getElementById("max").innerText = "0";
@@ -87,8 +96,8 @@ function loadTopics(id) {
         .then(r => r.json())
         .then(data => {
 
-            const box = document.getElementById("topicDropdown");
-            box.innerHTML = "";
+            currentTopicsData = data;
+            document.getElementById("topicDropdown").innerHTML = "";
 
             // ==============================
             // HARD MODE
@@ -106,78 +115,128 @@ function loadTopics(id) {
             // ==============================
             // NORMAL MODES
             // ==============================
-            // Mavzular Bo'lim bo'yicha guruhlanadi (masalan "I. UMUMIY
-            // KIMYO"), yig'iladigan (collapsible) sarlavha ostida.
-            // Bo'limi yo'q mavzular ("sectionId" NULL) — sarlavhasiz,
-            // hozirgidek tekis ro'yxatda, oxirida (backend'dan shu tartibda
-            // keladi — TopicRepository.getTopicsWithQuestionCount). Bo'lim
-            // umuman bo'lmagan fan uchun bu ko'rinish 100% avvalgidek qoladi.
-            const groups = new Map(); // sectionId (yoki null) -> {name, topics: []}
+            // Avval Fan tanlanadi (yuqorida), SHU FANDA Bo'lim(lar) bo'lsa —
+            // keyin Bo'lim, KEYINGINA o'sha bo'limdagi mavzular ko'rsatiladi
+            // (bosqichma-bosqich: Fan -> Bo'lim -> Mavzu). Bo'limi yo'q
+            // mavzular ("sectionId" NULL) — agar fanda umuman Bo'lim
+            // bo'lmasa, hozirgidek to'g'ridan-to'g'ri tekis ro'yxat sifatida
+            // ko'rsatiladi (ko'rinish 100% avvalgidek qoladi); agar fanda
+            // BOSHQA mavzular bo'lim(lar)ga ega bo'lsa-yu, ba'zilari hali
+            // biriktirilmagan bo'lsa — "— Bo'limsiz mavzular —" degan
+            // alohida variant sifatida Bo'lim tanlovida chiqadi.
+            const sectionsById = new Map();
+            let hasUnassigned = false;
             data.forEach(t => {
-                const key = t.sectionId || "__none__";
-                if (!groups.has(key)) {
-                    groups.set(key, {name: t.sectionName, topics: []});
+                if (t.sectionId) {
+                    if (!sectionsById.has(t.sectionId)) {
+                        sectionsById.set(t.sectionId, {
+                            id: t.sectionId,
+                            name: t.sectionName,
+                            orderIndex: t.sectionOrderIndex
+                        });
+                    }
+                } else {
+                    hasUnassigned = true;
                 }
-                groups.get(key).topics.push(t);
             });
 
-            groups.forEach((group, key) => {
-                const topicsContainer = document.createElement("div");
-                topicsContainer.className = "section-topics";
+            const bolimSection = document.getElementById("bolimSection");
+            const sectionSelect = document.getElementById("sectionSelect");
 
-                group.topics.forEach(t => {
-                    const label = document.createElement("label");
+            if (sectionsById.size === 0) {
+                // Bu fanda Bo'lim umuman yo'q — eskicha, to'g'ridan-to'g'ri
+                // tekis ro'yxat (Bo'lim qadami butunlay o'tkazib yuboriladi).
+                bolimSection.classList.add("hidden");
+                renderTopicCheckboxes(data);
+                return;
+            }
 
-                    label.innerHTML = `
-                        <input type="checkbox" value="${t.id}">
-                        ${t.name} (${t.questionCount} ta test)
-                    `;
+            bolimSection.classList.remove("hidden");
+            sectionSelect.innerHTML = '<option value="">-- Bo\'limni tanlang --</option>';
 
-                    const checkbox = label.querySelector("input");
-
-                    if (preselectTopicId && Number(t.id) === Number(preselectTopicId)) {
-                        checkbox.checked = true;
-                    }
-
-                    checkbox.addEventListener("change", () => {
-                        updateMax();
-                        updateTopicLabel();
-                    });
-
-                    topicsContainer.appendChild(label);
+            Array.from(sectionsById.values())
+                .sort((a, b) => a.orderIndex - b.orderIndex)
+                .forEach(sec => {
+                    const opt = document.createElement("option");
+                    opt.value = sec.id;
+                    opt.textContent = sec.name;
+                    sectionSelect.appendChild(opt);
                 });
 
-                if (key === "__none__") {
-                    // Bo'limsiz — sarlavhasiz, to'g'ridan-to'g'ri qo'yiladi.
-                    box.appendChild(topicsContainer);
-                } else {
-                    const groupDiv = document.createElement("div");
-                    groupDiv.className = "section-group";
-
-                    const header = document.createElement("div");
-                    header.className = "section-header";
-                    header.innerHTML = `<span>${group.name}</span> <span class="section-chevron">▾</span>`;
-                    header.addEventListener("click", () => {
-                        groupDiv.classList.toggle("collapsed");
-                    });
-
-                    groupDiv.appendChild(header);
-                    groupDiv.appendChild(topicsContainer);
-                    box.appendChild(groupDiv);
-                }
-            });
+            if (hasUnassigned) {
+                const opt = document.createElement("option");
+                opt.value = "__none__";
+                opt.textContent = "— Bo'limsiz mavzular —";
+                sectionSelect.appendChild(opt);
+            }
 
             // Kurs bo'limidan kelib, mavzu avtomatik belgilangan bo'lsa —
-            // uning guruhini ochib qo'yamiz (aks holda collapsed holatda
-            // "belgilangan" checkbox ko'zga ko'rinmay qolishi mumkin) va
-            // "necha ta test bor"/label darhol yangilanadi (odatda faqat
-            // checkbox o'zgarganda ishga tushardi).
+            // uning Bo'limini avtomatik tanlab, to'g'ridan-to'g'ri o'sha
+            // bo'limning mavzular ro'yxatini ochamiz (foydalanuvchi qo'lda
+            // Bo'lim tanlashini kutib o'tirmasdan).
             if (preselectTopicId) {
-                updateMax();
-                updateTopicLabel();
+                const preselected = data.find(t => Number(t.id) === Number(preselectTopicId));
+                if (preselected) {
+                    sectionSelect.value = preselected.sectionId || "__none__";
+                    onSectionSelectChange();
+                }
             }
 
         });
+}
+
+// Bo'lim tanlangach — faqat o'sha bo'limga tegishli mavzular ko'rsatiladi
+// (qayta server so'rovi shart emas, currentTopicsData'dan filtrlanadi).
+function onSectionSelectChange() {
+    const sectionValue = document.getElementById("sectionSelect").value;
+
+    if (!sectionValue) {
+        document.getElementById("topicDropdown").innerHTML = "";
+        document.getElementById("topicLabel").innerText = "Mavzularni tanlang";
+        updateMax();
+        return;
+    }
+
+    const filtered = sectionValue === "__none__"
+        ? currentTopicsData.filter(t => !t.sectionId)
+        : currentTopicsData.filter(t => Number(t.sectionId) === Number(sectionValue));
+
+    renderTopicCheckboxes(filtered);
+}
+
+function renderTopicCheckboxes(topics) {
+    const box = document.getElementById("topicDropdown");
+    box.innerHTML = "";
+
+    topics.forEach(t => {
+        const label = document.createElement("label");
+
+        label.innerHTML = `
+            <input type="checkbox" value="${t.id}">
+            ${t.name} (${t.questionCount} ta test)
+        `;
+
+        const checkbox = label.querySelector("input");
+
+        if (preselectTopicId && Number(t.id) === Number(preselectTopicId)) {
+            checkbox.checked = true;
+        }
+
+        checkbox.addEventListener("change", () => {
+            updateMax();
+            updateTopicLabel();
+        });
+
+        box.appendChild(label);
+    });
+
+    // Kurs bo'limidan kelib, mavzu avtomatik belgilangan bo'lsa — "necha ta
+    // test bor"/label darhol yangilanishi kerak (odatda faqat checkbox
+    // o'zgarganda ishga tushardi).
+    if (preselectTopicId) {
+        updateMax();
+        updateTopicLabel();
+    }
 }
 
 function toggleTopics() {

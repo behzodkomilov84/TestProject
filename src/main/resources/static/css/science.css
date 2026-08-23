@@ -84,6 +84,27 @@ h1 {
         cursor: pointer;
     }
 
+    .hidden {
+        display: none !important;
+    }
+
+    /* Bo'lim ustidan (Fan -> Bo'lim -> Mavzu) kelinganda ko'rinadigan
+       filtr bildirgichi (topic.js showSectionFilterBanner()). */
+    .section-filter-banner {
+        background: #e8f5f3;
+        border-left: 3px solid #00796b;
+        border-radius: 4px;
+        padding: 8px 12px;
+        margin-bottom: 12px;
+        font-size: 14px;
+        color: #00695c;
+    }
+
+    .section-filter-banner a {
+        color: #00695c;
+        text-decoration: underline;
+    }
+
     /* Mavzu qaysi Bo'limga (masalan "I. UMUMIY KIMYO") biriktirilganini
        ko'rsatuvchi kichik belgi — bo'limsiz mavzularda chiqmaydi
        (topic.js render()). */

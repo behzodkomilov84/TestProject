@@ -39,6 +39,11 @@
 <div class="wrapper">
     <button id="btnSections" onclick="location.href='/topic-sections?scienceId=' + getScienceId()">📂 Bo'limlar</button>
 
+    <!-- Bo'lim ustidan (Fan -> Bo'lim -> Mavzu) kelinganda ko'rinadi —
+         qaysi bo'lim mavzulari filtrlanib ko'rsatilayotganini bildiradi
+         (topic.js#DOMContentLoaded to'ldiradi/ko'rsatadi). -->
+    <div class="section-filter-banner hidden" id="sectionFilterBanner"></div>
+
     <!--
         БЛОК ДЛЯ ОТОБРАЖЕНИЯ СООБЩЕНИЙ ОБ ОШИБКАХ
         Скрыт, так как используем Toast-уведомления
