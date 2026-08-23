@@ -346,6 +346,11 @@ public class TelegramBot extends TelegramLongPollingBot {
                 }
                 if (data.startsWith("pt_answer_")) {
                     Long answerId = Long.parseLong(data.replace("pt_answer_", ""));
+                    // Javob tanlangach — joriy savol xabari o'chib, keyingi
+                    // savol (yoki test tugagan bo'lsa, natija) o'rniga
+                    // yuboriladi. Aks holda ko'p savolli testda barcha
+                    // o'tilgan savollar chatda ustma-ust to'planib qolardi.
+                    deleteMessageSafely(chatId, callbackMsgId);
                     execute(practiceTestService.submitAnswer(chatId, answerId));
                     return;
                 }
