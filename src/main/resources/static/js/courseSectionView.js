@@ -2,6 +2,34 @@ let youTubePlayer = null;
 let sectionData = null;
 let externalTimerId = null;
 
+// YouTube pleyeri (YT.Player) "videoId" parametri sifatida FAQAT xom
+// ID'ni (masalan "dQw4w9WgXcQ") qabul qiladi — to'liq URL bersa, hech
+// narsa yuklamay qora ekran qoladi. Bazada ba'zi eski yozuvlarda
+// (o'qituvchi to'liq havolani joylashtirgan bo'lsa) to'liq URL saqlanib
+// qolgan bo'lishi mumkin — shu sabab ko'rsatishdan oldin har doim shu
+// funksiya orqali xom ID'ga o'giramiz (agar allaqachon xom ID bo'lsa,
+// o'zgarishsiz qaytadi).
+function extractYouTubeId(input) {
+    if (!input) return input;
+    const trimmed = input.trim();
+    if (!trimmed.includes("/") && !trimmed.includes("?")) return trimmed;
+
+    try {
+        const url = new URL(trimmed);
+        if (url.hostname.includes("youtu.be")) {
+            return url.pathname.slice(1);
+        }
+        if (url.searchParams.get("v")) {
+            return url.searchParams.get("v");
+        }
+        const embedMatch = url.pathname.match(/\/embed\/([^/?]+)/);
+        if (embedMatch) return embedMatch[1];
+    } catch (e) {
+        // URL sifatida parse bo'lmadi — ehtimol shunchaki ID, o'zgarishsiz qoldiramiz.
+    }
+    return trimmed;
+}
+
 document.getElementById("backToCourseBtn").onclick = () => {
     location.href = "/courses/" + COURSE_ID;
 };
@@ -153,7 +181,7 @@ function setupVideoCompletionTracking(data) {
     }
 
     if (data.videoSourceType === "YOUTUBE") {
-        initYouTubePlayer(data.videoUrl);
+        initYouTubePlayer(extractYouTubeId(data.videoUrl));
         return;
     }
 
@@ -172,7 +200,7 @@ function setupVideoCompletionTracking(data) {
 // YouTube IFrame API global callback — API skripti yuklangach avtomatik chaqiriladi.
 function onYouTubeIframeAPIReady() {
     if (sectionData && sectionData.type !== "TEXT" && sectionData.videoSourceType === "YOUTUBE") {
-        initYouTubePlayer(sectionData.videoUrl);
+        initYouTubePlayer(extractYouTubeId(sectionData.videoUrl));
     }
 }
 

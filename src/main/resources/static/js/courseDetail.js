@@ -1,6 +1,31 @@
 let cachedCourse = null;
 let clickPaymentEnabled = false;
 
+// YouTube pleyeri (courseSectionView.js) "videoId" sifatida FAQAT xom
+// ID'ni qabul qiladi, to'liq URL emas — shu sabab o'qituvchi to'liq
+// havolani joylashtirsa ham, saqlashdan oldin shu yerda tozalab olamiz
+// (aks holda video keyinchalik qora ekran bo'lib chiqadi).
+function extractYouTubeId(input) {
+    if (!input) return input;
+    const trimmed = input.trim();
+    if (!trimmed.includes("/") && !trimmed.includes("?")) return trimmed;
+
+    try {
+        const url = new URL(trimmed);
+        if (url.hostname.includes("youtu.be")) {
+            return url.pathname.slice(1);
+        }
+        if (url.searchParams.get("v")) {
+            return url.searchParams.get("v");
+        }
+        const embedMatch = url.pathname.match(/\/embed\/([^/?]+)/);
+        if (embedMatch) return embedMatch[1];
+    } catch (e) {
+        // URL sifatida parse bo'lmadi — ehtimol shunchaki ID, o'zgarishsiz qoldiramiz.
+    }
+    return trimmed;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     loadCourse();
     loadScienceNamesList();
@@ -917,6 +942,9 @@ async function submitAddSection() {
                 alert("❌ Video URL/ID ni kiriting");
                 return;
             }
+            if (source === "YOUTUBE") {
+                payload.videoUrl = extractYouTubeId(payload.videoUrl);
+            }
             if (source === "EXTERNAL") {
                 payload.videoDurationSeconds = Number(document.getElementById("newSectionVideoDuration").value) || null;
             }
@@ -1135,6 +1163,9 @@ async function submitEditSection() {
             if (!payload.videoUrl) {
                 alert("❌ Video URL/ID ni kiriting");
                 return;
+            }
+            if (source === "YOUTUBE") {
+                payload.videoUrl = extractYouTubeId(payload.videoUrl);
             }
             if (source === "EXTERNAL") {
                 payload.videoDurationSeconds = Number(document.getElementById("editSectionVideoDuration").value) || null;
