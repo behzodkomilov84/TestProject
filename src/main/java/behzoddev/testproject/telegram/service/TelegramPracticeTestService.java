@@ -162,11 +162,168 @@ public class TelegramPracticeTestService {
         return msg;
     }
 
-    // ================= 2. Savollar sonini tanlash =================
+    // ================= 1.5. Bo'lim va Mavzu tanlash =================
+    // Saytdagi testConfigPage.js bilan bir xil mantiq: agar shu fanda
+    // Bo'lim(lar) bo'lsa (masalan Kimyo — "I. UMUMIY KIMYO" va h.k.),
+    // avval Bo'lim, keyin (ixtiyoriy) Mavzu tanlanadi. Bo'limi yo'q
+    // (yoki umuman Bo'limlarga bo'linmagan) fanlarda bu qadam butunlay
+    // o'tkazib yuboriladi — to'g'ridan-to'g'ri eskicha, butun fan
+    // bo'yicha son tanlashga o'tiladi (100% orqaga moslik).
 
     public SendMessage selectScience(Long chatId, Long scienceId) {
-        String mode = currentMode(chatId);
+        sessionService.putTempData(chatId, "pt_scienceId", scienceId.toString());
         List<TopicWithQuestionCountDto> topics = topicService.getTopicsWithQuestionCount(scienceId);
+
+        // Bo'lim(lar)ga bo'linmagan (yoki mavzusi umuman yo'q) fan uchun —
+        // eskicha, to'g'ridan-to'g'ri butun fan bo'yicha son tanlashga
+        // o'tiladi (showCountSelection bo'sh ro'yxatni ham to'g'ri
+        // "savollar yo'q" xabari bilan qayta ishlaydi).
+        boolean hasSections = topics.stream().anyMatch(t -> t.sectionId() != null);
+        if (!hasSections) {
+            return showCountSelection(chatId, topics, "fanda");
+        }
+
+        return showSectionSelection(chatId, scienceId, topics);
+    }
+
+    private SendMessage showSectionSelection(Long chatId, Long scienceId, List<TopicWithQuestionCountDto> topics) {
+        // sectionId -> {name, orderIndex} — LinkedHashMap emas, tartib
+        // orderIndex bo'yicha alohida saralanadi (topics ro'yxati
+        // TopicRepository.getTopicsWithQuestionCount'da allaqachon shunday
+        // tartiblangan, lekin bu yerda ANIQ qilish uchun qayta saralanadi).
+        record SectionInfo(Long id, String name, Integer orderIndex) {}
+        java.util.Map<Long, SectionInfo> sectionsById = new java.util.LinkedHashMap<>();
+        boolean hasUnassigned = false;
+        for (TopicWithQuestionCountDto t : topics) {
+            if (t.sectionId() != null) {
+                sectionsById.putIfAbsent(t.sectionId(), new SectionInfo(t.sectionId(), t.sectionName(), t.sectionOrderIndex()));
+            } else {
+                hasUnassigned = true;
+            }
+        }
+
+        SendMessage msg = new SendMessage();
+        msg.setChatId(chatId.toString());
+        msg.setText("📂 Bo'limni tanlang (yoki fanning barcha mavzulari bilan mashq qiling):");
+
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        sectionsById.values().stream()
+                .sorted(java.util.Comparator.comparing(SectionInfo::orderIndex,
+                        java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
+                .forEach(sec -> rows.add(List.of(button(sec.name(), "pt_section_" + scienceId + "_" + sec.id()))));
+
+        if (hasUnassigned) {
+            rows.add(List.of(button("— Bo'limsiz mavzular —", "pt_section_" + scienceId + "_none")));
+        }
+        rows.add(List.of(button("🔷 Barchasi (shu fan bo'yicha)", "pt_section_" + scienceId + "_all")));
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(rows);
+        msg.setReplyMarkup(markup);
+        return msg;
+    }
+
+    // "pt_section_<scienceId>_<sectionValue>" — sectionValue "all" (butun
+    // fan, eskicha xulq-atvor), "none" (bo'limsiz mavzular) yoki haqiqiy
+    // bo'lim id'si bo'lishi mumkin.
+    public SendMessage selectSection(Long chatId, Long scienceId, String sectionValue) {
+        List<TopicWithQuestionCountDto> allTopics = topicService.getTopicsWithQuestionCount(scienceId);
+
+        if ("all".equals(sectionValue)) {
+            return showCountSelection(chatId, allTopics, "fanda");
+        }
+
+        List<TopicWithQuestionCountDto> filtered;
+        String sectionLabel;
+        if ("none".equals(sectionValue)) {
+            filtered = allTopics.stream().filter(t -> t.sectionId() == null).toList();
+            sectionLabel = "Bo'limsiz mavzular";
+        } else {
+            Long sectionId = Long.parseLong(sectionValue);
+            filtered = allTopics.stream().filter(t -> sectionId.equals(t.sectionId())).toList();
+            sectionLabel = filtered.isEmpty() ? "Bo'lim" : filtered.get(0).sectionName();
+        }
+
+        if (filtered.isEmpty()) {
+            SendMessage msg = new SendMessage();
+            msg.setChatId(chatId.toString());
+            msg.setText("🎯 Bu bo'limda hozircha mavzular mavjud emas.");
+            return msg;
+        }
+
+        return showTopicSelection(chatId, scienceId, sectionValue, sectionLabel, filtered);
+    }
+
+    private SendMessage showTopicSelection(Long chatId, Long scienceId, String sectionValue, String sectionLabel,
+                                            List<TopicWithQuestionCountDto> topics) {
+        SendMessage msg = new SendMessage();
+        msg.setChatId(chatId.toString());
+        msg.setText("📖 " + sectionLabel + " — mavzuni tanlang (yoki bo'limning barcha mavzulari bilan mashq qiling):");
+
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        rows.add(List.of(button("🔷 Barcha mavzular (shu bo'limda)", "pt_topicgroup_" + scienceId + "_" + sectionValue)));
+        for (TopicWithQuestionCountDto t : topics) {
+            rows.add(List.of(button(t.name() + " (" + t.questionCount() + " ta)", "pt_topic_" + t.id())));
+        }
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(rows);
+        msg.setReplyMarkup(markup);
+        return msg;
+    }
+
+    // "🔷 Barcha mavzular (shu bo'limda)" tugmasi — selectSection bilan bir
+    // xil filtrlash, lekin mavzu tanlashni o'tkazib, darhol son tanlashga
+    // o'tadi.
+    public SendMessage selectTopicGroup(Long chatId, Long scienceId, String sectionValue) {
+        List<TopicWithQuestionCountDto> allTopics = topicService.getTopicsWithQuestionCount(scienceId);
+
+        List<TopicWithQuestionCountDto> filtered;
+        if ("none".equals(sectionValue)) {
+            filtered = allTopics.stream().filter(t -> t.sectionId() == null).toList();
+        } else {
+            Long targetSectionId = Long.valueOf(sectionValue);
+            filtered = allTopics.stream().filter(t -> targetSectionId.equals(t.sectionId())).toList();
+        }
+
+        return showCountSelection(chatId, filtered, "bo'limda");
+    }
+
+    // Bitta aniq mavzu tanlanganda (mavzular ro'yxatidan) — DIQQAT:
+    // startForTopic()'dan farqli, bu yerda foydalanuvchi allaqachon
+    // tanlagan rejim (practice/exam/hard) SAQLANIB QOLADI (startForTopic
+    // esa kurs bo'limidan to'g'ridan-to'g'ri kelinganda, rejim tanlash
+    // qadami umuman bo'lmagani uchun har doim "practice"ga qat'iy
+    // belgilaydi).
+    public SendMessage selectTopic(Long chatId, Long topicId) {
+        String scienceIdRaw = sessionService.getTempData(chatId).get("pt_scienceId");
+        List<TopicWithQuestionCountDto> topics = scienceIdRaw == null || scienceIdRaw.isBlank()
+                ? List.of()
+                : topicService.getTopicsWithQuestionCount(Long.parseLong(scienceIdRaw));
+
+        TopicWithQuestionCountDto match = topics.stream()
+                .filter(t -> topicId.equals(t.id()))
+                .findFirst()
+                .orElse(null);
+
+        if (match == null) {
+            SendMessage msg = new SendMessage();
+            msg.setChatId(chatId.toString());
+            msg.setText("❌ Mavzu topilmadi. 🎯 Mustaqil test tugmasidan qaytadan boshlang.");
+            return msg;
+        }
+
+        return showCountSelection(chatId, List.of(match), "mavzuda");
+    }
+
+    // ================= 2. Savollar sonini tanlash =================
+    // contextLabel — "fanda"/"bo'limda"/"mavzuda" — savol topilmasa
+    // chiqadigan xabarga qo'yiladi ("Bu <contextLabel> hozircha ... yo'q").
+    // "topics" (raw id ro'yxati emas) qabul qilinadi — questionCount()
+    // ALLAQACHON olib kelingan bo'lgani uchun qayta so'rov yuborilmaydi
+    // (asl selectScience shunday ishlagan, testlar ham shunga mos).
+    private SendMessage showCountSelection(Long chatId, List<TopicWithQuestionCountDto> topics, String contextLabel) {
+        String mode = currentMode(chatId);
         List<Long> topicIds = topics.stream().map(TopicWithQuestionCountDto::id).toList();
 
         SendMessage msg = new SendMessage();
@@ -180,18 +337,17 @@ public class TelegramPracticeTestService {
             User user = getUserByChatId(chatId);
             available = questionRepository.findHardForUser(user.getId(), topicIds).size();
             if (available == 0) {
-                msg.setText("🔥 Bu fanda hozircha xato qilingan (hard) savollaringiz yo'q.");
+                msg.setText("🔥 Bu " + contextLabel + " hozircha xato qilingan (hard) savollaringiz yo'q.");
                 return msg;
             }
         } else {
             available = topics.stream().mapToLong(TopicWithQuestionCountDto::questionCount).sum();
             if (available == 0) {
-                msg.setText("🎯 Bu fanda hozircha savollar yo'q.");
+                msg.setText("🎯 Bu " + contextLabel + " hozircha savollar yo'q.");
                 return msg;
             }
         }
 
-        sessionService.putTempData(chatId, "pt_scienceId", scienceId.toString());
         sessionService.putTempData(chatId, "pt_topicIds", joinIds(topicIds));
         sessionService.putTempData(chatId, "pt_available", String.valueOf(available));
 

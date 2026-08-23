@@ -260,6 +260,29 @@ public class TelegramBot extends TelegramLongPollingBot {
                     execute(practiceTestService.selectScience(chatId, scienceId));
                     return;
                 }
+                // "pt_section_<scienceId>_<sectionValue>" — sectionValue "all"
+                // (butun fan), "none" (bo'limsiz mavzular) yoki bo'lim id'si.
+                if (data.startsWith("pt_section_")) {
+                    String rest = data.replace("pt_section_", "");
+                    int sep = rest.indexOf('_');
+                    Long scienceId = Long.parseLong(rest.substring(0, sep));
+                    String sectionValue = rest.substring(sep + 1);
+                    execute(practiceTestService.selectSection(chatId, scienceId, sectionValue));
+                    return;
+                }
+                if (data.startsWith("pt_topicgroup_")) {
+                    String rest = data.replace("pt_topicgroup_", "");
+                    int sep = rest.indexOf('_');
+                    Long scienceId = Long.parseLong(rest.substring(0, sep));
+                    String sectionValue = rest.substring(sep + 1);
+                    execute(practiceTestService.selectTopicGroup(chatId, scienceId, sectionValue));
+                    return;
+                }
+                if (data.startsWith("pt_topic_")) {
+                    Long topicId = Long.parseLong(data.replace("pt_topic_", ""));
+                    execute(practiceTestService.selectTopic(chatId, topicId));
+                    return;
+                }
                 if (data.equals("pt_count_custom")) {
                     execute(practiceTestService.promptCustomCount(chatId));
                     return;
@@ -347,6 +370,14 @@ public class TelegramBot extends TelegramLongPollingBot {
                 if (data.startsWith("tg_import_science_")) {
                     Long scienceId = Long.parseLong(data.replace("tg_import_science_", ""));
                     execute(questionImportService.selectScience(chatId, scienceId));
+                    return;
+                }
+                if (data.startsWith("tg_import_topicspage_")) {
+                    String rest = data.replace("tg_import_topicspage_", "");
+                    int sep = rest.lastIndexOf('_');
+                    Long scienceId = Long.parseLong(rest.substring(0, sep));
+                    int page = Integer.parseInt(rest.substring(sep + 1));
+                    execute(questionImportService.selectSciencePage(chatId, scienceId, page));
                     return;
                 }
                 if (data.startsWith("tg_import_topic_")) {

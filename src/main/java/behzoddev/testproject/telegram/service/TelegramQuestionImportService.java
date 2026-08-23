@@ -40,6 +40,12 @@ public class TelegramQuestionImportService {
     private static final String TEMPLATE_CLASSPATH = "templates/template_For_Import.xlsx";
     private static final String TEMPLATE_FILE_NAME = "template_For_Import.xlsx";
 
+    // Mavzular ro'yxati sahifalanadi (masalan Kimyo'da 45 ta mavzu bor —
+    // bittasi bitta xabarda hammasi chiqsa, juda uzun/noqulay ro'yxat
+    // bo'lib qolardi). TelegramCourseReaderService.SECTIONS_PER_PAGE bilan
+    // bir xil konvensiya.
+    private static final int TOPICS_PER_PAGE = 8;
+
     private final ScienceService scienceService;
     private final TopicService topicService;
     private final ExcelService excelService;
@@ -71,6 +77,11 @@ public class TelegramQuestionImportService {
     }
 
     public SendMessage selectScience(Long chatId, Long scienceId) {
+        return selectSciencePage(chatId, scienceId, 0);
+    }
+
+    // "◀️/▶️" navigatsiya tugmalari shu orqali chaqiriladi (tg_import_topicspage_).
+    public SendMessage selectSciencePage(Long chatId, Long scienceId, int page) {
         List<TopicWithQuestionCountDto> topics = topicService.getTopicsWithQuestionCount(scienceId);
 
         SendMessage msg = new SendMessage();
@@ -84,13 +95,30 @@ public class TelegramQuestionImportService {
             return msg;
         }
 
-        msg.setText("🗂 Mavzuni tanlang:");
+        int totalPages = (int) Math.ceil(topics.size() / (double) TOPICS_PER_PAGE);
+        int safePage = Math.max(0, Math.min(page, totalPages - 1));
+        int from = safePage * TOPICS_PER_PAGE;
+        int to = Math.min(from + TOPICS_PER_PAGE, topics.size());
+
+        msg.setText(totalPages > 1
+                ? "🗂 Mavzuni tanlang (" + (safePage + 1) + "/" + totalPages + "-sahifa):"
+                : "🗂 Mavzuni tanlang:");
 
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-        for (TopicWithQuestionCountDto topic : topics) {
+        for (TopicWithQuestionCountDto topic : topics.subList(from, to)) {
             rows.add(List.of(button(topic.name() + " (" + topic.questionCount() + " ta savol)",
                     "tg_import_topic_" + topic.id())));
         }
+
+        List<InlineKeyboardButton> navRow = new ArrayList<>();
+        if (safePage > 0) {
+            navRow.add(button("◀️", "tg_import_topicspage_" + scienceId + "_" + (safePage - 1)));
+        }
+        if (safePage < totalPages - 1) {
+            navRow.add(button("▶️", "tg_import_topicspage_" + scienceId + "_" + (safePage + 1)));
+        }
+        if (!navRow.isEmpty()) rows.add(navRow);
+
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(rows);
         msg.setReplyMarkup(markup);
