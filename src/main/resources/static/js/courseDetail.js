@@ -1217,6 +1217,11 @@ function onVideoSourceChange() {
 
     document.getElementById("newSectionVideoUrl").placeholder =
         source === "YOUTUBE" ? "YouTube video ID (masalan: dQw4w9WgXcQ)" : "Video URL";
+    // Manba turi o'zgarganda eski qiymat (masalan boshqa turga tegishli
+    // ID/havola) qolib ketmasin — aks holda foydalanuvchi yangi havolani
+    // maydonni tozalamasdan ustiga qo'shib yozib qo'yishi (tasodifan
+    // qo'shilib ketishi) mumkin.
+    document.getElementById("newSectionVideoUrl").value = "";
 }
 
 async function submitAddSection() {
@@ -1389,7 +1394,7 @@ async function openEditSectionForm(sectionId) {
             document.getElementById("editSectionVideoSource").value = section.videoSourceType || "YOUTUBE";
             document.getElementById("editSectionVideoUrl").value = section.videoUrl || "";
             document.getElementById("editSectionVideoDuration").value = section.videoDurationSeconds || "";
-            onEditVideoSourceChange();
+            onEditVideoSourceChange(true); // keepValue — yuqorida qo'yilgan mavjud URL/ID'ni tozalamaslik uchun
         }
 
         // Fan — allaqachon bog'langan bo'lsa o'sha, aks holda kurs nomi
@@ -1431,7 +1436,16 @@ function onEditContentToggle(changedCheckbox) {
     document.getElementById("editVideoFields").style.display = includeVideo.checked ? "block" : "none";
 }
 
-function onEditVideoSourceChange() {
+// keepValue=true faqat bo'lim yuklanganda (openEditSectionForm) ishlatiladi
+// — o'sha payt editSectionVideoUrl'ga ALLAQACHON mavjud video URL/ID
+// qo'yilgan bo'ladi, uni yo'qotmaslik kerak. Foydalanuvchi dropdown'ni
+// O'ZI o'zgartirganda (onchange) esa keepValue berilmaydi — o'sha holatda
+// maydon TOZALANADI, aks holda eski turga tegishli qiymat (masalan eski
+// YouTube ID) qolib, foydalanuvchi yangi havolani ustiga qo'shib
+// yozib qo'yishi (maydonni oldin tanlamasdan paste qilishi) natijasida
+// ikkalasi qo'shilib, DB ustuni sig'imidan oshib ketishi mumkin edi
+// ("Kiritilgan matn juda uzun" xatosi shundan kelib chiqqan edi).
+function onEditVideoSourceChange(keepValue) {
     const source = document.getElementById("editSectionVideoSource").value;
     document.getElementById("editSectionVideoUrl").style.display = source === "UPLOAD" ? "none" : "block";
     document.getElementById("editSectionVideoFile").style.display = source === "UPLOAD" ? "block" : "none";
@@ -1439,6 +1453,10 @@ function onEditVideoSourceChange() {
 
     document.getElementById("editSectionVideoUrl").placeholder =
         source === "YOUTUBE" ? "YouTube video ID (masalan: dQw4w9WgXcQ)" : "Video URL";
+
+    if (!keepValue) {
+        document.getElementById("editSectionVideoUrl").value = "";
+    }
 }
 
 async function submitEditSection() {
