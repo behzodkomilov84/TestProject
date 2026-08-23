@@ -322,6 +322,7 @@ async function richInsertImage(editorId, fileInput) {
             + `<span class="rich-img-handle" title="Sudrab o'lchamini o'zgartiring"></span>`
             + `</span>&nbsp;`;
         document.execCommand('insertHTML', false, html);
+        injectAlignBars(editorId);
     } catch (err) {
         console.error(err);
         alert("❌ Rasm yuklashda tarmoq xatoligi");
@@ -405,6 +406,7 @@ function insertYouTubeEmbedHtml(editorId, source, width) {
         + `<span class="rich-img-handle" title="Sudrab o'lchamini o'zgartiring"></span>`
         + `</span>&nbsp;`;
     document.execCommand('insertHTML', false, html);
+    injectAlignBars(editorId);
 }
 
 async function richInsertUploadedVideo(editorId, fileInput) {
@@ -435,12 +437,49 @@ async function richInsertUploadedVideo(editorId, fileInput) {
             + `<span class="rich-img-handle" title="Sudrab o'lchamini o'zgartiring"></span>`
             + `</span>&nbsp;`;
         document.execCommand('insertHTML', false, html);
+        injectAlignBars(editorId);
     } catch (err) {
         console.error(err);
         alert("❌ Video yuklashda tarmoq xatoligi");
     } finally {
         fileInput.value = "";
     }
+}
+
+// ================= Rasm/video'ni chapga/markazga/o'ngga surish =================
+// Har bir "rich-img-wrap" (rasm ham, video ham) ustida — resize tutqichi
+// kabi — kichik surish tugmalari (⬅ ⏺ ➡) chiqadi. Ular bosilganda wrap'ga
+// "align-left/center/right" klassi qo'shiladi (courses.css'da wrap'ni
+// display:block qilib, margin orqali chap/markaz/o'ngga suradi — hech
+// qanday klass bo'lmasa standart holat: matn bilan bir qatorda, chapdan
+// boshlanadi). Yangi qo'shilgan rasm/video uchun ham (richInsertImage/
+// insertYouTubeEmbedHtml/richInsertUploadedVideo — insertHTML'dan keyin),
+// oldin saqlangan (bazadan yuklangan eski) rasm/video uchun ham
+// (openEditSectionForm — kontent yuklangandan keyin) chaqiriladi, shu
+// sabab ESKI rasmlarga ham bu imkoniyat qo'shiladi.
+function injectAlignBars(editorId) {
+    const editor = document.getElementById(editorId);
+    if (!editor) return;
+    editor.querySelectorAll('.rich-img-wrap').forEach((wrap) => {
+        if (wrap.querySelector('.rich-img-align-bar')) return; // Allaqachon bor
+        const bar = document.createElement('span');
+        bar.className = 'rich-img-align-bar';
+        bar.setAttribute('contenteditable', 'false');
+        bar.innerHTML =
+            `<button type="button" title="Chapga surish" onclick="setMediaAlign(event,'left')">⬅</button>`
+            + `<button type="button" title="Markazga surish" onclick="setMediaAlign(event,'center')">⏺</button>`
+            + `<button type="button" title="O'ngga surish" onclick="setMediaAlign(event,'right')">➡</button>`;
+        wrap.appendChild(bar);
+    });
+}
+
+function setMediaAlign(evt, align) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    const wrap = evt.currentTarget.closest('.rich-img-wrap');
+    if (!wrap) return;
+    wrap.classList.remove('align-left', 'align-center', 'align-right');
+    wrap.classList.add('align-' + align);
 }
 
 // ================= Rasm o'lchamini sudrab o'zgartirish =================
@@ -1152,6 +1191,7 @@ async function openEditSectionForm(sectionId) {
             ? (section.textContent || "")
             : escapeHtml(section.textContent || "").replace(/\n/g, "<br>");
         attachImageResizeHandlers("editSectionTextEditor");
+        injectAlignBars("editSectionTextEditor");
 
         onEditContentToggle(document.getElementById("editIncludeText"));
 

@@ -541,6 +541,64 @@ body {
     cursor: nwse-resize;
 }
 
+/* Rasm/video'ni ekranning chap/markaz/o'ng tomoniga surish — tugmalar
+   (injectAlignBars, courseDetail.js) faqat tahrirlagich ichida ko'rinadi
+   (resize tutqichi kabi), lekin natijadagi align-left/center/right klass
+   o'qish sahifasida ham ishlaydi (chunki HTML saqlanganda shu klass bilan
+   birga saqlanadi). */
+.rich-img-align-bar {
+    display: none;
+}
+
+.rich-text-editor .rich-img-align-bar {
+    display: flex;
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    padding: 1px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.rich-img-align-bar button {
+    border: none;
+    background: #eee;
+    border-radius: 3px;
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+}
+
+.rich-img-align-bar button:hover {
+    background: #ddd;
+}
+
+.rich-img-wrap.align-left,
+.rich-img-wrap.align-center,
+.rich-img-wrap.align-right {
+    display: block;
+}
+
+.rich-img-wrap.align-left {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+.rich-img-wrap.align-center {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.rich-img-wrap.align-right {
+    margin-left: auto;
+    margin-right: 0;
+}
+
 .rich-text-editor ul,
 .rich-text-editor ol {
     margin: 0 0 10px;
