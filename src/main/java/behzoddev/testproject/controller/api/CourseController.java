@@ -64,4 +64,16 @@ public class CourseController {
     public Map<String, String> uploadCover(@RequestParam("image") MultipartFile image) {
         return Map.of("url", fileStorageService.storeCourseCoverImage(image));
     }
+
+    // Bo'lim (CourseChapter) nomini o'zgartirish — CourseChapter BITTA
+    // umumiy yozuv bo'lgani uchun, shu bir chaqiruv bilan unga biriktirilgan
+    // BARCHA mavzularda nom avtomatik yangilanadi (mavzularni birma-bir
+    // tahrirlab chiqish shart emas).
+    @PutMapping("/{courseId}/chapters/{chapterId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public void renameChapter(@PathVariable Long courseId, @PathVariable Long chapterId,
+                               @RequestBody Map<String, String> body,
+                               @AuthenticationPrincipal User user) {
+        courseService.renameChapter(courseId, chapterId, body.get("name"), user);
+    }
 }

@@ -993,7 +993,6 @@ let allSections = [];
 
 function renderSections(sections) {
     allSections = sections;
-    updateChapterDatalist();
 
     // Kursda kamida bitta mavzu biror Bo'limga biriktirilgan bo'lsagina
     // guruhlangan ("box"li) ko'rinishga o'tiladi — aks holda (standart,
@@ -1155,9 +1154,16 @@ function renderChapterBox(group, globalIndexById) {
         ? buildPaginationHtml(totalPages, page, (p) => `changeChapterPage('${group.key}', ${p})`)
         : "";
 
+    // "✏️" — faqat haqiqiy bo'limlarda (group.chapterId != null), "—
+    // Bo'limsiz mavzular —" psevdo-guruhida ko'rsatilmaydi (uni "qayta
+    // nomlash" mantiqsiz — u umuman CourseChapter yozuvi emas).
+    const renameBtn = (cachedCourse && cachedCourse.canManage && group.chapterId != null)
+        ? `<button class="chapter-rename-btn" onclick="renameChapterPrompt(${group.chapterId})" title="Bo'lim nomini tahrirlash">✏️</button>`
+        : "";
+
     return `
         <div class="chapter-box">
-            <h3 class="chapter-box-title">📂 ${escapeHtml(group.name)} <span class="chapter-box-count">(${group.items.length})</span></h3>
+            <h3 class="chapter-box-title">📂 ${escapeHtml(group.name)} <span class="chapter-box-count">(${group.items.length})</span>${renameBtn}</h3>
             <div class="sections-grid">${cardsHtml}</div>
             ${paginationHtml ? `<div class="sections-pagination chapter-box-pagination">${paginationHtml}</div>` : ""}
         </div>
@@ -1172,12 +1178,19 @@ function changeChapterPage(chapterKey, page) {
 /* ===== Sahifalash tugmalari — flat va guruhlangan ko'rinishlar bir xil ishlatadi ===== */
 
 function buildPaginationHtml(totalPages, currentPage, onClickFor) {
+    const isFirst = currentPage === 0;
+    const isLast = currentPage === totalPages - 1;
+
     const buttons = [];
-    buttons.push(`<button ${currentPage === 0 ? "disabled" : ""} onclick="${onClickFor(currentPage - 1)}">‹ Oldingi</button>`);
+    // «/» — bevosita BIRINCHI/OXIRGI sahifaga sakrash (ko'p sahifali
+    // ro'yxatlarda ‹Oldingi/Keyingi› bilan bittalab bosib borish noqulay).
+    buttons.push(`<button ${isFirst ? "disabled" : ""} onclick="${onClickFor(0)}" title="Birinchi sahifa">«</button>`);
+    buttons.push(`<button ${isFirst ? "disabled" : ""} onclick="${onClickFor(currentPage - 1)}">‹ Oldingi</button>`);
     for (let p = 0; p < totalPages; p++) {
         buttons.push(`<button class="${p === currentPage ? "active" : ""}" onclick="${onClickFor(p)}">${p + 1}</button>`);
     }
-    buttons.push(`<button ${currentPage === totalPages - 1 ? "disabled" : ""} onclick="${onClickFor(currentPage + 1)}">Keyingi ›</button>`);
+    buttons.push(`<button ${isLast ? "disabled" : ""} onclick="${onClickFor(currentPage + 1)}">Keyingi ›</button>`);
+    buttons.push(`<button ${isLast ? "disabled" : ""} onclick="${onClickFor(totalPages - 1)}" title="Oxirgi sahifa">»</button>`);
     return buttons.join("");
 }
 
@@ -1191,13 +1204,103 @@ function renderPaginationInto(container, totalPages, currentPage, onClickFor) {
     container.style.display = "flex";
 }
 
-// "📂 Bo'lim nomi" maydonlarining (newSectionChapterName/editSectionChapterName)
-// avtomatik taklif ro'yxati — kursdagi mavjud Bo'lim nomlaridan (takrorsiz).
-function updateChapterDatalist() {
-    const names = [...new Set(allSections.filter(s => s.chapterName).map(s => s.chapterName))];
-    const datalist = document.getElementById("chapterNamesList");
-    if (!datalist) return;
-    datalist.innerHTML = names.map(n => `<option value="${escapeHtml(n)}"></option>`).join("");
+/* ===== Mavzuni Bo'limga biriktirish — TANLOV (select), erkin matn emas =====
+   Erkin matn (avvalgi versiya) yozuvdagi eng kichik farqda ham (bo'sh joy,
+   katta-kichik harf, imlo xatosi) yangi DUBLIKAT bo'lim yaratib yuborardi,
+   va bitta bo'limni "qayta nomlash" uchun unga tegishli HAR BIR mavzuni
+   birma-bir tahrirlab, qo'lda bir xil yangi nomni terish kerak bo'lardi.
+   Endi: mavjud bo'limlar ANIQ id bo'yicha tanlanadi (CourseSectionSaveDto.
+   chapterId); faqat "➕ Yangi bo'lim yaratish..." tanlanganda nom kiritiladi
+   (newChapterName) — va nomni o'zgartirish alohida renameChapterPrompt()
+   orqali, BITTA umumiy CourseChapter yozuvini o'zgartiradi (barcha unga
+   biriktirilgan mavzularda darhol, avtomatik aks etadi). */
+
+const NEW_CHAPTER_OPTION = "__new__";
+
+// selectId — "newSectionChapterSelect" | "editSectionChapterSelect".
+// selectedChapterId — oldindan tanlangan bo'lim id'si (tahrirlashda), yoki null.
+function populateChapterSelect(selectId, selectedChapterId) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    const chaptersById = new Map();
+    for (const s of allSections) {
+        if (s.chapterId != null && !chaptersById.has(s.chapterId)) {
+            chaptersById.set(s.chapterId, { id: s.chapterId, name: s.chapterName, orderIndex: s.chapterOrderIndex });
+        }
+    }
+    const chapters = [...chaptersById.values()].sort((a, b) => a.orderIndex - b.orderIndex);
+
+    const options = ['<option value="">— Bo\'limsiz —</option>'];
+    for (const c of chapters) {
+        options.push(`<option value="${c.id}">${escapeHtml(c.name)}</option>`);
+    }
+    options.push(`<option value="${NEW_CHAPTER_OPTION}">➕ Yangi bo'lim yaratish...</option>`);
+
+    select.innerHTML = options.join("");
+    select.value = selectedChapterId != null ? String(selectedChapterId) : "";
+}
+
+// "➕ Yangi bo'lim yaratish..." tanlansa — yangi nom kiritish maydoni ochiladi.
+function onChapterSelectChange(mode) {
+    const select = document.getElementById(mode + "SectionChapterSelect");
+    const newInput = document.getElementById(mode + "SectionChapterNewInput");
+    const isNew = select.value === NEW_CHAPTER_OPTION;
+    newInput.style.display = isNew ? "block" : "none";
+    if (isNew) {
+        newInput.value = "";
+        newInput.focus();
+    }
+}
+
+// submitAddSection/submitEditSection payload'iga to'g'ridan-to'g'ri
+// qo'shiladigan {chapterId, newChapterName} juftligi.
+function getChapterPayload(mode) {
+    const select = document.getElementById(mode + "SectionChapterSelect");
+    if (select.value === NEW_CHAPTER_OPTION) {
+        const name = document.getElementById(mode + "SectionChapterNewInput").value.trim();
+        return { chapterId: null, newChapterName: name || null };
+    }
+    if (!select.value) {
+        return { chapterId: null, newChapterName: null };
+    }
+    return { chapterId: Number(select.value), newChapterName: null };
+}
+
+// "✏️" — bo'lim (chapter-box) sarlavhasidagi tahrirlash tugmasi. Nom BITTA
+// umumiy CourseChapter yozuvida saqlanadi — shu yerda o'zgartirilishi bilan
+// unga biriktirilgan BARCHA mavzularda avtomatik yangilanadi.
+function renameChapterPrompt(chapterId) {
+    const current = allSections.find(s => s.chapterId === chapterId);
+    const newName = prompt("Bo'lim nomini kiriting:", current ? current.chapterName : "");
+    if (newName === null) return; // bekor qilindi
+
+    const trimmed = newName.trim();
+    if (!trimmed) {
+        alert("❌ Bo'lim nomi bo'sh bo'lishi mumkin emas.");
+        return;
+    }
+
+    renameChapter(chapterId, trimmed);
+}
+
+async function renameChapter(chapterId, newName) {
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/chapters/${chapterId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: newName })
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "Bo'lim nomini o'zgartirishda xatolik");
+            return;
+        }
+        loadCourse();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
 }
 
 function escapeHtml(text) {
@@ -1395,6 +1498,8 @@ function openAddSectionForm() {
     applyScienceSelection("new", cachedCourse ? cachedCourse.title : "");
     document.getElementById("newSectionLinkTopic").checked = false;
     onTopicLinkToggle("new");
+    populateChapterSelect("newSectionChapterSelect", null);
+    onChapterSelectChange("new");
     document.getElementById("addSectionForm").style.display = "flex";
     document.getElementById("openAddSectionBtn").style.display = "none";
 }
@@ -1456,7 +1561,7 @@ async function submitAddSection() {
         title, type, textContent: null, videoSourceType: null, videoUrl: null, videoDurationSeconds: null,
         scienceName: linkTopic ? getSelectedScienceName("new") : null,
         topicName: linkTopic ? (document.getElementById("newSectionTopicName").value.trim() || null) : null,
-        chapterName: document.getElementById("newSectionChapterName").value.trim() || null,
+        ...getChapterPayload("new"),
         textContentFormat: "HTML"
     };
 
@@ -1531,7 +1636,8 @@ async function submitAddSection() {
         document.getElementById("newSectionVideoUrl").value = "";
         document.getElementById("newSectionScienceOther").value = "";
         document.getElementById("newSectionTopicName").value = "";
-        document.getElementById("newSectionChapterName").value = "";
+        populateChapterSelect("newSectionChapterSelect", null);
+        onChapterSelectChange("new");
         newTopicNameManuallyEdited = false;
         document.getElementById("newSectionLinkTopic").checked = false;
         onTopicLinkToggle("new");
@@ -1624,7 +1730,8 @@ async function openEditSectionForm(sectionId) {
         document.getElementById("editSectionLinkTopic").checked = !!section.linkedTopicName;
         onTopicLinkToggle("edit");
 
-        document.getElementById("editSectionChapterName").value = section.chapterName || "";
+        populateChapterSelect("editSectionChapterSelect", section.chapterId);
+        onChapterSelectChange("edit");
 
         expandManagePanel();
         document.getElementById("editSectionForm").style.display = "flex";
@@ -1698,7 +1805,7 @@ async function submitEditSection() {
         title, type, textContent: null, videoSourceType: null, videoUrl: null, videoDurationSeconds: null,
         scienceName: linkTopic ? getSelectedScienceName("edit") : null,
         topicName: linkTopic ? (document.getElementById("editSectionTopicName").value.trim() || null) : null,
-        chapterName: document.getElementById("editSectionChapterName").value.trim() || null,
+        ...getChapterPayload("edit"),
         textContentFormat: "HTML"
     };
 

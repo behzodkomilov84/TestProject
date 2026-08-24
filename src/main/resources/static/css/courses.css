@@ -908,6 +908,9 @@ body {
 }
 
 .chapter-box-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin: 0 0 14px;
     font-size: 17px;
     color: #1e293b;
@@ -917,6 +920,24 @@ body {
     font-weight: 400;
     font-size: 13px;
     color: #94a3b8;
+}
+
+/* "✏️" — bo'lim nomini tahrirlash (renameChapterPrompt, courseDetail.js).
+   Bosilganda BARCHA shu bo'limdagi mavzularda nom avtomatik yangilanadi
+   (CourseChapter — bitta umumiy yozuv, mavzular unga faqat FK orqali
+   bog'langan). */
+.chapter-rename-btn {
+    margin-left: auto;
+    background: none;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 8px;
+}
+
+.chapter-rename-btn:hover {
+    background: #eef2f7;
 }
 
 /* Bo'lim ichidagi sahifalash — umumiy .sections-pagination uslubidan

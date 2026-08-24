@@ -26,8 +26,10 @@ public record CourseSectionContentDto(
         // ID'larni emas, fan/mavzu NOMINI ko'radi va o'zgartiradi.
         String linkedTopicName,
         String linkedScienceName,
-        // Kurs ICHIDAGI Bo'lim (CourseChapter) nomi — tahrirlash formasini
-        // oldindan to'ldirish uchun (null = "Bo'limsiz").
+        // Kurs ICHIDAGI Bo'lim (CourseChapter) — tahrirlash formasidagi
+        // TANLOV (select)ni oldindan to'g'ri variantga qo'yish uchun
+        // (null = "Bo'limsiz").
+        Long chapterId,
         String chapterName,
         boolean completed,
         Long prevSectionId, // null bo'lsa — bu birinchi bo'lim

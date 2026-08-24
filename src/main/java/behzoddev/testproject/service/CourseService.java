@@ -153,6 +153,7 @@ public class CourseService {
                 .linkedTopicName(section.getLinkedTopic() != null ? section.getLinkedTopic().getName() : null)
                 .linkedScienceName(section.getLinkedTopic() != null
                         ? section.getLinkedTopic().getScience().getName() : null)
+                .chapterId(section.getChapter() != null ? section.getChapter().getId() : null)
                 .chapterName(section.getChapter() != null ? section.getChapter().getName() : null)
                 .completed(completed)
                 .prevSectionId(prev != null ? prev.getId() : null)
@@ -288,7 +289,7 @@ public class CourseService {
 
         CourseSection section = buildSectionFromDto(dto, course, nextOrder);
         section.setLinkedTopic(resolveLinkedTopic(dto.scienceName(), dto.topicName()));
-        section.setChapter(resolveChapter(course, dto.chapterName()));
+        section.setChapter(resolveChapter(course, dto.chapterId(), dto.newChapterName()));
         courseSectionRepository.save(section);
 
         return CourseSectionSummaryDto.builder()
@@ -324,7 +325,7 @@ public class CourseService {
         // Bo'lim tanlansa/o'zgartirilsa — mavzu darhol o'sha bo'limga
         // "o'tib qoladi" (foydalanuvchi so'rovi bo'yicha); bo'sh
         // qoldirilsa — "Bo'limsiz"ga qaytadi (unlink).
-        section.setChapter(resolveChapter(section.getCourse(), dto.chapterName()));
+        section.setChapter(resolveChapter(section.getCourse(), dto.chapterId(), dto.newChapterName()));
 
         courseSectionRepository.save(section);
     }
@@ -388,17 +389,28 @@ public class CourseService {
                 .orElseGet(() -> topicRepository.save(Topic.builder().name(trimmedTopic).science(science).build()));
     }
 
-    // Bo'lim (CourseChapter) nomi kiritilsa — shu KURSDA shu nomli bo'lim
-    // mavjud bo'lmasa avtomatik yaratiladi (oxiriga qo'shiladi), mavjud
-    // bo'lsa o'shanga biriktiriladi (nom katta-kichik harfga sezgir emas —
-    // "1-BOB" va "1-bob" bir xil bo'lim deb hisoblanadi). Bo'sh/null —
+    // "chapterId" berilgan bo'lsa — ANIQ shu (mavjud) bo'lim ishlatiladi
+    // (frontend'da endi erkin matn emas, tanlov/select — shuning uchun
+    // yozuvdagi kichik farq tufayli tasodifan yangi dublikat bo'lim
+    // yaratilib ketish muammosi endi yo'q). Aks holda "newChapterName"
+    // berilsa (foydalanuvchi "➕ Yangi bo'lim" variantini tanlagan) — shu
+    // KURSDA shu nomli bo'lim mavjud bo'lmasa avtomatik yaratiladi (oxiriga
+    // qo'shiladi), mavjud bo'lsa (nom katta-kichik harfga sezgir emas)
+    // o'shanga biriktiriladi — bu ikkinchi tekshiruv shunchaki xavfsizlik
+    // to'ri, asosiy yo'l endi "chapterId" orqali. Ikkalasi ham bo'lmasa —
     // "Bo'limsiz" (unlink).
-    private CourseChapter resolveChapter(Course course, String chapterName) {
-        if (chapterName == null || chapterName.isBlank()) {
+    private CourseChapter resolveChapter(Course course, Long chapterId, String newChapterName) {
+        if (chapterId != null) {
+            return courseChapterRepository.findById(chapterId)
+                    .filter(c -> c.getCourse().getId().equals(course.getId()))
+                    .orElseThrow(() -> new IllegalArgumentException("❌ Tanlangan bo'lim topilmadi."));
+        }
+
+        if (newChapterName == null || newChapterName.isBlank()) {
             return null;
         }
 
-        String trimmed = chapterName.trim();
+        String trimmed = newChapterName.trim();
 
         return courseChapterRepository.findByCourse_IdAndNameIgnoreCase(course.getId(), trimmed)
                 .orElseGet(() -> {
@@ -411,6 +423,28 @@ public class CourseService {
                             .orderIndex(nextOrder)
                             .build());
                 });
+    }
+
+    // Bo'lim nomini o'zgartirish — CourseChapter BITTA umumiy yozuv bo'lgani
+    // (har bir mavzuda alohida saqlangan matn emas) uchun, shu yerda bir
+    // marta o'zgartirilishi bilan unga biriktirilgan BARCHA mavzularda ham
+    // (chapter_id FK orqali) darhol avtomatik yangilanadi — mavzularni
+    // birma-bir tahrirlab chiqish shart emas.
+    @Transactional
+    public void renameChapter(Long courseId, Long chapterId, String newName, User currentUser) {
+        Course course = getCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
+
+        if (newName == null || newName.isBlank()) {
+            throw new IllegalArgumentException("❌ Bo'lim nomi bo'sh bo'lishi mumkin emas.");
+        }
+
+        CourseChapter chapter = courseChapterRepository.findById(chapterId)
+                .filter(c -> c.getCourse().getId().equals(courseId))
+                .orElseThrow(() -> new NoSuchElementException("Bo'lim topilmadi"));
+
+        chapter.setName(newName.trim());
+        courseChapterRepository.save(chapter);
     }
 
     private CourseSection buildSectionFromDto(CourseSectionSaveDto dto, Course course, int orderIndex) {
