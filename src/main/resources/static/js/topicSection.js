@@ -245,6 +245,25 @@ function buttons(s, i) {
            `;
 }
 
+// "✏️ Edit" tugmasi shu funksiyani chaqiradi — topic.js'da bor, bu yerga
+// klonlanganda (topicSection.js yaratilganda) tushib qolgan edi, shu
+// sabab "✏️ Edit" bosilganda hech narsa sodir bo'lmasdi (browser konsolida
+// "edit is not defined" xatosi bilan).
+function edit(i) {
+    if (itemBlock.some(s => s.mode === "EDIT")) {
+        showToast('warning', 'Avval tahrirlashni yakuniga yetkazing!');
+        focusIndex = itemBlock.findIndex(s => s.mode !== "VIEW");
+        render();
+        return;
+    }
+    itemBlock[i].mode = "EDIT";
+    focusIndex = i;
+
+    oldName = itemBlock[i].name;
+
+    render();
+}
+
 // Faqat DB'da mavjud (id > 0) bo'limlar orasida joy almashtiradi va
 // darhol serverga (reorder endpoint) yuboradi — yangi (hali saqlanmagan)
 // bo'limlar bilan aralashtirmaslik uchun oddiy holatda saqlanadi.
