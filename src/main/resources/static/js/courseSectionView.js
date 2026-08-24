@@ -145,9 +145,13 @@ function renderTopicTestLink(data) {
     btn.textContent = "🎯 Mavzuga oid testlarni yechish";
     btn.className = "topic-test-btn";
     btn.onclick = () => {
+        // "courseId" — testConfigPage'da "🔙 Mavzularga qaytish" tugmasini
+        // ko'rsatish uchun (foydalanuvchi testni boshlamasdan, brauzer
+        // "orqaga"siga tayanmasdan, kursga qaytishi uchun).
         const params = new URLSearchParams({
             scienceId: data.linkedScienceId,
-            topicId: data.linkedTopicId
+            topicId: data.linkedTopicId,
+            courseId: COURSE_ID
         });
         location.href = "/testConfigPage?" + params.toString();
     };

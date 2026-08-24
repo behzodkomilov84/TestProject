@@ -25,6 +25,26 @@ h2 {
     font-size: 28px;
 }
 
+/* Kurs mavzusidan "🎯 Mavzuga oid testlarni yechish" orqali kelinganda —
+   testni boshlamasdan kursga qaytish tugmasi (testConfigPage.js). */
+.back-to-course-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    background: white;
+    color: #334155;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.back-to-course-btn:hover {
+    background: #f1f5f9;
+}
+
 .section {
     margin-top: 24px;
 }

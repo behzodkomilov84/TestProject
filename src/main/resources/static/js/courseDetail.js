@@ -1050,7 +1050,7 @@ function renderSectionCard(s, globalIndexById) {
     // (faqat ochilgan/qulflanmagan mavzularda — qulflangan bo'lsa
     // mavzuning o'zini ham ko'rib bo'lmaydi).
     const testLink = (!s.locked && s.linkedTopicId)
-        ? `<button class="topic-test-btn-inline" onclick="event.stopPropagation(); location.href='/testConfigPage?scienceId=${s.linkedScienceId}&topicId=${s.linkedTopicId}'">🎯 Mavzuga oid testlarni yechish</button>`
+        ? `<button class="topic-test-btn-inline" onclick="event.stopPropagation(); location.href='/testConfigPage?scienceId=${s.linkedScienceId}&topicId=${s.linkedTopicId}&courseId=${COURSE_ID}'">🎯 Mavzuga oid testlarni yechish</button>`
         : "";
 
     // Ichidagi tugmalar (test, boshqarish) bosilganda kartaning o'zi

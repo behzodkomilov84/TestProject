@@ -27,6 +27,14 @@
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
 <div class="container">
+    <!-- Faqat kurs mavzusidagi "🎯 Mavzuga oid testlarni yechish"
+         tugmasidan kelinganda ko'rinadi (URL'da courseId bo'lsa) — testni
+         boshlamasdan, brauzer "orqaga"siga tayanmasdan kursga qaytish
+         uchun (testConfigPage.js#DOMContentLoaded). Boshqa hollarda
+         (masalan bosh menyudan to'g'ridan-to'g'ri kirilganda) butunlay
+         yashirin qoladi. -->
+    <button id="backToCourseBtn" class="back-to-course-btn hidden">🔙 Mavzularga qaytish</button>
+
     <h2>Bilimingizni sinab ko'ring</h2>
 
     <div class="section">

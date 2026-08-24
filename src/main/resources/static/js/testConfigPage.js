@@ -4,6 +4,10 @@
 const urlParams = new URLSearchParams(window.location.search);
 const preselectScienceId = urlParams.get("scienceId");
 const preselectTopicId = urlParams.get("topicId");
+// Shu kurs (mazkur "🎯 Mavzuga oid testlarni yechish" tugmasi qaysi
+// kursdan bosilgan bo'lsa) — faqat "🔙 Mavzularga qaytish" tugmasini
+// ko'rsatish/qayerga qaytarishni bilish uchun (pastda, DOMContentLoaded).
+const returnCourseId = urlParams.get("courseId");
 
 if (preselectTopicId) {
     sessionStorage.setItem("testMode", "practice");
@@ -25,6 +29,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (testMode === "hard") {
         topicSection.style.display = "none";
+    }
+
+    // Faqat kurs mavzusidan ("🎯 Mavzuga oid testlarni yechish") kelinganda
+    // ko'rinadi — boshqa hollarda (bosh menyudan to'g'ridan-to'g'ri
+    // kirilganda, courseId URL'da bo'lmaydi) butunlay yashirin qoladi.
+    if (returnCourseId) {
+        const backBtn = document.getElementById("backToCourseBtn");
+        backBtn.classList.remove("hidden");
+        backBtn.onclick = () => {
+            location.href = `/courses/${returnCourseId}`;
+        };
     }
 
 });
