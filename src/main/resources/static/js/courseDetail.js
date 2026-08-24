@@ -798,6 +798,15 @@ function onScienceSelectChange(mode) {
     const select = document.getElementById(mode === "new" ? "newSectionScienceSelect" : "editSectionScienceSelect");
     const otherInput = document.getElementById(mode === "new" ? "newSectionScienceOther" : "editSectionScienceOther");
     otherInput.style.display = select.value === OTHER_SCIENCE_VALUE ? "block" : "none";
+
+    // Fan o'zgartirilganda — Bo'lim ro'yxati ham shu YANGI Fanda TEST
+    // BOSHQARUVIda mavjud Bo'limlar bilan qayta to'ldiriladi
+    // (populateChapterSelect). Joriy tanlov ("id:<id>" bo'lsa — kursning
+    // o'z Bo'limi, Fan o'zgarsa ham hamon amal qiladi) saqlanadi.
+    const chapterSelectId = mode === "new" ? "newSectionChapterSelect" : "editSectionChapterSelect";
+    const currentValue = document.getElementById(chapterSelectId).value;
+    const currentChapterId = currentValue.startsWith("id:") ? Number(currentValue.slice(3)) : null;
+    populateChapterSelect(chapterSelectId, currentChapterId, mode);
 }
 
 // Formani ochishda chaqiriladi — agar berilgan nom (masalan shu kursning
@@ -1219,26 +1228,72 @@ const NEW_CHAPTER_OPTION = "__new__";
 
 // selectId — "newSectionChapterSelect" | "editSectionChapterSelect".
 // selectedChapterId — oldindan tanlangan bo'lim id'si (tahrirlashda), yoki null.
-function populateChapterSelect(selectId, selectedChapterId) {
+// mode — "new" | "edit" — tanlangan Fan (Science)ni topish uchun (shu
+// Fanda TEST BOSHQARUVIda ALLAQACHON mavjud Bo'limlarni ham ro'yxatga
+// qo'shish uchun, pastga qarang). Berilmasa (yoki Fan hali tanlanmagan/
+// yangi bo'lsa) — faqat shu KURSNING o'z Bo'limlari ko'rsatiladi
+// (avvalgi xulq-atvor).
+async function populateChapterSelect(selectId, selectedChapterId, mode) {
     const select = document.getElementById(selectId);
     if (!select) return;
 
+    // 1) Shu KURSNING o'z Bo'limlari (CourseChapter) — "id:<id>" bilan
+    //    tanlanadi, saqlashda ANIQ shu bo'lim ishlatiladi (chapterId).
     const chaptersById = new Map();
     for (const s of allSections) {
         if (s.chapterId != null && !chaptersById.has(s.chapterId)) {
             chaptersById.set(s.chapterId, { id: s.chapterId, name: s.chapterName, orderIndex: s.chapterOrderIndex });
         }
     }
-    const chapters = [...chaptersById.values()].sort((a, b) => a.orderIndex - b.orderIndex);
+    const courseChapters = [...chaptersById.values()].sort((a, b) => a.orderIndex - b.orderIndex);
+
+    // 2) TEST BOSHQARUVIDA (tanlangan Fan bo'yicha) ALLAQACHON mavjud
+    //    Bo'limlar — kursning o'z Bo'limlari ro'yxatida hali bo'lmagan
+    //    (nom bo'yicha, katta-kichik harfga sezgir emas) nomlar UNIKAL
+    //    holda qo'shib qo'yiladi. "name:<nom>" bilan tanlanadi, saqlashda
+    //    newChapterName sifatida yuboriladi (backend resolveChapter — shu
+    //    nomli TopicSection allaqachon bor bo'lsa, aynan o'shanga
+    //    ulanadi, YANGI dublikat yaratilmaydi).
+    let externalNames = [];
+    const scienceId = mode ? getSelectedScienceId(mode) : null;
+    if (scienceId != null) {
+        try {
+            const res = await fetch(`/api/topic-section?scienceId=${scienceId}`);
+            if (res.ok) {
+                const sections = await res.json();
+                const existingNamesLower = new Set(courseChapters.map(c => c.name.toLowerCase()));
+                externalNames = sections
+                    .filter(s => !existingNamesLower.has(s.name.toLowerCase()))
+                    .sort((a, b) => a.orderIndex - b.orderIndex)
+                    .map(s => s.name);
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    }
 
     const options = ['<option value="">— Bo\'limsiz —</option>'];
-    for (const c of chapters) {
-        options.push(`<option value="${c.id}">${escapeHtml(c.name)}</option>`);
+    for (const c of courseChapters) {
+        options.push(`<option value="id:${c.id}">${escapeHtml(c.name)}</option>`);
+    }
+    for (const name of externalNames) {
+        options.push(`<option value="name:${encodeURIComponent(name)}">${escapeHtml(name)}</option>`);
     }
     options.push(`<option value="${NEW_CHAPTER_OPTION}">➕ Yangi bo'lim yaratish...</option>`);
 
     select.innerHTML = options.join("");
-    select.value = selectedChapterId != null ? String(selectedChapterId) : "";
+    select.value = selectedChapterId != null ? `id:${selectedChapterId}` : "";
+}
+
+// Tanlangan (yoki "Boshqa"da qo'lda yozilgan) Fan nomini cachedSciences
+// ro'yxatidan id'siga o'giradi — hali mavjud bo'lmagan (yangi kiritilgan)
+// Fan uchun albatta null qaytadi (test boshqaruvida hali hech qanday
+// Bo'lim bo'lishi ham mumkin emas, shuning uchun bu to'g'ri xulq-atvor).
+function getSelectedScienceId(mode) {
+    const name = getSelectedScienceName(mode);
+    if (!name) return null;
+    const match = cachedSciences.find(s => s.name.toLowerCase() === name.toLowerCase());
+    return match ? match.id : null;
 }
 
 // "➕ Yangi bo'lim yaratish..." tanlansa — yangi nom kiritish maydoni ochiladi.
@@ -1254,17 +1309,27 @@ function onChapterSelectChange(mode) {
 }
 
 // submitAddSection/submitEditSection payload'iga to'g'ridan-to'g'ri
-// qo'shiladigan {chapterId, newChapterName} juftligi.
+// qo'shiladigan {chapterId, newChapterName} juftligi — select qiymati
+// "id:<id>" (kursning o'z Bo'limi) yoki "name:<nom>" (TEST BOSHQARUVIdan
+// olingan, hali kursga biriktirilmagan Bo'lim nomi) bo'lishi mumkin.
 function getChapterPayload(mode) {
     const select = document.getElementById(mode + "SectionChapterSelect");
-    if (select.value === NEW_CHAPTER_OPTION) {
+    const value = select.value;
+
+    if (value === NEW_CHAPTER_OPTION) {
         const name = document.getElementById(mode + "SectionChapterNewInput").value.trim();
         return { chapterId: null, newChapterName: name || null };
     }
-    if (!select.value) {
+    if (!value) {
         return { chapterId: null, newChapterName: null };
     }
-    return { chapterId: Number(select.value), newChapterName: null };
+    if (value.startsWith("id:")) {
+        return { chapterId: Number(value.slice(3)), newChapterName: null };
+    }
+    if (value.startsWith("name:")) {
+        return { chapterId: null, newChapterName: decodeURIComponent(value.slice(5)) };
+    }
+    return { chapterId: null, newChapterName: null };
 }
 
 // "✏️" — bo'lim (chapter-box) sarlavhasidagi tahrirlash tugmasi. Nom BITTA
@@ -1498,7 +1563,7 @@ function openAddSectionForm() {
     applyScienceSelection("new", cachedCourse ? cachedCourse.title : "");
     document.getElementById("newSectionLinkTopic").checked = false;
     onTopicLinkToggle("new");
-    populateChapterSelect("newSectionChapterSelect", null);
+    populateChapterSelect("newSectionChapterSelect", null, "new");
     onChapterSelectChange("new");
     document.getElementById("addSectionForm").style.display = "flex";
     document.getElementById("openAddSectionBtn").style.display = "none";
@@ -1636,7 +1701,7 @@ async function submitAddSection() {
         document.getElementById("newSectionVideoUrl").value = "";
         document.getElementById("newSectionScienceOther").value = "";
         document.getElementById("newSectionTopicName").value = "";
-        populateChapterSelect("newSectionChapterSelect", null);
+        populateChapterSelect("newSectionChapterSelect", null, "new");
         onChapterSelectChange("new");
         newTopicNameManuallyEdited = false;
         document.getElementById("newSectionLinkTopic").checked = false;
@@ -1730,7 +1795,7 @@ async function openEditSectionForm(sectionId) {
         document.getElementById("editSectionLinkTopic").checked = !!section.linkedTopicName;
         onTopicLinkToggle("edit");
 
-        populateChapterSelect("editSectionChapterSelect", section.chapterId);
+        populateChapterSelect("editSectionChapterSelect", section.chapterId, "edit");
         onChapterSelectChange("edit");
 
         expandManagePanel();
