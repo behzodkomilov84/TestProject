@@ -864,6 +864,32 @@ body {
     background: #f1f5f9;
 }
 
+/* Har bir Bo'lim ("box")ning O'ZINING saralash tugmalari (renderChapterBox,
+   courseDetail.js) — .sections-sort-bar bilan bir xil uslub, faqat
+   sarlavha ostida, box ichida (kichikroq bo'shliq bilan). */
+.chapter-box-sort {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.chapter-box-sort button {
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid #d5dde8;
+    background: white;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.chapter-box-sort button:hover {
+    background: #f1f5f9;
+}
+
 /* #sectionsList — endi shunchaki VERTIKAL konteyner: Bo'limi yo'q kursda
    to'g'ridan-to'g'ri bitta .sections-grid'ni, Bo'limli kursda esa bir
    nechta .chapter-box'ni (har birida o'z .sections-grid'i) ushlab turadi. */
@@ -918,6 +944,17 @@ body {
     border: 1px solid #e2e8f0;
     border-radius: 14px;
     padding: 18px;
+}
+
+/* Bo'lim ("box") ICHIDAGI mavzular — tashqi (bo'limsiz) ro'yxatdan farqli,
+   bitta ustunda, bitta qatorda ketma-ket ko'rsatiladi (avval umumiy
+   .sections-grid'ning ko'p ustunli — 2/3/4/6 — javobgar (responsive)
+   qoidasi bu yerga ham tarqalib, keng ekranlarda mavzular 2 qatorli
+   "g'alati" panjara bo'lib qolardi). Ikkita klass (.chapter-box
+   .sections-grid) specifichligi yuqoriroq bo'lgani uchun, media-query
+   ichidagi bitta klassli qoidalarni ham bemalol yengadi. */
+.chapter-box .sections-grid {
+    grid-template-columns: 1fr;
 }
 
 .chapter-box-title {

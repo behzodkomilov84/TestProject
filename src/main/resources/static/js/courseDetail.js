@@ -898,7 +898,11 @@ function renderCourse(course) {
     // shu logikani hisoblab, canManage sifatida qaytaradi).
     const managePanel = document.getElementById("manageCoursePanel");
     managePanel.style.display = course.canManage ? "block" : "none";
-    document.getElementById("sectionsSortBar").style.display = course.canManage ? "flex" : "none";
+    // Umumiy "Saralash" panelining ko'rinish-yo'qligi shu YERDA emas,
+    // renderSections() ichida hal qilinadi: guruhlangan (Bo'limli) kursda
+    // bu umumiy panel BUTUNLAY yashiriladi — har bir Bo'lim o'zining
+    // alohida "Saralash" tugmalariga ega bo'ladi (renderChapterBox —
+    // sortChapterSections). Faqat bo'limsiz (flat) kursda ko'rinadi.
 
     // Panel yig'ilgan/ochiq holati — saqlangan tanlov bo'lsa o'shanga
     // qarab, aks holda HTML'dagi standart (yig'ilgan) holatda qoladi.
@@ -1007,6 +1011,14 @@ function renderSections(sections) {
     // guruhlangan ("box"li) ko'rinishga o'tiladi — aks holda (standart,
     // hozirgi barcha kurslar) 100% eskidek, bitta tekis grid.
     const hasAnyChapter = sections.some(s => s.chapterId != null);
+    const canManage = cachedCourse && cachedCourse.canManage;
+
+    // Umumiy (butun kurs bo'yicha) "Saralash" — faqat GURUHLANMAGAN
+    // (flat) ko'rinishda ma'noli, chunki guruhlangan ko'rinishda har bir
+    // Bo'lim endi O'ZINING alohida "Saralash" tugmalariga ega
+    // (renderChapterBox), bittasi butun kursni aralashtirib yubormasligi
+    // uchun.
+    document.getElementById("sectionsSortBar").style.display = (canManage && !hasAnyChapter) ? "flex" : "none";
 
     if (hasAnyChapter) {
         renderGroupedSections();
@@ -1170,13 +1182,53 @@ function renderChapterBox(group, globalIndexById) {
         ? `<button class="chapter-rename-btn" onclick="renameChapterPrompt(${group.chapterId})" title="Bo'lim nomini tahrirlash">✏️</button>`
         : "";
 
+    // Har bir Bo'lim — o'zining ALOHIDA "Saralash: A→Z / Z→A" tugmalariga
+    // ega (sortChapterSections) — faqat SHU bo'lim ichidagi mavzularni
+    // qayta tartiblaydi, boshqa bo'limlarga (yoki bo'limsiz mavzularga)
+    // hech qanday ta'sir qilmaydi.
+    const sortBar = (cachedCourse && cachedCourse.canManage && group.items.length > 1)
+        ? `<div class="chapter-box-sort" onclick="event.stopPropagation()">
+               <span>Saralash:</span>
+               <button onclick="sortChapterSections('${group.key}', 'AZ')">A→Z</button>
+               <button onclick="sortChapterSections('${group.key}', 'ZA')">Z→A</button>
+           </div>`
+        : "";
+
     return `
         <div class="chapter-box">
             <h3 class="chapter-box-title">📂 ${escapeHtml(group.name)} <span class="chapter-box-count">(${group.items.length})</span>${renameBtn}</h3>
+            ${sortBar}
             <div class="sections-grid">${cardsHtml}</div>
             ${paginationHtml ? `<div class="sections-pagination chapter-box-pagination">${paginationHtml}</div>` : ""}
         </div>
     `;
+}
+
+// Faqat "chapterKey" bo'limiga (yoki "none" — bo'limsiz mavzular
+// psevdo-guruhiga) tegishli mavzularni A-Z/Z-A tartibga soladi — boshqa
+// bo'limlardagi (yoki bo'limsiz) mavzularning nisbiy tartibi BUTUNLAY
+// o'zgarishsiz qoladi. Backend /sections/reorder har doim TO'LIQ (butun
+// kurs bo'yicha) yangi tartibdagi id ro'yxatini kutadi (orderIndex —
+// bitta umumiy, ketma-ket raqam, Bo'lim bo'yicha alohida emas) — shu
+// sabab shu bo'limga tegishli o'rinlarga, ular TURGAN JOYLARIDA, faqat
+// yangi (saralangan) tartibda qo'yiladi.
+function sortChapterSections(chapterKey, dir) {
+    if (!cachedCourse) return;
+
+    const targetChapterId = chapterKey === "none" ? null : Number(chapterKey);
+    const targetItems = cachedCourse.sections.filter(s => (s.chapterId ?? null) === targetChapterId);
+    const sortedTarget = [...targetItems].sort((a, b) =>
+        dir === "AZ" ? a.title.localeCompare(b.title, "uz") : b.title.localeCompare(a.title, "uz"));
+
+    const result = [...cachedCourse.sections];
+    let sortedIdx = 0;
+    for (let i = 0; i < result.length; i++) {
+        if ((result[i].chapterId ?? null) === targetChapterId) {
+            result[i] = sortedTarget[sortedIdx++];
+        }
+    }
+
+    reorderTo(result.map(s => s.id));
 }
 
 function changeChapterPage(chapterKey, page) {
