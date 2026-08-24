@@ -36,4 +36,12 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     @Query("select new behzoddev.testproject.dto.topic.TopicCourseTitleDto(cs.linkedTopic.id, cs.course.title) " +
             "from CourseSection cs where cs.linkedTopic.science.id = :scienceId")
     List<TopicCourseTitleDto> findLinkedCourseTitlesByScienceId(@Param("scienceId") Long scienceId);
+
+    // Bo'lim (CourseChapter) nomi o'zgartirilganda — shu Bo'limga tegishli,
+    // TEST BOSHQARUVI'dagi Fan/Mavzuga bog'langan kurs mavzularini topish
+    // uchun (CourseService.renameChapter -> syncTopicSectionNamesForChapter):
+    // ularning TopicSection'i (agar hali eski nom bilan tursa) ham
+    // shu YANGI nomga ko'chiriladi — bitta joyda o'zgartirilgan Bo'lim nomi
+    // ikkala tomonda (kurs VA test boshqaruvi) sinxron qolishi uchun.
+    List<CourseSection> findByChapter_IdAndLinkedTopicIsNotNull(Long chapterId);
 }

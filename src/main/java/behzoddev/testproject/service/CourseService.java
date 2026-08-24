@@ -27,11 +27,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * JavaRush uslubidagi online kurslar — OWNER yaratadi/tahrirlaydi, ADMIN/USER
@@ -422,6 +424,16 @@ public class CourseService {
     // bo'lsa o'shanga, bo'lmasa yangisi (oxiriga qo'shilib) yaratiladi —
     // TopicSectionService'dagi bilan bir xil find-or-create qoidasi
     // (nom katta-kichik harfga sezgir emas).
+    //
+    // DIQQAT — BOG'LANISH: shu yerda yaratilgan TopicSection bilan uni
+    // "tug'dirgan" CourseChapter orasida to'g'ridan-to'g'ri FK yo'q, faqat
+    // NOM orqali bog'lanish (bir martalik, shu yerda). Agar keyinchalik
+    // CourseChapter nomi o'zgartirilsa (renameChapter()) — o'sha metod
+    // shu nom orqali yaratilgan TopicSection'larni ham TOPIB, ularning
+    // nomini AVTOMATIK yangilaydi (syncTopicSectionNamesForChapter()) —
+    // ikkala tomon (kurs Bo'limi VA test boshqaruvidagi Bo'lim) sinxron
+    // qolishi uchun. Shu ikkita metod bir-biriga bog'liq — birini
+    // o'zgartirsangiz, ikkinchisini ham ko'rib chiqing.
     private TopicSection resolveTopicSection(Science science, String sectionName) {
         return topicSectionRepository.findByScience_IdAndNameIgnoreCase(science.getId(), sectionName)
                 .orElseGet(() -> {
@@ -483,13 +495,74 @@ public class CourseService {
         if (newName == null || newName.isBlank()) {
             throw new IllegalArgumentException("❌ Bo'lim nomi bo'sh bo'lishi mumkin emas.");
         }
+        String trimmedNewName = newName.trim();
 
         CourseChapter chapter = courseChapterRepository.findById(chapterId)
                 .filter(c -> c.getCourse().getId().equals(courseId))
                 .orElseThrow(() -> new NoSuchElementException("Bo'lim topilmadi"));
 
-        chapter.setName(newName.trim());
+        String oldName = chapter.getName();
+        chapter.setName(trimmedNewName);
         courseChapterRepository.save(chapter);
+
+        // MUHIM BOG'LANISH: resolveTopicSection() shu Bo'lim nomi bilan
+        // TEST BOSHQARUVI tomonida (Fan ichida) xuddi shu nomli TopicSection
+        // avtomatik yaratgan bo'lishi mumkin (kurs mavzusi Fan/Mavzuga
+        // bog'langanda). Bu ikkovi orasida to'g'ridan-to'g'ri FK yo'q —
+        // bog'lanish faqat NOM orqali (bir tomonlama, yaratilish paytida).
+        // Shu sabab, Bo'lim shu yerda qayta nomlansa, TopicSection tomonda
+        // ESKI nom bilan "yetim" qolib ketmasligi uchun — pastdagi
+        // sinxronlash BIR YO'NALISHDA (kurs -> test boshqaruvi) shu yerda
+        // avtomatik amalga oshiriladi. Aksincha (test boshqaruvida Bo'lim
+        // nomini o'zgartirish kursga qaytib ta'sir qilishi) — ATAYLAB
+        // qilinmagan, chunki bitta TopicSection bir nechta har xil kursning
+        // Bo'limlariga mos kelib qolishi mumkin (umumiy, kursga bog'liq
+        // bo'lmagan tushuncha).
+        syncTopicSectionNamesForChapter(chapterId, oldName, trimmedNewName);
+    }
+
+    // renameChapter() tomonidan chaqiriladi — batafsili izoh o'sha yerda.
+    private void syncTopicSectionNamesForChapter(Long chapterId, String oldName, String newName) {
+        if (oldName.equalsIgnoreCase(newName)) {
+            return; // Faqat registr (katta-kichik harf) o'zgargan — TopicSection nomi baribir bir xil hisoblanadi (ignoreCase), tegishga hojat yo'q.
+        }
+
+        List<CourseSection> linkedSections = courseSectionRepository.findByChapter_IdAndLinkedTopicIsNotNull(chapterId);
+
+        // Bir nechta kurs mavzusi xuddi shu TopicSection'ga ishora qilishi
+        // mumkin (masalan bir nechta mavzu bitta Fan ichida) — har birini
+        // FAQAT BIR MARTA qayta nomlash uchun.
+        Set<Long> processedSectionIds = new HashSet<>();
+
+        for (CourseSection cs : linkedSections) {
+            Topic topic = cs.getLinkedTopic();
+            TopicSection section = topic.getSection();
+            if (section == null || !processedSectionIds.add(section.getId())) {
+                continue;
+            }
+            // Admin TEST BOSHQARUVI tomonida shu bo'limni qo'lda BOSHQA
+            // nomga o'zgartirgan bo'lishi mumkin — bunday holda avtomatik
+            // qayta nomlash SHART EMAS (endi u kurs Bo'limi bilan bog'liq
+            // emas, o'z holicha boshqariladi).
+            if (!section.getName().equalsIgnoreCase(oldName)) {
+                continue;
+            }
+
+            // TopicSection jadvalida UNIQUE(science_id, name) cheklovi bor —
+            // agar shu Fanda YANGI nom bilan bo'lim allaqachon mavjud bo'lsa,
+            // nomni o'zgartirish o'rniga mavzu O'SHA mavjud bo'limga qayta
+            // biriktiriladi (resolveTopicSection bilan bir xil qoida).
+            Optional<TopicSection> existingWithNewName = topicSectionRepository
+                    .findByScience_IdAndNameIgnoreCase(section.getScience().getId(), newName);
+
+            if (existingWithNewName.isPresent()) {
+                topic.setSection(existingWithNewName.get());
+                topicRepository.save(topic);
+            } else {
+                section.setName(newName);
+                topicSectionRepository.save(section);
+            }
+        }
     }
 
     private CourseSection buildSectionFromDto(CourseSectionSaveDto dto, Course course, int orderIndex) {
