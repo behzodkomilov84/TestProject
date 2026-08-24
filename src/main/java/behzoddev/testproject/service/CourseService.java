@@ -393,14 +393,13 @@ public class CourseService {
     // bo'lsa, TEST BOSHQARUVI tomonida ham xuddi shu nomli Bo'lim (TopicSection)
     // avtomatik topiladi/yaratiladi VA mavzuga biriktiriladi — bu YANGI
     // yaratilayotgan mavzu uchun ham, ALLAQACHON mavjud (kurs bilan
-    // avvaldan bog'langan) mavzu uchun ham qo'llanadi: kursda Bo'lim
-    // o'zgartirilsa (masalan "1-BOB" dan "2-BOB"ga), TEST BOSHQARUVIdagi
-    // mavzuning bo'limi ham shu bilan birga o'zgaradi (foydalanuvchi
-    // so'rovi bo'yicha — kurs tomonidagi Bo'lim har doim "haqiqiy manba"
-    // hisoblanadi). Faqat "chapter == null" (kurs mavzusi hozir
-    // "Bo'limsiz") holatida mavjud mavzuning bo'limiga TEGILMAYDI — aks
-    // holda test-boshqaruvida qo'lda tashkil qilingan bo'lim tasodifan
-    // "Bo'limsiz"ga qaytarib yuborilardi.
+    // avvaldan bog'langan) mavzu uchun ham qo'llanadi. Kurs — HAR DOIM
+    // "haqiqiy manba": kursda Bo'lim o'zgartirilsa ("1-BOB"->"2-BOB"),
+    // TEST BOSHQARUVIdagi mavzuning bo'limi ham shu bilan birga o'zgaradi;
+    // kursda mavzu "Bo'limsiz mavzular"ga o'tkazilsa (chapter == null),
+    // TEST BOSHQARUVIdagi mavzu ham "Bo'limsiz"ga qaytariladi — ikki
+    // tomon HAR DOIM to'liq mos kelishi kerak (foydalanuvchi so'rovi
+    // bo'yicha: "kursdagi holatga qarab TEST BOSHQARUVI to'g'rilansin").
     private Topic resolveLinkedTopic(String scienceName, String topicName, CourseChapter chapter) {
         if (scienceName == null || scienceName.isBlank() || topicName == null || topicName.isBlank()) {
             return null;
@@ -412,20 +411,17 @@ public class CourseService {
         Science science = scienceRepository.findByName(trimmedScience)
                 .orElseGet(() -> scienceRepository.save(Science.builder().name(trimmedScience).build()));
 
+        TopicSection resolvedSection = chapter != null ? resolveTopicSection(science, chapter.getName()) : null;
+
         Optional<Topic> existing = topicRepository.findByScience_IdAndName(science.getId(), trimmedTopic);
         if (existing.isPresent()) {
             Topic topic = existing.get();
-            if (chapter != null) {
-                topic.setSection(resolveTopicSection(science, chapter.getName()));
-                topicRepository.save(topic);
-            }
+            topic.setSection(resolvedSection);
+            topicRepository.save(topic);
             return topic;
         }
 
-        Topic topic = Topic.builder().name(trimmedTopic).science(science).build();
-        if (chapter != null) {
-            topic.setSection(resolveTopicSection(science, chapter.getName()));
-        }
+        Topic topic = Topic.builder().name(trimmedTopic).science(science).section(resolvedSection).build();
         return topicRepository.save(topic);
     }
 
@@ -584,7 +580,10 @@ public class CourseService {
     // Bo'lim bir xil nomli TopicSection'ni "bo'lishib" ishlatgan bo'lsa —
     // birining nomini o'zgartirish ikkinchisiga ham "sirg'alib" ta'sir
     // qilishi mumkin). Shu metod HAR BIR kurs mavzusini joriy Bo'lim
-    // nomiga qarab qayta tekshirib, kerak bo'lsa to'g'rilaydi.
+    // nomiga qarab qayta tekshirib, kerak bo'lsa to'g'rilaydi — SHU
+    // JUMLADAN "Bo'limsiz mavzular"ga o'tkazilgan mavzular ham (ular
+    // TEST BOSHQARUVIDA ham Bo'limsiz qilinadi, resolveLinkedTopic bilan
+    // bir xil qoida).
     @Transactional
     public int syncChapterTopicSections(Long courseId, User currentUser) {
         Course course = getCourseOrThrow(courseId);
@@ -594,15 +593,25 @@ public class CourseService {
 
         int updated = 0;
         for (CourseSection cs : sections) {
-            CourseChapter chapter = cs.getChapter();
             Topic topic = cs.getLinkedTopic();
-            if (chapter == null || topic == null) {
-                continue;
+            if (topic == null) {
+                continue; // Fan/Mavzuga umuman bog'lanmagan — sinxronlanadigan narsa yo'q.
             }
 
-            TopicSection correctSection = resolveTopicSection(topic.getScience(), chapter.getName());
+            // chapter == null (kurs mavzusi "Bo'limsiz mavzular"da) bo'lsa —
+            // "to'g'ri" holat ham aynan shu: mavzu TEST BOSHQARUVIDA ham
+            // Bo'limsiz bo'lishi kerak (null). resolveLinkedTopic bilan
+            // bir xil qoida — kurs har doim "haqiqiy manba".
+            CourseChapter chapter = cs.getChapter();
+            TopicSection correctSection = chapter != null
+                    ? resolveTopicSection(topic.getScience(), chapter.getName())
+                    : null;
             TopicSection currentSection = topic.getSection();
-            if (currentSection == null || !currentSection.getId().equals(correctSection.getId())) {
+
+            boolean mismatch = (correctSection == null) != (currentSection == null)
+                    || (correctSection != null && !correctSection.getId().equals(currentSection.getId()));
+
+            if (mismatch) {
                 topic.setSection(correctSection);
                 topicRepository.save(topic);
                 updated++;

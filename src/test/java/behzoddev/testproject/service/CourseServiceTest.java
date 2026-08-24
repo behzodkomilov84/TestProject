@@ -496,7 +496,15 @@ class CourseServiceTest {
         courseService.addSection(1L, dto, owner());
 
         org.mockito.Mockito.verify(scienceRepository, org.mockito.Mockito.never()).save(any());
-        org.mockito.Mockito.verify(topicRepository, org.mockito.Mockito.never()).save(any());
+
+        // Mavjud mavzu qayta ishlatiladi (YANGI yaratilmaydi) — lekin
+        // Bo'lim holati (bu yerda — kurs mavzusi Bo'limsiz, chapter=null)
+        // HAR DOIM sinxronlanadi (kurs — "haqiqiy manba"), shuning uchun
+        // save() chaqiriladi (section=null qilib qo'yish uchun).
+        var topicCaptor = org.mockito.ArgumentCaptor.forClass(behzoddev.testproject.entity.Topic.class);
+        org.mockito.Mockito.verify(topicRepository).save(topicCaptor.capture());
+        assertThat(topicCaptor.getValue().getId()).isEqualTo(20L);
+        assertThat(topicCaptor.getValue().getSection()).isNull();
     }
 
     @Test
