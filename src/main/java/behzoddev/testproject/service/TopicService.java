@@ -100,6 +100,31 @@ public class TopicService {
 
         validation.textFieldMustNotBeEmpty(name);
 
+        // MUHIM: TopicController.saveTopic HAR DOIM shu metodni chaqiradi —
+        // hatto foydalanuvchi faqat mavzuning Bo'limini (sectionId)
+        // o'zgartirgan, nomiga tegmagan bo'lsa ham (chunki "updated"
+        // ro'yxati ikkalasidan BIRI o'zgarsa ham to'ldiriladi, topic.js).
+        // Shu sabab bloklash faqat NOM HAQIQATAN o'zgarayotganda ishga
+        // tushishi kerak — aks holda kursga bog'langan mavzuning Bo'limini
+        // qayta biriktirish (nomini tegmasdan) ham bloklanib qolar edi,
+        // bu so'ralmagan.
+        Topic existing = topicRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("❌Mavzu topilmadi."));
+
+        if (!existing.getName().equals(name)) {
+            // Kursga bog'langan mavzu (ya'ni unga ishora qiluvchi
+            // CourseSection bor) shu yerdan (TEST BOSHQARUVI) nomini
+            // o'zgartirib bo'lmaydi — TopicSectionService.updateSectionName
+            //'dagi Bo'lim uchun bilan bir xil qoida: kursga bog'langan
+            // narsalar faqat kurs ichidan tahrirlanishi kerak, ikkala
+            // tomonda alohida-alohida o'zgartirilib, chalkashib
+            // qolmasligi uchun.
+            courseSectionRepository.findByLinkedTopic_Id(id).ifPresent(cs -> {
+                throw new IllegalArgumentException("❌ Bu mavzu \"" + cs.getCourse().getTitle() +
+                        "\" kursiga bog'langan. Uni faqat shu kurs ichidan (kurs sahifasidagi mavzu ✏️ tugmasi orqali) tahrirlashingiz mumkin.");
+            });
+        }
+
         topicRepository.updateTopicName(id, name);
     }
 

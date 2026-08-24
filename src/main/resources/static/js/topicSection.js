@@ -115,14 +115,14 @@ function render() {
         </div>
             `
                 : `
-            <input
-                class="${inputClass}"
-                value="${s.name}"
+            <textarea
+                class="name-edit-area ${inputClass}"
+                rows="2"
                 ${placeholder}
                 oninput="itemBlock[${i}].name=this.value"
                 onkeydown="onClickKey(event, ${i})"
                 id="input-${i}"
-            >
+            >${escapeHtml(s.name)}</textarea>
             `
         }
     ${buttons(s, i)}
@@ -162,14 +162,18 @@ function hasDuplicate(currentIndex, name) {
 }
 
 function onClickKey(event, i) {
-    if (event.key === "Enter" && itemBlock[i].mode !== "VIEW") {
+    // Nom maydoni endi <textarea> — oddiy Enter saqlaydi (preventDefault
+    // shart, aks holda qo'shimcha bo'sh qator ham qo'shilib qolardi),
+    // Shift+Enter esa qator ko'chirish uchun ochiq qoldirilgan. "Delete"
+    // tugmasi orqali QATORNI o'chirish olib tashlandi — <textarea> ichida
+    // bu tugma endi odatiy (kursordan keyingi belgini o'chirish) ma'noda
+    // ishlaydi; qatorni o'chirish faqat 🗑️ tugmasi orqali.
+    if (event.key === "Enter" && !event.shiftKey && itemBlock[i].mode !== "VIEW") {
+        event.preventDefault();
         saveOnClientSide(i);
     }
     if (event.key === "Escape" && itemBlock[i].mode !== "VIEW") {
         cancel(i);
-    }
-    if (event.key === "Delete" && itemBlock[i].mode !== "VIEW") {
-        removeFromUi(i);
     }
 }
 

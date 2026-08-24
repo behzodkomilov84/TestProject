@@ -96,9 +96,42 @@ class TopicServiceTest {
 
     @Test
     void updateTopic_validName_delegatesToRepository() {
+        when(topicRepository.findById(1L)).thenReturn(Optional.of(Topic.builder().id(1L).name("Eski nom").build()));
+
         topicService.updateTopic(1L, "Yangi nom");
 
         verify(topicRepository).updateTopicName(1L, "Yangi nom");
+    }
+
+    // ===== Kursga bog'langan mavzuni TEST BOSHQARUVIDAN tahrirlashni bloklash =====
+
+    @Test
+    void updateTopic_linkedToCourseAndNameChanges_throwsAndDoesNotUpdate() {
+        when(topicRepository.findById(1L)).thenReturn(Optional.of(Topic.builder().id(1L).name("Eski nom").build()));
+        behzoddev.testproject.entity.Course course = behzoddev.testproject.entity.Course.builder().title("Kimyo asoslari").build();
+        behzoddev.testproject.entity.CourseSection section = behzoddev.testproject.entity.CourseSection.builder().course(course).build();
+        when(courseSectionRepository.findByLinkedTopic_Id(1L)).thenReturn(Optional.of(section));
+
+        assertThatThrownBy(() -> topicService.updateTopic(1L, "Yangi nom"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Kimyo asoslari");
+
+        verify(topicRepository, never()).updateTopicName(any(), any());
+    }
+
+    // Faqat mavzuning Bo'limi (sectionId) o'zgartirilganda ham
+    // TopicController.saveTopic har doim updateTopic'ni (nom O'ZGARMAGAN
+    // holda) chaqiradi — bu holatda bloklanmasligi kerak (aks holda kursga
+    // bog'langan mavzuning Bo'limini qayta biriktirish ham imkonsiz
+    // bo'lib qolar edi, bu so'ralmagan).
+    @Test
+    void updateTopic_linkedToCourseButNameUnchanged_updatesSuccessfully() {
+        when(topicRepository.findById(1L)).thenReturn(Optional.of(Topic.builder().id(1L).name("Bir xil nom").build()));
+
+        topicService.updateTopic(1L, "Bir xil nom");
+
+        verify(topicRepository).updateTopicName(1L, "Bir xil nom");
+        verify(courseSectionRepository, never()).findByLinkedTopic_Id(any());
     }
 
     @Test

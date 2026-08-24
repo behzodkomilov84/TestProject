@@ -188,14 +188,15 @@ function render() {
         </div>
             `
                 : `
-            <input
-                class="${inputClass}"
-                value="${s.name}"
+            <textarea
+                class="name-edit-area ${inputClass}"
+                rows="2"
                 ${placeholder}
+                ${s.linkedCourseTitle ? `readonly title="🔗 &quot;${escapeHtml(s.linkedCourseTitle)}&quot; kursiga bog'langan — nomini faqat shu kurs ichidan o'zgartirish mumkin (Bo'limini esa shu yerdan o'zgartirishingiz mumkin)."` : ''}
                 oninput="itemBlock[${i}].name=this.value"
                 onkeydown="onClickKey(event, ${i})"
                 id="input-${i}"
-            >
+            >${escapeHtml(s.name)}</textarea>
             <select class="topic-section-select" onchange="itemBlock[${i}].sectionId=this.value?Number(this.value):null" title="Bo'lim">
                 ${sectionOptionsHtml(s.sectionId)}
             </select>
@@ -245,7 +246,13 @@ function hasDuplicate(currentIndex, name) {
 } //DONE
 
 function onClickKey(event, i) {
-    if (event.key === "Enter" && itemBlock[i].mode !== "VIEW") {
+    // Nom maydoni endi <textarea> (bir necha qatorli tahrirlash uchun) —
+    // Shift+Enter bilan qator ko'chirish (agar kerak bo'lsa) ochiq
+    // qoldirilgan, oddiy Enter esa saqlaydi (avvalgi <input>'dagi bilan
+    // bir xil xulq-atvor) — preventDefault() shart, aks holda textarea'ga
+    // qo'shimcha bo'sh qator ham qo'shilib qolardi.
+    if (event.key === "Enter" && !event.shiftKey && itemBlock[i].mode !== "VIEW") {
+        event.preventDefault();
         saveOnClientSide(i);
     }
 
@@ -253,11 +260,11 @@ function onClickKey(event, i) {
         cancel(i);
     }
 
-    if (event.key === "Delete" && itemBlock[i].mode !== "VIEW") {
-        removeFromUi(i);
-    }
-
-
+    // "Delete" tugmasi ORQALI QATORNI O'CHIRISH endi olib tashlandi —
+    // <textarea> ichida matn tahrirlashda "Delete" odatiy (kursordan
+    // keyingi belgini o'chirish) ma'noda ishlatiladi, avvalgi <input>'da
+    // bo'lgani kabi butun QATORNI o'chirib yubormasligi kerak. Qatorni
+    // o'chirish endi faqat 🗑️ tugmasi orqali (buttons()).
 } //DONE
 
 function onViewKeyDown(event, index) {
@@ -352,6 +359,14 @@ function buttons(s, i) {
 } //DONE
 
 function edit(i) {
+    // DIQQAT: kursga bog'langan mavzuda nomini o'zgartirish render()'dagi
+    // <textarea readonly> orqali cheklanadi (va backend TopicService.
+    // updateTopic'da ham qo'shimcha himoya sifatida qaytariladi) — lekin
+    // Bo'limini (sectionId) o'zgartirish shu yerdan ATAYLAB ochiq
+    // qoldirilgan (foydalanuvchi so'rovi bo'yicha: "bo'limi o'zgartirilsa,
+    // bu bo'limdan o'chib, o'ziga tegishli bo'limga o'tib qolsin" —
+    // mavzuni kurs bilan bog'liq bo'lsa ham, TEST BOSHQARUVIDA qaysi
+    // Bo'limga guruhlanishini qo'lda boshqarish imkoniyati saqlanadi).
     if (itemBlock.some(s => s.mode === "EDIT")) {
         showToast('warning', 'Avval tahrirlashni yakuniga yetkazing!');
         focusIndex = itemBlock.findIndex(s => s.mode !== "VIEW");

@@ -56,6 +56,31 @@ h1 {
         padding: 6px;
     }
 
+    /* Nom tahrirlash maydoni — avval bitta qatorli <input> edi, uzun
+       nomlarni (masalan uzun Bo'lim/Kurs nomlarini) tahrirlashda matn
+       ko'rinmay, chapga-o'ngga suriladi edi. Endi <textarea> — bir necha
+       qatorga o'zi cho'ziladi (resize:vertical — kerak bo'lsa qo'lda ham
+       kattalashtirish mumkin), butun matn bir vaqtda ko'rinadi. */
+    .name-edit-area {
+        flex: 1;
+        min-height: 44px;
+        padding: 6px;
+        font-family: inherit;
+        font-size: 15px;
+        line-height: 1.3;
+        resize: vertical;
+    }
+
+    /* Kursga bog'langan mavzu — nomi shu yerdan o'zgartirilmaydi (topic.js
+       edit()), lekin ko'rinib/tanlanib turishi uchun oddiy "disabled"
+       emas, "readonly" ishlatilgan — shu sabab ko'rinishi ham alohida
+       (kulrang fon, "not-allowed" kursor) ko'rsatib turadi. */
+    .name-edit-area[readonly] {
+        background: #f1f5f9;
+        color: #64748b;
+        cursor: not-allowed;
+    }
+
     /* Ko'rish rejimidagi mavzu nomi — avval <input readonly> edi (bitta
        qatorli, uzun nomlar kesilib qolardi — masalan Kimyo fanining
        uzun mavzu sarlavhalari to'liq ko'rinmasdi). Endi <div> — matn
