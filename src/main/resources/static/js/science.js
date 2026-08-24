@@ -250,15 +250,19 @@ function removeFromUi(i) {
     }
 } //DONE
 
+// Tugmalar guruhi ".row-actions" ichiga o'raladi (science.css) — karta
+// ichida har doim ENG PASTGA "yopishadi" (margin-top:auto).
 function buttons(s, i) {
     if (s.mode === "VIEW") {
-        return `<button onclick="edit(${i})">✏️ Edit</button>`; //TODO
+        return `<div class="row-actions"><button onclick="edit(${i})">✏️ Edit</button></div>`;
     }
     return `
-               <button onclick="saveOnClientSide(${i})">💾 Save</button>
-               <button onclick="cancel(${i})">↩ Cancel</button>
-               <button onclick="removeFromUi(${i})">🗑️ Delete</button> 
-           `; //TODO
+        <div class="row-actions">
+            <button onclick="saveOnClientSide(${i})">💾 Save</button>
+            <button onclick="cancel(${i})">↩ Cancel</button>
+            <button onclick="removeFromUi(${i})">🗑️ Delete</button>
+        </div>
+    `;
 } //DONE
 
 function edit(i) {

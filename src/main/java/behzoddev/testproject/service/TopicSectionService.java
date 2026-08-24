@@ -111,6 +111,24 @@ public class TopicSectionService {
         topicSectionRepository.deleteById(sectionId);
     }
 
+    // "🗑️ Bo'sh bo'limlarni o'chirish" tugmasi — shu FANDA hech qanday
+    // mavzuga biriktirilmagan (topicCount==0) BARCHA bo'limlarni BIR
+    // YO'LA o'chiradi. Kursga bog'lanish xavfsizligi haqida qo'shimcha
+    // tekshiruv shart emas — mavzu bo'lmasa (topicCount==0), demak shu
+    // bo'lim orqali hech qanday mavzu kursga ham bog'lanmagan bo'ladi.
+    @Transactional
+    public int deleteEmptySections(Long scienceId) {
+        List<Long> emptyIds = topicSectionRepository.findByScienceIdOrderByOrderIndex(scienceId).stream()
+                .filter(s -> s.topicCount() == 0)
+                .map(TopicSectionIdAndNameDto::id)
+                .toList();
+
+        if (!emptyIds.isEmpty()) {
+            topicSectionRepository.deleteAllById(emptyIds);
+        }
+        return emptyIds.size();
+    }
+
     // Frontend to'liq tartiblangan id ro'yxatini yuboradi — biz
     // orderIndex'larni 1'dan qayta hisoblaymiz (CourseService.reorderSections
     // bilan bir xil andoza).

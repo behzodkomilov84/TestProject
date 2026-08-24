@@ -30,6 +30,43 @@ function getScienceId() {
     return element ? element.value : null;
 }
 
+// "🗑️ Bo'sh bo'limlarni o'chirish" — shu Fandagi hech qanday mavzuga
+// biriktirilmagan (topicCount==0) BARCHA bo'limlarni bir yo'la o'chiradi.
+// Avval saqlanmagan o'zgarishlar bo'lsa (yangi/tahrirlanayotgan qatorlar)
+// — chalkashmasin deb, ular haqida ogohlantiriladi.
+async function deleteEmptySections() {
+    if (itemBlock.some(s => s.mode !== "VIEW")) {
+        alert("❌ Avval tahrirlashni yakuniga yetkazing (yoki saqlang)!");
+        return;
+    }
+
+    const emptyCount = itemBlock.filter(s => s.id > 0 && (s.topicCount || 0) === 0).length;
+    if (emptyCount === 0) {
+        alert("ℹ️ Bo'sh bo'lim topilmadi.");
+        return;
+    }
+
+    if (!confirm(`⚠️ ${emptyCount} ta bo'sh bo'limni o'chirmoqchimisiz?\n\nBu amalni bekor qilib bo'lmaydi.`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/topic-section/empty?scienceId=${getScienceId()}`, { method: "DELETE" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || "O'chirishda xatolik");
+            return;
+        }
+        showToast('success', `✅ ${data.deleted} ta bo'sh bo'lim o'chirildi`, 4000);
+        await reloadFromDb(`/api/topic-section?scienceId=${getScienceId()}`);
+        focusIndex = 0;
+        render();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
 function escapeHtml(text) {
     const div = document.createElement("div");
     div.textContent = text ?? "";

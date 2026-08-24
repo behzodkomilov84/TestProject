@@ -73,4 +73,12 @@ public class TopicSectionController {
         topicSectionService.assignTopicToSection(topicId, body.get("sectionId"));
         return ResponseEntity.ok().build();
     }
+
+    // "🗑️ Bo'sh bo'limlarni o'chirish" tugmasi — shu Fanda hech qanday
+    // mavzuga biriktirilmagan BARCHA bo'limlarni bir yo'la o'chiradi.
+    @DeleteMapping("/api/topic-section/empty")
+    @ResponseBody
+    public ResponseEntity<Map<String, Integer>> deleteEmptySections(@RequestParam Long scienceId) {
+        return ResponseEntity.ok(Map.of("deleted", topicSectionService.deleteEmptySections(scienceId)));
+    }
 }

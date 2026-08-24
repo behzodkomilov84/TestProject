@@ -27,6 +27,9 @@
 <input type="hidden" id="scienceId" th:value="${scienceId}">
 <div class="wrapper">
     <button onclick="location.href='/topics?scienceId=' + getScienceId()">📋 Barcha mavzular (bo'limsiz ko'rish)</button>
+    <!-- Shu Fandagi hech qanday mavzuga biriktirilmagan (bo'sh) BARCHA
+         bo'limlarni bir yo'la o'chiradi (deleteEmptySections, topicSection.js). -->
+    <button onclick="deleteEmptySections()">🗑️ Bo'sh bo'limlarni o'chirish</button>
 
     <div class="error" id="error"></div>
 

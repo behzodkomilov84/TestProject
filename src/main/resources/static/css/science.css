@@ -20,34 +20,67 @@ h1 {
     text-align: center;
 }
 
-/* Основной контейнер — dinamik: keng ekranlarda kengroq (uzun
-   fan/mavzu/bo'lim nomlari qatorni "yorib chiqmasligi" uchun), tor
-   ekranlarda ekran kengligiga moslashadi. */
+/* Основной контейнер — dinamik: keng ekranlarda kengroq (grid bir necha
+   ustunga sig'ishi uchun ham kerak), tor ekranlarda ekran kengligiga
+   moslashadi. */
 .wrapper {
-    width: min(900px, 94vw);
+    width: min(1400px, 96vw);
     margin: auto;
     max-height: 75vh;
 }
 
-/* Контейнер списка предметов */
+/* Ro'yxat konteyneri — endi GRID: har bir Fan/Bo'lim/Mavzu alohida
+   KARTA sifatida, bir necha ustunda (ekran kengligiga qarab 1/2/3/4).
+   Konteynerning o'zi endi oq emas — och kulrang fon, har bir karta
+   O'ZINING oq foni bilan ajralib turadi (courseDetail.js'dagi
+   .section-item bilan bir xil uslub). */
 .list {
-    /*max-height: 320px;*/
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
     overflow-y: auto;
     border: 1px solid #444;
     border-radius: 8px;
-    padding: 10px;
+    padding: 14px;
     max-height: 80vh;
     height: 100%;
-    background-color: white;
+    background-color: #f4f6f9;
     color: #000;
+    align-content: start;
 }
 
-    /* Строка с предметом */
+@media (min-width: 600px) {
+    .list {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 900px) {
+    .list {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (min-width: 1300px) {
+    .list {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+    /* Bitta Fan/Bo'lim/Mavzu — KARTA: nom yuqorida, amallar (tugmalar)
+       har doim pastda (.row-actions'dagi margin-top:auto orqali) —
+       kartalar CSS Grid tomonidan avtomatik bir xil balandlikka
+       tenglanadi (align-items:stretch — default), shu sabab pastki
+       amallar qatori har doim bir tekis chiziqda turadi. */
     .row {
         display: flex;
+        flex-direction: column;
         gap: 10px;
-        margin-bottom: 10px;
-        align-items: center;
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 14px;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     }
 
     /* Поле ввода */
@@ -95,18 +128,20 @@ h1 {
         line-height: 1.3;
     }
 
+    /* Karta (.row) o'zining chegarasi/soyasi bilan ajralib turgani uchun,
+       nom qismining o'z chegarasi endi shart emas (ikki marta "quti"
+       ko'rinishini oldini olish uchun) — faqat hover'da yengil fon
+       o'zgarishi bilan bosiladigan ekanligi bildirib turiladi. */
     .topic-name.view {
         background: transparent;
         color: #333;
         font-size: 17px;
-        border: 1px solid #444;
-        border-radius: 8px;
+        border-radius: 6px;
     }
 
     /* Эффект при наведении на поле в режиме просмотра */
     .topic-name.view:hover {
-        background: #d5ddf5;
-        border: 1px solid #444;
+        background: #eef2ff;
         color: #0e0909;
         cursor: pointer;
     }
@@ -198,12 +233,17 @@ h1 {
         min-width: 0;
     }
 
-    /* Amallar (⬆️⬇️✏️🗑️ va h.k.) guruhi — nom qatori (.row-view) qancha
-       uzun/ko'p qatorli bo'lmasin, ENI HECH QACHON o'zgarmaydi. */
+    /* Amallar (⬆️⬇️✏️🗑️ va h.k.) guruhi — endi karta (.row) ICHIDA, ENG
+       PASTDA (margin-top:auto — nom qisqa bo'lsa ham, karta baland
+       (Grid tomonidan tenglashtirilgan) bo'lsa ham, amallar har doim
+       kartaning tagiga "yopishadi"). Gorizontal (tugmalar bir qatorda),
+       torayib qolmaydi. */
     .row-actions {
         display: flex;
         gap: 8px;
+        flex-wrap: wrap;
         flex-shrink: 0;
+        margin-top: auto;
     }
 
     /* Mavzuni tahrirlashda "Bo'lim" tanlash dropdown'i (topic.js) — nativ
