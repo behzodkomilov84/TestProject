@@ -20,20 +20,20 @@ h1 {
     text-align: center;
 }
 
-/* Основной контейнер — dinamik: keng ekranlarda kengroq (grid bir necha
-   ustunga sig'ishi uchun ham kerak), tor ekranlarda ekran kengligiga
-   moslashadi. */
+/* Основной контейнер — kengligi doim kamida ekranning 80%'ini egallaydi
+   (foydalanuvchi so'rovi bo'yicha), 1600px'dan keyin esa haddan tashqari
+   cho'zilib ketmasin deb chegaralanadi. */
 .wrapper {
-    width: min(1400px, 96vw);
+    width: min(1600px, 90vw);
     margin: auto;
     max-height: 75vh;
 }
 
-/* Ro'yxat konteyneri — endi GRID: har bir Fan/Bo'lim/Mavzu alohida
-   KARTA sifatida, bir necha ustunda (ekran kengligiga qarab 1/2/3/4).
-   Konteynerning o'zi endi oq emas — och kulrang fon, har bir karta
-   O'ZINING oq foni bilan ajralib turadi (courseDetail.js'dagi
-   .section-item bilan bir xil uslub). */
+/* Ro'yxat konteyneri — GRID, lekin BITTA USTUN (column) — har bir
+   Fan/Bo'lim/Mavzu alohida KARTA sifatida, ketma-ket pastga qarab
+   joylashadi (yonma-yon emas). Konteynerning o'zi oq emas — och kulrang
+   fon, har bir karta O'ZINING oq foni bilan ajralib turadi
+   (courseDetail.js'dagi .section-item bilan bir xil uslub). */
 .list {
     display: grid;
     grid-template-columns: 1fr;
@@ -47,24 +47,6 @@ h1 {
     background-color: #f4f6f9;
     color: #000;
     align-content: start;
-}
-
-@media (min-width: 600px) {
-    .list {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (min-width: 900px) {
-    .list {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-
-@media (min-width: 1300px) {
-    .list {
-        grid-template-columns: repeat(4, 1fr);
-    }
 }
 
     /* Bitta Fan/Bo'lim/Mavzu — KARTA: nom yuqorida, amallar (tugmalar)
