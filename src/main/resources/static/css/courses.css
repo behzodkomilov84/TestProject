@@ -946,24 +946,13 @@ body {
     padding: 18px;
 }
 
-/* Bo'lim ("box") ICHIDAGI mavzular — tashqi (bo'limsiz) ro'yxatdan farqli,
-   USTUN bo'yicha emas, BITTA QATOR bo'yicha (gorizontal, kerak bo'lsa
-   ichkarida gorizontal skroll bilan) tahlanadi — grid o'rniga flex
-   (nowrap) ishlatiladi, chunki grid ko'p ustunli bo'lganda mavzular
-   bir necha QATORGA bo'linib ketardi (masalan 8 ta mavzu, 4 ustunli
-   panjarada — 2 qator bo'lib qolardi). Ikkita klass (.chapter-box
-   .sections-grid) specifichligi yuqoriroq bo'lgani uchun, umumiy
-   .sections-grid'ning grid qoidalarini bemalol yengadi. */
-.chapter-box .sections-grid {
-    display: flex;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    padding-bottom: 6px; /* gorizontal skroll paydo bo'lganda kartalarga yopishib qolmasin */
-}
-
-.chapter-box .sections-grid .section-item {
-    flex: 0 0 260px; /* har bir karta belgilangan kenglikda — qator bo'ylab yonma-yon, siqilib ketmaydi */
-}
+/* Bo'lim ("box") ICHIDAGI mavzular — endi maxsus qoidaga hojat yo'q:
+   umumiy .sections-grid'ning javobgar (responsive) panjarasidan
+   (1/2/3/4/6 ustun) foydalanadi, xuddi tashqi (bo'limsiz) ro'yxat kabi.
+   Gorizontal skroll o'rniga — sahifa hajmi (CHAPTER_SECTIONS_PER_PAGE,
+   courseDetail.js) aynan bitta qatorga sig'adigan songa (4) tenglangan,
+   shu sabab har bir sahifa aynan bitta TO'LIQ qatorni tashkil qiladi,
+   qo'shimcha skroll shart emas. */
 
 .chapter-box-title {
     display: flex;

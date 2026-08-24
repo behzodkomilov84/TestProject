@@ -11,7 +11,12 @@ let sectionsPage = 0;
 // Kursda Bo'lim(lar) bo'lsa — har bir Bo'lim o'z alohida "box"ida, o'z
 // sahifalash tugmalari bilan ko'rsatiladi (renderGroupedSections). Har bir
 // Bo'lim uchun joriy sahifa alohida saqlanadi: chapterPages[chapterKey].
-const CHAPTER_SECTIONS_PER_PAGE = 8;
+// Umumiy .sections-grid javobgar panjarasi 1200px+'da 4 ustunli bo'ladi —
+// shu sabab 4 ta tanlangan: har bir sahifa aynan BITTA TO'LIQ qatorni
+// tashkil qiladi (qatorni "yorib chiqmaydi", qo'shimcha skroll ham shart
+// emas). Torroq ekranlarda (kamroq ustunli) 4 ta mavzu shunchaki 2-4
+// qatorga o'z-o'zidan bo'linadi — bu normal, kutilgan holat.
+const CHAPTER_SECTIONS_PER_PAGE = 4;
 let chapterPages = {};
 
 // YouTube pleyeri (courseSectionView.js) "videoId" sifatida FAQAT xom
