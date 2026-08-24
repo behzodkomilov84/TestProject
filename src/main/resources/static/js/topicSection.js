@@ -131,10 +131,13 @@ function render() {
                                     `;
 
         // Kursga bog'langan bo'lim — kichik belgi (topic.js'dagi "🔗 Kurs"
-        // belgisi bilan bir xil uslub/rang).
+        // belgisi bilan bir xil uslub/rang). O'z alohida qatorida (bo'lim
+        // NOMI har doim YANGI qatordan boshlanishi uchun — item-badges/
+        // item-title-row, science.css).
         const courseBadge = s.linkedCourseTitle
-            ? `<span class="topic-course-badge" title="Bu bo'lim kursga bog'langan, faqat kurs ichidan tahrirlanadi">🔗 Kurs: ${escapeHtml(s.linkedCourseTitle)}</span> `
+            ? `<span class="topic-course-badge" title="Bu bo'lim kursga bog'langan, faqat kurs ichidan tahrirlanadi">🔗 Kurs: ${escapeHtml(s.linkedCourseTitle)}</span>`
             : '';
+        const badgesRow = courseBadge ? `<div class="item-badges">${courseBadge}</div>` : '';
 
         row.innerHTML = `
     ${
@@ -151,7 +154,7 @@ function render() {
                 id="input-${i}"
                 class="topic-name ${inputClass}"
                 tabindex="-1"
-            >${courseBadge}${escapeHtml(s.name)}<span class="item-count-badge">(${s.topicCount} ta mavzu)</span></div>
+            >${badgesRow}<div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span><span class="item-count-badge">${s.topicCount} ta mavzu</span></div></div>
         </div>
             `
                 : `

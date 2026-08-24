@@ -161,7 +161,7 @@ function render() {
         // chiqmaydi.
         const sectionName = sectionNameById(s.sectionId);
         const sectionBadge = sectionName
-            ? `<span class="topic-section-badge">${escapeHtml(sectionName)}</span> `
+            ? `<span class="topic-section-badge">${escapeHtml(sectionName)}</span>`
             : '';
 
         // Shu mavzu biror KURS bo'limiga bog'langan bo'lsa — kichik belgi
@@ -169,7 +169,16 @@ function render() {
         // shu mavzuni o'chirsa/nomini butunlay o'zgartirsa, kursdagi
         // bog'lanish "yetim" qolib ketishi mumkinligini eslatib turadi.
         const courseBadge = s.linkedCourseTitle
-            ? `<span class="topic-course-badge" title="Bu mavzu kursga bog'langan">🔗 Kurs: ${escapeHtml(s.linkedCourseTitle)}</span> `
+            ? `<span class="topic-course-badge" title="Bu mavzu kursga bog'langan">🔗 Kurs: ${escapeHtml(s.linkedCourseTitle)}</span>`
+            : '';
+
+        // Bo'lim/Kurs belgilari — o'z alohida qatorida (bo'lsagina);
+        // mavzu NOMI esa har doim YANGI qatordan boshlanadi, savol soni
+        // belgisi esa nom bilan bir qatorda, lekin O'NG tomonda (ajralib
+        // turadigan fon bilan) — hammasi bir-biriga "yopishib" ketmasin
+        // deb (item-badges/item-title-row, science.css).
+        const badgesRow = (sectionBadge || courseBadge)
+            ? `<div class="item-badges">${sectionBadge}${courseBadge}</div>`
             : '';
 
         row.innerHTML = `
@@ -187,7 +196,7 @@ function render() {
                 id="input-${i}"
                 class="topic-name ${inputClass}"
                 tabindex="-1"
-            >${sectionBadge}${courseBadge}${escapeHtml(s.name)}<span class="item-count-badge">(${s.questionCount} ta test)</span></div>
+            >${badgesRow}<div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span><span class="item-count-badge">${s.questionCount} ta test</span></div></div>
         </div>
             `
                 : `

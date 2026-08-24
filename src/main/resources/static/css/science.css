@@ -179,16 +179,41 @@ h1 {
         vertical-align: middle;
     }
 
-    /* Fan/Bo'lim/Mavzu qatorlaridagi sanoq belgisi — "(N ta bo'lim/
-       mavzu/test)" (science.js/topicSection.js/topic.js render()). Nomdan
-       keyin, kichikroq va xiraroq rangda — ustunlik nomga berilishi uchun. */
+    /* Bo'lim/Kurs belgilari (topic-section-badge/topic-course-badge) —
+       nom USTIDA, o'z alohida qatorida (science.js/topicSection.js/
+       topic.js render() — item-badges). */
+    .item-badges {
+        margin-bottom: 6px;
+    }
+
+    /* Nom + sanoq belgisi bitta qatorda — nom chapda (kerak bo'lsa
+       o'ziga bir necha qatorga o'raladi), sanoq belgisi esa har doim
+       O'NG tomonda, torayib qolmaydi. */
+    .item-title-row {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .item-title-text {
+        flex: 1;
+        min-width: 0;
+    }
+
+    /* Fan/Bo'lim/Mavzu qatorlaridagi sanoq belgisi — "N ta bo'lim/mavzu/
+       test" (science.js/topicSection.js/topic.js render()). Endi ajralib
+       turadigan (pill) fonga ega — matn ichida "yo'qolib" ketmasin deb. */
     .item-count-badge {
         display: inline-block;
-        margin-left: 8px;
+        flex-shrink: 0;
+        background: #eef2f7;
+        color: #475569;
         font-size: 13px;
-        font-weight: 400;
-        color: #64748b;
-        vertical-align: middle;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 999px;
+        white-space: nowrap;
     }
 
     .row-link {
@@ -226,6 +251,23 @@ h1 {
         flex-wrap: wrap;
         flex-shrink: 0;
         margin-top: auto;
+    }
+
+    /* Fanlar (science.js) — 768px+ ekranlarda fan nomi va "✏️ Edit"
+       tugmasi BITTA qatorda, yonma-yon (nom chapda, tugma o'ngda) —
+       faqat ".science-row" (boshqa ro'yxatlarga, Bo'lim/Mavzuga,
+       ta'sir qilmaydi). Tor ekranda (mobil) esa .row'ning standart
+       ustunli (nom yuqorida, tugma pastda) ko'rinishi saqlanadi. */
+    @media (min-width: 768px) {
+        .row.science-row {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .row.science-row .row-actions {
+            margin-top: 0;
+        }
     }
 
     /* Mavzuni tahrirlashda "Bo'lim" tanlash dropdown'i (topic.js) — nativ

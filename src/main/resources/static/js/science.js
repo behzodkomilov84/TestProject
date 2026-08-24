@@ -70,9 +70,13 @@ function render() {
 
     itemBlock.forEach((s, i) => {
         const row = document.createElement("div");
-        row.className = "row";
-
         const isView = s.mode === "VIEW";
+        // "science-row" — 768px+ ekranlarda fan nomi va "✏️ Edit" tugmasi
+        // BITTA qatorda (yonma-yon) joylashishi uchun (science.css) —
+        // FAQAT ko'rish (VIEW) rejimida (tahrirlashda — textarea + bir
+        // nechta tugma — hamon ustunli, tor bo'lib qolmasin deb).
+        row.className = isView ? "row science-row" : "row";
+
         const isLink = isView && s.id !== null;
         const isNew = s.mode === "NEW";
         const placeholder = isNew ? 'placeholder="Yangi fan nomini kiriting"' : '';
@@ -99,7 +103,7 @@ function render() {
                 id="input-${i}"
                 class="topic-name ${inputClass}"
                 tabindex="-1"
-            >${escapeHtml(s.name)}${isLink ? `<span class="item-count-badge">(${s.sectionCount} ta bo'lim)</span>` : ""}</div>
+            ><div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta bo'lim</span>` : ""}</div></div>
         </div>
             `
                 : `
