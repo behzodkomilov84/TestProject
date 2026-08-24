@@ -53,7 +53,8 @@ public class TopicSectionService {
         }
 
         return sections.stream()
-                .map(s -> new TopicSectionIdAndNameDto(s.id(), s.name(), s.orderIndex(), courseTitleBySectionId.get(s.id())))
+                .map(s -> new TopicSectionIdAndNameDto(s.id(), s.name(), s.orderIndex(),
+                        courseTitleBySectionId.get(s.id()), s.topicCount()))
                 .toList();
     }
 

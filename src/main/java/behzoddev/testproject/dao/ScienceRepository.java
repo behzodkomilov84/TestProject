@@ -23,7 +23,12 @@ public interface ScienceRepository extends JpaRepository<Science, Long> {
     Optional<Science> findByIdWithTopics(Long id);
 
 
-    @Query("select new behzoddev.testproject.dto.science.ScienceIdAndNameDto(s.id, s.name) from Science s")
+    // sectionCount — shu fandagi Bo'limlar (TopicSection) soni, science.html
+    // fan qatorida ko'rsatish uchun ("(N ta bo'lim)"). Korrelyatsiyalangan
+    // subso'rov (har bir fan uchun bitta son qaytaradi — count() doim
+    // aniq bitta qatorli, fan-out xavfi yo'q).
+    @Query("select new behzoddev.testproject.dto.science.ScienceIdAndNameDto(s.id, s.name, " +
+            "(select count(ts) from TopicSection ts where ts.science = s)) from Science s")
     Set<ScienceIdAndNameDto> findAllScienceNames();
 
     @Query("select new behzoddev.testproject.dto.science.ScienceIdAndNameDto(s.id, s.name) from Science s where s.id = :id")

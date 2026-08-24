@@ -66,6 +66,9 @@ async function reloadFromDb(mapping) {
         // bloklash uchun — bunday bo'limning nomi kurs Bo'limi bilan
         // sinxronlangan, faqat kurs ichidan o'zgartiriladi).
         linkedCourseTitle: s.linkedCourseTitle || null,
+        // Shu bo'limda nechta mavzu borligi — render()'da "(N ta mavzu)"
+        // ko'rsatish uchun.
+        topicCount: s.topicCount || 0,
         mode: "VIEW"
     }));
 }
@@ -111,7 +114,7 @@ function render() {
                 id="input-${i}"
                 class="topic-name ${inputClass}"
                 tabindex="-1"
-            >${courseBadge}${escapeHtml(s.name)}</div>
+            >${courseBadge}${escapeHtml(s.name)}<span class="item-count-badge">(${s.topicCount} ta mavzu)</span></div>
         </div>
             `
                 : `

@@ -1,5 +1,6 @@
 package behzoddev.testproject.controller.api;
 
+import behzoddev.testproject.dto.course.CourseChapterDto;
 import behzoddev.testproject.dto.course.CourseDetailDto;
 import behzoddev.testproject.dto.course.CourseDto;
 import behzoddev.testproject.dto.course.CourseSaveDto;
@@ -84,5 +85,21 @@ public class CourseController {
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
     public Map<String, Integer> syncChapterTopics(@PathVariable Long courseId, @AuthenticationPrincipal User user) {
         return Map.of("updated", courseService.syncChapterTopicSections(courseId, user));
+    }
+
+    // Kursning BARCHA Bo'limlari (hozircha bo'sh bo'lganlari ham) — Bo'lim
+    // tanlash select'ini to'liq to'ldirish uchun (courseDetail.js).
+    @GetMapping("/{courseId}/chapters")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public List<CourseChapterDto> getChapters(@PathVariable Long courseId, @AuthenticationPrincipal User user) {
+        return courseService.getChapters(courseId, user);
+    }
+
+    // Faqat BO'SH (hech qanday mavzuga biriktirilmagan) Bo'limni o'chirish.
+    @DeleteMapping("/{courseId}/chapters/{chapterId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public void deleteChapter(@PathVariable Long courseId, @PathVariable Long chapterId,
+                               @AuthenticationPrincipal User user) {
+        courseService.deleteChapter(courseId, chapterId, user);
     }
 }

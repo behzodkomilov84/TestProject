@@ -1290,19 +1290,30 @@ const NEW_CHAPTER_OPTION = "__new__";
 // qo'shish uchun, pastga qarang). Berilmasa (yoki Fan hali tanlanmagan/
 // yangi bo'lsa) — faqat shu KURSNING o'z Bo'limlari ko'rsatiladi
 // (avvalgi xulq-atvor).
+// chapterId -> shu bo'limda nechta mavzu borligi — deleteSelectedChapter()
+// va onChapterSelectChange() "🗑️" tugmasini ko'rsatish/yashirish uchun
+// shu yerdan o'qiydi (har safar populateChapterSelect chaqirilganda
+// yangilanadi).
+let chapterCountsById = {};
+
 async function populateChapterSelect(selectId, selectedChapterId, mode) {
     const select = document.getElementById(selectId);
     if (!select) return;
 
-    // 1) Shu KURSNING o'z Bo'limlari (CourseChapter) — "id:<id>" bilan
-    //    tanlanadi, saqlashda ANIQ shu bo'lim ishlatiladi (chapterId).
-    const chaptersById = new Map();
-    for (const s of allSections) {
-        if (s.chapterId != null && !chaptersById.has(s.chapterId)) {
-            chaptersById.set(s.chapterId, { id: s.chapterId, name: s.chapterName, orderIndex: s.chapterOrderIndex });
-        }
+    // 1) Shu KURSNING BARCHA Bo'limlari (CourseChapter) — hozircha BO'SH
+    //    (hech qanday mavzuga biriktirilmaganlari) ham shu jumladan
+    //    (backend'dan, sectionCount bilan birga — bo'sh bo'limni
+    //    o'chirish imkoniyati uchun). "id:<id>" bilan tanlanadi,
+    //    saqlashda ANIQ shu bo'lim ishlatiladi (chapterId).
+    let courseChapters = [];
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/chapters`);
+        if (res.ok) courseChapters = await res.json();
+    } catch (err) {
+        console.error(err);
     }
-    const courseChapters = [...chaptersById.values()].sort((a, b) => a.orderIndex - b.orderIndex);
+    chapterCountsById = {};
+    courseChapters.forEach(c => { chapterCountsById[c.id] = c.sectionCount; });
 
     // 2) TEST BOSHQARUVIDA (tanlangan Fan bo'yicha) ALLAQACHON mavjud
     //    Bo'limlar — kursning o'z Bo'limlari ro'yxatida hali bo'lmagan
@@ -1331,7 +1342,8 @@ async function populateChapterSelect(selectId, selectedChapterId, mode) {
 
     const options = ['<option value="">— Bo\'limsiz —</option>'];
     for (const c of courseChapters) {
-        options.push(`<option value="id:${c.id}">${escapeHtml(c.name)}</option>`);
+        const emptyMark = c.sectionCount === 0 ? " (bo'sh)" : "";
+        options.push(`<option value="id:${c.id}">${escapeHtml(c.name)}${emptyMark}</option>`);
     }
     for (const name of externalNames) {
         options.push(`<option value="name:${encodeURIComponent(name)}">${escapeHtml(name)}</option>`);
@@ -1340,6 +1352,8 @@ async function populateChapterSelect(selectId, selectedChapterId, mode) {
 
     select.innerHTML = options.join("");
     select.value = selectedChapterId != null ? `id:${selectedChapterId}` : "";
+
+    if (mode) onChapterSelectChange(mode);
 }
 
 // Tanlangan (yoki "Boshqa"da qo'lda yozilgan) Fan nomini cachedSciences
@@ -1353,15 +1367,52 @@ function getSelectedScienceId(mode) {
     return match ? match.id : null;
 }
 
-// "➕ Yangi bo'lim yaratish..." tanlansa — yangi nom kiritish maydoni ochiladi.
+// "➕ Yangi bo'lim yaratish..." tanlansa — yangi nom kiritish maydoni
+// ochiladi; "🗑️" esa faqat hozir tanlangan Bo'lim kursning O'Z Bo'limi
+// ("id:" bilan) VA hech qanday mavzuga biriktirilmagan (bo'sh) bo'lsa
+// ko'rinadi (chapterCountsById — populateChapterSelect'da to'ldiriladi).
 function onChapterSelectChange(mode) {
     const select = document.getElementById(mode + "SectionChapterSelect");
     const newInput = document.getElementById(mode + "SectionChapterNewInput");
-    const isNew = select.value === NEW_CHAPTER_OPTION;
+    const deleteBtn = document.getElementById(mode + "SectionChapterDeleteBtn");
+    const value = select.value;
+
+    const isNew = value === NEW_CHAPTER_OPTION;
     newInput.style.display = isNew ? "block" : "none";
     if (isNew) {
         newInput.value = "";
         newInput.focus();
+    }
+
+    if (deleteBtn) {
+        const chapterId = value.startsWith("id:") ? Number(value.slice(3)) : null;
+        const isEmpty = chapterId != null && (chapterCountsById[chapterId] || 0) === 0;
+        deleteBtn.style.display = isEmpty ? "inline-flex" : "none";
+        deleteBtn.dataset.chapterId = chapterId != null ? String(chapterId) : "";
+    }
+}
+
+// "🗑️" tugmasi — faqat BO'SH (hech qanday mavzuga biriktirilmagan)
+// Bo'limni o'chiradi (backend ham xuddi shu tekshiruvni qaytaradi,
+// himoya sifatida). Bo'lim tanlash ro'yxatini qayta yuklaydi.
+async function deleteSelectedChapter(mode) {
+    const deleteBtn = document.getElementById(mode + "SectionChapterDeleteBtn");
+    const chapterId = deleteBtn.dataset.chapterId;
+    if (!chapterId) return;
+
+    if (!confirm("Bu bo'sh bo'limni o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.")) return;
+
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/chapters/${chapterId}`, { method: "DELETE" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "Bo'limni o'chirishda xatolik");
+            return;
+        }
+        await populateChapterSelect(mode + "SectionChapterSelect", null, mode);
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
     }
 }
 

@@ -56,6 +56,9 @@ async function reloadFromDb(mapping) {
         id: s.id,
         name: s.name,
         original: s.name,
+        // Shu fanda nechta Bo'lim (TopicSection) borligi — render()'da
+        // "(N ta bo'lim)" ko'rsatish uchun.
+        sectionCount: s.sectionCount || 0,
         mode: "VIEW"
     }));
 
@@ -96,7 +99,7 @@ function render() {
                 id="input-${i}"
                 class="topic-name ${inputClass}"
                 tabindex="-1"
-            >${escapeHtml(s.name)}</div>
+            >${escapeHtml(s.name)}${isLink ? `<span class="item-count-badge">(${s.sectionCount} ta bo'lim)</span>` : ""}</div>
         </div>
             `
                 : `

@@ -120,6 +120,9 @@ async function reloadFromDb(mapping) {
         // sahifasida, CourseSectionSaveDto.scienceName/topicName orqali
         // boshqariladi).
         linkedCourseTitle: s.linkedCourseTitle || null,
+        // Shu mavzuda nechta savol borligi — render()'da "(N ta test)"
+        // ko'rsatish uchun.
+        questionCount: s.questionCount || 0,
         mode: "VIEW"
     }));
 
@@ -184,7 +187,7 @@ function render() {
                 id="input-${i}"
                 class="topic-name ${inputClass}"
                 tabindex="-1"
-            >${sectionBadge}${courseBadge}${escapeHtml(s.name)}</div>
+            >${sectionBadge}${courseBadge}${escapeHtml(s.name)}<span class="item-count-badge">(${s.questionCount} ta test)</span></div>
         </div>
             `
                 : `

@@ -21,11 +21,16 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     // butunlay chiqarib tashlashi mumkin edi (aynan shu xato turi
     // yuqoridagi t.id workaround'iga sabab bo'lgan edi) — shu sabab
     // ataylab aniq LEFT JOIN ishlatilgan.
-    @Query("select new behzoddev.testproject.dto.topic.TopicIdAndNameDto(t.id, t.name, s.id) " +
+    // questionCount — shu mavzudagi savollar soni (topics.html'da "(N ta
+    // test)" ko'rsatish uchun). Korrelyatsiyalangan subso'rov — count()
+    // doim aniq bitta qatorli, fan-out xavfi yo'q.
+    @Query("select new behzoddev.testproject.dto.topic.TopicIdAndNameDto(t.id, t.name, s.id, " +
+            "(select count(q) from Question q where q.topic = t)) " +
             "from Topic t LEFT JOIN t.section s where t.science.id = :id order by t.orderIndex")
     List<TopicIdAndNameDto> findTopicsByScienceId(@Param("id") Long id);
 
-    @Query("select new behzoddev.testproject.dto.topic.TopicIdAndNameDto(t.id, t.name, s.id) " +
+    @Query("select new behzoddev.testproject.dto.topic.TopicIdAndNameDto(t.id, t.name, s.id, " +
+            "(select count(q) from Question q where q.topic = t)) " +
             "from Topic t LEFT JOIN t.section s where t.science.id = :scienceId and t.id = :topicId")
     TopicIdAndNameDto findTopicByIds(@Param("scienceId") Long scienceId, @Param("topicId") Long topicId);
 

@@ -716,6 +716,33 @@ body {
     margin-bottom: -4px;
 }
 
+/* Bo'lim tanlash select'i + uning yonidagi "🗑️" (faqat bo'sh — hech
+   qanday mavzuga biriktirilmagan — Bo'lim tanlanganda ko'rinadi,
+   onChapterSelectChange). */
+.chapter-select-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chapter-select-row select {
+    flex: 1;
+}
+
+.chapter-select-delete-btn {
+    flex-shrink: 0;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.chapter-select-delete-btn:hover {
+    background: #fee2e2;
+}
+
 /* ===== Kurs sahifasi (detail) ===== */
 
 .course-description {

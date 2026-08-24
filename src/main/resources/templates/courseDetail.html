@@ -199,7 +199,14 @@
                 <div class="field-hint">Masalan: Kimyo</div>
 
                 <label class="field-label" for="newSectionChapterSelect">Bo'lim (ixtiyoriy)</label>
-                <select id="newSectionChapterSelect" onchange="onChapterSelectChange('new')"></select>
+                <div class="chapter-select-row">
+                    <select id="newSectionChapterSelect" onchange="onChapterSelectChange('new')"></select>
+                    <!-- Faqat tanlangan Bo'lim BO'SH (hech qanday mavzuga
+                         biriktirilmagan) bo'lsa ko'rinadi (onChapterSelectChange). -->
+                    <button type="button" id="newSectionChapterDeleteBtn" class="chapter-select-delete-btn"
+                            style="display:none;" onclick="deleteSelectedChapter('new')"
+                            title="Bu bo'sh bo'limni o'chirish">🗑️</button>
+                </div>
                 <input type="text" id="newSectionChapterNewInput" style="display:none;"
                        placeholder="📂 Yangi bo'lim nomi (masalan: 1-BOB)" maxlength="255">
 
@@ -317,7 +324,12 @@
                 <div class="field-hint">Masalan: Kimyo</div>
 
                 <label class="field-label" for="editSectionChapterSelect">Bo'lim (ixtiyoriy)</label>
-                <select id="editSectionChapterSelect" onchange="onChapterSelectChange('edit')"></select>
+                <div class="chapter-select-row">
+                    <select id="editSectionChapterSelect" onchange="onChapterSelectChange('edit')"></select>
+                    <button type="button" id="editSectionChapterDeleteBtn" class="chapter-select-delete-btn"
+                            style="display:none;" onclick="deleteSelectedChapter('edit')"
+                            title="Bu bo'sh bo'limni o'chirish">🗑️</button>
+                </div>
                 <input type="text" id="editSectionChapterNewInput" style="display:none;"
                        placeholder="📂 Yangi bo'lim nomi (masalan: 1-BOB)" maxlength="255">
 

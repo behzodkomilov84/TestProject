@@ -584,6 +584,38 @@ public class CourseService {
     // JUMLADAN "Bo'limsiz mavzular"ga o'tkazilgan mavzular ham (ular
     // TEST BOSHQARUVIDA ham Bo'limsiz qilinadi, resolveLinkedTopic bilan
     // bir xil qoida).
+    // Kursning BARCHA Bo'limlari (hozircha bo'sh — hech qanday mavzuga
+    // biriktirilmaganlari ham) — courseDetail.js'dagi Bo'lim tanlash
+    // select'ini to'liq to'ldirish uchun (shu jumladan bo'sh bo'limlarni
+    // o'chirish imkoniyati bilan birga ko'rsatish).
+    @Transactional(readOnly = true)
+    public List<CourseChapterDto> getChapters(Long courseId, User currentUser) {
+        Course course = getCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
+        return courseChapterRepository.findByCourseIdWithSectionCount(courseId);
+    }
+
+    // Faqat BO'SH (hech qanday mavzuga biriktirilmagan) Bo'limni
+    // o'chirishga ruxsat beradi — "🗑️" tugmasi (courseDetail.js, Bo'lim
+    // tanlash select'i yonida). Foydali mavzular bilan band bo'lgan
+    // Bo'limni tasodifan o'chirib, ularni "yetim" qoldirmaslik uchun.
+    @Transactional
+    public void deleteChapter(Long courseId, Long chapterId, User currentUser) {
+        Course course = getCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
+
+        CourseChapter chapter = courseChapterRepository.findById(chapterId)
+                .filter(c -> c.getCourse().getId().equals(courseId))
+                .orElseThrow(() -> new NoSuchElementException("Bo'lim topilmadi"));
+
+        if (courseSectionRepository.existsByChapter_Id(chapterId)) {
+            throw new IllegalArgumentException(
+                    "❌ Bu bo'limda mavzular bor — avval ularni boshqa bo'limga o'tkazing yoki Bo'limsiz qiling.");
+        }
+
+        courseChapterRepository.delete(chapter);
+    }
+
     @Transactional
     public int syncChapterTopicSections(Long courseId, User currentUser) {
         Course course = getCourseOrThrow(courseId);

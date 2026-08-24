@@ -46,6 +46,10 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     // ikkala tomonda (kurs VA test boshqaruvi) sinxron qolishi uchun.
     List<CourseSection> findByChapter_IdAndLinkedTopicIsNotNull(Long chapterId);
 
+    // Bo'sh (hech qanday mavzuga biriktirilmagan) Bo'limni o'chirish
+    // xavfsizligini tekshirish uchun (CourseService.deleteChapter).
+    boolean existsByChapter_Id(Long chapterId);
+
     // Shu FANDAGI qaysi TEST BOSHQARUVI Bo'limlari (TopicSection) biror
     // kursga bog'langanini BULK topish uchun (TopicSectionService.
     // getSectionsByScienceId — "🔗 Kurs: ..." belgisi).

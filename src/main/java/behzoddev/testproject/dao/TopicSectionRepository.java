@@ -11,7 +11,11 @@ import java.util.Optional;
 
 public interface TopicSectionRepository extends JpaRepository<TopicSection, Long> {
 
-    @Query("select new behzoddev.testproject.dto.section.TopicSectionIdAndNameDto(s.id, s.name, s.orderIndex) " +
+    // topicCount — shu Bo'limdagi mavzular soni (topic-sections.html'da
+    // "(N ta mavzu)" ko'rsatish uchun). Korrelyatsiyalangan subso'rov —
+    // count() doim aniq bitta qatorli, fan-out xavfi yo'q.
+    @Query("select new behzoddev.testproject.dto.section.TopicSectionIdAndNameDto(s.id, s.name, s.orderIndex, " +
+            "(select count(t) from Topic t where t.section = s)) " +
             "from TopicSection s where s.science.id = :scienceId order by s.orderIndex")
     List<TopicSectionIdAndNameDto> findByScienceIdOrderByOrderIndex(@Param("scienceId") Long scienceId);
 
