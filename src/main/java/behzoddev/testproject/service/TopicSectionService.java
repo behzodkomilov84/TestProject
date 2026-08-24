@@ -1,10 +1,13 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.CourseSectionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
+import behzoddev.testproject.dto.section.TopicSectionCourseTitleDto;
 import behzoddev.testproject.dto.section.TopicSectionIdAndNameDto;
 import behzoddev.testproject.dto.section.TopicSectionNameDto;
+import behzoddev.testproject.entity.CourseSection;
 import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.entity.TopicSection;
 import behzoddev.testproject.mapper.TopicSectionMapper;
@@ -16,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 // "Bo'lim" (TopicSection) CRUD — Fan ichida mavzularni guruhlash uchun.
 // TopicService/ScienceService bilan bir xil andoza: oddiy CRUD + tartib
@@ -28,12 +32,29 @@ public class TopicSectionService {
     private final TopicSectionRepository topicSectionRepository;
     private final TopicRepository topicRepository;
     private final ScienceRepository scienceRepository;
+    private final CourseSectionRepository courseSectionRepository;
     private final TopicSectionMapper topicSectionMapper;
     private final Validation validation;
 
     @Transactional(readOnly = true)
     public List<TopicSectionIdAndNameDto> getSectionsByScienceId(Long scienceId) {
-        return topicSectionRepository.findByScienceIdOrderByOrderIndex(scienceId);
+        List<TopicSectionIdAndNameDto> sections = topicSectionRepository.findByScienceIdOrderByOrderIndex(scienceId);
+
+        // Qaysi bo'limlar biror kursga bog'langanini BULK olib, "🔗 Kurs:
+        // ..." belgisi uchun nomni qo'shib qo'yamiz (topic-sections
+        // sahifasi). Shu maydon bo'limni shu yerdan tahrirlash mumkin/
+        // mumkin emasligini ham bildiradi (frontend edit()'da tekshiradi).
+        Map<Long, String> courseTitleBySectionId = courseSectionRepository.findLinkedCourseTitlesBySectionScienceId(scienceId)
+                .stream()
+                .collect(Collectors.toMap(TopicSectionCourseTitleDto::sectionId, TopicSectionCourseTitleDto::courseTitle, (a, b) -> a));
+
+        if (courseTitleBySectionId.isEmpty()) {
+            return sections;
+        }
+
+        return sections.stream()
+                .map(s -> new TopicSectionIdAndNameDto(s.id(), s.name(), s.orderIndex(), courseTitleBySectionId.get(s.id())))
+                .toList();
     }
 
     @Transactional
@@ -62,6 +83,21 @@ public class TopicSectionService {
 
         TopicSection section = topicSectionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("❌Bo'lim topilmadi."));
+
+        // Kursga bog'langan bo'lim (ya'ni ichida kursga bog'langan mavzu
+        // bor) shu yerdan (TEST BOSHQARUVI) nomini o'zgartirib bo'lmaydi —
+        // uning nomi kurs Bo'limi (CourseChapter) bilan BIR TOMONLAMA
+        // sinxronlangan (CourseService.renameChapter ->
+        // syncTopicSectionNamesForChapter: kurs -> test boshqaruvi, aksi
+        // emas). Shu yerdan qo'lda o'zgartirilsa, keyingi kurs tomonidagi
+        // rename'da bu o'zgarish ustidan yozilib, "yo'qolib qolar" edi —
+        // shuning uchun ataylab bloklangan, aniq xabar bilan kursga
+        // yo'naltiriladi.
+        courseSectionRepository.findFirstByLinkedTopic_Section_Id(id).ifPresent(cs -> {
+            throw new IllegalArgumentException("❌ Bu bo'lim \"" + cs.getCourse().getTitle() +
+                    "\" kursiga bog'langan. Uni faqat shu kurs ichidan (kurs sahifasidagi Bo'lim ✏️ tugmasi orqali) tahrirlashingiz mumkin.");
+        });
+
         section.setName(name.trim());
         topicSectionRepository.save(section);
     }

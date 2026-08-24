@@ -1,5 +1,6 @@
 package behzoddev.testproject.dao;
 
+import behzoddev.testproject.dto.section.TopicSectionCourseTitleDto;
 import behzoddev.testproject.dto.topic.TopicCourseTitleDto;
 import behzoddev.testproject.entity.CourseSection;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -44,4 +45,18 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     // shu YANGI nomga ko'chiriladi — bitta joyda o'zgartirilgan Bo'lim nomi
     // ikkala tomonda (kurs VA test boshqaruvi) sinxron qolishi uchun.
     List<CourseSection> findByChapter_IdAndLinkedTopicIsNotNull(Long chapterId);
+
+    // Shu FANDAGI qaysi TEST BOSHQARUVI Bo'limlari (TopicSection) biror
+    // kursga bog'langanini BULK topish uchun (TopicSectionService.
+    // getSectionsByScienceId — "🔗 Kurs: ..." belgisi).
+    @Query("select new behzoddev.testproject.dto.section.TopicSectionCourseTitleDto(cs.linkedTopic.section.id, cs.course.title) " +
+            "from CourseSection cs where cs.linkedTopic.section is not null and cs.linkedTopic.section.science.id = :scienceId")
+    List<TopicSectionCourseTitleDto> findLinkedCourseTitlesBySectionScienceId(@Param("scienceId") Long scienceId);
+
+    // Bitta aniq Bo'lim (TopicSection) biror kursga bog'langanmi — bog'lansa
+    // qaysi kursgaligini bilish uchun (TopicSectionService.updateSectionName
+    // — shu bo'limni TEST BOSHQARUVIDAN tahrirlashni bloklaydi, chunki nomi
+    // kurs Bo'limi bilan bir tomonlama sinxronlangan — faqat kurs ichidan
+    // o'zgartirilishi kerak).
+    Optional<CourseSection> findFirstByLinkedTopic_Section_Id(Long sectionId);
 }

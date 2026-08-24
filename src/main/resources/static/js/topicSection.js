@@ -61,6 +61,11 @@ async function reloadFromDb(mapping) {
         id: s.id,
         name: s.name,
         original: s.name,
+        // Shu bo'lim biror KURSga bog'langan bo'lsa — o'sha kursning nomi
+        // (render()'da "🔗 Kurs: ..." belgisi VA edit()'da tahrirlashni
+        // bloklash uchun — bunday bo'limning nomi kurs Bo'limi bilan
+        // sinxronlangan, faqat kurs ichidan o'zgartiriladi).
+        linkedCourseTitle: s.linkedCourseTitle || null,
         mode: "VIEW"
     }));
 }
@@ -84,6 +89,13 @@ function render() {
                                     ${isLink ? 'link' : ''}
                                     ${hasDup ? 'duplicate' : ''}
                                     `;
+
+        // Kursga bog'langan bo'lim — kichik belgi (topic.js'dagi "🔗 Kurs"
+        // belgisi bilan bir xil uslub/rang).
+        const courseBadge = s.linkedCourseTitle
+            ? `<span class="topic-course-badge" title="Bu bo'lim kursga bog'langan, faqat kurs ichidan tahrirlanadi">🔗 Kurs: ${escapeHtml(s.linkedCourseTitle)}</span> `
+            : '';
+
         row.innerHTML = `
     ${
             isView
@@ -99,7 +111,7 @@ function render() {
                 id="input-${i}"
                 class="topic-name ${inputClass}"
                 tabindex="-1"
-            >${escapeHtml(s.name)}</div>
+            >${courseBadge}${escapeHtml(s.name)}</div>
         </div>
             `
                 : `
@@ -228,21 +240,28 @@ function removeFromUi(i) {
     }
 }
 
+// Tugmalar guruhi ".row-actions" ichiga o'raladi (science.css) — shu
+// tufayli bo'lim nomi qancha uzun bo'lib, bir necha qatorga o'ralib
+// ketmasin, tugmalar HECH QACHON torayib/siqilib qolmaydi (flex-shrink:0).
 function buttons(s, i) {
     if (s.mode === "VIEW") {
         const upDisabled = i === 0 ? "disabled" : "";
         const downDisabled = i === itemBlock.length - 1 ? "disabled" : "";
         return `
-            <button onclick="moveUp(${i})" ${upDisabled} title="Yuqoriga">⬆</button>
-            <button onclick="moveDown(${i})" ${downDisabled} title="Pastga">⬇</button>
-            <button onclick="edit(${i})">✏️ Edit</button>
+            <div class="row-actions">
+                <button onclick="moveUp(${i})" ${upDisabled} title="Yuqoriga">⬆</button>
+                <button onclick="moveDown(${i})" ${downDisabled} title="Pastga">⬇</button>
+                <button onclick="edit(${i})">✏️ Edit</button>
+            </div>
         `;
     }
     return `
-               <button onclick="saveOnClientSide(${i})">💾 Save</button>
-               <button onclick="cancel(${i})">↩ Cancel</button>
-               <button onclick="removeFromUi(${i})">🗑️ Delete</button>
-           `;
+        <div class="row-actions">
+            <button onclick="saveOnClientSide(${i})">💾 Save</button>
+            <button onclick="cancel(${i})">↩ Cancel</button>
+            <button onclick="removeFromUi(${i})">🗑️ Delete</button>
+        </div>
+    `;
 }
 
 // "✏️ Edit" tugmasi shu funksiyani chaqiradi — topic.js'da bor, bu yerga
@@ -250,6 +269,18 @@ function buttons(s, i) {
 // sabab "✏️ Edit" bosilganda hech narsa sodir bo'lmasdi (browser konsolida
 // "edit is not defined" xatosi bilan).
 function edit(i) {
+    // Kursga bog'langan bo'lim — nomi kurs Bo'limi bilan (bir tomonlama)
+    // sinxronlangan (CourseService.renameChapter), shu sabab bu yerdan
+    // tahrirlash BLOKLANADI — aks holda qo'lda kiritilgan o'zgarish
+    // keyingi kurs tomonidagi rename'da ustidan yozilib, "yo'qolib
+    // qolar" edi. Backend ham xuddi shu tekshiruvni qaytaradi
+    // (TopicSectionService.updateSectionName) — bu yerdagi tekshiruv
+    // foydalanuvchiga darhol, saqlashga urinmasdan tushuntirish beradi.
+    if (itemBlock[i].linkedCourseTitle) {
+        alert(`❌ Bu bo'lim "${itemBlock[i].linkedCourseTitle}" kursiga bog'langan.\n\nUni faqat shu kurs ichidan (kurs sahifasidagi Bo'lim ✏️ tugmasi orqali) tahrirlashingiz mumkin.`);
+        return;
+    }
+
     if (itemBlock.some(s => s.mode === "EDIT")) {
         showToast('warning', 'Avval tahrirlashni yakuniga yetkazing!');
         focusIndex = itemBlock.findIndex(s => s.mode !== "VIEW");
@@ -421,9 +452,12 @@ async function saveToDb() {
         });
 
         if (!response.ok) {
-            const text = await response.text();
-            console.error("SERVER RESPONSE:", text);
-            throw new Error("Server error (not JSON)");
+            // Backend {"error": "..."} shaklida qaytaradi (masalan
+            // "Bu bo'lim ... kursiga bog'langan" xabari) — avval bu yerda
+            // matn o'qib tashlanardi-yu, aniq sabab o'rniga umumiy "Server
+            // error (not JSON)" ko'rsatilardi.
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.error || "Saqlashda xatolik");
         }
 
         await response.json();

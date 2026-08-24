@@ -20,9 +20,11 @@ h1 {
     text-align: center;
 }
 
-/* Основной контейнер */
+/* Основной контейнер — dinamik: keng ekranlarda kengroq (uzun
+   fan/mavzu/bo'lim nomlari qatorni "yorib chiqmasligi" uchun), tor
+   ekranlarda ekran kengligiga moslashadi. */
 .wrapper {
-    width: min(650px, 94vw);
+    width: min(900px, 94vw);
     margin: auto;
     max-height: 75vh;
 }
@@ -149,6 +151,22 @@ h1 {
     .row-view {
         cursor: pointer;
         flex: 1 1 auto;
+        /* Flex konteynerlarda default min-width — "auto" (ya'ni ichidagi
+           matn kesilmasdan sig'adigan eng kichik kenglik) — shu sabab uzun
+           nom butun QATORNI (va shu bilan birga tugmalarni) torayishga
+           majburlab, "chuqur" ko'rinishni buzardi. min-width:0 — nom
+           qismini haqiqiy flexible qiladi (o'zi to'g'ri o'raladi/wrap),
+           tugmalar guruhi (.row-actions) esa flex-shrink:0 tufayli hech
+           qachon torayib qolmaydi. */
+        min-width: 0;
+    }
+
+    /* Amallar (⬆️⬇️✏️🗑️ va h.k.) guruhi — nom qatori (.row-view) qancha
+       uzun/ko'p qatorli bo'lmasin, ENI HECH QACHON o'zgarmaydi. */
+    .row-actions {
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
     }
 
     /* Кнопки — MUHIM: .wrapper ichida cheklangan, aks holda navbar fragment

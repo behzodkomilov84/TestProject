@@ -335,14 +335,19 @@ function removeFromUi(i) {
     }
 } //DONE
 
+// Tugmalar guruhi ".row-actions" ichiga o'raladi (science.css) — mavzu
+// nomi qancha uzun bo'lib, bir necha qatorga o'ralib ketmasin, tugmalar
+// HECH QACHON torayib/siqilib qolmaydi (flex-shrink:0).
 function buttons(s, i) {
     if (s.mode === "VIEW") {
-        return `<button onclick="edit(${i})">✏️ Edit</button>`;
+        return `<div class="row-actions"><button onclick="edit(${i})">✏️ Edit</button></div>`;
     }
     return `
-               <button onclick="saveOnClientSide(${i})">💾 Save</button>
-               <button onclick="cancel(${i})">↩ Cancel</button>
-               <button onclick="removeFromUi(${i})">🗑️ Delete</button> 
+        <div class="row-actions">
+            <button onclick="saveOnClientSide(${i})">💾 Save</button>
+            <button onclick="cancel(${i})">↩ Cancel</button>
+            <button onclick="removeFromUi(${i})">🗑️ Delete</button>
+        </div>
            `;
 } //DONE
 
@@ -529,9 +534,11 @@ async function saveToDb() {
             });
 
         if (!response.ok) {
-            const text = await response.text();   // 👈 читаем как ТЕКСТ
-            console.error("SERVER RESPONSE:", text);
-            throw new Error("Server error (not JSON)");
+            // Backend {"error": "..."} shaklida qaytaradi — avval bu yerda
+            // matn o'qib tashlanardi-yu, aniq sabab o'rniga umumiy "Server
+            // error (not JSON)" ko'rsatilardi.
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.error || "Saqlashda xatolik");
         }
 
         const data = await response.json();   // теперь это безопасно
