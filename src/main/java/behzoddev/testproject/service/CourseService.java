@@ -391,12 +391,16 @@ public class CourseService {
     //
     // "chapter" — shu kurs mavzusi qaysi Bo'limga (CourseChapter) tegishli
     // bo'lsa, TEST BOSHQARUVI tomonida ham xuddi shu nomli Bo'lim (TopicSection)
-    // avtomatik topiladi/yaratiladi va YANGI yaratilayotgan mavzuga
-    // biriktiriladi — ikki tomondagi "Bo'lim" tuzilmasi mos kelishi uchun
-    // (foydalanuvchi so'rovi bo'yicha). MUHIM: faqat mavzu YANGI
-    // yaratilayotganda qo'llanadi — allaqachon mavjud (ehtimol admin
-    // tomonidan test-boshqaruvida qo'lda tashkil qilingan) mavzuning
-    // bo'limi bu yerdan hech qachon o'zgartirilmaydi/bosib yozilmaydi.
+    // avtomatik topiladi/yaratiladi VA mavzuga biriktiriladi — bu YANGI
+    // yaratilayotgan mavzu uchun ham, ALLAQACHON mavjud (kurs bilan
+    // avvaldan bog'langan) mavzu uchun ham qo'llanadi: kursda Bo'lim
+    // o'zgartirilsa (masalan "1-BOB" dan "2-BOB"ga), TEST BOSHQARUVIdagi
+    // mavzuning bo'limi ham shu bilan birga o'zgaradi (foydalanuvchi
+    // so'rovi bo'yicha — kurs tomonidagi Bo'lim har doim "haqiqiy manba"
+    // hisoblanadi). Faqat "chapter == null" (kurs mavzusi hozir
+    // "Bo'limsiz") holatida mavjud mavzuning bo'limiga TEGILMAYDI — aks
+    // holda test-boshqaruvida qo'lda tashkil qilingan bo'lim tasodifan
+    // "Bo'limsiz"ga qaytarib yuborilardi.
     private Topic resolveLinkedTopic(String scienceName, String topicName, CourseChapter chapter) {
         if (scienceName == null || scienceName.isBlank() || topicName == null || topicName.isBlank()) {
             return null;
@@ -410,7 +414,12 @@ public class CourseService {
 
         Optional<Topic> existing = topicRepository.findByScience_IdAndName(science.getId(), trimmedTopic);
         if (existing.isPresent()) {
-            return existing.get();
+            Topic topic = existing.get();
+            if (chapter != null) {
+                topic.setSection(resolveTopicSection(science, chapter.getName()));
+                topicRepository.save(topic);
+            }
+            return topic;
         }
 
         Topic topic = Topic.builder().name(trimmedTopic).science(science).build();
