@@ -19,7 +19,10 @@ const testState = {
     answers: new Map(),
     startedAt: null,
     finishedAt: null,
-    finished: false
+    finished: false,
+    // Barcha savollarga javob berilgani haqida eslatma faqat BIR MARTA
+    // chiqishi uchun (har testda qayta tiklanadi — startTest/repeatWrongOnly).
+    allAnsweredNotified: false
 };
 
 //==============================================================
@@ -244,6 +247,7 @@ function startTest() {
     testState.startedAt = Date.now();
     testState.currentIndex = 0;
     testState.answers.clear();
+    testState.allAnsweredNotified = false;
 
     // ✅ ПОКАЗЫВАЕМ progress + timer
     document.getElementById("progress").style.width = "0%";
@@ -482,6 +486,7 @@ function repeatWrongOnly() {
     testState.currentIndex = 0;
     testState.startedAt = Date.now();
     testState.finishedAt = null;
+    testState.allAnsweredNotified = false;
 
     const container = document.getElementById("questions");
     container.innerHTML = "";
@@ -611,6 +616,17 @@ function updateProgress() {
     const bar = document.getElementById("progress");
     if (bar) {
         bar.style.width = percent + "%";
+    }
+
+    // Barcha savollarga javob berilgach — foydalanuvchi buni sezmasligi
+    // mumkin edi (masalan Exam/Hard rejimida hali vaqt tugamagan bo'lsa,
+    // yoki oxirgi savoldan "Keyingi" bosilsa ro'yxat boshiga qaytib
+    // ketaveradi) va aslida test tugaganini bilmasdan qaytadan yecha
+    // boshlashi mumkin edi. Shu sabab BIR MARTA (har testda) aniq eslatma.
+    if (answered === total && !testState.allAnsweredNotified) {
+        testState.allAnsweredNotified = true;
+        const timeNote = testState.mode === "practice" ? "" : " Vaqtingiz hali bor —";
+        alert(`✅ Siz barcha savollarga javob berdingiz!\n\n${timeNote} xohlasangiz javoblaringizni qayta ko'rib chiqishingiz mumkin ("AVVALGI"/"KEYINGI" tugmalari bilan). Tayyor bo'lsangiz, "Test Natijasi" tugmasini bosing.`);
     }
 }
 
