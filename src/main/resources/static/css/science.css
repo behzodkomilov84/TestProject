@@ -169,6 +169,21 @@ h1 {
         flex-shrink: 0;
     }
 
+    /* Mavzuni tahrirlashda "Bo'lim" tanlash dropdown'i (topic.js) — nativ
+       <select> BROWSER TOMONIDAN o'zining eng uzun <option> matniga qarab
+       kengligini avtomatik belgilaydi (masalan uzun Bo'lim nomi bo'lsa,
+       butun qatorni "yorib chiqib", Edit/Save tugmalarini o'ngga
+       surib-qirqib qo'yardi). Shu sabab kenglik ANIQ cheklangan — nomi
+       sig'masa, qisqartirilib (…) ko'rsatiladi, to'liq nomi esa hover
+       qilinganda odatiy brauzer tooltip'i orqali ko'rinadi. */
+    .topic-section-select {
+        max-width: 220px;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
     /* Кнопки — MUHIM: .wrapper ichida cheklangan, aks holda navbar fragment
        ichidagi tugmalarga (burger, dropdown, telegram) ham tarqalib,
        navbar ko'rinishini buzib qo'yardi. */

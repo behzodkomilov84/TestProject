@@ -196,7 +196,7 @@ function render() {
                 onkeydown="onClickKey(event, ${i})"
                 id="input-${i}"
             >
-            <select onchange="itemBlock[${i}].sectionId=this.value?Number(this.value):null" title="Bo'lim">
+            <select class="topic-section-select" onchange="itemBlock[${i}].sectionId=this.value?Number(this.value):null" title="Bo'lim">
                 ${sectionOptionsHtml(s.sectionId)}
             </select>
             `
