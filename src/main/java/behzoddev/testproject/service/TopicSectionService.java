@@ -141,6 +141,17 @@ public class TopicSectionService {
         Topic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new IllegalArgumentException("❌Mavzu topilmadi."));
 
+        // Kursga bog'langan mavzu (ya'ni unga ishora qiluvchi CourseSection
+        // bor) — Bo'limini ham shu yerdan (TEST BOSHQARUVI) o'zgartirib
+        // bo'lmaydi, xuddi nomini o'zgartirib bo'lmagani kabi
+        // (TopicService.updateTopic bilan bir xil qoida, foydalanuvchi
+        // so'rovi bo'yicha: bunday mavzu FAQAT kurs ichidan tahrirlanadi —
+        // qisman ham emas).
+        courseSectionRepository.findByLinkedTopic_Id(topicId).ifPresent(cs -> {
+            throw new IllegalArgumentException("❌ Bu mavzu \"" + cs.getCourse().getTitle() +
+                    "\" kursiga bog'langan. Uni faqat shu kurs ichidan (kurs sahifasidagi mavzu ✏️ tugmasi orqali) tahrirlashingiz mumkin.");
+        });
+
         if (sectionId == null) {
             topic.setSection(null);
         } else {

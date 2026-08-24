@@ -192,7 +192,6 @@ function render() {
                 class="name-edit-area ${inputClass}"
                 rows="2"
                 ${placeholder}
-                ${s.linkedCourseTitle ? `readonly title="🔗 &quot;${escapeHtml(s.linkedCourseTitle)}&quot; kursiga bog'langan — nomini faqat shu kurs ichidan o'zgartirish mumkin (Bo'limini esa shu yerdan o'zgartirishingiz mumkin)."` : ''}
                 oninput="itemBlock[${i}].name=this.value"
                 onkeydown="onClickKey(event, ${i})"
                 id="input-${i}"
@@ -359,14 +358,18 @@ function buttons(s, i) {
 } //DONE
 
 function edit(i) {
-    // DIQQAT: kursga bog'langan mavzuda nomini o'zgartirish render()'dagi
-    // <textarea readonly> orqali cheklanadi (va backend TopicService.
-    // updateTopic'da ham qo'shimcha himoya sifatida qaytariladi) — lekin
-    // Bo'limini (sectionId) o'zgartirish shu yerdan ATAYLAB ochiq
-    // qoldirilgan (foydalanuvchi so'rovi bo'yicha: "bo'limi o'zgartirilsa,
-    // bu bo'limdan o'chib, o'ziga tegishli bo'limga o'tib qolsin" —
-    // mavzuni kurs bilan bog'liq bo'lsa ham, TEST BOSHQARUVIDA qaysi
-    // Bo'limga guruhlanishini qo'lda boshqarish imkoniyati saqlanadi).
+    // Kursga bog'langan mavzu — nomi HAM, Bo'limi HAM faqat kurs ichidan
+    // o'zgartiriladi (foydalanuvchi so'rovi bo'yicha: "mavzu kursni ichida
+    // o'zgartiriladi" — bu yerdan umuman tahrirlash imkoni yo'q, na
+    // qisman). Backend ham xuddi shu tekshiruvni qaytaradi
+    // (TopicService.updateTopic, TopicSectionService.assignTopicToSection)
+    // — bu yerdagi tekshiruv foydalanuvchiga darhol, saqlashga
+    // urinmasdan tushuntirish beradi.
+    if (itemBlock[i].linkedCourseTitle) {
+        alert(`❌ Bu mavzu "${itemBlock[i].linkedCourseTitle}" kursiga bog'langan.\n\nUni (nomini ham, Bo'limini ham) faqat shu kurs ichidan (kurs sahifasidagi mavzu ✏️ tugmasi orqali) tahrirlashingiz mumkin.`);
+        return;
+    }
+
     if (itemBlock.some(s => s.mode === "EDIT")) {
         showToast('warning', 'Avval tahrirlashni yakuniga yetkazing!');
         focusIndex = itemBlock.findIndex(s => s.mode !== "VIEW");
