@@ -1420,6 +1420,29 @@ async function renameChapter(chapterId, newName) {
     }
 }
 
+// "🔄 Bo'lim-Mavzu bog'lanishini sinxronlash" — Bo'lim-Mavzu bog'lanishi
+// odatda avtomatik sinxron turadi (mavzu saqlanganda), lekin vaqt o'tishi
+// bilan farq (drift) paydo bo'lib qolishi mumkin — shu tugma BARCHA kurs
+// mavzularini joriy Bo'lim holatiga qarab qayta to'g'rilaydi (kurs —
+// "haqiqiy manba", TEST BOSHQARUVI shunga moslashtiriladi).
+async function syncChapterTopics() {
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/chapters/sync-topics`, { method: "POST" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || "Sinxronlashda xatolik");
+            return;
+        }
+        alert(data.updated > 0
+            ? `✅ ${data.updated} ta mavzuning Bo'limi TEST BOSHQARUVIDA to'g'rilandi.`
+            : "✅ Hammasi allaqachon sinxron edi — o'zgarish kerak bo'lmadi.");
+        loadCourse();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
 function escapeHtml(text) {
     const div = document.createElement("div");
     div.textContent = text;

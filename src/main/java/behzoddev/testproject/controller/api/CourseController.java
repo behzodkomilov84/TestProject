@@ -76,4 +76,13 @@ public class CourseController {
                                @AuthenticationPrincipal User user) {
         courseService.renameChapter(courseId, chapterId, body.get("name"), user);
     }
+
+    // Kurs Bo'limlari bilan TEST BOSHQARUVIdagi Bo'lim (TopicSection)
+    // orasidagi bog'lanishni qo'lda majburiy sinxronlashtirish — "🔄
+    // Bo'lim-Mavzu bog'lanishini sinxronlash" tugmasi (courseDetail.js).
+    @PostMapping("/{courseId}/chapters/sync-topics")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public Map<String, Integer> syncChapterTopics(@PathVariable Long courseId, @AuthenticationPrincipal User user) {
+        return Map.of("updated", courseService.syncChapterTopicSections(courseId, user));
+    }
 }

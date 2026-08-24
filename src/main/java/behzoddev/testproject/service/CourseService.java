@@ -574,6 +574,44 @@ public class CourseService {
         }
     }
 
+    // Kurs Bo'limlari bilan TEST BOSHQARUVIdagi Bo'lim (TopicSection)
+    // bog'lanishini QO'LDA majburiy sinxronlashtirish — "🔄 Bo'lim-Mavzu
+    // bog'lanishini sinxronlash" tugmasi shu orqali ishlaydi. Odatda bu
+    // avtomatik sodir bo'ladi (har safar kurs mavzusi saqlanganda —
+    // resolveLinkedTopic), lekin vaqt o'tishi bilan ikki tomon orasida
+    // farq paydo bo'lishi mumkin (masalan mavzu shu avtomatik
+    // sinxronlash qo'shilishidan OLDIN bog'langan bo'lsa, yoki bir nechta
+    // Bo'lim bir xil nomli TopicSection'ni "bo'lishib" ishlatgan bo'lsa —
+    // birining nomini o'zgartirish ikkinchisiga ham "sirg'alib" ta'sir
+    // qilishi mumkin). Shu metod HAR BIR kurs mavzusini joriy Bo'lim
+    // nomiga qarab qayta tekshirib, kerak bo'lsa to'g'rilaydi.
+    @Transactional
+    public int syncChapterTopicSections(Long courseId, User currentUser) {
+        Course course = getCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
+
+        List<CourseSection> sections = courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(courseId);
+
+        int updated = 0;
+        for (CourseSection cs : sections) {
+            CourseChapter chapter = cs.getChapter();
+            Topic topic = cs.getLinkedTopic();
+            if (chapter == null || topic == null) {
+                continue;
+            }
+
+            TopicSection correctSection = resolveTopicSection(topic.getScience(), chapter.getName());
+            TopicSection currentSection = topic.getSection();
+            if (currentSection == null || !currentSection.getId().equals(correctSection.getId())) {
+                topic.setSection(correctSection);
+                topicRepository.save(topic);
+                updated++;
+            }
+        }
+
+        return updated;
+    }
+
     private CourseSection buildSectionFromDto(CourseSectionSaveDto dto, Course course, int orderIndex) {
         return CourseSection.builder()
                 .course(course)

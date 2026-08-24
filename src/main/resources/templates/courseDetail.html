@@ -46,6 +46,15 @@
                 <button id="manageSubscriptionsBtn" onclick="location.href='/courses/subscriptions?courseId=' + COURSE_ID">
                     💳 Obunalarni boshqarish
                 </button>
+                <!-- Odatda Bo'lim-Mavzu bog'lanishi avtomatik sinxron
+                     turadi (mavzu saqlanganda), lekin vaqt o'tishi bilan
+                     farq paydo bo'lib qolishi mumkin (masalan bir nechta
+                     Bo'lim bitta TEST BOSHQARUVI Bo'limini bo'lishib
+                     ishlatgan bo'lsa) — shu tugma barcha mavzularni joriy
+                     Bo'lim nomiga qarab qayta to'g'rilaydi. -->
+                <button id="syncChapterTopicsBtn" onclick="syncChapterTopics()" title="Kurs Bo'limlari bilan TEST BOSHQARUVIdagi bog'langan mavzularning Bo'limi orasidagi farqni to'g'rilaydi">
+                    🔄 Bo'lim-Mavzu bog'lanishini sinxronlash
+                </button>
             </div>
 
         <div id="editCourseForm" class="course-form" style="display:none;">
