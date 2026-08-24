@@ -5,6 +5,7 @@ import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
 import behzoddev.testproject.dto.topic.TopicCourseLinkDto;
+import behzoddev.testproject.dto.topic.TopicCourseTitleDto;
 import behzoddev.testproject.dto.topic.TopicIdAndNameDto;
 import behzoddev.testproject.dto.topic.TopicNameDto;
 import behzoddev.testproject.dto.topic.TopicWithQuestionCountDto;
@@ -18,7 +19,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,7 +34,24 @@ public class TopicService {
     private final Validation validation;
 
     public List<TopicIdAndNameDto> getTopicsByScienceId(Long scienceId) {
-        return topicRepository.findTopicsByScienceId(scienceId);
+        List<TopicIdAndNameDto> topics = topicRepository.findTopicsByScienceId(scienceId);
+
+        // Shu fandagi qaysi mavzular kurs bo'limiga bog'langanini BULK
+        // olib, har bir mavzuga mos "🔗 Kurs: ..." belgisi uchun nomni
+        // qo'shib qo'yamiz (topics.html). Bir xil topicId ikki marta
+        // uchrasa (nazariy jihatdan — bir mavzu bir nechta kurs bo'limiga
+        // bog'langan bo'lsa), birinchisi olinadi.
+        Map<Long, String> courseTitleByTopicId = courseSectionRepository.findLinkedCourseTitlesByScienceId(scienceId)
+                .stream()
+                .collect(Collectors.toMap(TopicCourseTitleDto::topicId, TopicCourseTitleDto::courseTitle, (a, b) -> a));
+
+        if (courseTitleByTopicId.isEmpty()) {
+            return topics;
+        }
+
+        return topics.stream()
+                .map(t -> new TopicIdAndNameDto(t.id(), t.name(), t.sectionId(), courseTitleByTopicId.get(t.id())))
+                .toList();
     }
 
     public TopicIdAndNameDto getTopicByIds(Long scienceId, Long topicId) {

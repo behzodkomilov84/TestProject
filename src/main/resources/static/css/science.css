@@ -120,6 +120,21 @@ h1 {
         vertical-align: middle;
     }
 
+    /* Mavzu biror KURS bo'limiga bog'langan bo'lsa — kichik belgi
+       (topic.js render(), rangi .topic-section-badge'dan ataylab farqli,
+       ikkalasi bir vaqtda chiqsa ham chalkashmasin deb). */
+    .topic-course-badge {
+        display: inline-block;
+        font-size: 13px;
+        font-weight: 600;
+        color: #6d28d9;
+        background: #ede9fe;
+        border-radius: 4px;
+        padding: 2px 8px;
+        margin-right: 6px;
+        vertical-align: middle;
+    }
+
     .row-link {
         text-decoration: none;
         display: flex;

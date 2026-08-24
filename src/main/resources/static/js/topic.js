@@ -114,6 +114,12 @@ async function reloadFromDb(mapping) {
         original: s.name,
         sectionId: s.sectionId || null,
         originalSectionId: s.sectionId || null,
+        // Shu mavzu biror KURS bo'limiga bog'langan bo'lsa — o'sha kursning
+        // nomi (render()'da "🔗 Kurs: ..." belgisi uchun). Faqat KO'RISH
+        // maqsadida — bu yerdan tahrirlanmaydi (bog'lanish kurs tahrirlash
+        // sahifasida, CourseSectionSaveDto.scienceName/topicName orqali
+        // boshqariladi).
+        linkedCourseTitle: s.linkedCourseTitle || null,
         mode: "VIEW"
     }));
 
@@ -155,6 +161,14 @@ function render() {
             ? `<span class="topic-section-badge">${escapeHtml(sectionName)}</span> `
             : '';
 
+        // Shu mavzu biror KURS bo'limiga bog'langan bo'lsa — kichik belgi
+        // (topic.js#reloadFromDb linkedCourseTitle'ni to'ldiradi). Admin
+        // shu mavzuni o'chirsa/nomini butunlay o'zgartirsa, kursdagi
+        // bog'lanish "yetim" qolib ketishi mumkinligini eslatib turadi.
+        const courseBadge = s.linkedCourseTitle
+            ? `<span class="topic-course-badge" title="Bu mavzu kursga bog'langan">🔗 Kurs: ${escapeHtml(s.linkedCourseTitle)}</span> `
+            : '';
+
         row.innerHTML = `
     ${
             isView
@@ -170,7 +184,7 @@ function render() {
                 id="input-${i}"
                 class="topic-name ${inputClass}"
                 tabindex="-1"
-            >${sectionBadge}${escapeHtml(s.name)}</div>
+            >${sectionBadge}${courseBadge}${escapeHtml(s.name)}</div>
         </div>
             `
                 : `

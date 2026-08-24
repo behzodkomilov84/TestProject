@@ -7,6 +7,7 @@ import behzoddev.testproject.dao.CourseSectionRepository;
 import behzoddev.testproject.dao.CourseSubscriptionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
+import behzoddev.testproject.dao.TopicSectionRepository;
 import behzoddev.testproject.dto.course.*;
 import behzoddev.testproject.entity.Course;
 import behzoddev.testproject.entity.CourseChapter;
@@ -14,6 +15,7 @@ import behzoddev.testproject.entity.CourseSection;
 import behzoddev.testproject.entity.CourseSectionProgress;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
+import behzoddev.testproject.entity.TopicSection;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.entity.enums.CourseSectionContentFormat;
 import behzoddev.testproject.entity.enums.CourseSectionType;
@@ -29,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 
 /**
  * JavaRush uslubidagi online kurslar — OWNER yaratadi/tahrirlaydi, ADMIN/USER
@@ -47,6 +50,7 @@ public class CourseService {
     private final CourseSectionProgressRepository courseSectionProgressRepository;
     private final ScienceRepository scienceRepository;
     private final TopicRepository topicRepository;
+    private final TopicSectionRepository topicSectionRepository;
 
     /* ================= KATALOG / KO'RISH ================= */
 
@@ -288,8 +292,12 @@ public class CourseService {
                 .orElse(1);
 
         CourseSection section = buildSectionFromDto(dto, course, nextOrder);
-        section.setLinkedTopic(resolveLinkedTopic(dto.scienceName(), dto.topicName()));
-        section.setChapter(resolveChapter(course, dto.chapterId(), dto.newChapterName()));
+        // Avval Bo'lim (chapter) hal qilinadi — keyin mavzu bog'lanishida
+        // (resolveLinkedTopic) shu Bo'lim nomidan TEST BOSHQARUVI tomonida
+        // ham mos TopicSection avtomatik yaratish/topish uchun foydalaniladi.
+        CourseChapter chapter = resolveChapter(course, dto.chapterId(), dto.newChapterName());
+        section.setChapter(chapter);
+        section.setLinkedTopic(resolveLinkedTopic(dto.scienceName(), dto.topicName(), chapter));
         courseSectionRepository.save(section);
 
         return CourseSectionSummaryDto.builder()
@@ -321,11 +329,15 @@ public class CourseService {
         section.setVideoSourceType(dto.videoSourceType() != null ? VideoSourceType.valueOf(dto.videoSourceType()) : null);
         section.setVideoUrl(dto.videoUrl());
         section.setVideoDurationSeconds(dto.videoDurationSeconds());
-        section.setLinkedTopic(resolveLinkedTopic(dto.scienceName(), dto.topicName()));
         // Bo'lim tanlansa/o'zgartirilsa — mavzu darhol o'sha bo'limga
         // "o'tib qoladi" (foydalanuvchi so'rovi bo'yicha); bo'sh
-        // qoldirilsa — "Bo'limsiz"ga qaytadi (unlink).
-        section.setChapter(resolveChapter(section.getCourse(), dto.chapterId(), dto.newChapterName()));
+        // qoldirilsa — "Bo'limsiz"ga qaytadi (unlink). Avval hal qilinadi —
+        // keyin mavzu bog'lanishida (resolveLinkedTopic) shu Bo'lim
+        // nomidan TEST BOSHQARUVI tomonida ham mos TopicSection
+        // yaratish/topish uchun foydalaniladi.
+        CourseChapter chapter = resolveChapter(section.getCourse(), dto.chapterId(), dto.newChapterName());
+        section.setChapter(chapter);
+        section.setLinkedTopic(resolveLinkedTopic(dto.scienceName(), dto.topicName(), chapter));
 
         courseSectionRepository.save(section);
     }
@@ -374,7 +386,16 @@ public class CourseService {
     // yaratiladi (alohida TEST BOSHQARUVI sahifasiga o'tib, mos ID qidirib
     // yurishga hojat qolmaydi). Ikkalasi ham bo'sh bo'lsa — bog'lanish
     // olib tashlanadi (unlink).
-    private Topic resolveLinkedTopic(String scienceName, String topicName) {
+    //
+    // "chapter" — shu kurs mavzusi qaysi Bo'limga (CourseChapter) tegishli
+    // bo'lsa, TEST BOSHQARUVI tomonida ham xuddi shu nomli Bo'lim (TopicSection)
+    // avtomatik topiladi/yaratiladi va YANGI yaratilayotgan mavzuga
+    // biriktiriladi — ikki tomondagi "Bo'lim" tuzilmasi mos kelishi uchun
+    // (foydalanuvchi so'rovi bo'yicha). MUHIM: faqat mavzu YANGI
+    // yaratilayotganda qo'llanadi — allaqachon mavjud (ehtimol admin
+    // tomonidan test-boshqaruvida qo'lda tashkil qilingan) mavzuning
+    // bo'limi bu yerdan hech qachon o'zgartirilmaydi/bosib yozilmaydi.
+    private Topic resolveLinkedTopic(String scienceName, String topicName, CourseChapter chapter) {
         if (scienceName == null || scienceName.isBlank() || topicName == null || topicName.isBlank()) {
             return null;
         }
@@ -385,8 +406,32 @@ public class CourseService {
         Science science = scienceRepository.findByName(trimmedScience)
                 .orElseGet(() -> scienceRepository.save(Science.builder().name(trimmedScience).build()));
 
-        return topicRepository.findByScience_IdAndName(science.getId(), trimmedTopic)
-                .orElseGet(() -> topicRepository.save(Topic.builder().name(trimmedTopic).science(science).build()));
+        Optional<Topic> existing = topicRepository.findByScience_IdAndName(science.getId(), trimmedTopic);
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        Topic topic = Topic.builder().name(trimmedTopic).science(science).build();
+        if (chapter != null) {
+            topic.setSection(resolveTopicSection(science, chapter.getName()));
+        }
+        return topicRepository.save(topic);
+    }
+
+    // "chapter.getName()" bilan bir xil nomli TopicSection shu FANDA mavjud
+    // bo'lsa o'shanga, bo'lmasa yangisi (oxiriga qo'shilib) yaratiladi —
+    // TopicSectionService'dagi bilan bir xil find-or-create qoidasi
+    // (nom katta-kichik harfga sezgir emas).
+    private TopicSection resolveTopicSection(Science science, String sectionName) {
+        return topicSectionRepository.findByScience_IdAndNameIgnoreCase(science.getId(), sectionName)
+                .orElseGet(() -> {
+                    Integer maxOrder = topicSectionRepository.findMaxOrderIndexByScienceId(science.getId());
+                    return topicSectionRepository.save(TopicSection.builder()
+                            .science(science)
+                            .name(sectionName)
+                            .orderIndex(maxOrder != null ? maxOrder + 1 : 1)
+                            .build());
+                });
     }
 
     // "chapterId" berilgan bo'lsa — ANIQ shu (mavjud) bo'lim ishlatiladi

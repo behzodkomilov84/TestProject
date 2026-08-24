@@ -1,7 +1,10 @@
 package behzoddev.testproject.dao;
 
+import behzoddev.testproject.dto.topic.TopicCourseTitleDto;
 import behzoddev.testproject.entity.CourseSection;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,4 +29,11 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     // "🔗 Mavzuga havola qo'shish" tugmasi shu orqali to'g'ri course/section
     // ID'larini topadi (TopicService.getCourseLinkForTopic).
     Optional<CourseSection> findByLinkedTopic_Id(Long topicId);
+
+    // Shu FANDAGI qaysi mavzular (Topic) biror kurs bo'limiga bog'langanini
+    // BULK (bitta so'rov, N+1 emas) topish uchun — topics.html'da "🔗 Kurs:
+    // ..." belgisini ko'rsatish (TopicService.getTopicsByScienceId).
+    @Query("select new behzoddev.testproject.dto.topic.TopicCourseTitleDto(cs.linkedTopic.id, cs.course.title) " +
+            "from CourseSection cs where cs.linkedTopic.science.id = :scienceId")
+    List<TopicCourseTitleDto> findLinkedCourseTitlesByScienceId(@Param("scienceId") Long scienceId);
 }
