@@ -703,6 +703,19 @@ body {
     margin-top: -4px;
 }
 
+/* Maydon nomi — ayniqsa <select> uchun muhim (placeholder mexanizmi
+   yo'q, tanlangandan keyin nima ekanligi umuman ko'rinmay qolardi —
+   masalan "Fan" select'i tanlangan fan nomini ko'rsatadi-yu, bu qaysi
+   maydon ekanligi izsiz qolardi). Pastdagi maydonga yaqinroq turishi
+   uchun margin-bottom manfiy (.field-hint'dagi bilan bir xil g'oya,
+   faqat teskari yo'nalishda). */
+.field-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    margin-bottom: -4px;
+}
+
 /* ===== Kurs sahifasi (detail) ===== */
 
 .course-description {

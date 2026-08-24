@@ -49,14 +49,20 @@
             </div>
 
         <div id="editCourseForm" class="course-form" style="display:none;">
+            <label class="field-label" for="editCourseTitle">Kurs nomi</label>
             <input type="text" id="editCourseTitle" placeholder="Kurs nomi">
+
+            <label class="field-label" for="editCourseDescription">Tavsif</label>
             <textarea id="editCourseDescription" placeholder="Kurs tavsifi" rows="3"></textarea>
+
             <label class="content-toggle-label">
                 <input type="checkbox" id="editCourseFree" onchange="onEditCourseFreeToggle()"> 🆓 Bepul kurs (obunasiz ham hammaga ochiq — botda ham)
             </label>
             <div id="editCoursePriceField">
+                <label class="field-label" for="editCoursePrice">Narxi (so'm)</label>
                 <input type="number" id="editCoursePrice" placeholder="Kurs narxi (so'm)" min="0" step="1000">
             </div>
+            <label class="field-label" for="editCourseCoverFile">Muqova rasmi</label>
             <div class="course-form-cover">
                 <img id="editCourseCoverPreview" class="course-cover-preview" style="display:none;" alt="Kurs rasmi">
                 <input type="file" id="editCourseCoverFile" accept="image/*" onchange="previewEditCourseCover(this)">
@@ -69,18 +75,8 @@
         </div>
 
         <div id="addSectionForm" class="section-form" style="display:none;">
+            <label class="field-label" for="newSectionTitle">Mavzu nomi</label>
             <input type="text" id="newSectionTitle" placeholder="Mavzu nomi" maxlength="500" oninput="onSectionTitleInput('new')">
-
-            <!-- Kurs ICHIDAGI Bo'lim (bob) — ixtiyoriy: mavzular shu bo'yicha
-                 guruhlanib, kurs sahifasida alohida "box"da ko'rsatiladi.
-                 ANIQ TANLOV (select, endi erkin matn emas — yozuvdagi
-                 kichik farq tufayli tasodifan dublikat bo'lim yaratilib
-                 ketmasligi uchun); "➕ Yangi bo'lim yaratish..." tanlansa,
-                 nom kiritish maydoni ochiladi (populateChapterSelect/
-                 onChapterSelectChange, courseDetail.js). -->
-            <select id="newSectionChapterSelect" onchange="onChapterSelectChange('new')"></select>
-            <input type="text" id="newSectionChapterNewInput" style="display:none;"
-                   placeholder="📂 Yangi bo'lim nomi (masalan: 1-BOB)" maxlength="255">
 
             <!-- Matn va video bir vaqtning o'zida ham qo'shilishi mumkin —
                  kamida bittasi belgilangan bo'lishi shart. -->
@@ -159,6 +155,7 @@
             </label>
             <div class="field-hint">Bu — bo'limning ASOSIY videosi: talaba uni oxirigacha ko'rmaguncha keyingi mavzu ochilmaydi. (Matn ichiga, xohlagan joyga video qo'yish uchun esa yuqoridagi rich-toolbardagi 🎬 tugmasidan foydalaning — undagi videoni tomosha qilish keyingi mavzuga o'tishga bog'liq emas.)</div>
             <div id="videoFields" style="display:none;">
+                <label class="field-label" for="newSectionVideoSource">Video manbasi</label>
                 <select id="newSectionVideoSource" onchange="onVideoSourceChange()">
                     <option value="YOUTUBE">YouTube</option>
                     <option value="UPLOAD">Fayl yuklash</option>
@@ -169,20 +166,35 @@
                 <input type="number" id="newSectionVideoDuration" placeholder="Video davomiyligi (soniya) — faqat 'Boshqa manba' uchun" style="display:none;">
             </div>
 
-            <!-- Mavzuni TEST BOSHQARUVI'dagi Fan/Mavzu bilan bog'lash — ixtiyoriy.
-                 Kiritilgan nom mavjud bo'lmasa, avtomatik yaratiladi. Fan —
-                 tanlov (default — shu kurs nomi), "Boshqa" tanlansa erkin
-                 nom kiritish maydoni chiqadi. Mavzu nomi — default sifatida
-                 bo'lim nomi bilan bir xil (bo'lim nomi o'zgarsa, u ham
-                 qo'lda tahrirlanmagan bo'lsa, avtomatik yangilanadi).
+            <!-- Mavzuni TEST BOSHQARUVI'dagi Fan/Bo'lim/Mavzu bilan bog'lash —
+                 ixtiyoriy. Kiritilgan nom mavjud bo'lmasa, avtomatik
+                 yaratiladi. Fan — tanlov (default — shu kurs nomi),
+                 "Boshqa" tanlansa erkin nom kiritish maydoni chiqadi.
+                 Bo'lim — ANIQ TANLOV (select, erkin matn emas — yozuvdagi
+                 kichik farq tufayli tasodifan dublikat bo'lim yaratilib
+                 ketmasligi uchun), "➕ Yangi bo'lim yaratish..." tanlansa,
+                 nom kiritish maydoni ochiladi (populateChapterSelect/
+                 onChapterSelectChange, courseDetail.js). Fan va Mavzu
+                 orasida joylashtirilgan — ierarxiya "Fan → Bo'lim → Mavzu"
+                 tartibida ko'rinishi uchun. Mavzu nomi — default sifatida
+                 bo'lim (mavzu kartasi) nomi bilan bir xil (u o'zgarsa, bu
+                 ham qo'lda tahrirlanmagan bo'lsa, avtomatik yangilanadi).
             -->
             <label class="content-toggle-label">
                 <input type="checkbox" id="newSectionLinkTopic" onchange="onTopicLinkToggle('new')"> 🎯 Mavzuga oid testlar bilan bog'lash (ixtiyoriy)
             </label>
             <div id="newSectionTopicFields" style="display:none;">
+                <label class="field-label" for="newSectionScienceSelect">Fan</label>
                 <select id="newSectionScienceSelect" onchange="onScienceSelectChange('new')"></select>
                 <input type="text" id="newSectionScienceOther" placeholder="Fan nomi" style="display:none;">
                 <div class="field-hint">Masalan: Kimyo</div>
+
+                <label class="field-label" for="newSectionChapterSelect">Bo'lim (ixtiyoriy)</label>
+                <select id="newSectionChapterSelect" onchange="onChapterSelectChange('new')"></select>
+                <input type="text" id="newSectionChapterNewInput" style="display:none;"
+                       placeholder="📂 Yangi bo'lim nomi (masalan: 1-BOB)" maxlength="255">
+
+                <label class="field-label" for="newSectionTopicName">Mavzu nomi</label>
                 <input type="text" id="newSectionTopicName" placeholder="Mavzu nomi" oninput="onTopicNameInput('new')">
                 <div class="field-hint">Mavjud bo'lmasa, avtomatik yaratiladi</div>
             </div>
@@ -196,13 +208,8 @@
         <!-- Mavzuni tahrirlash — "✏️" tugmasi bosilganda shu bitta forma
              tanlangan bo'lim ma'lumotlari bilan to'ldirilib ochiladi. -->
         <div id="editSectionForm" class="section-form" style="display:none;">
+            <label class="field-label" for="editSectionTitle">Mavzu nomi</label>
             <input type="text" id="editSectionTitle" placeholder="Mavzu nomi" maxlength="500" oninput="onSectionTitleInput('edit')">
-
-            <!-- Bo'lim tanlansa — saqlagach mavzu darhol o'sha bo'limga
-                 "o'tib qoladi" (foydalanuvchi so'rovi bo'yicha). -->
-            <select id="editSectionChapterSelect" onchange="onChapterSelectChange('edit')"></select>
-            <input type="text" id="editSectionChapterNewInput" style="display:none;"
-                   placeholder="📂 Yangi bo'lim nomi (masalan: 1-BOB)" maxlength="255">
 
             <label class="content-toggle-label">
                 <input type="checkbox" id="editIncludeText" onchange="onEditContentToggle(this)"> 📄 Matn qo'shish
@@ -279,6 +286,7 @@
             </label>
             <div class="field-hint">Bu — bo'limning ASOSIY videosi: talaba uni oxirigacha ko'rmaguncha keyingi mavzu ochilmaydi. (Matn ichiga, xohlagan joyga video qo'yish uchun esa yuqoridagi rich-toolbardagi 🎬 tugmasidan foydalaning — undagi videoni tomosha qilish keyingi mavzuga o'tishga bog'liq emas.)</div>
             <div id="editVideoFields" style="display:none;">
+                <label class="field-label" for="editSectionVideoSource">Video manbasi</label>
                 <select id="editSectionVideoSource" onchange="onEditVideoSourceChange()">
                     <option value="YOUTUBE">YouTube</option>
                     <option value="UPLOAD">Fayl yuklash</option>
@@ -289,13 +297,22 @@
                 <input type="number" id="editSectionVideoDuration" placeholder="Video davomiyligi (soniya) — faqat 'Boshqa manba' uchun" style="display:none;">
             </div>
 
+            <!-- Fan → Bo'lim → Mavzu tartibida — addSectionForm bilan bir xil. -->
             <label class="content-toggle-label">
                 <input type="checkbox" id="editSectionLinkTopic" onchange="onTopicLinkToggle('edit')"> 🎯 Mavzuga oid testlar bilan bog'lash (ixtiyoriy)
             </label>
             <div id="editSectionTopicFields" style="display:none;">
+                <label class="field-label" for="editSectionScienceSelect">Fan</label>
                 <select id="editSectionScienceSelect" onchange="onScienceSelectChange('edit')"></select>
                 <input type="text" id="editSectionScienceOther" placeholder="Fan nomi" style="display:none;">
                 <div class="field-hint">Masalan: Kimyo</div>
+
+                <label class="field-label" for="editSectionChapterSelect">Bo'lim (ixtiyoriy)</label>
+                <select id="editSectionChapterSelect" onchange="onChapterSelectChange('edit')"></select>
+                <input type="text" id="editSectionChapterNewInput" style="display:none;"
+                       placeholder="📂 Yangi bo'lim nomi (masalan: 1-BOB)" maxlength="255">
+
+                <label class="field-label" for="editSectionTopicName">Mavzu nomi</label>
                 <input type="text" id="editSectionTopicName" placeholder="Mavzu nomi" oninput="onTopicNameInput('edit')">
                 <div class="field-hint">Mavjud bo'lmasa, avtomatik yaratiladi</div>
             </div>
