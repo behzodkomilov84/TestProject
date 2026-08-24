@@ -81,6 +81,43 @@ function getScienceId() {
     return element ? element.value : null;
 }
 
+// "🗑️ Testi yo'q mavzularni o'chirish" — shu Fanda hech qanday savoli
+// bo'lmagan (questionCount==0) BARCHA mavzularni bir yo'la o'chiradi.
+// Kursga bog'langan mavzular backend tomonidan avtomatik chetlab
+// o'tiladi (TopicService.deleteQuestionlessTopics).
+async function deleteQuestionlessTopics() {
+    if (itemBlock.some(s => s.mode !== "VIEW")) {
+        alert("❌ Avval tahrirlashni yakuniga yetkazing (yoki saqlang)!");
+        return;
+    }
+
+    const candidateCount = itemBlock.filter(s => s.id > 0 && (s.questionCount || 0) === 0).length;
+    if (candidateCount === 0) {
+        alert("ℹ️ Testi yo'q mavzu topilmadi.");
+        return;
+    }
+
+    if (!confirm(`⚠️ Testi yo'q ${candidateCount} ta mavzuni o'chirmoqchimisiz?\n\n(Kursga bog'langan mavzular, agar bo'lsa, avtomatik chetlab o'tiladi.)\n\nBu amalni bekor qilib bo'lmaydi.`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/topic/questionless?scienceId=${getScienceId()}`, { method: "DELETE" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || "O'chirishda xatolik");
+            return;
+        }
+        showToast('success', `✅ ${data.deleted} ta mavzu o'chirildi`, 4000);
+        await reloadFromDb(`/api/topic?scienceId=${getScienceId()}`);
+        focusIndex = 0;
+        render();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
 function escapeHtml(text) {
     const div = document.createElement("div");
     div.textContent = text ?? "";

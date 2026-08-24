@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -94,6 +95,32 @@ public class TopicService {
     @Transactional
     public void removeTopic(Long topicId) {
         topicRepository.deleteById(topicId);
+    }
+
+    // "🗑️ Testi yo'q mavzularni o'chirish" — shu Fanda hech qanday savoli
+    // bo'lmagan (questionCount==0) BARCHA mavzularni bir yo'la o'chiradi.
+    // Kursga bog'langan mavzular ATAYLAB chetlab o'tiladi — CourseSection.
+    // linked_topic_id FK'i RESTRICT bo'lgani uchun (ON DELETE SET NULL
+    // emas), ularni o'chirishga urinish butun operatsiyani xato bilan
+    // to'xtatib qo'yardi; bundan tashqari, kursga bog'langan mavzuni
+    // shu yerdan o'chirish umuman mumkin emas (TopicService.updateTopic'
+    // dagi bilan bir xil qoida — faqat kurs ichidan boshqariladi).
+    @Transactional
+    public int deleteQuestionlessTopics(Long scienceId) {
+        Set<Long> linkedTopicIds = courseSectionRepository.findLinkedCourseTitlesByScienceId(scienceId)
+                .stream()
+                .map(TopicCourseTitleDto::topicId)
+                .collect(Collectors.toSet());
+
+        List<Long> deletableIds = topicRepository.findTopicsByScienceId(scienceId).stream()
+                .filter(t -> t.questionCount() == 0 && !linkedTopicIds.contains(t.id()))
+                .map(TopicIdAndNameDto::id)
+                .toList();
+
+        if (!deletableIds.isEmpty()) {
+            topicRepository.deleteAllById(deletableIds);
+        }
+        return deletableIds.size();
     }
 
     @Transactional

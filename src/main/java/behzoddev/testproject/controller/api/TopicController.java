@@ -90,4 +90,11 @@ public class TopicController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    // "🗑️ Testi yo'q mavzularni o'chirish" — shu Fanda hech qanday savoli
+    // bo'lmagan BARCHA mavzularni bir yo'la o'chiradi.
+    @DeleteMapping("/api/topic/questionless")
+    public ResponseEntity<Map<String, Integer>> deleteQuestionlessTopics(@RequestParam Long scienceId) {
+        return ResponseEntity.ok(Map.of("deleted", topicService.deleteQuestionlessTopics(scienceId)));
+    }
+
 }

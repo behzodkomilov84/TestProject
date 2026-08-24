@@ -38,6 +38,9 @@
 <!-- ОСНОВНОЙ КОНТЕЙНЕР -->
 <div class="wrapper">
     <button id="btnSections" onclick="location.href='/topic-sections?scienceId=' + getScienceId()">📂 Bo'limlar</button>
+    <!-- Shu Fandagi hech qanday savoli (testi) yo'q BARCHA mavzularni
+         bir yo'la o'chiradi (deleteQuestionlessTopics, topic.js). -->
+    <button onclick="deleteQuestionlessTopics()">🗑️ Testi yo'q mavzularni o'chirish</button>
 
     <!-- Bo'lim ustidan (Fan -> Bo'lim -> Mavzu) kelinganda ko'rinadi —
          qaysi bo'lim mavzulari filtrlanib ko'rsatilayotganini bildiradi
