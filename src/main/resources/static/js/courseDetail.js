@@ -1416,6 +1416,40 @@ async function deleteSelectedChapter(mode) {
     }
 }
 
+// "🗑️ Bo'shlarni tozalash" — shu KURSDA hech qanday mavzuga
+// biriktirilmagan BARCHA Bo'limlarni bir yo'la o'chiradi (topic-sections
+// sahifasidagi "Bo'sh bo'limlarni o'chirish" bilan bir xil g'oya, faqat
+// bu yerda CourseChapter uchun). Ochiq turgan har ikkala forma
+// (yangi/tahrirlash) select'i ham qayta yuklanadi.
+async function deleteEmptyChapters() {
+    if (!confirm("Kursdagi barcha bo'sh (hech qanday mavzuga biriktirilmagan) bo'limlarni o'chirmoqchimisiz?\n\nBu amalni bekor qilib bo'lmaydi.")) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/chapters/empty`, { method: "DELETE" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || "O'chirishda xatolik");
+            return;
+        }
+
+        alert(data.deleted > 0
+            ? `✅ ${data.deleted} ta bo'sh bo'lim o'chirildi.`
+            : "ℹ️ Bo'sh bo'lim topilmadi.");
+
+        if (document.getElementById("newSectionChapterSelect")) {
+            await populateChapterSelect("newSectionChapterSelect", null, "new");
+        }
+        if (document.getElementById("editSectionChapterSelect")) {
+            await populateChapterSelect("editSectionChapterSelect", null, "edit");
+        }
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
 // submitAddSection/submitEditSection payload'iga to'g'ridan-to'g'ri
 // qo'shiladigan {chapterId, newChapterName} juftligi — select qiymati
 // "id:<id>" (kursning o'z Bo'limi) yoki "name:<nom>" (TEST BOSHQARUVIdan

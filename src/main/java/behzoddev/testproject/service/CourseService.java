@@ -616,6 +616,26 @@ public class CourseService {
         courseChapterRepository.delete(chapter);
     }
 
+    // "🗑️ Bo'sh bo'limlarni o'chirish" — shu kursda hech qanday mavzuga
+    // biriktirilmagan (sectionCount==0) BARCHA Bo'limlarni bir yo'la
+    // o'chiradi (deleteChapter'dagi bilan bir xil xavfsizlik qoidasi —
+    // faqat bo'sh bo'limlar, band bo'lganlariga tegilmaydi).
+    @Transactional
+    public int deleteEmptyChapters(Long courseId, User currentUser) {
+        Course course = getCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
+
+        List<Long> emptyIds = courseChapterRepository.findByCourseIdWithSectionCount(courseId).stream()
+                .filter(c -> c.sectionCount() == 0)
+                .map(CourseChapterDto::id)
+                .toList();
+
+        if (!emptyIds.isEmpty()) {
+            courseChapterRepository.deleteAllById(emptyIds);
+        }
+        return emptyIds.size();
+    }
+
     @Transactional
     public int syncChapterTopicSections(Long courseId, User currentUser) {
         Course course = getCourseOrThrow(courseId);

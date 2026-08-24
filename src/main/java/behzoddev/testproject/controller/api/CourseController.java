@@ -95,6 +95,16 @@ public class CourseController {
         return courseService.getChapters(courseId, user);
     }
 
+    // Shu kursda hech qanday mavzuga biriktirilmagan BARCHA Bo'limlarni
+    // bir yo'la o'chirish — "/{chapterId}" bilan chalkashmasligi uchun
+    // aniq literal yo'l ("empty"), Spring bunday holatlarda literal
+    // segmentni {chapterId} path-variable'dan avtomatik ustun qo'yadi.
+    @DeleteMapping("/{courseId}/chapters/empty")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public Map<String, Integer> deleteEmptyChapters(@PathVariable Long courseId, @AuthenticationPrincipal User user) {
+        return Map.of("deleted", courseService.deleteEmptyChapters(courseId, user));
+    }
+
     // Faqat BO'SH (hech qanday mavzuga biriktirilmagan) Bo'limni o'chirish.
     @DeleteMapping("/{courseId}/chapters/{chapterId}")
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")

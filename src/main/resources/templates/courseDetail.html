@@ -206,6 +206,10 @@
                     <button type="button" id="newSectionChapterDeleteBtn" class="chapter-select-delete-btn"
                             style="display:none;" onclick="deleteSelectedChapter('new')"
                             title="Bu bo'sh bo'limni o'chirish">🗑️</button>
+                    <!-- Kursdagi BARCHA bo'sh (hech qanday mavzuga
+                         biriktirilmagan) Bo'limlarni bir yo'la o'chiradi. -->
+                    <button type="button" class="chapter-select-delete-btn" onclick="deleteEmptyChapters()"
+                            title="Kursdagi barcha bo'sh bo'limlarni o'chirish">🗑️ Bo'shlarni tozalash</button>
                 </div>
                 <input type="text" id="newSectionChapterNewInput" style="display:none;"
                        placeholder="📂 Yangi bo'lim nomi (masalan: 1-BOB)" maxlength="255">
@@ -329,6 +333,8 @@
                     <button type="button" id="editSectionChapterDeleteBtn" class="chapter-select-delete-btn"
                             style="display:none;" onclick="deleteSelectedChapter('edit')"
                             title="Bu bo'sh bo'limni o'chirish">🗑️</button>
+                    <button type="button" class="chapter-select-delete-btn" onclick="deleteEmptyChapters()"
+                            title="Kursdagi barcha bo'sh bo'limlarni o'chirish">🗑️ Bo'shlarni tozalash</button>
                 </div>
                 <input type="text" id="editSectionChapterNewInput" style="display:none;"
                        placeholder="📂 Yangi bo'lim nomi (masalan: 1-BOB)" maxlength="255">
