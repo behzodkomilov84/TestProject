@@ -256,6 +256,17 @@ h1 {
         transition: background-color 0.3s ease-out;
     }
 
+    /* .wrapper'ning TO'G'RIDAN-TO'G'RI farzandi bo'lgan tugmalar (masalan
+       topics.html'dagi "📂 Bo'limlar", topic-sections.html'dagi "📋 Barcha
+       mavzular" / "🗑️ Bo'sh bo'limlarni o'chirish") — o'zaro va pastdagi
+       elementga (masalan .list) hech qanday bo'shliqsiz "yopishib"
+       turardi (oralaridagi banner/xato bloklari odatda hidden bo'lgani
+       uchun). Faqat TO'G'RIDAN-TO'G'RI farzandlarga tegadi — karta
+       ichidagi (.row-actions) tugmalarga ta'sir qilmaydi. */
+    .wrapper > button {
+        margin: 0 8px 12px 0;
+    }
+
     .wrapper button:hover{
         background-color: rgb(134, 219, 232);
     }
