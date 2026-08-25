@@ -12,6 +12,15 @@ import java.util.List;
 
 public interface QuestionRepository extends JpaRepository<Question, Long> {
 
+    // DIQQAT: "questions.topic_id" ustunida FK cheklovi YO'Q (init.sql) —
+    // shu sabab Topic o'chirilganda savollar avtomatik (CASCADE) o'chmaydi,
+    // "egasiz" (dangling topic_id) holatda saqlanib qolaveradi. Mavzuni
+    // (savollari bilan birga) atayin butunlay o'chirmoqchi bo'lgan
+    // joylarda (TopicSectionService.removeSectionWithTopics) shu metod
+    // ORQALI ANIQ chaqirilishi kerak — aks holda "egasiz" savollar
+    // to'planib qoladi.
+    void deleteByTopic_Id(Long topicId);
+
     @EntityGraph(value = "questionWithAnswers")
     @Query("""
                 select distinct q

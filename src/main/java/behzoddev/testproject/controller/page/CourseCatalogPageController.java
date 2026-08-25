@@ -17,6 +17,14 @@ public class CourseCatalogPageController {
         return "coursesCatalog";
     }
 
+    // "O'chirilganlar savati" — literal yo'l, "/courses/{id}" pastdagi
+    // path-variable'dan Spring tomonidan avtomatik ustun qo'yiladi.
+    @GetMapping("/courses/trash")
+    public String openTrash(Model model, Authentication authentication) {
+        model.addAttribute("role", primaryRole(authentication));
+        return "courseTrash";
+    }
+
     @GetMapping("/courses/{id}")
     public String openCourseDetail(@PathVariable Long id, Model model, Authentication authentication) {
         model.addAttribute("role", primaryRole(authentication));

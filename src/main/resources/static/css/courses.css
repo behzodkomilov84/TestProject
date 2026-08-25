@@ -1567,3 +1567,53 @@ body {
 .table-scroll {
     overflow-x: auto;
 }
+
+/* "📦 Backup orqali tiklash" (courseTrash.html/.js) — fayl tanlash +
+   vaqt oralig'i (Dan/Gacha) + "🔍 Ko'rish" bitta qatorda, kichik
+   ekranlarda o'raladi. */
+.backup-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 12px 0;
+}
+
+.backup-controls select,
+.backup-controls input[type="datetime-local"] {
+    padding: 6px 8px;
+}
+
+#backupPreviewResult ul {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#backupPreviewResult li {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+
+#backupPreviewResult .error {
+    color: #dc2626;
+    font-weight: 600;
+}
+
+/* Kurs bo'limi (TopicSection)/kurs Bo'limi "🔗 Kurs: ..." belgisi bilan
+   bir xil uslub (science.css'dagi .topic-course-badge) — courseTrash.html
+   science.css'ni ulamagani uchun shu yerda alohida takrorlanadi. */
+.topic-course-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #fef3c7;
+    color: #92400e;
+    font-size: 0.8em;
+}

@@ -252,16 +252,65 @@ public class CourseService {
         return toDto(course, course.getCreatedBy());
     }
 
-    // Kursni o'chirish — bo'limlar, obunalar va bo'lim-progress yozuvlari
-    // FK RESTRICT bilan bog'langani uchun (courses.sql'da ON DELETE CASCADE
-    // yo'q), avval ULARNI, keyin kursning o'zini o'chiramiz. Aks holda
-    // "Cannot delete or update a parent row: a foreign key constraint
-    // fails" xatosi chiqib, kurs umuman o'chmasdi (frontend'dagi tasdiqlash
-    // xabari "Barcha bo'limlar ham o'chadi" deb va'da bergani kabi).
+    // Kursni "O'chirilganlar savati"ga o'tkazish (soft-delete) — DARHOL
+    // butunlay o'chirilmaydi. Bo'limlar, mavzular, obunalar, progress
+    // yozuvlari HAM tegilmay saqlanadi — "O'chirilganlar" sahifasidan
+    // (restoreCourse) bir tugma bilan hammasi bilan birga qaytadan
+    // tiklanishi mumkin. Haqiqatan butunlay (qaytarib bo'lmaydigan)
+    // o'chirish uchun — permanentlyDeleteCourse (faqat allaqachon
+    // "savat"da turgan kursga nisbatan).
     @Transactional
     public void deleteCourse(Long courseId, User currentUser) {
         Course course = getCourseOrThrow(courseId);
         checkCanManage(course, currentUser);
+        course.setDeletedAt(LocalDateTime.now());
+        courseRepository.save(course);
+    }
+
+    // "O'chirilganlar savati" ro'yxati — OWNER hammasini, ADMIN faqat
+    // o'zi yaratganlarini ko'radi (boshqa CRUD amallar bilan bir xil
+    // ruxsat qoidasi).
+    @Transactional(readOnly = true)
+    public List<CourseDto> getDeletedCourses(User currentUser) {
+        List<Course> deleted = currentUser.hasRole("ROLE_OWNER")
+                ? courseRepository.findAllDeletedOrderByDeletedAtDesc()
+                : courseRepository.findDeletedByCreatedBy_IdOrderByDeletedAtDesc(currentUser.getId());
+        return deleted.stream().map(c -> toDto(c, currentUser)).toList();
+    }
+
+    // "♻️ Tiklash" — kursni "O'chirilganlar savati"dan qaytaradi, u bilan
+    // birga saqlanib qolgan bo'lim/mavzu/obuna/progress ma'lumotlari ham
+    // avtomatik yana ko'rinadigan bo'ladi (ular hech qachon o'chirilmagan
+    // edi).
+    @Transactional
+    public void restoreCourse(Long courseId, User currentUser) {
+        Course course = getAnyCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
+
+        if (course.getDeletedAt() == null) {
+            throw new IllegalArgumentException("❌ Bu kurs o'chirilmagan — tiklashning hojati yo'q.");
+        }
+
+        course.setDeletedAt(null);
+        courseRepository.save(course);
+    }
+
+    // "🗑️ Butunlay o'chirish" — FAQAT allaqachon "O'chirilganlar savati"da
+    // turgan kursga nisbatan (ikki bosqichli himoya — tasodifan bosib
+    // yubormaslik uchun). Bu amal QAYTARIB BO'LMAYDI: bo'limlar, obunalar
+    // va bo'lim-progress yozuvlari FK RESTRICT bilan bog'langani uchun
+    // (courses.sql'da ON DELETE CASCADE yo'q), avval ULARNI, keyin
+    // kursning o'zini o'chiramiz.
+    @Transactional
+    public void permanentlyDeleteCourse(Long courseId, User currentUser) {
+        Course course = getAnyCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
+
+        if (course.getDeletedAt() == null) {
+            throw new IllegalArgumentException(
+                    "❌ Bu kursni butunlay o'chirishdan oldin, avval oddiy \"O'chirish\" orqali savatga o'tkazish kerak.");
+        }
+
         courseSectionProgressRepository.deleteBySection_Course_Id(courseId);
         courseSubscriptionRepository.deleteByCourse_Id(courseId);
         courseSectionRepository.deleteByCourse_Id(courseId);
@@ -751,7 +800,22 @@ public class CourseService {
         }
     }
 
+    // Oddiy (kundalik) foydalanish uchun — soft-delete qilingan (savatdagi)
+    // kurs bu yerda ATAYLAB "topilmadi" deb hisoblanadi (404), aks holda
+    // uni oddiy ko'rish/tahrirlash/mavzu qo'shish kabi amallar orqali
+    // ham "ko'rish" mumkin bo'lib qolardi.
     private Course getCourseOrThrow(Long courseId) {
+        Course course = getAnyCourseOrThrow(courseId);
+        if (course.getDeletedAt() != null) {
+            throw new NoSuchElementException("Kurs topilmadi");
+        }
+        return course;
+    }
+
+    // FAQAT "O'chirilganlar savati" amallari (restoreCourse,
+    // permanentlyDeleteCourse, getDeletedCourses) uchun — soft-delete
+    // qilingan kursni ham topa oladi.
+    private Course getAnyCourseOrThrow(Long courseId) {
         return courseRepository.findById(courseId)
                 .orElseThrow(() -> new NoSuchElementException("Kurs topilmadi"));
     }
@@ -782,6 +846,7 @@ public class CourseService {
                 .sectionCount(sectionCount)
                 .subscribed(subscribed)
                 .createdAt(course.getCreatedAt())
+                .deletedAt(course.getDeletedAt())
                 .build();
     }
 }

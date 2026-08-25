@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <title>O'chirilgan kurslar</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/courses.css">
+
+    <script src="/js/courseTrash.js" defer></script>
+    <script src="/js/navbar.js" defer></script>
+</head>
+
+<body th:attr="data-role=${role}">
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="courses-container">
+    <header class="courses-top-bar">
+        <h1>🗑️ O'chirilgan kurslar</h1>
+        <button onclick="location.href='/courses'">← Kurslar</button>
+    </header>
+
+    <p class="course-description">
+        Bu yerdagi kurslar hali BUTUNLAY o'chirilmagan — bo'limlari, mavzulari, obunalari va o'quvchilar
+        progressi saqlanib turibdi. "♻️ Tiklash" bosilsa, hammasi bilan birga darhol qaytadi.
+    </p>
+
+    <div id="trashGrid" class="courses-grid">
+        <div class="courses-empty">Yuklanmoqda...</div>
+    </div>
+
+    <!-- FAQAT ROLE_OWNER (backendda ham shunday cheklangan — BackupController).
+         "O'chirilganlar savati" YETARLI bo'lmagan holatlar uchun: kurs
+         BUTUNLAY o'chirilgan yoki bu funksiya yaratilishidan OLDIN yo'qolgan
+         bo'lsa, kunlik zaxira nusxadan (backup) tanlab tiklash. -->
+    <section id="backupPanel" class="owner-only-el" style="display:none;">
+        <hr>
+        <h2>📦 Backup orqali tiklash</h2>
+        <p class="course-description">
+            "O'chirilganlar savati"dan ham topilmagan (masalan BUTUNLAY o'chirilgan) kurslar uchun — kunlik zaxira
+            faylini va vaqt oralig'ini tanlang, shu oraliqdan tashqaridagilar tiklanmaydi.
+        </p>
+
+        <div class="backup-controls">
+            <select id="backupFileSelect"></select>
+            <label>Dan: <input type="datetime-local" id="backupFromInput"></label>
+            <label>Gacha: <input type="datetime-local" id="backupToInput"></label>
+            <button onclick="previewBackupCourses()">🔍 Ko'rish</button>
+        </div>
+
+        <div id="backupPreviewResult"></div>
+    </section>
+</div>
+
+</body>
+</html>

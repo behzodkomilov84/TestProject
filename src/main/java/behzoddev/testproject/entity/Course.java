@@ -55,4 +55,12 @@ public class Course {
     @Column(name = "created_at", nullable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    // "O'chirilganlar savati" — kurs "🗑️ O'chirish" bosilganda DARHOL
+    // butunlay o'chirilmaydi, faqat shu maydon bilan belgilanadi (bo'lim/
+    // mavzu/obuna/progress ma'lumotlari HAM tegilmay saqlanadi) — bir
+    // vaqt ichida CourseService.restoreCourse orqali qaytadan tiklash
+    // mumkin bo'lishi uchun. NULL — o'chirilmagan (odatiy holat).
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 }

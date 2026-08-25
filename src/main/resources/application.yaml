@@ -92,6 +92,12 @@ app:
   # (masalan avtomatik login) shu bazaga qo'shib quriladi. Ilova o'zi
   # nginx orqasida ishlagani uchun o'z domenini bilmaydi.
   public-base-url: ${APP_PUBLIC_BASE_URL:https://study-grow.uz}
+  # "📦 Backup orqali tiklash" paneli (BackupRestoreService) shu papkadan
+  # *.sql.gz fayllarni qidiradi — bo'sh bo'lsa (lokal dev'da odatiy holat),
+  # funksiya "0 ta backup" deb jim ko'rsatadi, xato bermaydi. Production'da
+  # docker-compose.prod.yml orqali /app/backups'ga o'rnatiladi (host'dagi
+  # ./backups papkasi, backup.sh yozadigan joyning O'ZI, faqat READ-ONLY).
+  backups-dir: ${BACKUPS_DIR:}
   upload:
     # Yuklangan rasmlar (savol/javob uchun geometrik chizmalar va h.k.) shu
     # papkaga saqlanadi. Jar ichida emas — jar tashqarisida, doimiy joyda

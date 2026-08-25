@@ -20,7 +20,12 @@
 <div class="courses-container">
     <header class="courses-top-bar">
         <h1>🎓 Kurslar</h1>
-        <button id="createCourseBtn" class="owner-only-el" style="display:none;" onclick="openCreateCourseForm()">+ Yangi kurs</button>
+        <div>
+            <button id="createCourseBtn" class="owner-only-el" style="display:none;" onclick="openCreateCourseForm()">+ Yangi kurs</button>
+            <!-- Faqat OWNER/ADMIN uchun — soft-delete qilingan kurslarni
+                 ko'rish/tiklash (courseTrash.html). -->
+            <button id="trashBtn" class="owner-only-el" style="display:none;" onclick="location.href='/courses/trash'">🗑️ O'chirilganlar</button>
+        </div>
     </header>
 
     <!-- OWNER uchun — yangi kurs yaratish formasi -->

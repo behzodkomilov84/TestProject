@@ -355,27 +355,25 @@ class CourseServiceTest {
                 .hasMessageContaining("bu kursga tegishli emas");
     }
 
-    // ===== deleteCourse =====
-    // Haqiqiy production bug: course_sections/course_subscriptions FK
-    // RESTRICT bo'lgani uchun (ON DELETE CASCADE emas), bog'liq yozuvlar
-    // avval o'chirilmasa, kursning o'zini o'chirish "Cannot delete or
-    // update a parent row: a foreign key constraint fails" xatosi bilan
-    // muvaffaqiyatsiz tugardi.
+    // ===== deleteCourse (soft-delete — "O'chirilganlar savati") =====
+    // Haqiqiy production hodisa: bir bo'limni o'chirish deb butun kurs
+    // qattiq (hard) o'chirilib ketgan edi — shu sabab deleteCourse endi
+    // faqat deletedAt'ni belgilaydi, bog'liq yozuvlarga (progress/
+    // obuna/bo'lim/mavzu) UMUMAN TEGMAYDI — instant, to'liq tiklash
+    // (restoreCourse) uchun.
 
     @Test
-    void deleteCourse_deletesDependentRecordsBeforeCourseItself() {
+    void deleteCourse_softDeletes_doesNotTouchDependentRecords() {
         Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
 
         courseService.deleteCourse(1L, owner());
 
-        var inOrder = org.mockito.Mockito.inOrder(
-                courseSectionProgressRepository, courseSubscriptionRepository,
-                courseSectionRepository, courseRepository);
-        inOrder.verify(courseSectionProgressRepository).deleteBySection_Course_Id(1L);
-        inOrder.verify(courseSubscriptionRepository).deleteByCourse_Id(1L);
-        inOrder.verify(courseSectionRepository).deleteByCourse_Id(1L);
-        inOrder.verify(courseRepository).delete(course);
+        assertThat(course.getDeletedAt()).isNotNull();
+        org.mockito.Mockito.verify(courseRepository).save(course);
+        org.mockito.Mockito.verifyNoInteractions(
+                courseSectionProgressRepository, courseSubscriptionRepository, courseSectionRepository);
+        org.mockito.Mockito.verify(courseRepository, org.mockito.Mockito.never()).delete(org.mockito.Mockito.any());
     }
 
     @Test
@@ -384,6 +382,74 @@ class CourseServiceTest {
 
         assertThatThrownBy(() -> courseService.deleteCourse(1L, owner()))
                 .isInstanceOf(NoSuchElementException.class);
+    }
+
+    @Test
+    void deleteCourse_alreadySoftDeleted_treatedAsNotFound() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner())
+                .deletedAt(java.time.LocalDateTime.now()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> courseService.deleteCourse(1L, owner()))
+                .isInstanceOf(NoSuchElementException.class);
+    }
+
+    // ===== restoreCourse =====
+
+    @Test
+    void restoreCourse_clearsDeletedAt() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner())
+                .deletedAt(java.time.LocalDateTime.now()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        courseService.restoreCourse(1L, owner());
+
+        assertThat(course.getDeletedAt()).isNull();
+        org.mockito.Mockito.verify(courseRepository).save(course);
+    }
+
+    @Test
+    void restoreCourse_notDeleted_throws() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> courseService.restoreCourse(1L, owner()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("o'chirilmagan");
+    }
+
+    // ===== permanentlyDeleteCourse =====
+    // Ikki bosqichli himoya: faqat allaqachon "savat"da (deletedAt != null)
+    // turgan kursga nisbatan ishlaydi, aks holda rad etiladi.
+
+    @Test
+    void permanentlyDeleteCourse_softDeletedCourse_cascadesAndDeletes() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner())
+                .deletedAt(java.time.LocalDateTime.now()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        courseService.permanentlyDeleteCourse(1L, owner());
+
+        var inOrder = org.mockito.Mockito.inOrder(
+                courseSectionProgressRepository, courseSubscriptionRepository,
+                courseSectionRepository, courseChapterRepository, courseRepository);
+        inOrder.verify(courseSectionProgressRepository).deleteBySection_Course_Id(1L);
+        inOrder.verify(courseSubscriptionRepository).deleteByCourse_Id(1L);
+        inOrder.verify(courseSectionRepository).deleteByCourse_Id(1L);
+        inOrder.verify(courseChapterRepository).deleteByCourse_Id(1L);
+        inOrder.verify(courseRepository).delete(course);
+    }
+
+    @Test
+    void permanentlyDeleteCourse_notYetSoftDeleted_throws() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> courseService.permanentlyDeleteCourse(1L, owner()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("savatga o'tkazish");
+
+        org.mockito.Mockito.verify(courseRepository, org.mockito.Mockito.never()).delete(org.mockito.Mockito.any());
     }
 
     // ===== ADMIN faqat o'zi yaratgan kursni boshqara oladi =====
@@ -424,7 +490,8 @@ class CourseServiceTest {
 
         courseService.deleteCourse(1L, owner());
 
-        org.mockito.Mockito.verify(courseRepository).delete(course);
+        assertThat(course.getDeletedAt()).isNotNull();
+        org.mockito.Mockito.verify(courseRepository).save(course);
     }
 
     // ===== deleteSection: bo'limga tegishli progress yozuvlari avval o'chishi kerak =====

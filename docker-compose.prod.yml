@@ -86,8 +86,13 @@ services:
       # asosida https/http'ni to'g'ri aniqlaydi (redirect URL'lar,
       # "Secure" cookie va h.k. uchun muhim).
       SERVER_FORWARD_HEADERS_STRATEGY: framework
+      # "📦 Backup orqali tiklash" paneli (BackupRestoreService) shu yerdan
+      # *.sql.gz fayllarni o'qiydi — READ-ONLY (:ro), ilova hech qachon
+      # to'g'ridan-to'g'ri shu papkaga yozmaydi.
+      BACKUPS_DIR: /app/backups
     volumes:
       - uploads-data:/app/uploads
+      - ./backups:/app/backups:ro
     # DIQQAT: bu yerda "ports:" yo'q — ilova faqat nginx orqali (ichki
     # tarmoq, app:8080) ko'rinadi, tashqariga to'g'ridan-to'g'ri ochiq emas.
     restart: unless-stopped

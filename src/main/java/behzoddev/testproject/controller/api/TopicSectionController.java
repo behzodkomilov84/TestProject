@@ -81,4 +81,16 @@ public class TopicSectionController {
     public ResponseEntity<Map<String, Integer>> deleteEmptySections(@RequestParam Long scienceId) {
         return ResponseEntity.ok(Map.of("deleted", topicSectionService.deleteEmptySections(scienceId)));
     }
+
+    // "🗑️ Bo'lim + mavzularni birga o'chirish" — DARHOL (batch/saveToDb
+    // orqali emas) ishlaydi, chunki QAYTARIB BO'LMAYDI (savollar bilan
+    // birga butunlay o'chadi). Xatolik (masalan biror mavzu kursga
+    // bog'langan) bo'lsa — {"error": "..."} qaytadi, frontend shuni
+    // ko'rsatadi.
+    @DeleteMapping("/api/topic-section/{id}/with-topics")
+    @ResponseBody
+    public ResponseEntity<Void> removeSectionWithTopics(@PathVariable Long id) {
+        topicSectionService.removeSectionWithTopics(id);
+        return ResponseEntity.ok().build();
+    }
 }

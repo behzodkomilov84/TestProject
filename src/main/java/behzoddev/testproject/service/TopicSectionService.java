@@ -1,6 +1,7 @@
 package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.CourseSectionRepository;
+import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
@@ -33,6 +34,7 @@ public class TopicSectionService {
     private final TopicRepository topicRepository;
     private final ScienceRepository scienceRepository;
     private final CourseSectionRepository courseSectionRepository;
+    private final QuestionRepository questionRepository;
     private final TopicSectionMapper topicSectionMapper;
     private final Validation validation;
 
@@ -108,6 +110,37 @@ public class TopicSectionService {
     // NULL" — sxemada shunga mos qilib yaratilgan).
     @Transactional
     public void removeSection(Long sectionId) {
+        topicSectionRepository.deleteById(sectionId);
+    }
+
+    // "🗑️ Bo'lim + mavzularni birga o'chirish" — oddiy removeSection'dan
+    // farqli, bu yerda BO'LIM ICHIDAGI BARCHA MAVZULAR ham (savollari
+    // bilan birga) butunlay o'chiriladi, faqat "Bo'limsiz"ga qaytarilmaydi.
+    // QAYTARIB BO'LMAYDI. Xavfsizlik: agar shu bo'limdagi biror mavzu
+    // kursga bog'langan bo'lsa, BUTUN amal (birortasi ham o'chirilmasdan)
+    // rad etiladi — CourseSection.linked_topic_id FK RESTRICT bo'lgani
+    // uchun texnik jihatdan ham imkonsiz, va bunday mavzuni faqat kurs
+    // ichidan boshqarish kerak (TopicService.updateTopic bilan bir xil
+    // qoida).
+    @Transactional
+    public void removeSectionWithTopics(Long sectionId) {
+        List<Topic> topics = topicRepository.findBySection_IdOrderByOrderIndexAsc(sectionId);
+
+        for (Topic topic : topics) {
+            if (courseSectionRepository.findByLinkedTopic_Id(topic.getId()).isPresent()) {
+                throw new IllegalArgumentException("❌ \"" + topic.getName() +
+                        "\" mavzusi kursga bog'langan — avval kurs ichidan bog'lanishni olib tashlang, keyin qaytadan urinib ko'ring.");
+            }
+        }
+
+        for (Topic topic : topics) {
+            // questions.topic_id'da FK yo'q (CASCADE avtomatik ishlamaydi) —
+            // shu sabab savollar ANIQ, alohida o'chiriladi (aks holda
+            // "egasiz" bo'lib qolib ketardi).
+            questionRepository.deleteByTopic_Id(topic.getId());
+            topicRepository.deleteById(topic.getId());
+        }
+
         topicSectionRepository.deleteById(sectionId);
     }
 

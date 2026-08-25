@@ -253,6 +253,12 @@ h1 {
         margin-top: auto;
     }
 
+    /* "🗑️ Bo'lim + mavzular" (topicSection.js) kabi QAYTARIB BO'LMAYDIGAN
+       amallar uchun — courses.css'dagi .danger-btn bilan bir xil rang. */
+    .row-actions .danger-btn {
+        background: #dc2626;
+    }
+
     /* Fanlar (science.js) — 768px+ ekranlarda fan nomi va "✏️ Edit"
        tugmasi BITTA qatorda, yonma-yon (nom chapda, tugma o'ngda) —
        faqat ".science-row" (boshqa ro'yxatlarga, Bo'lim/Mavzuga,

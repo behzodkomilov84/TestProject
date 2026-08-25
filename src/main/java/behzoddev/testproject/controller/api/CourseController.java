@@ -53,10 +53,36 @@ public class CourseController {
         return courseService.updateCourse(id, dto, user);
     }
 
+    // Endi haqiqiy "o'chirish" emas — "O'chirilganlar savati"ga o'tkazish
+    // (soft-delete). Bo'limlar/mavzular/obunalar TEGILMAY qoladi, keyinroq
+    // qaytadan tiklash mumkin (restore).
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
     public void delete(@PathVariable Long id, @AuthenticationPrincipal User user) {
         courseService.deleteCourse(id, user);
+    }
+
+    // "O'chirilganlar savati" — soft-delete qilingan kurslar ro'yxati
+    // ("/{id}" bilan chalkashmasligi uchun aniq literal yo'l "/deleted").
+    @GetMapping("/deleted")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public List<CourseDto> deleted(@AuthenticationPrincipal User user) {
+        return courseService.getDeletedCourses(user);
+    }
+
+    // "♻️ Tiklash" — kursni "O'chirilganlar savati"dan qaytaradi.
+    @PostMapping("/{id}/restore")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public void restore(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        courseService.restoreCourse(id, user);
+    }
+
+    // "🗑️ Butunlay o'chirish" — QAYTARIB BO'LMAYDI, faqat allaqachon
+    // savatdagi kursga nisbatan (CourseService.permanentlyDeleteCourse).
+    @DeleteMapping("/{id}/permanent")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public void permanentDelete(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        courseService.permanentlyDeleteCourse(id, user);
     }
 
     // Kurs muqova rasmini yuklash — qaytgan URL CourseSaveDto.coverImageUrl'ga qo'yiladi.
