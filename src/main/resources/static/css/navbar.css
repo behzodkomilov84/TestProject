@@ -330,8 +330,23 @@ body.menu-open::after {
    satrini yashiramiz — biz faqat yuqoridagi kichik 🌐 dropdown'ni
    ishlatamiz, Google'ning katta select elementi hech qachon ko'rinmasligi
    kerak. */
+/* HAQIQIY, HAMMA SAHIFADA takrorlanuvchi production bug: Google
+   Translate skripti (yuqoridagi #google_translate_element) ishga
+   tushganda, <body>ga INLINE stil qo'shadi:
+   "position:relative; min-height:100%; top:0px;" (tarjima banneri
+   uchun joy tayyorlash maqsadida — bu STANDART Google Translate
+   xatti-harakati, hatto banner ko'rinmasa ham). "top:0" allaqachon shu
+   yerda bekor qilingan edi, lekin "min-height:100%" bekor qilinmagan
+   edi — Claude Browser orqali JS bilan aniq o'lchab tasdiqlandi:
+   shu YAGONA xususiyat document.documentElement.scrollHeight'ni HAR
+   BIR sahifada (courses, testSession, index — CSS fayli qanday
+   bo'lishidan qat'i nazar) ~91px ga oshirib yuborar edi — ekranga
+   to'liq sig'gan sahifada ham keraksiz vertikal scroll paydo qilardi.
+   Inline stilni yengish uchun "!important" shart (inline har doim
+   oddiy CSS qoidasidan ustun turadi). */
 body {
     top: 0 !important;
+    min-height: auto !important;
 }
 
 /* Google'ning "Переведено на .../Показать исходный текст/Настройки"
