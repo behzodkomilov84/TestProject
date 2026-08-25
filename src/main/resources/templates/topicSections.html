@@ -30,6 +30,13 @@
     <!-- Shu Fandagi hech qanday mavzuga biriktirilmagan (bo'sh) BARCHA
          bo'limlarni bir yo'la o'chiradi (deleteEmptySections, topicSection.js). -->
     <button onclick="deleteEmptySections()">🗑️ Bo'sh bo'limlarni o'chirish</button>
+    <!-- Soft-delete qilingan (🗑️ o'chirilgan) Bo'limlar — "♻️ Tiklash"
+         bilan bir zumda qaytariladi (TopicSectionService.getDeletedSections/restoreSection). -->
+    <button onclick="toggleSectionTrash()">🗑️ O'chirilgan bo'limlar</button>
+
+    <div id="sectionTrashPanel" style="display:none;">
+        <div id="sectionTrashList"></div>
+    </div>
 
     <div class="error" id="error"></div>
 

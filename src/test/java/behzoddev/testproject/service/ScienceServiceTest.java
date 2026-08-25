@@ -113,4 +113,74 @@ class ScienceServiceTest {
                 new ScienceIdAndNameDto(1L, "Matematika"),
                 new ScienceIdAndNameDto(2L, "Fizika"));
     }
+
+    // ===== removeScience (soft-delete — "O'chirilganlar savati") =====
+
+    @Test
+    void removeScience_softDeletes_doesNotHardDelete() {
+        Science science = Science.builder().id(1L).name("Kimyo").build();
+        when(scienceRepository.findById(1L)).thenReturn(Optional.of(science));
+
+        scienceService.removeScience(1L);
+
+        assertThat(science.getDeletedAt()).isNotNull();
+        verify(scienceRepository).save(science);
+        verify(scienceRepository, org.mockito.Mockito.never()).deleteById(any());
+        verify(scienceRepository, org.mockito.Mockito.never()).delete(any());
+    }
+
+    @Test
+    void removeScience_notFound_throws() {
+        when(scienceRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> scienceService.removeScience(1L))
+                .isInstanceOf(java.util.NoSuchElementException.class);
+    }
+
+    // ===== restoreScience =====
+
+    @Test
+    void restoreScience_clearsDeletedAt() {
+        Science science = Science.builder().id(1L).name("Kimyo")
+                .deletedAt(java.time.LocalDateTime.now()).build();
+        when(scienceRepository.findById(1L)).thenReturn(Optional.of(science));
+
+        scienceService.restoreScience(1L);
+
+        assertThat(science.getDeletedAt()).isNull();
+        verify(scienceRepository).save(science);
+    }
+
+    @Test
+    void restoreScience_notDeleted_throws() {
+        Science science = Science.builder().id(1L).name("Kimyo").build();
+        when(scienceRepository.findById(1L)).thenReturn(Optional.of(science));
+
+        assertThatThrownBy(() -> scienceService.restoreScience(1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("o'chirilmagan");
+    }
+
+    // ===== permanentlyDeleteScience =====
+
+    @Test
+    void permanentlyDeleteScience_softDeletedScience_hardDeletes() {
+        Science science = Science.builder().id(1L).name("Kimyo")
+                .deletedAt(java.time.LocalDateTime.now()).build();
+        when(scienceRepository.findById(1L)).thenReturn(Optional.of(science));
+
+        scienceService.permanentlyDeleteScience(1L);
+
+        verify(scienceRepository).delete(science);
+    }
+
+    @Test
+    void permanentlyDeleteScience_notYetSoftDeleted_throws() {
+        Science science = Science.builder().id(1L).name("Kimyo").build();
+        when(scienceRepository.findById(1L)).thenReturn(Optional.of(science));
+
+        assertThatThrownBy(() -> scienceService.permanentlyDeleteScience(1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("savatga o'tkazish");
+    }
 }

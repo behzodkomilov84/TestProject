@@ -7,6 +7,7 @@ import behzoddev.testproject.dao.TopicSectionRepository;
 import behzoddev.testproject.dto.section.TopicSectionCourseTitleDto;
 import behzoddev.testproject.dto.section.TopicSectionIdAndNameDto;
 import behzoddev.testproject.dto.section.TopicSectionNameDto;
+import behzoddev.testproject.dto.section.TopicSectionTrashDto;
 import behzoddev.testproject.entity.CourseSection;
 import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.entity.TopicSection;
@@ -16,9 +17,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 // "Bo'lim" (TopicSection) CRUD — Fan ichida mavzularni guruhlash uchun.
@@ -103,12 +106,61 @@ public class TopicSectionService {
         topicSectionRepository.save(section);
     }
 
-    // Bo'lim o'chirilganda unga tegishli mavzular O'CHMAYDI — faqat
-    // bo'limsiz holatga qaytadi (topics.section_id FK "ON DELETE SET
-    // NULL" — sxemada shunga mos qilib yaratilgan).
+    // "O'chirilganlar savati"ga o'tkazish (soft-delete) — DARHOL butunlay
+    // o'chirilmaydi, mavzulari HAM tegilmay saqlanadi — "♻️ Tiklash"
+    // bilan bir zumda qaytadi.
     @Transactional
     public void removeSection(Long sectionId) {
-        topicSectionRepository.deleteById(sectionId);
+        TopicSection section = getSectionOrThrow(sectionId);
+        section.setDeletedAt(LocalDateTime.now());
+        topicSectionRepository.save(section);
+    }
+
+    // "O'chirilganlar savati" ro'yxati (Fan ichida).
+    @Transactional(readOnly = true)
+    public List<TopicSectionTrashDto> getDeletedSections(Long scienceId) {
+        return topicSectionRepository.findDeletedByScienceId(scienceId);
+    }
+
+    // "♻️ Tiklash" — Bo'limni savatdan qaytaradi, mavzulari avtomatik
+    // yana ko'rinadigan bo'ladi (ular hech qachon o'chirilmagan edi).
+    @Transactional
+    public void restoreSection(Long sectionId) {
+        TopicSection section = getAnySectionOrThrow(sectionId);
+        if (section.getDeletedAt() == null) {
+            throw new IllegalArgumentException("❌ Bu bo'lim o'chirilmagan — tiklashning hojati yo'q.");
+        }
+        section.setDeletedAt(null);
+        topicSectionRepository.save(section);
+    }
+
+    // "🗑️ Butunlay o'chirish" — FAQAT allaqachon savatda turgan Bo'limga
+    // nisbatan. QAYTARIB BO'LMAYDI: mavzular O'ZI o'chmaydi (topics.
+    // section_id FK "ON DELETE SET NULL" — bo'limsiz bo'lib qoladi).
+    @Transactional
+    public void permanentlyDeleteSection(Long sectionId) {
+        TopicSection section = getAnySectionOrThrow(sectionId);
+        if (section.getDeletedAt() == null) {
+            throw new IllegalArgumentException(
+                    "❌ Bu bo'limni butunlay o'chirishdan oldin, avval oddiy \"O'chirish\" orqali savatga o'tkazish kerak.");
+        }
+        topicSectionRepository.delete(section);
+    }
+
+    private TopicSection getSectionOrThrow(Long sectionId) {
+        TopicSection section = getAnySectionOrThrow(sectionId);
+        if (section.getDeletedAt() != null) {
+            throw new NoSuchElementException("Bo'lim topilmadi");
+        }
+        return section;
+    }
+
+    // FAQAT "O'chirilganlar savati" amallari (restoreSection,
+    // permanentlyDeleteSection, getDeletedSections) uchun — soft-delete
+    // qilingan Bo'limni ham topa oladi.
+    private TopicSection getAnySectionOrThrow(Long sectionId) {
+        return topicSectionRepository.findById(sectionId)
+                .orElseThrow(() -> new NoSuchElementException("Bo'lim topilmadi"));
     }
 
     // "🗑️ Bo'lim + mavzularni birga o'chirish" — ATAYLAB shu yerda EMAS.
@@ -132,7 +184,10 @@ public class TopicSectionService {
                 .toList();
 
         if (!emptyIds.isEmpty()) {
-            topicSectionRepository.deleteAllById(emptyIds);
+            List<TopicSection> empty = topicSectionRepository.findAllById(emptyIds);
+            LocalDateTime now = LocalDateTime.now();
+            empty.forEach(s -> s.setDeletedAt(now));
+            topicSectionRepository.saveAll(empty);
         }
         return emptyIds.size();
     }

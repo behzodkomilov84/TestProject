@@ -41,6 +41,14 @@
         БЛОК ДЛЯ ОТОБРАЖЕНИЯ СООБЩЕНИЙ ОБ ОШИБКАХ
         Скрыт, так как используем Toast-уведомления
     -->
+    <!-- Soft-delete qilingan (🗑️ o'chirilgan) fanlar — "♻️ Tiklash" bilan
+         bir zumda qaytariladi (ScienceService.getDeletedSciences/restoreScience). -->
+    <button onclick="toggleScienceTrash()">🗑️ O'chirilgan fanlar</button>
+
+    <div id="scienceTrashPanel" style="display:none;">
+        <div id="scienceTrashList"></div>
+    </div>
+
     <div class="error" id="error"></div>
 
     <!-- КОНТЕЙНЕР СПИСКА ПРЕДМЕТОВ -->

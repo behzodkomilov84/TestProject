@@ -5,6 +5,7 @@ import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dto.science.ScienceDto;
 import behzoddev.testproject.dto.science.ScienceIdAndNameDto;
 import behzoddev.testproject.dto.science.ScienceNameDto;
+import behzoddev.testproject.dto.science.ScienceTrashDto;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.mapper.ScienceMapper;
@@ -13,7 +14,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 
@@ -94,9 +97,64 @@ public class ScienceService {
         return science.isPresent();
     }
 
+    // "O'chirilganlar savati"ga o'tkazish (soft-delete) — DARHOL butunlay
+    // o'chirilmaydi, Bo'lim/mavzu/savollari HAM tegilmay saqlanadi —
+    // "♻️ Tiklash" bilan bir zumda qaytadi (CourseService.deleteCourse
+    // bilan bir xil g'oya).
     @Transactional
     public void removeScience(Long scienceId) {
-        scienceRepository.deleteById(scienceId);
+        Science science = getScienceOrThrow(scienceId);
+        science.setDeletedAt(LocalDateTime.now());
+        scienceRepository.save(science);
+    }
+
+    // "O'chirilganlar savati" ro'yxati.
+    @Transactional(readOnly = true)
+    public List<ScienceTrashDto> getDeletedSciences() {
+        return scienceRepository.findAllDeleted();
+    }
+
+    // "♻️ Tiklash" — fanni savatdan qaytaradi, Bo'lim/mavzu/savollari
+    // avtomatik yana ko'rinadigan bo'ladi (ular hech qachon o'chirilmagan edi).
+    @Transactional
+    public void restoreScience(Long scienceId) {
+        Science science = getAnyScienceOrThrow(scienceId);
+        if (science.getDeletedAt() == null) {
+            throw new IllegalArgumentException("❌ Bu fan o'chirilmagan — tiklashning hojati yo'q.");
+        }
+        science.setDeletedAt(null);
+        scienceRepository.save(science);
+    }
+
+    // "🗑️ Butunlay o'chirish" — FAQAT allaqachon savatda turgan fanga
+    // nisbatan. QAYTARIB BO'LMAYDI. Bo'lim/mavzular hali mavjud bo'lsa —
+    // FK RESTRICT (topics.science_id) tufayli xato beradi (foydalanuvchi
+    // avval ularni o'chirishi kerak) — GlobalRestExceptionHandler buni
+    // tushunarli "bog'liq ma'lumotlar mavjud" xabariga aylantiradi.
+    @Transactional
+    public void permanentlyDeleteScience(Long scienceId) {
+        Science science = getAnyScienceOrThrow(scienceId);
+        if (science.getDeletedAt() == null) {
+            throw new IllegalArgumentException(
+                    "❌ Bu fanni butunlay o'chirishdan oldin, avval oddiy \"O'chirish\" orqali savatga o'tkazish kerak.");
+        }
+        scienceRepository.delete(science);
+    }
+
+    private Science getScienceOrThrow(Long scienceId) {
+        Science science = getAnyScienceOrThrow(scienceId);
+        if (science.getDeletedAt() != null) {
+            throw new NoSuchElementException("Fan topilmadi");
+        }
+        return science;
+    }
+
+    // FAQAT "O'chirilganlar savati" amallari (restoreScience,
+    // permanentlyDeleteScience, getDeletedSciences) uchun — soft-delete
+    // qilingan fanni ham topa oladi.
+    private Science getAnyScienceOrThrow(Long scienceId) {
+        return scienceRepository.findById(scienceId)
+                .orElseThrow(() -> new NoSuchElementException("Fan topilmadi"));
     }
 
     @Transactional

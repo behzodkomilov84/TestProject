@@ -4,6 +4,7 @@ import behzoddev.testproject.dto.question.QuestionShortDto;
 import behzoddev.testproject.dto.science.ScienceDto;
 import behzoddev.testproject.dto.science.ScienceIdAndNameDto;
 import behzoddev.testproject.dto.science.ScienceNameDto;
+import behzoddev.testproject.dto.science.ScienceTrashDto;
 import behzoddev.testproject.dto.topic.TopicIdAndNameDto;
 import behzoddev.testproject.dto.topic.TopicNameDto;
 import behzoddev.testproject.entity.Question;
@@ -193,10 +194,39 @@ public class ScienceController {
         return ResponseEntity.ok().build();
     }
 
+    // DIQQAT: ilgari @PreAuthorize'siz edi (istalgan login qilgan
+    // foydalanuvchi chaqira olardi) — /topic, /question'dagi bilan bir
+    // xil sabab bilan tuzatildi (bu controller'dagi boshqa amallar ham
+    // hali himoyasiz — alohida ko'rib chiqilishi kerak).
     @DeleteMapping("/science/{scienceId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
     public ResponseEntity<Void> deleteScience(@PathVariable Long scienceId) {
         scienceService.removeScience(scienceId);
         return ResponseEntity.noContent().build();
+    }
+
+    // "O'chirilganlar savati" (fan darajasida).
+    @GetMapping("/api/science/deleted")
+    @ResponseBody
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public ResponseEntity<List<ScienceTrashDto>> getDeletedSciences() {
+        return ResponseEntity.ok(scienceService.getDeletedSciences());
+    }
+
+    @PostMapping("/api/science/{scienceId}/restore")
+    @ResponseBody
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public ResponseEntity<Void> restoreScience(@PathVariable Long scienceId) {
+        scienceService.restoreScience(scienceId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/api/science/{scienceId}/permanent")
+    @ResponseBody
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public ResponseEntity<Void> permanentDeleteScience(@PathVariable Long scienceId) {
+        scienceService.permanentlyDeleteScience(scienceId);
+        return ResponseEntity.ok().build();
     }
 
     // DIQQAT: bu ikkala endpoint ilgari @PreAuthorize'siz edi (istalgan

@@ -18,6 +18,90 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// "🗑️ O'chirilgan fanlar" paneli — soft-delete qilingan Science'lar
+// ro'yxati (bir zumda "♻️ Tiklash" qilinadigan).
+let scienceTrashOpen = false;
+
+function toggleScienceTrash() {
+    scienceTrashOpen = !scienceTrashOpen;
+    document.getElementById("scienceTrashPanel").style.display = scienceTrashOpen ? "block" : "none";
+    if (scienceTrashOpen) {
+        loadScienceTrash();
+    }
+}
+
+async function loadScienceTrash() {
+    const list = document.getElementById("scienceTrashList");
+    list.innerHTML = "<p>Yuklanmoqda...</p>";
+
+    try {
+        const res = await fetch("/api/science/deleted");
+        if (!res.ok) {
+            list.innerHTML = "<p>Yuklashda xatolik</p>";
+            return;
+        }
+        const items = await res.json();
+        if (!items.length) {
+            list.innerHTML = "<p>O'chirilgan fan yo'q</p>";
+            return;
+        }
+        list.innerHTML = items.map(s => `
+            <div class="row">
+                <div>${escapeHtml(s.name)} — ${formatScienceTrashDate(s.deletedAt)}da o'chirilgan</div>
+                <div class="row-actions">
+                    <button onclick="restoreScienceFromTrash(${s.id})">♻️ Tiklash</button>
+                    <button class="danger-btn" onclick="permanentlyDeleteScienceFromTrash(${s.id}, ${JSON.stringify(s.name).replace(/"/g, "&quot;")})">🗑️ Butunlay o'chirish</button>
+                </div>
+            </div>
+        `).join("");
+    } catch (err) {
+        console.error(err);
+        list.innerHTML = "<p>Tarmoq xatoligi</p>";
+    }
+}
+
+function formatScienceTrashDate(isoString) {
+    if (!isoString) return "";
+    const d = new Date(isoString);
+    return d.toLocaleDateString("uz-UZ") + " " + d.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
+}
+
+async function restoreScienceFromTrash(scienceId) {
+    if (!confirm("Bu fanni tiklamoqchimisiz?")) return;
+
+    try {
+        const res = await fetch(`/api/science/${scienceId}/restore`, { method: "POST" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "Tiklashda xatolik");
+            return;
+        }
+        loadScienceTrash();
+        await reloadFromDb("/api/science");
+        render();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+async function permanentlyDeleteScienceFromTrash(scienceId, name) {
+    if (!confirm(`⚠️ "${name}" fanini BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.\n\n(Agar bu fanda hali Bo'lim/mavzu bo'lsa, avval ularni o'chirish kerak bo'ladi.)`)) return;
+
+    try {
+        const res = await fetch(`/api/science/${scienceId}/permanent`, { method: "DELETE" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "O'chirishda xatolik");
+            return;
+        }
+        loadScienceTrash();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
 
 // ========================================================================
 //                      Functions

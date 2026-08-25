@@ -3,6 +3,7 @@ package behzoddev.testproject.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Entity
@@ -30,4 +31,11 @@ public class Science {
     @OneToMany(mappedBy = "science", cascade = CascadeType.PERSIST)
     @ToString.Exclude
     private Set<Topic> topics;
+
+    // "O'chirilganlar savati" — Course.deletedAt bilan bir xil g'oya:
+    // o'chirilganda DARHOL butunlay o'chmaydi (Bo'lim/mavzu/savollari
+    // ham saqlanib qoladi), faqat shu maydon bilan belgilanadi —
+    // "♻️ Tiklash" bilan bir zumda qaytadi.
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 }

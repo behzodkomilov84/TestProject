@@ -2,6 +2,7 @@ package behzoddev.testproject.controller.api;
 
 import behzoddev.testproject.dto.section.TopicSectionIdAndNameDto;
 import behzoddev.testproject.dto.section.TopicSectionNameDto;
+import behzoddev.testproject.dto.section.TopicSectionTrashDto;
 import behzoddev.testproject.service.TopicSectionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -80,5 +81,26 @@ public class TopicSectionController {
     @ResponseBody
     public ResponseEntity<Map<String, Integer>> deleteEmptySections(@RequestParam Long scienceId) {
         return ResponseEntity.ok(Map.of("deleted", topicSectionService.deleteEmptySections(scienceId)));
+    }
+
+    // "O'chirilganlar savati" (Bo'lim darajasida, Fan ichida).
+    @GetMapping("/api/topic-section/deleted")
+    @ResponseBody
+    public ResponseEntity<List<TopicSectionTrashDto>> getDeleted(@RequestParam Long scienceId) {
+        return ResponseEntity.ok(topicSectionService.getDeletedSections(scienceId));
+    }
+
+    @PostMapping("/api/topic-section/{id}/restore")
+    @ResponseBody
+    public ResponseEntity<Void> restore(@PathVariable Long id) {
+        topicSectionService.restoreSection(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/api/topic-section/{id}/permanent")
+    @ResponseBody
+    public ResponseEntity<Void> permanentDelete(@PathVariable Long id) {
+        topicSectionService.permanentlyDeleteSection(id);
+        return ResponseEntity.ok().build();
     }
 }

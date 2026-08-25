@@ -3,6 +3,7 @@ package behzoddev.testproject.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.Set;
 
 // "Bo'lim" — Fan (Science) ichidagi mavzular guruhi (masalan Kimyo fanida
@@ -45,4 +46,11 @@ public class TopicSection {
     @OneToMany(mappedBy = "section")
     @ToString.Exclude
     private Set<Topic> topics;
+
+    // "O'chirilganlar savati" — Course.deletedAt bilan bir xil g'oya:
+    // o'chirilganda DARHOL butunlay o'chmaydi (mavzulari ham tegilmay
+    // saqlanadi), faqat shu maydon bilan belgilanadi — "♻️ Tiklash"
+    // bilan bir zumda qaytadi.
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 }

@@ -73,6 +73,90 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// "🗑️ O'chirilgan bo'limlar" paneli — soft-delete qilingan
+// TopicSection'lar ro'yxati (bir zumda "♻️ Tiklash" qilinadigan).
+let sectionTrashOpen = false;
+
+function toggleSectionTrash() {
+    sectionTrashOpen = !sectionTrashOpen;
+    document.getElementById("sectionTrashPanel").style.display = sectionTrashOpen ? "block" : "none";
+    if (sectionTrashOpen) {
+        loadSectionTrash();
+    }
+}
+
+async function loadSectionTrash() {
+    const list = document.getElementById("sectionTrashList");
+    list.innerHTML = "<p>Yuklanmoqda...</p>";
+
+    try {
+        const res = await fetch(`/api/topic-section/deleted?scienceId=${getScienceId()}`);
+        if (!res.ok) {
+            list.innerHTML = "<p>Yuklashda xatolik</p>";
+            return;
+        }
+        const items = await res.json();
+        if (!items.length) {
+            list.innerHTML = "<p>O'chirilgan bo'lim yo'q</p>";
+            return;
+        }
+        list.innerHTML = items.map(s => `
+            <div class="row">
+                <div>${escapeHtml(s.name)} — ${formatSectionTrashDate(s.deletedAt)}da o'chirilgan</div>
+                <div class="row-actions">
+                    <button onclick="restoreSectionFromTrash(${s.id})">♻️ Tiklash</button>
+                    <button class="danger-btn" onclick="permanentlyDeleteSectionFromTrash(${s.id}, ${JSON.stringify(s.name).replace(/"/g, "&quot;")})">🗑️ Butunlay o'chirish</button>
+                </div>
+            </div>
+        `).join("");
+    } catch (err) {
+        console.error(err);
+        list.innerHTML = "<p>Tarmoq xatoligi</p>";
+    }
+}
+
+function formatSectionTrashDate(isoString) {
+    if (!isoString) return "";
+    const d = new Date(isoString);
+    return d.toLocaleDateString("uz-UZ") + " " + d.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
+}
+
+async function restoreSectionFromTrash(sectionId) {
+    if (!confirm("Bu bo'limni tiklamoqchimisiz?")) return;
+
+    try {
+        const res = await fetch(`/api/topic-section/${sectionId}/restore`, { method: "POST" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "Tiklashda xatolik");
+            return;
+        }
+        loadSectionTrash();
+        await reloadFromDb(`/api/topic-section?scienceId=${getScienceId()}`);
+        render();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+async function permanentlyDeleteSectionFromTrash(sectionId, name) {
+    if (!confirm(`⚠️ "${name}" bo'limini BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi. (Mavzulari o'chmaydi, faqat "bo'limsiz" bo'lib qoladi.)`)) return;
+
+    try {
+        const res = await fetch(`/api/topic-section/${sectionId}/permanent`, { method: "DELETE" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "O'chirishda xatolik");
+            return;
+        }
+        loadSectionTrash();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
 function afterStartPage(mapping) {
     reloadFromDb(mapping).then(() => {
         focusIndex = 0;
