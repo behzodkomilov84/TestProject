@@ -277,6 +277,7 @@ function startTest() {
     // ✅ ПОКАЗЫВАЕМ progress + timer
     document.getElementById("progress").style.height = "0%";
     document.getElementById("progressFraction").innerText = `0/${testState.questions.length}`;
+    document.getElementById("progressPercent").innerText = "0%";
     document.getElementById("progressWrapper").classList.remove("hidden");
     document.body.classList.remove("no-progress");
 
@@ -643,11 +644,15 @@ function updateProgress() {
     if (bar) {
         bar.style.height = percent + "%";
     }
-    // Foydalanuvchi so'rovi: progress-bar USTIDA foiz emas, "2/5" kabi
-    // aniq son ko'rinishi kerak.
+    // Foydalanuvchi so'rovi: progress-bar USTIDA "2/5" kabi aniq son,
+    // OSTIDA esa foiz — ikkalasi ham ko'rinib turadi.
     const fractionLabel = document.getElementById("progressFraction");
     if (fractionLabel) {
         fractionLabel.innerText = `${answered}/${total}`;
+    }
+    const percentLabel = document.getElementById("progressPercent");
+    if (percentLabel) {
+        percentLabel.innerText = percent + "%";
     }
 
     // Barcha savollarga javob berilgach — foydalanuvchi buni sezmasligi

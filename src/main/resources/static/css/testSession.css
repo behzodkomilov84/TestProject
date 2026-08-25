@@ -57,10 +57,16 @@ body {
    natijada ichidagi foiz-asosidagi to'ldirish (#progress{height:X%})
    ham noto'g'ri (masalan o'rtada "muallaq") ko'rinardi. Aniq balandlik
    bilan bu hisoblash 100% barqaror. */
+/* HAQIQIY BUG: "position:sticky" flex ota-element ichida (bu yerdagi
+   kabi) ba'zi brauzerlarda "hodisiy" (haqiqiy hech qanday element
+   ekrandan chiqmasa ham) qo'shimcha scroll balandligi qo'shib
+   yuboradigan taniqli nosozlik — document.documentElement.scrollHeight
+   document.body.offsetHeight'dan katta chiqib, ekranga sig'ib turgan
+   sahifada ham keraksiz vertikal scroll paydo qilardi. "sticky" bu
+   yerda muhim emas edi (panel balandligi savol blokiga taxminan teng,
+   deyarli har doim bir vaqtda ekranda) — shu sabab oddiy joylashuvga
+   almashtirildi, muammo butunlay yo'qoladi. */
 .progress-wrapper {
-    position: sticky;
-    top: 90px;
-
     flex-shrink: 0;
     width: 64px;
     height: min(55vh, 460px);
@@ -148,6 +154,16 @@ body {
 
     display: flex;
     flex-direction: column-reverse; /* pastdan yuqoriga to'lishi uchun — bitta farzand (#progress) shu sabab ENG PASTGA "yopishadi" */
+    /* HAQIQIY BUG: bu sahifada Bootstrap CDN ham yuklangan, uning
+       O'ZINING ".progress-bar" klassi bor (progress komponenti) —
+       "display:flex; flex-direction:column; justify-content:center;"
+       bilan. testSession.css KEYINROQ yuklansa ham, "justify-content"
+       xususiyatini bu yerda ANIQ o'zgartirmagan edim — shu sabab
+       Bootstrap'ning "center" qiymati "sirg'alib" ishlab, to'ldirish
+       (fill) doim MARKAZDAN chiqib turardi (column-reverse to'g'ri
+       ishlagan bo'lsa ham). Endi ANIQ "flex-start" (column-reverse'da
+       bu — PASTKI chekka) qo'yilgan. */
+    justify-content: flex-start;
 }
 
 #progress {
@@ -491,7 +507,6 @@ input[type="radio"] {
 
     .progress-wrapper {
         width: 44px;
-        top: 78px;
         height: min(50vh, 380px);
     }
 
