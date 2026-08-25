@@ -41,7 +41,6 @@
             <div class="manage-actions-row">
                 <button onclick="togglePublish()" id="togglePublishBtn">—</button>
                 <button onclick="openEditCourseForm()">✏️ Tahrirlash</button>
-                <button class="danger-btn" onclick="deleteCourse()">🗑️ O'chirish</button>
                 <button id="openAddSectionBtn" onclick="openAddSectionForm()">➕ Mavzu qo'shish</button>
                 <button id="manageSubscriptionsBtn" onclick="location.href='/courses/subscriptions?courseId=' + COURSE_ID">
                     💳 Obunalarni boshqarish
@@ -59,6 +58,10 @@
                      "♻️ Tiklash" bilan bir zumda qaytariladi (CourseService.
                      getDeletedSections/restoreSection). -->
                 <button id="sectionTrashBtn" onclick="toggleSectionTrash()">🗑️ O'chirilgan mavzular</button>
+                <!-- Foydalanuvchi so'rovi bo'yicha — eng xavfli amal (kursni
+                     o'chirish) qatorning ENG OXIRIGA ko'chirildi, tasodifan
+                     bosilib ketmasligi uchun. -->
+                <button class="danger-btn" onclick="deleteCourse()">🗑️ O'chirish</button>
             </div>
 
             <div id="sectionTrashPanel" style="display:none;">
