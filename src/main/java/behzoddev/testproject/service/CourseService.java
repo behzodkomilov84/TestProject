@@ -733,8 +733,21 @@ public class CourseService {
                 .filter(s -> s.getChapter() != null && s.getChapter().getId().equals(chapterId))
                 .toList();
 
+        // MUHIM: Bo'lim (chapter) HARD-DELETE qilinadi — shu sabab har bir
+        // mavzudagi "chapter" bog'lanishi OLDINDAN null qilinishi SHART
+        // (soft-delete qilingandan keyin ham). Aks holda mavzular hali
+        // o'chirilayotgan Bo'limga ishora qilib turgan holda flush
+        // bo'lib, Hibernate "TransientPropertyValueException ...
+        // references an unsaved transient instance" xatosini berardi —
+        // haqiqiy production bug (bo'lim o'chirishga urinishda foydalanuvchi
+        // shu xom Hibernate xatosini ko'rgan). Null qilingandan keyin
+        // mavzular (agar keyinchalik tiklansa) "Bo'limsiz mavzular"
+        // sifatida ko'rinadi — bu allaqachon tanish, qo'llab-quvvatlanadigan holat.
         LocalDateTime now = LocalDateTime.now();
-        chapterSections.forEach(s -> s.setDeletedAt(now));
+        chapterSections.forEach(s -> {
+            s.setDeletedAt(now);
+            s.setChapter(null);
+        });
         courseSectionRepository.saveAll(chapterSections);
         courseChapterRepository.delete(chapter);
     }

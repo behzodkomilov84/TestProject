@@ -587,6 +587,11 @@ class CourseServiceTest {
         courseService.deleteChapterWithLinkedTopics(1L, 10L, owner());
 
         assertThat(section.getDeletedAt()).isNotNull();
+        // Haqiqiy production bug: "chapter" bog'lanishi null qilinmasa,
+        // Bo'lim hard-delete qilinganda Hibernate
+        // "TransientPropertyValueException: ... references an unsaved
+        // transient instance" xatosini berardi.
+        assertThat(section.getChapter()).isNull();
         org.mockito.Mockito.verify(courseSectionRepository).saveAll(List.of(section));
         org.mockito.Mockito.verify(courseChapterRepository).delete(chapter);
         // TEST BOSHQARUVI (Topic/Question/TopicSection) — HECH QANDAY chaqiruv bo'lmasligi kerak.

@@ -19,39 +19,6 @@ if (!topicId) {
     loadQuestions(topicId, currentPage);
 }
 
-// ".top-element" (yuqoridagi tugmalar qatori) "position: fixed" — shu
-// sabab uning balandligi oddiy oqim (".container" joylashuvi)ga
-// AVTOMATIK ta'sir qilmaydi; ".container"ning CSS'dagi margin-top
-// (question.css) esa QATTIQ raqam. Tugmalar soni ko'payib (masalan
-// yangi tugma qo'shilganda), yoki ekran torayib ".top-element" ikki
-// qatorga o'ralib qolsa — u balandroq bo'lib, ".container" ustiga
-// "tushib" qolar edi (haqiqiy production bug, aynan shu sabab bilan).
-// Shu funksiya har doim ".top-element"ning HAQIQIY (joriy) balandligini
-// o'lchab, ".container"ning margin-top'ini SHUNGA moslab qo'yadi —
-// endi nechta tugma bo'lishidan, ekran o'lchamidan qat'i nazar, ikkovi
-// HECH QACHON bir-birining ustiga tushmaydi.
-function syncContainerOffsetWithTopElement() {
-    const topEl = document.getElementById("topElement");
-    const container = document.querySelector(".container");
-    if (!topEl || !container) return;
-
-    const gap = 15; // .top-element bilan .container orasidagi bo'shliq
-    container.style.marginTop = (topEl.getBoundingClientRect().bottom + gap) + "px";
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    syncContainerOffsetWithTopElement();
-
-    const topEl = document.getElementById("topElement");
-    if (topEl && window.ResizeObserver) {
-        // Ekran torayib/kengayib ".top-element" balandligi o'zgarsa
-        // (masalan tugmalar 2-qatorga o'tib/qaytib qolsa) — DARHOL
-        // qayta hisoblanadi.
-        new ResizeObserver(syncContainerOffsetWithTopElement).observe(topEl);
-    }
-});
-window.addEventListener("resize", syncContainerOffsetWithTopElement);
-
 function normalizeApiResponse(data) {
     // CASE 1: Page<T>
     if (data && Array.isArray(data.content)) {

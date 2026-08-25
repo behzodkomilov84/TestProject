@@ -11,7 +11,7 @@ body {
 
 .container {
     width: 95%;
-    margin: 165px auto 20px auto;
+    margin: 20px auto;
     padding: 15px;
     border-radius: 8px;
     box-shadow: 0 6px 24px rgba(3, 2, 2, 0.87);
@@ -52,24 +52,24 @@ body {
     border-radius: 6px;
 }
 
+/* Foydalanuvchi so'rovi bo'yicha: ilgari "position:fixed" edi — bu
+   sabab uning balandligi oddiy hujjat oqimiga ta'sir qilmasdi, pastdagi
+   .container'ning margin-top'i esa QATTIQ raqam (165px) edi. Tugmalar
+   ko'payib (yoki sarlavha uzunroq bo'lib) bu blok balandroq bo'lib
+   qolganda — .container ustiga "tushib" qolar edi (haqiqiy production
+   bug). Endi ODDIY OQIMDA (position:fixed YO'Q) — bu holat STRUKTURAV
+   RAVISHDA butunlay imkonsiz: .top-element qancha baland bo'lmasin,
+   pastdagi .container HAR DOIM avtomatik shuncha pastroqda boshlanadi
+   (brauzerning o'zi hisoblaydi), qo'shimcha JS/qattiq raqam SHART EMAS. */
 .top-element {
     display: grid;
     grid-template-columns: auto 1fr auto;
     align-items: center;
-    position: fixed;
-    top: 75px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 98vw;
+    width: 95%;
+    margin: 90px auto 0;
     background: #a2bdb9;
     box-shadow: 0 6px 24px rgba(3, 2, 2, 0.87);
     border-radius: 8px;
-    /* MUHIM: navbar.css'dagi .navbar (va uning mobil menyusi .nav-items)
-       ham z-index:1000 — teng bo'lganda DOM tartibida keyingi element
-       (shu blok) ustidan bosib chiqardi, natijada mobilda menyu ochilganda
-       shu blok uning ustiga tushib, menyu punktlari ko'rinmay qolardi.
-       Navbardan past, oddiy sahifa kontentidan (z-index yo'q) yuqori. */
-    z-index: 500;
     overflow-x: hidden;
 }
 
