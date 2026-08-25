@@ -48,21 +48,27 @@ body {
     min-width: 0; /* uzun so'zlar flex konteynerni "yorib chiqib" ketmasligi uchun */
 }
 
+/* MUHIM: bu blokning balandligi ATAYLAB "align-self:stretch" (qo'shni
+   .questions-container'ga moslab cho'zilish) ORQALI EMAS, aniq
+   chegaralangan qiymat (min(...)) orqali beriladi. Sabab — haqiqiy
+   production bug: "position:sticky" + "align-self:stretch" birikmasi
+   balandlikni ISHONCHSIZ (ba'zan haddan tashqari katta, sahifada
+   keraksiz bo'sh joy va qo'shimcha scroll paydo qiladigan) hisoblardi,
+   natijada ichidagi foiz-asosidagi to'ldirish (#progress{height:X%})
+   ham noto'g'ri (masalan o'rtada "muallaq") ko'rinardi. Aniq balandlik
+   bilan bu hisoblash 100% barqaror. */
 .progress-wrapper {
     position: sticky;
     top: 90px;
 
     flex-shrink: 0;
     width: 64px;
+    height: min(55vh, 460px);
 
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
-
-    /* Savollar bloki bilan taxminan bir xil balandlik — pastga qarab
-       cho'zilib, progress-bar shuncha uzun bo'lishi uchun. */
-    align-self: stretch;
+    gap: 8px;
 }
 
 
@@ -125,25 +131,29 @@ body {
     100% { box-shadow: 0 0 0 rgba(255,82,82,0.7); }
 }
 
-/* Foydalanuvchi so'rovi: progress-bar endi VERTIKAL (pastdan yuqoriga
-   to'ladi), savollar blokining O'NG tomonida. */
+/* Foydalanuvchi so'rovi: progress-bar endi VERTIKAL, PASTDAN YUQORIGA
+   to'ladi, savollar blokining O'NG tomonida. ".progress-wrapper" ANIQ
+   balandlikka ega (yuqoridagi izohga qarang) — shu sabab bu yerdagi
+   "flex:1" endi ANIQ, barqaror piksel balandlikka teng bo'ladi (avvalgi
+   "align-self:stretch" versiyasida ISHONCHSIZ edi). */
 .progress-bar {
     width: 14px;
     background: #e5e9f2;
 
     flex: 1;                 /* qolgan bo'sh joyni egallaydi (vertikal) */
-    min-height: 120px;
+    min-height: 0;            /* flex item'ning "min-height:auto" standart cheklovini olib tashlaydi */
 
     border-radius: 6px;
     overflow: hidden;
 
     display: flex;
-    flex-direction: column-reverse; /* pastdan yuqoriga to'lishi uchun */
+    flex-direction: column-reverse; /* pastdan yuqoriga to'lishi uchun — bitta farzand (#progress) shu sabab ENG PASTGA "yopishadi" */
 }
 
 #progress {
     width: 100%;
     height: 0%;
+    flex-shrink: 0;
     transition: height 0.3s ease;
 
     background: linear-gradient(
@@ -154,11 +164,12 @@ body {
     box-shadow: 0 0 10px rgba(78,140,255,0.6);
 }
 
-.progress-percent {
-    font-size: 12px;
+.progress-fraction {
+    font-size: 13px;
     font-weight: 700;
     color: #4e5b76;
     flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .questions-container{
@@ -481,6 +492,7 @@ input[type="radio"] {
     .progress-wrapper {
         width: 44px;
         top: 78px;
+        height: min(50vh, 380px);
     }
 
     .progress-bar {

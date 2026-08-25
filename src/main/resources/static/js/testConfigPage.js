@@ -40,8 +40,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (returnCourseId) {
         const backBtn = document.getElementById("backToCourseBtn");
         backBtn.classList.remove("hidden");
+        // Haqiqiy production bug: ilgari FAQAT kursning o'ziga
+        // (/courses/{courseId} — umumiy ro'yxat) qaytarardi, aynan
+        // qaysi darsdan kelingani "yo'qolib" ketardi — foydalanuvchi
+        // "tashqarida" qolib, qaytadan o'sha darsni qidirishga majbur
+        // bo'lardi. Endi returnSectionId bo'lsa, ANIQ o'sha darsning
+        // o'ziga qaytaradi.
         backBtn.onclick = () => {
-            location.href = `/courses/${returnCourseId}`;
+            location.href = returnSectionId
+                ? `/courses/${returnCourseId}/sections/${returnSectionId}`
+                : `/courses/${returnCourseId}`;
         };
     }
 

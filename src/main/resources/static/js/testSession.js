@@ -229,11 +229,16 @@ function showQuestion(index) {
     active.classList.add('active');
     active.style.display = 'block';
 
-    // 👇 гарантируем, что вопрос виден под progress-bar
-    active.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-    });
+    // Har bir savol ko'rsatilganda sahifa ENG TEPAGA (rejim yorlig'i +
+    // "🔙 Mavzuga qaytish" tugmasi ham ko'rinadigan holatda) qaytadi —
+    // avval bu yerda "active.scrollIntoView({block:'start'})" ishlatilgan
+    // edi, lekin u savol blokini navbar OSTIGA "yashiruvchi" (haqiqiy
+    // production bug — foydalanuvchi HAR safar yangi savolga o'tganda
+    // qo'lda tepaga tortishga majbur bo'lardi) noto'g'ri joylashuv
+    // berardi, chunki navbar/mode-label/qaytish tugmasi savol blokidan
+    // OLDIN turadi — scrollIntoView ularni ham ekrandan chiqarib
+    // yuborardi.
+    window.scrollTo({top: 0, behavior: 'smooth'});
 
     focusFirstAnswer();
 }
@@ -271,7 +276,7 @@ function startTest() {
 
     // ✅ ПОКАЗЫВАЕМ progress + timer
     document.getElementById("progress").style.height = "0%";
-    document.getElementById("progressPercent").innerText = "0%";
+    document.getElementById("progressFraction").innerText = `0/${testState.questions.length}`;
     document.getElementById("progressWrapper").classList.remove("hidden");
     document.body.classList.remove("no-progress");
 
@@ -638,9 +643,11 @@ function updateProgress() {
     if (bar) {
         bar.style.height = percent + "%";
     }
-    const percentLabel = document.getElementById("progressPercent");
-    if (percentLabel) {
-        percentLabel.innerText = percent + "%";
+    // Foydalanuvchi so'rovi: progress-bar USTIDA foiz emas, "2/5" kabi
+    // aniq son ko'rinishi kerak.
+    const fractionLabel = document.getElementById("progressFraction");
+    if (fractionLabel) {
+        fractionLabel.innerText = `${answered}/${total}`;
     }
 
     // Barcha savollarga javob berilgach — foydalanuvchi buni sezmasligi
