@@ -33,10 +33,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * JavaRush uslubidagi online kurslar — OWNER yaratadi/tahrirlaydi, ADMIN/USER
@@ -712,18 +710,16 @@ public class CourseService {
     // (chunki bu amal aynan KURS Bo'limi kontekstida ma'noga ega).
     //
     // deleteChapter'dan farqli, bo'sh bo'lishi SHART EMAS: shu Bo'limdagi
-    // BARCHA kurs mavzularini (CourseSection) ham o'chiradi. Agar shu
-    // Bo'lim TEST BOSHQARUVIdagi biror Bo'limga (TopicSection) bog'langan
-    // bo'lsa — O'SHA Bo'limning mavzulari (savollari bilan birga) ham
-    // o'chiriladi. HAMMASI SOFT-DELETE (Course.deletedAt bilan bir xil
-    // g'oya) — CourseSection/Topic/Question o'zlarining "O'chirilganlar
-    // savati"laridan alohida-alohida tiklanishi mumkin (faqat TopicSection
-    // — Bo'limning O'ZI — hard-delete, chunki u shunchaki guruhlash
-    // birligi, Topic'lar undan uzilib "bo'limsiz" bo'lib qoladi, xolos).
-    // Xavfsizlik: agar bog'langan TopicSection'dagi biror mavzu BOSHQA kurs
-    // Bo'limiga ham (shu kursning boshqa Bo'limi yoki boshqa kurs) bog'langan
-    // bo'lsa — butun amal rad etiladi (o'sha boshqa bog'lanishni "yetim"
-    // qoldirmaslik uchun).
+    // BARCHA kurs mavzularini (CourseSection) soft-delete qiladi. MUHIM
+    // QOIDA (foydalanuvchi ANIQ talabi): TEST BOSHQARUVIdagi Topic/Question
+    // HECH QACHON, HECH QANDAY holatda bu yerdan tegilmaydi/o'chirilmaydi —
+    // agar shu Bo'limdagi biror mavzu TEST BOSHQARUVIga bog'langan bo'lsa,
+    // FAQAT bog'lanishning o'zi uziladi (bu allaqachon avtomatik sodir
+    // bo'ladi: CourseSection soft-delete qilingach, uning linkedTopic FK'i
+    // bazada jismoniy qolsa ham, findByLinkedTopic_Id/findLinkedCourseTitles*
+    // kabi BARCHA "bog'langanmi?" so'rovlari deletedAt IS NULL filtri bilan
+    // yozilgan — shu sabab mavzu darhol "bog'lanmagan" ko'rinadi, Topic/
+    // Question esa TEST BOSHQARUVIda bus-butun, tegilmagan holda qolaveradi).
     @Transactional
     public void deleteChapterWithLinkedTopics(Long courseId, Long chapterId, User currentUser) {
         Course course = getCourseOrThrow(courseId);
@@ -737,42 +733,10 @@ public class CourseService {
                 .filter(s -> s.getChapter() != null && s.getChapter().getId().equals(chapterId))
                 .toList();
 
-        // Shu Bo'limga bog'langan TEST BOSHQARUVI Bo'lim(lar)i — odatda
-        // bitta, lekin nazariy jihatdan bir nechta har xil TopicSection'dan
-        // mavzular shu bitta kurs Bo'limiga bog'langan bo'lishi mumkin.
-        Set<Long> topicSectionIds = chapterSections.stream()
-                .map(CourseSection::getLinkedTopic)
-                .filter(Objects::nonNull)
-                .map(Topic::getSection)
-                .filter(Objects::nonNull)
-                .map(TopicSection::getId)
-                .collect(Collectors.toSet());
-
-        for (Long topicSectionId : topicSectionIds) {
-            for (Topic topic : topicRepository.findBySection_IdAndDeletedAtIsNullOrderByOrderIndexAsc(topicSectionId)) {
-                courseSectionRepository.findByLinkedTopic_Id(topic.getId()).ifPresent(link -> {
-                    if (!link.getChapter().getId().equals(chapterId)) {
-                        throw new IllegalArgumentException("❌ \"" + topic.getName() +
-                                "\" mavzusi boshqa kurs bo'limiga ham bog'langan — avval o'sha bog'lanishni olib tashlang.");
-                    }
-                });
-            }
-        }
-
         LocalDateTime now = LocalDateTime.now();
         chapterSections.forEach(s -> s.setDeletedAt(now));
         courseSectionRepository.saveAll(chapterSections);
         courseChapterRepository.delete(chapter);
-
-        for (Long topicSectionId : topicSectionIds) {
-            List<Topic> topics = topicRepository.findBySection_IdAndDeletedAtIsNullOrderByOrderIndexAsc(topicSectionId);
-            for (Topic topic : topics) {
-                questionRepository.softDeleteByTopic_Id(topic.getId());
-                topic.setDeletedAt(now);
-            }
-            topicRepository.saveAll(topics);
-            topicSectionRepository.deleteById(topicSectionId);
-        }
     }
 
     // "🗑️ Bo'sh bo'limlarni o'chirish" — shu kursda hech qanday mavzuga

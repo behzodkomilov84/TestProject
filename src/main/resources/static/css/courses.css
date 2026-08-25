@@ -1016,12 +1016,25 @@ body {
     color: #94a3b8;
 }
 
+/* ✏️ va 🗑️ tugmalari BITTA guruhda (chapter-box-actions) — faqat shu
+   guruhning O'ZI "margin-left:auto" bilan o'ngga suriladi. AVVAL har
+   ikkala tugmaning ALOHIDA-ALOHIDA "margin-left:auto"si bor edi — flex
+   qoidasiga ko'ra bir nechta auto-margin bo'lsa, bo'sh joy ULAR
+   ORASIDA TENG bo'lib taqsimlanadi, natijada ikkovi bir-biridan olib
+   qochib, orada katta bo'shliq paydo bo'lgan edi (haqiqiy production
+   bug). Endi ikkovi doim yonma-yon turadi. */
+.chapter-box-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
 /* "✏️" — bo'lim nomini tahrirlash (renameChapterPrompt, courseDetail.js).
    Bosilganda BARCHA shu bo'limdagi mavzularda nom avtomatik yangilanadi
    (CourseChapter — bitta umumiy yozuv, mavzular unga faqat FK orqali
    bog'langan). */
 .chapter-rename-btn {
-    margin-left: auto;
     background: none;
     border: 1px solid #e2e8f0;
     border-radius: 6px;
@@ -1035,8 +1048,8 @@ body {
 }
 
 /* "🗑️ Bo'lim + mavzular" (deleteChapterWithLinkedTopics, courseDetail.js)
-   — ✏️ tugmasi yonida, lekin QAYTARIB BO'LMAYDIGAN amal ekanini
-   bildiruvchi qizil rang bilan ajratilgan. */
+   — ✏️ tugmasi yonida, qizil rang bilan ajratilgan (soft-delete bo'lsa
+   ham, bir yo'la bir nechta mavzuga ta'sir qilgani uchun eslatma). */
 .chapter-rename-btn.danger-btn {
     border-color: #fecaca;
     color: #dc2626;

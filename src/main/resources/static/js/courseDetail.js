@@ -1210,7 +1210,7 @@ function renderChapterBox(group, globalIndexById) {
 
     return `
         <div class="chapter-box">
-            <h3 class="chapter-box-title">📂 ${escapeHtml(group.name)} <span class="chapter-box-count">(${group.items.length})</span>${renameBtn}${deleteWithTopicsBtn}</h3>
+            <h3 class="chapter-box-title">📂 ${escapeHtml(group.name)} <span class="chapter-box-count">(${group.items.length})</span><span class="chapter-box-actions">${renameBtn}${deleteWithTopicsBtn}</span></h3>
             ${sortBar}
             <div class="sections-grid">${cardsHtml}</div>
             ${paginationHtml ? `<div class="sections-pagination chapter-box-pagination">${paginationHtml}</div>` : ""}
@@ -1521,15 +1521,13 @@ async function renameChapter(chapterId, newName) {
 
 // "🗑️ Bo'lim + mavzular" (chapter-box sarlavhasidagi ✏️ yonida) —
 // deleteSelectedChapter'dan farqli, bo'sh bo'lishi shart emas: shu
-// Bo'lim ICHIDAGI barcha kurs mavzularini o'chiradi, va agar TEST
-// BOSHQARUVIdagi biror Bo'limga bog'langan bo'lsa — o'sha Bo'limning
-// mavzularini (savollari bilan birga) ham. QAYTARIB BO'LMAYDI — shu
-// sabab ikki bosqichli tasdiqlash.
+// Bo'lim ICHIDAGI barcha kurs mavzularini (CourseSection) soft-delete
+// qiladi ("🗑️ O'chirilgan mavzular" panelidan "♻️ Tiklash" bilan
+// qaytariladi). TEST BOSHQARUVIdagi Topic/Question'ga HECH QACHON
+// tegilmaydi — bog'langan mavzu bo'lsa ham, faqat bog'lanishning o'zi
+// (avtomatik) uziladi, savollar o'z joyida, butun holda qolaveradi.
 async function deleteChapterWithLinkedTopics(chapterId, chapterName) {
-    if (!confirm(`⚠️ "${chapterName}" bo'limini ICHIDAGI BARCHA mavzulari bilan butunlay o'chirmoqchimisiz?\n\nAgar bu bo'lim TEST BOSHQARUVIga bog'langan bo'lsa, o'sha yerdagi mos mavzular savollari bilan birga o'chadi.`)) {
-        return;
-    }
-    if (!confirm("Haqiqatan ham ishonchingiz komilmi? Bu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi (backup orqali qo'lda tiklashdan boshqa).")) {
+    if (!confirm(`"${chapterName}" bo'limini ICHIDAGI barcha mavzulari bilan o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — "🗑️ O'chirilgan mavzular" panelidan qaytarish mumkin. TEST BOSHQARUVIdagi savollarga tegilmaydi.)`)) {
         return;
     }
 
