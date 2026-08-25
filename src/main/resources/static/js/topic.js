@@ -151,7 +151,7 @@ async function loadTopicTrash() {
                 <div>${escapeHtml(t.name)} (${t.questionCount} ta test) — ${formatTopicTrashDate(t.deletedAt)}da o'chirilgan</div>
                 <div class="row-actions">
                     <button onclick="restoreTopic(${t.id})">♻️ Tiklash</button>
-                    <button class="danger-btn" onclick="permanentlyDeleteTopic(${t.id}, ${JSON.stringify(t.name)})">🗑️ Butunlay o'chirish</button>
+                    <button class="danger-btn" onclick="permanentlyDeleteTopic(${t.id}, ${JSON.stringify(t.name).replace(/"/g, "&quot;")})">🗑️ Butunlay o'chirish</button>
                 </div>
             </div>
         `).join("");

@@ -50,7 +50,7 @@ function renderTrash(courses) {
                     </div>
                     <div class="course-form-actions">
                         <button onclick="restoreCourse(${c.id})">♻️ Tiklash</button>
-                        <button class="danger-btn" onclick="permanentlyDeleteCourse(${c.id}, ${JSON.stringify(c.title)})">🗑️ Butunlay o'chirish</button>
+                        <button class="danger-btn" onclick="permanentlyDeleteCourse(${c.id}, ${JSON.stringify(c.title).replace(/"/g, "&quot;")})">🗑️ Butunlay o'chirish</button>
                     </div>
                 </div>
             </div>

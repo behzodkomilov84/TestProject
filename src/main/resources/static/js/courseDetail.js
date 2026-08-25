@@ -1193,7 +1193,7 @@ function renderChapterBox(group, globalIndexById) {
     // BOSHQARUVIdagi mos mavzu+savollarni ham) birga o'chiradi. Foydalanuvchi
     // so'rovi bo'yicha ATAYLAB shu yerda (TEST BOSHQARUVIda EMAS).
     const deleteWithTopicsBtn = (cachedCourse && cachedCourse.canManage && group.chapterId != null)
-        ? `<button class="chapter-rename-btn danger-btn" onclick="deleteChapterWithLinkedTopics(${group.chapterId}, ${JSON.stringify(group.name)})" title="Bo'lim va ichidagi barcha mavzularni (bog'langan bo'lsa, TEST BOSHQARUVIdagi savollari bilan) butunlay o'chirish">🗑️</button>`
+        ? `<button class="chapter-rename-btn danger-btn" onclick="deleteChapterWithLinkedTopics(${group.chapterId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Bo'lim va ichidagi barcha mavzularni (bog'langan bo'lsa, TEST BOSHQARUVIdagi savollari bilan) butunlay o'chirish">🗑️</button>`
         : "";
 
     // Har bir Bo'lim — o'zining ALOHIDA "Saralash: A→Z / Z→A" tugmalariga
@@ -1976,7 +1976,7 @@ async function loadSectionTrash() {
                 <div>${escapeHtml(s.title)} — ${formatSectionTrashDate(s.deletedAt)}da o'chirilgan</div>
                 <div class="row-actions">
                     <button onclick="restoreSection(${s.id})">♻️ Tiklash</button>
-                    <button class="danger-btn" onclick="permanentlyDeleteSection(${s.id}, ${JSON.stringify(s.title)})">🗑️ Butunlay o'chirish</button>
+                    <button class="danger-btn" onclick="permanentlyDeleteSection(${s.id}, ${JSON.stringify(s.title).replace(/"/g, "&quot;")})">🗑️ Butunlay o'chirish</button>
                 </div>
             </div>
         `).join("");
