@@ -11,24 +11,58 @@ body {
 }
 
 .container {
-    max-width: 900px;
-    margin: 90px auto 40px auto;
+    max-width: 1000px;
+    margin: 90px auto 24px auto;
+    padding: 0 12px;
+}
+
+/* Rejim yorlig'i + "🔙 Mavzuga qaytish" tugmasi bir qatorda — endi
+   position:fixed EMAS (oddiy oqimda), shu sabab pastdagi savol bloki
+   bilan bir-birining ustiga tushib qolishi STRUKTURAV RAVISHDA
+   imkonsiz (avvalgi ".progress-wrapper{position:fixed}" +
+   ".mode-label{margin-top:115px}" kombinatsiyasi — bir nechta
+   qattiq raqam bir-biriga mos kelmay, sahifa yuklanganda tepa qismi
+   fixed elementlar ostida "yashiringan" holda ochilardi, mobilda
+   foydalanuvchi qo'lda tepaga tortishga majbur bo'lardi). */
+.test-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+/* Savollar bloki (chapda) + progress/taymer (o'ngda, VERTIKAL) —
+   foydalanuvchi so'rovi bo'yicha. Tor ekranlarda ham (mobil) qatorda
+   qoladi — progress panel juda tor (56px) bo'lgani uchun asosiy
+   kontentdan deyarli joy olmaydi. */
+.test-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+}
+
+.questions-container {
+    flex: 1;
+    min-width: 0; /* uzun so'zlar flex konteynerni "yorib chiqib" ketmasligi uchun */
 }
 
 .progress-wrapper {
-    position: fixed;
-    top: 80px;              /* ниже navbar */
-    left: 50%;
-    transform: translateX(-50%);
+    position: sticky;
+    top: 90px;
 
-    width: 75%;
-    height: 35px;
+    flex-shrink: 0;
+    width: 64px;
 
     display: flex;
-    align-items: center;     /* вертикально по центру */
-    gap: 16px;               /* расстояние между элементами */
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
 
-    z-index: 1000;
+    /* Savollar bloki bilan taxminan bir xil balandlik — pastga qarab
+       cho'zilib, progress-bar shuncha uzun bo'lishi uchun. */
+    align-self: stretch;
 }
 
 
@@ -71,10 +105,13 @@ body {
 .timer {
     background: linear-gradient(135deg, darkorchid, #6a1b9a);
     color: #fff;
-    font-size: 17px;
+    font-size: 14px;
     letter-spacing: 1px;
-    padding: 10px 15px;
+    padding: 8px 6px;
     border-radius: 10px;
+    width: 100%;
+    text-align: center;
+    flex-shrink: 0;
 }
 
 .timer.danger {
@@ -88,27 +125,40 @@ body {
     100% { box-shadow: 0 0 0 rgba(255,82,82,0.7); }
 }
 
+/* Foydalanuvchi so'rovi: progress-bar endi VERTIKAL (pastdan yuqoriga
+   to'ladi), savollar blokining O'NG tomonida. */
 .progress-bar {
-    height: 14px;
+    width: 14px;
     background: #e5e9f2;
 
-    flex: 1;                 /* занимает всё оставшееся место */
+    flex: 1;                 /* qolgan bo'sh joyni egallaydi (vertikal) */
+    min-height: 120px;
 
     border-radius: 6px;
     overflow: hidden;
+
+    display: flex;
+    flex-direction: column-reverse; /* pastdan yuqoriga to'lishi uchun */
 }
 
 #progress {
-    height: 100%;
-    width: 0%;
-    transition: width 0.3s ease;
+    width: 100%;
+    height: 0%;
+    transition: height 0.3s ease;
 
     background: linear-gradient(
-            90deg,
+            0deg,
             #4e8cff,
             #6aa6ff
     );
     box-shadow: 0 0 10px rgba(78,140,255,0.6);
+}
+
+.progress-percent {
+    font-size: 12px;
+    font-weight: 700;
+    color: #4e5b76;
+    flex-shrink: 0;
 }
 
 .questions-container{
@@ -118,17 +168,25 @@ body {
 .question-block {
     background: linear-gradient(180deg, #ffffff, #f9fbff);
     border-radius: 16px;
-    padding: 28px 32px;
-    max-width: 850px;
+    padding: 16px 20px;
 
     box-shadow:
             0 10px 25px rgba(0,0,0,0.08),
             inset 0 0 0 1px rgba(0,0,0,0.03);
 
     height: auto;
-    min-height: 65vh;
 
     display: none;
+
+    /* "🔝 Tepa qismi ko'rinmay qolyapti" — haqiqiy production bug:
+       showQuestion() savolni scrollIntoView({block:'start'}) bilan
+       ekranga chiqarardi, lekin navbar HAMON position:fixed (72px) —
+       scrollIntoView buni hisobga olmaydi, natijada savol sarlavhasining
+       tepa qismi fixed navbar OSTIDA "yashiringan" holda qolar edi,
+       mobilda foydalanuvchi qo'lda pastga (aslida "tepaga") tortishga
+       majbur bo'lardi. scroll-margin-top shu farqni AVTOMATIK
+       kompensatsiya qiladi. */
+    scroll-margin-top: 90px;
 }
 
 .question-block.active {
@@ -137,10 +195,10 @@ body {
 }
 
 .question-block h3 {
-    font-size: 20px;
+    font-size: 18px;
     font-weight: 600;
     color: #2c3e50;
-    margin-bottom: 22px;
+    margin-bottom: 12px;
 }
 
 ul {
@@ -149,15 +207,15 @@ ul {
 }
 
 .question-block ul li {
-    margin-bottom: 14px;
+    margin-bottom: 8px;
 }
 
 .question-block label {
     display: flex;
     align-items: center;
-    gap: 14px;
+    gap: 12px;
 
-    padding: 14px 18px;
+    padding: 10px 14px;
     border-radius: 12px;
     cursor: pointer;
 
@@ -185,7 +243,7 @@ ul {
     justify-content: space-between;
     gap: 10px;
     flex-wrap: wrap;
-    margin-top: 30px;
+    margin-top: 16px;
 }
 
 /* MUHIM: .container ichida cheklangan — aks holda navbar fragment ichidagi
@@ -369,10 +427,20 @@ body.test-started .question-block {
 .mode-label {
     text-align: center;
     font-weight: bold;
-    padding: 8px;
-    margin-bottom: 10px;
-    margin-top: 115px;
+    padding: 8px 14px;
     border-radius: 8px;
+}
+
+/* "🔙 Mavzuga qaytish" — kurs darsidan kelingan bo'lsa, test
+   sessiyasining OXIRIGACHA ko'rinib turadi (testSession.js). */
+.return-topic-btn {
+    background: #eef2f7;
+    color: #334155;
+    border: 1px solid #cbd5e1;
+}
+
+.return-topic-btn:hover {
+    background: #e2e8f0;
 }
 
 /* PRACTICE */
@@ -400,4 +468,35 @@ body[data-mode="hard"] .mode-label {
    yashirin bo'lsa ham bosish (klik) ishlayveradi. */
 input[type="radio"] {
     display: none;
+}
+
+/* Juda tor ekranlarda (telefon) progress panelni yanada torroq qilib,
+   savollar bloki uchun ko'proq joy qoldiradi. */
+@media (max-width: 480px) {
+    .container {
+        margin-top: 78px;
+        padding: 0 8px;
+    }
+
+    .progress-wrapper {
+        width: 44px;
+        top: 78px;
+    }
+
+    .progress-bar {
+        width: 10px;
+    }
+
+    .timer {
+        font-size: 11px;
+        padding: 6px 4px;
+    }
+
+    .progress-percent {
+        font-size: 10px;
+    }
+
+    .question-block {
+        padding: 12px 14px;
+    }
 }

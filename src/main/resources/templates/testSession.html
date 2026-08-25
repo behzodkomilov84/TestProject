@@ -21,22 +21,34 @@
 
 <div class="container">
 
-    <div id="modeLabel" class="mode-label"></div>
+    <div class="test-topbar">
+        <div id="modeLabel" class="mode-label"></div>
+        <!-- Kurs darsidan ("🎯 Mavzuga oid testlarni yechish") kelingan
+             bo'lsa — test sessiyasining OXIRIGACHA (oxirgi savolgacha)
+             ko'rinib turadi (testSession.js#setupReturnToTopicButton). -->
+        <button id="returnToTopicBtn" class="return-topic-btn hidden">🔙 Mavzuga qaytish</button>
+    </div>
 
-    <div id="progressWrapper" class="progress-wrapper">
+    <div class="test-layout">
+        <!-- Вопросы -->
+        <div id="questions" class="questions-container"></div>
 
-       <!-- Прогресс -->
-       <div class="progress-bar">
-           <div id="progress"></div>
+        <!-- Progress + Таймер — endi VERTIKAL, savollar blokidan O'NG
+             tomonda (foydalanuvchi so'rovi bo'yicha). -->
+        <div id="progressWrapper" class="progress-wrapper">
+
+           <!-- Таймер -->
+           <div id="timer" class="timer"></div>
+
+           <!-- Прогресс -->
+           <div class="progress-bar">
+               <div id="progress"></div>
+           </div>
+
+           <div id="progressPercent" class="progress-percent">0%</div>
+
        </div>
-
-       <!-- Таймер -->
-       <div id="timer" class="timer"></div>
-
-   </div>
-
-    <!-- Вопросы -->
-    <div id="questions" class="questions-container"></div>
+    </div>
 
 </div>
 

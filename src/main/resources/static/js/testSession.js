@@ -43,6 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     setupModeLabel();
+    setupReturnToTopicButton();
 
     // Запрашиваем тест сразу после загрузки страницы
     fetch("/api/test-session/start", {
@@ -76,6 +77,25 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
 });
+
+// "🔙 Mavzuga qaytish" — kurs darsidan ("🎯 Mavzuga oid testlarni
+// yechish") kelingan bo'lsa (testConfigPage.js#startTest sessionStorage'ga
+// yozib qo'ygan), test sessiyasining OXIRIGACHA (5-savolni yechayotganda
+// ham) ko'rinib turadi — foydalanuvchi so'rovi bo'yicha. Boshqa hollarda
+// (bosh menyudan to'g'ridan-to'g'ri kirilganda) butunlay yashirin qoladi.
+function setupReturnToTopicButton() {
+    const courseId = sessionStorage.getItem("returnCourseId");
+    if (!courseId) return;
+
+    const sectionId = sessionStorage.getItem("returnSectionId");
+    const btn = document.getElementById("returnToTopicBtn");
+    btn.classList.remove("hidden");
+    btn.onclick = () => {
+        location.href = sectionId
+            ? `/courses/${courseId}/sections/${sectionId}`
+            : `/courses/${courseId}`;
+    };
+}
 
 function setupModeLabel() {
 
@@ -250,7 +270,8 @@ function startTest() {
     testState.allAnsweredNotified = false;
 
     // ✅ ПОКАЗЫВАЕМ progress + timer
-    document.getElementById("progress").style.width = "0%";
+    document.getElementById("progress").style.height = "0%";
+    document.getElementById("progressPercent").innerText = "0%";
     document.getElementById("progressWrapper").classList.remove("hidden");
     document.body.classList.remove("no-progress");
 
@@ -615,7 +636,11 @@ function updateProgress() {
 
     const bar = document.getElementById("progress");
     if (bar) {
-        bar.style.width = percent + "%";
+        bar.style.height = percent + "%";
+    }
+    const percentLabel = document.getElementById("progressPercent");
+    if (percentLabel) {
+        percentLabel.innerText = percent + "%";
     }
 
     // Barcha savollarga javob berilgach — foydalanuvchi buni sezmasligi

@@ -5,9 +5,12 @@ const urlParams = new URLSearchParams(window.location.search);
 const preselectScienceId = urlParams.get("scienceId");
 const preselectTopicId = urlParams.get("topicId");
 // Shu kurs (mazkur "🎯 Mavzuga oid testlarni yechish" tugmasi qaysi
-// kursdan bosilgan bo'lsa) — faqat "🔙 Mavzularga qaytish" tugmasini
+// kursdan bosilgan bo'lsa) — "🔙 Mavzularga qaytish" tugmasini
 // ko'rsatish/qayerga qaytarishni bilish uchun (pastda, DOMContentLoaded).
+// Test boshlangandan keyin ham (testSession.js) ko'rinib turishi uchun
+// startTest()'da sessionStorage'ga ham yozib qo'yiladi.
 const returnCourseId = urlParams.get("courseId");
+const returnSectionId = urlParams.get("sectionId");
 
 if (preselectTopicId) {
     sessionStorage.setItem("testMode", "practice");
@@ -376,6 +379,19 @@ function startTest() {
     sessionStorage.setItem("limit", limit);
     sessionStorage.setItem("time", timeValue);
     sessionStorage.setItem("testMode", mode);
+
+    // "🔙 Mavzuga qaytish" tugmasi test sessiyasining OXIRIGACHA (masalan
+    // 5-savolni yechayotganda ham) ko'rinib turishi uchun — testSession.js
+    // shu ikkalasini o'qib, doimiy tugma chiqaradi. Bo'sh bo'lsa (odatiy
+    // holat — testConfigPage'ga bosh menyudan to'g'ridan-to'g'ri
+    // kirilganda) — testSession'da tugma ko'rsatilmaydi.
+    if (returnCourseId) {
+        sessionStorage.setItem("returnCourseId", returnCourseId);
+        sessionStorage.setItem("returnSectionId", returnSectionId || "");
+    } else {
+        sessionStorage.removeItem("returnCourseId");
+        sessionStorage.removeItem("returnSectionId");
+    }
 
     // 👉 просто переход
     window.location.href = "/testSession";

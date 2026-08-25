@@ -151,7 +151,12 @@ function renderTopicTestLink(data) {
         const params = new URLSearchParams({
             scienceId: data.linkedScienceId,
             topicId: data.linkedTopicId,
-            courseId: COURSE_ID
+            courseId: COURSE_ID,
+            // Test sessiyasi TUGAGUNCHA ham "🔙 Mavzuga qaytish" tugmasi
+            // ko'rinib turishi uchun (testConfigPage.js -> testSession.js,
+            // sessionStorage orqali) — aynan SHU darsga (bo'lim emas)
+            // qaytarish uchun.
+            sectionId: SECTION_ID
         });
         location.href = "/testConfigPage?" + params.toString();
     };
