@@ -1187,6 +1187,15 @@ function renderChapterBox(group, globalIndexById) {
         ? `<button class="chapter-rename-btn" onclick="renameChapterPrompt(${group.chapterId})" title="Bo'lim nomini tahrirlash">✏️</button>`
         : "";
 
+    // "🗑️ Bo'lim + mavzular" — deleteSelectedChapter (Bo'lim tanlash
+    // select'i yonida) dan farqli, bo'sh bo'lishi shart emas: shu Bo'lim
+    // ICHIDAGI barcha kurs mavzularini (va bog'langan bo'lsa, TEST
+    // BOSHQARUVIdagi mos mavzu+savollarni ham) birga o'chiradi. Foydalanuvchi
+    // so'rovi bo'yicha ATAYLAB shu yerda (TEST BOSHQARUVIda EMAS).
+    const deleteWithTopicsBtn = (cachedCourse && cachedCourse.canManage && group.chapterId != null)
+        ? `<button class="chapter-rename-btn danger-btn" onclick="deleteChapterWithLinkedTopics(${group.chapterId}, ${JSON.stringify(group.name)})" title="Bo'lim va ichidagi barcha mavzularni (bog'langan bo'lsa, TEST BOSHQARUVIdagi savollari bilan) butunlay o'chirish">🗑️</button>`
+        : "";
+
     // Har bir Bo'lim — o'zining ALOHIDA "Saralash: A→Z / Z→A" tugmalariga
     // ega (sortChapterSections) — faqat SHU bo'lim ichidagi mavzularni
     // qayta tartiblaydi, boshqa bo'limlarga (yoki bo'limsiz mavzularga)
@@ -1201,7 +1210,7 @@ function renderChapterBox(group, globalIndexById) {
 
     return `
         <div class="chapter-box">
-            <h3 class="chapter-box-title">📂 ${escapeHtml(group.name)} <span class="chapter-box-count">(${group.items.length})</span>${renameBtn}</h3>
+            <h3 class="chapter-box-title">📂 ${escapeHtml(group.name)} <span class="chapter-box-count">(${group.items.length})</span>${renameBtn}${deleteWithTopicsBtn}</h3>
             ${sortBar}
             <div class="sections-grid">${cardsHtml}</div>
             ${paginationHtml ? `<div class="sections-pagination chapter-box-pagination">${paginationHtml}</div>` : ""}
@@ -1501,6 +1510,34 @@ async function renameChapter(chapterId, newName) {
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
             alert(data.error || "Bo'lim nomini o'zgartirishda xatolik");
+            return;
+        }
+        loadCourse();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+// "🗑️ Bo'lim + mavzular" (chapter-box sarlavhasidagi ✏️ yonida) —
+// deleteSelectedChapter'dan farqli, bo'sh bo'lishi shart emas: shu
+// Bo'lim ICHIDAGI barcha kurs mavzularini o'chiradi, va agar TEST
+// BOSHQARUVIdagi biror Bo'limga bog'langan bo'lsa — o'sha Bo'limning
+// mavzularini (savollari bilan birga) ham. QAYTARIB BO'LMAYDI — shu
+// sabab ikki bosqichli tasdiqlash.
+async function deleteChapterWithLinkedTopics(chapterId, chapterName) {
+    if (!confirm(`⚠️ "${chapterName}" bo'limini ICHIDAGI BARCHA mavzulari bilan butunlay o'chirmoqchimisiz?\n\nAgar bu bo'lim TEST BOSHQARUVIga bog'langan bo'lsa, o'sha yerdagi mos mavzular savollari bilan birga o'chadi.`)) {
+        return;
+    }
+    if (!confirm("Haqiqatan ham ishonchingiz komilmi? Bu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi (backup orqali qo'lda tiklashdan boshqa).")) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/chapters/${chapterId}/with-topics`, { method: "DELETE" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "O'chirishda xatolik");
             return;
         }
         loadCourse();

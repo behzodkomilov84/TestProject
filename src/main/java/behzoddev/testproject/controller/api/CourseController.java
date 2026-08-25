@@ -138,4 +138,16 @@ public class CourseController {
                                @AuthenticationPrincipal User user) {
         courseService.deleteChapter(courseId, chapterId, user);
     }
+
+    // "🗑️ Bo'lim + mavzularni birga o'chirish" — deleteChapter'dan farqli,
+    // BO'SH bo'lishi shart emas: Bo'limdagi barcha kurs mavzularini
+    // (va bog'langan bo'lsa, TEST BOSHQARUVIdagi mos mavzu+savollarni ham)
+    // birga o'chiradi. "/with-topics" literal segment — Spring bunday
+    // holatda {chapterId} path-variable'dan ustun qo'yadi, chalkashmaydi.
+    @DeleteMapping("/{courseId}/chapters/{chapterId}/with-topics")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public void deleteChapterWithLinkedTopics(@PathVariable Long courseId, @PathVariable Long chapterId,
+                                               @AuthenticationPrincipal User user) {
+        courseService.deleteChapterWithLinkedTopics(courseId, chapterId, user);
+    }
 }

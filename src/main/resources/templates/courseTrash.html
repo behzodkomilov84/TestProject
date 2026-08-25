@@ -45,7 +45,7 @@
         </p>
 
         <div class="backup-controls">
-            <select id="backupFileSelect"></select>
+            <select id="backupFileSelect" onchange="fillDefaultBackupRange()"></select>
             <label>Dan: <input type="datetime-local" id="backupFromInput"></label>
             <label>Gacha: <input type="datetime-local" id="backupToInput"></label>
             <button onclick="previewBackupCourses()">🔍 Ko'rish</button>

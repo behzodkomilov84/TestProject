@@ -5,6 +5,7 @@ import behzoddev.testproject.dao.CourseRepository;
 import behzoddev.testproject.dao.CourseSectionProgressRepository;
 import behzoddev.testproject.dao.CourseSectionRepository;
 import behzoddev.testproject.dao.CourseSubscriptionRepository;
+import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
@@ -32,8 +33,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * JavaRush uslubidagi online kurslar — OWNER yaratadi/tahrirlaydi, ADMIN/USER
@@ -53,6 +56,7 @@ public class CourseService {
     private final ScienceRepository scienceRepository;
     private final TopicRepository topicRepository;
     private final TopicSectionRepository topicSectionRepository;
+    private final QuestionRepository questionRepository;
 
     /* ================= KATALOG / KO'RISH ================= */
 
@@ -663,6 +667,71 @@ public class CourseService {
         }
 
         courseChapterRepository.delete(chapter);
+    }
+
+    // "🗑️ Bo'lim + mavzularni birga o'chirish" — FAQAT shu yerdan (kurs
+    // ichidan) ishlaydi, TEST BOSHQARUVIdan (topicSections.html) EMAS —
+    // foydalanuvchi so'rovi bo'yicha ataylab shu yerga joylashtirilgan
+    // (chunki bu amal aynan KURS Bo'limi kontekstida ma'noga ega).
+    //
+    // deleteChapter'dan farqli, bo'sh bo'lishi SHART EMAS: shu Bo'limdagi
+    // BARCHA kurs mavzularini (CourseSection — progress bilan birga) ham
+    // o'chiradi. Agar shu Bo'lim TEST BOSHQARUVIdagi biror Bo'limga
+    // (TopicSection) bog'langan bo'lsa — O'SHA Bo'limning mavzulari ham
+    // savollari bilan birga butunlay o'chiriladi (questions.topic_id'da FK
+    // yo'qligi uchun ANIQ, alohida — QuestionRepository.deleteByTopic_Id).
+    // Xavfsizlik: agar bog'langan TopicSection'dagi biror mavzu BOSHQA kurs
+    // Bo'limiga ham (shu kursning boshqa Bo'limi yoki boshqa kurs) bog'langan
+    // bo'lsa — butun amal rad etiladi (o'sha boshqa bog'lanishni "yetim"
+    // qoldirmaslik uchun). QAYTARIB BO'LMAYDI.
+    @Transactional
+    public void deleteChapterWithLinkedTopics(Long courseId, Long chapterId, User currentUser) {
+        Course course = getCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
+
+        CourseChapter chapter = courseChapterRepository.findById(chapterId)
+                .filter(c -> c.getCourse().getId().equals(courseId))
+                .orElseThrow(() -> new NoSuchElementException("Bo'lim topilmadi"));
+
+        List<CourseSection> chapterSections = courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(courseId).stream()
+                .filter(s -> s.getChapter() != null && s.getChapter().getId().equals(chapterId))
+                .toList();
+
+        // Shu Bo'limga bog'langan TEST BOSHQARUVI Bo'lim(lar)i — odatda
+        // bitta, lekin nazariy jihatdan bir nechta har xil TopicSection'dan
+        // mavzular shu bitta kurs Bo'limiga bog'langan bo'lishi mumkin.
+        Set<Long> topicSectionIds = chapterSections.stream()
+                .map(CourseSection::getLinkedTopic)
+                .filter(Objects::nonNull)
+                .map(Topic::getSection)
+                .filter(Objects::nonNull)
+                .map(TopicSection::getId)
+                .collect(Collectors.toSet());
+
+        for (Long topicSectionId : topicSectionIds) {
+            for (Topic topic : topicRepository.findBySection_IdOrderByOrderIndexAsc(topicSectionId)) {
+                courseSectionRepository.findByLinkedTopic_Id(topic.getId()).ifPresent(link -> {
+                    if (!link.getChapter().getId().equals(chapterId)) {
+                        throw new IllegalArgumentException("❌ \"" + topic.getName() +
+                                "\" mavzusi boshqa kurs bo'limiga ham bog'langan — avval o'sha bog'lanishni olib tashlang.");
+                    }
+                });
+            }
+        }
+
+        for (CourseSection s : chapterSections) {
+            courseSectionProgressRepository.deleteBySection_Id(s.getId());
+        }
+        courseSectionRepository.deleteAll(chapterSections);
+        courseChapterRepository.delete(chapter);
+
+        for (Long topicSectionId : topicSectionIds) {
+            for (Topic topic : topicRepository.findBySection_IdOrderByOrderIndexAsc(topicSectionId)) {
+                questionRepository.deleteByTopic_Id(topic.getId());
+                topicRepository.deleteById(topic.getId());
+            }
+            topicSectionRepository.deleteById(topicSectionId);
+        }
     }
 
     // "🗑️ Bo'sh bo'limlarni o'chirish" — shu kursda hech qanday mavzuga

@@ -287,42 +287,6 @@ function removeFromUi(i) {
     }
 }
 
-// "🗑️ Bo'lim + mavzular" — bo'limni ICHIDAGI BARCHA mavzular bilan
-// (savollari bilan birga) DARHOL, butunlay o'chiradi. Oddiy 🗑️ Delete
-// (EDIT rejimida, saveToDb orqali batch)dan farqli — bu DARHOL serverga
-// yuboriladi, chunki QAYTARIB BO'LMAYDI. Shu sabab ikki bosqichli
-// tasdiqlash (courseTrash.js'dagi "Butunlay o'chirish" bilan bir xil
-// uslub).
-async function removeSectionWithTopics(sectionId, sectionName, topicCount) {
-    if (itemBlock.some(s => s.mode !== "VIEW")) {
-        alert("❌ Avval tahrirlashni yakuniga yetkazing (yoki saqlang)!");
-        return;
-    }
-
-    if (!confirm(`⚠️ "${sectionName}" bo'limini ICHIDAGI ${topicCount} ta mavzu bilan (savollari bilan birga) BUTUNLAY o'chirmoqchimisiz?\n\nBu oddiy o'chirishdan farqli — mavzular "bo'limsiz"ga qaytmaydi, savollari bilan birga butunlay yo'qoladi.`)) {
-        return;
-    }
-    if (!confirm("Haqiqatan ham ishonchingiz komilmi? Bu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi (backup orqali qo'lda tiklashdan boshqa).")) {
-        return;
-    }
-
-    try {
-        const res = await fetch(`/api/topic-section/${sectionId}/with-topics`, { method: "DELETE" });
-        if (!res.ok) {
-            const data = await res.json().catch(() => ({}));
-            alert(data.error || "O'chirishda xatolik");
-            return;
-        }
-        showToast('success', `✅ "${sectionName}" bo'limi mavzulari bilan o'chirildi`, 4000);
-        await reloadFromDb(`/api/topic-section?scienceId=${scienceId}`);
-        focusIndex = 0;
-        render();
-    } catch (err) {
-        console.error(err);
-        alert("Tarmoq xatoligi");
-    }
-}
-
 // Tugmalar guruhi ".row-actions" ichiga o'raladi (science.css) — shu
 // tufayli bo'lim nomi qancha uzun bo'lib, bir necha qatorga o'ralib
 // ketmasin, tugmalar HECH QACHON torayib/siqilib qolmaydi (flex-shrink:0).
@@ -330,19 +294,11 @@ function buttons(s, i) {
     if (s.mode === "VIEW") {
         const upDisabled = i === 0 ? "disabled" : "";
         const downDisabled = i === itemBlock.length - 1 ? "disabled" : "";
-        // Ichida mavzu bor bo'limlar uchun QO'SHIMCHA, alohida tugma —
-        // oddiy 🗑️ Delete (EDIT rejimida, faqat bo'shatadi) dan farqli,
-        // bu DARHOL ishlaydi va mavzularni SAVOLLARI BILAN BIRGA butunlay
-        // o'chiradi (removeSectionWithTopics — QAYTARIB BO'LMAYDI).
-        const deleteWithTopicsBtn = s.topicCount > 0
-            ? `<button class="danger-btn" onclick="removeSectionWithTopics(${s.id}, ${JSON.stringify(s.name)}, ${s.topicCount})" title="Bo'lim va ichidagi barcha mavzularni (savollari bilan) butunlay o'chirish">🗑️ Bo'lim + mavzular</button>`
-            : '';
         return `
             <div class="row-actions">
                 <button onclick="moveUp(${i})" ${upDisabled} title="Yuqoriga">⬆</button>
                 <button onclick="moveDown(${i})" ${downDisabled} title="Pastga">⬇</button>
                 <button onclick="edit(${i})">✏️ Edit</button>
-                ${deleteWithTopicsBtn}
             </div>
         `;
     }

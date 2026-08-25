@@ -8,8 +8,17 @@
     /* Основные стили страницы */
 
 body {
-    height: 90vh;
+    /* "height" (qattiq balandlik) o'rniga "min-height" — aks holda
+       kontent (masalan ko'p qatorli ro'yxat + pastdagi tugmalar qatori)
+       shu 90vh'dan oshib ketganda, oxirgi tugmalar ekran tashqarisiga
+       "kesilib" chiqib qolar edi (ko'rinmas yoki ekran chetiga
+       "yopishib qolgandek" bo'lardi). "padding-bottom" esa — sahifa
+       oxiridagi tugmalar ekran tagiga chippa yopishib qolmasin deb,
+       navbar tepasidagi bo'shliq (margin-top) bilan bir xil g'oyada
+       pastga ham nafas oladigan joy beradi. */
+    min-height: 90vh;
     margin-top: 85px;
+    padding-bottom: 40px;
     background: #f4f6f9;
     color: #333;
     font-family: Arial, sans-serif;
@@ -25,7 +34,7 @@ h1 {
    cho'zilib ketmasin deb chegaralanadi. */
 .wrapper {
     width: min(1600px, 90vw);
-    margin: auto;
+    margin: 0 auto 24px;
     max-height: 75vh;
 }
 

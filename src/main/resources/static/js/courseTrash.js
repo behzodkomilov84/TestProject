@@ -128,10 +128,28 @@ function loadBackupFiles() {
                 return;
             }
             select.innerHTML = files.map(f =>
-                `<option value="${f.fileName}">${formatDate(f.capturedAt)} — ${formatBytes(f.sizeBytes)}</option>`
+                `<option value="${f.fileName}" data-captured-at="${f.capturedAt}">${formatDate(f.capturedAt)} — ${formatBytes(f.sizeBytes)}</option>`
             ).join("");
+            // Vaqt oralig'ini QAYERDAN boshlash kerakligini foydalanuvchi
+            // bilmasligi mumkin (kurs qachon YARATILGANini aniq eslay
+            // olmaydi) — shu sabab standart holatda ENG KENG oraliq
+            // (juda uzoq o'tmishdan, backup olingan payt/hozirgacha)
+            // avtomatik to'ldiriladi, shunda "Ko'rish" birinchi urinishda
+            // ham natija berishi kerak; kerak bo'lsa keyin torайтirish mumkin.
+            fillDefaultBackupRange();
         })
         .catch(err => console.error(err));
+}
+
+function fillDefaultBackupRange() {
+    const select = document.getElementById("backupFileSelect");
+    const option = select.options[select.selectedIndex];
+    const capturedAt = option ? option.dataset.capturedAt : null;
+
+    document.getElementById("backupFromInput").value = "2000-01-01T00:00";
+    document.getElementById("backupToInput").value = capturedAt
+        ? capturedAt.slice(0, 16)
+        : new Date().toISOString().slice(0, 16);
 }
 
 function formatBytes(bytes) {

@@ -126,6 +126,26 @@ body {
     cursor: pointer;
 }
 
+/* "🗑️ O'chirilganlar" — #createCourseBtn bilan bir xil o'lcham/shakl,
+   lekin neytral (o'zi hech narsani o'chirmaydi, faqat "savat" sahifasiga
+   olib boradi) — hover'da qizg'ish tus bilan yumshoq eslatma beradi. */
+#trashBtn {
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    background: white;
+    color: #475569;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+#trashBtn:hover {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
 /* ===== Kurslar katalogi (grid) ===== */
 
 .courses-grid {
@@ -1012,6 +1032,18 @@ body {
 
 .chapter-rename-btn:hover {
     background: #eef2f7;
+}
+
+/* "🗑️ Bo'lim + mavzular" (deleteChapterWithLinkedTopics, courseDetail.js)
+   — ✏️ tugmasi yonida, lekin QAYTARIB BO'LMAYDIGAN amal ekanini
+   bildiruvchi qizil rang bilan ajratilgan. */
+.chapter-rename-btn.danger-btn {
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
+.chapter-rename-btn.danger-btn:hover {
+    background: #fef2f2;
 }
 
 /* Bo'lim ichidagi sahifalash — umumiy .sections-pagination uslubidan
