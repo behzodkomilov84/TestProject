@@ -73,10 +73,24 @@ body {
     overflow-x: hidden;
 }
 
-.back-btn {
+/* Ikkita chap tugma (← MAVZUGA QAYTISH + 🗑️ O'chirilganlar) BITTA grid
+   ustunida, yonma-yon — shu tufayli .top-element'ning "auto 1fr auto"
+   3 ustunli grid'i buzilmaydi (4-tugma qo'shilganda avval Grid uni
+   YANGI QATORGA "uloqtirib" yuborgan, natijada .top-element balandligi
+   kutilganidan katta bo'lib, pastdagi .container ustiga "tushib"
+   qolgan edi — aynan shu producion bug). Kelajakda yana tugma
+   qo'shilsa ham, shu guruh ICHIGA joylashtirilsa xavfsiz. */
+.top-element-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
     justify-self: start;
-    height: 42px;
     margin-left: 16px;
+}
+
+.back-btn {
+    height: 42px;
     justify-content: center;
 }
 

@@ -23,16 +23,18 @@
 
 <div class="container">
 
-    <div class="top-element">
-        <button class="back-btn" onclick="goBack()">← MAVZUGA QAYTISH</button>
+    <div class="top-element" id="topElement">
+        <div class="top-element-left">
+            <button class="back-btn" onclick="goBack()">← MAVZUGA QAYTISH</button>
+            <!-- Soft-delete qilingan (🗑️ o'chirilgan) savollar — "♻️ Tiklash"
+                 bilan bir zumda qaytariladi (QuestionService.getDeletedQuestions/restoreQuestion). -->
+            <button class="back-btn" onclick="toggleQuestionTrash()">🗑️ O'chirilganlar</button>
+        </div>
 
         <h1>Mavzuga oid testlar</h1>
         <input type="hidden" id="topicId" th:value="${topicId}">
 
         <button class="create-btn" onclick="createTest()">➕ TEST YARATISH</button>
-        <!-- Soft-delete qilingan (🗑️ o'chirilgan) savollar — "♻️ Tiklash"
-             bilan bir zumda qaytariladi (QuestionService.getDeletedQuestions/restoreQuestion). -->
-        <button class="back-btn" onclick="toggleQuestionTrash()">🗑️ O'chirilganlar</button>
     </div>
 
     <div id="questionTrashPanel" style="display:none;">
