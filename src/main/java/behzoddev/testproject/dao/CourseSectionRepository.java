@@ -1,5 +1,6 @@
 package behzoddev.testproject.dao;
 
+import behzoddev.testproject.dto.course.CourseSectionTrashDto;
 import behzoddev.testproject.dto.section.TopicSectionCourseTitleDto;
 import behzoddev.testproject.dto.topic.TopicCourseTitleDto;
 import behzoddev.testproject.entity.CourseSection;
@@ -10,32 +11,46 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 import java.util.Optional;
 
+// DIQQAT: CourseSection'da "O'chirilganlar savati" (deletedAt) bor —
+// quyidagi metodlarning DEYARLI barchasi (permanentlyDeleteCourse'da
+// ishlatiladigan deleteByCourse_Id'dan tashqari) ATAYLAB "deletedAt is
+// null" filtri bilan yozilgan, chunki soft-delete qilingan bo'lim endi
+// "yo'q" deb hisoblanishi kerak — kurs ko'rinishida, "🔗 Kurs" belgilarida,
+// bo'sh-bo'lim tekshiruvida va h.k. Metod NOMLARI o'zgartirilmagan (faqat
+// ichki JPQL'ga filtr qo'shilgan) — shu sabab CourseService'dagi chaqiruv
+// joylarini yangilash shart emas.
 public interface CourseSectionRepository extends JpaRepository<CourseSection, Long> {
 
-    List<CourseSection> findByCourse_IdOrderByOrderIndexAsc(Long courseId);
+    @Query("select cs from CourseSection cs where cs.course.id = :courseId and cs.deletedAt is null order by cs.orderIndex asc")
+    List<CourseSection> findByCourse_IdOrderByOrderIndexAsc(@Param("courseId") Long courseId);
 
-    Optional<CourseSection> findByCourse_IdAndOrderIndex(Long courseId, int orderIndex);
+    @Query("select cs from CourseSection cs where cs.course.id = :courseId and cs.orderIndex = :orderIndex and cs.deletedAt is null")
+    Optional<CourseSection> findByCourse_IdAndOrderIndex(@Param("courseId") Long courseId, @Param("orderIndex") int orderIndex);
 
-    long countByCourse_Id(Long courseId);
+    @Query("select count(cs) from CourseSection cs where cs.course.id = :courseId and cs.deletedAt is null")
+    long countByCourse_Id(@Param("courseId") Long courseId);
 
     // Kursning eng katta tartib raqami — yangi bo'lim qo'shishda "oxiriga qo'shish" uchun.
-    Optional<CourseSection> findTopByCourse_IdOrderByOrderIndexDesc(Long courseId);
+    @Query("select cs from CourseSection cs where cs.course.id = :courseId and cs.deletedAt is null order by cs.orderIndex desc limit 1")
+    Optional<CourseSection> findTopByCourse_IdOrderByOrderIndexDesc(@Param("courseId") Long courseId);
 
-    // Kursni o'chirishdan oldin — foreign key RESTRICT bo'lgani uchun,
-    // avval shu kursning barcha bo'limlarini o'chirish kerak
-    // (CourseService.deleteCourse).
+    // Kursni BUTUNLAY (permanentlyDeleteCourse) o'chirishdan oldin — foreign
+    // key RESTRICT bo'lgani uchun, avval shu kursning BARCHA bo'limlarini
+    // (soft-delete qilinganlari HAM) o'chirish kerak — shu sabab bu metod
+    // ATAYLAB filtrlanmagan.
     void deleteByCourse_Id(Long courseId);
 
     // Berilgan mavzuga (Topic) bog'langan bo'lim — test yaratish formasida
     // "🔗 Mavzuga havola qo'shish" tugmasi shu orqali to'g'ri course/section
     // ID'larini topadi (TopicService.getCourseLinkForTopic).
-    Optional<CourseSection> findByLinkedTopic_Id(Long topicId);
+    @Query("select cs from CourseSection cs where cs.linkedTopic.id = :topicId and cs.deletedAt is null")
+    Optional<CourseSection> findByLinkedTopic_Id(@Param("topicId") Long topicId);
 
     // Shu FANDAGI qaysi mavzular (Topic) biror kurs bo'limiga bog'langanini
     // BULK (bitta so'rov, N+1 emas) topish uchun — topics.html'da "🔗 Kurs:
     // ..." belgisini ko'rsatish (TopicService.getTopicsByScienceId).
     @Query("select new behzoddev.testproject.dto.topic.TopicCourseTitleDto(cs.linkedTopic.id, cs.course.title) " +
-            "from CourseSection cs where cs.linkedTopic.science.id = :scienceId")
+            "from CourseSection cs where cs.linkedTopic.science.id = :scienceId and cs.deletedAt is null")
     List<TopicCourseTitleDto> findLinkedCourseTitlesByScienceId(@Param("scienceId") Long scienceId);
 
     // Bo'lim (CourseChapter) nomi o'zgartirilganda — shu Bo'limga tegishli,
@@ -44,17 +59,19 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     // ularning TopicSection'i (agar hali eski nom bilan tursa) ham
     // shu YANGI nomga ko'chiriladi — bitta joyda o'zgartirilgan Bo'lim nomi
     // ikkala tomonda (kurs VA test boshqaruvi) sinxron qolishi uchun.
-    List<CourseSection> findByChapter_IdAndLinkedTopicIsNotNull(Long chapterId);
+    @Query("select cs from CourseSection cs where cs.chapter.id = :chapterId and cs.linkedTopic is not null and cs.deletedAt is null")
+    List<CourseSection> findByChapter_IdAndLinkedTopicIsNotNull(@Param("chapterId") Long chapterId);
 
     // Bo'sh (hech qanday mavzuga biriktirilmagan) Bo'limni o'chirish
     // xavfsizligini tekshirish uchun (CourseService.deleteChapter).
-    boolean existsByChapter_Id(Long chapterId);
+    @Query("select case when count(cs) > 0 then true else false end from CourseSection cs where cs.chapter.id = :chapterId and cs.deletedAt is null")
+    boolean existsByChapter_Id(@Param("chapterId") Long chapterId);
 
     // Shu FANDAGI qaysi TEST BOSHQARUVI Bo'limlari (TopicSection) biror
     // kursga bog'langanini BULK topish uchun (TopicSectionService.
     // getSectionsByScienceId — "🔗 Kurs: ..." belgisi).
     @Query("select new behzoddev.testproject.dto.section.TopicSectionCourseTitleDto(cs.linkedTopic.section.id, cs.course.title) " +
-            "from CourseSection cs where cs.linkedTopic.section is not null and cs.linkedTopic.section.science.id = :scienceId")
+            "from CourseSection cs where cs.linkedTopic.section is not null and cs.linkedTopic.section.science.id = :scienceId and cs.deletedAt is null")
     List<TopicSectionCourseTitleDto> findLinkedCourseTitlesBySectionScienceId(@Param("scienceId") Long scienceId);
 
     // Bitta aniq Bo'lim (TopicSection) biror kursga bog'langanmi — bog'lansa
@@ -62,5 +79,11 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     // — shu bo'limni TEST BOSHQARUVIDAN tahrirlashni bloklaydi, chunki nomi
     // kurs Bo'limi bilan bir tomonlama sinxronlangan — faqat kurs ichidan
     // o'zgartirilishi kerak).
-    Optional<CourseSection> findFirstByLinkedTopic_Section_Id(Long sectionId);
+    @Query("select cs from CourseSection cs where cs.linkedTopic.section.id = :sectionId and cs.deletedAt is null order by cs.id limit 1")
+    Optional<CourseSection> findFirstByLinkedTopic_Section_Id(@Param("sectionId") Long sectionId);
+
+    // "O'chirilganlar savati" ro'yxati (kurs ichida) — CourseService.getDeletedSections.
+    @Query("select new behzoddev.testproject.dto.course.CourseSectionTrashDto(cs.id, cs.title, cs.deletedAt) " +
+            "from CourseSection cs where cs.course.id = :courseId and cs.deletedAt is not null order by cs.deletedAt desc")
+    List<CourseSectionTrashDto> findDeletedByCourse_Id(@Param("courseId") Long courseId);
 }

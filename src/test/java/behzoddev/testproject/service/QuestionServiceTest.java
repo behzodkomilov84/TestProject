@@ -196,16 +196,18 @@ class QuestionServiceTest {
         verify(questionRepository, org.mockito.Mockito.never()).save(any());
     }
 
-    // ===== deleteQuestion =====
+    // ===== deleteQuestion (soft-delete — "O'chirilganlar savati") =====
 
     @Test
-    void deleteQuestion_success() {
+    void deleteQuestion_softDeletes_doesNotHardDelete() {
         Question question = Question.builder().id(5L).questionText("Savol").build();
         when(questionRepository.findById(5L)).thenReturn(Optional.of(question));
 
         questionService.deleteQuestion(5L);
 
-        verify(questionRepository).delete(question);
+        assertThat(question.getDeletedAt()).isNotNull();
+        verify(questionRepository).save(question);
+        verify(questionRepository, org.mockito.Mockito.never()).delete(any());
     }
 
     @Test
@@ -213,8 +215,54 @@ class QuestionServiceTest {
         when(questionRepository.findById(5L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> questionService.deleteQuestion(5L))
+                .isInstanceOf(java.util.NoSuchElementException.class);
+    }
+
+    // ===== restoreQuestion =====
+
+    @Test
+    void restoreQuestion_clearsDeletedAt() {
+        Question question = Question.builder().id(5L).questionText("Savol")
+                .deletedAt(java.time.LocalDateTime.now()).build();
+        when(questionRepository.findById(5L)).thenReturn(Optional.of(question));
+
+        questionService.restoreQuestion(5L);
+
+        assertThat(question.getDeletedAt()).isNull();
+        verify(questionRepository).save(question);
+    }
+
+    @Test
+    void restoreQuestion_notDeleted_throws() {
+        Question question = Question.builder().id(5L).questionText("Savol").build();
+        when(questionRepository.findById(5L)).thenReturn(Optional.of(question));
+
+        assertThatThrownBy(() -> questionService.restoreQuestion(5L))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Question not found");
+                .hasMessageContaining("o'chirilmagan");
+    }
+
+    // ===== permanentlyDeleteQuestion =====
+
+    @Test
+    void permanentlyDeleteQuestion_softDeletedQuestion_hardDeletes() {
+        Question question = Question.builder().id(5L).questionText("Savol")
+                .deletedAt(java.time.LocalDateTime.now()).build();
+        when(questionRepository.findById(5L)).thenReturn(Optional.of(question));
+
+        questionService.permanentlyDeleteQuestion(5L);
+
+        verify(questionRepository).delete(question);
+    }
+
+    @Test
+    void permanentlyDeleteQuestion_notYetSoftDeleted_throws() {
+        Question question = Question.builder().id(5L).questionText("Savol").build();
+        when(questionRepository.findById(5L)).thenReturn(Optional.of(question));
+
+        assertThatThrownBy(() -> questionService.permanentlyDeleteQuestion(5L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("savatga o'tkazish");
     }
 
     // ===== getQuestionById =====

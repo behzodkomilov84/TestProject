@@ -397,15 +397,52 @@ public class CourseService {
         courseSectionRepository.save(section);
     }
 
-    // Bo'limni o'chirishdan oldin unga tegishli progress yozuvlarini ham
-    // o'chiramiz — aks holda course_section_progress.section_id FK RESTRICT
-    // bo'lgani uchun (biror foydalanuvchi shu bo'limni "tugatilgan" deb
-    // belgilagan bo'lsa) "Cannot delete or update a parent row" xatosi bilan
-    // muvaffaqiyatsiz tugaydi (deleteCourse'dagi xuddi shu turdagi bug bilan bir xil).
+    // Mavzuni (kurs darsi) "O'chirilganlar savati"ga o'tkazish (soft-delete)
+    // — DARHOL butunlay o'chirilmaydi, progress yozuvlari HAM tegilmay
+    // saqlanadi (Course.deletedAt bilan bir xil g'oya) — "♻️ Tiklash" bilan
+    // bir zumda qaytadi.
     @Transactional
     public void deleteSection(Long courseId, Long sectionId, User currentUser) {
         CourseSection section = getSectionOrThrow(sectionId, courseId);
         checkCanManage(section.getCourse(), currentUser);
+        section.setDeletedAt(LocalDateTime.now());
+        courseSectionRepository.save(section);
+    }
+
+    // "O'chirilganlar savati" ro'yxati (kurs ichida).
+    @Transactional(readOnly = true)
+    public List<CourseSectionTrashDto> getDeletedSections(Long courseId, User currentUser) {
+        Course course = getCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
+        return courseSectionRepository.findDeletedByCourse_Id(courseId);
+    }
+
+    // "♻️ Tiklash" — mavzuni savatdan qaytaradi, progress yozuvlari
+    // avtomatik yana ko'rinadigan bo'ladi (ular hech qachon o'chirilmagan edi).
+    @Transactional
+    public void restoreSection(Long courseId, Long sectionId, User currentUser) {
+        Course course = getCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
+        CourseSection section = getAnySectionOrThrow(sectionId, courseId);
+        if (section.getDeletedAt() == null) {
+            throw new IllegalArgumentException("❌ Bu mavzu o'chirilmagan — tiklashning hojati yo'q.");
+        }
+        section.setDeletedAt(null);
+        courseSectionRepository.save(section);
+    }
+
+    // "🗑️ Butunlay o'chirish" — FAQAT allaqachon savatda turgan mavzuga
+    // nisbatan. QAYTARIB BO'LMAYDI: progress yozuvlari FK RESTRICT
+    // bo'lgani uchun avval ular, keyin mavzuning o'zi o'chiriladi.
+    @Transactional
+    public void permanentlyDeleteSection(Long courseId, Long sectionId, User currentUser) {
+        Course course = getCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
+        CourseSection section = getAnySectionOrThrow(sectionId, courseId);
+        if (section.getDeletedAt() == null) {
+            throw new IllegalArgumentException(
+                    "❌ Bu mavzuni butunlay o'chirishdan oldin, avval oddiy \"O'chirish\" orqali savatga o'tkazish kerak.");
+        }
         courseSectionProgressRepository.deleteBySection_Id(sectionId);
         courseSectionRepository.delete(section);
     }
@@ -675,15 +712,18 @@ public class CourseService {
     // (chunki bu amal aynan KURS Bo'limi kontekstida ma'noga ega).
     //
     // deleteChapter'dan farqli, bo'sh bo'lishi SHART EMAS: shu Bo'limdagi
-    // BARCHA kurs mavzularini (CourseSection — progress bilan birga) ham
-    // o'chiradi. Agar shu Bo'lim TEST BOSHQARUVIdagi biror Bo'limga
-    // (TopicSection) bog'langan bo'lsa — O'SHA Bo'limning mavzulari ham
-    // savollari bilan birga butunlay o'chiriladi (questions.topic_id'da FK
-    // yo'qligi uchun ANIQ, alohida — QuestionRepository.deleteByTopic_Id).
+    // BARCHA kurs mavzularini (CourseSection) ham o'chiradi. Agar shu
+    // Bo'lim TEST BOSHQARUVIdagi biror Bo'limga (TopicSection) bog'langan
+    // bo'lsa — O'SHA Bo'limning mavzulari (savollari bilan birga) ham
+    // o'chiriladi. HAMMASI SOFT-DELETE (Course.deletedAt bilan bir xil
+    // g'oya) — CourseSection/Topic/Question o'zlarining "O'chirilganlar
+    // savati"laridan alohida-alohida tiklanishi mumkin (faqat TopicSection
+    // — Bo'limning O'ZI — hard-delete, chunki u shunchaki guruhlash
+    // birligi, Topic'lar undan uzilib "bo'limsiz" bo'lib qoladi, xolos).
     // Xavfsizlik: agar bog'langan TopicSection'dagi biror mavzu BOSHQA kurs
     // Bo'limiga ham (shu kursning boshqa Bo'limi yoki boshqa kurs) bog'langan
     // bo'lsa — butun amal rad etiladi (o'sha boshqa bog'lanishni "yetim"
-    // qoldirmaslik uchun). QAYTARIB BO'LMAYDI.
+    // qoldirmaslik uchun).
     @Transactional
     public void deleteChapterWithLinkedTopics(Long courseId, Long chapterId, User currentUser) {
         Course course = getCourseOrThrow(courseId);
@@ -709,7 +749,7 @@ public class CourseService {
                 .collect(Collectors.toSet());
 
         for (Long topicSectionId : topicSectionIds) {
-            for (Topic topic : topicRepository.findBySection_IdOrderByOrderIndexAsc(topicSectionId)) {
+            for (Topic topic : topicRepository.findBySection_IdAndDeletedAtIsNullOrderByOrderIndexAsc(topicSectionId)) {
                 courseSectionRepository.findByLinkedTopic_Id(topic.getId()).ifPresent(link -> {
                     if (!link.getChapter().getId().equals(chapterId)) {
                         throw new IllegalArgumentException("❌ \"" + topic.getName() +
@@ -719,17 +759,18 @@ public class CourseService {
             }
         }
 
-        for (CourseSection s : chapterSections) {
-            courseSectionProgressRepository.deleteBySection_Id(s.getId());
-        }
-        courseSectionRepository.deleteAll(chapterSections);
+        LocalDateTime now = LocalDateTime.now();
+        chapterSections.forEach(s -> s.setDeletedAt(now));
+        courseSectionRepository.saveAll(chapterSections);
         courseChapterRepository.delete(chapter);
 
         for (Long topicSectionId : topicSectionIds) {
-            for (Topic topic : topicRepository.findBySection_IdOrderByOrderIndexAsc(topicSectionId)) {
-                questionRepository.deleteByTopic_Id(topic.getId());
-                topicRepository.deleteById(topic.getId());
+            List<Topic> topics = topicRepository.findBySection_IdAndDeletedAtIsNullOrderByOrderIndexAsc(topicSectionId);
+            for (Topic topic : topics) {
+                questionRepository.softDeleteByTopic_Id(topic.getId());
+                topic.setDeletedAt(now);
             }
+            topicRepository.saveAll(topics);
             topicSectionRepository.deleteById(topicSectionId);
         }
     }
@@ -890,6 +931,17 @@ public class CourseService {
     }
 
     private CourseSection getSectionOrThrow(Long sectionId, Long courseId) {
+        CourseSection section = getAnySectionOrThrow(sectionId, courseId);
+        if (section.getDeletedAt() != null) {
+            throw new NoSuchElementException("Mavzu topilmadi");
+        }
+        return section;
+    }
+
+    // FAQAT "O'chirilganlar savati" amallari (restoreSection,
+    // permanentlyDeleteSection, getDeletedSections) uchun — soft-delete
+    // qilingan mavzuni ham topa oladi.
+    private CourseSection getAnySectionOrThrow(Long sectionId, Long courseId) {
         CourseSection section = courseSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new NoSuchElementException("Mavzu topilmadi"));
 

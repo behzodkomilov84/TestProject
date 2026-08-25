@@ -731,3 +731,32 @@ td label{
     border-radius: 4px;
     border: 1px solid #ccc;
 }
+/* "🗑️ O'chirilganlar" paneli (question.js — questionTrashList) — oddiy
+   qator uslubi (courseDetail.js'dagi sectionTrashList bilan bir xil g'oya). */
+#questionTrashList .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+}
+
+#questionTrashList .row-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+#questionTrashList .danger-btn {
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+}

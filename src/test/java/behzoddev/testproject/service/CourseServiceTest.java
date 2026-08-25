@@ -5,8 +5,10 @@ import behzoddev.testproject.dao.CourseRepository;
 import behzoddev.testproject.dao.CourseSectionProgressRepository;
 import behzoddev.testproject.dao.CourseSectionRepository;
 import behzoddev.testproject.dao.CourseSubscriptionRepository;
+import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
+import behzoddev.testproject.dao.TopicSectionRepository;
 import behzoddev.testproject.dto.course.CourseDetailDto;
 import behzoddev.testproject.dto.course.CourseDto;
 import behzoddev.testproject.dto.course.CourseSaveDto;
@@ -14,8 +16,11 @@ import behzoddev.testproject.dto.course.CourseSectionContentDto;
 import behzoddev.testproject.dto.course.CourseSectionSaveDto;
 import behzoddev.testproject.dto.course.CourseSectionSummaryDto;
 import behzoddev.testproject.entity.Course;
+import behzoddev.testproject.entity.CourseChapter;
 import behzoddev.testproject.entity.CourseSection;
 import behzoddev.testproject.entity.Role;
+import behzoddev.testproject.entity.Topic;
+import behzoddev.testproject.entity.TopicSection;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.entity.enums.CourseSectionType;
 import behzoddev.testproject.entity.enums.CourseSubscriptionStatus;
@@ -61,6 +66,10 @@ class CourseServiceTest {
     private ScienceRepository scienceRepository;
     @Mock
     private TopicRepository topicRepository;
+    @Mock
+    private TopicSectionRepository topicSectionRepository;
+    @Mock
+    private QuestionRepository questionRepository;
 
     @InjectMocks
     private CourseService courseService;
@@ -494,23 +503,141 @@ class CourseServiceTest {
         org.mockito.Mockito.verify(courseRepository).save(course);
     }
 
-    // ===== deleteSection: bo'limga tegishli progress yozuvlari avval o'chishi kerak =====
-    // Haqiqiy production bug: course_section_progress.section_id FK RESTRICT
-    // bo'lgani uchun, foydalanuvchi bo'limni "tugatilgan" deb belgilagan
-    // bo'lsa, bo'limni o'chirish "Bu amalni bajarib bo'lmadi — bog'liq
-    // ma'lumotlar mavjud" (409) xatosi bilan muvaffaqiyatsiz tugardi.
+    // ===== deleteSection (soft-delete — "O'chirilganlar savati") =====
+    // Course.deletedAt bilan bir xil g'oya: progress yozuvlariga UMUMAN
+    // tegilmaydi (avvalgi "Cannot delete or update a parent row" xatosi
+    // bug'ini keltirib chiqargan hard-delete endi umuman ishlatilmaydi).
 
     @Test
-    void deleteSection_deletesProgressBeforeSectionItself() {
+    void deleteSection_softDeletes_doesNotTouchProgress() {
         Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
         CourseSection section = CourseSection.builder().id(5L).course(course).orderIndex(1).build();
         when(courseSectionRepository.findById(5L)).thenReturn(Optional.of(section));
 
         courseService.deleteSection(1L, 5L, owner());
 
+        assertThat(section.getDeletedAt()).isNotNull();
+        org.mockito.Mockito.verify(courseSectionRepository).save(section);
+        org.mockito.Mockito.verifyNoInteractions(courseSectionProgressRepository);
+        org.mockito.Mockito.verify(courseSectionRepository, org.mockito.Mockito.never()).delete(org.mockito.Mockito.any());
+    }
+
+    @Test
+    void restoreSection_clearsDeletedAt() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseSection section = CourseSection.builder().id(5L).course(course).orderIndex(1)
+                .deletedAt(java.time.LocalDateTime.now()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findById(5L)).thenReturn(Optional.of(section));
+
+        courseService.restoreSection(1L, 5L, owner());
+
+        assertThat(section.getDeletedAt()).isNull();
+        org.mockito.Mockito.verify(courseSectionRepository).save(section);
+    }
+
+    @Test
+    void permanentlyDeleteSection_softDeletedSection_deletesProgressThenSection() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseSection section = CourseSection.builder().id(5L).course(course).orderIndex(1)
+                .deletedAt(java.time.LocalDateTime.now()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findById(5L)).thenReturn(Optional.of(section));
+
+        courseService.permanentlyDeleteSection(1L, 5L, owner());
+
         var inOrder = org.mockito.Mockito.inOrder(courseSectionProgressRepository, courseSectionRepository);
         inOrder.verify(courseSectionProgressRepository).deleteBySection_Id(5L);
         inOrder.verify(courseSectionRepository).delete(section);
+    }
+
+    @Test
+    void permanentlyDeleteSection_notYetSoftDeleted_throws() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseSection section = CourseSection.builder().id(5L).course(course).orderIndex(1).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findById(5L)).thenReturn(Optional.of(section));
+
+        assertThatThrownBy(() -> courseService.permanentlyDeleteSection(1L, 5L, owner()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("savatga o'tkazish");
+    }
+
+    // ===== deleteChapterWithLinkedTopics =====
+    // Kurs Bo'limi + mavzularini birga o'chirish — CourseSection'lar VA
+    // (bog'langan bo'lsa) TopicSection'dagi Topic/Question'lar HAMMASI
+    // soft-delete qilinishi kerak (hard delete emas), TopicSection'ning
+    // O'ZI esa hard-delete (shunchaki guruhlash birligi).
+
+    @Test
+    void deleteChapterWithLinkedTopics_noLinkedTopics_softDeletesSectionsOnly() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter chapter = CourseChapter.builder().id(10L).course(course).name("Bo'lim").orderIndex(1).build();
+        CourseSection section = CourseSection.builder().id(5L).course(course).chapter(chapter).orderIndex(1).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findById(10L)).thenReturn(Optional.of(chapter));
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(section));
+
+        courseService.deleteChapterWithLinkedTopics(1L, 10L, owner());
+
+        assertThat(section.getDeletedAt()).isNotNull();
+        org.mockito.Mockito.verify(courseSectionRepository).saveAll(List.of(section));
+        org.mockito.Mockito.verify(courseChapterRepository).delete(chapter);
+        org.mockito.Mockito.verifyNoInteractions(topicSectionRepository, questionRepository);
+    }
+
+    @Test
+    void deleteChapterWithLinkedTopics_linkedTopicSection_softDeletesTopicsAndQuestionsThenHardDeletesTopicSection() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter chapter = CourseChapter.builder().id(10L).course(course).name("Bo'lim").orderIndex(1).build();
+        TopicSection topicSection = TopicSection.builder().id(20L).name("Bo'lim").build();
+        Topic topic = Topic.builder().id(30L).name("Mavzu").section(topicSection).build();
+        CourseSection section = CourseSection.builder().id(5L).course(course).chapter(chapter)
+                .orderIndex(1).linkedTopic(topic).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findById(10L)).thenReturn(Optional.of(chapter));
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(section));
+        when(topicRepository.findBySection_IdAndDeletedAtIsNullOrderByOrderIndexAsc(20L)).thenReturn(List.of(topic));
+        when(courseSectionRepository.findByLinkedTopic_Id(30L)).thenReturn(Optional.of(section));
+
+        courseService.deleteChapterWithLinkedTopics(1L, 10L, owner());
+
+        assertThat(section.getDeletedAt()).isNotNull();
+        assertThat(topic.getDeletedAt()).isNotNull();
+        org.mockito.Mockito.verify(questionRepository).softDeleteByTopic_Id(30L);
+        org.mockito.Mockito.verify(topicRepository).saveAll(List.of(topic));
+        org.mockito.Mockito.verify(topicSectionRepository).deleteById(20L);
+        org.mockito.Mockito.verify(topicRepository, org.mockito.Mockito.never()).deleteById(any());
+        org.mockito.Mockito.verify(questionRepository, org.mockito.Mockito.never()).deleteByTopic_Id(any());
+    }
+
+    @Test
+    void deleteChapterWithLinkedTopics_topicLinkedToOtherChapter_throwsAndDoesNotDelete() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter chapter = CourseChapter.builder().id(10L).course(course).name("Bo'lim").orderIndex(1).build();
+        CourseChapter otherChapter = CourseChapter.builder().id(11L).course(course).name("Boshqa bo'lim").orderIndex(2).build();
+        TopicSection topicSection = TopicSection.builder().id(20L).name("Bo'lim").build();
+        Topic topic = Topic.builder().id(30L).name("Mavzu").section(topicSection).build();
+        CourseSection section = CourseSection.builder().id(5L).course(course).chapter(chapter)
+                .orderIndex(1).linkedTopic(topic).build();
+        CourseSection otherSection = CourseSection.builder().id(6L).course(course).chapter(otherChapter)
+                .orderIndex(2).linkedTopic(topic).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findById(10L)).thenReturn(Optional.of(chapter));
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(section));
+        when(topicRepository.findBySection_IdAndDeletedAtIsNullOrderByOrderIndexAsc(20L)).thenReturn(List.of(topic));
+        // "boshqa bog'lanish" — findByLinkedTopic_Id shu topic uchun BOSHQA bo'limdagi sectionni qaytaradi
+        when(courseSectionRepository.findByLinkedTopic_Id(30L)).thenReturn(Optional.of(otherSection));
+
+        assertThatThrownBy(() -> courseService.deleteChapterWithLinkedTopics(1L, 10L, owner()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("boshqa kurs bo'limiga ham bog'langan");
+
+        org.mockito.Mockito.verify(courseChapterRepository, org.mockito.Mockito.never()).delete(any());
+        org.mockito.Mockito.verify(courseSectionRepository, org.mockito.Mockito.never()).saveAll(any());
     }
 
     // ===== TEST BOSHQARUVI bilan bog'lash: Fan/Mavzu autocreate =====

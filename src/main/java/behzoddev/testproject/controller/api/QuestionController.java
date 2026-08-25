@@ -4,6 +4,7 @@ import behzoddev.testproject.dto.answer.AnswerShortDto;
 import behzoddev.testproject.dto.ModalCommentSaveDto;
 import behzoddev.testproject.dto.question.QuestionDto;
 import behzoddev.testproject.dto.question.QuestionSaveDto;
+import behzoddev.testproject.dto.question.QuestionTrashDto;
 import behzoddev.testproject.exception.ErrorResponse;
 import behzoddev.testproject.service.AnswerService;
 import behzoddev.testproject.service.FileStorageService;
@@ -236,6 +237,35 @@ public class QuestionController {
             return ResponseEntity
                     .badRequest()
                     .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // "O'chirilganlar savati" (savol/test darajasida).
+    @GetMapping("/api/question/deleted")
+    @ResponseBody
+    public ResponseEntity<List<QuestionTrashDto>> getDeleted(@RequestParam Long topicId) {
+        return ResponseEntity.ok(questionService.getDeletedQuestions(topicId));
+    }
+
+    @PostMapping("/api/question/{id}/restore")
+    @ResponseBody
+    public ResponseEntity<?> restore(@PathVariable Long id) {
+        try {
+            questionService.restoreQuestion(id);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @DeleteMapping("/api/question/{id}/permanent")
+    @ResponseBody
+    public ResponseEntity<?> permanentDelete(@PathVariable Long id) {
+        try {
+            questionService.permanentlyDeleteQuestion(id);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 }

@@ -8,6 +8,7 @@ import behzoddev.testproject.dto.answer.AnswerShortDto;
 import behzoddev.testproject.dto.question.QuestionDto;
 import behzoddev.testproject.dto.question.QuestionSaveDto;
 import behzoddev.testproject.dto.question.QuestionShortDto;
+import behzoddev.testproject.dto.question.QuestionTrashDto;
 import behzoddev.testproject.dto.teacher.ResponseQuestionTextDto;
 import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Question;
@@ -22,8 +23,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -170,12 +173,62 @@ public class QuestionService {
         answerRepository.saveAll(answerList);
     }
 
+    // "O'chirilganlar savati"ga o'tkazish (soft-delete) — DARHOL butunlay
+    // o'chirilmaydi, javoblari (Answer) HAM tegilmay saqlanadi — "♻️
+    // Tiklash" bilan bir zumda qaytadi (CourseService.deleteCourse bilan
+    // bir xil g'oya).
     @Transactional
     public void deleteQuestion(Long questionId) {
-        Question question = questionRepository.findById(questionId)
-                .orElseThrow(() -> new IllegalArgumentException("Question not found"));
+        Question question = getQuestionOrThrow(questionId);
+        question.setDeletedAt(LocalDateTime.now());
+        questionRepository.save(question);
+    }
 
+    // "O'chirilganlar savati" ro'yxati (mavzu ichida).
+    @Transactional(readOnly = true)
+    public List<QuestionTrashDto> getDeletedQuestions(Long topicId) {
+        return questionRepository.findDeletedByTopic_Id(topicId);
+    }
+
+    // "♻️ Tiklash" — savolni savatdan qaytaradi, javoblari avtomatik yana
+    // ko'rinadigan bo'ladi (ular hech qachon o'chirilmagan edi).
+    @Transactional
+    public void restoreQuestion(Long questionId) {
+        Question question = getAnyQuestionOrThrow(questionId);
+        if (question.getDeletedAt() == null) {
+            throw new IllegalArgumentException("❌ Bu savol o'chirilmagan — tiklashning hojati yo'q.");
+        }
+        question.setDeletedAt(null);
+        questionRepository.save(question);
+    }
+
+    // "🗑️ Butunlay o'chirish" — FAQAT allaqachon savatda turgan savolga
+    // nisbatan. QAYTARIB BO'LMAYDI: javoblar (Answer) JPA orphanRemoval
+    // orqali avtomatik o'chiriladi.
+    @Transactional
+    public void permanentlyDeleteQuestion(Long questionId) {
+        Question question = getAnyQuestionOrThrow(questionId);
+        if (question.getDeletedAt() == null) {
+            throw new IllegalArgumentException(
+                    "❌ Bu savolni butunlay o'chirishdan oldin, avval oddiy \"O'chirish\" orqali savatga o'tkazish kerak.");
+        }
         questionRepository.delete(question);
+    }
+
+    private Question getQuestionOrThrow(Long questionId) {
+        Question question = getAnyQuestionOrThrow(questionId);
+        if (question.getDeletedAt() != null) {
+            throw new NoSuchElementException("Savol topilmadi");
+        }
+        return question;
+    }
+
+    // FAQAT "O'chirilganlar savati" amallari (restoreQuestion,
+    // permanentlyDeleteQuestion, getDeletedQuestions) uchun — soft-delete
+    // qilingan savolni ham topa oladi.
+    private Question getAnyQuestionOrThrow(Long questionId) {
+        return questionRepository.findById(questionId)
+                .orElseThrow(() -> new NoSuchElementException("Savol topilmadi"));
     }
 
     @Transactional
@@ -280,10 +333,10 @@ public class QuestionService {
         List<Question> list;
 
         if (q == null || q.isBlank()) {
-            list = questionRepository.findByTopicId(topicId);
+            list = questionRepository.findByTopicIdAndDeletedAtIsNull(topicId);
         } else {
             list = questionRepository
-                    .findByTopicIdAndQuestionTextContainingIgnoreCase(
+                    .findByTopicIdAndQuestionTextContainingIgnoreCaseAndDeletedAtIsNull(
                             topicId,
                             q
                     );
@@ -294,7 +347,7 @@ public class QuestionService {
 
     public List<ResponseQuestionTextDto> getQuestionsByTopic(Long topicId) {
         // Преобразуем сущности Question в DTO
-        return questionRepository.findByTopicId(topicId)
+        return questionRepository.findByTopicIdAndDeletedAtIsNull(topicId)
                 .stream()
                 .map(q -> questionMapper.mapQuestionToResponseQuestionTextDto(q))
                 .toList();

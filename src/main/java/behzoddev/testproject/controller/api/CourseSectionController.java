@@ -3,6 +3,7 @@ package behzoddev.testproject.controller.api;
 import behzoddev.testproject.dto.course.CourseSectionContentDto;
 import behzoddev.testproject.dto.course.CourseSectionSaveDto;
 import behzoddev.testproject.dto.course.CourseSectionSummaryDto;
+import behzoddev.testproject.dto.course.CourseSectionTrashDto;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.CourseService;
 import behzoddev.testproject.service.FileStorageService;
@@ -71,6 +72,27 @@ public class CourseSectionController {
     public void delete(@PathVariable Long courseId, @PathVariable Long sectionId,
                         @AuthenticationPrincipal User user) {
         courseService.deleteSection(courseId, sectionId, user);
+    }
+
+    // "O'chirilganlar savati" (kurs mavzusi/dars darajasida).
+    @GetMapping("/deleted")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public List<CourseSectionTrashDto> getDeleted(@PathVariable Long courseId, @AuthenticationPrincipal User user) {
+        return courseService.getDeletedSections(courseId, user);
+    }
+
+    @PostMapping("/{sectionId}/restore")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public void restore(@PathVariable Long courseId, @PathVariable Long sectionId,
+                         @AuthenticationPrincipal User user) {
+        courseService.restoreSection(courseId, sectionId, user);
+    }
+
+    @DeleteMapping("/{sectionId}/permanent")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public void permanentDelete(@PathVariable Long courseId, @PathVariable Long sectionId,
+                                 @AuthenticationPrincipal User user) {
+        courseService.permanentlyDeleteSection(courseId, sectionId, user);
     }
 
     // Bo'limlar tartibini qayta belgilash (yuqoriga/pastga ko'chirish,

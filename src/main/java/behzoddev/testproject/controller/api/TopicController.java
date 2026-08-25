@@ -3,10 +3,12 @@ package behzoddev.testproject.controller.api;
 import behzoddev.testproject.dto.topic.TopicCourseLinkDto;
 import behzoddev.testproject.dto.topic.TopicIdAndNameDto;
 import behzoddev.testproject.dto.topic.TopicNameDto;
+import behzoddev.testproject.dto.topic.TopicTrashDto;
 import behzoddev.testproject.service.TopicSectionService;
 import behzoddev.testproject.service.TopicService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -97,4 +99,24 @@ public class TopicController {
         return ResponseEntity.ok(Map.of("deleted", topicService.deleteQuestionlessTopics(scienceId)));
     }
 
+    // "O'chirilganlar savati" (mavzu darajasida) — faqat OWNER/ADMIN.
+    @GetMapping("/api/topic/deleted")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public ResponseEntity<List<TopicTrashDto>> getDeleted(@RequestParam Long scienceId) {
+        return ResponseEntity.ok(topicService.getDeletedTopics(scienceId));
+    }
+
+    @PostMapping("/api/topic/{topicId}/restore")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public ResponseEntity<Void> restore(@PathVariable Long topicId) {
+        topicService.restoreTopic(topicId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/api/topic/{topicId}/permanent")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public ResponseEntity<Void> permanentDelete(@PathVariable Long topicId) {
+        topicService.permanentlyDeleteTopic(topicId);
+        return ResponseEntity.ok().build();
+    }
 }

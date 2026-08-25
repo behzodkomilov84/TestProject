@@ -3,6 +3,7 @@ package behzoddev.testproject.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
@@ -42,5 +43,13 @@ public class Question {
 
     @ManyToOne(fetch = FetchType.LAZY)
     private Topic topic;
+
+    // "O'chirilganlar savati" — Course.deletedAt bilan bir xil g'oya:
+    // o'chirilganda DARHOL butunlay o'chmaydi (javoblari ham saqlanib
+    // qoladi — Answer'lar CASCADE bilan avtomatik o'chirilmaydi, chunki
+    // Question'ning o'zi endi o'chirilmayapti), faqat shu maydon bilan
+    // belgilanadi — "♻️ Tiklash" bilan bir zumda qaytadi.
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 
 }

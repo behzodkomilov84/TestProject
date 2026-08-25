@@ -118,6 +118,92 @@ async function deleteQuestionlessTopics() {
     }
 }
 
+// "🗑️ O'chirilgan mavzular" paneli — soft-delete qilingan Topic'lar
+// ro'yxati (bir zumda "♻️ Tiklash" qilinadigan). Panel yopiq holatda
+// boshlanadi, bosilganda ochilib ro'yxatni yuklaydi.
+let topicTrashOpen = false;
+
+function toggleTopicTrash() {
+    topicTrashOpen = !topicTrashOpen;
+    document.getElementById("topicTrashPanel").style.display = topicTrashOpen ? "block" : "none";
+    if (topicTrashOpen) {
+        loadTopicTrash();
+    }
+}
+
+async function loadTopicTrash() {
+    const list = document.getElementById("topicTrashList");
+    list.innerHTML = "<p>Yuklanmoqda...</p>";
+
+    try {
+        const res = await fetch(`/api/topic/deleted?scienceId=${getScienceId()}`);
+        if (!res.ok) {
+            list.innerHTML = "<p>Yuklashda xatolik</p>";
+            return;
+        }
+        const items = await res.json();
+        if (!items.length) {
+            list.innerHTML = "<p>O'chirilgan mavzu yo'q</p>";
+            return;
+        }
+        list.innerHTML = items.map(t => `
+            <div class="row">
+                <div>${escapeHtml(t.name)} (${t.questionCount} ta test) — ${formatTopicTrashDate(t.deletedAt)}da o'chirilgan</div>
+                <div class="row-actions">
+                    <button onclick="restoreTopic(${t.id})">♻️ Tiklash</button>
+                    <button class="danger-btn" onclick="permanentlyDeleteTopic(${t.id}, ${JSON.stringify(t.name)})">🗑️ Butunlay o'chirish</button>
+                </div>
+            </div>
+        `).join("");
+    } catch (err) {
+        console.error(err);
+        list.innerHTML = "<p>Tarmoq xatoligi</p>";
+    }
+}
+
+function formatTopicTrashDate(isoString) {
+    if (!isoString) return "";
+    const d = new Date(isoString);
+    return d.toLocaleDateString("uz-UZ") + " " + d.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
+}
+
+async function restoreTopic(topicId) {
+    if (!confirm("Bu mavzuni tiklamoqchimisiz?")) return;
+
+    try {
+        const res = await fetch(`/api/topic/${topicId}/restore`, { method: "POST" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "Tiklashda xatolik");
+            return;
+        }
+        loadTopicTrash();
+        await reloadFromDb(`/api/topic?scienceId=${scienceId}`);
+        render();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+async function permanentlyDeleteTopic(topicId, name) {
+    if (!confirm(`⚠️ "${name}" mavzusini BUTUNLAY (savollari bilan birga) o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`)) return;
+    if (!confirm("Haqiqatan ham ishonchingiz komilmi?")) return;
+
+    try {
+        const res = await fetch(`/api/topic/${topicId}/permanent`, { method: "DELETE" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "O'chirishda xatolik");
+            return;
+        }
+        loadTopicTrash();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
 function escapeHtml(text) {
     const div = document.createElement("div");
     div.textContent = text ?? "";

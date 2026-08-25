@@ -17,6 +17,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -198,13 +199,22 @@ public class ScienceController {
         return ResponseEntity.noContent().build();
     }
 
+    // DIQQAT: bu ikkala endpoint ilgari @PreAuthorize'siz edi (istalgan
+    // login qilgan foydalanuvchi, hatto ROLE_USER ham, chaqira olardi —
+    // /api/** prefiksiz bo'lgani uchun SecurityConfig'dagi ROLE_OWNER/
+    // ROLE_ADMIN qoidasi ularga tegmasdi). Endi "O'chirilganlar savati"
+    // (restore/permanent) qo'shilgani munosabati bilan tuzatildi —
+    // boshqa barcha topic/question mutatsiya endpoint'lari bilan bir xil
+    // ruxsat qoidasi.
     @DeleteMapping("/topic/{topicId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
     public ResponseEntity<Void> deleteTopic(@PathVariable Long topicId) {
         topicService.removeTopic(topicId);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/question/{questionId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
     public ResponseEntity<Void> deleteQuestion(@PathVariable Long questionId) {
         questionService.deleteQuestion(questionId);
         return ResponseEntity.noContent().build();

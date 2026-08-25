@@ -1,6 +1,7 @@
 package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.CourseSectionRepository;
+import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
@@ -8,6 +9,7 @@ import behzoddev.testproject.dto.topic.TopicCourseLinkDto;
 import behzoddev.testproject.dto.topic.TopicCourseTitleDto;
 import behzoddev.testproject.dto.topic.TopicIdAndNameDto;
 import behzoddev.testproject.dto.topic.TopicNameDto;
+import behzoddev.testproject.dto.topic.TopicTrashDto;
 import behzoddev.testproject.dto.topic.TopicWithQuestionCountDto;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Topic;
@@ -18,8 +20,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -28,6 +32,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TopicService {
     private final TopicRepository topicRepository;
+    private final QuestionRepository questionRepository;
     private final TopicMapper topicMapper;
     private final ScienceRepository scienceRepository;
     private final TopicSectionRepository topicSectionRepository;
@@ -92,19 +97,23 @@ public class TopicService {
         return topicRepository.save(topic);
     }
 
+    // "O'chirilganlar savati"ga o'tkazish (soft-delete) — DARHOL butunlay
+    // o'chirilmaydi, savollari (Question) HAM tegilmay saqlanadi —
+    // "♻️ Tiklash" bilan bir zumda qaytadi (CourseService.deleteCourse
+    // bilan bir xil g'oya).
     @Transactional
     public void removeTopic(Long topicId) {
-        topicRepository.deleteById(topicId);
+        Topic topic = getTopicOrThrow(topicId);
+        topic.setDeletedAt(LocalDateTime.now());
+        topicRepository.save(topic);
     }
 
     // "🗑️ Testi yo'q mavzularni o'chirish" — shu Fanda hech qanday savoli
-    // bo'lmagan (questionCount==0) BARCHA mavzularni bir yo'la o'chiradi.
-    // Kursga bog'langan mavzular ATAYLAB chetlab o'tiladi — CourseSection.
-    // linked_topic_id FK'i RESTRICT bo'lgani uchun (ON DELETE SET NULL
-    // emas), ularni o'chirishga urinish butun operatsiyani xato bilan
-    // to'xtatib qo'yardi; bundan tashqari, kursga bog'langan mavzuni
-    // shu yerdan o'chirish umuman mumkin emas (TopicService.updateTopic'
-    // dagi bilan bir xil qoida — faqat kurs ichidan boshqariladi).
+    // bo'lmagan (questionCount==0) BARCHA mavzularni bir yo'la (soft-delete)
+    // o'chiradi. Kursga bog'langan mavzular ATAYLAB chetlab o'tiladi —
+    // kursga bog'langan mavzuni shu yerdan o'chirish umuman mumkin emas
+    // (TopicService.updateTopic'dagi bilan bir xil qoida — faqat kurs
+    // ichidan boshqariladi).
     @Transactional
     public int deleteQuestionlessTopics(Long scienceId) {
         Set<Long> linkedTopicIds = courseSectionRepository.findLinkedCourseTitlesByScienceId(scienceId)
@@ -118,9 +127,61 @@ public class TopicService {
                 .toList();
 
         if (!deletableIds.isEmpty()) {
-            topicRepository.deleteAllById(deletableIds);
+            List<Topic> deletable = topicRepository.findAllById(deletableIds);
+            LocalDateTime now = LocalDateTime.now();
+            deletable.forEach(t -> t.setDeletedAt(now));
+            topicRepository.saveAll(deletable);
         }
         return deletableIds.size();
+    }
+
+    // "O'chirilganlar savati" ro'yxati (Fan ichida).
+    @Transactional(readOnly = true)
+    public List<TopicTrashDto> getDeletedTopics(Long scienceId) {
+        return topicRepository.findDeletedByScienceId(scienceId);
+    }
+
+    // "♻️ Tiklash" — mavzuni savatdan qaytaradi, savollari avtomatik yana
+    // ko'rinadigan bo'ladi (ular hech qachon o'chirilmagan edi).
+    @Transactional
+    public void restoreTopic(Long topicId) {
+        Topic topic = getAnyTopicOrThrow(topicId);
+        if (topic.getDeletedAt() == null) {
+            throw new IllegalArgumentException("❌ Bu mavzu o'chirilmagan — tiklashning hojati yo'q.");
+        }
+        topic.setDeletedAt(null);
+        topicRepository.save(topic);
+    }
+
+    // "🗑️ Butunlay o'chirish" — FAQAT allaqachon savatda turgan mavzuga
+    // nisbatan. QAYTARIB BO'LMAYDI: savollar (questions.topic_id'da FK
+    // yo'qligi uchun) ANIQ, alohida o'chiriladi (aks holda "egasiz" bo'lib
+    // qolib ketardi).
+    @Transactional
+    public void permanentlyDeleteTopic(Long topicId) {
+        Topic topic = getAnyTopicOrThrow(topicId);
+        if (topic.getDeletedAt() == null) {
+            throw new IllegalArgumentException(
+                    "❌ Bu mavzuni butunlay o'chirishdan oldin, avval oddiy \"O'chirish\" orqali savatga o'tkazish kerak.");
+        }
+        questionRepository.deleteByTopic_Id(topicId);
+        topicRepository.delete(topic);
+    }
+
+    private Topic getTopicOrThrow(Long topicId) {
+        Topic topic = getAnyTopicOrThrow(topicId);
+        if (topic.getDeletedAt() != null) {
+            throw new NoSuchElementException("Mavzu topilmadi");
+        }
+        return topic;
+    }
+
+    // FAQAT "O'chirilganlar savati" amallari (restoreTopic,
+    // permanentlyDeleteTopic, getDeletedTopics) uchun — soft-delete
+    // qilingan mavzuni ham topa oladi.
+    private Topic getAnyTopicOrThrow(Long topicId) {
+        return topicRepository.findById(topicId)
+                .orElseThrow(() -> new NoSuchElementException("Mavzu topilmadi"));
     }
 
     @Transactional

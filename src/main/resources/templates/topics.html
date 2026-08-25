@@ -41,6 +41,13 @@
     <!-- Shu Fandagi hech qanday savoli (testi) yo'q BARCHA mavzularni
          bir yo'la o'chiradi (deleteQuestionlessTopics, topic.js). -->
     <button onclick="deleteQuestionlessTopics()">🗑️ Testi yo'q mavzularni o'chirish</button>
+    <!-- Soft-delete qilingan (🗑️ o'chirilgan) mavzular — "♻️ Tiklash" bilan
+         bir zumda qaytariladi (TopicService.getDeletedTopics/restoreTopic). -->
+    <button onclick="toggleTopicTrash()">🗑️ O'chirilgan mavzular</button>
+
+    <div id="topicTrashPanel" style="display:none;">
+        <div id="topicTrashList"></div>
+    </div>
 
     <!-- Bo'lim ustidan (Fan -> Bo'lim -> Mavzu) kelinganda ko'rinadi —
          qaysi bo'lim mavzulari filtrlanib ko'rsatilayotganini bildiradi

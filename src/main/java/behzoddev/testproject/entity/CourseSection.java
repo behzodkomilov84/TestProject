@@ -84,4 +84,11 @@ public class CourseSection {
     @Column(name = "created_at", nullable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    // "O'chirilganlar savati" — Course.deletedAt bilan bir xil g'oya:
+    // o'chirilganda DARHOL butunlay o'chmaydi (progress yozuvlari ham
+    // saqlanib qoladi), faqat shu maydon bilan belgilanadi — "♻️ Tiklash"
+    // bilan bir zumda qaytadi.
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
 }

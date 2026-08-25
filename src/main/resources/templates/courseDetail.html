@@ -55,6 +55,14 @@
                 <button id="syncChapterTopicsBtn" onclick="syncChapterTopics()" title="Kurs Bo'limlari bilan TEST BOSHQARUVIdagi bog'langan mavzularning Bo'limi orasidagi farqni to'g'rilaydi">
                     🔄 Bo'lim-Mavzu bog'lanishini sinxronlash
                 </button>
+                <!-- Soft-delete qilingan (🗑️ o'chirilgan) kurs mavzulari —
+                     "♻️ Tiklash" bilan bir zumda qaytariladi (CourseService.
+                     getDeletedSections/restoreSection). -->
+                <button id="sectionTrashBtn" onclick="toggleSectionTrash()">🗑️ O'chirilgan mavzular</button>
+            </div>
+
+            <div id="sectionTrashPanel" style="display:none;">
+                <div id="sectionTrashList"></div>
             </div>
 
         <div id="editCourseForm" class="course-form" style="display:none;">

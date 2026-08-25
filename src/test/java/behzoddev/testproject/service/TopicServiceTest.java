@@ -1,6 +1,7 @@
 package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.CourseSectionRepository;
+import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
@@ -32,6 +33,8 @@ class TopicServiceTest {
     @Mock
     private TopicRepository topicRepository;
     @Mock
+    private QuestionRepository questionRepository;
+    @Mock
     private TopicMapper topicMapper;
     @Mock
     private ScienceRepository scienceRepository;
@@ -47,7 +50,7 @@ class TopicServiceTest {
     @BeforeEach
     void setUp() {
         Validation validation = new Validation(answerService);
-        topicService = new TopicService(topicRepository, topicMapper, scienceRepository, topicSectionRepository, courseSectionRepository, validation);
+        topicService = new TopicService(topicRepository, questionRepository, topicMapper, scienceRepository, topicSectionRepository, courseSectionRepository, validation);
     }
 
     @Test
@@ -134,10 +137,76 @@ class TopicServiceTest {
         verify(courseSectionRepository, never()).findByLinkedTopic_Id(any());
     }
 
+    // ===== removeTopic (soft-delete — "O'chirilganlar savati") =====
+
     @Test
-    void removeTopic_delegatesToRepository() {
+    void removeTopic_softDeletes_doesNotTouchQuestions() {
+        Topic topic = Topic.builder().id(1L).name("Mavzu").build();
+        when(topicRepository.findById(1L)).thenReturn(Optional.of(topic));
+
         topicService.removeTopic(1L);
 
-        verify(topicRepository).deleteById(1L);
+        assertThat(topic.getDeletedAt()).isNotNull();
+        verify(topicRepository).save(topic);
+        verify(topicRepository, never()).deleteById(any());
+        verify(questionRepository, never()).deleteByTopic_Id(any());
+    }
+
+    @Test
+    void removeTopic_notFound_throws() {
+        when(topicRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> topicService.removeTopic(1L))
+                .isInstanceOf(java.util.NoSuchElementException.class);
+    }
+
+    // ===== restoreTopic =====
+
+    @Test
+    void restoreTopic_clearsDeletedAt() {
+        Topic topic = Topic.builder().id(1L).name("Mavzu")
+                .deletedAt(java.time.LocalDateTime.now()).build();
+        when(topicRepository.findById(1L)).thenReturn(Optional.of(topic));
+
+        topicService.restoreTopic(1L);
+
+        assertThat(topic.getDeletedAt()).isNull();
+        verify(topicRepository).save(topic);
+    }
+
+    @Test
+    void restoreTopic_notDeleted_throws() {
+        Topic topic = Topic.builder().id(1L).name("Mavzu").build();
+        when(topicRepository.findById(1L)).thenReturn(Optional.of(topic));
+
+        assertThatThrownBy(() -> topicService.restoreTopic(1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("o'chirilmagan");
+    }
+
+    // ===== permanentlyDeleteTopic =====
+
+    @Test
+    void permanentlyDeleteTopic_softDeletedTopic_deletesQuestionsThenTopic() {
+        Topic topic = Topic.builder().id(1L).name("Mavzu")
+                .deletedAt(java.time.LocalDateTime.now()).build();
+        when(topicRepository.findById(1L)).thenReturn(Optional.of(topic));
+
+        topicService.permanentlyDeleteTopic(1L);
+
+        verify(questionRepository).deleteByTopic_Id(1L);
+        verify(topicRepository).delete(topic);
+    }
+
+    @Test
+    void permanentlyDeleteTopic_notYetSoftDeleted_throws() {
+        Topic topic = Topic.builder().id(1L).name("Mavzu").build();
+        when(topicRepository.findById(1L)).thenReturn(Optional.of(topic));
+
+        assertThatThrownBy(() -> topicService.permanentlyDeleteTopic(1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("savatga o'tkazish");
+
+        verify(topicRepository, never()).delete(any());
     }
 }

@@ -1709,8 +1709,11 @@ async function submitEditCourse() {
     }
 }
 
+// Kursni "O'chirilganlar savati"ga o'tkazadi (soft-delete) — DARHOL
+// butunlay o'chmaydi, /courses/trash sahifasidan "♻️ Tiklash" bilan
+// bir zumda qaytariladi (CourseService.deleteCourse).
 async function deleteCourse() {
-    if (!confirm("Kursni butunlay o'chirmoqchimisiz? Barcha mavzular ham o'chadi.")) return;
+    if (!confirm("Kursni \"O'chirilganlar savati\"ga o'tkazmoqchimisiz?\n\n(Butunlay o'chmaydi — /courses/trash sahifasidan istalgan payt qaytarish mumkin.)")) return;
 
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}`, { method: "DELETE" });
@@ -1920,11 +1923,11 @@ async function submitAddSection() {
     }
 }
 
+// "O'chirilganlar savati"ga o'tkazadi (soft-delete) — darhol butunlay
+// o'chmaydi, "🗑️ O'chirilgan mavzular" panelidan ("♻️ Tiklash") bir
+// zumda qaytariladi (CourseService.deleteSection).
 async function deleteSection(sectionId) {
-    // Backend 409 (bog'liq ma'lumotlar — progress yozuvlari) qaytarishi
-    // mumkin edi, lekin CourseService.deleteSection endi ularni avtomatik
-    // o'chiradi (kursni o'chirishdagi FK bug bilan bir xil sabab/tuzatish).
-    if (!confirm("Mavzuni o'chirmoqchimisiz?")) return;
+    if (!confirm("Mavzuni o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — \"🗑️ O'chirilgan mavzular\" panelidan qaytarish mumkin.)")) return;
 
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/sections/${sectionId}`, { method: "DELETE" });
@@ -1934,6 +1937,91 @@ async function deleteSection(sectionId) {
             return;
         }
         loadCourse();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+// "🗑️ O'chirilgan mavzular" paneli — soft-delete qilingan CourseSection'lar
+// ro'yxati (bir zumda "♻️ Tiklash" qilinadigan). Panel yopiq holatda
+// boshlanadi, bosilganda ochilib ro'yxatni yuklaydi.
+let sectionTrashOpen = false;
+
+function toggleSectionTrash() {
+    sectionTrashOpen = !sectionTrashOpen;
+    document.getElementById("sectionTrashPanel").style.display = sectionTrashOpen ? "block" : "none";
+    if (sectionTrashOpen) {
+        loadSectionTrash();
+    }
+}
+
+async function loadSectionTrash() {
+    const list = document.getElementById("sectionTrashList");
+    list.innerHTML = "<p>Yuklanmoqda...</p>";
+
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/sections/deleted`);
+        if (!res.ok) {
+            list.innerHTML = "<p>Yuklashda xatolik</p>";
+            return;
+        }
+        const items = await res.json();
+        if (!items.length) {
+            list.innerHTML = "<p>O'chirilgan mavzu yo'q</p>";
+            return;
+        }
+        list.innerHTML = items.map(s => `
+            <div class="row">
+                <div>${escapeHtml(s.title)} — ${formatSectionTrashDate(s.deletedAt)}da o'chirilgan</div>
+                <div class="row-actions">
+                    <button onclick="restoreSection(${s.id})">♻️ Tiklash</button>
+                    <button class="danger-btn" onclick="permanentlyDeleteSection(${s.id}, ${JSON.stringify(s.title)})">🗑️ Butunlay o'chirish</button>
+                </div>
+            </div>
+        `).join("");
+    } catch (err) {
+        console.error(err);
+        list.innerHTML = "<p>Tarmoq xatoligi</p>";
+    }
+}
+
+function formatSectionTrashDate(isoString) {
+    if (!isoString) return "";
+    const d = new Date(isoString);
+    return d.toLocaleDateString("uz-UZ") + " " + d.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
+}
+
+async function restoreSection(sectionId) {
+    if (!confirm("Bu mavzuni tiklamoqchimisiz?")) return;
+
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/sections/${sectionId}/restore`, { method: "POST" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "Tiklashda xatolik");
+            return;
+        }
+        loadSectionTrash();
+        loadCourse();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+async function permanentlyDeleteSection(sectionId, title) {
+    if (!confirm(`⚠️ "${title}" mavzusini BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`)) return;
+    if (!confirm("Haqiqatan ham ishonchingiz komilmi?")) return;
+
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/sections/${sectionId}/permanent`, { method: "DELETE" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "O'chirishda xatolik");
+            return;
+        }
+        loadSectionTrash();
     } catch (err) {
         console.error(err);
         alert("Tarmoq xatoligi");

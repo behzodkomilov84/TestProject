@@ -1,6 +1,7 @@
 package behzoddev.testproject.dao;
 
 import behzoddev.testproject.dto.topic.TopicIdAndNameDto;
+import behzoddev.testproject.dto.topic.TopicTrashDto;
 import behzoddev.testproject.dto.topic.TopicWithQuestionCountDto;
 import behzoddev.testproject.entity.Topic;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -26,12 +27,12 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     // doim aniq bitta qatorli, fan-out xavfi yo'q.
     @Query("select new behzoddev.testproject.dto.topic.TopicIdAndNameDto(t.id, t.name, s.id, " +
             "(select count(q) from Question q where q.topic = t)) " +
-            "from Topic t LEFT JOIN t.section s where t.science.id = :id order by t.orderIndex")
+            "from Topic t LEFT JOIN t.section s where t.science.id = :id and t.deletedAt is null order by t.orderIndex")
     List<TopicIdAndNameDto> findTopicsByScienceId(@Param("id") Long id);
 
     @Query("select new behzoddev.testproject.dto.topic.TopicIdAndNameDto(t.id, t.name, s.id, " +
             "(select count(q) from Question q where q.topic = t)) " +
-            "from Topic t LEFT JOIN t.section s where t.science.id = :scienceId and t.id = :topicId")
+            "from Topic t LEFT JOIN t.section s where t.science.id = :scienceId and t.id = :topicId and t.deletedAt is null")
     TopicIdAndNameDto findTopicByIds(@Param("scienceId") Long scienceId, @Param("topicId") Long topicId);
 
     // Kurs bo'limini TEST BOSHQARUVI'dagi mavzuga bog'lashda — mavjud
@@ -53,16 +54,22 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     // sarlavhasiz/tekis ro'yxat sifatida ko'rsatiladi).
     @Query("select new behzoddev.testproject.dto.topic.TopicWithQuestionCountDto(" +
             "t.id, t.name, count(q.id), s.id, s.name, s.orderIndex) " +
-            "FROM Topic t LEFT JOIN Question q ON q.topic.id = t.id LEFT JOIN t.section s " +
-            "WHERE t.science.id = :scienceId " +
+            "FROM Topic t LEFT JOIN Question q ON q.topic.id = t.id AND q.deletedAt IS NULL LEFT JOIN t.section s " +
+            "WHERE t.science.id = :scienceId AND t.deletedAt IS NULL " +
             "GROUP BY t.id, t.name, t.orderIndex, s.id, s.name, s.orderIndex " +
             "ORDER BY CASE WHEN s.id IS NULL THEN 1 ELSE 0 END, s.orderIndex, t.orderIndex")
     List<TopicWithQuestionCountDto> getTopicsWithQuestionCount(@Param("scienceId") Long scienceId);
 
-    List<Topic> findBySection_IdOrderByOrderIndexAsc(Long sectionId);
+    List<Topic> findBySection_IdAndDeletedAtIsNullOrderByOrderIndexAsc(Long sectionId);
 
-    List<Topic> findByScience_IdAndSectionIsNullOrderByOrderIndexAsc(Long scienceId);
+    List<Topic> findByScience_IdAndSectionIsNullAndDeletedAtIsNullOrderByOrderIndexAsc(Long scienceId);
 
     @Query("select max(t.orderIndex) from Topic t where t.science.id = :scienceId")
     Integer findMaxOrderIndexByScienceId(@Param("scienceId") Long scienceId);
+
+    // "O'chirilganlar savati" (Fan ichida) — TopicService.getDeletedTopics.
+    @Query("select new behzoddev.testproject.dto.topic.TopicTrashDto(t.id, t.name, t.deletedAt, " +
+            "(select count(q) from Question q where q.topic = t)) " +
+            "from Topic t where t.science.id = :scienceId and t.deletedAt is not null order by t.deletedAt desc")
+    List<TopicTrashDto> findDeletedByScienceId(@Param("scienceId") Long scienceId);
 }

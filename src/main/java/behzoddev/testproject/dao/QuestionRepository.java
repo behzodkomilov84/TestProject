@@ -1,25 +1,35 @@
 package behzoddev.testproject.dao;
 
+import behzoddev.testproject.dto.question.QuestionTrashDto;
 import behzoddev.testproject.entity.Question;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
+// DIQQAT: Question'da "O'chirilganlar savati" (deletedAt) bor — quyidagi
+// o'quvchi/admin-facing "o'qish" metodlarining barchasi ATAYLAB "deletedAt
+// is null" filtri bilan yozilgan (deleteByTopic_Id/softDeleteByTopic_Id'dan
+// tashqari — ular ANIQ cascade-o'chirish/tiklash uchun).
 public interface QuestionRepository extends JpaRepository<Question, Long> {
 
-    // DIQQAT: "questions.topic_id" ustunida FK cheklovi YO'Q (init.sql) —
-    // shu sabab Topic o'chirilganda savollar avtomatik (CASCADE) o'chmaydi,
-    // "egasiz" (dangling topic_id) holatda saqlanib qolaveradi. Mavzuni
-    // (savollari bilan birga) atayin butunlay o'chirmoqchi bo'lgan
-    // joylarda (TopicSectionService.removeSectionWithTopics) shu metod
-    // ORQALI ANIQ chaqirilishi kerak — aks holda "egasiz" savollar
-    // to'planib qoladi.
+    // FAQAT TopicService.permanentlyDeleteTopic (mavzuni BUTUNLAY, qaytarib
+    // bo'lmaydigan tarzda o'chirish) uchun — "questions.topic_id" ustunida
+    // FK cheklovi YO'Q (init.sql), shu sabab bu yerda ANIQ chaqirilishi
+    // kerak, aks holda "egasiz" savollar to'planib qoladi.
     void deleteByTopic_Id(Long topicId);
+
+    // CourseService.deleteChapterWithLinkedTopics uchun — mavzu bilan birga
+    // savollari ham SOFT-delete qilinadi (Question o'zining "O'chirilganlar
+    // savati"dan alohida tiklanishi mumkin bo'lib qoladi).
+    @Modifying
+    @Query("update Question q set q.deletedAt = CURRENT_TIMESTAMP where q.topic.id = :topicId and q.deletedAt is null")
+    void softDeleteByTopic_Id(@Param("topicId") Long topicId);
 
     @EntityGraph(value = "questionWithAnswers")
     @Query("""
@@ -27,16 +37,17 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
                 from Question q
                 where q.topic.science.id = :scienceId
                   and q.topic.id = :topicId
+                  and q.deletedAt is null
             """)
     List<Question> getQuestionsByIds(@Param("scienceId") Long scienceId, @Param("topicId") Long topicId);
 
     @Query("""
-            select q from Question q where q.topic.id = :topicId
+            select q from Question q where q.topic.id = :topicId and q.deletedAt is null
             """)
     List<Question> getQuestionsByTopicId(@Param("topicId") Long topicId);
 
     @Query("""
-            select q from Question q where q.id = :questionId
+            select q from Question q where q.id = :questionId and q.deletedAt is null
             """)
     Question getQuestionById(@Param("questionId") Long questionId);
 
@@ -45,18 +56,20 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
              from Question q
              left join fetch q.answers
              where q.topic.id in :topicIds
+               and q.deletedAt is null
             """)
     List<Question> findRandomQuestionsByTopicIds(@Param("topicIds") List<Long> topicIds);
 
     @Query("""
             SELECT count(q) FROM Question q
             WHERE q.topic.id IN :topicIds
+              AND q.deletedAt is null
             """)
     int countByTopicIds(@Param("topicIds") List<Long> topicIds);
 
     @Query("""
             select q from Question q
-            where q.topic.id = :topicId
+            where q.topic.id = :topicId and q.deletedAt is null
             """)
     Page<Question> findByTopicId(@Param("topicId") Long topicId, Pageable pageable);
 
@@ -64,6 +77,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
                 select q
                 from Question q
                 where q.topic.id = :topicId
+                  and q.deletedAt is null
                   and (:search is null or lower(q.questionText) like lower(concat('%', :search, '%')))
             """)
     Page<Question> findByTopicIdAndQuestionTextContainingIgnoreCase(Long topicId, String search, Pageable pageable);
@@ -71,10 +85,10 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     // ===== ALL MODE =====
 
     @EntityGraph(attributePaths = "answers")
-    List<Question> findByTopicId(Long topicId);
+    List<Question> findByTopicIdAndDeletedAtIsNull(Long topicId);
 
     @EntityGraph(attributePaths = "answers")
-    List<Question> findByTopicIdAndQuestionTextContainingIgnoreCase(Long topicId, String questionText);
+    List<Question> findByTopicIdAndQuestionTextContainingIgnoreCaseAndDeletedAtIsNull(Long topicId, String questionText);
 
     @Query("""
                 SELECT q
@@ -83,6 +97,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
                     ON q.id = s.id.questionId
                     AND s.id.userId = :userId
                 WHERE q.topic.id IN :topicIds
+                AND q.deletedAt is null
                 AND (
                     s IS NULL
                     OR (
@@ -105,4 +120,10 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             """)
     List<Question> findHardForUser(Long userId, List<Long> topicIds);
 
+    // "O'chirilganlar savati" ro'yxati (mavzu ichida) — QuestionService.getDeletedQuestions.
+    @Query("""
+            select new behzoddev.testproject.dto.question.QuestionTrashDto(q.id, q.questionText, q.deletedAt)
+            from Question q where q.topic.id = :topicId and q.deletedAt is not null order by q.deletedAt desc
+            """)
+    List<QuestionTrashDto> findDeletedByTopic_Id(@Param("topicId") Long topicId);
   }

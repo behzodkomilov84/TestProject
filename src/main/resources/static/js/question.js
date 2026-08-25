@@ -642,9 +642,12 @@ function hideCommentColumn() {
         .forEach(c => c.classList.add("hidden"));
 }
 
+// "O'chirilganlar savati"ga o'tkazadi (soft-delete) — darhol butunlay
+// o'chmaydi, "🗑️ O'chirilganlar" panelidan ("♻️ Tiklash") bir zumda
+// qaytariladi (QuestionService.deleteQuestion).
 async function deleteQuestion(questionId) {
 
-    if (!confirm("Rostdan ham savolni o‘chirmoqchimisiz?")) return;
+    if (!confirm("Rostdan ham savolni o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — \"🗑️ O'chirilganlar\" panelidan qaytarish mumkin.)")) return;
 
     try {
         const res = await fetch(`/api/question/${questionId}`, {method: "DELETE"});
@@ -666,6 +669,97 @@ async function deleteQuestion(questionId) {
 
 function goBack() {
     history.back();
+}
+
+// "🗑️ O'chirilganlar" paneli — soft-delete qilingan savollar ro'yxati
+// (bir zumda "♻️ Tiklash" qilinadigan). Panel yopiq holatda boshlanadi,
+// bosilganda ochilib ro'yxatni yuklaydi.
+let questionTrashOpen = false;
+
+function toggleQuestionTrash() {
+    questionTrashOpen = !questionTrashOpen;
+    document.getElementById("questionTrashPanel").style.display = questionTrashOpen ? "block" : "none";
+    if (questionTrashOpen) {
+        loadQuestionTrash();
+    }
+}
+
+function escapeHtmlTrash(text) {
+    const div = document.createElement("div");
+    div.textContent = text ?? "";
+    return div.innerHTML;
+}
+
+async function loadQuestionTrash() {
+    const list = document.getElementById("questionTrashList");
+    list.innerHTML = "<p>Yuklanmoqda...</p>";
+
+    try {
+        const res = await fetch(`/api/question/deleted?topicId=${topicId}`);
+        if (!res.ok) {
+            list.innerHTML = "<p>Yuklashda xatolik</p>";
+            return;
+        }
+        const items = await res.json();
+        if (!items.length) {
+            list.innerHTML = "<p>O'chirilgan savol yo'q</p>";
+            return;
+        }
+        list.innerHTML = items.map(q => `
+            <div class="row">
+                <div>${escapeHtmlTrash(q.questionText)} — ${formatQuestionTrashDate(q.deletedAt)}da o'chirilgan</div>
+                <div class="row-actions">
+                    <button onclick="restoreQuestion(${q.id})">♻️ Tiklash</button>
+                    <button class="danger-btn" onclick="permanentlyDeleteQuestion(${q.id})">🗑️ Butunlay o'chirish</button>
+                </div>
+            </div>
+        `).join("");
+    } catch (err) {
+        console.error(err);
+        list.innerHTML = "<p>Tarmoq xatoligi</p>";
+    }
+}
+
+function formatQuestionTrashDate(isoString) {
+    if (!isoString) return "";
+    const d = new Date(isoString);
+    return d.toLocaleDateString("uz-UZ") + " " + d.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
+}
+
+async function restoreQuestion(questionId) {
+    if (!confirm("Bu savolni tiklamoqchimisiz?")) return;
+
+    try {
+        const res = await fetch(`/api/question/${questionId}/restore`, { method: "POST" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "Tiklashda xatolik");
+            return;
+        }
+        loadQuestionTrash();
+        await loadQuestions(topicId, currentPage);
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+async function permanentlyDeleteQuestion(questionId) {
+    if (!confirm("⚠️ Bu savolni BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.")) return;
+    if (!confirm("Haqiqatan ham ishonchingiz komilmi?")) return;
+
+    try {
+        const res = await fetch(`/api/question/${questionId}/permanent`, { method: "DELETE" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "O'chirishda xatolik");
+            return;
+        }
+        loadQuestionTrash();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
 }
 
 function createTest() {

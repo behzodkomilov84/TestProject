@@ -1637,6 +1637,26 @@ body {
     font-weight: 600;
 }
 
+/* "🗑️ O'chirilgan mavzular" paneli (courseDetail.js — sectionTrashList) —
+   #backupPreviewResult'dagi bilan bir xil oddiy qator uslubi. */
+#sectionTrashList .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+}
+
+#sectionTrashList .row-actions {
+    display: flex;
+    gap: 8px;
+}
+
 /* Kurs bo'limi (TopicSection)/kurs Bo'limi "🔗 Kurs: ..." belgisi bilan
    bir xil uslub (science.css'dagi .topic-course-badge) — courseTrash.html
    science.css'ni ulamagani uchun shu yerda alohida takrorlanadi. */
