@@ -381,12 +381,13 @@
 
     <h2 class="curriculum-title">📋 Mavzular</h2>
 
-    <!-- OWNER/ADMIN uchun — shu kurs (va u bog'langan bo'lsa, bir nechta
-         bo'lsa HAMMASI) ichidagi mavzularning matn darsi ("mavzu
-         yoritmasi" — CourseSection.textContent) bo'yicha qidiruv
+    <!-- Istalgan foydalanuvchi (OWNER/ADMIN/USER) uchun — tahrirlashga
+         aloqasi yo'q, oddiy qidiruv. Shu kurs (va u bog'langan bo'lsa,
+         bir nechta bo'lsa HAMMASI) ichidagi mavzularning matn darsi
+         ("mavzu yoritmasi" — CourseSection.textContent) bo'yicha qidiradi
          (runExplanationSearch, courseDetail.js). Topilgan natijaga
          bosilsa — o'sha bo'lim/darsning o'ziga o'tadi. -->
-    <div class="explanation-search-box" id="explanationSearchBox" style="display:none;">
+    <div class="explanation-search-box" id="explanationSearchBox">
         <input type="text" id="explanationSearchInput" class="explanation-search-input"
                placeholder="🔍 Kurs ichidan qidirish (mavzu yoritmasidan)...">
         <div id="explanationSearchResults" class="explanation-search-results hidden"></div>

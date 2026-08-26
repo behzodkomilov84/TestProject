@@ -98,6 +98,11 @@ public class SecurityConfig {
                                 "/courses/**",
                                 "/api/courses/**",
                                 "/api/course-subscriptions/**",
+                                // "Kurs ichidan mavzu yoritmasi bo'yicha qidiruv" —
+                                // faqat O'QISH (tahrirlash emas), shuning uchun
+                                // OWNER/ADMIN bilan cheklanmaydi — istalgan login
+                                // qilgan foydalanuvchiga (USER ham) ochiq.
+                                "/api/course-sections/search-explanations",
                                 // ROLE_ADMIN'ni onlayn sotib olish — asosan ROLE_USER
                                 // uchun (ular hali ADMIN emas), shuning uchun umumiy
                                 // "/api/**" (faqat OWNER/ADMIN) qoidasidan oldin, alohida.

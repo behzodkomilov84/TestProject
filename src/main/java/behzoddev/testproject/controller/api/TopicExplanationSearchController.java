@@ -3,7 +3,6 @@ package behzoddev.testproject.controller.api;
 import behzoddev.testproject.dto.course.TopicExplanationSearchResultDto;
 import behzoddev.testproject.service.CourseService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -25,8 +24,11 @@ public class TopicExplanationSearchController {
 
     private final CourseService courseService;
 
+    // Tahrirlash emas, oddiy o'qish/qidiruv — shuning uchun @PreAuthorize
+    // YO'Q (SecurityConfig'da "/api/course-sections/search-explanations"
+    // istalgan login qilgan foydalanuvchiga — OWNER/ADMIN/USER — ochiq
+    // qilib qo'yilgan).
     @GetMapping("/search-explanations")
-    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
     public List<TopicExplanationSearchResultDto> search(
             @RequestParam List<Long> topicIds,
             @RequestParam String q

@@ -1025,10 +1025,11 @@ function renderSections(sections) {
     // uchun.
     document.getElementById("sectionsSortBar").style.display = (canManage && !hasAnyChapter) ? "flex" : "none";
 
-    // "Kurs ichidan mavzu yoritmasi bo'yicha qidiruv" — flat/guruhlangan
-    // ko'rinishdan qat'i nazar ko'rinadi (sortBar'dan farqli), faqat
-    // boshqaruvchilar uchun (izoh matni tahririyat ma'lumoti).
-    document.getElementById("explanationSearchBox").style.display = canManage ? "block" : "none";
+    // "Kurs ichidan mavzu yoritmasi bo'yicha qidiruv" — tahrirlashga
+    // aloqasi yo'q, oddiy o'qish/qidiruv, shuning uchun sortBar'dan
+    // farqli faqat boshqaruvchilarga emas — istalgan foydalanuvchiga
+    // (OWNER/ADMIN/USER) ko'rinadi (flat/guruhlangan ko'rinishdan qat'i nazar).
+    document.getElementById("explanationSearchBox").style.display = "block";
 
     if (hasAnyChapter) {
         renderGroupedSections();
