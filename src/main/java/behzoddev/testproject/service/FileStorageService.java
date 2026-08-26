@@ -171,7 +171,21 @@ public class FileStorageService {
         }
 
         String detectedType = tika.detect(content);
-        if (!ALLOWED_PPT_TYPES.contains(detectedType.toLowerCase())) {
+        boolean recognizedByTika = ALLOWED_PPT_TYPES.contains(detectedType.toLowerCase());
+        // Ba'zi .pptx fayllar (haqiqiy PowerPoint bilan emas, balki biror
+        // avtomatik generator/kutubxona bilan yaratilgan — production'da
+        // TASDIQLANGAN haqiqiy holat) Tika kutgan to'liq ichki
+        // metama'lumotga ega bo'lmaydi, shu sabab Tika ularni aniq
+        // PowerPoint sifatida emas, umumiy "application/zip" deb
+        // aniqlashi mumkin — garchi LibreOffice ularni MUAMMOSIZ ochsa
+        // ham. Shu holatda Tika'ning umumiy taxminiga emas, ZIP FAYL
+        // ICHIDA "ppt/presentation.xml" borligini TO'G'RIDAN-TO'G'RI
+        // tekshiramiz — bu "bu chindan ham PowerPoint paketi"ligini
+        // Tika taxminidan ANIQROQ tasdiqlaydi (soxta zip'lar hali ham rad etiladi).
+        boolean looksLikePptxZip = !recognizedByTika
+                && "application/zip".equalsIgnoreCase(detectedType)
+                && containsPptxPresentationXml(content);
+        if (!recognizedByTika && !looksLikePptxZip) {
             log.warn("Fayl turi mos kelmadi: client Content-Type='{}', haqiqiy (Tika)='{}', fayl='{}'",
                     contentType, detectedType, file.getOriginalFilename());
             throw new IllegalArgumentException("❌Faqat PowerPoint fayllari (.ppt, .pptx) yuklash mumkin.");
@@ -184,7 +198,7 @@ public class FileStorageService {
 
         String extension = extractExtension(file.getOriginalFilename(), ALLOWED_PPT_EXTENSIONS);
         if (extension.isEmpty()) {
-            extension = detectedType.contains("openxmlformats") ? ".pptx" : ".ppt";
+            extension = (detectedType.contains("openxmlformats") || looksLikePptxZip) ? ".pptx" : ".ppt";
         }
 
         Path workDir = null;
@@ -240,6 +254,25 @@ public class FileStorageService {
         } finally {
             deleteDirectoryQuietly(workDir);
         }
+    }
+
+    // ZIP fayl ICHIDA "ppt/presentation.xml" bor-yo'qligini tekshiradi —
+    // .pptx (OOXML) paketining ANIQ, shubhasiz belgisi (Tika'ning umumiy
+    // "application/zip" taxminidan farqli, storeCoursePptSlides'da
+    // izohlangan haqiqiy production holat uchun).
+    private boolean containsPptxPresentationXml(byte[] content) {
+        try (java.util.zip.ZipInputStream zis =
+                     new java.util.zip.ZipInputStream(new java.io.ByteArrayInputStream(content))) {
+            java.util.zip.ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                if ("ppt/presentation.xml".equals(entry.getName())) {
+                    return true;
+                }
+            }
+        } catch (IOException e) {
+            return false;
+        }
+        return false;
     }
 
     // LibreOffice (headless) orqali .ppt/.pptx faylni PDF'ga o'giradi —
