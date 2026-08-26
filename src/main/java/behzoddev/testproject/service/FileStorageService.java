@@ -174,16 +174,20 @@ public class FileStorageService {
         boolean recognizedByTika = ALLOWED_PPT_TYPES.contains(detectedType.toLowerCase());
         // Ba'zi .pptx fayllar (haqiqiy PowerPoint bilan emas, balki biror
         // avtomatik generator/kutubxona bilan yaratilgan — production'da
-        // TASDIQLANGAN haqiqiy holat) Tika kutgan to'liq ichki
-        // metama'lumotga ega bo'lmaydi, shu sabab Tika ularni aniq
-        // PowerPoint sifatida emas, umumiy "application/zip" deb
-        // aniqlashi mumkin — garchi LibreOffice ularni MUAMMOSIZ ochsa
-        // ham. Shu holatda Tika'ning umumiy taxminiga emas, ZIP FAYL
-        // ICHIDA "ppt/presentation.xml" borligini TO'G'RIDAN-TO'G'RI
-        // tekshiramiz — bu "bu chindan ham PowerPoint paketi"ligini
-        // Tika taxminidan ANIQROQ tasdiqlaydi (soxta zip'lar hali ham rad etiladi).
+        // TASDIQLANGAN haqiqiy holat, real faylda tekshirilgan) Tika
+        // kutgan to'liq ichki metama'lumotga ega bo'lmaydi, shu sabab
+        // Tika ularni aniq PowerPoint sifatida emas, umumiy — yoki
+        // "application/zip", yoki "application/x-tika-ooxml" ("bu OOXML
+        // ekanini bildim, lekin aniq QAYSI turi ekanini bilolmadim" degan
+        // Tika'ning o'z fallback turi) — deb aniqlashi mumkin, garchi
+        // LibreOffice ularni MUAMMOSIZ ochsa ham. Shu holatda Tika'ning
+        // umumiy taxminiga emas, ZIP FAYL ICHIDA "ppt/presentation.xml"
+        // borligini TO'G'RIDAN-TO'G'RI tekshiramiz — bu "bu chindan ham
+        // PowerPoint paketi"ligini Tika taxminidan ANIQROQ tasdiqlaydi
+        // (soxta zip'lar hali ham rad etiladi).
         boolean looksLikePptxZip = !recognizedByTika
-                && "application/zip".equalsIgnoreCase(detectedType)
+                && ("application/zip".equalsIgnoreCase(detectedType)
+                    || "application/x-tika-ooxml".equalsIgnoreCase(detectedType))
                 && containsPptxPresentationXml(content);
         if (!recognizedByTika && !looksLikePptxZip) {
             log.warn("Fayl turi mos kelmadi: client Content-Type='{}', haqiqiy (Tika)='{}', fayl='{}'",
