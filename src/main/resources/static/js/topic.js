@@ -481,7 +481,21 @@ function removeFromUi(i) {
 // HECH QACHON torayib/siqilib qolmaydi (flex-shrink:0).
 function buttons(s, i) {
     if (s.mode === "VIEW") {
-        return `<div class="row-actions"><button onclick="edit(${i})">✏️ Edit</button></div>`;
+        // Tartib tugmalari (⬆⬇) — bo'lim bo'yicha FILTRLANGAN (ko'rinadigan)
+        // ro'yxatdagi o'rniga qarab disabled qilinadi, raw massiv
+        // indeksiga emas (chunki qo'shni massiv elementi boshqa bo'limga
+        // tegishli bo'lishi mumkin — getVisibleIndices()).
+        const visible = getVisibleIndices();
+        const pos = visible.indexOf(i);
+        const upDisabled = pos <= 0 ? "disabled" : "";
+        const downDisabled = pos === -1 || pos === visible.length - 1 ? "disabled" : "";
+        return `
+            <div class="row-actions">
+                <button class="order-move-btn" onclick="moveUp(${i})" ${upDisabled} title="Yuqoriga">⬆</button>
+                <button class="order-move-btn" onclick="moveDown(${i})" ${downDisabled} title="Pastga">⬇</button>
+                <button onclick="edit(${i})">✏️ Edit</button>
+            </div>
+        `;
     }
     return `
         <div class="row-actions">
@@ -491,6 +505,78 @@ function buttons(s, i) {
         </div>
            `;
 } //DONE
+
+// Faqat joriy filtrlashda (bo'lim bo'yicha yoki hammasi) KO'RINADIGAN
+// qatorlarning raw itemBlock indekslarini qaytaradi — ⬆⬇ tugmalari va
+// A-Z/Z-A saralash shu ro'yxat DOIRASIDA ishlashi kerak (boshqa
+// bo'limdagi qatorlar aralashib ketmasin).
+function getVisibleIndices() {
+    return itemBlock
+        .map((s, idx) => ({s, idx}))
+        .filter(({s}) => !filterSectionId || Number(s.sectionId) === Number(filterSectionId))
+        .map(({idx}) => idx);
+}
+
+function moveUp(i) {
+    const visible = getVisibleIndices();
+    const pos = visible.indexOf(i);
+    if (pos <= 0) return;
+    const otherIdx = visible[pos - 1];
+    [itemBlock[otherIdx], itemBlock[i]] = [itemBlock[i], itemBlock[otherIdx]];
+    persistOrder();
+}
+
+function moveDown(i) {
+    const visible = getVisibleIndices();
+    const pos = visible.indexOf(i);
+    if (pos === -1 || pos >= visible.length - 1) return;
+    const otherIdx = visible[pos + 1];
+    [itemBlock[otherIdx], itemBlock[i]] = [itemBlock[i], itemBlock[otherIdx]];
+    persistOrder();
+}
+
+// Yangi tartibni serverga saqlaydi — BUTUN itemBlock (shu Fandagi barcha
+// mavzular, filtrlanmagan) joriy massiv tartibida yuboriladi, chunki
+// backend (/api/topic/reorder) bitta Fanning TO'LIQ mavzular ro'yxatini
+// kutadi (TopicService.reorderTopics — id to'plami mos kelmasa xato
+// qaytaradi).
+async function persistOrder() {
+    render();
+    const orderedIds = itemBlock.filter(s => s.id > 0).map(s => s.id);
+    if (orderedIds.length < 2) return;
+    try {
+        const response = await fetch(`/api/topic/reorder?scienceId=${scienceId}`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(orderedIds)
+        });
+        if (!response.ok) throw new Error("Server error: " + response.status);
+        showToast('success', 'Tartib saqlandi', 2000);
+    } catch (err) {
+        console.error(err);
+        showToast('error', 'Tartibni saqlashda xatolik', 4000);
+    }
+}
+
+// A→Z / Z→A — faqat joriy KO'RINADIGAN (bo'lim bo'yicha filtrlangan)
+// qatorlar orasida saralanadi; boshqa bo'limdagi qatorlarning massivdagi
+// o'rni butunlay tegilmay qoladi (courseDetail.js#sortChapterSections
+// bilan bir xil "slot almashtirish" texnikasi).
+function sortAllAZ(dir) {
+    if (itemBlock.some(s => s.mode !== "VIEW")) {
+        alert("❌ Avval tahrirlashni yakuniga yetkazing (yoki saqlang)!");
+        return;
+    }
+    const visibleIndices = getVisibleIndices();
+    if (visibleIndices.length < 2) return;
+    const visibleItems = visibleIndices.map(idx => itemBlock[idx]);
+    const sorted = [...visibleItems].sort((a, b) =>
+        dir === "AZ" ? a.name.localeCompare(b.name, "uz") : b.name.localeCompare(a.name, "uz"));
+    visibleIndices.forEach((idx, k) => {
+        itemBlock[idx] = sorted[k];
+    });
+    persistOrder();
+}
 
 function edit(i) {
     // Kursga bog'langan mavzu — nomi HAM, Bo'limi HAM faqat kurs ichidan

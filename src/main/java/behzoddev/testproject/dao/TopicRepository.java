@@ -64,6 +64,9 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
 
     List<Topic> findByScience_IdAndSectionIsNullAndDeletedAtIsNullOrderByOrderIndexAsc(Long scienceId);
 
+    // Reorder (⬆⬇, A-Z/Z-A) uchun — TopicService.reorderTopics.
+    List<Topic> findByScience_IdAndDeletedAtIsNullOrderByOrderIndexAsc(Long scienceId);
+
     @Query("select max(t.orderIndex) from Topic t where t.science.id = :scienceId")
     Integer findMaxOrderIndexByScienceId(@Param("scienceId") Long scienceId);
 

@@ -15,7 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
@@ -67,6 +69,9 @@ public class ScienceService {
                 topic.setScience(science);
             }
         }
+
+        Integer maxOrder = scienceRepository.findMaxOrderIndex();
+        science.setOrderIndex(maxOrder != null ? maxOrder + 1 : 1);
 
         return scienceRepository.save(science);
     }
@@ -162,6 +167,29 @@ public class ScienceService {
         validation.textFieldMustNotBeEmpty(name);
 
         scienceRepository.updateScienceName(id, name);
+    }
+
+    // Frontend to'liq tartiblangan id ro'yxatini yuboradi (⬆⬇ yoki A-Z/Z-A
+    // saralashdan keyin) — biz orderIndex'larni 1'dan qayta hisoblaymiz
+    // (CourseService.reorderSections/TopicSectionService.reorderSections
+    // bilan bir xil andoza).
+    @Transactional
+    public void reorderSciences(List<Long> orderedScienceIds) {
+        List<Science> sciences = scienceRepository.findAllByDeletedAtIsNullOrderByOrderIndex();
+        Map<Long, Science> byId = new LinkedHashMap<>();
+        for (Science s : sciences) {
+            byId.put(s.getId(), s);
+        }
+
+        if (orderedScienceIds.size() != sciences.size() || !byId.keySet().containsAll(orderedScienceIds)) {
+            throw new IllegalArgumentException("❌Fanlar ro'yxati mos kelmayapti.");
+        }
+
+        int index = 1;
+        for (Long id : orderedScienceIds) {
+            byId.get(id).setOrderIndex(index++);
+        }
+        scienceRepository.saveAll(sciences);
     }
 
     @Transactional

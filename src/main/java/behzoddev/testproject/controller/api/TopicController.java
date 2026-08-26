@@ -92,6 +92,14 @@ public class TopicController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    // Mavzular tartibini qayta belgilash ("⬆⬇" yoki A-Z/Z-A saralashdan
+    // keyin) — to'liq yangi tartibdagi id ro'yxati.
+    @PostMapping("/api/topic/reorder")
+    public ResponseEntity<Void> reorder(@RequestParam Long scienceId, @RequestBody List<Long> orderedTopicIds) {
+        topicService.reorderTopics(scienceId, orderedTopicIds);
+        return ResponseEntity.ok().build();
+    }
+
     // "🗑️ Testi yo'q mavzularni o'chirish" — shu Fanda hech qanday savoli
     // bo'lmagan BARCHA mavzularni bir yo'la o'chiradi.
     @DeleteMapping("/api/topic/questionless")

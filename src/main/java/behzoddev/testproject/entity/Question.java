@@ -44,6 +44,12 @@ public class Question {
     @ManyToOne(fetch = FetchType.LAZY)
     private Topic topic;
 
+    // Shu mavzu ichidagi tartib raqami — A-Z/Z-A saralash va qo'lda
+    // tartiblash (⬆⬇) imkoniyati uchun (Topic.orderIndex bilan bir xil
+    // konvensiya).
+    @Column(name = "order_index")
+    private Integer orderIndex;
+
     // "O'chirilganlar savati" — Course.deletedAt bilan bir xil g'oya:
     // o'chirilganda DARHOL butunlay o'chmaydi (javoblari ham saqlanib
     // qoladi — Answer'lar CASCADE bilan avtomatik o'chirilmaydi, chunki

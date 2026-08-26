@@ -25,7 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -151,10 +153,12 @@ public class QuestionService {
         Topic topic = topicRepository.getTopicById(questionSaveDto.topicId());
 
         validation.textFieldMustNotBeEmpty(questionSaveDto.questionText());
+        Integer maxOrderIndex = questionRepository.findMaxOrderIndexByTopicId(questionSaveDto.topicId());
         Question newQuestion = Question.builder()
                 .questionText(questionSaveDto.questionText())
                 .imageUrl(questionSaveDto.imageUrl())
                 .topic(topic)
+                .orderIndex(maxOrderIndex == null ? 1 : maxOrderIndex + 1)
                 .build();
 
         Question savedQuestion = questionRepository.save(newQuestion);
@@ -333,10 +337,10 @@ public class QuestionService {
         List<Question> list;
 
         if (q == null || q.isBlank()) {
-            list = questionRepository.findByTopicIdAndDeletedAtIsNull(topicId);
+            list = questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(topicId);
         } else {
             list = questionRepository
-                    .findByTopicIdAndQuestionTextContainingIgnoreCaseAndDeletedAtIsNull(
+                    .findByTopicIdAndQuestionTextContainingIgnoreCaseAndDeletedAtIsNullOrderByOrderIndexAsc(
                             topicId,
                             q
                     );
@@ -345,9 +349,26 @@ public class QuestionService {
         return questionMapper.mapQuestionListToQuestionDtoList(list);
     }
 
+    // Savollar tartibini qayta belgilash ("⬆⬇" yoki A-Z/Z-A saralashdan
+    // keyin, faqat "Hammasi" (isAllMode) rejimida, question.js) —
+    // to'liq yangi tartibdagi id ro'yxati (TopicService.reorderTopics /
+    // ScienceService.reorderSciences bilan bir xil andoza).
+    @Transactional
+    public void reorderQuestions(Long topicId, List<Long> orderedQuestionIds) {
+        List<Question> questions = questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(topicId);
+        Map<Long, Question> byId = new LinkedHashMap<>();
+        for (Question q : questions) byId.put(q.getId(), q);
+        if (orderedQuestionIds.size() != questions.size() || !byId.keySet().containsAll(orderedQuestionIds)) {
+            throw new IllegalArgumentException("❌Savollar ro'yxati mavzuning savollariga mos kelmayapti.");
+        }
+        int index = 1;
+        for (Long id : orderedQuestionIds) byId.get(id).setOrderIndex(index++);
+        questionRepository.saveAll(questions);
+    }
+
     public List<ResponseQuestionTextDto> getQuestionsByTopic(Long topicId) {
         // Преобразуем сущности Question в DTO
-        return questionRepository.findByTopicIdAndDeletedAtIsNull(topicId)
+        return questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(topicId)
                 .stream()
                 .map(q -> questionMapper.mapQuestionToResponseQuestionTextDto(q))
                 .toList();

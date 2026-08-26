@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -215,6 +216,28 @@ public class TopicService {
         }
 
         topicRepository.updateTopicName(id, name);
+    }
+
+    // Frontend to'liq tartiblangan id ro'yxatini yuboradi (⬆⬇ yoki A-Z/Z-A
+    // saralashdan keyin) — biz orderIndex'larni 1'dan qayta hisoblaymiz
+    // (TopicSectionService.reorderSections bilan bir xil andoza).
+    @Transactional
+    public void reorderTopics(Long scienceId, List<Long> orderedTopicIds) {
+        List<Topic> topics = topicRepository.findByScience_IdAndDeletedAtIsNullOrderByOrderIndexAsc(scienceId);
+        Map<Long, Topic> byId = new LinkedHashMap<>();
+        for (Topic t : topics) {
+            byId.put(t.getId(), t);
+        }
+
+        if (orderedTopicIds.size() != topics.size() || !byId.keySet().containsAll(orderedTopicIds)) {
+            throw new IllegalArgumentException("❌Mavzular ro'yxati fanning mavzulariga mos kelmayapti.");
+        }
+
+        int index = 1;
+        for (Long id : orderedTopicIds) {
+            byId.get(id).setOrderIndex(index++);
+        }
+        topicRepository.saveAll(topics);
     }
 
     @Transactional

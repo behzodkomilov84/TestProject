@@ -380,8 +380,8 @@ function buttons(s, i) {
         const downDisabled = i === itemBlock.length - 1 ? "disabled" : "";
         return `
             <div class="row-actions">
-                <button onclick="moveUp(${i})" ${upDisabled} title="Yuqoriga">⬆</button>
-                <button onclick="moveDown(${i})" ${downDisabled} title="Pastga">⬇</button>
+                <button class="order-move-btn" onclick="moveUp(${i})" ${upDisabled} title="Yuqoriga">⬆</button>
+                <button class="order-move-btn" onclick="moveDown(${i})" ${downDisabled} title="Pastga">⬇</button>
                 <button onclick="edit(${i})">✏️ Edit</button>
             </div>
         `;
@@ -459,6 +459,20 @@ async function persistOrder() {
         console.error(err);
         showToast('error', 'Tartibni saqlashda xatolik', 4000);
     }
+}
+
+// "Saralash: A→Z / Z→A" — hali saqlanmagan (NEW/EDIT) qatorlar bo'lsa
+// avval ularni yakunlash so'raladi.
+function sortAllAZ(dir) {
+    if (itemBlock.some(s => s.mode !== "VIEW")) {
+        alert("❌ Avval tahrirlashni yakuniga yetkazing (yoki saqlang)!");
+        return;
+    }
+
+    itemBlock.sort((a, b) =>
+        dir === "AZ" ? a.name.localeCompare(b.name, "uz") : b.name.localeCompare(a.name, "uz"));
+
+    persistOrder();
 }
 
 function showToast(type, message, duration = 4000) {

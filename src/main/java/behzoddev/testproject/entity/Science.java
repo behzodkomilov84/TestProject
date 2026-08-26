@@ -32,6 +32,12 @@ public class Science {
     @ToString.Exclude
     private Set<Topic> topics;
 
+    // Fanlar ro'yxatidagi tartib raqami — A-Z/Z-A saralash va qo'lda
+    // tartiblash (⬆⬇) imkoniyati uchun (TopicSection.orderIndex bilan
+    // bir xil konvensiya).
+    @Column(name = "order_index")
+    private Integer orderIndex;
+
     // "O'chirilganlar savati" — Course.deletedAt bilan bir xil g'oya:
     // o'chirilganda DARHOL butunlay o'chmaydi (Bo'lim/mavzu/savollari
     // ham saqlanib qoladi), faqat shu maydon bilan belgilanadi —

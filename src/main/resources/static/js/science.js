@@ -342,7 +342,15 @@ function removeFromUi(i) {
 // ichida har doim ENG PASTGA "yopishadi" (margin-top:auto).
 function buttons(s, i) {
     if (s.mode === "VIEW") {
-        return `<div class="row-actions"><button onclick="edit(${i})">✏️ Edit</button></div>`;
+        const upDisabled = i === 0 ? "disabled" : "";
+        const downDisabled = i === itemBlock.length - 1 ? "disabled" : "";
+        return `
+            <div class="row-actions">
+                <button class="order-move-btn" onclick="moveUp(${i})" ${upDisabled} title="Yuqoriga">⬆</button>
+                <button class="order-move-btn" onclick="moveDown(${i})" ${downDisabled} title="Pastga">⬇</button>
+                <button onclick="edit(${i})">✏️ Edit</button>
+            </div>
+        `;
     }
     return `
         <div class="row-actions">
@@ -352,6 +360,57 @@ function buttons(s, i) {
         </div>
     `;
 } //DONE
+
+// Faqat DB'da mavjud (id > 0) fanlar orasida joy almashtiradi va darhol
+// serverga (reorder endpoint) yuboradi — yangi (hali saqlanmagan)
+// fanlar bilan aralashtirmaslik uchun oddiy holatda saqlanadi
+// (topicSection.js#moveUp bilan bir xil andoza).
+function moveUp(i) {
+    if (i <= 0) return;
+    [itemBlock[i - 1], itemBlock[i]] = [itemBlock[i], itemBlock[i - 1]];
+    persistOrder();
+}
+
+function moveDown(i) {
+    if (i >= itemBlock.length - 1) return;
+    [itemBlock[i], itemBlock[i + 1]] = [itemBlock[i + 1], itemBlock[i]];
+    persistOrder();
+}
+
+async function persistOrder() {
+    render();
+
+    const orderedIds = itemBlock.filter(s => s.id > 0).map(s => s.id);
+    if (orderedIds.length < 2) return;
+
+    try {
+        const response = await fetch("/api/science/reorder", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(orderedIds)
+        });
+        if (!response.ok) throw new Error("Server error: " + response.status);
+        showToast('success', 'Tartib saqlandi', 2000);
+    } catch (err) {
+        console.error(err);
+        showToast('error', 'Tartibni saqlashda xatolik', 4000);
+    }
+}
+
+// "Saralash: A→Z / Z→A" — hali saqlanmagan (NEW/EDIT) qatorlar bo'lsa
+// avval ularni yakunlash so'raladi (topicSection.js'dagi 🗑️ bo'sh
+// bo'limlarni o'chirish bilan bir xil ehtiyot chorasi).
+function sortAllAZ(dir) {
+    if (itemBlock.some(s => s.mode !== "VIEW")) {
+        alert("❌ Avval tahrirlashni yakuniga yetkazing (yoki saqlang)!");
+        return;
+    }
+
+    itemBlock.sort((a, b) =>
+        dir === "AZ" ? a.name.localeCompare(b.name, "uz") : b.name.localeCompare(a.name, "uz"));
+
+    persistOrder();
+}
 
 function edit(i) {
     if (itemBlock.some(s => s.mode === "EDIT")) {

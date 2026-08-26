@@ -58,6 +58,17 @@
             <option value="all">Hammasi</option>
         </select>
 
+        <!-- Faqat "Hammasi" rejimida va qidiruv bo'sh bo'lganda ko'rinadi
+             (question.js#updateSortButtonsVisibility) — sabab: qidiruv
+             faollashsa, ekrandagi ro'yxat mavzuning TO'LIQ ro'yxati
+             bo'lmay qoladi, backend esa reorder'da TO'LIQ mos kelishni
+             talab qiladi (QuestionService.reorderQuestions). -->
+        <div class="sort-buttons hidden" id="questionSortButtons">
+            <span>Saralash:</span>
+            <button onclick="sortAllAZ('AZ')">A→Z</button>
+            <button onclick="sortAllAZ('ZA')">Z→A</button>
+        </div>
+
     </div>
 
     <div class="table-wrapper">
@@ -74,6 +85,7 @@
                 <th>E</th>
                 <th title="To'g'ri javob">✅</th>
                 <th class="comment-col hidden" title="Izoh">💬To'g'ri <br>javob izohi</th>
+                <th title="Faqat 'Hammasi' rejimida ishlaydi">Tartib</th>
                 <th>Amallar</th>
             </tr>
             </thead>

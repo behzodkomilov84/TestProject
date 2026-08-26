@@ -38,6 +38,7 @@
     <include file="/db/changelog/course-soft-delete.sql"/>
     <include file="/db/changelog/topic-section-question-soft-delete.sql"/>
     <include file="/db/changelog/science-topic-section-soft-delete.sql"/>
+    <include file="/db/changelog/science-question-order-index.sql"/>
 
 
 </databaseChangeLog>

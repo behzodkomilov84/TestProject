@@ -679,6 +679,50 @@ td label{
     align-items: center;
 }
 
+/* "Tartib" ustuni (⬆⬇) va A-Z/Z-A saralash — faqat "Hammasi" (isAllMode)
+   rejimida va qidiruv bo'sh bo'lganda ko'rinadi/ishlaydi (question.js). */
+.order-move-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: none;
+    background: #4e8cff;
+    color: #fff;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.order-move-btn:hover { background: #3b76e0; }
+.order-move-btn:disabled { opacity: 0.35; cursor: not-allowed; background: #94a3b8; }
+
+.order-cell {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
+}
+
+.sort-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #64748b;
+}
+.sort-buttons button {
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid #d5dde8;
+    background: white;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+}
+.sort-buttons button:hover { background: #f1f5f9; }
+
 .pagination {
     margin-top: 16px;
     display: flex;

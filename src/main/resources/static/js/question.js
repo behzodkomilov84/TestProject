@@ -14,7 +14,7 @@ let isServerPaging = false;
 
 if (!topicId) {
     document.querySelector("#questionsTable tbody").innerHTML =
-        "<tr><td colspan='10'>❌ topicId yuborilmagan</td></tr>";
+        "<tr><td colspan='11'>❌ topicId yuborilmagan</td></tr>";
 } else {
     loadQuestions(topicId, currentPage);
 }
@@ -70,19 +70,27 @@ async function loadQuestions(topicId, page = 0) {
             last: normalized.page === normalized.totalPages - 1
         });
 
+        updateSortButtonsVisibility();
+
     } catch (e) {
         document.querySelector("#questionsTable tbody").innerHTML =
-            `<tr><td colspan="10">❌ ${e.message}</td></tr>`;
+            `<tr><td colspan="11">❌ ${e.message}</td></tr>`;
     }
 }
 
-function renderQuestionsTable(questions) {
+function renderQuestionsTable(rows) {
     const tbody = document.querySelector("#questionsTable tbody");
     tbody.innerHTML = "";
 
     const letters = ["A", "B", "C", "D", "E"];
 
-    questions.forEach((q, index) => {
+    // ⬆⬇ tugmalari FAQAT "Hammasi" rejimida va qidiruv bo'sh bo'lganda
+    // ishlaydi — sabab: aks holda ekrandagi ro'yxat mavzuning TO'LIQ
+    // ro'yxati bo'lmay qoladi, backend esa reorder'da TO'LIQ mos kelishni
+    // talab qiladi (QuestionService.reorderQuestions).
+    const canReorder = isAllMode && !searchQuery;
+
+    rows.forEach((q, index) => {
         const answers = q.answers.slice(0, 5);
         const correctIndex = answers.findIndex(a => a.isTrue);
         const correctLetter = correctIndex !== -1 ? letters[correctIndex] : "-";
@@ -128,7 +136,14 @@ function renderQuestionsTable(questions) {
             <td class="comment-col hidden">
                     <input class="comment-input" type="text">
             </td>
-            
+
+            <td class="order-cell">
+                ${canReorder ? `
+                    <button class="order-move-btn" onclick="moveQuestionUp(${index})" ${index === 0 ? "disabled" : ""} title="Yuqoriga">⬆</button>
+                    <button class="order-move-btn" onclick="moveQuestionDown(${index})" ${index === rows.length - 1 ? "disabled" : ""} title="Pastga">⬇</button>
+                ` : `<span style="color:#94a3b8; font-size:11px;">—</span>`}
+            </td>
+
             <td class="actions-cell">
                 <div class="view-actions">
                     
@@ -270,6 +285,7 @@ async function loadPage() {
 
     renderQuestionsTable(page.content);
     renderPagination(page);
+    updateSortButtonsVisibility();
 }
 
 
@@ -291,8 +307,69 @@ async function loadAllQuestions() {
 
     const data = await res.json();
 
-    renderQuestionsTable(data);
+    // ⬆⬇ / A-Z / Z-A saralash shu massiv ustida ishlaydi (moveQuestionUp/
+    // moveQuestionDown/sortAllAZ) — ALL rejimda ekrandagi ro'yxat
+    // mavzuning TO'LIQ ro'yxati bilan bir xil bo'lgani uchun xavfsiz
+    // (qidiruv bo'sh bo'lganda).
+    questions = data;
+
+    renderQuestionsTable(questions);
     hidePagination();
+    updateSortButtonsVisibility();
+}
+
+function updateSortButtonsVisibility() {
+    const shouldShow = isAllMode && !searchQuery;
+    const el = document.getElementById("questionSortButtons");
+    if (el) el.classList.toggle("hidden", !shouldShow);
+}
+
+// ⬆⬇ tugmalari — QuestionService.reorderQuestions bilan bir xil andoza
+// (Topic/Science'dagi kabi). Faqat "Hammasi" rejimida va qidiruv bo'sh
+// bo'lganda chaqiriladi (renderQuestionsTable canReorder tekshiruvi).
+function moveQuestionUp(i) {
+    if (!Array.isArray(questions) || i <= 0) return;
+    [questions[i - 1], questions[i]] = [questions[i], questions[i - 1]];
+    persistQuestionOrder();
+}
+
+function moveQuestionDown(i) {
+    if (!Array.isArray(questions) || i >= questions.length - 1) return;
+    [questions[i], questions[i + 1]] = [questions[i + 1], questions[i]];
+    persistQuestionOrder();
+}
+
+async function persistQuestionOrder() {
+    renderQuestionsTable(questions);
+    const orderedIds = questions.map(q => q.id);
+    if (orderedIds.length < 2) return;
+    try {
+        const response = await fetch(`/api/question/reorder?topicId=${topicId}`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(orderedIds)
+        });
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            throw new Error(data.error || ("Server error: " + response.status));
+        }
+        showAlert("✅ Tartib saqlandi", "success");
+    } catch (err) {
+        console.error(err);
+        showAlert(err.message || "Tartibni saqlashda xatolik");
+        await loadAllQuestions();
+    }
+}
+
+// A→Z / Z→A — faqat "Hammasi" rejimida va qidiruv bo'sh bo'lganda
+// ishlaydi (updateSortButtonsVisibility shu holatda tugmalarni ko'rsatadi).
+function sortAllAZ(dir) {
+    if (!isAllMode || searchQuery || !Array.isArray(questions) || questions.length < 2) return;
+    questions.sort((a, b) =>
+        dir === "AZ"
+            ? a.questionText.localeCompare(b.questionText, "uz")
+            : b.questionText.localeCompare(a.questionText, "uz"));
+    persistQuestionOrder();
 }
 
 

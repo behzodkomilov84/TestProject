@@ -403,3 +403,55 @@ h1 {
     .error {
         display: none;
     }
+/* "⬆⬇" tartib o'zgartirish tugmalari — foydalanuvchi ko'rsatgan rasmga
+   mos, to'q ko'k kvadrat belgi (science.js/topic.js/topicSection.js —
+   Fan/Bo'lim/Mavzu darajasida). */
+.order-move-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: none;
+    background: #4e8cff;
+    color: #fff;
+    font-size: 15px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.order-move-btn:hover {
+    background: #3b76e0;
+}
+
+.order-move-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    background: #94a3b8;
+}
+
+/* "Saralash: A→Z / Z→A" — courses.css'dagi .chapter-box-sort bilan bir
+   xil g'oya (oddiy oq tugmalar), TEST BOSHQARUVI sahifalarida. */
+.sort-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 10px 0;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.sort-buttons button {
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1px solid #d5dde8;
+    background: white;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.sort-buttons button:hover {
+    background: #f1f5f9;
+}

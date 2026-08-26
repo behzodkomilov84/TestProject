@@ -41,6 +41,15 @@ public class ScienceController {
         return ResponseEntity.ok(scienceIdsAndNames);
     }
 
+    // Fanlar tartibini qayta belgilash ("⬆⬇" yoki A-Z/Z-A saralashdan
+    // keyin) — to'liq yangi tartibdagi id ro'yxati.
+    @PostMapping("/api/science/reorder")
+    @ResponseBody
+    public ResponseEntity<Void> reorderSciences(@RequestBody List<Long> orderedScienceIds) {
+        scienceService.reorderSciences(orderedScienceIds);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/api/science/save")
     @ResponseBody
     public ResponseEntity<?> saveScience(@RequestBody Map<String, Object> payload) {

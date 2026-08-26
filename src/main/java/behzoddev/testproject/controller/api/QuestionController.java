@@ -93,6 +93,19 @@ public class QuestionController {
         );
     }
 
+    // Savollar tartibini qayta belgilash ("⬆⬇" yoki A-Z/Z-A saralashdan
+    // keyin, faqat "Hammasi" rejimida) — to'liq yangi tartibdagi id ro'yxati.
+    @PostMapping("/api/question/reorder")
+    @ResponseBody
+    public ResponseEntity<?> reorder(@RequestParam Long topicId, @RequestBody List<Long> orderedQuestionIds) {
+        try {
+            questionService.reorderQuestions(topicId, orderedQuestionIds);
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping("/api/question/save")
     @ResponseBody
     public ResponseEntity<?> saveQuestion(@RequestBody Map<Object, Object> payload) {

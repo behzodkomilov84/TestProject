@@ -26,7 +26,7 @@ public interface ScienceRepository extends JpaRepository<Science, Long> {
     // aniqroq xabar bilan bloklaydi, tiklashni taklif qiladi).
 
     @EntityGraph(value = "scienceWithTopics")
-    @Query("select s from Science s where s.deletedAt is null")
+    @Query("select s from Science s where s.deletedAt is null order by s.orderIndex")
     Set<Science> findAllWithTopics();
 
     @EntityGraph(value = "scienceWithTopics")
@@ -40,8 +40,15 @@ public interface ScienceRepository extends JpaRepository<Science, Long> {
     // aniq bitta qatorli, fan-out xavfi yo'q).
     @Query("select new behzoddev.testproject.dto.science.ScienceIdAndNameDto(s.id, s.name, " +
             "(select count(ts) from TopicSection ts where ts.science = s and ts.deletedAt is null)) " +
-            "from Science s where s.deletedAt is null")
+            "from Science s where s.deletedAt is null order by s.orderIndex")
     Set<ScienceIdAndNameDto> findAllScienceNames();
+
+    // Reorder (⬆⬇, A-Z/Z-A) uchun — ScienceService.reorderSciences.
+    @Query("select s from Science s where s.deletedAt is null order by s.orderIndex")
+    List<Science> findAllByDeletedAtIsNullOrderByOrderIndex();
+
+    @Query("select max(s.orderIndex) from Science s")
+    Integer findMaxOrderIndex();
 
     @Query("select new behzoddev.testproject.dto.science.ScienceIdAndNameDto(s.id, s.name) " +
             "from Science s where s.id = :id and s.deletedAt is null")

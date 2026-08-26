@@ -70,6 +70,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Query("""
             select q from Question q
             where q.topic.id = :topicId and q.deletedAt is null
+            order by q.orderIndex
             """)
     Page<Question> findByTopicId(@Param("topicId") Long topicId, Pageable pageable);
 
@@ -79,16 +80,27 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
                 where q.topic.id = :topicId
                   and q.deletedAt is null
                   and (:search is null or lower(q.questionText) like lower(concat('%', :search, '%')))
+                order by q.orderIndex
             """)
     Page<Question> findByTopicIdAndQuestionTextContainingIgnoreCase(Long topicId, String search, Pageable pageable);
 
     // ===== ALL MODE =====
+    // ⬆⬇ / A-Z / Z-A saralash faqat shu ("Hammasi" — isAllMode) rejimda
+    // ishlaydi (question.js), shu sabab aynan shu ikkita so'rov
+    // ORDER BY orderIndex bilan yozilgan.
 
     @EntityGraph(attributePaths = "answers")
-    List<Question> findByTopicIdAndDeletedAtIsNull(Long topicId);
+    List<Question> findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(Long topicId);
 
     @EntityGraph(attributePaths = "answers")
-    List<Question> findByTopicIdAndQuestionTextContainingIgnoreCaseAndDeletedAtIsNull(Long topicId, String questionText);
+    List<Question> findByTopicIdAndQuestionTextContainingIgnoreCaseAndDeletedAtIsNullOrderByOrderIndexAsc(Long topicId, String questionText);
+
+    // Reorder (⬆⬇, A-Z/Z-A) uchun — QuestionService.reorderQuestions
+    // (findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc'ning o'zi
+    // qayta ishlatiladi — javoblar bilan birga kelishi zarar qilmaydi).
+
+    @Query("select max(q.orderIndex) from Question q where q.topic.id = :topicId")
+    Integer findMaxOrderIndexByTopicId(@Param("topicId") Long topicId);
 
     @Query("""
                 SELECT q
