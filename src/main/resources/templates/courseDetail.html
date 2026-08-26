@@ -156,6 +156,8 @@
                     <button type="button" onclick="triggerImageInsert('newSectionTextEditor')" title="Rasm qo'shish">🖼</button>
                     <input type="file" id="newSectionImageInput" accept="image/*" style="display:none;" onchange="richInsertImage('newSectionTextEditor', this)">
                     <button type="button" onclick="openVideoInsertModal('newSectionTextEditor')" title="Video qo'shish (matn ichiga, xohlagan joyga)">🎬</button>
+                    <button type="button" onclick="triggerPptInsert('newSectionTextEditor')" title="PPT/PPTX taqdimot qo'shish (slaydlar sifatida, o'ng-chap tugmalar bilan)">🎞</button>
+                    <input type="file" id="newSectionPptInput" accept=".ppt,.pptx" style="display:none;" onchange="richInsertPpt('newSectionTextEditor', this)">
                     <span class="rich-toolbar-sep"></span>
                     <button type="button" onclick="richExec('newSectionTextEditor','removeFormat')" title="Formatni tozalash">🧹</button>
                 </div>
@@ -298,6 +300,8 @@
                     <button type="button" onclick="triggerImageInsert('editSectionTextEditor')" title="Rasm qo'shish">🖼</button>
                     <input type="file" id="editSectionImageInput" accept="image/*" style="display:none;" onchange="richInsertImage('editSectionTextEditor', this)">
                     <button type="button" onclick="openVideoInsertModal('editSectionTextEditor')" title="Video qo'shish (matn ichiga, xohlagan joyga)">🎬</button>
+                    <button type="button" onclick="triggerPptInsert('editSectionTextEditor')" title="PPT/PPTX taqdimot qo'shish (slaydlar sifatida, o'ng-chap tugmalar bilan)">🎞</button>
+                    <input type="file" id="editSectionPptInput" accept=".ppt,.pptx" style="display:none;" onchange="richInsertPpt('editSectionTextEditor', this)">
                     <span class="rich-toolbar-sep"></span>
                     <button type="button" onclick="richExec('editSectionTextEditor','removeFormat')" title="Formatni tozalash">🧹</button>
                 </div>

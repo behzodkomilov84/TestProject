@@ -126,4 +126,18 @@ public class CourseSectionController {
     ) {
         return Map.of("url", fileStorageService.storeCourseSectionImage(image));
     }
+
+    // Bo'lim matni (rich-toolbar "🎞 PPT qo'shish") ichiga qo'yiladigan
+    // PPT/PPTX taqdimot — LibreOffice orqali har bir sahifa alohida PNG
+    // rasmga (slaydga) aylantiriladi. Qaytgan URL'lar ro'yxati
+    // contentEditable ichiga navigatsiya tugmali slayd-shou sifatida
+    // qo'yiladi (frontend tomonida, richInsertPpt()).
+    @PostMapping("/upload-ppt")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public Map<String, Object> uploadPpt(
+            @PathVariable Long courseId,
+            @RequestParam("ppt") MultipartFile ppt
+    ) {
+        return Map.of("slideUrls", fileStorageService.storeCoursePptSlides(ppt));
+    }
 }

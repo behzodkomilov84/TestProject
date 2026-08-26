@@ -11,10 +11,13 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 /**
  * Savol, javob va izoh (commentary)ga rasm/video biriktirish uchun
@@ -47,6 +50,19 @@ public class FileStorageService {
     private static final List<String> ALLOWED_IMAGE_EXTENSIONS =
             List.of(".png", ".jpg", ".jpeg", ".webp", ".gif", ".heic", ".heif");
     private static final long MAX_IMAGE_SIZE_BYTES = 10L * 1024 * 1024; // 10MB
+
+    // PPT/PPTX taqdimot — "🎞 PPT qo'shish" (rich-toolbar, kurs bo'limi
+    // matni ichiga slaydlar sifatida qo'shish) uchun. Tika OOXML
+    // konteynerni (.pptx) odatda to'g'ri aniqlaydi (ichidagi
+    // [Content_Types].xml orqali), shu sabab umumiy "application/zip"
+    // muqobil sifatida QO'SHILMAGAN — bu haqiqiy .pptx tekshiruvini
+    // zaiflashtirmasligi uchun.
+    private static final Set<String> ALLOWED_PPT_TYPES = Set.of(
+            "application/vnd.ms-powerpoint",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+    );
+    private static final List<String> ALLOWED_PPT_EXTENSIONS = List.of(".ppt", ".pptx");
+    private static final long MAX_PPT_SIZE_BYTES = 50L * 1024 * 1024; // 50MB
 
     private static final Set<String> ALLOWED_VIDEO_TYPES = Set.of(
             "video/mp4", "video/webm", "video/ogg",
@@ -121,6 +137,196 @@ public class FileStorageService {
         return store(file, "courses", ALLOWED_IMAGE_TYPES, ALLOWED_IMAGE_EXTENSIONS,
                 MAX_IMAGE_SIZE_BYTES, "❌Rasm hajmi 10MB dan katta bo'lishi mumkin emas.",
                 "❌Faqat rasm fayllari (PNG, JPEG, WEBP, GIF) yuklash mumkin.");
+    }
+
+    /**
+     * PPT/PPTX taqdimotni kurs bo'limi matni ichiga (rich-toolbar, "🎞 PPT
+     * qo'shish") slaydlar sifatida qo'shish uchun — LibreOffice orqali
+     * PDF'ga, so'ng {@code pdftoppm} orqali har bir sahifa alohida PNG
+     * rasmga aylantiriladi ("courses" ostki papkasiga saqlanadi). Natija —
+     * tartiblangan slayd rasm URL'lari ro'yxati (birinchi elementi —
+     * 1-slayd).
+     */
+    public List<String> storeCoursePptSlides(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("❌Fayl tanlanmagan.");
+        }
+
+        if (file.getSize() > MAX_PPT_SIZE_BYTES) {
+            throw new IllegalArgumentException("❌Taqdimot hajmi 50MB dan katta bo'lishi mumkin emas.");
+        }
+
+        String contentType = file.getContentType();
+        boolean declaredTypeUnknown = contentType == null || contentType.equalsIgnoreCase("application/octet-stream");
+        if (!declaredTypeUnknown && !ALLOWED_PPT_TYPES.contains(contentType.toLowerCase())) {
+            throw new IllegalArgumentException("❌Faqat PowerPoint fayllari (.ppt, .pptx) yuklash mumkin.");
+        }
+
+        byte[] content;
+        try {
+            content = file.getBytes();
+        } catch (IOException e) {
+            log.error("Faylni o'qishda xatolik", e);
+            throw new IllegalStateException("❌Faylni o'qib bo'lmadi.", e);
+        }
+
+        String detectedType = tika.detect(content);
+        if (!ALLOWED_PPT_TYPES.contains(detectedType.toLowerCase())) {
+            log.warn("Fayl turi mos kelmadi: client Content-Type='{}', haqiqiy (Tika)='{}', fayl='{}'",
+                    contentType, detectedType, file.getOriginalFilename());
+            throw new IllegalArgumentException("❌Faqat PowerPoint fayllari (.ppt, .pptx) yuklash mumkin.");
+        }
+
+        // Virus/zararli kod tekshiruvi — LibreOffice'ga (ishonchsiz kirish
+        // ma'lumotini qayta ishlaydigan tashqi dastur) yuborishdan OLDIN,
+        // xuddi convertHeicToJpeg'dagi kabi.
+        clamAvScanService.scan(content, file.getOriginalFilename());
+
+        String extension = extractExtension(file.getOriginalFilename(), ALLOWED_PPT_EXTENSIONS);
+        if (extension.isEmpty()) {
+            extension = detectedType.contains("openxmlformats") ? ".pptx" : ".ppt";
+        }
+
+        Path workDir = null;
+        try {
+            workDir = Files.createTempDirectory("ppt-import-");
+            Path inputFile = workDir.resolve("input" + extension);
+            Files.write(inputFile, content);
+
+            convertPptToPdf(inputFile, workDir);
+
+            Path pdfFile = workDir.resolve("input.pdf");
+            if (!Files.exists(pdfFile)) {
+                throw new IllegalStateException("❌Taqdimotni PDF'ga o'girib bo'lmadi.");
+            }
+
+            splitPdfIntoSlideImages(pdfFile, workDir);
+
+            List<Path> slideFiles;
+            try (Stream<Path> paths = Files.list(workDir)) {
+                slideFiles = paths
+                        .filter(p -> p.getFileName().toString().startsWith("slide-")
+                                && p.getFileName().toString().endsWith(".png"))
+                        .sorted(Comparator.comparingInt(this::extractSlideNumber))
+                        .toList();
+            }
+
+            if (slideFiles.isEmpty()) {
+                throw new IllegalStateException("❌Taqdimotda hech qanday slayd topilmadi.");
+            }
+
+            Path targetDir = Path.of(uploadDir, "courses").toAbsolutePath().normalize();
+            Files.createDirectories(targetDir);
+
+            String prefix = UUID.randomUUID().toString();
+            List<String> urls = new ArrayList<>();
+            for (int i = 0; i < slideFiles.size(); i++) {
+                String newFileName = prefix + "-slide-" + (i + 1) + ".png";
+                Path targetFile = targetDir.resolve(newFileName).normalize();
+
+                // Path traversal'dan himoya — store()dagi bilan bir xil tekshiruv.
+                if (!targetFile.startsWith(targetDir)) {
+                    throw new IllegalArgumentException("❌Noto'g'ri fayl nomi.");
+                }
+
+                Files.copy(slideFiles.get(i), targetFile);
+                urls.add("/uploads/courses/" + newFileName);
+            }
+
+            return urls;
+        } catch (IOException e) {
+            log.error("PPT import qilishda xatolik", e);
+            throw new IllegalStateException("❌Taqdimotni saqlashda xatolik.", e);
+        } finally {
+            deleteDirectoryQuietly(workDir);
+        }
+    }
+
+    // LibreOffice (headless) orqali .ppt/.pptx faylni PDF'ga o'giradi —
+    // natija xuddi shu papkaga, kirish fayli bilan bir xil nom ostida
+    // ("input.pdf") yoziladi (soffice'ning o'zi shunday nomlaydi).
+    // "-env:UserInstallation" — HAR BIR chaqiruvga ALOHIDA, vaqtinchalik
+    // profil papkasi beradi: aks holda soffice bir vaqtning o'zida bir
+    // nechta so'rov (yoki oldingi jarayon tozalanmay qolgan bo'lsa) kelsa,
+    // umumiy profilni qulflab, "boshqa nusxa allaqachon ishlamoqda" xatosi
+    // bilan to'xtab qoladi.
+    private void convertPptToPdf(Path inputFile, Path workDir) {
+        Path profileDir = workDir.resolve("loprofile");
+        try {
+            Process process = new ProcessBuilder(
+                    "soffice", "--headless", "--norestore",
+                    "-env:UserInstallation=file://" + profileDir.toAbsolutePath(),
+                    "--convert-to", "pdf", "--outdir", workDir.toString(), inputFile.toString())
+                    .redirectErrorStream(true)
+                    .start();
+            boolean finished = process.waitFor(90, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                throw new IllegalStateException("❌Taqdimotni PDF'ga o'girish vaqti tugadi.");
+            }
+            if (process.exitValue() != 0) {
+                throw new IllegalStateException("❌Taqdimotni PDF'ga o'girishda xatolik.");
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("❌LibreOffice orqali o'girishda xatolik.", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("❌Taqdimotni o'girish to'xtatildi.", e);
+        }
+    }
+
+    // PDF'ning har bir sahifasini alohida PNG rasmga ("slide-1.png",
+    // "slide-2.png", ...) ajratadi — poppler-utils'ning "pdftoppm" buyrug'i.
+    private void splitPdfIntoSlideImages(Path pdfFile, Path workDir) {
+        try {
+            Process process = new ProcessBuilder(
+                    "pdftoppm", "-png", "-r", "120", pdfFile.toString(), workDir.resolve("slide").toString())
+                    .redirectErrorStream(true)
+                    .start();
+            boolean finished = process.waitFor(60, TimeUnit.SECONDS);
+            if (!finished) {
+                process.destroyForcibly();
+                throw new IllegalStateException("❌Slaydlarni rasmga aylantirish vaqti tugadi.");
+            }
+            if (process.exitValue() != 0) {
+                throw new IllegalStateException("❌Slaydlarni rasmga aylantirishda xatolik.");
+            }
+        } catch (IOException e) {
+            throw new IllegalStateException("❌pdftoppm orqali o'girishda xatolik.", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("❌Slaydlarga ajratish to'xtatildi.", e);
+        }
+    }
+
+    // "slide-1.png" / "slide-01.png" (pdftoppm sahifalar soniga qarab
+    // raqamni nolь bilan to'ldirishi mumkin) faylidan raqamni ajratib
+    // oladi — slaydlar TO'G'RI tartibda (1,2,3,...) saralanishi uchun
+    // (oddiy alifbo tartibida "slide-10.png" "slide-2.png"dan OLDIN
+    // kelib qolardi).
+    private int extractSlideNumber(Path path) {
+        String name = path.getFileName().toString();
+        String numberPart = name.substring("slide-".length(), name.length() - ".png".length());
+        try {
+            return Integer.parseInt(numberPart);
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private void deleteDirectoryQuietly(Path dir) {
+        if (dir == null) return;
+        try (Stream<Path> walk = Files.walk(dir)) {
+            walk.sorted(Comparator.reverseOrder()).forEach(p -> {
+                try {
+                    Files.deleteIfExists(p);
+                } catch (IOException e) {
+                    log.warn("Vaqtinchalik faylni o'chirib bo'lmadi: {}", p, e);
+                }
+            });
+        } catch (IOException e) {
+            log.warn("Vaqtinchalik papkani tozalashda xatolik: {}", dir, e);
+        }
     }
 
     private String store(

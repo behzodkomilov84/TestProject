@@ -593,6 +593,48 @@ body {
     cursor: nwse-resize;
 }
 
+/* "🎞 PPT qo'shish" — slayd-shou navigatsiya paneli (◀ N/M ▶). Resize
+   tutqichi/align-bar'dan FARQLI — bu HAM tahrirlashda, HAM o'qish
+   sahifasida ko'rinishi/ishlashi kerak (talaba slaydlar orasida o'tishi
+   uchun), shu sabab ".rich-text-editor" bilan cheklanmagan. */
+.rich-ppt-nav {
+    position: absolute;
+    left: 50%;
+    bottom: 6px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 12px;
+}
+
+.rich-ppt-nav-btn {
+    border: none;
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    cursor: pointer;
+    font-size: 12px;
+    line-height: 1;
+    padding: 0;
+}
+
+.rich-ppt-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.rich-ppt-counter {
+    min-width: 34px;
+    text-align: center;
+    white-space: nowrap;
+}
+
 /* Rasm/video'ni ekranning chap/markaz/o'ng tomoniga surish — tugmalar
    (injectAlignBars, courseDetail.js) faqat tahrirlagich ichida ko'rinadi
    (resize tutqichi kabi), lekin natijadagi align-left/center/right klass

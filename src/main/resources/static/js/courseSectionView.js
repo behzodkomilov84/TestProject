@@ -249,6 +249,36 @@ function linkify(text) {
     );
 }
 
+// ◀/▶ tugmalari — courseDetail.js#pptSlideNav bilan AYNAN BIR XIL (PPT
+// slayd-shou HTML'i matn ichida saqlanadi, shu sabab ikkala sahifada —
+// tahrirlashda VA shu yerda, o'qishda — ham ishlashi kerak). Shu wrap
+// ichidagi <img>ning src'ini data-slides ro'yxatidagi keyingi/oldingi
+// slaydga almashtiradi (aylanma).
+function pptSlideNav(evt, direction) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    const wrap = evt.currentTarget.closest('.rich-ppt-wrap');
+    if (!wrap) return;
+
+    let slides;
+    try {
+        slides = JSON.parse(wrap.dataset.slides || "[]");
+    } catch (e) {
+        slides = [];
+    }
+    if (!slides.length) return;
+
+    let index = Number(wrap.dataset.slideIndex || 0);
+    index = (index + direction + slides.length) % slides.length;
+    wrap.dataset.slideIndex = String(index);
+
+    const img = wrap.querySelector('img');
+    if (img) img.src = slides[index];
+
+    const counter = wrap.querySelector('.rich-ppt-counter');
+    if (counter) counter.textContent = `${index + 1} / ${slides.length}`;
+}
+
 function buildVideoEmbed(data) {
     if (data.videoSourceType === "YOUTUBE") {
         return `<div class="video-embed-wrapper"><div id="ytPlayer"></div></div>`;

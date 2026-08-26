@@ -585,6 +585,108 @@ async function richInsertUploadedVideo(editorId, fileInput) {
     }
 }
 
+// ================= "🎞 PPT qo'shish" (matn ICHIGA, slaydlar sifatida) =================
+// Rasm/video bilan bir xil tamoyilda: fayl serverga yuklanadi (LibreOffice
+// orqali har bir slayd alohida rasmga aylantiriladi — FileStorageService.
+// storeCoursePptSlides), qaytgan slayd URL'lari ro'yxati kursor turgan
+// joyga qo'yiladi. MUHIM: bu HAM "rich-img-wrap" texnikasidan foydalanadi
+// (birinchi slayd oddiy <img> sifatida) — shu sabab sudrab-o'lchamini-
+// o'zgartirish tutqichi HECH QANDAY qo'shimcha kodsiz o'zi ishlayveradi
+// (startImageResize wrap ichidan "img, video, iframe" qidiradi). Ustiga
+// qo'shilgan ◀ N/M ▶ tugmalari (pptSlideNav) shu <img>ning src'ini
+// slaydlar orasida almashtiradi — <img> elementining o'zi almashtirilmagani
+// uchun, qo'lda o'zgartirilgan o'lcham slaydlar orasida o'tilganda ham saqlanadi.
+function triggerPptInsert(editorId) {
+    richInsertSavedRange = captureEditorSelection(editorId);
+    const inputId = editorId === "newSectionTextEditor" ? "newSectionPptInput" : "editSectionPptInput";
+    document.getElementById(inputId).click();
+}
+
+async function richInsertPpt(editorId, fileInput) {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    attachImageResizeHandlers(editorId);
+
+    try {
+        const formData = new FormData();
+        formData.append("ppt", file);
+        const res = await fetch(`/api/courses/${COURSE_ID}/sections/upload-ppt`, {
+            method: "POST", body: formData
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || "❌ Taqdimotni import qilishda xatolik");
+            return;
+        }
+
+        const slides = data.slideUrls || [];
+        if (!slides.length) {
+            alert("❌ Taqdimotda hech qanday slayd topilmadi");
+            return;
+        }
+
+        restoreEditorSelection(editorId, richInsertSavedRange);
+        insertPptSlideshowHtml(editorId, slides);
+    } catch (err) {
+        console.error(err);
+        alert("❌ Taqdimotni import qilishda tarmoq xatoligi");
+    } finally {
+        fileInput.value = "";
+    }
+}
+
+function insertPptSlideshowHtml(editorId, slides) {
+    // JSON.stringify natijasi doim qo'sh tirnoq (") bilan — shu sabab
+    // atribut ichiga qo'yishdan oldin ular &quot;ga almashtiriladi (aks
+    // holda atribut vaqtidan oldin yopilib, HTML buziladi — bu loyihada
+    // bir necha marta uchragan onclick+JSON.stringify bugi bilan bir xil turkum).
+    const slidesAttr = JSON.stringify(slides).replace(/"/g, "&quot;");
+    const firstUrl = escapeHtml(slides[0]);
+    const html = `<span class="rich-img-wrap rich-ppt-wrap" contenteditable="false" data-slides="${slidesAttr}" data-slide-index="0">`
+        + `<img src="${firstUrl}">`
+        + `<span class="rich-ppt-nav" contenteditable="false">`
+        + `<button type="button" class="rich-ppt-nav-btn" onclick="pptSlideNav(event,-1)" title="Oldingi slayd">◀</button>`
+        + `<span class="rich-ppt-counter">1 / ${slides.length}</span>`
+        + `<button type="button" class="rich-ppt-nav-btn" onclick="pptSlideNav(event,1)" title="Keyingi slayd">▶</button>`
+        + `</span>`
+        + `<span class="rich-img-handle" title="Sudrab o'lchamini o'zgartiring"></span>`
+        + `</span>&nbsp;`;
+    document.execCommand('insertHTML', false, html);
+    injectAlignBars(editorId);
+    injectCaptions(editorId);
+}
+
+// ◀/▶ tugmalari — shu wrap ichidagi <img>ning src'ini data-slides
+// ro'yxatidagi keyingi/oldingi slaydga almashtiradi (aylanma: oxiridan
+// birinchiga, aksincha). E'TIBOR: xuddi shu funksiya courseSectionView.js'da
+// ham bor (talaba/kursni ko'rish sahifasida) — chunki bu HTML saqlangan
+// matn ichida, ikkala sahifada ham (tahrirlashda VA o'qishda) ishlashi kerak.
+function pptSlideNav(evt, direction) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    const wrap = evt.currentTarget.closest('.rich-ppt-wrap');
+    if (!wrap) return;
+
+    let slides;
+    try {
+        slides = JSON.parse(wrap.dataset.slides || "[]");
+    } catch (e) {
+        slides = [];
+    }
+    if (!slides.length) return;
+
+    let index = Number(wrap.dataset.slideIndex || 0);
+    index = (index + direction + slides.length) % slides.length;
+    wrap.dataset.slideIndex = String(index);
+
+    const img = wrap.querySelector('img');
+    if (img) img.src = slides[index];
+
+    const counter = wrap.querySelector('.rich-ppt-counter');
+    if (counter) counter.textContent = `${index + 1} / ${slides.length}`;
+}
+
 // ================= Rasm/video'ni chapga/markazga/o'ngga surish =================
 // Har bir "rich-img-wrap" (rasm ham, video ham) ustida — resize tutqichi
 // kabi — kichik surish tugmalari (⬅ ⏺ ➡) chiqadi. Ular bosilganda wrap'ga
