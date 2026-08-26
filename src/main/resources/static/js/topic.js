@@ -228,6 +228,7 @@ document.getElementById("explanationSearchInput")?.addEventListener("input", (e)
 });
 
 async function runExplanationSearch(query) {
+    lastExplanationSearchQuery = query;
     const resultsEl = document.getElementById("explanationSearchResults");
     if (!query) {
         resultsEl.classList.add("hidden");
@@ -261,11 +262,14 @@ async function runExplanationSearch(query) {
     }
 }
 
-// Oxirgi qidiruv natijalari — goToExplanationResult() shundan o'qib,
-// bosilgan natijaning BUTUN ro'yxatini sessionStorage'ga saqlaydi
-// (courseSectionView.js#setupSearchNav "Oldingi/Keyingi natija"
-// tugmalarini shundan ko'rsatadi).
+// Oxirgi qidiruv natijalari va so'zi — goToExplanationResult() shundan
+// o'qib, bosilgan natijaning BUTUN ro'yxati + qidirilgan so'zni
+// sessionStorage'ga saqlaydi (courseSectionView.js#setupSearchNav
+// "Oldingi/Keyingi natija" tugmalarini, courseSectionView.js#
+// highlightSearchQuery esa mavzu matni ichida shu so'zni topib fonini
+// o'zgartirishni shundan oladi).
 let lastExplanationSearchResults = [];
+let lastExplanationSearchQuery = "";
 
 function renderExplanationSearchResults(results) {
     lastExplanationSearchResults = results;
@@ -285,16 +289,18 @@ function renderExplanationSearchResults(results) {
     `).join("");
 }
 
-// Natijaga bosilganda — BUTUN natijalar ro'yxati + joriy index + qaysi
-// sahifadan qidirilgani sessionStorage'ga saqlanadi (courseSectionView.js
-// shundan o'qib, "Oldingi/Keyingi natija"/"Natijalarga qaytish"
-// tugmalarini ko'rsatadi — qidiruvni qayta berishga hojat qolmaydi).
+// Natijaga bosilganda — BUTUN natijalar ro'yxati + joriy index + qidirilgan
+// so'z + qaysi sahifadan qidirilgani sessionStorage'ga saqlanadi
+// (courseSectionView.js shundan o'qib, "Oldingi/Keyingi natija"/
+// "Natijalarga qaytish" tugmalarini ko'rsatadi VA mavzu matni ichida shu
+// so'zni topib fonini o'zgartiradi — qidiruvni qayta berishga hojat qolmaydi).
 function goToExplanationResult(index) {
     const target = lastExplanationSearchResults[index];
     if (!target) return;
     sessionStorage.setItem("explanationSearchNav", JSON.stringify({
         results: lastExplanationSearchResults,
         index,
+        query: lastExplanationSearchQuery,
         returnUrl: window.location.pathname + window.location.search
     }));
     location.href = `/courses/${target.courseId}/sections/${target.sectionId}`;

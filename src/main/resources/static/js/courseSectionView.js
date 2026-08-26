@@ -34,7 +34,15 @@ document.getElementById("backToCourseBtn").onclick = () => {
     location.href = "/courses/" + COURSE_ID;
 };
 
+// searchNavContext — bir marta, sahifa yuklanganda o'qiladi (loadSearchNavContext),
+// keyin HAM "Oldingi/Keyingi natija" paneli (setupSearchNav), HAM mavzu
+// matni ichidagi qidiruv so'zini fonini o'zgartirish (highlightSearchQuery,
+// renderSection() oxirida) shundan foydalanadi — ikkalasi ham AYNAN bir
+// xil "joriy sahifa qidiruv natijasiga mosmi" tekshiruviga tayanadi.
+let searchNavContext = null;
+
 document.addEventListener("DOMContentLoaded", () => {
+    searchNavContext = loadSearchNavContext();
     loadSection();
     setupSearchNav();
 });
@@ -44,32 +52,37 @@ document.addEventListener("DOMContentLoaded", () => {
 // ========================================================================
 // topic.js / courseDetail.js'dagi "kurs ichidan mavzu yoritmasi bo'yicha
 // qidiruv" natijasiga bosilganda, BUTUN natijalar ro'yxati + bosilgan
-// natijaning indeksi + qidirilgan asl sahifa manzili sessionStorage'ga
-// saqlanadi. Shu yerda o'sha ma'lumot o'qib, agar u AYNAN joriy
-// (COURSE_ID, SECTION_ID) bilan mos kelsa — "Oldingi/Keyingi natija"
-// paneli ko'rsatiladi. Mos kelmasa (masalan foydalanuvchi oddiy
+// natijaning indeksi + qidirilgan so'z + qidirilgan asl sahifa manzili
+// sessionStorage'ga saqlanadi. Shu yerda o'sha ma'lumot o'qib, agar u
+// AYNAN joriy (COURSE_ID, SECTION_ID) bilan mos kelsa — "Oldingi/Keyingi
+// natija" paneli ko'rsatiladi VA mavzu matni ichida qidirilgan so'z
+// topilib, foni o'zgartiriladi. Mos kelmasa (masalan foydalanuvchi oddiy
 // "Keyingi mavzu →" tugmasi orqali boshqa bo'limga o'tgan bo'lsa) —
-// panel avtomatik yashirin qoladi, alohida "tozalash" kodi shart emas.
+// ikkalasi ham o'chiq qoladi, alohida "tozalash" kodi shart emas.
 const EXPLANATION_SEARCH_NAV_KEY = "explanationSearchNav";
+
+function loadSearchNavContext() {
+    let nav;
+    try {
+        nav = JSON.parse(sessionStorage.getItem(EXPLANATION_SEARCH_NAV_KEY) || "null");
+    } catch (e) {
+        return null;
+    }
+    if (!nav || !Array.isArray(nav.results) || !nav.results.length) return null;
+
+    const current = nav.results[nav.index];
+    if (!current || Number(current.courseId) !== Number(COURSE_ID) || Number(current.sectionId) !== Number(SECTION_ID)) {
+        return null;
+    }
+    return nav;
+}
 
 function setupSearchNav() {
     const bar = document.getElementById("searchNavBar");
     if (!bar) return;
 
-    let nav;
-    try {
-        nav = JSON.parse(sessionStorage.getItem(EXPLANATION_SEARCH_NAV_KEY) || "null");
-    } catch (e) {
-        nav = null;
-    }
-
-    if (!nav || !Array.isArray(nav.results) || !nav.results.length) {
-        bar.classList.add("hidden");
-        return;
-    }
-
-    const current = nav.results[nav.index];
-    if (!current || Number(current.courseId) !== Number(COURSE_ID) || Number(current.sectionId) !== Number(SECTION_ID)) {
+    const nav = searchNavContext;
+    if (!nav) {
         bar.classList.add("hidden");
         return;
     }
@@ -171,6 +184,75 @@ function renderSection(data) {
     renderTopicTestLink(data);
     updatePrevButton(data);
     updateNextButton(data);
+
+    // Shu sahifaga "kurs ichidan mavzu yoritmasi bo'yicha qidiruv"
+    // natijasidan kelingan bo'lsa (searchNavContext) — qidirilgan so'zni
+    // mavzu matni ICHIDA topib, fonini o'zgartiramiz (topish oson bo'lishi
+    // uchun). content.innerHTML ALLAQACHON to'ldirilgandan KEYIN
+    // chaqirilishi shart — aks holda hali bo'sh div ichida qidirardi.
+    if (searchNavContext && searchNavContext.query) {
+        highlightSearchQuery(content, searchNavContext.query);
+    }
+}
+
+// Berilgan konteyner ICHIDAGI matn (text node)larda "query" so'zini
+// (katta-kichik harfga sezgirmas, HAR BIR uchragan joyda) topib,
+// <mark class="search-highlight-mark"> bilan o'raydi — HTML teglariga
+// (masalan <img alt="...">) TEGMAYDI, chunki faqat TEXT node'lar bo'ylab
+// yuriladi (TreeWalker). Birinchi topilgan joyga avtomatik skroll qiladi.
+function highlightSearchQuery(container, query) {
+    const trimmed = (query || "").trim();
+    if (!trimmed) return;
+
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+        acceptNode: (node) => {
+            // <script>/<style> ichidagi matnga tegilmaydi (bu kontentda
+            // odatda bo'lmaydi, lekin xavfsizlik uchun).
+            const tag = node.parentElement ? node.parentElement.tagName : "";
+            return (tag === "SCRIPT" || tag === "STYLE")
+                ? NodeFilter.FILTER_REJECT
+                : NodeFilter.FILTER_ACCEPT;
+        }
+    });
+
+    const textNodes = [];
+    let node;
+    while ((node = walker.nextNode())) {
+        textNodes.push(node);
+    }
+
+    const lowerQuery = trimmed.toLowerCase();
+    let firstMark = null;
+
+    textNodes.forEach((textNode) => {
+        const text = textNode.nodeValue;
+        const lowerText = text.toLowerCase();
+        let idx = lowerText.indexOf(lowerQuery);
+        if (idx === -1) return;
+
+        const frag = document.createDocumentFragment();
+        let lastEnd = 0;
+        while (idx !== -1) {
+            if (idx > lastEnd) {
+                frag.appendChild(document.createTextNode(text.slice(lastEnd, idx)));
+            }
+            const mark = document.createElement("mark");
+            mark.className = "search-highlight-mark";
+            mark.textContent = text.slice(idx, idx + trimmed.length);
+            frag.appendChild(mark);
+            if (!firstMark) firstMark = mark;
+            lastEnd = idx + trimmed.length;
+            idx = lowerText.indexOf(lowerQuery, lastEnd);
+        }
+        if (lastEnd < text.length) {
+            frag.appendChild(document.createTextNode(text.slice(lastEnd)));
+        }
+        textNode.parentNode.replaceChild(frag, textNode);
+    });
+
+    if (firstMark) {
+        firstMark.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
 }
 
 // Oldingi mavzuga qaytish — ketma-ket ochilish tartibida oldingi bo'lim

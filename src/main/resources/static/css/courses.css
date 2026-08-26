@@ -593,6 +593,16 @@ body {
     cursor: nwse-resize;
 }
 
+/* "Kurs ichidan mavzu qidiruvi" natijasidan kelinganda — qidirilgan so'z
+   mavzu matni ICHIDA shu bilan belgilanadi (highlightSearchQuery,
+   courseSectionView.js) — topish oson bo'lishi uchun. */
+.search-highlight-mark {
+    background: #fef08a;
+    color: #1e293b;
+    padding: 0 2px;
+    border-radius: 2px;
+}
+
 /* "🎞 PPT qo'shish" — slayd-shou navigatsiya paneli (◀ N/M ▶). Resize
    tutqichi/align-bar'dan FARQLI — bu HAM tahrirlashda, HAM o'qish
    sahifasida ko'rinishi/ishlashi kerak (talaba slaydlar orasida o'tishi
