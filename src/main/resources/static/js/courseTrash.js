@@ -200,12 +200,22 @@ async function previewBackupCourses() {
             return;
         }
 
+        // MUHIM: checkbox HAQIQIY "disabled" atributi bilan EMAS — brauzer
+        // "disabled" elementga umuman click hodisasini bermaydi/ko'tarmaydi
+        // (na o'ziga, na ota elementlarga), shu sabab avval bosilganda hech
+        // qanday izoh chiqarib bo'lmas edi. Buning o'rniga oddiy (ishlaydigan)
+        // checkbox, lekin bosilganda darhol qaytarib o'chiriladi va SABABI
+        // alert orqali ko'rsatiladi (explainBackupCheckboxBlocked) — CSS
+        // klassi (.backup-checkbox-blocked) esa faqat "disabled"dek KO'RINISH
+        // uchun.
         resultDiv.innerHTML = `
             <ul id="backupCandidateList">
                 ${data.map(c => `
                     <li>
                         <label>
-                            <input type="checkbox" value="${c.id}" ${c.alreadyExistsLive ? "disabled" : ""}>
+                            <input type="checkbox" value="${c.id}"
+                                class="${c.alreadyExistsLive ? "backup-checkbox-blocked" : ""}"
+                                ${c.alreadyExistsLive ? `onclick="return explainBackupCheckboxBlocked(this, ${c.id})"` : ""}>
                             #${c.id} — ${escapeHtml(c.title)} (${formatDate(c.createdAt)})
                             ${c.alreadyExistsLive ? '<span class="topic-course-badge">Jonli bazada allaqachon bor — o\'tkazib yuboriladi</span>' : ""}
                         </label>
@@ -218,6 +228,16 @@ async function previewBackupCourses() {
         console.error(err);
         resultDiv.innerHTML = `<p class="error">Tarmoq xatoligi</p>`;
     }
+}
+
+// checkbox "band" (jonli bazada allaqachon bor) bo'lganda bosilganda
+// chaqiriladi — darhol qaytarib o'chiradi (checkbox click hodisasi
+// checked=true qilib bo'lgach chaqiriladi, shu sabab shu yerda qaytarib
+// olinadi) va sababini alert orqali tushuntiradi.
+function explainBackupCheckboxBlocked(checkbox, courseId) {
+    checkbox.checked = false;
+    alert(`❌ #${courseId} kursi jonli bazada ALLAQACHON bor (faol yoki "O'chirilganlar savati"da) — shu sabab backup'dan tiklab bo'lmaydi, checkbox band qilingan.\n\nAgar bu kursni backup'dagi holatiga qaytarmoqchi bo'lsangiz, avval uni joriy holatidan olib tashlash (masalan butunlay o'chirish) kerak — bu funksiya mavjud kursning USTIGA yozmaydi.`);
+    return false;
 }
 
 async function applyBackupRestore() {

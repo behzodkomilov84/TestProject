@@ -1682,3 +1682,11 @@ body {
     color: #92400e;
     font-size: 0.8em;
 }
+
+/* Backup'dan tiklashda "band" checkbox — HAQIQIY disabled emas (aks
+   holda bosilganda izoh chiqmas edi, courseTrash.js#explainBackupCheckboxBlocked),
+   faqat shunday ko'rinishi uchun. */
+.backup-checkbox-blocked {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
