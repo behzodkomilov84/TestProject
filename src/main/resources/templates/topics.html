@@ -16,6 +16,7 @@
     <!-- Подключение CSS, jS -->
     <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/science.css">
+    <link rel="stylesheet" href="/css/topic-explanation-search.css">
 
     <script src="/js/navbar.js" defer></script>
     <script src="/js/topic.js" defer></script>
@@ -53,6 +54,17 @@
          qaysi bo'lim mavzulari filtrlanib ko'rsatilayotganini bildiradi
          (topic.js#DOMContentLoaded to'ldiradi/ko'rsatadi). -->
     <div class="section-filter-banner hidden" id="sectionFilterBanner"></div>
+
+    <!-- Sahifadagi mavzular bog'langan kurs(lar) ichidan, o'sha
+         kurslarning BARCHA mavzuga bog'langan bo'limlaridagi matn
+         darsi ("mavzu yoritmasi") bo'yicha qidiradi (runExplanationSearch,
+         topic.js). Topilgan mavzuga bosilsa — o'sha kurs bo'limining
+         o'ziga o'tkazadi. -->
+    <div class="explanation-search-box" id="explanationSearchBox">
+        <input type="text" id="explanationSearchInput" class="explanation-search-input"
+               placeholder="🔍 Kurs ichidan qidirish (mavzu yoritmasidan)...">
+        <div id="explanationSearchResults" class="explanation-search-results hidden"></div>
+    </div>
 
     <div class="sort-buttons">
         <span>Saralash:</span>

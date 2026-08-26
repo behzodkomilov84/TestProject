@@ -1,0 +1,73 @@
+/* "Kurs ichidan mavzu yoritmasi bo'yicha qidiruv" — topics.html
+   va courseDetail.html'da umumiy (topic.js/courseDetail.js). */
+
+.explanation-search-box {
+    position: relative;
+    margin: 12px 0;
+    max-width: 480px;
+}
+
+.explanation-search-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #d5dde8;
+    border-radius: 8px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.explanation-search-input:focus {
+    outline: none;
+    border-color: #4e8cff;
+}
+
+.explanation-search-results {
+    margin-top: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.explanation-search-results.hidden {
+    display: none;
+}
+
+.explanation-search-result-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 10px 14px;
+    border: none;
+    border-bottom: 1px solid #f1f5f9;
+    background: none;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.explanation-search-result-item:last-child {
+    border-bottom: none;
+}
+
+.explanation-search-result-item:hover {
+    background: #f8fafc;
+}
+
+.explanation-search-result-topic {
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.explanation-search-result-meta {
+    display: block;
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.explanation-search-empty {
+    padding: 10px 14px;
+    color: #94a3b8;
+    font-size: 13px;
+}

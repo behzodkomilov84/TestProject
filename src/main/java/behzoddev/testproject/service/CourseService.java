@@ -415,6 +415,25 @@ public class CourseService {
         return courseSectionRepository.findDeletedByCourse_Id(courseId);
     }
 
+    // "Kurs ichidan mavzu yoritmasi bo'yicha qidiruv" (topics.html va
+    // courseDetail.js'da umumiy) — 1) berilgan mavzular (topicIds — joriy
+    // sahifadagi/kursdagi mavzular) qaysi kurs(lar)ga bog'langanini
+    // topadi; 2) shu kurs(lar)ning BARCHA (bo'lim/chapter farqisiz) mavzuga
+    // bog'langan bo'limlari orasidan matn darsi (textContent — "mavzu
+    // yoritmasi") ichida qidiruv so'zi bor bo'limlarni qaytaradi. Bir
+    // nechta kursga bog'langan bo'lsa — BARCHA o'sha kurslar qidiriladi.
+    @Transactional(readOnly = true)
+    public List<TopicExplanationSearchResultDto> searchTopicExplanations(List<Long> topicIds, String query) {
+        if (topicIds == null || topicIds.isEmpty() || query == null || query.isBlank()) {
+            return List.of();
+        }
+        List<Long> courseIds = courseSectionRepository.findCourseIdsByLinkedTopicIds(topicIds);
+        if (courseIds.isEmpty()) {
+            return List.of();
+        }
+        return courseSectionRepository.searchLinkedExplanations(courseIds, query.trim());
+    }
+
     // "♻️ Tiklash" — mavzuni savatdan qaytaradi, progress yozuvlari
     // avtomatik yana ko'rinadigan bo'ladi (ular hech qachon o'chirilmagan edi).
     @Transactional

@@ -210,6 +210,75 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// ========================================================================
+//     Kurs ichidan mavzu yoritmasi bo'yicha qidiruv
+// ========================================================================
+// Shu sahifadagi (joriy bo'lim filtriga mos) mavzular qaysi kurs(lar)ga
+// bog'langan bo'lsa, o'sha kurs(lar)ning BARCHA mavzuga bog'langan
+// bo'limlaridagi matn darsi ("mavzu yoritmasi" — CourseSection.textContent)
+// ichidan qidiradi (backend: CourseService.searchTopicExplanations).
+// Bir nechta kursga bog'langan bo'lsa — BARCHA o'sha kurslar qidiriladi.
+// Topilgan natijaga bosilsa — o'sha kurs bo'limining o'ziga o'tadi.
+let explanationSearchTimeout = null;
+
+document.getElementById("explanationSearchInput")?.addEventListener("input", (e) => {
+    clearTimeout(explanationSearchTimeout);
+    const query = e.target.value.trim();
+    explanationSearchTimeout = setTimeout(() => runExplanationSearch(query), 400);
+});
+
+async function runExplanationSearch(query) {
+    const resultsEl = document.getElementById("explanationSearchResults");
+    if (!query) {
+        resultsEl.classList.add("hidden");
+        resultsEl.innerHTML = "";
+        return;
+    }
+
+    // Faqat SAHIFADAGI (joriy bo'lim filtriga mos, allaqachon bazaga
+    // saqlangan) mavzular id'lari — render()dagi ko'rinish filtri bilan bir xil.
+    const topicIds = itemBlock
+        .filter(s => s.id > 0 && (!filterSectionId || Number(s.sectionId) === Number(filterSectionId)))
+        .map(s => s.id);
+
+    if (topicIds.length === 0) {
+        resultsEl.classList.remove("hidden");
+        resultsEl.innerHTML = `<div class="explanation-search-empty">Bu sahifada hech qanday mavzu yo'q</div>`;
+        return;
+    }
+
+    try {
+        const params = new URLSearchParams({ q: query });
+        topicIds.forEach(id => params.append("topicIds", id));
+        const res = await fetch(`/api/course-sections/search-explanations?${params}`);
+        if (!res.ok) throw new Error("Qidiruvda xatolik");
+        const results = await res.json();
+        renderExplanationSearchResults(results);
+    } catch (err) {
+        console.error(err);
+        resultsEl.classList.remove("hidden");
+        resultsEl.innerHTML = `<div class="explanation-search-empty">❌ Qidirishda xatolik</div>`;
+    }
+}
+
+function renderExplanationSearchResults(results) {
+    const resultsEl = document.getElementById("explanationSearchResults");
+    resultsEl.classList.remove("hidden");
+
+    if (!results.length) {
+        resultsEl.innerHTML = `<div class="explanation-search-empty">Hech narsa topilmadi</div>`;
+        return;
+    }
+
+    resultsEl.innerHTML = results.map(r => `
+        <button class="explanation-search-result-item"
+                onclick="location.href='/courses/${r.courseId}/sections/${r.sectionId}'">
+            <span class="explanation-search-result-topic">${escapeHtml(r.topicName)}</span>
+            <span class="explanation-search-result-meta">${escapeHtml(r.courseTitle)} — ${escapeHtml(r.sectionTitle)}</span>
+        </button>
+    `).join("");
+}
+
 function afterStartPage(mapping) {
         reloadFromDb(mapping).then(r => {
             focusIndex = 0;// выбрать первый элемент

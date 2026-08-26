@@ -1,6 +1,7 @@
 package behzoddev.testproject.dao;
 
 import behzoddev.testproject.dto.course.CourseSectionTrashDto;
+import behzoddev.testproject.dto.course.TopicExplanationSearchResultDto;
 import behzoddev.testproject.dto.section.TopicSectionCourseTitleDto;
 import behzoddev.testproject.dto.topic.TopicCourseTitleDto;
 import behzoddev.testproject.entity.CourseSection;
@@ -86,4 +87,27 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     @Query("select new behzoddev.testproject.dto.course.CourseSectionTrashDto(cs.id, cs.title, cs.deletedAt) " +
             "from CourseSection cs where cs.course.id = :courseId and cs.deletedAt is not null order by cs.deletedAt desc")
     List<CourseSectionTrashDto> findDeletedByCourse_Id(@Param("courseId") Long courseId);
+
+    // "Kurs ichidan mavzu yoritmasi bo'yicha qidiruv" — 1-bosqich:
+    // berilgan mavzular (topicIds — topics.html'dagi joriy sahifa yoki
+    // courseDetail.js'dagi joriy kursning bog'langan mavzulari) qaysi
+    // kurs(lar)ga bog'langanini aniqlaydi (CourseService.searchTopicExplanations).
+    @Query("select distinct cs.course.id from CourseSection cs where cs.linkedTopic.id in :topicIds and cs.deletedAt is null")
+    List<Long> findCourseIdsByLinkedTopicIds(@Param("topicIds") List<Long> topicIds);
+
+    // 2-bosqich: shu kurs(lar)ning BARCHA (istalgan Bo'lim/chapter'dagi,
+    // biror mavzuga bog'langan) bo'limlari orasidan matn darsi
+    // (textContent — "mavzu yoritmasi") ichida qidiruv so'zi bor
+    // bo'limlarni topadi.
+    @Query("""
+            select new behzoddev.testproject.dto.course.TopicExplanationSearchResultDto(
+                cs.linkedTopic.id, cs.linkedTopic.name, cs.course.id, cs.course.title, cs.id, cs.title)
+            from CourseSection cs
+            where cs.course.id in :courseIds
+              and cs.linkedTopic is not null
+              and cs.deletedAt is null
+              and cs.textContent is not null
+              and lower(cs.textContent) like lower(concat('%', :q, '%'))
+            """)
+    List<TopicExplanationSearchResultDto> searchLinkedExplanations(@Param("courseIds") List<Long> courseIds, @Param("q") String q);
 }
