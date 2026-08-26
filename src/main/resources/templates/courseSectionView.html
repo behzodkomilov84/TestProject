@@ -8,6 +8,7 @@
     <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/courses.css">
+    <link rel="stylesheet" href="/css/topic-explanation-search.css">
 
     <script th:inline="javascript">
         const COURSE_ID = /*[[${courseId}]]*/ 0;
@@ -28,6 +29,16 @@
         <h1 id="sectionTitle">Yuklanmoqda...</h1>
         <button class="back-btn" id="backToCourseBtn">← Kursga qaytish</button>
     </header>
+
+    <!-- Faqat shu sahifaga qidiruv natijasidan kelingan bo'lsa ko'rinadi
+         (setupSearchNav, courseSectionView.js) — qidiruvni qayta bermasdan
+         keyingi/oldingi topilgan mavzuga o'tish uchun. -->
+    <div id="searchNavBar" class="search-nav-bar hidden">
+        <button id="searchNavBackBtn">🔍 Natijalarga qaytish</button>
+        <span id="searchNavPosition" class="search-nav-position"></span>
+        <button id="searchNavPrevBtn">◀ Oldingi natija</button>
+        <button id="searchNavNextBtn">Keyingi natija ▶</button>
+    </div>
 
     <div id="sectionContent" class="section-content"></div>
 

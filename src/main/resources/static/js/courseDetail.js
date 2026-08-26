@@ -1630,7 +1630,14 @@ async function runExplanationSearch(query) {
     }
 }
 
+// Oxirgi qidiruv natijalari — goToExplanationResult() shundan o'qib,
+// bosilgan natijaning BUTUN ro'yxatini sessionStorage'ga saqlaydi
+// (courseSectionView.js#setupSearchNav "Oldingi/Keyingi natija"
+// tugmalarini shundan ko'rsatadi).
+let lastExplanationSearchResults = [];
+
 function renderExplanationSearchResults(results) {
+    lastExplanationSearchResults = results;
     const resultsEl = document.getElementById("explanationSearchResults");
     resultsEl.classList.remove("hidden");
 
@@ -1639,13 +1646,27 @@ function renderExplanationSearchResults(results) {
         return;
     }
 
-    resultsEl.innerHTML = results.map(r => `
-        <button class="explanation-search-result-item"
-                onclick="location.href='/courses/${r.courseId}/sections/${r.sectionId}'">
+    resultsEl.innerHTML = results.map((r, i) => `
+        <button class="explanation-search-result-item" onclick="goToExplanationResult(${i})">
             <span class="explanation-search-result-topic">${escapeHtml(r.topicName)}</span>
             <span class="explanation-search-result-meta">${escapeHtml(r.courseTitle)} — ${escapeHtml(r.sectionTitle)}</span>
         </button>
     `).join("");
+}
+
+// Natijaga bosilganda — BUTUN natijalar ro'yxati + joriy index + qaysi
+// sahifadan qidirilgani sessionStorage'ga saqlanadi (courseSectionView.js
+// shundan o'qib, "Oldingi/Keyingi natija"/"Natijalarga qaytish"
+// tugmalarini ko'rsatadi — qidiruvni qayta berishga hojat qolmaydi).
+function goToExplanationResult(index) {
+    const target = lastExplanationSearchResults[index];
+    if (!target) return;
+    sessionStorage.setItem("explanationSearchNav", JSON.stringify({
+        results: lastExplanationSearchResults,
+        index,
+        returnUrl: window.location.pathname + window.location.search
+    }));
+    location.href = `/courses/${target.courseId}/sections/${target.sectionId}`;
 }
 
 // "150000" -> "150 000" — minglik ajratkichi doim bo'shliq bo'lishi uchun

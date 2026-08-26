@@ -36,7 +36,67 @@ document.getElementById("backToCourseBtn").onclick = () => {
 
 document.addEventListener("DOMContentLoaded", () => {
     loadSection();
+    setupSearchNav();
 });
+
+// ========================================================================
+//     Qidiruv natijalari orasida navigatsiya
+// ========================================================================
+// topic.js / courseDetail.js'dagi "kurs ichidan mavzu yoritmasi bo'yicha
+// qidiruv" natijasiga bosilganda, BUTUN natijalar ro'yxati + bosilgan
+// natijaning indeksi + qidirilgan asl sahifa manzili sessionStorage'ga
+// saqlanadi. Shu yerda o'sha ma'lumot o'qib, agar u AYNAN joriy
+// (COURSE_ID, SECTION_ID) bilan mos kelsa — "Oldingi/Keyingi natija"
+// paneli ko'rsatiladi. Mos kelmasa (masalan foydalanuvchi oddiy
+// "Keyingi mavzu →" tugmasi orqali boshqa bo'limga o'tgan bo'lsa) —
+// panel avtomatik yashirin qoladi, alohida "tozalash" kodi shart emas.
+const EXPLANATION_SEARCH_NAV_KEY = "explanationSearchNav";
+
+function setupSearchNav() {
+    const bar = document.getElementById("searchNavBar");
+    if (!bar) return;
+
+    let nav;
+    try {
+        nav = JSON.parse(sessionStorage.getItem(EXPLANATION_SEARCH_NAV_KEY) || "null");
+    } catch (e) {
+        nav = null;
+    }
+
+    if (!nav || !Array.isArray(nav.results) || !nav.results.length) {
+        bar.classList.add("hidden");
+        return;
+    }
+
+    const current = nav.results[nav.index];
+    if (!current || Number(current.courseId) !== Number(COURSE_ID) || Number(current.sectionId) !== Number(SECTION_ID)) {
+        bar.classList.add("hidden");
+        return;
+    }
+
+    bar.classList.remove("hidden");
+    document.getElementById("searchNavPosition").textContent = `${nav.index + 1} / ${nav.results.length}`;
+
+    document.getElementById("searchNavBackBtn").onclick = () => {
+        location.href = nav.returnUrl || ("/courses/" + COURSE_ID);
+    };
+
+    const prevBtn = document.getElementById("searchNavPrevBtn");
+    prevBtn.disabled = nav.index <= 0;
+    prevBtn.onclick = () => goToSearchResult(nav, nav.index - 1);
+
+    const nextBtn = document.getElementById("searchNavNextBtn");
+    nextBtn.disabled = nav.index >= nav.results.length - 1;
+    nextBtn.onclick = () => goToSearchResult(nav, nav.index + 1);
+}
+
+function goToSearchResult(nav, newIndex) {
+    const target = nav.results[newIndex];
+    if (!target) return;
+    nav.index = newIndex;
+    sessionStorage.setItem(EXPLANATION_SEARCH_NAV_KEY, JSON.stringify(nav));
+    location.href = `/courses/${target.courseId}/sections/${target.sectionId}`;
+}
 
 function loadSection() {
     fetch(`/api/courses/${COURSE_ID}/sections/${SECTION_ID}`)
