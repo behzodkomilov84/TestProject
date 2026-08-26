@@ -596,15 +596,17 @@ body {
 /* "🎞 PPT qo'shish" — slayd-shou navigatsiya paneli (◀ N/M ▶). Resize
    tutqichi/align-bar'dan FARQLI — bu HAM tahrirlashda, HAM o'qish
    sahifasida ko'rinishi/ishlashi kerak (talaba slaydlar orasida o'tishi
-   uchun), shu sabab ".rich-text-editor" bilan cheklanmagan. */
+   uchun), shu sabab ".rich-text-editor" bilan cheklanmagan.
+   MUHIM: rasm USTIGA emas — rasmning TAGIGA, alohida qator sifatida
+   (position:absolute EMAS, oddiy oqim) — aks holda slayd matnining bir
+   qismini yashirib qo'yardi. */
 .rich-ppt-nav {
-    position: absolute;
-    left: 50%;
-    bottom: 6px;
-    transform: translateX(-50%);
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
+    width: fit-content;
+    margin: 6px auto 0;
     background: rgba(0, 0, 0, 0.55);
     color: #fff;
     border-radius: 999px;
