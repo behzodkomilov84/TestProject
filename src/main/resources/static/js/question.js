@@ -53,15 +53,21 @@ async function loadQuestions(topicId, page = 0) {
 
         if (!res.ok) throw new Error("Testlarni yuklashda xatolik yuz berdi.");
 
-        questions = await res.json();
+        const data = await res.json();
 
-        const normalized = normalizeApiResponse(questions);
+        const normalized = normalizeApiResponse(data);
 
         isServerPaging = normalized.isPaged;
         currentPage = normalized.page;
         totalPages = normalized.totalPages;
 
-        renderQuestionsTable(normalized.items);
+        // ⬆⬇ / A-Z / Z-A saralash shu massiv ustida ishlaydi — sahifa
+        // birdaniga TO'LIQ ro'yxat bo'lsa (masalan sahifa hajmi 10, jami
+        // savol ham 10 — totalPages===1), massiv aynan mavzuning TO'LIQ
+        // ro'yxati bilan bir xil bo'ladi (canReorder/updateSortButtonsVisibility).
+        questions = normalized.items;
+
+        renderQuestionsTable(questions);
 
         renderPagination({
             totalPages: normalized.totalPages,
@@ -84,11 +90,13 @@ function renderQuestionsTable(rows) {
 
     const letters = ["A", "B", "C", "D", "E"];
 
-    // ⬆⬇ tugmalari FAQAT "Hammasi" rejimida va qidiruv bo'sh bo'lganda
-    // ishlaydi — sabab: aks holda ekrandagi ro'yxat mavzuning TO'LIQ
-    // ro'yxati bo'lmay qoladi, backend esa reorder'da TO'LIQ mos kelishni
-    // talab qiladi (QuestionService.reorderQuestions).
-    const canReorder = isAllMode && !searchQuery;
+    // ⬆⬇ tugmalari ishlaydi FAQAT ekrandagi ro'yxat mavzuning TO'LIQ
+    // (faol) savollar ro'yxati bilan bir xil bo'lganda — ya'ni "Hammasi"
+    // rejimida, YOKI oddiy sahifalashda ham agar jami BITTA sahifagagina
+    // sig'sa (totalPages<=1 — masalan sahifa hajmi 10, jami savol ham 10,
+    // xuddi shu holat bo'yicha xato xabar qilingan edi: /question?topicId=75).
+    // Qidiruv faol bo'lsa — HAR DOIM o'chirilgan (natija to'liq ro'yxat emas).
+    const canReorder = !searchQuery && (isAllMode || totalPages <= 1);
 
     rows.forEach((q, index) => {
         const answers = q.answers.slice(0, 5);
@@ -283,7 +291,13 @@ async function loadPage() {
 
     const page = await res.json();
 
-    renderQuestionsTable(page.content);
+    currentPage = page.number ?? currentPage;
+    totalPages = page.totalPages ?? 1;
+    // ⬆⬇ / A-Z / Z-A saralash shu massiv ustida ishlaydi — bitta sahifa
+    // TO'LIQ ro'yxat bo'lsa (totalPages===1), xavfsiz (canReorder).
+    questions = page.content;
+
+    renderQuestionsTable(questions);
     renderPagination(page);
     updateSortButtonsVisibility();
 }
@@ -318,15 +332,18 @@ async function loadAllQuestions() {
     updateSortButtonsVisibility();
 }
 
+// renderQuestionsTable ichidagi "canReorder" bilan bir xil shart —
+// ekrandagi ro'yxat mavzuning TO'LIQ ro'yxati bo'lganda (Hammasi rejimi,
+// YOKI oddiy sahifalashda ham jami BITTA sahifagagina sig'sa).
 function updateSortButtonsVisibility() {
-    const shouldShow = isAllMode && !searchQuery;
+    const shouldShow = !searchQuery && (isAllMode || totalPages <= 1);
     const el = document.getElementById("questionSortButtons");
     if (el) el.classList.toggle("hidden", !shouldShow);
 }
 
 // ⬆⬇ tugmalari — QuestionService.reorderQuestions bilan bir xil andoza
-// (Topic/Science'dagi kabi). Faqat "Hammasi" rejimida va qidiruv bo'sh
-// bo'lganda chaqiriladi (renderQuestionsTable canReorder tekshiruvi).
+// (Topic/Science'dagi kabi). Faqat canReorder=true bo'lgan holatda
+// chaqiriladi (renderQuestionsTable).
 function moveQuestionUp(i) {
     if (!Array.isArray(questions) || i <= 0) return;
     [questions[i - 1], questions[i]] = [questions[i], questions[i - 1]];
@@ -357,14 +374,20 @@ async function persistQuestionOrder() {
     } catch (err) {
         console.error(err);
         showAlert(err.message || "Tartibni saqlashda xatolik");
-        await loadAllQuestions();
+        // isAllMode'ga qarab TO'G'RI ro'yxatni qayta yuklaymiz (loadPage
+        // isAllMode=true bo'lsa hech narsa qilmay chiqib ketadi).
+        if (isAllMode) {
+            await loadAllQuestions();
+        } else {
+            await loadPage();
+        }
     }
 }
 
-// A→Z / Z→A — faqat "Hammasi" rejimida va qidiruv bo'sh bo'lganda
-// ishlaydi (updateSortButtonsVisibility shu holatda tugmalarni ko'rsatadi).
+// A→Z / Z→A — faqat canReorder=true bo'lgan holatda (updateSortButtonsVisibility
+// shu holatda tugmalarni ko'rsatadi) ishlaydi.
 function sortAllAZ(dir) {
-    if (!isAllMode || searchQuery || !Array.isArray(questions) || questions.length < 2) return;
+    if (searchQuery || !(isAllMode || totalPages <= 1) || !Array.isArray(questions) || questions.length < 2) return;
     questions.sort((a, b) =>
         dir === "AZ"
             ? a.questionText.localeCompare(b.questionText, "uz")
