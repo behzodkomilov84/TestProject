@@ -61,10 +61,9 @@ async function loadQuestions(topicId, page = 0) {
         currentPage = normalized.page;
         totalPages = normalized.totalPages;
 
-        // ⬆⬇ / A-Z / Z-A saralash shu massiv ustida ishlaydi — sahifa
-        // birdaniga TO'LIQ ro'yxat bo'lsa (masalan sahifa hajmi 10, jami
-        // savol ham 10 — totalPages===1), massiv aynan mavzuning TO'LIQ
-        // ro'yxati bilan bir xil bo'ladi (canReorder/updateSortButtonsVisibility).
+        // Faqat EKRANDA ko'rsatish uchun — ⬆⬇ / A-Z / Z-A saralash bunga
+        // emas, har doim /api/question/all orqali qayta yuklangan TO'LIQ
+        // ro'yxatga nisbatan ishlaydi (fetchAllActiveQuestions).
         questions = normalized.items;
 
         renderQuestionsTable(questions);
@@ -90,13 +89,15 @@ function renderQuestionsTable(rows) {
 
     const letters = ["A", "B", "C", "D", "E"];
 
-    // ⬆⬇ tugmalari ishlaydi FAQAT ekrandagi ro'yxat mavzuning TO'LIQ
-    // (faol) savollar ro'yxati bilan bir xil bo'lganda — ya'ni "Hammasi"
-    // rejimida, YOKI oddiy sahifalashda ham agar jami BITTA sahifagagina
-    // sig'sa (totalPages<=1 — masalan sahifa hajmi 10, jami savol ham 10,
-    // xuddi shu holat bo'yicha xato xabar qilingan edi: /question?topicId=75).
-    // Qidiruv faol bo'lsa — HAR DOIM o'chirilgan (natija to'liq ro'yxat emas).
-    const canReorder = !searchQuery && (isAllMode || totalPages <= 1);
+    // ⬆⬇ tugmalari sahifalash holatidan (10/20/.../Hammasi) QAT'I NAZAR
+    // ishlaydi — bosilganda ekrandagi (ehtimol qisman) ro'yxatga emas,
+    // HAR DOIM /api/question/all orqali qayta yuklangan TO'LIQ faol
+    // ro'yxatga nisbatan amal qiladi (moveQuestionUp/moveQuestionDown/
+    // sortAllAZ — reorderAgainstFullList). Faqat qidiruv FAOL bo'lganda
+    // o'chirilgan — aks holda foydalanuvchi qidiruv natijasi ustida
+    // sortlayotganini o'ylab qolishi mumkin, holbuki amal HAR DOIM butun
+    // mavzu bo'yicha bajariladi.
+    const canReorder = !searchQuery;
 
     rows.forEach((q, index) => {
         const answers = q.answers.slice(0, 5);
@@ -147,8 +148,8 @@ function renderQuestionsTable(rows) {
 
             <td class="order-cell">
                 ${canReorder ? `
-                    <button class="order-move-btn" onclick="moveQuestionUp(${index})" ${index === 0 ? "disabled" : ""} title="Yuqoriga">⬆</button>
-                    <button class="order-move-btn" onclick="moveQuestionDown(${index})" ${index === rows.length - 1 ? "disabled" : ""} title="Pastga">⬇</button>
+                    <button class="order-move-btn" onclick="moveQuestionUp(${q.id})" title="Yuqoriga">⬆</button>
+                    <button class="order-move-btn" onclick="moveQuestionDown(${q.id})" title="Pastga">⬇</button>
                 ` : `<span style="color:#94a3b8; font-size:11px;">—</span>`}
             </td>
 
@@ -293,8 +294,7 @@ async function loadPage() {
 
     currentPage = page.number ?? currentPage;
     totalPages = page.totalPages ?? 1;
-    // ⬆⬇ / A-Z / Z-A saralash shu massiv ustida ishlaydi — bitta sahifa
-    // TO'LIQ ro'yxat bo'lsa (totalPages===1), xavfsiz (canReorder).
+    // Faqat EKRANDA ko'rsatish uchun (izoh yuqorida, loadQuestions'da).
     questions = page.content;
 
     renderQuestionsTable(questions);
@@ -321,10 +321,7 @@ async function loadAllQuestions() {
 
     const data = await res.json();
 
-    // ⬆⬇ / A-Z / Z-A saralash shu massiv ustida ishlaydi (moveQuestionUp/
-    // moveQuestionDown/sortAllAZ) — ALL rejimda ekrandagi ro'yxat
-    // mavzuning TO'LIQ ro'yxati bilan bir xil bo'lgani uchun xavfsiz
-    // (qidiruv bo'sh bo'lganda).
+    // Faqat EKRANDA ko'rsatish uchun (izoh yuqorida, loadQuestions'da).
     questions = data;
 
     renderQuestionsTable(questions);
@@ -333,66 +330,93 @@ async function loadAllQuestions() {
 }
 
 // renderQuestionsTable ichidagi "canReorder" bilan bir xil shart —
-// ekrandagi ro'yxat mavzuning TO'LIQ ro'yxati bo'lganda (Hammasi rejimi,
-// YOKI oddiy sahifalashda ham jami BITTA sahifagagina sig'sa).
+// qidiruv FAOL bo'lmasa (sahifalash holatidan qat'i nazar).
 function updateSortButtonsVisibility() {
-    const shouldShow = !searchQuery && (isAllMode || totalPages <= 1);
+    const shouldShow = !searchQuery;
     const el = document.getElementById("questionSortButtons");
     if (el) el.classList.toggle("hidden", !shouldShow);
 }
 
-// ⬆⬇ tugmalari — QuestionService.reorderQuestions bilan bir xil andoza
-// (Topic/Science'dagi kabi). Faqat canReorder=true bo'lgan holatda
-// chaqiriladi (renderQuestionsTable).
-function moveQuestionUp(i) {
-    if (!Array.isArray(questions) || i <= 0) return;
-    [questions[i - 1], questions[i]] = [questions[i], questions[i - 1]];
-    persistQuestionOrder();
+// Mavzuning TO'LIQ (sahifalanmagan, faol) savollar ro'yxatini har safar
+// yangidan yuklaydi — ⬆⬇/A-Z/Z-A amallari ekrandagi (ehtimol qisman)
+// ro'yxatga emas, HAR DOIM shu TO'LIQ ro'yxatga nisbatan bajarilishi
+// uchun (aks holda 10/20 tadan ko'rsatilayotganda faqat o'sha sahifa
+// ichida "aralashib", boshqa sahifadagilarga umuman tegilmasdi).
+async function fetchAllActiveQuestions() {
+    const res = await fetch(`/api/question/all?topicId=${topicId}`);
+    if (!res.ok) throw new Error("Savollarni yuklashda xatolik");
+    return await res.json();
 }
 
-function moveQuestionDown(i) {
-    if (!Array.isArray(questions) || i >= questions.length - 1) return;
-    [questions[i], questions[i + 1]] = [questions[i + 1], questions[i]];
-    persistQuestionOrder();
-}
-
-async function persistQuestionOrder() {
-    renderQuestionsTable(questions);
-    const orderedIds = questions.map(q => q.id);
-    if (orderedIds.length < 2) return;
-    try {
-        const response = await fetch(`/api/question/reorder?topicId=${topicId}`, {
-            method: "POST",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify(orderedIds)
-        });
-        if (!response.ok) {
-            const data = await response.json().catch(() => ({}));
-            throw new Error(data.error || ("Server error: " + response.status));
-        }
-        showAlert("✅ Tartib saqlandi", "success");
-    } catch (err) {
-        console.error(err);
-        showAlert(err.message || "Tartibni saqlashda xatolik");
-        // isAllMode'ga qarab TO'G'RI ro'yxatni qayta yuklaymiz (loadPage
-        // isAllMode=true bo'lsa hech narsa qilmay chiqib ketadi).
-        if (isAllMode) {
-            await loadAllQuestions();
-        } else {
-            await loadPage();
-        }
+async function submitQuestionOrder(orderedIds) {
+    const response = await fetch(`/api/question/reorder?topicId=${topicId}`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify(orderedIds)
+    });
+    if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || ("Server error: " + response.status));
     }
 }
 
-// A→Z / Z→A — faqat canReorder=true bo'lgan holatda (updateSortButtonsVisibility
-// shu holatda tugmalarni ko'rsatadi) ishlaydi.
-function sortAllAZ(dir) {
-    if (searchQuery || !(isAllMode || totalPages <= 1) || !Array.isArray(questions) || questions.length < 2) return;
-    questions.sort((a, b) =>
-        dir === "AZ"
-            ? a.questionText.localeCompare(b.questionText, "uz")
-            : b.questionText.localeCompare(a.questionText, "uz"));
-    persistQuestionOrder();
+// Joriy ko'rinishni (sahifalangan yoki "Hammasi") qayta yuklaydi —
+// reorderdan keyin ekranda YANGI tartib ko'rinishi uchun.
+async function reloadCurrentQuestionsView() {
+    if (isAllMode) {
+        await loadAllQuestions();
+    } else {
+        await loadPage();
+    }
+}
+
+// ⬆⬇ tugmalari — bosilgan savolning ID'si TO'LIQ ro'yxat ichidagi haqiqiy
+// o'rnini topib, qo'shni savol bilan almashtiradi (ekrandagi ko'rinishga
+// emas — QuestionService.reorderQuestions bilan bir xil andoza).
+function moveQuestionUp(questionId) {
+    reorderQuestionRelativeToNeighbor(questionId, -1);
+}
+
+function moveQuestionDown(questionId) {
+    reorderQuestionRelativeToNeighbor(questionId, 1);
+}
+
+async function reorderQuestionRelativeToNeighbor(questionId, direction) {
+    try {
+        const all = await fetchAllActiveQuestions();
+        const pos = all.findIndex(q => q.id === questionId);
+        const neighborPos = pos + direction;
+        if (pos === -1 || neighborPos < 0 || neighborPos >= all.length) {
+            return; // Allaqachon birinchi/oxirgi — jim o'tkazib yuboriladi.
+        }
+        [all[pos], all[neighborPos]] = [all[neighborPos], all[pos]];
+        await submitQuestionOrder(all.map(q => q.id));
+        showAlert("✅ Tartib saqlandi", "success");
+        await reloadCurrentQuestionsView();
+    } catch (err) {
+        console.error(err);
+        showAlert(err.message || "Tartibni saqlashda xatolik");
+    }
+}
+
+// A→Z / Z→A — sahifalash holatidan qat'i nazar mavzuning TO'LIQ faol
+// ro'yxati bo'yicha saralaydi (updateSortButtonsVisibility faqat
+// qidiruv faol bo'lganda yashiradi).
+async function sortAllAZ(dir) {
+    try {
+        const all = await fetchAllActiveQuestions();
+        if (all.length < 2) return;
+        all.sort((a, b) =>
+            dir === "AZ"
+                ? a.questionText.localeCompare(b.questionText, "uz")
+                : b.questionText.localeCompare(a.questionText, "uz"));
+        await submitQuestionOrder(all.map(q => q.id));
+        showAlert("✅ Tartib saqlandi", "success");
+        await reloadCurrentQuestionsView();
+    } catch (err) {
+        console.error(err);
+        showAlert(err.message || "Tartibni saqlashda xatolik");
+    }
 }
 
 
