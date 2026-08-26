@@ -355,7 +355,7 @@ public class QuestionService {
     // ScienceService.reorderSciences bilan bir xil andoza).
     @Transactional
     public void reorderQuestions(Long topicId, List<Long> orderedQuestionIds) {
-        List<Question> questions = questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(topicId);
+        List<Question> questions = questionRepository.findActiveByTopicIdOrderByOrderIndex(topicId);
         Map<Long, Question> byId = new LinkedHashMap<>();
         for (Question q : questions) byId.put(q.getId(), q);
         if (orderedQuestionIds.size() != questions.size() || !byId.keySet().containsAll(orderedQuestionIds)) {

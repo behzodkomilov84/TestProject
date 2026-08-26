@@ -95,9 +95,18 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @EntityGraph(attributePaths = "answers")
     List<Question> findByTopicIdAndQuestionTextContainingIgnoreCaseAndDeletedAtIsNullOrderByOrderIndexAsc(Long topicId, String questionText);
 
-    // Reorder (⬆⬇, A-Z/Z-A) uchun — QuestionService.reorderQuestions
-    // (findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc'ning o'zi
-    // qayta ishlatiladi — javoblar bilan birga kelishi zarar qilmaydi).
+    // Reorder (⬆⬇, A-Z/Z-A) uchun — QuestionService.reorderQuestions.
+    // MUHIM: yuqoridagi findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc
+    // ATAYLAB ishlatilMAYDI — uning @EntityGraph(attributePaths="answers")
+    // JOIN FETCH'i DISTINCT'siz bo'lgani uchun har bir savol o'zining
+    // javoblari soncha marta takrorlanib qaytadi (masalan 5 ta javobli
+    // savol — 5 marta), natijada ro'yxat hajmi frontend yuborgan id
+    // to'plamidan har doim KATTA chiqib, "Savollar ro'yxati mavzuning
+    // savollariga mos kelmayapti" xatosini bergan (haqiqiy production bug).
+    // Bu yerda javoblar umuman kerak emas (faqat orderIndex o'zgaradi),
+    // shu sabab oddiy (fetch join'siz) so'rov ishlatiladi.
+    @Query("select q from Question q where q.topic.id = :topicId and q.deletedAt is null order by q.orderIndex")
+    List<Question> findActiveByTopicIdOrderByOrderIndex(@Param("topicId") Long topicId);
 
     @Query("select max(q.orderIndex) from Question q where q.topic.id = :topicId")
     Integer findMaxOrderIndexByTopicId(@Param("topicId") Long topicId);
