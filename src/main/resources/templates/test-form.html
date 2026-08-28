@@ -14,6 +14,14 @@
 <body>
 
 <div class="container">
+    <!-- Faqat kurs mavzu kartochkasidagi "➕ Testga savol qo'shish"
+         tugmasidan kelinganda ko'rinadi (URL'da courseId bo'lsa) —
+         testConfigPage.html'dagi "🔙 Mavzularga qaytish" bilan bir xil
+         andoza (test-form.js#DOMContentLoaded). Boshqa hollarda (masalan
+         TEST BOSHQARUVI'dagi "➕ TEST YARATISH" orqali kelinganda)
+         butunlay yashirin qoladi. -->
+    <button id="backToCourseBtn" class="back-to-course-btn hidden">🔙 Kursga qaytish</button>
+
     <h1>Test yaratish</h1>
 
     <div class="top-btn">

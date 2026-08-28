@@ -187,7 +187,27 @@ document.addEventListener("click", (e) => {
     insertTextAtCursor(textarea, buildTopicLinkHtml(topicCourseLink));
 });
 
+// Kurs mavzu kartochkasidagi "➕ Testga savol qo'shish" tugmasidan
+// kelinganda — URL'da ?courseId=&sectionId= beriladi (testConfigPage.js
+// bilan bir xil andoza), shu orqali "🔙 Kursga qaytish" tugmasi ANIQ o'sha
+// kurs bo'limining o'ziga qaytaradi (faqat kursning umumiy ro'yxatiga emas).
+const testFormUrlParams = new URLSearchParams(window.location.search);
+const testFormReturnCourseId = testFormUrlParams.get("courseId");
+const testFormReturnSectionId = testFormUrlParams.get("sectionId");
+
 document.addEventListener("DOMContentLoaded", () => {
+
+    // Faqat kursdan (courseId URL'da bo'lsa) kelinganda ko'rinadi — TEST
+    // BOSHQARUVI'dagi "➕ TEST YARATISH" orqali kelinganda butunlay yashirin.
+    if (testFormReturnCourseId) {
+        const backBtn = document.getElementById("backToCourseBtn");
+        backBtn.classList.remove("hidden");
+        backBtn.onclick = () => {
+            location.href = testFormReturnSectionId
+                ? `/courses/${testFormReturnCourseId}/sections/${testFormReturnSectionId}`
+                : `/courses/${testFormReturnCourseId}`;
+        };
+    }
 
     const form = document.getElementById("testForm");
 

@@ -1166,6 +1166,15 @@ function renderSectionCard(s, globalIndexById) {
         ? `<button class="topic-test-btn-inline" onclick="event.stopPropagation(); location.href='/testConfigPage?scienceId=${s.linkedScienceId}&topicId=${s.linkedTopicId}&courseId=${COURSE_ID}'">🎯 Mavzuga oid testlarni yechish</button>`
         : "";
 
+    // Faqat boshqaruvchilar uchun — shu mavzuga (TEST BOSHQARUVIga
+    // bog'langan bo'lsa) to'g'ridan-to'g'ri kartochkadan yangi test savoli
+    // qo'shish (test-form.html'ga o'tadi, ?courseId=&sectionId= orqali —
+    // u yerdagi "🔙 Kursga qaytish" tugmasi ANIQ shu kartochkaga qaytaradi,
+    // testConfigPage.js bilan bir xil andoza).
+    const addTestBtn = (cachedCourse && cachedCourse.canManage && s.linkedTopicId)
+        ? `<button class="topic-test-btn-inline" onclick="event.stopPropagation(); location.href='/question/${s.linkedTopicId}/create-test-form?courseId=${COURSE_ID}&sectionId=${s.id}'">➕ Testga savol qo'shish</button>`
+        : "";
+
     // Ichidagi tugmalar (test, boshqarish) bosilganda kartaning o'zi
     // ham navigatsiya qilib yubormasligi uchun — shu wrapper'larga
     // event.stopPropagation() qo'yiladi.
@@ -1182,9 +1191,10 @@ function renderSectionCard(s, globalIndexById) {
     // (test tugmasi boshqarish tugmalarining USTIGA) yig'ilgan, sarlavha
     // qatoridan alohida. Bo'sh joy bo'lsa (.section-item flex-column),
     // shu blok margin-top:auto orqali pastga "yopishadi".
-    const bottomGroup = (testLink || manageActions)
+    const bottomGroup = (testLink || addTestBtn || manageActions)
         ? `<div class="section-item-bottom" onclick="event.stopPropagation()">
                ${testLink}
+               ${addTestBtn}
                ${manageActions}
            </div>`
         : "";
