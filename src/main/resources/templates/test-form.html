@@ -16,25 +16,29 @@
 <div class="container">
     <h1>Test yaratish</h1>
 
-    <div class="top-btn">
-        <div class="left-btn">
-            <!-- Faqat kurs mavzu kartochkasidagi "➕ Testga savol qo'shish"
-                 tugmasidan kelinganda ko'rinadi (URL'da courseId bo'lsa) —
-                 testConfigPage.html'dagi "🔙 Mavzularga qaytish" bilan bir
-                 xil andoza (test-form.js#DOMContentLoaded). Boshqa
-                 hollarda (masalan TEST BOSHQARUVI'dagi "➕ TEST YARATISH"
-                 orqali kelinganda) butunlay yashirin qoladi. -->
-            <button id="backToCourseBtn" class="back-to-course-btn hidden">🔙 Kursga qaytish</button>
-            <button class="btn-import" type="button" onclick="importExcel()" title="Avval shablonni yuklab oling, to'ldirib qayta import qiling.">📥 Import from Excel</button>
-            <input type="file" id="excelFile" accept=".xlsx" hidden>
-        </div>
-        <div class="right-btn">
-            <button class="btn-export" type="button" onclick="downloadTemplate()">
-                📄 Shablon
-            </button>
-        </div>
+    <div class="form-header-row">
+        <!-- Faqat kurs mavzu kartochkasidagi "➕ Testga savol qo'shish"
+             tugmasidan kelinganda ko'rinadi (URL'da courseId bo'lsa) —
+             testConfigPage.html'dagi "🔙 Mavzularga qaytish" bilan bir xil
+             andoza (test-form.js#DOMContentLoaded). Boshqa hollarda
+             (masalan TEST BOSHQARUVI'dagi "➕ TEST YARATISH" orqali
+             kelinganda) butunlay yashirin qoladi — shu holatda ".top-btn"
+             o'zining "margin-left:auto"si bilan qatorning ENG CHAP
+             tomonida (yagona flex element sifatida) qoladi, Import/
+             Shablon'ning joyi o'zgarmaydi. -->
+        <button id="backToCourseBtn" class="back-to-course-btn hidden">🔙 Kursga qaytish</button>
 
-
+        <div class="top-btn">
+            <div class="left-btn">
+                <button class="btn-import" type="button" onclick="importExcel()" title="Avval shablonni yuklab oling, to'ldirib qayta import qiling.">📥 Import from Excel</button>
+                <input type="file" id="excelFile" accept=".xlsx" hidden>
+            </div>
+            <div class="right-btn">
+                <button class="btn-export" type="button" onclick="downloadTemplate()">
+                    📄 Shablon
+                </button>
+            </div>
+        </div>
     </div>
 
 

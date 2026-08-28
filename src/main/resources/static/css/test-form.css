@@ -10,16 +10,25 @@ body {
 }
 
 
+/* "Kursga qaytish" tugmasi + "📥 Import from Excel"/"📄 Shablon" guruhi —
+   BIR XIL gorizontal qatorda, lekin ikkalasi orasida ATAYLAB bo'sh joy:
+   "Kursga qaytish" qatorning ENG CHAP chetida, ".top-btn" (Import/Shablon)
+   esa o'zining "margin-left:auto"si bilan har doim ENG O'NG chetda —
+   "Kursga qaytish" yashirin bo'lganda ham (yagona flex element sifatida)
+   Import/Shablon'ning joyi o'zgarmaydi. */
+.form-header-row {
+    display: flex;
+    align-items: center;
+}
+
 /* "🔙 Kursga qaytish" — testConfigPage.css'dagi ".back-to-course-btn"
    bilan bir xil uslub (bu sahifa alohida CSS fayl ulagani uchun shu
-   yerda takrorlangan). ".left-btn" ichida — "📥 Import from Excel" bilan
-   BIR QATORDA, uning chap tomonida chiqishi uchun (".top-btn" flex qator). */
+   yerda takrorlangan). */
 .back-to-course-btn {
     display: inline-flex;
     align-items: center;
     gap: 6px;
     padding: 8px 14px;
-    margin-right: 12px;
     margin-bottom: 20px;
     border-radius: 8px;
     border: 1px solid #cbd5e1;
