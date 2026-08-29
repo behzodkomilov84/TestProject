@@ -164,6 +164,16 @@ public class SecurityConfig {
                                         "{\"error\":\"Sessiyangiz tugagan. Iltimos, sahifani yangilab, qayta kiring.\"}"
                                 );
                             } else {
+                                // Haqiqiy production kamchilik: oddiy sahifaga (API
+                                // emas) o'tishga urinilganda sessiya tugagan bo'lsa,
+                                // foydalanuvchi HECH QANDAY tushuntirishsiz "/login"ga
+                                // tashlanardi — nega qayta kirishi kerakligini
+                                // bilmasdi. Endi login.html'dagi MAVJUD "LOGIN_ERROR"
+                                // mexanizmi (formLogin().failureHandler() bilan bir xil
+                                // FlashMap usuli) orqali aniq xabar ko'rsatiladi.
+                                var flashMap = new FlashMap();
+                                flashMap.put("LOGIN_ERROR", "⏳ Sessiyangiz tugadi. Iltimos, qaytadan kiring.");
+                                new SessionFlashMapManager().saveOutputFlashMap(flashMap, request, response);
                                 response.sendRedirect("/login");
                             }
                         })
