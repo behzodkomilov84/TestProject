@@ -1168,11 +1168,11 @@ function renderSectionCard(s, globalIndexById) {
 
     // Faqat boshqaruvchilar uchun — shu mavzuga (TEST BOSHQARUVIga
     // bog'langan bo'lsa) to'g'ridan-to'g'ri kartochkadan yangi test savoli
-    // qo'shish (test-form.html'ga o'tadi, ?courseId=&sectionId= orqali —
-    // u yerdagi "🔙 Kursga qaytish" tugmasi ANIQ shu kartochkaga qaytaradi,
-    // testConfigPage.js bilan bir xil andoza).
+    // qo'shish (test-form.html'ga o'tadi, ?courseId= orqali — u yerdagi
+    // "🔙 Kursga qaytish" tugmasi kursning UMUMIY (mavzular ro'yxati)
+    // sahifasiga qaytaradi, ANIQ shu mavzu ICHIGA emas).
     const addTestBtn = (cachedCourse && cachedCourse.canManage && s.linkedTopicId)
-        ? `<button class="topic-test-btn-inline" onclick="event.stopPropagation(); location.href='/question/${s.linkedTopicId}/create-test-form?courseId=${COURSE_ID}&sectionId=${s.id}'">➕ Testga savol qo'shish</button>`
+        ? `<button class="topic-test-btn-inline" onclick="event.stopPropagation(); location.href='/question/${s.linkedTopicId}/create-test-form?courseId=${COURSE_ID}'">➕ Testga savol qo'shish</button>`
         : "";
 
     // Ichidagi tugmalar (test, boshqarish) bosilganda kartaning o'zi

@@ -188,12 +188,13 @@ document.addEventListener("click", (e) => {
 });
 
 // Kurs mavzu kartochkasidagi "➕ Testga savol qo'shish" tugmasidan
-// kelinganda — URL'da ?courseId=&sectionId= beriladi (testConfigPage.js
-// bilan bir xil andoza), shu orqali "🔙 Kursga qaytish" tugmasi ANIQ o'sha
-// kurs bo'limining o'ziga qaytaradi (faqat kursning umumiy ro'yxatiga emas).
+// kelinganda — URL'da ?courseId= beriladi. "🔙 Kursga qaytish" tugmasi
+// ATAYLAB kursning UMUMIY (mavzular ro'yxati) sahifasiga qaytaradi — aynan
+// shu mavzu (dars) ICHIGA EMAS (foydalanuvchi so'rovi bo'yicha: test savoli
+// qo'shib bo'lgach, mavzu matnini "o'qish" rejimiga emas, tashqarida —
+// kursning o'ziga qaytish kerak).
 const testFormUrlParams = new URLSearchParams(window.location.search);
 const testFormReturnCourseId = testFormUrlParams.get("courseId");
-const testFormReturnSectionId = testFormUrlParams.get("sectionId");
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -203,9 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const backBtn = document.getElementById("backToCourseBtn");
         backBtn.classList.remove("hidden");
         backBtn.onclick = () => {
-            location.href = testFormReturnSectionId
-                ? `/courses/${testFormReturnCourseId}/sections/${testFormReturnSectionId}`
-                : `/courses/${testFormReturnCourseId}`;
+            location.href = `/courses/${testFormReturnCourseId}`;
         };
     }
 
