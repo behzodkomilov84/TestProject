@@ -7,7 +7,10 @@ let questions = null;
 
 let currentPage = 0;
 let pageSize = 10;
-let isAllMode = false;
+// Standart (default) holatda "Hammasi" tanlangan bo'ladi (pageSizeSelect'da
+// ham "all" — selected) — o'qituvchi sahifaga kirishi bilan mavzuning
+// BARCHA savollarini bir zumda ko'radi, sahifalashni qo'lda tanlashi shart emas.
+let isAllMode = true;
 let searchQuery = "";
 let totalPages = 1;
 let isServerPaging = false;
@@ -16,7 +19,7 @@ if (!topicId) {
     document.querySelector("#questionsTable tbody").innerHTML =
         "<tr><td colspan='11'>❌ topicId yuborilmagan</td></tr>";
 } else {
-    loadQuestions(topicId, currentPage);
+    loadAllQuestions();
 }
 
 function normalizeApiResponse(data) {
