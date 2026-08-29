@@ -1210,13 +1210,13 @@ function renderSectionCard(s, globalIndexById) {
     return `
         <div class="section-item ${s.locked ? "locked" : ""}"${cardClick}>
             <div class="section-item-top">
-                <div class="section-item-left">
+                <div class="section-item-badges">
                     <div class="${indexClass}">${indexIcon}</div>
-                    ${titleEl}
                     <span class="section-type-icon">${typeIcon}</span>
                     ${s.locked ? '<span class="section-type-icon">🔒</span>' : ""}
                     ${questionCountBadge}
                 </div>
+                ${titleEl}
             </div>
             ${bottomGroup}
         </div>

@@ -1162,10 +1162,15 @@ body {
     gap: 10px;
 }
 
-.section-item-left {
+/* Doira (tartib raqami) + turi belgisi (📄/🎬) + 🔒 + "N ta test" belgisi
+   — ALOHIDA, YUQORIDAGI qatorda (mavzu nomining O'ZIDAN chetlashtirilgan),
+   shunda mavzu nomi (".section-title-text") o'z qatorida TO'LIQ enni
+   oladi — avval bir qatorda birga bo'lganda, uzun nomlar tor joyga
+   siqilib, so'zlar o'rtasidan bo'linib ketardi. */
+.section-item-badges {
     display: flex;
-    align-items: flex-start;
-    gap: 12px;
+    align-items: center;
+    gap: 8px;
 }
 
 .section-index {
