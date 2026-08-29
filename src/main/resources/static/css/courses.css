@@ -1352,6 +1352,31 @@ body {
     cursor: not-allowed;
 }
 
+/* "…" bosilganda o'rniga chiqadigan kichik sahifa raqami maydoni
+   (togglePageJumpInput, courseDetail.js) — pagination tugmalari bilan
+   BIR XIL o'lchamda, faqat kiritish uchun moslangan. */
+.page-jump-input {
+    width: 52px;
+    min-width: 52px;
+    padding: 7px 8px;
+    border-radius: 8px;
+    border: 1px solid #2563eb;
+    text-align: center;
+    font-weight: 600;
+    font-size: 13px;
+    color: #334155;
+}
+
+.page-jump-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.25);
+}
+
+/* Yozuvlik ko'rinishi uchun boshqa raqamlardan biroz farqli kursor. */
+.page-ellipsis {
+    cursor: pointer;
+}
+
 /* ===== Bo'lim ko'rish sahifasi ===== */
 
 .section-content {

@@ -1379,6 +1379,15 @@ function changeChapterPage(chapterKey, page) {
 
 /* ===== Sahifalash tugmalari — flat va guruhlangan ko'rinishlar bir xil ishlatadi ===== */
 
+// Ko'p sahifali ro'yxatlarda (masalan 18 sahifa) BARCHA raqamni birma-bir
+// chizish o'rniga — "oynali" sahifalash: doim 1-, OXIRGI sahifa va joriy
+// sahifa atrofidagi ±PAGE_WINDOW_DELTA raqamlar ko'rinadi, orada uzilgan
+// joyda "…" chiqadi. "…" statik EMAS — bosilsa kichik raqam maydoniga
+// aylanadi (togglePageJumpInput) va Enter bosilganda YOZILGAN sahifaga
+// BEVOSITA o'tkazadi (masalan 2-sahifadan 15-sahifaga — oradagi barcha
+// sahifalarni birma-bir bosib o'tirmasdan).
+const PAGE_WINDOW_DELTA = 2;
+
 function buildPaginationHtml(totalPages, currentPage, onClickFor) {
     const isFirst = currentPage === 0;
     const isLast = currentPage === totalPages - 1;
@@ -1388,12 +1397,72 @@ function buildPaginationHtml(totalPages, currentPage, onClickFor) {
     // ro'yxatlarda ‹Oldingi/Keyingi› bilan bittalab bosib borish noqulay).
     buttons.push(`<button ${isFirst ? "disabled" : ""} onclick="${onClickFor(0)}" title="Birinchi sahifa">«</button>`);
     buttons.push(`<button ${isFirst ? "disabled" : ""} onclick="${onClickFor(currentPage - 1)}">‹ Oldingi</button>`);
-    for (let p = 0; p < totalPages; p++) {
-        buttons.push(`<button class="${p === currentPage ? "active" : ""}" onclick="${onClickFor(p)}">${p + 1}</button>`);
+
+    // Ko'rsatiladigan sahifa raqamlari: birinchi, oxirgi, va joriy atrofi.
+    const pagesToShow = new Set([0, totalPages - 1]);
+    for (let p = currentPage - PAGE_WINDOW_DELTA; p <= currentPage + PAGE_WINDOW_DELTA; p++) {
+        if (p >= 0 && p < totalPages) pagesToShow.add(p);
     }
+    const sortedPages = [...pagesToShow].sort((a, b) => a - b);
+
+    // "…" bosilganda qaysi funksiyani (changeSectionsPage yoki
+    // changeChapterPage — closure bo'yicha bo'limga xos) chaqirish
+    // kerakligini keyinroq (runtime'da, foydalanuvchi raqam kiritgach)
+    // bilish uchun — onClickFor'ni "__JUMP__" placeholder bilan chaqirib,
+    // natijani shablon sifatida data-atributga yozib qo'yamiz (aks holda
+    // bir nechta bo'lim-box'i bir vaqtda ekranda bo'lsa, qaysi bo'limning
+    // sahifalashiga tegishli ekanini bilib bo'lmas edi).
+    const jumpTemplate = onClickFor("__JUMP__").replace(/"/g, "&quot;");
+
+    let prevPage = null;
+    sortedPages.forEach((p) => {
+        if (prevPage !== null && p - prevPage > 1) {
+            buttons.push(`<button class="page-ellipsis" data-jump-template="${jumpTemplate}" data-max="${totalPages}" onclick="togglePageJumpInput(this)" title="Sahifaga o'tish">…</button>`);
+        }
+        buttons.push(`<button class="${p === currentPage ? "active" : ""}" onclick="${onClickFor(p)}">${p + 1}</button>`);
+        prevPage = p;
+    });
+
     buttons.push(`<button ${isLast ? "disabled" : ""} onclick="${onClickFor(currentPage + 1)}">Keyingi ›</button>`);
     buttons.push(`<button ${isLast ? "disabled" : ""} onclick="${onClickFor(totalPages - 1)}" title="Oxirgi sahifa">»</button>`);
     return buttons.join("");
+}
+
+// "…" bosilganda — o'sha o'rniga kichik raqam kiritish maydoni chiqadi.
+// Enter — yozilgan sahifaga bevosita o'tkazadi; Escape/fokusdan chiqish
+// (bo'sh holda) — yana "…" belgisiga qaytaradi.
+function togglePageJumpInput(ellipsisBtn) {
+    const template = ellipsisBtn.dataset.jumpTemplate;
+    const max = Number(ellipsisBtn.dataset.max);
+
+    const input = document.createElement("input");
+    input.type = "number";
+    input.className = "page-jump-input";
+    input.min = "1";
+    input.max = String(max);
+    input.placeholder = "№";
+
+    const commit = () => {
+        const value = Number(input.value);
+        if (Number.isInteger(value) && value >= 1 && value <= max) {
+            // "__JUMP__" — build vaqtida onClickFor'dan olingan shablon
+            // ichidagi joy egallovchi, endi haqiqiy (0-indeksli) sahifa
+            // raqami bilan almashtiriladi va xuddi oddiy sahifalash
+            // tugmasidagi onclick kabi bajariladi.
+            new Function(template.replace("__JUMP__", String(value - 1)))();
+        }
+    };
+
+    input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") commit();
+        if (e.key === "Escape") input.replaceWith(ellipsisBtn);
+    });
+    input.addEventListener("blur", () => {
+        if (!input.value) input.replaceWith(ellipsisBtn);
+    });
+
+    ellipsisBtn.replaceWith(input);
+    input.focus();
 }
 
 function renderPaginationInto(container, totalPages, currentPage, onClickFor) {
