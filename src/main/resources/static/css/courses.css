@@ -1058,6 +1058,11 @@ body {
 .chapter-box-title {
     display: flex;
     align-items: center;
+    /* Endi "(mavzu — N ta, jami testlar — M ta)" matni uzunroq — tor
+       ekranlarda (yoki uzun Bo'lim nomlarida) qatorga sig'masa, keyingi
+       qatorga tushsin (aks holda gorizontal skroll paydo bo'lardi). */
+    flex-wrap: wrap;
+    row-gap: 4px;
     gap: 8px;
     margin: 0 0 14px;
     font-size: 17px;

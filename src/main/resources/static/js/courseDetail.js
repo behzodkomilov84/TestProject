@@ -1293,6 +1293,12 @@ function renderGroupedSections() {
 }
 
 function renderChapterBox(group, globalIndexById) {
+    // Shu Bo'limdagi BARCHA mavzularning (TEST BOSHQARUVIga bog'langanlari)
+    // testlari yig'indisi — bo'lim sarlavhasida "jami testlar" sifatida
+    // ko'rsatish uchun (foydalanuvchi so'rovi bo'yicha).
+    const totalQuestions = group.items.reduce(
+        (sum, s) => sum + (s.linkedTopicId != null ? (s.linkedTopicQuestionCount || 0) : 0), 0);
+
     const totalPages = Math.max(1, Math.ceil(group.items.length / CHAPTER_SECTIONS_PER_PAGE));
     let page = chapterPages[group.key] || 0;
     if (page >= totalPages) page = totalPages - 1;
@@ -1337,7 +1343,7 @@ function renderChapterBox(group, globalIndexById) {
 
     return `
         <div class="chapter-box">
-            <h3 class="chapter-box-title">📂 ${escapeHtml(group.name)} <span class="chapter-box-count">(${group.items.length})</span><span class="chapter-box-actions">${renameBtn}${deleteWithTopicsBtn}</span></h3>
+            <h3 class="chapter-box-title">📂 ${escapeHtml(group.name)} <span class="chapter-box-count">(mavzu — ${group.items.length} ta, jami testlar — ${totalQuestions} ta)</span><span class="chapter-box-actions">${renameBtn}${deleteWithTopicsBtn}</span></h3>
             ${sortBar}
             <div class="sections-grid">${cardsHtml}</div>
             ${paginationHtml ? `<div class="sections-pagination chapter-box-pagination">${paginationHtml}</div>` : ""}
