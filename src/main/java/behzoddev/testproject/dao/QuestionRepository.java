@@ -1,6 +1,7 @@
 package behzoddev.testproject.dao;
 
 import behzoddev.testproject.dto.question.QuestionTrashDto;
+import behzoddev.testproject.dto.question.TopicQuestionCountDto;
 import behzoddev.testproject.entity.Question;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -66,6 +67,15 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
               AND q.deletedAt is null
             """)
     int countByTopicIds(@Param("topicIds") List<Long> topicIds);
+
+    // Kurs sahifasida ("Mavzu kartochkasi") har bir bog'langan mavzuning
+    // ALOHIDA-ALOHIDA nechta faol savoli borligini BULK (bitta so'rov,
+    // N+1 emas) ko'rsatish uchun — countByTopicIds'dan farqli, bu yerda
+    // BARCHASI birga emas, har bir topicId uchun alohida son kerak
+    // (CourseService.getDetail).
+    @Query("select new behzoddev.testproject.dto.question.TopicQuestionCountDto(q.topic.id, count(q)) " +
+            "from Question q where q.topic.id in :topicIds and q.deletedAt is null group by q.topic.id")
+    List<TopicQuestionCountDto> countByTopicIdsGrouped(@Param("topicIds") List<Long> topicIds);
 
     @Query("""
             select q from Question q

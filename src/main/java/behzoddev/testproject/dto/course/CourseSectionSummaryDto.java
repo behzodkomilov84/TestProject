@@ -17,6 +17,10 @@ public record CourseSectionSummaryDto(
         // tugmasini ko'rsatish uchun (avval faqat bo'limni ochgach ko'rinardi).
         Long linkedTopicId,
         Long linkedScienceId,
+        // linkedTopicId bog'langan bo'lsa — shu mavzuning nechta faol
+        // savoli borligi (kartochkada "N ta test" belgisi uchun) —
+        // linkedTopicId null bo'lsa, bu ham null (savol soni ma'nosiz).
+        Integer linkedTopicQuestionCount,
         // Kurs ICHIDAGI Bo'lim (CourseChapter) — null bo'lsa "Bo'limsiz",
         // frontend'da (courseDetail.js) shu bo'yicha alohida "box"larga
         // guruhlanadi.

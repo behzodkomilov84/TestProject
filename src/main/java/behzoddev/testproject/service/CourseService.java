@@ -10,6 +10,7 @@ import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
 import behzoddev.testproject.dto.course.*;
+import behzoddev.testproject.dto.question.TopicQuestionCountDto;
 import behzoddev.testproject.entity.Course;
 import behzoddev.testproject.entity.CourseChapter;
 import behzoddev.testproject.entity.CourseSection;
@@ -33,8 +34,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * JavaRush uslubidagi online kurslar — OWNER yaratadi/tahrirlaydi, ADMIN/USER
@@ -89,6 +92,20 @@ public class CourseService {
 
         List<CourseSection> sections = courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(courseId);
 
+        // Har bir bog'langan mavzuning nechta faol savoli borligi — BULK
+        // (bitta so'rov, N+1 EMAS) hisoblanadi, kartochkada "N ta test"
+        // belgisi uchun (foydalanuvchi so'rovi bo'yicha).
+        List<Long> linkedTopicIds = sections.stream()
+                .map(CourseSection::getLinkedTopic)
+                .filter(Objects::nonNull)
+                .map(Topic::getId)
+                .distinct()
+                .toList();
+        Map<Long, Long> questionCountByTopicId = linkedTopicIds.isEmpty()
+                ? Map.of()
+                : questionRepository.countByTopicIdsGrouped(linkedTopicIds).stream()
+                        .collect(Collectors.toMap(TopicQuestionCountDto::topicId, TopicQuestionCountDto::count));
+
         List<CourseSectionSummaryDto> sectionDtos = sections.stream()
                 .map(s -> CourseSectionSummaryDto.builder()
                         .id(s.getId())
@@ -100,6 +117,9 @@ public class CourseService {
                                 .existsByUser_IdAndSection_Id(currentUser.getId(), s.getId()))
                         .linkedTopicId(s.getLinkedTopic() != null ? s.getLinkedTopic().getId() : null)
                         .linkedScienceId(s.getLinkedTopic() != null ? s.getLinkedTopic().getScience().getId() : null)
+                        .linkedTopicQuestionCount(s.getLinkedTopic() != null
+                                ? questionCountByTopicId.getOrDefault(s.getLinkedTopic().getId(), 0L).intValue()
+                                : null)
                         .chapterId(s.getChapter() != null ? s.getChapter().getId() : null)
                         .chapterName(s.getChapter() != null ? s.getChapter().getName() : null)
                         .chapterOrderIndex(s.getChapter() != null ? s.getChapter().getOrderIndex() : null)

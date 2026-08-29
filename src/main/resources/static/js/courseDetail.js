@@ -1158,6 +1158,14 @@ function renderSectionCard(s, globalIndexById) {
     const titleEl = `<span class="section-title-text" title="${escapeHtml(s.title)}">${escapeHtml(s.title)}</span>`;
     const cardClick = s.locked ? "" : ` onclick="location.href='/courses/${COURSE_ID}/sections/${s.id}'"`;
 
+    // Shu mavzu TEST BOSHQARUVIga bog'langan bo'lsa — nechta faol savoli
+    // borligi (foydalanuvchi so'rovi bo'yicha: har bir mavzu kartochkasida
+    // ko'rinishi kerak). linkedTopicQuestionCount backend'da BULK
+    // hisoblanadi (CourseService.getDetail).
+    const questionCountBadge = s.linkedTopicId != null
+        ? `<span class="section-question-count-badge">📝 ${s.linkedTopicQuestionCount} ta test</span>`
+        : "";
+
     // Shu mavzu haqiqiy test tizimidagi bir mavzuga bog'langan bo'lsa —
     // ro'yxatdan turib ham, mavzuni ochmasdan, testlarni yechish tugmasi
     // (faqat ochilgan/qulflanmagan mavzularda — qulflangan bo'lsa
@@ -1207,6 +1215,7 @@ function renderSectionCard(s, globalIndexById) {
                     ${titleEl}
                     <span class="section-type-icon">${typeIcon}</span>
                     ${s.locked ? '<span class="section-type-icon">🔒</span>' : ""}
+                    ${questionCountBadge}
                 </div>
             </div>
             ${bottomGroup}
