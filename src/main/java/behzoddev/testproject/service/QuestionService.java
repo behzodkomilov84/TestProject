@@ -239,6 +239,23 @@ public class QuestionService {
         questionRepository.delete(question);
     }
 
+    // Guruh holatida BUTUNLAY o'chirish (question.js — savatdagi
+    // checkbox'lar orqali belgilangan savollar). FAQAT allaqachon savatda
+    // (soft-delete qilingan) turganlarga nisbatan — hali savatga
+    // o'tkazilmagan (faol) savol tasodifan shu yerdan o'chib ketmasligi
+    // uchun (bitta-bitta permanentlyDeleteQuestion bilan bir xil qoida).
+    @Transactional
+    public int permanentlyDeleteQuestions(List<Long> questionIds) {
+        if (questionIds == null || questionIds.isEmpty()) {
+            return 0;
+        }
+        List<Question> questions = questionRepository.findAllById(questionIds).stream()
+                .filter(q -> q.getDeletedAt() != null)
+                .toList();
+        questionRepository.deleteAll(questions);
+        return questions.size();
+    }
+
     private Question getQuestionOrThrow(Long questionId) {
         Question question = getAnyQuestionOrThrow(questionId);
         if (question.getDeletedAt() != null) {

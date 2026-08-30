@@ -909,9 +909,16 @@ function escapeHtmlTrash(text) {
     return div.innerHTML;
 }
 
+// O'chirilganlar savatida belgilangan savol ID'lari — guruh holatida
+// BUTUNLAY o'chirish uchun (asosiy jadvaldagi selectedQuestionIds'dan
+// ALOHIDA — ikkalasi butunlay boshqa ro'yxatlar). Panel har safar qayta
+// yuklanganda (loadQuestionTrash) tozalanadi.
+let selectedTrashQuestionIds = new Set();
+
 async function loadQuestionTrash() {
     const list = document.getElementById("questionTrashList");
     list.innerHTML = "<p>Yuklanmoqda...</p>";
+    selectedTrashQuestionIds.clear();
 
     try {
         const res = await fetch(`/api/question/deleted?topicId=${topicId}`);
@@ -924,18 +931,93 @@ async function loadQuestionTrash() {
             list.innerHTML = "<p>O'chirilgan savol yo'q</p>";
             return;
         }
-        list.innerHTML = items.map(q => `
+        list.innerHTML = `
+            <div class="trash-bulk-actions">
+                <label><input type="checkbox" id="selectAllTrashCheckbox" onchange="toggleSelectAllTrash(this)"> Hammasini belgilash</label>
+                <button id="bulkPermanentDeleteBtn" class="bulk-delete-btn hidden" onclick="permanentlyDeleteSelectedQuestions()">🗑️ Tanlanganlarni BUTUNLAY o'chirish (<span id="bulkPermanentDeleteCount">0</span>)</button>
+            </div>
+            ${items.map(q => `
             <div class="row">
+                <input type="checkbox" class="trash-select-checkbox" data-question-id="${q.id}" onchange="onTrashCheckboxChange(${q.id}, this)">
                 <div>${escapeHtmlTrash(q.questionText)} — ${formatQuestionTrashDate(q.deletedAt)}da o'chirilgan</div>
                 <div class="row-actions">
                     <button onclick="restoreQuestion(${q.id})">♻️ Tiklash</button>
                     <button class="danger-btn" onclick="permanentlyDeleteQuestion(${q.id})">🗑️ Butunlay o'chirish</button>
                 </div>
             </div>
-        `).join("");
+        `).join("")}`;
+        updateBulkPermanentDeleteButton();
     } catch (err) {
         console.error(err);
         list.innerHTML = "<p>Tarmoq xatoligi</p>";
+    }
+}
+
+function onTrashCheckboxChange(questionId, checkbox) {
+    if (checkbox.checked) {
+        selectedTrashQuestionIds.add(questionId);
+    } else {
+        selectedTrashQuestionIds.delete(questionId);
+        const selectAll = document.getElementById("selectAllTrashCheckbox");
+        if (selectAll) selectAll.checked = false;
+    }
+    updateBulkPermanentDeleteButton();
+}
+
+// "Hammasini belgilash" (savatda) — faqat EKRANDAGI (shu mavzuning
+// BARCHA o'chirilgan savollari — sahifalash yo'q) qatorlarga taalluqli.
+function toggleSelectAllTrash(selectAllCheckbox) {
+    document.querySelectorAll("#questionTrashList .trash-select-checkbox").forEach((cb) => {
+        cb.checked = selectAllCheckbox.checked;
+        const questionId = Number(cb.dataset.questionId);
+        if (selectAllCheckbox.checked) {
+            selectedTrashQuestionIds.add(questionId);
+        } else {
+            selectedTrashQuestionIds.delete(questionId);
+        }
+    });
+    updateBulkPermanentDeleteButton();
+}
+
+function updateBulkPermanentDeleteButton() {
+    const btn = document.getElementById("bulkPermanentDeleteBtn");
+    if (!btn) return;
+    const count = selectedTrashQuestionIds.size;
+    document.getElementById("bulkPermanentDeleteCount").textContent = String(count);
+    btn.classList.toggle("hidden", count === 0);
+}
+
+// "🗑️ Tanlanganlarni BUTUNLAY o'chirish" — BARCHA belgilangan savollarni
+// BITTA so'rovda, QAYTARIB BO'LMAYDIGAN tarzda o'chiradi
+// (QuestionService.permanentlyDeleteQuestions, /api/question/bulk/permanent).
+// FAQAT allaqachon savatda (soft-delete qilingan) turgan savollarga
+// nisbatan ishlaydi — bitta-bitta "Butunlay o'chirish" bilan bir xil g'oya.
+async function permanentlyDeleteSelectedQuestions() {
+    const ids = [...selectedTrashQuestionIds];
+    if (!ids.length) return;
+
+    if (!confirm(`⚠️ ${ids.length} ta savolni BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`)) {
+        return;
+    }
+    if (!confirm("Haqiqatan ham ishonchingiz komilmi?")) {
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/question/bulk/permanent", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ids)
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || "O'chirishda xatolik");
+        }
+        selectedTrashQuestionIds.clear();
+        loadQuestionTrash();
+    } catch (err) {
+        console.error(err);
+        alert(err.message || "Tarmoq xatoligi");
     }
 }
 

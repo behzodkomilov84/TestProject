@@ -298,4 +298,19 @@ public class QuestionController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+    // Guruh holatida BUTUNLAY o'chirish — savatdagi checkbox'lar orqali
+    // belgilangan savollar (question.js#permanentlyDeleteSelectedQuestions).
+    // Literal "/bulk/permanent" — "/{id}/permanent"dan ANIQROQ deb
+    // hisoblanadi (Spring'ning o'zi to'g'ri yo'naltiradi).
+    @DeleteMapping("/api/question/bulk/permanent")
+    @ResponseBody
+    public ResponseEntity<?> permanentDeleteBulk(@RequestBody List<Long> ids) {
+        try {
+            int deleted = questionService.permanentlyDeleteQuestions(ids);
+            return ResponseEntity.ok(Map.of("deleted", deleted));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }

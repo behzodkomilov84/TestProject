@@ -819,6 +819,17 @@ td label{
     cursor: pointer;
 }
 
+/* "Hammasini belgilash" + guruh holatida BUTUNLAY o'chirish tugmasi —
+   savat ro'yxatining USTIDA (loadQuestionTrash, question.js). */
+.trash-bulk-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: #475569;
+}
+
 /* Jadvaldagi checkbox'lar orqali belgilangan savollarni guruh holatida
    o'chirish tugmasi (bulkDeleteBtn) — kamida bitta belgilansa ko'rinadi
    (updateBulkDeleteButton, question.js). */
