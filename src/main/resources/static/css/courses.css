@@ -1143,6 +1143,7 @@ body {
    ichki matnda emas, shu butun kartada (kurs katalogi kartalari bilan
    bir xil uslub) — karta bosiladigan (qulflanmagan bo'lsa). */
 .section-item {
+    position: relative; /* pastdagi klaviatura-yo'riqnoma tooltip'i (::after) shu kartaga nisbatan joylashishi uchun */
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -1156,17 +1157,70 @@ body {
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
+/* Klaviatura navigatsiyasi yo'riqnomasi — sichqonni kartaga olib borganda
+   (yoki klaviaturada fokus qilinganda), kartaning TEPASIDA kichik
+   "qo'llanma" pufakchasi chiqadi: ←/→/↑/↓/Home nima qilishini ko'rsatadi.
+   Qulflangan kartalarda ham ishlaydi (navigatsiya ular ustida ham
+   ishlaydi, faqat Enter bilan ochilmaydi). CSS-only — JS shart emas. */
+.section-item::after {
+    content: "⌨️  ←/→ — mavzular orasida    ↑/↓ — sahifa    Home — 1-sahifaga";
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    margin-bottom: 8px;
+    transform: translate(-50%, 6px);
+    background: rgba(15, 23, 42, 0.94);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+    padding: 7px 12px;
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    z-index: 30;
+}
+
+.section-item:hover::after,
+.section-item:focus::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
 .section-item:not(.locked) {
     cursor: pointer;
 }
 
+/* Fon rangi ham, sarlavha matni rangi ham HOVER'da birga, mos ohangda
+   o'zgaradi (foydalanuvchi so'rovi) — avval faqat soya/balandlik
+   o'zgarardi, fon/matn rangi butunlay tegilmagan edi. */
 .section-item:not(.locked):hover {
     transform: translateY(-3px);
     box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    background: #eef2ff;
+}
+
+.section-item:not(.locked):hover .section-title-text {
+    color: #1e3a8a;
 }
 
 .section-item.locked {
     opacity: 0.6;
+}
+
+/* Klaviatura bilan tanlangan karta (courseDetail.js#selectCard —
+   ←/→/↑/↓/Home navigatsiyasi VA "🔙 Kursga qaytish"dan "?focus=" bilan
+   qaytilganda). Brauzerning standart (ko'pincha xunuk) fokus halqasi
+   o'rniga aniq, izchil ko'rinish. */
+.section-item:focus {
+    outline: none;
+}
+
+.section-item.selected {
+    outline: 3px solid #1976d2;
+    outline-offset: 2px;
 }
 
 .section-item-top {

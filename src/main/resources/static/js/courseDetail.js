@@ -19,6 +19,19 @@ let sectionsPage = 0;
 const CHAPTER_SECTIONS_PER_PAGE = 4;
 let chapterPages = {};
 
+// Klaviatura bilan mavzu kartochkalari orasida navigatsiya (←/→ — joriy
+// sahifa/Bo'lim ichida oldingi-keyingi kartaga, ↑/↓ — oldingi/keyingi
+// sahifa, Home — 1-sahifa). Tanlangan kartaning id'si — qayta chizishlar
+// (sahifa/Bo'lim almashganda) orasida ham saqlanib qoladi.
+let selectedSectionId = null;
+
+// "🔙 Kursga qaytish" (test-form.js) dan "?focus=<sectionId>" bilan
+// qaytilganda — ANIQ shu kartani ekranga chiqarib, "tanlangan" holatda
+// belgilash uchun. FAQAT birinchi yuklanishda qo'llaniladi (keyingi
+// qayta chizishlarda — masalan bo'lim tahrirlangandan keyin — takrorlanmaydi).
+const focusSectionIdFromUrl = Number(new URLSearchParams(window.location.search).get("focus")) || null;
+let pendingFocusApplied = false;
+
 // YouTube pleyeri (courseSectionView.js) "videoId" sifatida FAQAT xom
 // ID'ni qabul qiladi, to'liq URL emas — shu sabab o'qituvchi to'liq
 // havolani joylashtirsa ham, saqlashdan oldin shu yerda tozalab olamiz
@@ -1138,6 +1151,34 @@ function renderSections(sections) {
     } else {
         renderFlatSections();
     }
+
+    if (!pendingFocusApplied && focusSectionIdFromUrl) {
+        pendingFocusApplied = true;
+        applyFocusFromUrl(focusSectionIdFromUrl);
+    }
+}
+
+// "?focus=<sectionId>" — sahifa birinchi ochilganda, o'sha kartani o'zi
+// turgan sahifa/Bo'limga o'tkazib (agar hozirgi sahifada bo'lmasa),
+// ekranga chiqarib, "tanlangan" holatda belgilaydi (selectCard).
+function applyFocusFromUrl(sectionId) {
+    const section = allSections.find(s => s.id === sectionId);
+    if (!section) return; // topilmadi (o'chirilgan/boshqa kurs) — jim o'tkazib yuboriladi
+
+    const hasAnyChapter = allSections.some(s => s.chapterId != null);
+    if (hasAnyChapter) {
+        const key = section.chapterId != null ? String(section.chapterId) : "none";
+        const items = allSections.filter(s => (s.chapterId != null ? String(s.chapterId) : "none") === key);
+        const idx = items.findIndex(s => s.id === sectionId);
+        chapterPages[key] = Math.floor(idx / CHAPTER_SECTIONS_PER_PAGE);
+        renderGroupedSections();
+    } else {
+        const idx = allSections.findIndex(s => s.id === sectionId);
+        sectionsPage = Math.floor(idx / SECTIONS_PER_PAGE);
+        renderFlatSections();
+    }
+
+    selectCard(sectionId, { scroll: true });
 }
 
 // Har bir mavzu-tugmalar-karta shablonini bir joyda ushlab turadi — flat
@@ -1156,7 +1197,12 @@ function renderSectionCard(s, globalIndexById) {
     // bilan bir xil uslub) — shuning uchun sarlavha endi alohida <a>
     // emas, oddiy matn; hover effekti ham shu tashqi kartada.
     const titleEl = `<span class="section-title-text" title="${escapeHtml(s.title)}">${escapeHtml(s.title)}</span>`;
-    const cardClick = s.locked ? "" : ` onclick="location.href='/courses/${COURSE_ID}/sections/${s.id}'"`;
+    // Bosilganda — avval "tanlangan" deb belgilaymiz (selectCard),
+    // qulflanmagan bo'lsa keyin darhol o'sha mavzuga o'tadi (qulflangan
+    // bo'lsa faqat tanlash — klaviatura navigatsiyasi shu yerdan davom etadi).
+    const cardClick = s.locked
+        ? ` onclick="selectCard(${s.id})"`
+        : ` onclick="selectCard(${s.id}); location.href='/courses/${COURSE_ID}/sections/${s.id}'"`;
 
     // Shu mavzu TEST BOSHQARUVIga bog'langan bo'lsa — nechta faol savoli
     // borligi (foydalanuvchi so'rovi bo'yicha: har bir mavzu kartochkasida
@@ -1178,9 +1224,12 @@ function renderSectionCard(s, globalIndexById) {
     // bog'langan bo'lsa) to'g'ridan-to'g'ri kartochkadan yangi test savoli
     // qo'shish (test-form.html'ga o'tadi, ?courseId= orqali — u yerdagi
     // "🔙 Kursga qaytish" tugmasi kursning UMUMIY (mavzular ro'yxati)
-    // sahifasiga qaytaradi, ANIQ shu mavzu ICHIGA emas).
+    // sahifasiga qaytaradi, ANIQ shu mavzu ICHIGA emas). "&fromSectionId="
+    // — aynan shu kartochkadan ketilganini eslab qolish uchun: test-form.js
+    // "🔙 Kursga qaytish"da buni "?focus=" sifatida qaytarib beradi, shunda
+    // bu sahifaga qaytilganda ANIQ shu karta avtomatik ko'rsatiladi/tanlanadi.
     const addTestBtn = (cachedCourse && cachedCourse.canManage && s.linkedTopicId)
-        ? `<button class="topic-test-btn-inline" onclick="event.stopPropagation(); location.href='/question/${s.linkedTopicId}/create-test-form?courseId=${COURSE_ID}'">➕ Testga savol qo'shish</button>`
+        ? `<button class="topic-test-btn-inline" onclick="event.stopPropagation(); location.href='/question/${s.linkedTopicId}/create-test-form?courseId=${COURSE_ID}&fromSectionId=${s.id}'">➕ Testga savol qo'shish</button>`
         : "";
 
     // Ichidagi tugmalar (test, boshqarish) bosilganda kartaning o'zi
@@ -1207,8 +1256,16 @@ function renderSectionCard(s, globalIndexById) {
            </div>`
         : "";
 
+    // Klaviatura navigatsiyasi (←/→/↑/↓/Home — onCardKeyDown) uchun karta
+    // fokus oladigan (tabindex) va o'zining sectionId'sini bilishi kerak
+    // (data-section-id — selectCard shu orqali DOM elementini topadi).
+    const isSelected = s.id === selectedSectionId;
+
     return `
-        <div class="section-item ${s.locked ? "locked" : ""}"${cardClick}>
+        <div class="section-item ${s.locked ? "locked" : ""} ${isSelected ? "selected" : ""}"
+             data-section-id="${s.id}"
+             tabindex="0"
+             onkeydown="onCardKeyDown(event, ${s.id})"${cardClick}>
             <div class="section-item-top">
                 <div class="section-item-badges">
                     <div class="${indexClass}">${indexIcon}</div>
@@ -1391,6 +1448,111 @@ function sortChapterSections(chapterKey, dir) {
 function changeChapterPage(chapterKey, page) {
     chapterPages[chapterKey] = page;
     renderGroupedSections();
+}
+
+/* ===== Mavzu kartochkalari orasida klaviatura navigatsiyasi ===== */
+
+// Tanlangan kartaning "navigatsiya guruhi" — bo'limsiz (flat) ko'rinishda
+// BUTUN kurs; guruhlangan ko'rinishda esa FAQAT shu kartaning Bo'limi
+// (yoki "— Bo'limsiz mavzular —" psevdo-guruhi). ←/→/↑/↓/Home
+// navigatsiyasi ANIQ shu guruh (o'z sahifalashi) DOIRASIDA ishlaydi —
+// boshqa Bo'limdagi kartalarga "sakrab" ketmaydi.
+function getCardGroup(sectionId) {
+    const section = allSections.find(s => s.id === sectionId);
+    if (!section) return null;
+
+    const hasAnyChapter = allSections.some(s => s.chapterId != null);
+    if (!hasAnyChapter) {
+        return {
+            items: allSections,
+            perPage: SECTIONS_PER_PAGE,
+            getPage: () => sectionsPage,
+            setPage: (p) => { sectionsPage = p; renderFlatSections(); }
+        };
+    }
+
+    const key = section.chapterId != null ? String(section.chapterId) : "none";
+    const items = allSections.filter(s => (s.chapterId != null ? String(s.chapterId) : "none") === key);
+    return {
+        items,
+        perPage: CHAPTER_SECTIONS_PER_PAGE,
+        getPage: () => chapterPages[key] || 0,
+        setPage: (p) => { chapterPages[key] = p; renderGroupedSections(); }
+    };
+}
+
+// ← / → — joriy sahifadagi (yoki joriy Bo'lim qutisidagi) oldingi/keyingi
+// kartaga o'tadi. Sahifa chegarasiga yetganda hech narsa qilmaydi (avtomatik
+// keyingi sahifaga o'tmaydi — buning uchun alohida ↑/↓ bor).
+function moveCardSelection(sectionId, delta) {
+    const group = getCardGroup(sectionId);
+    if (!group) return;
+
+    const page = group.getPage();
+    const pageItems = group.items.slice(page * group.perPage, page * group.perPage + group.perPage);
+    const idx = pageItems.findIndex(s => s.id === sectionId);
+    const newIdx = idx + delta;
+    if (idx === -1 || newIdx < 0 || newIdx >= pageItems.length) return;
+
+    selectCard(pageItems[newIdx].id);
+}
+
+// ↑ — bir oldingi sahifa, ↓ — bir keyingi sahifa, Home — 1-sahifa. Yangi
+// sahifaga o'tgach, o'sha sahifaning BIRINCHI kartasi avtomatik tanlanadi
+// (va ekranga scroll qilinadi).
+function moveCardPage(sectionId, dir) {
+    const group = getCardGroup(sectionId);
+    if (!group) return;
+
+    const totalPages = Math.max(1, Math.ceil(group.items.length / group.perPage));
+    const curPage = group.getPage();
+    const newPage = dir === "home" ? 0 : curPage + dir;
+    if (newPage < 0 || newPage >= totalPages || newPage === curPage) return;
+
+    group.setPage(newPage);
+
+    const firstOnPage = group.items.slice(newPage * group.perPage, newPage * group.perPage + group.perPage)[0];
+    if (firstOnPage) selectCard(firstOnPage.id, { scroll: true });
+}
+
+function onCardKeyDown(event, sectionId) {
+    switch (event.key) {
+        case "ArrowRight":
+            event.preventDefault();
+            moveCardSelection(sectionId, 1);
+            break;
+        case "ArrowLeft":
+            event.preventDefault();
+            moveCardSelection(sectionId, -1);
+            break;
+        case "ArrowDown":
+            event.preventDefault();
+            moveCardPage(sectionId, 1);
+            break;
+        case "ArrowUp":
+            event.preventDefault();
+            moveCardPage(sectionId, -1);
+            break;
+        case "Home":
+            event.preventDefault();
+            moveCardPage(sectionId, "home");
+            break;
+    }
+}
+
+// Kartani "tanlangan" deb belgilaydi — vizual ajratib ko'rsatish
+// (".selected" klassi) + klaviatura fokusi (keyingi Strelka/Home
+// tugmalari shu kartadan davom etishi uchun). "scroll" — sahifa/Bo'lim
+// almashganda yangi kartani ekranga ko'rinadigan joyga olib kelish uchun.
+function selectCard(sectionId, { scroll = false } = {}) {
+    selectedSectionId = sectionId;
+    document.querySelectorAll(".section-item.selected").forEach(el => el.classList.remove("selected"));
+    const el = document.querySelector(`.section-item[data-section-id="${sectionId}"]`);
+    if (el) {
+        el.classList.add("selected");
+        el.focus({ preventScroll: !scroll });
+        if (scroll) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
 }
 
 /* ===== Sahifalash tugmalari — flat va guruhlangan ko'rinishlar bir xil ishlatadi ===== */

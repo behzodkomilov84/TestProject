@@ -195,6 +195,12 @@ document.addEventListener("click", (e) => {
 // kursning o'ziga qaytish kerak).
 const testFormUrlParams = new URLSearchParams(window.location.search);
 const testFormReturnCourseId = testFormUrlParams.get("courseId");
+// Kurs sahifasidagi ANIQ qaysi mavzu kartochkasidan ("➕ Testga savol
+// qo'shish") kelingani — courseDetail.js shuni "&fromSectionId=" orqali
+// jo'natadi. Qaytishda "?focus=" sifatida beriladi, shunda kurs sahifasi
+// o'sha kartani avtomatik ekranga chiqarib, "tanlangan" holatda belgilaydi
+// (courseDetail.js#applyFocusFromUrl).
+const testFormReturnSectionId = testFormUrlParams.get("fromSectionId");
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -204,7 +210,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const backBtn = document.getElementById("backToCourseBtn");
         backBtn.classList.remove("hidden");
         backBtn.onclick = () => {
-            location.href = `/courses/${testFormReturnCourseId}`;
+            location.href = testFormReturnSectionId
+                ? `/courses/${testFormReturnCourseId}?focus=${testFormReturnSectionId}`
+                : `/courses/${testFormReturnCourseId}`;
         };
     }
 
