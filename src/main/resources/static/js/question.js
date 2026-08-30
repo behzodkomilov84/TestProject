@@ -20,6 +20,23 @@ if (!topicId) {
         "<tr><td colspan='12'>❌ topicId yuborilmagan</td></tr>";
 } else {
     loadAllQuestions();
+    loadTopicName();
+}
+
+// Sarlavhada ("Mavzuga oid testlar: <nomi>") aynan qaysi mavzu ekanini
+// ko'rsatish uchun (foydalanuvchi so'rovi — bir nechta mavzu sahifasi
+// ochilganda adashib qolmaslik uchun).
+async function loadTopicName() {
+    const heading = document.getElementById("topicNameHeading");
+    if (!heading) return;
+    try {
+        const res = await fetch(`/api/topic/${topicId}/name`);
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        heading.textContent = data.name;
+    } catch (err) {
+        heading.textContent = "";
+    }
 }
 
 function normalizeApiResponse(data) {

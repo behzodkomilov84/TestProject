@@ -82,6 +82,13 @@ public class TopicController {
         return ResponseEntity.ok(topicIdAndNameDto);
     }
 
+    // Faqat mavzu nomi — question.html sarlavhasida ("Mavzuga oid testlar:
+    // <nomi>") ko'rsatish uchun. scienceId shart emas.
+    @GetMapping("/api/topic/{topicId}/name")
+    public ResponseEntity<Map<String, String>> getTopicName(@PathVariable Long topicId) {
+        return ResponseEntity.ok(Map.of("name", topicService.getTopicName(topicId)));
+    }
+
     // Test yaratish formasidagi "🔗 Mavzuga havola qo'shish" tugmasi shu
     // orqali joriy mavzu qaysi kurs bo'limiga bog'langanini bilib oladi.
     // Bog'lanmagan bo'lsa — 404 (frontend tugmani yashiradi).

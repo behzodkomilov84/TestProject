@@ -169,6 +169,14 @@ public class TopicService {
         topicRepository.delete(topic);
     }
 
+    // Faqat mavzu NOMINI olish uchun (question.html sarlavhasida "Mavzuga
+    // oid testlar: <nomi>" ko'rsatish uchun) — scienceId shart emas,
+    // getTopicByIds'dan farqli.
+    @Transactional(readOnly = true)
+    public String getTopicName(Long topicId) {
+        return getTopicOrThrow(topicId).getName();
+    }
+
     private Topic getTopicOrThrow(Long topicId) {
         Topic topic = getAnyTopicOrThrow(topicId);
         if (topic.getDeletedAt() != null) {
