@@ -1152,10 +1152,29 @@ function renderSections(sections) {
         renderFlatSections();
     }
 
-    if (!pendingFocusApplied && focusSectionIdFromUrl) {
+    // Sahifa birinchi ochilganda — bir marta: "?focus=" bo'lsa o'sha
+    // kartaga, bo'lmasa DEFAULT holatda birinchi (ekranda ko'rinadigan
+    // eng birinchi) kartaga fokus/belgilash qo'yiladi (foydalanuvchi
+    // so'rovi bo'yicha). Keyingi qayta chizishlarda (masalan bo'lim
+    // tahrirlangandan keyin) takrorlanmaydi.
+    if (!pendingFocusApplied) {
         pendingFocusApplied = true;
-        applyFocusFromUrl(focusSectionIdFromUrl);
+        if (focusSectionIdFromUrl) {
+            applyFocusFromUrl(focusSectionIdFromUrl);
+        } else {
+            selectFirstCardByDefault();
+        }
     }
+}
+
+// DOM'dagi (haqiqiy ko'rinadigan) ENG BIRINCHI kartani tanlangan/fokusda
+// deb belgilaydi — allSections[0]'ga emas, DOM tartibiga tayanadi, chunki
+// guruhlangan ko'rinishda Bo'lim qutilari tartibi allSections'ning xom
+// tartibidan farq qilishi mumkin (renderGroupedSections — orderIndex
+// bo'yicha saralaydi).
+function selectFirstCardByDefault() {
+    const firstCardEl = document.querySelector(".section-item");
+    if (firstCardEl) selectCard(Number(firstCardEl.dataset.sectionId));
 }
 
 // "?focus=<sectionId>" — sahifa birinchi ochilganda, o'sha kartani o'zi
@@ -1327,6 +1346,12 @@ function changeSectionsPage(page) {
     sectionsPage = page;
     renderFlatSections();
     document.getElementById("sectionsList").scrollIntoView({ behavior: "smooth", block: "start" });
+
+    // Sahifa (sichqon bilan pagination tugmasi orqali) almashganda ham —
+    // klaviatura bilan (↑/↓/Home) almashgandagi kabi — yangi sahifaning
+    // BIRINCHI kartasi default holatda tanlangan/fokusda bo'ladi.
+    const firstOnPage = allSections.slice(page * SECTIONS_PER_PAGE, page * SECTIONS_PER_PAGE + SECTIONS_PER_PAGE)[0];
+    if (firstOnPage) selectCard(firstOnPage.id);
 }
 
 /* ===== Bo'limlar bo'yicha guruhlangan — har biri alohida "box", o'z sahifalashi bilan ===== */
@@ -1448,6 +1473,13 @@ function sortChapterSections(chapterKey, dir) {
 function changeChapterPage(chapterKey, page) {
     chapterPages[chapterKey] = page;
     renderGroupedSections();
+
+    // Sahifa (sichqon bilan pagination tugmasi orqali) almashganda ham —
+    // klaviatura bilan (↑/↓/Home) almashgandagi kabi — yangi sahifaning
+    // BIRINCHI kartasi default holatda tanlangan/fokusda bo'ladi.
+    const items = allSections.filter(s => (s.chapterId != null ? String(s.chapterId) : "none") === chapterKey);
+    const firstOnPage = items.slice(page * CHAPTER_SECTIONS_PER_PAGE, page * CHAPTER_SECTIONS_PER_PAGE + CHAPTER_SECTIONS_PER_PAGE)[0];
+    if (firstOnPage) selectCard(firstOnPage.id);
 }
 
 /* ===== Mavzu kartochkalari orasida klaviatura navigatsiyasi ===== */
