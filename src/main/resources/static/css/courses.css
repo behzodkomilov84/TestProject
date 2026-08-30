@@ -1163,7 +1163,7 @@ body {
    Qulflangan kartalarda ham ishlaydi (navigatsiya ular ustida ham
    ishlaydi, faqat Enter bilan ochilmaydi). CSS-only — JS shart emas. */
 .section-item::after {
-    content: "⌨️  ←/→ — mavzular orasida    ↑/↓ — sahifa    Home — 1-sahifaga";
+    content: "⌨️  ←/→ — mavzular orasida    ↑/↓ — sahifa    Home — 1-, End — oxirgi kartaga";
     position: absolute;
     left: 50%;
     bottom: 100%;

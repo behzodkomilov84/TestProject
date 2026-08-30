@@ -1514,24 +1514,45 @@ function getCardGroup(sectionId) {
 }
 
 // ← / → — joriy sahifadagi (yoki joriy Bo'lim qutisidagi) oldingi/keyingi
-// kartaga o'tadi. Sahifa chegarasiga yetganda hech narsa qilmaydi (avtomatik
-// keyingi sahifaga o'tmaydi — buning uchun alohida ↑/↓ bor).
+// kartaga o'tadi. Sahifa chegarasiga yetganda (→ bilan OXIRGI kartadan,
+// yoki ← bilan BIRINCHI kartadan) — agar keyingi/oldingi sahifa mavjud
+// bo'lsa, avtomatik o'sha sahifaga o'tadi (→ — keyingi sahifaning
+// BIRINCHISI, ← — oldingi sahifaning OXIRGISI). Butun ro'yxatning eng
+// boshida/oxirida bo'lsa (o'tadigan sahifa yo'q) — hech narsa qilmaydi.
 function moveCardSelection(sectionId, delta) {
     const group = getCardGroup(sectionId);
     if (!group) return;
 
+    const totalPages = Math.max(1, Math.ceil(group.items.length / group.perPage));
     const page = group.getPage();
     const pageItems = group.items.slice(page * group.perPage, page * group.perPage + group.perPage);
     const idx = pageItems.findIndex(s => s.id === sectionId);
+    if (idx === -1) return;
     const newIdx = idx + delta;
-    if (idx === -1 || newIdx < 0 || newIdx >= pageItems.length) return;
 
-    selectCard(pageItems[newIdx].id);
+    if (newIdx >= 0 && newIdx < pageItems.length) {
+        selectCard(pageItems[newIdx].id);
+        return;
+    }
+
+    if (delta > 0 && page < totalPages - 1) {
+        const newPage = page + 1;
+        group.setPage(newPage);
+        const firstOnPage = group.items.slice(newPage * group.perPage, newPage * group.perPage + group.perPage)[0];
+        if (firstOnPage) selectCard(firstOnPage.id, { scroll: true });
+    } else if (delta < 0 && page > 0) {
+        const newPage = page - 1;
+        group.setPage(newPage);
+        const itemsOnNewPage = group.items.slice(newPage * group.perPage, newPage * group.perPage + group.perPage);
+        const lastOnPage = itemsOnNewPage[itemsOnNewPage.length - 1];
+        if (lastOnPage) selectCard(lastOnPage.id, { scroll: true });
+    }
+    // aks holda — ro'yxatning eng boshi/oxiri, o'tadigan joy yo'q.
 }
 
-// ↑ — bir oldingi sahifa, ↓ — bir keyingi sahifa, Home — 1-sahifa. Yangi
-// sahifaga o'tgach, o'sha sahifaning BIRINCHI kartasi avtomatik tanlanadi
-// (va ekranga scroll qilinadi).
+// ↑ — bir oldingi sahifa, ↓ — bir keyingi sahifa, Home — 1-sahifa (BIRINCHI
+// kartasi tanlanadi). Yangi sahifaga o'tgach, o'sha sahifaning BIRINCHI
+// kartasi avtomatik tanlanadi (va ekranga scroll qilinadi).
 function moveCardPage(sectionId, dir) {
     const group = getCardGroup(sectionId);
     if (!group) return;
@@ -1545,6 +1566,23 @@ function moveCardPage(sectionId, dir) {
 
     const firstOnPage = group.items.slice(newPage * group.perPage, newPage * group.perPage + group.perPage)[0];
     if (firstOnPage) selectCard(firstOnPage.id, { scroll: true });
+}
+
+// End — ENG OXIRGI sahifaning ENG OXIRGI kartasiga o'tadi (Home'ning
+// aksi — Home 1-sahifa/1-kartaga, End oxirgi sahifa/oxirgi kartaga).
+function moveCardToLast(sectionId) {
+    const group = getCardGroup(sectionId);
+    if (!group) return;
+
+    const totalPages = Math.max(1, Math.ceil(group.items.length / group.perPage));
+    const lastPage = totalPages - 1;
+    if (group.getPage() !== lastPage) {
+        group.setPage(lastPage);
+    }
+
+    const itemsOnLastPage = group.items.slice(lastPage * group.perPage, lastPage * group.perPage + group.perPage);
+    const lastCard = itemsOnLastPage[itemsOnLastPage.length - 1];
+    if (lastCard) selectCard(lastCard.id, { scroll: true });
 }
 
 function onCardKeyDown(event, sectionId) {
@@ -1568,6 +1606,10 @@ function onCardKeyDown(event, sectionId) {
         case "Home":
             event.preventDefault();
             moveCardPage(sectionId, "home");
+            break;
+        case "End":
+            event.preventDefault();
+            moveCardToLast(sectionId);
             break;
     }
 }
