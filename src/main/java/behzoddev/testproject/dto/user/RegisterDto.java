@@ -6,7 +6,13 @@ import jakarta.validation.constraints.Size;
 
 public record RegisterDto(
         @NotBlank(message = "❌Username bo'sh bo'lishi mumkin emas.") String username,
-        @NotBlank(message = "❌Email bo'sh bo'lishi mumkin emas.") @Email(message = "❌Email formati noto'g'ri.") String email,
+        // Email ENDI IXTIYORIY — ko'pchilik foydalanuvchida email yo'q yoki
+        // o'zi login/parolini bilmaydi (birov ochib bergan). Kiritilsa,
+        // formati tekshiriladi (@Email bo'sh qatorni xato deb hisoblamaydi);
+        // bo'sh qoldirilsa — UserServiceImpl.register() akkauntni
+        // TASDIQLASHSIZ darhol faollashtiradi (vaqtinchalik yechim — kelgusida
+        // SMS orqali tasdiqlashga almashtiriladi).
+        @Email(message = "❌Email formati noto'g'ri.") String email,
         // Telefon ixtiyoriy — bo'sh qoldirilsa ro'yxatdan o'tishda muammo bo'lmaydi.
         String phoneCountry,
         String phoneNumber,

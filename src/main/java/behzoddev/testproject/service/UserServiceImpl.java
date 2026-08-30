@@ -55,12 +55,15 @@ public class UserServiceImpl implements UserDetailsService, UserService {
             throw new UserAlreadyExistsException(dto.username());
         }
 
-        // 1.1 Email — parolni tiklash uchun kerak, shuning uchun majburiy va unikal.
-        if (dto.email() == null || dto.email().isBlank()) {
-            throw new IllegalArgumentException("❌Email bo'sh bo'lishi mumkin emas.");
-        }
+        // 1.1 Email ENDI IXTIYORIY (foydalanuvchi so'rovi: ko'pchilikda email
+        // yo'q yoki o'zi login/parolini bilmaydi). Kiritilgan bo'lsa —
+        // hozirgidek unikal bo'lishi va tasdiqlash kodi (emailga) yuborilishi
+        // shart; bo'sh bo'lsa — pastda akkaunt TASDIQLASHSIZ darhol
+        // faollashtiriladi (vaqtinchalik yechim — kelgusida SMS orqali
+        // tasdiqlashga almashtiriladi).
+        boolean hasEmail = dto.email() != null && !dto.email().isBlank();
 
-        if (userRepository.existsByEmail(dto.email())) {
+        if (hasEmail && userRepository.existsByEmail(dto.email())) {
             throw new IllegalArgumentException("❌Bu email allaqachon ro'yxatdan o'tgan.");
         }
 
@@ -91,19 +94,29 @@ public class UserServiceImpl implements UserDetailsService, UserService {
 
         User user = User.builder()
                 .username(dto.username())
-                .email(dto.email())
+                // Bo'sh qatorni emas, aniq NULL saqlaymiz — aks holda bir nechta
+                // email'siz foydalanuvchida bo'sh qator unique tekshiruviga
+                // (existsByEmail) keyinroq to'g'ri kelmasligi mumkin edi.
+                .email(hasEmail ? dto.email() : null)
                 .phoneNumber(normalizedPhone)
                 .password(passwordEncoder.encode(dto.password()))
                 .roles(roles)
-                .emailVerified(false) // Tasdiqlash kodi kiritilmaguncha kirish mumkin emas (isEnabled()).
+                // Email bor bo'lsa — tasdiqlash kodi kiritilmaguncha kirish
+                // mumkin emas (isEnabled()). Email YO'Q bo'lsa — tasdiqlash
+                // kanali yo'q (SMS hali ulanmagan), shuning uchun akkaunt
+                // DARHOL faollashtiriladi (vaqtinchalik yechim).
+                .emailVerified(!hasEmail)
                 .build();
 
         // 5. Сохраняем
         userRepository.save(user);
 
-        // 6. Emailni tasdiqlash kodini yuboramiz — user login qilishdan oldin
-        // shu kodni /verify-email sahifasida kiritishi kerak.
-        emailVerificationService.sendVerificationCode(user);
+        // 6. Email kiritilgan bo'lsagina tasdiqlash kodi yuboriladi — user
+        // login qilishdan oldin shu kodni /verify-email sahifasida kiritishi
+        // kerak. Email yo'q bo'lsa — akkaunt yuqorida allaqachon faollashtirildi.
+        if (hasEmail) {
+            emailVerificationService.sendVerificationCode(user);
+        }
     }
 
     @Override

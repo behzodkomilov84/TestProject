@@ -11,7 +11,7 @@
     <meta name="author" content="Автор">
 
     <!-- Заголовок страницы -->
-    <title>login</title>
+    <title>Kirish</title>
 
     <!-- Подключение CSS -->
     <link rel="stylesheet" href="/css/register-login.css">
@@ -36,20 +36,20 @@
 
 <div class="container">
     <div class="login form">
-        <header>Login</header>
+        <header>Kirish</header>
         <form action="/login" method="post">
-            <input class="username" type="text" name="username" id="username" placeholder="Enter your name" autocomplete="username" required>
+            <input class="username" type="text" name="username" id="username" placeholder="Foydalanuvchi nomini kiriting" autocomplete="username" required>
             <div class="password-box">
-            <input class="password" type="password" name="password" id="pwd" placeholder="Enter your password" autocomplete="current-password" required>
+            <input class="password" type="password" name="password" id="pwd" placeholder="Parolni kiriting" autocomplete="current-password" required>
             <input class="checkbox" type="checkbox" id="showPsw" onclick="pwd.type=this.checked?'text':'password'">
-                <label for="showPsw">Show password?</label>
+                <label for="showPsw">Parolni ko'rsatish?</label>
             </div>
-            <a href="/forgot-password">Forgot password?</a>
-            <input type="submit" class="button" value="Login">
+            <a href="/forgot-password">Parolni unutdingizmi?</a>
+            <input type="submit" class="button" value="Kirish">
         </form>
         <div class="signup" id="signup">
-            <span class="signup">Don't have an account?
-            <label><a href="/registration">Sign up</a></label></span>
+            <span class="signup">Hisobingiz yo'qmi?
+            <label><a href="/registration">Ro'yxatdan o'tish</a></label></span>
         </div>
 
 

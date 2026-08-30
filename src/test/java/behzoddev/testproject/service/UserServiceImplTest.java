@@ -138,14 +138,27 @@ class UserServiceImplTest {
         verify(userRepository, never()).save(any());
     }
 
+    // Email ENDI IXTIYORIY — bo'sh qoldirilsa endi XATO tashlanMAYDI, aksincha
+    // akkaunt tasdiqlashsiz (emailVerified=true) darhol yaratiladi, email
+    // NULL saqlanadi (bo'sh qator emas) va tasdiqlash kodi umuman yuborilmaydi.
     @Test
-    void register_emailBlank_throws() {
+    void register_emailBlank_createsUserImmediatelyVerifiedWithoutSendingCode() {
         RegisterDto dto = new RegisterDto("newuser", "  ", null, null, "secret1", "secret1");
         when(userRepository.existsByUsername("newuser")).thenReturn(false);
+        when(roleRepository.findByRoleName("ROLE_USER")).thenReturn(Optional.of(roleUser));
+        when(passwordEncoder.encode("secret1")).thenReturn("ENCODED");
 
-        assertThatThrownBy(() -> userService.register(dto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Email bo'sh");
+        userService.register(dto);
+
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        User saved = captor.getValue();
+
+        assertThat(saved.getEmail()).isNull();
+        assertThat(saved.isEmailVerified()).isTrue();
+
+        verify(userRepository, never()).existsByEmail(anyString());
+        verify(emailVerificationService, never()).sendVerificationCode(any());
     }
 
     @Test
