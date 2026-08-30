@@ -818,3 +818,21 @@ td label{
     padding: 6px 10px;
     cursor: pointer;
 }
+
+/* Jadvaldagi checkbox'lar orqali belgilangan savollarni guruh holatida
+   o'chirish tugmasi (bulkDeleteBtn) — kamida bitta belgilansa ko'rinadi
+   (updateBulkDeleteButton, question.js). */
+.bulk-delete-btn {
+    background: #dc2626;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.bulk-delete-btn:hover {
+    background: #b91c1c;
+}

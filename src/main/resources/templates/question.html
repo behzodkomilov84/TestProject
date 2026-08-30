@@ -68,6 +68,10 @@
             <button onclick="sortAllAZ('ZA')">Z→A</button>
         </div>
 
+        <!-- Kamida bitta savol jadvaldagi checkbox orqali belgilansa
+             ko'rinadi (updateBulkDeleteButton, question.js). -->
+        <button id="bulkDeleteBtn" class="bulk-delete-btn hidden" onclick="deleteSelectedQuestions()">🗑️ Tanlanganlarni o'chirish (<span id="bulkDeleteCount">0</span>)</button>
+
     </div>
 
     <div class="table-wrapper">
@@ -75,6 +79,7 @@
         <table id="questionsTable" class="questions-table">
             <thead>
             <tr>
+                <th><input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" title="Hammasini belgilash"></th>
                 <th>№</th>
                 <th>SAVOLLAR</th>
                 <th>A</th>

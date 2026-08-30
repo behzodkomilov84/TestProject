@@ -188,6 +188,26 @@ public class QuestionService {
         questionRepository.save(question);
     }
 
+    // Guruh holatida o'chirish (question.js — jadvaldagi checkbox'lar
+    // orqali belgilangan savollar) — bitta so'rovda BARCHASI soft-delete
+    // qilinadi. Allaqachon o'chirilgan (yoki mavjud bo'lmagan) id'lar jim
+    // o'tkazib yuboriladi — bitta noto'g'ri id butun amaliyotni
+    // to'xtatib qo'ymasligi uchun. Qaytariladigan son — HAQIQATDA
+    // o'chirilganlar (frontend'da tasdiq xabari uchun).
+    @Transactional
+    public int deleteQuestions(List<Long> questionIds) {
+        if (questionIds == null || questionIds.isEmpty()) {
+            return 0;
+        }
+        LocalDateTime now = LocalDateTime.now();
+        List<Question> questions = questionRepository.findAllById(questionIds).stream()
+                .filter(q -> q.getDeletedAt() == null)
+                .toList();
+        questions.forEach(q -> q.setDeletedAt(now));
+        questionRepository.saveAll(questions);
+        return questions.size();
+    }
+
     // "O'chirilganlar savati" ro'yxati (mavzu ichida).
     @Transactional(readOnly = true)
     public List<QuestionTrashDto> getDeletedQuestions(Long topicId) {

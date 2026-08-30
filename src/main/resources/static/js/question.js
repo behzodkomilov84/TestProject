@@ -17,7 +17,7 @@ let isServerPaging = false;
 
 if (!topicId) {
     document.querySelector("#questionsTable tbody").innerHTML =
-        "<tr><td colspan='11'>❌ topicId yuborilmagan</td></tr>";
+        "<tr><td colspan='12'>❌ topicId yuborilmagan</td></tr>";
 } else {
     loadAllQuestions();
 }
@@ -82,13 +82,26 @@ async function loadQuestions(topicId, page = 0) {
 
     } catch (e) {
         document.querySelector("#questionsTable tbody").innerHTML =
-            `<tr><td colspan="11">❌ ${e.message}</td></tr>`;
+            `<tr><td colspan="12">❌ ${e.message}</td></tr>`;
     }
 }
+
+// Belgilangan (checkbox orqali) savol ID'lari — guruh holatida o'chirish
+// uchun (toggleSelectAll/onRowCheckboxChange/deleteSelectedQuestions).
+// Jadval QAYTA chizilganda (saralash, sahifa almashtirish, tahrirlashdan
+// keyin qayta yuklash va h.k.) ATAYLAB TOZALANADI — ekranda
+// ko'rinmayotgan qatorlar tasodifan o'chib ketmasligi uchun (xavfsiz,
+// oldindan aytib bo'ladigan xulq-atvor).
+let selectedQuestionIds = new Set();
 
 function renderQuestionsTable(rows) {
     const tbody = document.querySelector("#questionsTable tbody");
     tbody.innerHTML = "";
+
+    selectedQuestionIds.clear();
+    updateBulkDeleteButton();
+    const selectAllCheckbox = document.getElementById("selectAllCheckbox");
+    if (selectAllCheckbox) selectAllCheckbox.checked = false;
 
     const letters = ["A", "B", "C", "D", "E"];
 
@@ -114,6 +127,7 @@ function renderQuestionsTable(rows) {
         // lekin savol matnini saqlashda mavjud rasm o'chib ketmasligi uchun kerak).
         row.dataset.imageUrl = q.imageUrl || "";
         row.innerHTML = `
+            <td><input type="checkbox" class="row-select-checkbox" onchange="onRowCheckboxChange(${q.id}, this)"></td>
             <td class="enumeration">${index + 1}</td>
             <td data-editable>
                 ${q.questionText}
@@ -195,6 +209,84 @@ function renderQuestionsTable(rows) {
         `;
         tbody.appendChild(row);
     });
+}
+
+// ========================================================================
+//     Guruh holatida belgilash / o'chirish
+// ========================================================================
+
+function onRowCheckboxChange(questionId, checkbox) {
+    if (checkbox.checked) {
+        selectedQuestionIds.add(questionId);
+    } else {
+        selectedQuestionIds.delete(questionId);
+        // Bitta qator bekor qilinsa — "hammasini belgilash" ham endi
+        // to'g'ri emas (barchasi belgilangan degani emas).
+        const selectAllCheckbox = document.getElementById("selectAllCheckbox");
+        if (selectAllCheckbox) selectAllCheckbox.checked = false;
+    }
+    updateBulkDeleteButton();
+}
+
+// "Hammasini belgilash" — faqat EKRANDAGI (joriy sahifadagi yoki
+// "Hammasi" rejimida — barcha) qatorlarga taalluqli.
+function toggleSelectAll(selectAllCheckbox) {
+    document.querySelectorAll("#questionsTable tbody .row-select-checkbox").forEach((cb) => {
+        cb.checked = selectAllCheckbox.checked;
+        const questionId = Number(cb.closest("tr").dataset.questionId);
+        if (selectAllCheckbox.checked) {
+            selectedQuestionIds.add(questionId);
+        } else {
+            selectedQuestionIds.delete(questionId);
+        }
+    });
+    updateBulkDeleteButton();
+}
+
+function updateBulkDeleteButton() {
+    const btn = document.getElementById("bulkDeleteBtn");
+    if (!btn) return;
+    const count = selectedQuestionIds.size;
+    document.getElementById("bulkDeleteCount").textContent = String(count);
+    btn.classList.toggle("hidden", count === 0);
+}
+
+// "🗑️ Tanlanganlarni o'chirish" — BARCHA belgilangan savollarni BITTA
+// so'rovda soft-delete qiladi (QuestionService.deleteQuestions,
+// /api/question/bulk) — darhol butunlay o'chmaydi, "🗑️ O'chirilganlar"
+// panelidan qaytarish mumkin (bitta-bitta o'chirish bilan bir xil g'oya).
+async function deleteSelectedQuestions() {
+    const ids = [...selectedQuestionIds];
+    if (!ids.length) return;
+
+    if (!confirm(`⚠️ ${ids.length} ta savolni o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — "🗑️ O'chirilganlar" panelidan qaytarish mumkin.)`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/question/bulk", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ids)
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || "O'chirishda xatolik");
+        }
+
+        if (editingRow && ids.includes(Number(editingRow.dataset.questionId))) {
+            editingRow = null;
+        }
+        hideCommentColumn();
+
+        const data = await res.json().catch(() => ({}));
+        showAlert(`✅ ${data.deleted ?? ids.length} ta savol o'chirildi`, "success");
+
+        await reloadCurrentQuestionsView();
+    } catch (err) {
+        console.error(err);
+        showAlert(err.message || "O'chirishda xatolik");
+    }
 }
 
 function renderPagination(page) {

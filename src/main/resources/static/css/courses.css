@@ -942,6 +942,14 @@ body {
     margin-bottom: 12px;
 }
 
+/* Bo'limsiz (tekis) kursda — ".chapter-box-count" bilan BIR XIL uslub
+   (renderFlatSections, courseDetail.js). */
+.sections-summary {
+    font-size: 13px;
+    color: #94a3b8;
+    margin-bottom: 12px;
+}
+
 .sections-sort-bar {
     display: flex;
     align-items: center;

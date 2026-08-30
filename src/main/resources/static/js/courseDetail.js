@@ -1249,7 +1249,17 @@ function renderFlatSections() {
     const pageSections = allSections.slice(from, from + SECTIONS_PER_PAGE);
     const globalIndexById = buildGlobalIndexMap();
 
-    list.innerHTML = `<div class="sections-grid">
+    // Bo'limlarga guruhlangan ko'rinishdagi (renderChapterBox) "jami mavzu
+    // / jami testlar" bilan BIR XIL — bo'limsiz (tekis) kursda ham shu
+    // umumiy son ko'rinishi kerak (foydalanuvchi so'rovi: "gridda ham
+    // to'g'rila"). Butun KURS bo'yicha (allSections — sahifalanmagan,
+    // to'liq ro'yxat), joriy sahifagagina emas.
+    const totalQuestions = allSections.reduce(
+        (sum, s) => sum + (s.linkedTopicId != null ? (s.linkedTopicQuestionCount || 0) : 0), 0);
+
+    list.innerHTML = `
+        <div class="sections-summary">(mavzu — ${allSections.length} ta, jami testlar — ${totalQuestions} ta)</div>
+        <div class="sections-grid">
         ${pageSections.map(s => renderSectionCard(s, globalIndexById)).join("")}
     </div>`;
 

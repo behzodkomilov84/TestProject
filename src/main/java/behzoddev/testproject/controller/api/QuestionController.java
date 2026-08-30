@@ -253,6 +253,23 @@ public class QuestionController {
         }
     }
 
+    // Guruh holatida o'chirish — jadvaldagi checkbox'lar orqali
+    // belgilangan savollar (question.js#deleteSelectedQuestions). Spring
+    // literal "/bulk" segmentini yuqoridagi "/{id}"dan ANIQROQ deb
+    // hisoblab, to'g'ri metodga yo'naltiradi (id="bulk" deb noto'g'ri
+    // talqin qilinmaydi).
+    @DeleteMapping("/api/question/bulk")
+    public ResponseEntity<?> deleteBulk(@RequestBody List<Long> ids) {
+        try {
+            int deleted = questionService.deleteQuestions(ids);
+            return ResponseEntity.ok(Map.of("deleted", deleted));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
+
     // "O'chirilganlar savati" (savol/test darajasida).
     @GetMapping("/api/question/deleted")
     @ResponseBody
