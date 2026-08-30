@@ -246,10 +246,17 @@ h1 {
         color: #475569;
     }
 
-    .bulk-delete-btn {
+    /* MUHIM: "#questionScienceTrashPanel" bilan ANIQ scope qilingan —
+       aks holda ".wrapper button" (specificity 0,1,1) oddiy
+       ".bulk-delete-btn" klassidan (0,1,0) KUCHLIROQ bo'lib, fonni
+       "aquamarine"ga qaytarib yuborardi (haqiqiy topilgan bug —
+       question.css'dagi ".container button" bilan bir xil turdagi
+       muammo). Qora ramka + qora shrift — yonidagi (♻️ Tiklash) oddiy
+       tugmalarga o'xshab ko'rinishi uchun. */
+    #questionScienceTrashPanel .bulk-delete-btn {
         background: #dc2626;
-        color: #fff;
-        border: none;
+        color: #000;
+        border: 2px solid #000;
         border-radius: 6px;
         padding: 8px 14px;
         cursor: pointer;
@@ -257,14 +264,14 @@ h1 {
         font-size: 13px;
     }
 
-    .bulk-delete-btn:hover {
+    #questionScienceTrashPanel .bulk-delete-btn:hover {
         background: #b91c1c;
     }
 
-    .restore-bulk-btn {
+    #questionScienceTrashPanel .restore-bulk-btn {
         background: #16a34a;
-        color: #fff;
-        border: none;
+        color: #000;
+        border: 2px solid #000;
         border-radius: 6px;
         padding: 8px 14px;
         cursor: pointer;
@@ -272,7 +279,7 @@ h1 {
         font-size: 13px;
     }
 
-    .restore-bulk-btn:hover {
+    #questionScienceTrashPanel .restore-bulk-btn:hover {
         background: #15803d;
     }
 
