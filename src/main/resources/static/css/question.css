@@ -73,6 +73,16 @@ body {
     overflow-x: hidden;
 }
 
+/* "🗑️ O'chirilganlar" paneli (#questionTrashPanel) — .top-element'ning
+   pastida margin YO'Q edi, shu sabab panel (ochilganda) tepadagi
+   boksga to'g'ridan-to'g'ri "yopishib" qolardi (haqiqiy topilgan bug —
+   ♻️/🗑️ guruh tugmalari boks chetiga tegib turardi). ".controls" bilan
+   bir xil tepa bo'shlig'i (12px) + .container bilan mos kenglik. */
+#questionTrashPanel {
+    width: 95%;
+    margin: 12px auto 0;
+}
+
 /* Ikkita chap tugma (← MAVZUGA QAYTISH + 🗑️ O'chirilganlar) BITTA grid
    ustunida, yonma-yon — shu tufayli .top-element'ning "auto 1fr auto"
    3 ustunli grid'i buzilmaydi (4-tugma qo'shilganda avval Grid uni
