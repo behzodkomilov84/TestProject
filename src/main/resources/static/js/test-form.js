@@ -306,7 +306,15 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             if (!res.ok) {
-                throw new Error(await res.text());
+                // Backend dublikat (409, "Bunday javoblarga ega savol
+                // allaqachon mavjud.") va boshqa xatoliklarda ANIQ xabar
+                // bilan javob beradi ({message, status} — ErrorResponse) —
+                // avval bu yerda o'qib tashlanardi-yu, quyida doim bitta
+                // umumiy "Saqlashda xatolik" ko'rsatilardi (haqiqiy
+                // production bug: foydalanuvchi nima uchun saqlanmaganini
+                // — masalan dublikat ekanini — hech qachon bilolmasdi).
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.message || data.error || "Saqlashda xatolik");
             }
 
             alert("✅ Test muvaffaqiyatli saqlandi");
@@ -317,7 +325,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } catch (err) {
             console.error(err);
-            alert("❌ Saqlashda xatolik");
+            alert("❌ " + (err.message || "Saqlashda xatolik"));
         }
     });
 
