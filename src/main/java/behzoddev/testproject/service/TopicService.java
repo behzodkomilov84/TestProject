@@ -58,7 +58,7 @@ public class TopicService {
 
         return topics.stream()
                 .map(t -> new TopicIdAndNameDto(t.id(), t.name(), t.sectionId(),
-                        courseTitleByTopicId.get(t.id()), t.questionCount()))
+                        courseTitleByTopicId.get(t.id()), t.questionCount(), t.trashedQuestionCount()))
                 .toList();
     }
 

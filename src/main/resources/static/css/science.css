@@ -225,6 +225,57 @@ h1 {
         white-space: nowrap;
     }
 
+    /* Savatdagi (o'chirilgan) testlar soni — faol testlar belgisidan
+       (item-count-badge) ALOHIDA, ogohlantiruvchi rangda (topic.js render() —
+       faqat trashedQuestionCount > 0 bo'lsa chiqadi). */
+    .item-trash-badge {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    /* "🗑️ Barcha o'chirilgan testlar" paneli (topic.js#
+       loadQuestionScienceTrash) — question.css'dagi bir xil nomli
+       klasslar bilan bir xil ko'rinish (bu sahifa question.css'ni
+       ulamaydi, shu sabab shu yerda ham takrorlangan). */
+    .trash-bulk-actions {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-bottom: 10px;
+        font-size: 13px;
+        color: #475569;
+    }
+
+    .bulk-delete-btn {
+        background: #dc2626;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 14px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 13px;
+    }
+
+    .bulk-delete-btn:hover {
+        background: #b91c1c;
+    }
+
+    .restore-bulk-btn {
+        background: #16a34a;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 8px 14px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 13px;
+    }
+
+    .restore-bulk-btn:hover {
+        background: #15803d;
+    }
+
     .row-link {
         text-decoration: none;
         display: flex;

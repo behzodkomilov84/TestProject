@@ -7,6 +7,7 @@ import behzoddev.testproject.dto.answer.AnswerDto;
 import behzoddev.testproject.dto.answer.AnswerShortDto;
 import behzoddev.testproject.dto.question.QuestionDto;
 import behzoddev.testproject.dto.question.QuestionSaveDto;
+import behzoddev.testproject.dto.question.QuestionScienceTrashDto;
 import behzoddev.testproject.dto.question.QuestionShortDto;
 import behzoddev.testproject.dto.question.QuestionTrashDto;
 import behzoddev.testproject.dto.teacher.ResponseQuestionTextDto;
@@ -212,6 +213,32 @@ public class QuestionService {
     @Transactional(readOnly = true)
     public List<QuestionTrashDto> getDeletedQuestions(Long topicId) {
         return questionRepository.findDeletedByTopic_Id(topicId);
+    }
+
+    // "O'chirilganlar savati" — BUTUN FAN bo'yicha (topics.html'dagi
+    // global savol savati, barcha mavzular birga, har biri qaysi
+    // mavzu/bo'limga tegishli ekani bilan).
+    @Transactional(readOnly = true)
+    public List<QuestionScienceTrashDto> getDeletedQuestionsByScience(Long scienceId) {
+        return questionRepository.findDeletedByScienceId(scienceId);
+    }
+
+    // Guruh holatida "♻️ Tiklash" (question.js — savatdagi checkbox'lar
+    // orqali belgilangan savollar) — bitta so'rovda BARCHASI savatdan
+    // qaytariladi. FAQAT allaqachon savatda (soft-delete qilingan)
+    // turganlarga nisbatan — deleteQuestions/permanentlyDeleteQuestions
+    // bilan bir xil "jim o'tkazib yuborish" qoidasi.
+    @Transactional
+    public int restoreQuestions(List<Long> questionIds) {
+        if (questionIds == null || questionIds.isEmpty()) {
+            return 0;
+        }
+        List<Question> questions = questionRepository.findAllById(questionIds).stream()
+                .filter(q -> q.getDeletedAt() != null)
+                .toList();
+        questions.forEach(q -> q.setDeletedAt(null));
+        questionRepository.saveAll(questions);
+        return questions.size();
     }
 
     // "♻️ Tiklash" — savolni savatdan qaytaradi, javoblari avtomatik yana

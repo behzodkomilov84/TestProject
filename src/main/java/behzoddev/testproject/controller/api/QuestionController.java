@@ -4,6 +4,7 @@ import behzoddev.testproject.dto.answer.AnswerShortDto;
 import behzoddev.testproject.dto.ModalCommentSaveDto;
 import behzoddev.testproject.dto.question.QuestionDto;
 import behzoddev.testproject.dto.question.QuestionSaveDto;
+import behzoddev.testproject.dto.question.QuestionScienceTrashDto;
 import behzoddev.testproject.dto.question.QuestionTrashDto;
 import behzoddev.testproject.exception.ErrorResponse;
 import behzoddev.testproject.service.AnswerService;
@@ -277,12 +278,36 @@ public class QuestionController {
         return ResponseEntity.ok(questionService.getDeletedQuestions(topicId));
     }
 
+    // "O'chirilganlar savati" — BUTUN FAN bo'yicha (topics.html'dagi
+    // global savol savati, barcha mavzular birga).
+    @GetMapping("/api/question/deleted-by-science")
+    @ResponseBody
+    public ResponseEntity<List<QuestionScienceTrashDto>> getDeletedByScience(@RequestParam Long scienceId) {
+        return ResponseEntity.ok(questionService.getDeletedQuestionsByScience(scienceId));
+    }
+
     @PostMapping("/api/question/{id}/restore")
     @ResponseBody
     public ResponseEntity<?> restore(@PathVariable Long id) {
         try {
             questionService.restoreQuestion(id);
             return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Guruh holatida "♻️ Tiklash" — savatdagi checkbox'lar orqali
+    // belgilangan savollar (question.js#restoreSelectedQuestions /
+    // topicScienceTrash.js). Literal "/bulk/restore" — "/{id}/restore"dan
+    // ANIQROQ deb hisoblanadi (Spring'ning o'zi to'g'ri yo'naltiradi,
+    // xuddi "/bulk" va "/bulk/permanent"dagi kabi).
+    @PostMapping("/api/question/bulk/restore")
+    @ResponseBody
+    public ResponseEntity<?> restoreBulk(@RequestBody List<Long> ids) {
+        try {
+            int restored = questionService.restoreQuestions(ids);
+            return ResponseEntity.ok(Map.of("restored", restored));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

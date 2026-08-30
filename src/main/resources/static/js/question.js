@@ -934,6 +934,7 @@ async function loadQuestionTrash() {
         list.innerHTML = `
             <div class="trash-bulk-actions">
                 <label><input type="checkbox" id="selectAllTrashCheckbox" onchange="toggleSelectAllTrash(this)"> Hammasini belgilash</label>
+                <button id="bulkRestoreBtn" class="restore-bulk-btn hidden" onclick="restoreSelectedQuestions()">♻️ Tanlanganlarni tiklash (<span id="bulkRestoreCount">0</span>)</button>
                 <button id="bulkPermanentDeleteBtn" class="bulk-delete-btn hidden" onclick="permanentlyDeleteSelectedQuestions()">🗑️ Tanlanganlarni BUTUNLAY o'chirish (<span id="bulkPermanentDeleteCount">0</span>)</button>
             </div>
             ${items.map(q => `
@@ -980,11 +981,51 @@ function toggleSelectAllTrash(selectAllCheckbox) {
 }
 
 function updateBulkPermanentDeleteButton() {
-    const btn = document.getElementById("bulkPermanentDeleteBtn");
-    if (!btn) return;
     const count = selectedTrashQuestionIds.size;
-    document.getElementById("bulkPermanentDeleteCount").textContent = String(count);
-    btn.classList.toggle("hidden", count === 0);
+
+    const deleteBtn = document.getElementById("bulkPermanentDeleteBtn");
+    if (deleteBtn) {
+        document.getElementById("bulkPermanentDeleteCount").textContent = String(count);
+        deleteBtn.classList.toggle("hidden", count === 0);
+    }
+
+    // "♻️ Tanlanganlarni tiklash" tugmasi ham xuddi shu tanlov (Set)
+    // asosida ko'rsatiladi/yashiriladi — ikkalasi bir xil checkbox'larga
+    // tegishli, faqat amal boshqacha (savatdan chiqarish vs butunlay o'chirish).
+    const restoreBtn = document.getElementById("bulkRestoreBtn");
+    if (restoreBtn) {
+        document.getElementById("bulkRestoreCount").textContent = String(count);
+        restoreBtn.classList.toggle("hidden", count === 0);
+    }
+}
+
+// "♻️ Tanlanganlarni tiklash" — BARCHA belgilangan savollarni BITTA
+// so'rovda savatdan qaytaradi (QuestionService.restoreQuestions,
+// /api/question/bulk/restore) — bitta-bitta "♻️ Tiklash" bilan bir xil
+// g'oya, faqat guruh holatida.
+async function restoreSelectedQuestions() {
+    const ids = [...selectedTrashQuestionIds];
+    if (!ids.length) return;
+
+    if (!confirm(`${ids.length} ta savolni tiklamoqchimisiz?`)) return;
+
+    try {
+        const res = await fetch("/api/question/bulk/restore", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ids)
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || "Tiklashda xatolik");
+        }
+        selectedTrashQuestionIds.clear();
+        loadQuestionTrash();
+        await loadQuestions(topicId, currentPage);
+    } catch (err) {
+        console.error(err);
+        alert(err.message || "Tarmoq xatoligi");
+    }
 }
 
 // "🗑️ Tanlanganlarni BUTUNLAY o'chirish" — BARCHA belgilangan savollarni

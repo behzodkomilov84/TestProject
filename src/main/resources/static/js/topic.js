@@ -211,6 +211,220 @@ function escapeHtml(text) {
 }
 
 // ========================================================================
+//     "🗑️ Barcha o'chirilgan testlar" — BUTUN FAN bo'yicha (barcha
+//     mavzular birga) o'chirilgan savollar ro'yxati, har biri qaysi
+//     mavzu/bo'limga tegishli ekani bilan. question.html'dagi ALOHIDA
+//     (bitta mavzu doirasidagi) savatdan farqli — bu yerda butun fan
+//     ko'lamida bitta joyda ko'rish/tiklash/butunlay o'chirish.
+// ========================================================================
+let questionScienceTrashOpen = false;
+let selectedScienceTrashQuestionIds = new Set();
+
+function toggleQuestionScienceTrash() {
+    questionScienceTrashOpen = !questionScienceTrashOpen;
+    document.getElementById("questionScienceTrashPanel").style.display = questionScienceTrashOpen ? "block" : "none";
+    if (questionScienceTrashOpen) {
+        loadQuestionScienceTrash();
+    }
+}
+
+async function loadQuestionScienceTrash() {
+    const list = document.getElementById("questionScienceTrashList");
+    list.innerHTML = "<p>Yuklanmoqda...</p>";
+    selectedScienceTrashQuestionIds.clear();
+
+    try {
+        const res = await fetch(`/api/question/deleted-by-science?scienceId=${getScienceId()}`);
+        if (!res.ok) {
+            list.innerHTML = "<p>Yuklashda xatolik</p>";
+            return;
+        }
+        const items = await res.json();
+        if (!items.length) {
+            list.innerHTML = "<p>O'chirilgan test yo'q</p>";
+            return;
+        }
+        list.innerHTML = `
+            <div class="trash-bulk-actions">
+                <label><input type="checkbox" id="selectAllScienceTrashCheckbox" onchange="toggleSelectAllScienceTrash(this)"> Hammasini belgilash</label>
+                <button id="bulkRestoreScienceTrashBtn" class="restore-bulk-btn hidden" onclick="restoreSelectedScienceTrashQuestions()">♻️ Tanlanganlarni tiklash (<span id="bulkRestoreScienceTrashCount">0</span>)</button>
+                <button id="bulkPermanentDeleteScienceTrashBtn" class="bulk-delete-btn hidden" onclick="permanentlyDeleteSelectedScienceTrashQuestions()">🗑️ Tanlanganlarni BUTUNLAY o'chirish (<span id="bulkPermanentDeleteScienceTrashCount">0</span>)</button>
+            </div>
+            ${items.map(q => {
+                // Qaysi mavzu va (bo'lsa) qaysi bo'limga tegishli ekani —
+                // foydalanuvchi so'rovi bo'yicha aynan shu batafsillik
+                // ko'rsatilishi kerak edi.
+                const location = q.sectionName
+                    ? `${escapeHtml(q.sectionName)} → ${escapeHtml(q.topicName)}`
+                    : escapeHtml(q.topicName);
+                return `
+            <div class="row">
+                <input type="checkbox" class="science-trash-select-checkbox" data-question-id="${q.id}" onchange="onScienceTrashCheckboxChange(${q.id}, this)">
+                <div>
+                    ${escapeHtml(q.questionText)}<br>
+                    <span class="topic-section-badge">${location}</span>
+                    <span style="color:#94a3b8; font-size:12px;"> — ${formatQuestionTrashDate(q.deletedAt)}da o'chirilgan</span>
+                </div>
+                <div class="row-actions">
+                    <button onclick="restoreScienceTrashQuestion(${q.id})">♻️ Tiklash</button>
+                    <button class="danger-btn" onclick="permanentlyDeleteScienceTrashQuestion(${q.id})">🗑️ Butunlay o'chirish</button>
+                </div>
+            </div>
+        `;
+            }).join("")}`;
+        updateScienceTrashBulkButtons();
+    } catch (err) {
+        console.error(err);
+        list.innerHTML = "<p>Tarmoq xatoligi</p>";
+    }
+}
+
+// "N ta test" / "🗑️ N ta savatda" belgilari joriy holatga mos bo'lishi
+// uchun mavzular ro'yxatini ham qayta yuklaydi (reloadFromDb + render).
+async function refreshTopicsAfterScienceTrashChange() {
+    await reloadFromDb(`/api/topic?scienceId=${scienceId}`);
+    render();
+}
+
+function formatQuestionTrashDate(isoString) {
+    if (!isoString) return "";
+    const d = new Date(isoString);
+    return d.toLocaleDateString("uz-UZ") + " " + d.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
+}
+
+function onScienceTrashCheckboxChange(questionId, checkbox) {
+    if (checkbox.checked) {
+        selectedScienceTrashQuestionIds.add(questionId);
+    } else {
+        selectedScienceTrashQuestionIds.delete(questionId);
+        const selectAll = document.getElementById("selectAllScienceTrashCheckbox");
+        if (selectAll) selectAll.checked = false;
+    }
+    updateScienceTrashBulkButtons();
+}
+
+function toggleSelectAllScienceTrash(selectAllCheckbox) {
+    document.querySelectorAll("#questionScienceTrashList .science-trash-select-checkbox").forEach((cb) => {
+        cb.checked = selectAllCheckbox.checked;
+        const questionId = Number(cb.dataset.questionId);
+        if (selectAllCheckbox.checked) {
+            selectedScienceTrashQuestionIds.add(questionId);
+        } else {
+            selectedScienceTrashQuestionIds.delete(questionId);
+        }
+    });
+    updateScienceTrashBulkButtons();
+}
+
+function updateScienceTrashBulkButtons() {
+    const count = selectedScienceTrashQuestionIds.size;
+
+    const restoreBtn = document.getElementById("bulkRestoreScienceTrashBtn");
+    if (restoreBtn) {
+        document.getElementById("bulkRestoreScienceTrashCount").textContent = String(count);
+        restoreBtn.classList.toggle("hidden", count === 0);
+    }
+
+    const deleteBtn = document.getElementById("bulkPermanentDeleteScienceTrashBtn");
+    if (deleteBtn) {
+        document.getElementById("bulkPermanentDeleteScienceTrashCount").textContent = String(count);
+        deleteBtn.classList.toggle("hidden", count === 0);
+    }
+}
+
+async function restoreScienceTrashQuestion(questionId) {
+    if (!confirm("Bu testni tiklamoqchimisiz?")) return;
+
+    try {
+        const res = await fetch(`/api/question/${questionId}/restore`, { method: "POST" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "Tiklashda xatolik");
+            return;
+        }
+        loadQuestionScienceTrash();
+        await refreshTopicsAfterScienceTrashChange();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+async function permanentlyDeleteScienceTrashQuestion(questionId) {
+    if (!confirm("⚠️ Bu testni BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.")) return;
+    if (!confirm("Haqiqatan ham ishonchingiz komilmi?")) return;
+
+    try {
+        const res = await fetch(`/api/question/${questionId}/permanent`, { method: "DELETE" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "O'chirishda xatolik");
+            return;
+        }
+        loadQuestionScienceTrash();
+        await refreshTopicsAfterScienceTrashChange();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+async function restoreSelectedScienceTrashQuestions() {
+    const ids = [...selectedScienceTrashQuestionIds];
+    if (!ids.length) return;
+
+    if (!confirm(`${ids.length} ta testni tiklamoqchimisiz?`)) return;
+
+    try {
+        const res = await fetch("/api/question/bulk/restore", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ids)
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || "Tiklashda xatolik");
+        }
+        selectedScienceTrashQuestionIds.clear();
+        loadQuestionScienceTrash();
+        await refreshTopicsAfterScienceTrashChange();
+    } catch (err) {
+        console.error(err);
+        alert(err.message || "Tarmoq xatoligi");
+    }
+}
+
+async function permanentlyDeleteSelectedScienceTrashQuestions() {
+    const ids = [...selectedScienceTrashQuestionIds];
+    if (!ids.length) return;
+
+    if (!confirm(`⚠️ ${ids.length} ta testni BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`)) {
+        return;
+    }
+    if (!confirm("Haqiqatan ham ishonchingiz komilmi?")) {
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/question/bulk/permanent", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(ids)
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || "O'chirishda xatolik");
+        }
+        selectedScienceTrashQuestionIds.clear();
+        loadQuestionScienceTrash();
+        await refreshTopicsAfterScienceTrashChange();
+    } catch (err) {
+        console.error(err);
+        alert(err.message || "Tarmoq xatoligi");
+    }
+}
+
+// ========================================================================
 //     Kurs ichidan mavzu yoritmasi bo'yicha qidiruv
 // ========================================================================
 // Shu sahifadagi (joriy bo'lim filtriga mos) mavzular qaysi kurs(lar)ga
@@ -339,9 +553,13 @@ async function reloadFromDb(mapping) {
         // sahifasida, CourseSectionSaveDto.scienceName/topicName orqali
         // boshqariladi).
         linkedCourseTitle: s.linkedCourseTitle || null,
-        // Shu mavzuda nechta savol borligi — render()'da "(N ta test)"
-        // ko'rsatish uchun.
+        // Shu mavzuda nechta FAOL savol borligi — render()'da "(N ta test)"
+        // ko'rsatish uchun (savatdagi/o'chirilgan savollar bu songa
+        // KIRMAYDI — alohida, quyidagi trashedQuestionCount'da).
         questionCount: s.questionCount || 0,
+        // Shu mavzuning "O'chirilganlar savati"da nechta savoli borligi —
+        // questionCount'dan ALOHIDA belgi sifatida ko'rsatiladi.
+        trashedQuestionCount: s.trashedQuestionCount || 0,
         mode: "VIEW"
     }));
 
@@ -415,7 +633,7 @@ function render() {
                 id="input-${i}"
                 class="topic-name ${inputClass}"
                 tabindex="-1"
-            >${badgesRow}<div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span><span class="item-count-badge">${s.questionCount} ta test</span></div></div>
+            >${badgesRow}<div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span><span class="item-count-badge">${s.questionCount} ta test</span>${s.trashedQuestionCount > 0 ? `<span class="item-count-badge item-trash-badge" title="Savatdagi (o'chirilgan) testlar">🗑️ ${s.trashedQuestionCount} ta savatda</span>` : ""}</div></div>
         </div>
             `
                 : `

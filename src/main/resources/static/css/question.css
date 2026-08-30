@@ -847,3 +847,21 @@ td label{
 .bulk-delete-btn:hover {
     background: #b91c1c;
 }
+
+/* Guruh holatida savatdan "♻️ Tiklash" tugmasi (bulkRestoreBtn) —
+   bulk-delete-btn bilan bir xil o'lcham, lekin yashil (tiklash — ijobiy
+   amal, o'chirish emas). */
+.restore-bulk-btn {
+    background: #16a34a;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.restore-bulk-btn:hover {
+    background: #15803d;
+}

@@ -1,5 +1,6 @@
 package behzoddev.testproject.dao;
 
+import behzoddev.testproject.dto.question.QuestionScienceTrashDto;
 import behzoddev.testproject.dto.question.QuestionTrashDto;
 import behzoddev.testproject.dto.question.TopicQuestionCountDto;
 import behzoddev.testproject.entity.Question;
@@ -157,4 +158,20 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             from Question q where q.topic.id = :topicId and q.deletedAt is not null order by q.deletedAt desc
             """)
     List<QuestionTrashDto> findDeletedByTopic_Id(@Param("topicId") Long topicId);
+
+    // "O'chirilganlar savati" — BUTUN FAN bo'yicha (barcha mavzular birga,
+    // topics.html'dagi global savol savati) — QuestionService.
+    // getDeletedQuestionsByScience. LEFT JOIN t.section — mavzu bo'limsiz
+    // bo'lsa ham qator natijadan tushib qolmasin uchun (xuddi
+    // TopicRepository'dagi kabi).
+    @Query("""
+            select new behzoddev.testproject.dto.question.QuestionScienceTrashDto(
+                q.id, q.questionText, q.deletedAt, t.id, t.name, s.name)
+            from Question q
+            join q.topic t
+            left join t.section s
+            where t.science.id = :scienceId and q.deletedAt is not null
+            order by q.deletedAt desc
+            """)
+    List<QuestionScienceTrashDto> findDeletedByScienceId(@Param("scienceId") Long scienceId);
   }

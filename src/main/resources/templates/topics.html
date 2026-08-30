@@ -50,6 +50,17 @@
         <div id="topicTrashList"></div>
     </div>
 
+    <!-- Shu FANNING BARCHA mavzularidagi o'chirilgan testlar — bitta joyda
+         (har bir savol qaysi mavzu/bo'limga tegishli ekani bilan birga).
+         Alohida-alohida mavzu sahifasidagi (question.html) savatdan farqli,
+         bu yerda BUTUN fan bo'yicha bitta ro'yxat (topic.js#
+         toggleQuestionScienceTrash/loadQuestionScienceTrash). -->
+    <button onclick="toggleQuestionScienceTrash()">🗑️ Barcha o'chirilgan testlar</button>
+
+    <div id="questionScienceTrashPanel" style="display:none;">
+        <div id="questionScienceTrashList"></div>
+    </div>
+
     <!-- Bo'lim ustidan (Fan -> Bo'lim -> Mavzu) kelinganda ko'rinadi —
          qaysi bo'lim mavzulari filtrlanib ko'rsatilayotganini bildiradi
          (topic.js#DOMContentLoaded to'ldiradi/ko'rsatadi). -->

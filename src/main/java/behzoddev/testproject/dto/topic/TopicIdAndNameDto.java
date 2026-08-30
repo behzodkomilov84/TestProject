@@ -13,24 +13,38 @@ public record TopicIdAndNameDto(
         // kursning nomi (topics.html'da "🔗 Kurs: ..." belgisini ko'rsatish
         // uchun). NULL — kursga bog'lanmagan.
         String linkedCourseTitle,
-        // Shu mavzuda nechta savol borligi — topics.html'da har bir mavzu
-        // qatorida ko'rsatish uchun (masalan "(12 ta test)").
-        long questionCount) {
+        // Shu mavzuda nechta FAOL (o'chirilmagan) savol borligi —
+        // topics.html'da har bir mavzu qatorida ko'rsatish uchun (masalan
+        // "(12 ta test)"). MUHIM: "O'chirilganlar savati"ga o'tkazilgan
+        // (deletedAt != null) savollar bu sonda hisoblanMAYDI — aks holda
+        // savatdagi testlar "faol test" sifatida ko'rinib, foydalanuvchini
+        // chalg'itardi (haqiqiy topilgan bug).
+        long questionCount,
+        // Shu mavzuning "O'chirilganlar savati"da nechta savoli borligi —
+        // questionCount'dan ALOHIDA ko'rsatish uchun (masalan "🗑️ 3 ta
+        // savatda"), topics.html'da.
+        long trashedQuestionCount) {
 
-    // Orqaga moslik — TopicRepository'dagi JPQL constructor-expression'lar
+    // TopicRepository'dagi JPQL constructor-expression'lar
     // (findTopicsByScienceId/findTopicByIds) linkedCourseTitle'ni bermaydi
     // (bulk join fan-out xavfi tufayli — bir mavzu nazariy jihatdan bir
     // nechta kurs bo'limiga bog'lanishi mumkin, JOIN qatorlarni ko'paytirib
-    // yuborardi), lekin questionCount'ni beradi (count() — fan-out
-    // xavfisiz, aniq bitta qatorli korrelyatsiyalangan subso'rov). Shu
-    // maydon (linkedCourseTitle) TopicService.getTopicsByScienceId'da
-    // alohida (bitta bulk) so'rov bilan to'ldiriladi.
+    // yuborardi), lekin questionCount/trashedQuestionCount'ni beradi
+    // (count() — fan-out xavfisiz, aniq bitta qatorli korrelyatsiyalangan
+    // subso'rovlar). linkedCourseTitle maydoni
+    // TopicService.getTopicsByScienceId'da alohida (bitta bulk) so'rov
+    // bilan to'ldiriladi.
+    public TopicIdAndNameDto(Long id, String name, Long sectionId, long questionCount, long trashedQuestionCount) {
+        this(id, name, sectionId, null, questionCount, trashedQuestionCount);
+    }
+
+    // Orqaga moslik — trashedQuestionCount qo'shilishidan oldingi chaqiruvlar uchun.
     public TopicIdAndNameDto(Long id, String name, Long sectionId, long questionCount) {
-        this(id, name, sectionId, null, questionCount);
+        this(id, name, sectionId, null, questionCount, 0);
     }
 
     // Yana ham eskiroq — hech qanday qo'shimcha maydonsiz.
     public TopicIdAndNameDto(Long id, String name, Long sectionId) {
-        this(id, name, sectionId, null, 0);
+        this(id, name, sectionId, null, 0, 0);
     }
 }
