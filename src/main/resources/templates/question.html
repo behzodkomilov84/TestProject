@@ -28,14 +28,20 @@
             <button class="back-btn" onclick="goBack()">← MAVZUGA QAYTISH</button>
             <!-- Soft-delete qilingan (🗑️ o'chirilgan) savollar — "♻️ Tiklash"
                  bilan bir zumda qaytariladi (QuestionService.getDeletedQuestions/restoreQuestion). -->
-            <button class="back-btn" onclick="toggleQuestionTrash()">🗑️ O'chirilganlar</button>
+            <button class="back-btn" onclick="toggleQuestionTrash()">🗑️ O'chirilganlar <span id="questionTrashBadge" class="notif-badge" style="display:none;">0</span></button>
         </div>
 
-        <h1>Mavzuga oid testlar: <span id="topicNameHeading">…</span></h1>
+        <h1>Mavzuga oid testlar</h1>
         <input type="hidden" id="topicId" th:value="${topicId}">
 
         <button class="create-btn" onclick="createTest()">➕ TEST YARATISH</button>
     </div>
+
+    <!-- Mavzu nomi — ATAYLAB yuqoridagi ".top-element" boksidan TASHQARIDA,
+         alohida qatorda (h1 ichida bo'lganda shrifti juda katta va box'ga
+         "sig'may" ko'rinardi). Shrifti clamp() bilan ekran kengligiga
+         qarab avtomatik kichrayadi/kattalashadi (responsive). -->
+    <div class="topic-name-subheading" id="topicNameHeading"></div>
 
     <div id="questionTrashPanel" style="display:none;">
         <div id="questionTrashList"></div>

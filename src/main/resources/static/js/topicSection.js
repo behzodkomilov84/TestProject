@@ -19,6 +19,29 @@ if (!scienceId) {
     alert("❌ scienceId topilmadi (HTML dan)");
 } else {
     afterStartPage(`/api/topic-section?scienceId=${scienceId}`);
+    refreshSectionTrashBadge();
+}
+
+// Badge'ni (".notif-badge" — navbar.js#refreshUnreadCount bilan bir xil
+// uslub) sonini yangilaydi — 0 bo'lsa yashiradi. Bir nechta sahifada
+// (question.js/topic.js/...) bir xil andoza bilan takrorlanadi — mustaqil
+// kichik JS fayllar bo'lgani uchun ataylab nusxalangan.
+function setTrashBadgeCount(badgeId, count) {
+    const badge = document.getElementById(badgeId);
+    if (!badge) return;
+    if (count > 0) {
+        badge.style.display = "inline-flex";
+        badge.textContent = count > 99 ? "99+" : count;
+    } else {
+        badge.style.display = "none";
+    }
+}
+
+function refreshSectionTrashBadge() {
+    fetch(`/api/topic-section/deleted?scienceId=${scienceId}`)
+        .then(r => r.ok ? r.json() : [])
+        .then(items => setTrashBadgeCount("sectionTrashBadge", items.length))
+        .catch(err => console.error(err));
 }
 
 // ========================================================================
@@ -61,6 +84,7 @@ async function deleteEmptySections() {
         await reloadFromDb(`/api/topic-section?scienceId=${getScienceId()}`);
         focusIndex = 0;
         render();
+        refreshSectionTrashBadge();
     } catch (err) {
         console.error(err);
         alert("Tarmoq xatoligi");
@@ -96,6 +120,7 @@ async function loadSectionTrash() {
             return;
         }
         const items = await res.json();
+        setTrashBadgeCount("sectionTrashBadge", items.length);
         if (!items.length) {
             list.innerHTML = "<p>O'chirilgan bo'lim yo'q</p>";
             return;
@@ -617,6 +642,7 @@ async function saveToDb() {
         await reloadFromDb(`/api/topic-section?scienceId=${scienceId}`);
         focusIndex = 0;
         render();
+        refreshSectionTrashBadge();
 
     } catch (err) {
         console.error(err);

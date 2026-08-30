@@ -11,6 +11,29 @@ let newName = ""; //for EDIT uses
 // ========================================================================
 
 afterStartPage("/api/science");
+refreshScienceTrashBadge();
+
+// Badge'ni (".notif-badge" — navbar.js#refreshUnreadCount bilan bir xil
+// uslub) sonini yangilaydi — 0 bo'lsa yashiradi. Bir nechta sahifada
+// (question.js/topic.js/...) bir xil andoza bilan takrorlanadi — mustaqil
+// kichik JS fayllar bo'lgani uchun ataylab nusxalangan.
+function setTrashBadgeCount(badgeId, count) {
+    const badge = document.getElementById(badgeId);
+    if (!badge) return;
+    if (count > 0) {
+        badge.style.display = "inline-flex";
+        badge.textContent = count > 99 ? "99+" : count;
+    } else {
+        badge.style.display = "none";
+    }
+}
+
+function refreshScienceTrashBadge() {
+    fetch("/api/science/deleted")
+        .then(r => r.ok ? r.json() : [])
+        .then(items => setTrashBadgeCount("scienceTrashBadge", items.length))
+        .catch(err => console.error(err));
+}
 
 function escapeHtml(text) {
     const div = document.createElement("div");
@@ -41,6 +64,7 @@ async function loadScienceTrash() {
             return;
         }
         const items = await res.json();
+        setTrashBadgeCount("scienceTrashBadge", items.length);
         if (!items.length) {
             list.innerHTML = "<p>O'chirilgan fan yo'q</p>";
             return;
@@ -608,6 +632,7 @@ async function saveToDb() {
         await reloadFromDb("/api/science");
         focusIndex = 0;
         render(); // ❗ shu qator yo'q edi — shuning uchun DB yangilangan, lekin ekran eskicha qolardi
+        refreshScienceTrashBadge();
 
     } catch (err) {
         console.error(err);

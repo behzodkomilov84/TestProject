@@ -21,6 +21,35 @@ if (!topicId) {
 } else {
     loadAllQuestions();
     loadTopicName();
+    refreshQuestionTrashBadge();
+}
+
+// "🗑️ O'chirilganlar" tugmasidagi hisoblagich (bildirishnoma belgisi bilan
+// bir xil uslub — ".notif-badge", navbar.js#refreshUnreadCount) — savatda
+// nechta savol borligini, panelni ochmasdan ham ko'rsatib turadi. Har bir
+// tiklash/o'chirish amalidan keyin qayta chaqiriladi (loadQuestionTrash,
+// deleteQuestion va h.k.).
+function refreshQuestionTrashBadge() {
+    fetch(`/api/question/deleted?topicId=${topicId}`)
+        .then(r => r.ok ? r.json() : [])
+        .then(items => setTrashBadgeCount("questionTrashBadge", items.length))
+        .catch(err => console.error(err));
+}
+
+// Badge'ni (".notif-badge") sonini yangilaydi — 0 bo'lsa yashiradi, aks
+// holda ko'rsatadi (99+dan katta bo'lsa "99+" deb yozadi). Bir nechta
+// sahifada (question.js/topic.js/science.js/...) bir xil andoza bilan
+// takrorlanadi — mustaqil kichik JS fayllar bo'lgani uchun ataylab
+// nusxalangan (umumiy modul yo'q).
+function setTrashBadgeCount(badgeId, count) {
+    const badge = document.getElementById(badgeId);
+    if (!badge) return;
+    if (count > 0) {
+        badge.style.display = "inline-flex";
+        badge.textContent = count > 99 ? "99+" : count;
+    } else {
+        badge.style.display = "none";
+    }
 }
 
 // Sarlavhada ("Mavzuga oid testlar: <nomi>") aynan qaysi mavzu ekanini
@@ -33,7 +62,7 @@ async function loadTopicName() {
         const res = await fetch(`/api/topic/${topicId}/name`);
         if (!res.ok) throw new Error();
         const data = await res.json();
-        heading.textContent = data.name;
+        heading.textContent = `📋 ${data.name}`;
     } catch (err) {
         heading.textContent = "";
     }
@@ -300,6 +329,7 @@ async function deleteSelectedQuestions() {
         showAlert(`✅ ${data.deleted ?? ids.length} ta savol o'chirildi`, "success");
 
         await reloadCurrentQuestionsView();
+        refreshQuestionTrashBadge();
     } catch (err) {
         console.error(err);
         showAlert(err.message || "O'chirishda xatolik");
@@ -898,6 +928,7 @@ async function deleteQuestion(questionId) {
         hideCommentColumn();
 
         await loadQuestions(topicId, currentPage);
+        refreshQuestionTrashBadge();
     } catch (e) {
         alert(e.message);
     }
@@ -944,6 +975,7 @@ async function loadQuestionTrash() {
             return;
         }
         const items = await res.json();
+        setTrashBadgeCount("questionTrashBadge", items.length);
         if (!items.length) {
             list.innerHTML = "<p>O'chirilgan savol yo'q</p>";
             return;

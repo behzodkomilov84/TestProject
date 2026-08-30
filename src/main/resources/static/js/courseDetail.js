@@ -1040,9 +1040,35 @@ function renderCourse(course) {
             course.published ? "📕 Qoralamaga o'tkazish" : "📗 Chop etish";
         document.getElementById("editCourseTitle").value = course.title;
         document.getElementById("editCourseDescription").value = course.description || "";
+        // Faqat boshqaruvchilarga ko'rinadigan tugma (#sectionTrashBtn) —
+        // badge ham shu shart bilan yangilanadi (aks holda oddiy
+        // o'quvchida keraksiz 403 so'rov ketardi).
+        refreshCourseSectionTrashBadge();
     }
 
     renderSections(course.sections);
+}
+
+// Badge'ni (".notif-badge" — navbar.js#refreshUnreadCount bilan bir xil
+// uslub) sonini yangilaydi — 0 bo'lsa yashiradi. Bir nechta sahifada
+// (question.js/topic.js/...) bir xil andoza bilan takrorlanadi — mustaqil
+// kichik JS fayllar bo'lgani uchun ataylab nusxalangan.
+function setTrashBadgeCount(badgeId, count) {
+    const badge = document.getElementById(badgeId);
+    if (!badge) return;
+    if (count > 0) {
+        badge.style.display = "inline-flex";
+        badge.textContent = count > 99 ? "99+" : count;
+    } else {
+        badge.style.display = "none";
+    }
+}
+
+function refreshCourseSectionTrashBadge() {
+    fetch(`/api/courses/${COURSE_ID}/sections/deleted`)
+        .then(r => r.ok ? r.json() : [])
+        .then(items => setTrashBadgeCount("courseSectionTrashBadge", items.length))
+        .catch(err => console.error(err));
 }
 
 // Obuna banner'i ("🔒 ... obuna kerak" / "⏳ so'rov yuborilgan") — alohida
@@ -2508,6 +2534,7 @@ async function loadSectionTrash() {
             return;
         }
         const items = await res.json();
+        setTrashBadgeCount("courseSectionTrashBadge", items.length);
         if (!items.length) {
             list.innerHTML = "<p>O'chirilgan mavzu yo'q</p>";
             return;

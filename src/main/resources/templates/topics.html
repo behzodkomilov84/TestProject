@@ -44,7 +44,7 @@
     <button onclick="deleteQuestionlessTopics()">🗑️ Testi yo'q mavzularni o'chirish</button>
     <!-- Soft-delete qilingan (🗑️ o'chirilgan) mavzular — "♻️ Tiklash" bilan
          bir zumda qaytariladi (TopicService.getDeletedTopics/restoreTopic). -->
-    <button onclick="toggleTopicTrash()">🗑️ O'chirilgan mavzular</button>
+    <button onclick="toggleTopicTrash()">🗑️ O'chirilgan mavzular <span id="topicTrashBadge" class="notif-badge" style="display:none;">0</span></button>
 
     <div id="topicTrashPanel" style="display:none;">
         <div id="topicTrashList"></div>
@@ -55,7 +55,7 @@
          Alohida-alohida mavzu sahifasidagi (question.html) savatdan farqli,
          bu yerda BUTUN fan bo'yicha bitta ro'yxat (topic.js#
          toggleQuestionScienceTrash/loadQuestionScienceTrash). -->
-    <button onclick="toggleQuestionScienceTrash()">🗑️ Barcha o'chirilgan testlar</button>
+    <button onclick="toggleQuestionScienceTrash()">🗑️ Barcha o'chirilgan testlar <span id="questionScienceTrashBadge" class="notif-badge" style="display:none;">0</span></button>
 
     <div id="questionScienceTrashPanel" style="display:none;">
         <div id="questionScienceTrashList"></div>

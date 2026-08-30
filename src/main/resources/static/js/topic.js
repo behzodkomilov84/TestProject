@@ -30,6 +30,37 @@ if (!scienceId) {
         showSectionFilterBanner();
         afterStartPage(`/api/topic?scienceId=${scienceId}`);
     });
+    refreshTopicTrashBadge();
+    refreshQuestionScienceTrashBadge();
+}
+
+// Badge'ni (".notif-badge" — navbar.js#refreshUnreadCount bilan bir xil
+// uslub) sonini yangilaydi — 0 bo'lsa yashiradi. Bir nechta sahifada
+// (question.js/science.js/...) bir xil andoza bilan takrorlanadi —
+// mustaqil kichik JS fayllar bo'lgani uchun ataylab nusxalangan.
+function setTrashBadgeCount(badgeId, count) {
+    const badge = document.getElementById(badgeId);
+    if (!badge) return;
+    if (count > 0) {
+        badge.style.display = "inline-flex";
+        badge.textContent = count > 99 ? "99+" : count;
+    } else {
+        badge.style.display = "none";
+    }
+}
+
+function refreshTopicTrashBadge() {
+    fetch(`/api/topic/deleted?scienceId=${scienceId}`)
+        .then(r => r.ok ? r.json() : [])
+        .then(items => setTrashBadgeCount("topicTrashBadge", items.length))
+        .catch(err => console.error(err));
+}
+
+function refreshQuestionScienceTrashBadge() {
+    fetch(`/api/question/deleted-by-science?scienceId=${scienceId}`)
+        .then(r => r.ok ? r.json() : [])
+        .then(items => setTrashBadgeCount("questionScienceTrashBadge", items.length))
+        .catch(err => console.error(err));
 }
 
 function showSectionFilterBanner() {
@@ -112,6 +143,7 @@ async function deleteQuestionlessTopics() {
         await reloadFromDb(`/api/topic?scienceId=${getScienceId()}`);
         focusIndex = 0;
         render();
+        refreshTopicTrashBadge();
     } catch (err) {
         console.error(err);
         alert("Tarmoq xatoligi");
@@ -142,6 +174,7 @@ async function loadTopicTrash() {
             return;
         }
         const items = await res.json();
+        setTrashBadgeCount("topicTrashBadge", items.length);
         if (!items.length) {
             list.innerHTML = "<p>O'chirilgan mavzu yo'q</p>";
             return;
@@ -240,6 +273,7 @@ async function loadQuestionScienceTrash() {
             return;
         }
         const items = await res.json();
+        setTrashBadgeCount("questionScienceTrashBadge", items.length);
         if (!items.length) {
             list.innerHTML = "<p>O'chirilgan test yo'q</p>";
             return;
@@ -1110,6 +1144,7 @@ async function saveToDb() {
         await reloadFromDb(`/api/topic?scienceId=${scienceId}`);
         focusIndex = 0;
         render(); // ❗ shu qator yo'q edi — shuning uchun DB yangilangan, lekin ekran eskicha qolardi
+        refreshTopicTrashBadge();
 
     } catch (err) {
         console.error(err);

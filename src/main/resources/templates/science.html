@@ -43,7 +43,7 @@
     -->
     <!-- Soft-delete qilingan (🗑️ o'chirilgan) fanlar — "♻️ Tiklash" bilan
          bir zumda qaytariladi (ScienceService.getDeletedSciences/restoreScience). -->
-    <button onclick="toggleScienceTrash()">🗑️ O'chirilgan fanlar</button>
+    <button onclick="toggleScienceTrash()">🗑️ O'chirilgan fanlar <span id="scienceTrashBadge" class="notif-badge" style="display:none;">0</span></button>
 
     <div id="scienceTrashPanel" style="display:none;">
         <div id="scienceTrashList"></div>

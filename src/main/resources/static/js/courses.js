@@ -7,9 +7,32 @@ const CAN_CREATE_COURSE = ROLE === "ROLE_OWNER" || ROLE === "ROLE_ADMIN";
 document.addEventListener("DOMContentLoaded", () => {
     if (CAN_CREATE_COURSE) {
         document.querySelectorAll(".owner-only-el").forEach(el => el.style.display = "");
+        // "🗑️ O'chirilganlar" tugmasidagi hisoblagich — faqat shu rolga
+        // ko'rinadigan tugma bilan birga (backend /api/courses/deleted ham
+        // faqat OWNER/ADMIN'ga ochiq — aks holda oddiy o'quvchida keraksiz
+        // 403 so'rov ketardi).
+        refreshCourseTrashBadge();
     }
     loadCourses();
 });
+
+// Badge'ni (".notif-badge" — navbar.js#refreshUnreadCount bilan bir xil
+// uslub) sonini yangilaydi — 0 bo'lsa yashiradi.
+function refreshCourseTrashBadge() {
+    fetch("/api/courses/deleted")
+        .then(r => r.ok ? r.json() : [])
+        .then(items => {
+            const badge = document.getElementById("courseTrashBadge");
+            if (!badge) return;
+            if (items.length > 0) {
+                badge.style.display = "inline-flex";
+                badge.textContent = items.length > 99 ? "99+" : items.length;
+            } else {
+                badge.style.display = "none";
+            }
+        })
+        .catch(err => console.error(err));
+}
 
 function loadCourses() {
     fetch("/api/courses")

@@ -135,6 +135,22 @@ h1 {
     justify-self: center;
 }
 
+/* Mavzu nomi — ".top-element" boksidan TASHQARIDA, alohida qator
+   (question.html). clamp(min, ideal, max) — ekran kengligiga qarab
+   shrifti o'zi avtomatik kichrayadi/kattalashadi (mobil'da 15px'dan
+   pastga tushmaydi, keng ekranda 22px'dan oshmaydi) — h1 ichida
+   bo'lganda doim bir xil (juda katta) shriftda, uzun mavzu nomlarida
+   "sig'may" ko'rinardi degan shikoyat tufayli. */
+.topic-name-subheading {
+    text-align: center;
+    font-size: clamp(15px, 2.2vw, 22px);
+    font-weight: 600;
+    color: #475569;
+    margin: 10px auto 16px;
+    padding: 0 12px;
+    word-break: break-word;
+}
+
 .question-block {
     background: #fff;
     border: 1px solid #444;
