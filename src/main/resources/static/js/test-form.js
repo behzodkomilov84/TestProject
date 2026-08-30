@@ -216,6 +216,29 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 
+    // "⬅ Orqaga" — TEST BOSHQARUVI'dan (kursdan emas, "➕ TEST YARATISH"
+    // orqali) kelinganda ham, kursdan kelinganda ham — mavzuning o'zi
+    // qaysi Fan/Bo'limga tegishli ekanini bilib, ANIQ shu bo'lim ko'rinib
+    // turgan /topics sahifasiga qaytaradi (oldin history.back() edi —
+    // ba'zan foydalanuvchi kutgan joyga emas, tasodifiy oldingi sahifaga
+    // olib borardi). Fetch muvaffaqiyatsiz bo'lsa — history.back() eskicha
+    // fallback sifatida qoladi (HTML'dagi onclick o'zgarishsiz).
+    const backOrqagaBtn = document.getElementById("backBtn");
+    if (backOrqagaBtn) {
+        const currentTopicId = document.getElementById("topicId").value;
+        fetch(`/api/topic/${currentTopicId}/location`)
+            .then(r => r.ok ? r.json() : null)
+            .then(loc => {
+                if (!loc) return;
+                backOrqagaBtn.onclick = () => {
+                    location.href = loc.sectionId
+                        ? `/topics?scienceId=${loc.scienceId}&sectionId=${loc.sectionId}`
+                        : `/topics?scienceId=${loc.scienceId}`;
+                };
+            })
+            .catch(err => console.error(err));
+    }
+
     const form = document.getElementById("testForm");
 
     document.querySelectorAll(".image-upload").forEach(setupImageUpload);

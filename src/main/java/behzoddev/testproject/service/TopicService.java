@@ -8,6 +8,7 @@ import behzoddev.testproject.dao.TopicSectionRepository;
 import behzoddev.testproject.dto.topic.TopicCourseLinkDto;
 import behzoddev.testproject.dto.topic.TopicCourseTitleDto;
 import behzoddev.testproject.dto.topic.TopicIdAndNameDto;
+import behzoddev.testproject.dto.topic.TopicLocationDto;
 import behzoddev.testproject.dto.topic.TopicNameDto;
 import behzoddev.testproject.dto.topic.TopicTrashDto;
 import behzoddev.testproject.dto.topic.TopicWithQuestionCountDto;
@@ -175,6 +176,16 @@ public class TopicService {
     @Transactional(readOnly = true)
     public String getTopicName(Long topicId) {
         return getTopicOrThrow(topicId).getName();
+    }
+
+    // Mavzu qaysi Fan/Bo'limga tegishli ekani — test-form.js'dagi "⬅
+    // Orqaga" tugmasi TEST BOSHQARUVI'dagi tegishli sahifaga
+    // (/topics?scienceId=&sectionId=) qaytishi uchun.
+    @Transactional(readOnly = true)
+    public TopicLocationDto getTopicLocation(Long topicId) {
+        Topic topic = getTopicOrThrow(topicId);
+        Long sectionId = topic.getSection() != null ? topic.getSection().getId() : null;
+        return new TopicLocationDto(topic.getScience().getId(), sectionId);
     }
 
     private Topic getTopicOrThrow(Long topicId) {

@@ -2,6 +2,7 @@ package behzoddev.testproject.controller.api;
 
 import behzoddev.testproject.dto.topic.TopicCourseLinkDto;
 import behzoddev.testproject.dto.topic.TopicIdAndNameDto;
+import behzoddev.testproject.dto.topic.TopicLocationDto;
 import behzoddev.testproject.dto.topic.TopicNameDto;
 import behzoddev.testproject.dto.topic.TopicTrashDto;
 import behzoddev.testproject.service.TopicSectionService;
@@ -87,6 +88,13 @@ public class TopicController {
     @GetMapping("/api/topic/{topicId}/name")
     public ResponseEntity<Map<String, String>> getTopicName(@PathVariable Long topicId) {
         return ResponseEntity.ok(Map.of("name", topicService.getTopicName(topicId)));
+    }
+
+    // Mavzu qaysi Fan/Bo'limga tegishli ekani — test-form.js'dagi "⬅
+    // Orqaga" tugmasi TEST BOSHQARUVI'dagi tegishli sahifaga qaytishi uchun.
+    @GetMapping("/api/topic/{topicId}/location")
+    public ResponseEntity<TopicLocationDto> getTopicLocation(@PathVariable Long topicId) {
+        return ResponseEntity.ok(topicService.getTopicLocation(topicId));
     }
 
     // Test yaratish formasidagi "🔗 Mavzuga havola qo'shish" tugmasi shu
