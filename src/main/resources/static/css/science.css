@@ -137,6 +137,18 @@ h1 {
         cursor: pointer;
     }
 
+    /* Klaviatura fokusi (sahifa ochilganda BIRINCHI qator avtomatik
+       fokusda turadi — afterStartPage/render(), science.js/topic.js/
+       topicSection.js) — avval hech qanday ko'rinadigan belgi yo'q edi,
+       fokus "texnik jihatdan" bor edi-yu, ko'zga ko'rinmasdi (haqiqiy
+       foydalanuvchi shikoyati). Endi courseDetail.js'dagi tanlangan
+       kartochka bilan bir xil uslub — aniq ko'k ramka. */
+    .topic-name.view:focus {
+        outline: 3px solid #1976d2;
+        outline-offset: 2px;
+        background: #eef2ff;
+    }
+
     .hidden {
         display: none !important;
     }
