@@ -30,8 +30,12 @@ function extractYouTubeId(input) {
     return trimmed;
 }
 
+// "?focus=" — kurs sahifasiga qaytganda ANIQ shu mavzu kartochkasini
+// avtomatik ekranga chiqarib, "tanlangan" holatda belgilash uchun
+// (courseDetail.js#applyFocusFromUrl) — test-form.js'dagi "🔙 Kursga
+// qaytish" bilan bir xil andoza.
 document.getElementById("backToCourseBtn").onclick = () => {
-    location.href = "/courses/" + COURSE_ID;
+    location.href = `/courses/${COURSE_ID}?focus=${SECTION_ID}`;
 };
 
 // searchNavContext — bir marta, sahifa yuklanganda o'qiladi (loadSearchNavContext),
