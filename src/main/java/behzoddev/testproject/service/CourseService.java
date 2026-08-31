@@ -65,17 +65,24 @@ public class CourseService {
     private final QuestionRepository questionRepository;
 
     // "🔗 Mavzuga havola qo'shish" (topicLinkButton.js#buildTopicLinkHtml)
-    // tomonidan izohga qo'shilgan havolani topish uchun — faqat
-    // "/courses/{courseId}/sections/{sectionId}" ko'rinishidagi href'ni
-    // qidiradi (boshqa (masalan tashqi) havolalarga tegmaydi).
+    // tomonidan izohga qo'shilgan havolani topish uchun — "/courses/
+    // {courseId}/sections/{sectionId}" ko'rinishidagi href'ni qidiradi
+    // (boshqa (masalan tashqi) havolalarga tegmaydi). "(?:https?://[^/\"]+)?"
+    // — ixtiyoriy domen prefiksi: ba'zi ESKI havolalar to'liq URL
+    // ("https://study-grow.uz/courses/...") shaklida saqlangan edi —
+    // avval bu shakl UMUMAN mos kelmasdi, shu sabab audit "havola yo'q"
+    // deb noto'g'ri hisoblab, ustiga YANA bitta (ikkinchi) havola qo'shib
+    // qo'yardi (haqiqiy topilgan bug — "2 ta qo'shilib qolyapti").
     private static final Pattern TOPIC_LINK_HREF_PATTERN =
-            Pattern.compile("href=\"/courses/(\\d+)/sections/(\\d+)\"");
+            Pattern.compile("href=\"(?:https?://[^/\"]+)?/courses/(\\d+)/sections/(\\d+)\"");
 
     // Izohdagi eski/noto'g'ri mavzu havolasi belgisini (badge) olib
     // tashlash uchun — ixtiyoriy o'rab turuvchi <span>...</span> bilan
     // birga (agar bor bo'lsa), aks holda faqat <a>...</a>ning o'zi.
+    // TOPIC_LINK_HREF_PATTERN bilan bir xil (ixtiyoriy domen prefiksli)
+    // qoidaga mos.
     private static final Pattern TOPIC_LINK_BADGE_PATTERN = Pattern.compile(
-            "(?:<span[^>]*>\\s*)?<a\\s+href=\"/courses/\\d+/sections/\\d+\"[^>]*>.*?</a>(?:\\s*</span>)?",
+            "(?:<span[^>]*>\\s*)?<a\\s+href=\"(?:https?://[^/\"]+)?/courses/\\d+/sections/\\d+\"[^>]*>.*?</a>(?:\\s*</span>)?",
             Pattern.DOTALL
     );
 
@@ -1066,8 +1073,6 @@ public class CourseService {
         CourseSection section = courseSectionRepository.findByCourse_IdAndLinkedTopic_Id(courseId, topicId)
                 .orElseThrow(() -> new IllegalArgumentException("❌ Bu mavzu shu kursga bog'lanmagan."));
 
-        String correctBadge = buildTopicLinkBadge(courseId, section.getId(), section.getLinkedTopic().getName());
-
         List<Question> questions = questionRepository.getQuestionsByTopicId(topicId);
         int fixed = 0;
         for (Question q : questions) {
@@ -1078,7 +1083,12 @@ public class CourseService {
             boolean hasLink = commentary != null && TOPIC_LINK_HREF_PATTERN.matcher(commentary).find();
             if (hasLink) continue;
 
-            trueAnswer.setCommentary((commentary == null ? "" : commentary) + correctBadge);
+            // applyCorrectLink (strip+qo'shish) ATAYLAB ishlatilgan — oddiy
+            // qo'shish (append) o'rniga: agar izohda TOPIC_LINK_HREF_PATTERN
+            // aniqlay olmaydigan, lekin qisman/buzuq havola qoldig'i bo'lsa
+            // ham (masalan eski formatdagi), shu yerda tozalanadi — ikkita
+            // havola bir joyda qolib ketmasligi uchun (haqiqiy topilgan bug).
+            applyCorrectLink(trueAnswer, courseId, section);
             fixed++;
         }
         return fixed;
