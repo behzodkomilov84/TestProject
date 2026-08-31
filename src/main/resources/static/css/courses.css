@@ -274,6 +274,17 @@ body {
     flex-wrap: wrap;
 }
 
+/* Tugmalar qatoridan (.manage-actions-row) keyin ochiladigan panellar
+   (#sectionTrashPanel, #topicLinkAuditPanel) — ikkalasida ham avval
+   HECH QANDAY tepa bo'shlig'i yo'q edi, shu sabab ochilganda tugmalar
+   qatoriga to'g'ridan-to'g'ri "yopishib" ko'rinardi (haqiqiy topilgan
+   bug — question.css'dagi #questionTrashPanel bilan bir xil turdagi
+   xatolik). */
+#sectionTrashPanel,
+#topicLinkAuditPanel {
+    margin-top: 14px;
+}
+
 .course-form-actions button, .manage-actions-row button, .section-form button {
     padding: 9px 16px;
     border-radius: 8px;

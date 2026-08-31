@@ -141,6 +141,20 @@ h1 {
         display: none !important;
     }
 
+    /* Tugma orqali ochiladigan savat panellari (#scienceTrashPanel —
+       science.html, #sectionTrashPanel — topicSections.html,
+       #topicTrashPanel / #questionScienceTrashPanel — topics.html) —
+       avval hech qanday tepa bo'shlig'i yo'q edi, shu sabab ochilganda
+       tugmalar qatoriga to'g'ridan-to'g'ri "yopishib" ko'rinardi
+       (question.css'dagi #questionTrashPanel bilan bir xil turdagi,
+       haqiqiy topilgan xatolik — endi hamma joyda birdek tuzatilgan). */
+    #scienceTrashPanel,
+    #sectionTrashPanel,
+    #topicTrashPanel,
+    #questionScienceTrashPanel {
+        margin-top: 14px;
+    }
+
     /* Bo'lim ustidan (Fan -> Bo'lim -> Mavzu) kelinganda ko'rinadigan
        filtr bildirgichi (topic.js showSectionFilterBanner()). */
     .section-filter-banner {
