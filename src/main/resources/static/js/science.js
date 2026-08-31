@@ -224,7 +224,7 @@ function render() {
                 id="input-${i}"
                 class="topic-name ${inputClass}"
                 tabindex="-1"
-            ><div class="item-title-row">${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestions(${s.id})" title="Shu fandagi barcha mavzularning testlarini Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>` : ""}<span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta bo'lim</span>` : ""}</div></div>
+            ><div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta bo'lim</span>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestions(${s.id})" title="Shu fandagi barcha mavzularning testlarini Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>` : ""}</div></div>
         </div>
             `
                 : `
