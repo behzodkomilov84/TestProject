@@ -680,7 +680,7 @@ function render() {
             tabindex="0"
             ondblclick="openQuestions(${s.id})"
             onkeydown="onViewKeyDown(event, ${i})"
-            title="Enter — Саволларни очиш | ↑ ↓ — навигация"
+            title="Enter — Саволларни очиш | ↑ ↓ — навигация | Home/End — биринчи/охирги"
         >
             <div
                 id="input-${i}"
@@ -797,6 +797,16 @@ function onViewKeyDown(event, index) {
         case "ArrowDown":
             event.preventDefault();
             moveFocus(index + 1);
+            break;
+
+        case "Home":
+            event.preventDefault();
+            moveFocus(0);
+            break;
+
+        case "End":
+            event.preventDefault();
+            moveFocus(itemBlock.length - 1);
             break;
     }
 } //DONE

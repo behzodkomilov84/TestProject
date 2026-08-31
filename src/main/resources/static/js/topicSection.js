@@ -277,7 +277,7 @@ function render() {
             tabindex="0"
             ondblclick="openTopics(${s.id})"
             onkeydown="onViewKeyDown(event, ${i})"
-            title="Enter — Mavzularni ochish | ↑ ↓ — navigatsiya"
+            title="Enter — Mavzularni ochish | ↑ ↓ — navigatsiya | Home/End — birinchi/oxirgi"
         >
             <div
                 id="input-${i}"
@@ -372,6 +372,16 @@ function onViewKeyDown(event, index) {
         case "ArrowDown":
             event.preventDefault();
             moveFocus(index + 1);
+            break;
+
+        case "Home":
+            event.preventDefault();
+            moveFocus(0);
+            break;
+
+        case "End":
+            event.preventDefault();
+            moveFocus(itemBlock.length - 1);
             break;
     }
 }
