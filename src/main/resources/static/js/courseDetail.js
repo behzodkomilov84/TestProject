@@ -2129,10 +2129,24 @@ async function loadTopicLinkAudit() {
             return;
         }
 
-        list.innerHTML = topics.map(t => {
+        // Katta kurslarda o'nlab mavzuda yuzlab xato havola bir yo'la
+        // topilishi mumkin — har birini alohida bosish o'rniga, BUTUN
+        // kurs bo'yicha bittada tuzatish tugmasi (faqat xato havolalar
+        // bo'lsa ko'rinadi).
+        const totalWrong = topics.reduce((sum, t) => sum + t.wrongItems.length, 0);
+        const fixAllInCourseBtn = totalWrong > 0
+            ? `<div class="topic-link-audit-fix-all">
+                   <button onclick="fixAllWrongTopicLinksInCourse()">🛠️ Butun kursdagi BARCHA xato havolalarni tuzatish (${totalWrong} ta)</button>
+               </div>`
+            : "";
+
+        list.innerHTML = fixAllInCourseBtn + topics.map(t => {
             const hasIssues = t.missingCount > 0 || t.wrongItems.length > 0;
             const addMissingBtn = t.missingCount > 0
                 ? `<button onclick="addMissingTopicLinks(${t.topicId})">➕ Havola qo'shish (${t.missingCount} ta)</button>`
+                : "";
+            const fixAllWrongBtn = t.wrongItems.length > 0
+                ? `<button onclick="fixAllWrongTopicLinks(${t.topicId})">✅ Barchasini to'g'irlash (${t.wrongItems.length} ta)</button>`
                 : "";
             const wrongRows = t.wrongItems.map(item => `
                 <div class="topic-link-wrong-row">
@@ -2153,6 +2167,7 @@ async function loadTopicLinkAudit() {
                         ${t.missingCount > 0 ? `, ➖ ${t.missingCount} ta havolasiz` : ""}
                         ${t.wrongItems.length > 0 ? `, ⚠️ ${t.wrongItems.length} ta xato havolali` : ""}
                         ${addMissingBtn}
+                        ${fixAllWrongBtn}
                     </div>
                     ${wrongRows}
                 </div>
@@ -2188,6 +2203,45 @@ async function fixWrongTopicLink(questionId) {
             alert(data.error || "To'g'irlashda xatolik");
             return;
         }
+        loadTopicLinkAudit();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+// "✅ Barchasini to'g'irlash" (bitta mavzu) — shu mavzudagi barcha XATO
+// havolali savollarni bitta so'rovda to'g'irlaydi.
+async function fixAllWrongTopicLinks(topicId) {
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/topic-links/fix-all-wrong?topicId=${topicId}`, { method: "POST" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || "To'g'irlashda xatolik");
+            return;
+        }
+        alert(`✅ ${data.fixed} ta savolning havolasi to'g'irlandi`);
+        loadTopicLinkAudit();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+// "🛠️ Butun kursdagi BARCHA xato havolalarni tuzatish" — kattaroq amal
+// (yuzlab savolga tegishi mumkin), shuning uchun tasdiqlash so'raladi.
+async function fixAllWrongTopicLinksInCourse() {
+    if (!confirm("⚠️ Butun kursdagi BARCHA xato havolali savollarni to'g'irlamoqchimisiz?\n\nBu amalni bekor qilib bo'lmaydi (lekin har bir havola o'zining mavzusiga to'g'irlanadi, xavfsiz).")) {
+        return;
+    }
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/topic-links/fix-all-wrong`, { method: "POST" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || "To'g'irlashda xatolik");
+            return;
+        }
+        alert(`✅ ${data.fixed} ta savolning havolasi to'g'irlandi`);
         loadTopicLinkAudit();
     } catch (err) {
         console.error(err);

@@ -1884,6 +1884,17 @@ body {
     opacity: 0.6;
 }
 
+/* "🛠️ Butun kursdagi BARCHA xato havolalarni tuzatish" tugmasi — panel
+   ustida, alohida ajralib turadi (katta ko'lamli amal). */
+.topic-link-audit-fix-all {
+    margin-bottom: 10px;
+}
+
+.topic-link-audit-fix-all button {
+    background: #dc2626;
+    color: #fff;
+}
+
 .topic-link-audit-summary {
     display: flex;
     flex-wrap: wrap;

@@ -176,4 +176,17 @@ public class CourseController {
     public void fixWrongTopicLink(@PathVariable Long courseId, @RequestParam Long questionId) {
         courseService.fixWrongTopicLink(courseId, questionId);
     }
+
+    // "✅ Barchasini to'g'irlash" — topicId berilsa FAQAT shu mavzudagi,
+    // berilmasa BUTUN kursdagi barcha xato havolali savollarni bittada
+    // to'g'irlaydi.
+    @PostMapping("/{courseId}/topic-links/fix-all-wrong")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public Map<String, Integer> fixAllWrongTopicLinks(@PathVariable Long courseId,
+                                                        @RequestParam(required = false) Long topicId) {
+        int fixed = topicId != null
+                ? courseService.fixAllWrongTopicLinks(courseId, topicId)
+                : courseService.fixAllWrongTopicLinksInCourse(courseId);
+        return Map.of("fixed", fixed);
+    }
 }

@@ -1101,6 +1101,68 @@ public class CourseService {
             throw new IllegalArgumentException("❌ Bu savolning to'g'ri javobi topilmadi.");
         }
 
+        applyCorrectLink(trueAnswer, courseId, section);
+    }
+
+    // "✅ Barchasini to'g'irlash" — BITTA mavzudagi barcha XATO havolali
+    // savollarni bitta so'rovda to'g'irlaydi (havolasi umuman yo'qlariga
+    // tegmaydi — ular addMissingTopicLinks orqali). Qaytariladigan son —
+    // nechta savol to'g'irlangani.
+    @Transactional
+    public int fixAllWrongTopicLinks(Long courseId, Long topicId) {
+        CourseSection section = courseSectionRepository.findByCourse_IdAndLinkedTopic_Id(courseId, topicId)
+                .orElseThrow(() -> new IllegalArgumentException("❌ Bu mavzu shu kursga bog'lanmagan."));
+        return fixAllWrongLinksForSection(courseId, section);
+    }
+
+    // "🛠️ Butun kursdagi BARCHA xato havolalarni tuzatish" — auditTopicLinks
+    // bilan bir xil ko'lamda (shu kursga bog'langan HAMMA mavzular), har
+    // birida topilgan xato havolalarni birma-bir to'g'irlaydi. Katta
+    // kurslarda yuzlab xato havola bir yo'la topilishi mumkin (real holat:
+    // Bakteriologiya kursida 51 ta mavzuda 780 ta xato havola topilgan edi) —
+    // shu sabab alohida (per-topic emas, butun kurs) tugma qo'shilgan.
+    @Transactional
+    public int fixAllWrongTopicLinksInCourse(Long courseId) {
+        List<CourseSection> linkedSections = courseSectionRepository.findByCourse_IdAndLinkedTopicIsNotNull(courseId);
+        int total = 0;
+        for (CourseSection section : linkedSections) {
+            total += fixAllWrongLinksForSection(courseId, section);
+        }
+        return total;
+    }
+
+    // fixAllWrongTopicLinks va fixAllWrongTopicLinksInCourse'ning umumiy
+    // ichki qismi — bitta mavzu (allaqachon topilgan CourseSection bilan)
+    // doirasidagi barcha xato havolalarni to'g'irlaydi.
+    private int fixAllWrongLinksForSection(Long courseId, CourseSection section) {
+        Topic topic = section.getLinkedTopic();
+        String expectedHref = "/courses/" + courseId + "/sections/" + section.getId();
+
+        List<Question> questions = questionRepository.getQuestionsByTopicId(topic.getId());
+        int fixed = 0;
+        for (Question q : questions) {
+            Answer trueAnswer = findTrueAnswer(q);
+            if (trueAnswer == null) continue;
+
+            String commentary = trueAnswer.getCommentary();
+            if (commentary == null) continue;
+
+            Matcher m = TOPIC_LINK_HREF_PATTERN.matcher(commentary);
+            if (!m.find()) continue; // havola umuman yo'q — bu yerga tegishli emas
+
+            String actualHref = "/courses/" + m.group(1) + "/sections/" + m.group(2);
+            if (actualHref.equals(expectedHref)) continue; // allaqachon to'g'ri
+
+            applyCorrectLink(trueAnswer, courseId, section);
+            fixed++;
+        }
+        return fixed;
+    }
+
+    // Bitta javobning izohidagi (bor bo'lsa) eski mavzu havola belgisini
+    // olib tashlab, o'rniga TO'G'RI havolani qo'yadi — fixWrongTopicLink
+    // va fixAllWrongLinksForSection ikkalasi ham shundan foydalanadi.
+    private void applyCorrectLink(Answer trueAnswer, Long courseId, CourseSection section) {
         String correctBadge = buildTopicLinkBadge(courseId, section.getId(), section.getLinkedTopic().getName());
         String existing = trueAnswer.getCommentary();
         String cleaned = existing == null ? "" : TOPIC_LINK_BADGE_PATTERN.matcher(existing).replaceAll("");
