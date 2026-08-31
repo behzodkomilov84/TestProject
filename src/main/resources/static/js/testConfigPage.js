@@ -11,6 +11,14 @@ const preselectTopicId = urlParams.get("topicId");
 // startTest()'da sessionStorage'ga ham yozib qo'yiladi.
 const returnCourseId = urlParams.get("courseId");
 const returnSectionId = urlParams.get("sectionId");
+// Kurs sahifasidagi mavzu KARTOCHKALARI ro'yxatidan ("🎯 Mavzuga oid
+// testlarni yechish", courseDetail.js) kelinganda — "sectionId" (dars/
+// bo'lim sahifasi) o'rniga shu kartochkaning o'zi beriladi, chunki bu
+// yerda "dars sahifasi" umuman yo'q — foydalanuvchi to'g'ridan-to'g'ri
+// ro'yxatdan kelgan. Qaytishda /courses/{courseId}?focus= orqali ANIQ
+// shu kartochkaga qaytariladi (courseDetail.js#applyFocusFromUrl bilan
+// bir xil g'oya, test-form.js#backToCourseBtn bilan bir xil yechim).
+const returnFocusSectionId = urlParams.get("fromSectionId");
 
 if (preselectTopicId) {
     sessionStorage.setItem("testMode", "practice");
@@ -49,7 +57,9 @@ document.addEventListener("DOMContentLoaded", () => {
         backBtn.onclick = () => {
             location.href = returnSectionId
                 ? `/courses/${returnCourseId}/sections/${returnSectionId}`
-                : `/courses/${returnCourseId}`;
+                : returnFocusSectionId
+                    ? `/courses/${returnCourseId}?focus=${returnFocusSectionId}`
+                    : `/courses/${returnCourseId}`;
         };
     }
 
@@ -396,9 +406,11 @@ function startTest() {
     if (returnCourseId) {
         sessionStorage.setItem("returnCourseId", returnCourseId);
         sessionStorage.setItem("returnSectionId", returnSectionId || "");
+        sessionStorage.setItem("returnFocusSectionId", returnFocusSectionId || "");
     } else {
         sessionStorage.removeItem("returnCourseId");
         sessionStorage.removeItem("returnSectionId");
+        sessionStorage.removeItem("returnFocusSectionId");
     }
 
     // 👉 просто переход

@@ -88,12 +88,20 @@ function setupReturnToTopicButton() {
     if (!courseId) return;
 
     const sectionId = sessionStorage.getItem("returnSectionId");
+    // Kurs sahifasidagi mavzu KARTOCHKALARI ro'yxatidan ("🎯 Mavzuga oid
+    // testlarni yechish", courseDetail.js) kelingan bo'lsa — "sectionId"
+    // (dars sahifasi) o'rniga shu kartochkaning o'zi (testConfigPage.js
+    // #returnFocusSectionId orqali sessionStorage'ga yozilgan). Qaytishda
+    // /courses/{courseId}?focus= orqali ANIQ shu kartochkaga qaytariladi.
+    const focusSectionId = sessionStorage.getItem("returnFocusSectionId");
     const btn = document.getElementById("returnToTopicBtn");
     btn.classList.remove("hidden");
     btn.onclick = () => {
         location.href = sectionId
             ? `/courses/${courseId}/sections/${sectionId}`
-            : `/courses/${courseId}`;
+            : focusSectionId
+                ? `/courses/${courseId}?focus=${focusSectionId}`
+                : `/courses/${courseId}`;
     };
 }
 
