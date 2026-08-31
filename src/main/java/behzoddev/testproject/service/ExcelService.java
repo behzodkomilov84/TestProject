@@ -1,11 +1,13 @@
 package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.QuestionRepository;
+import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dto.answer.AnswerShortDto;
 import behzoddev.testproject.dto.excel.ImportResultDto;
 import behzoddev.testproject.dto.question.QuestionSaveDto;
 import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Question;
+import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.validation.Validation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,10 +45,16 @@ public class ExcelService {
     // qilib bo'ladi (round-trip).
     private static final String[] EXPORT_HEADERS =
             {"Question", "A", "B", "C", "D", "E", "Correct", "Comment (Faqat to'g'ri javob uchun)"};
+    // Bo'lim/Fan miqyosidagi eksport uchun — "Mavzu" ustuni qo'shilgan
+    // (bir nechta mavzu birga bo'lgani uchun, qaysi savol qaysi
+    // mavzuga tegishli ekanini bilish uchun kerak).
+    private static final String[] MULTI_TOPIC_EXPORT_HEADERS =
+            {"Mavzu", "Question", "A", "B", "C", "D", "E", "Correct", "Comment (Faqat to'g'ri javob uchun)"};
     private static final String[] ANSWER_LETTERS = {"A", "B", "C", "D", "E"};
 
     private final QuestionService questionService;
     private final QuestionRepository questionRepository;
+    private final TopicRepository topicRepository;
     private final DataFormatter formatter = new DataFormatter();
     private final AnswerService answerService;
     private final Validation validation;
@@ -85,28 +93,9 @@ public class ExcelService {
 
             int rowIdx = 1;
             for (Question q : questions) {
-                List<Answer> answers = q.getAnswers() == null
-                        ? List.of()
-                        : q.getAnswers().stream()
-                                .sorted(Comparator.comparing(Answer::getId))
-                                .limit(5)
-                                .toList();
-
                 Row row = sheet.createRow(rowIdx++);
                 row.createCell(0).setCellValue(q.getQuestionText());
-
-                String correctLetter = "";
-                String correctComment = "";
-                for (int i = 0; i < answers.size(); i++) {
-                    Answer a = answers.get(i);
-                    row.createCell(i + 1).setCellValue(a.getAnswerText());
-                    if (Boolean.TRUE.equals(a.getIsTrue())) {
-                        correctLetter = ANSWER_LETTERS[i];
-                        correctComment = a.getCommentary() != null ? a.getCommentary() : "";
-                    }
-                }
-                row.createCell(6).setCellValue(correctLetter);
-                row.createCell(7).setCellValue(correctComment);
+                writeAnswerColumns(row, 1, q);
             }
 
             wb.write(out);
@@ -115,6 +104,89 @@ public class ExcelService {
             log.error("Excelga eksport qilishda xatolik", e);
             throw new RuntimeException("❌Excelga eksport qilishda xatolik", e);
         }
+    }
+
+    // Bo'lim/Fan miqyosida eksport — bir nechta mavzu savollarini BITTA
+    // faylga yig'adi, har bir qatorda qaysi mavzuga tegishli ekani
+    // ("Mavzu" ustuni, ENG BOSHIDA) ko'rsatiladi — bitta mavzulik
+    // eksportdan farqli, bu holatda qaysi savol qaysi mavzuga tegishli
+    // ekanini bilish MUHIM. DIQQAT: import shabloni bilan mos EMAS
+    // (ustun soni/tartibi boshqacha, "Mavzu" ustuni qo'shilgan) — bu
+    // eksport faqat KO'RISH/hisobot uchun, qayta import qilib bo'lmaydi.
+    @Transactional(readOnly = true)
+    public byte[] exportQuestionsForSection(Long sectionId) {
+        return exportQuestionsForTopics(topicRepository.findBySection_IdAndDeletedAtIsNullOrderByOrderIndexAsc(sectionId));
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] exportQuestionsForScience(Long scienceId) {
+        return exportQuestionsForTopics(topicRepository.findByScience_IdAndDeletedAtIsNullOrderByOrderIndexAsc(scienceId));
+    }
+
+    private byte[] exportQuestionsForTopics(List<Topic> topics) {
+        try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = wb.createSheet("Savollar");
+
+            CellStyle headerStyle = wb.createCellStyle();
+            Font headerFont = wb.createFont();
+            headerFont.setBold(true);
+            headerStyle.setFont(headerFont);
+
+            Row header = sheet.createRow(0);
+            for (int i = 0; i < MULTI_TOPIC_EXPORT_HEADERS.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(MULTI_TOPIC_EXPORT_HEADERS[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            int[] columnWidthsChars = {35, 50, 25, 25, 25, 25, 25, 10, 40};
+            for (int i = 0; i < columnWidthsChars.length; i++) {
+                sheet.setColumnWidth(i, columnWidthsChars[i] * 256);
+            }
+
+            int rowIdx = 1;
+            for (Topic topic : topics) {
+                List<Question> questions = questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(topic.getId());
+                for (Question q : questions) {
+                    Row row = sheet.createRow(rowIdx++);
+                    row.createCell(0).setCellValue(topic.getName());
+                    row.createCell(1).setCellValue(q.getQuestionText());
+                    writeAnswerColumns(row, 2, q);
+                }
+            }
+
+            wb.write(out);
+            return out.toByteArray();
+        } catch (IOException e) {
+            log.error("Excelga eksport qilishda xatolik", e);
+            throw new RuntimeException("❌Excelga eksport qilishda xatolik", e);
+        }
+    }
+
+    // Bitta savolning A/B/C/D/E javob ustunlari + Correct + Comment
+    // ustunlarini "startCol"dan boshlab yozadi (bitta mavzulik eksportda
+    // startCol=1, ko'p mavzulik eksportda startCol=2 — "Mavzu"/"Question"
+    // ustunlaridan keyin).
+    private void writeAnswerColumns(Row row, int startCol, Question q) {
+        List<Answer> answers = q.getAnswers() == null
+                ? List.of()
+                : q.getAnswers().stream()
+                        .sorted(Comparator.comparing(Answer::getId))
+                        .limit(5)
+                        .toList();
+
+        String correctLetter = "";
+        String correctComment = "";
+        for (int i = 0; i < answers.size(); i++) {
+            Answer a = answers.get(i);
+            row.createCell(startCol + i).setCellValue(a.getAnswerText());
+            if (Boolean.TRUE.equals(a.getIsTrue())) {
+                correctLetter = ANSWER_LETTERS[i];
+                correctComment = a.getCommentary() != null ? a.getCommentary() : "";
+            }
+        }
+        row.createCell(startCol + 5).setCellValue(correctLetter);
+        row.createCell(startCol + 6).setCellValue(correctComment);
     }
 
     @Transactional

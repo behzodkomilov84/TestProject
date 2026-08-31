@@ -42,6 +42,8 @@ class ExcelServiceTest {
     @Mock
     private QuestionRepository questionRepository; // faqat exportQuestions() uchun (bu oqimda chaqirilmaydi)
     @Mock
+    private behzoddev.testproject.dao.TopicRepository topicRepository; // faqat bo'lim/fan eksporti uchun (bu oqimda chaqirilmaydi)
+    @Mock
     private AnswerService excelAnswerService; // ExcelService'ning o'z isUnique() tekshiruvi uchun
     @Mock
     private AnswerService validationAnswerService; // faqat Validation ichida ishlatiladi (bu oqimda chaqirilmaydi)
@@ -53,7 +55,7 @@ class ExcelServiceTest {
     @BeforeEach
     void setUp() {
         Validation validation = new Validation(validationAnswerService);
-        excelService = new ExcelService(questionService, questionRepository, excelAnswerService, validation, clamAvScanService);
+        excelService = new ExcelService(questionService, questionRepository, topicRepository, excelAnswerService, validation, clamAvScanService);
         // Fayl-darajasidagi validatsiya testlari (bo'sh/katta/noto'g'ri kengaytma)
         // qatorlarni umuman o'qishga yetmaydi — shu stublar ular uchun keraksiz
         // bo'lgani uchun lenient qilingan.
@@ -267,6 +269,44 @@ class ExcelServiceTest {
             assertThat(row.getCell(2).getStringCellValue()).isEqualTo("Samarqand");
             assertThat(row.getCell(6).getStringCellValue()).isEqualTo("B"); // 2-javob (indeks 1) to'g'ri
             assertThat(row.getCell(7).getStringCellValue()).isEqualTo("To'g'ri, chunki...");
+        }
+    }
+
+    // ===== exportQuestionsForSection / exportQuestionsForScience =====
+
+    @Test
+    void exportQuestionsForSection_multipleTopics_addsTopicColumnAndShiftsAnswers() throws IOException {
+        behzoddev.testproject.entity.Topic topic1 = behzoddev.testproject.entity.Topic.builder().id(10L).name("1-mavzu").build();
+        behzoddev.testproject.entity.Topic topic2 = behzoddev.testproject.entity.Topic.builder().id(20L).name("2-mavzu").build();
+
+        Answer a1 = Answer.builder().id(1L).answerText("Ha").isTrue(true).commentary("izoh1").build();
+        Question q1 = Question.builder().id(1L).questionText("1-savol").answers(List.of(a1)).build();
+
+        Answer a2 = Answer.builder().id(2L).answerText("Yo'q").isTrue(true).commentary("izoh2").build();
+        Question q2 = Question.builder().id(2L).questionText("2-savol").answers(List.of(a2)).build();
+
+        when(topicRepository.findBySection_IdAndDeletedAtIsNullOrderByOrderIndexAsc(7L))
+                .thenReturn(List.of(topic1, topic2));
+        when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(10L)).thenReturn(List.of(q1));
+        when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(20L)).thenReturn(List.of(q2));
+
+        byte[] result = excelService.exportQuestionsForSection(7L);
+
+        try (XSSFWorkbook wb = new XSSFWorkbook(new java.io.ByteArrayInputStream(result))) {
+            Sheet sheet = wb.getSheetAt(0);
+            Row header = sheet.getRow(0);
+            assertThat(header.getCell(0).getStringCellValue()).isEqualTo("Mavzu");
+            assertThat(header.getCell(1).getStringCellValue()).isEqualTo("Question");
+
+            Row row1 = sheet.getRow(1);
+            assertThat(row1.getCell(0).getStringCellValue()).isEqualTo("1-mavzu");
+            assertThat(row1.getCell(1).getStringCellValue()).isEqualTo("1-savol");
+            assertThat(row1.getCell(2).getStringCellValue()).isEqualTo("Ha");
+            assertThat(row1.getCell(7).getStringCellValue()).isEqualTo("A");
+
+            Row row2 = sheet.getRow(2);
+            assertThat(row2.getCell(0).getStringCellValue()).isEqualTo("2-mavzu");
+            assertThat(row2.getCell(1).getStringCellValue()).isEqualTo("2-savol");
         }
     }
 }

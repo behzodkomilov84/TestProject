@@ -246,7 +246,14 @@ function render() {
         const courseBadge = s.linkedCourseTitle
             ? `<span class="topic-course-badge" title="Bu bo'lim kursga bog'langan, faqat kurs ichidan tahrirlanadi">🔗 Kurs: ${escapeHtml(s.linkedCourseTitle)}</span>`
             : '';
-        const badgesRow = courseBadge ? `<div class="item-badges">${courseBadge}</div>` : '';
+
+        // "📊 Excel'ga eksport" — shu Bo'limdagi BARCHA mavzularning
+        // savollarini BITTA faylga yig'ib yuklab beradi. Kurs belgisi
+        // bo'lmasa ham HAR DOIM ko'rinadi (topic.js'dagi mavzu-darajali
+        // eksport bilan bir xil uslub).
+        const exportBtn = `<button class="topic-export-btn" onclick="event.stopPropagation(); exportSectionQuestions(${s.id})" title="Shu bo'limdagi barcha mavzularning testlarini Excel'ga eksport qilish">📊</button>`;
+
+        const badgesRow = `<div class="item-badges">${courseBadge}${exportBtn}</div>`;
 
         row.innerHTML = `
     ${
@@ -304,6 +311,13 @@ function openTopics(sectionId) {
     }
     // Faqat shu bo'limga tegishli mavzularni ko'rsatadigan holatda ochiladi.
     window.location.href = `/topics?scienceId=${scienceId}&sectionId=${sectionId}`;
+}
+
+// "📊 Excel'ga eksport" — shu Bo'limdagi BARCHA mavzularning savollarini
+// BITTA .xlsx faylga yig'ib yuklab beradi (topic.js#exportTopicQuestions
+// bilan bir xil andoza, faqat butun Bo'lim miqyosida).
+function exportSectionQuestions(sectionId) {
+    window.location.href = `/api/export/questions/section?sectionId=${sectionId}`;
 }
 
 function hasDuplicate(currentIndex, name) {

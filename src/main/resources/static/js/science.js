@@ -211,7 +211,7 @@ function render() {
                 id="input-${i}"
                 class="topic-name ${inputClass}"
                 tabindex="-1"
-            ><div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta bo'lim</span>` : ""}</div></div>
+            >${isLink ? `<div class="item-badges"><button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestions(${s.id})" title="Shu fandagi barcha mavzularning testlarini Excel'ga eksport qilish">📊</button></div>` : ""}<div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta bo'lim</span>` : ""}</div></div>
         </div>
             `
                 : `
@@ -261,6 +261,13 @@ function openTopics(scienceId) {
     // Endi to'g'ridan-to'g'ri mavzular emas, avval Bo'limlar sahifasiga
     // o'tiladi (Fan -> Bo'lim -> Mavzu ierarxiyasi).
     window.location.href = `/topic-sections?scienceId=${scienceId}`;
+}
+
+// "📊 Excel'ga eksport" — shu Fandagi BARCHA mavzularning savollarini
+// BITTA .xlsx faylga yig'ib yuklab beradi (topic.js#exportTopicQuestions
+// bilan bir xil andoza, faqat butun Fan miqyosida).
+function exportScienceQuestions(scienceId) {
+    window.location.href = `/api/export/questions/science?scienceId=${scienceId}`;
 }
 
 function hasDuplicate(currentIndex, name) {

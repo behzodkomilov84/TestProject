@@ -52,4 +52,30 @@ public class ExcelImportController {
                 .body(data);
     }
 
+    // "📊 Excel'ga eksport" (Bo'lim miqyosida) — shu Bo'limdagi BARCHA
+    // mavzularning savollarini BITTA faylga yig'ib beradi (topicSection.js).
+    @GetMapping("/export/questions/section")
+    public ResponseEntity<byte[]> exportQuestionsForSection(@RequestParam Long sectionId) {
+        byte[] data = excelService.exportQuestionsForSection(sectionId);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=savollar_bolim_" + sectionId + ".xlsx")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(data);
+    }
+
+    // "📊 Excel'ga eksport" (Fan miqyosida) — shu Fandagi BARCHA
+    // mavzularning savollarini BITTA faylga yig'ib beradi (science.js).
+    @GetMapping("/export/questions/science")
+    public ResponseEntity<byte[]> exportQuestionsForScience(@RequestParam Long scienceId) {
+        byte[] data = excelService.exportQuestionsForScience(scienceId);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=savollar_fan_" + scienceId + ".xlsx")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(data);
+    }
+
 }
