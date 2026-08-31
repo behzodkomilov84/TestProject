@@ -1311,6 +1311,7 @@ function renderSectionCard(s, globalIndexById) {
              data-section-id="${s.id}"
              tabindex="0"
              onkeydown="onCardKeyDown(event, ${s.id})"${cardClick}>
+            <span class="kbd-hint-badge">⌨️</span>
             <div class="section-item-top">
                 <div class="section-item-badges">
                     <div class="${indexClass}">${indexIcon}</div>
@@ -1382,13 +1383,13 @@ function changeSectionsPage(page) {
 
 /* ===== Bo'limlar bo'yicha guruhlangan — har biri alohida "box", o'z sahifalashi bilan ===== */
 
-function renderGroupedSections() {
-    const list = document.getElementById("sectionsList");
-    document.getElementById("sectionsPagination").style.display = "none";
-
-    // chapterKey -> {chapterId, name, orderIndex, items[]}. "none" —
-    // hali hech qanday Bo'limga biriktirilmagan mavzular (bo'lsa, ro'yxat
-    // OXIRIDA, "— Bo'limsiz mavzular —" nomi bilan).
+// allSections'ni Bo'lim (chapter) bo'yicha guruhlab, tartib bo'yicha
+// saralab qaytaradi. chapterKey -> {chapterId, name, orderIndex, items[]}.
+// "none" — hali hech qanday Bo'limga biriktirilmagan mavzular (bo'lsa,
+// ro'yxat OXIRIDA, "— Bo'limsiz mavzular —" nomi bilan). renderGroupedSections
+// VA Ctrl+↑/↓ (moveToAdjacentChapter — bo'limlar orasida o'tish) ikkalasi
+// ham shundan foydalanadi.
+function getSortedChapterGroups() {
     const groups = new Map();
     for (const s of allSections) {
         const key = s.chapterId != null ? String(s.chapterId) : "none";
@@ -1403,8 +1404,14 @@ function renderGroupedSections() {
         }
         groups.get(key).items.push(s);
     }
+    return [...groups.values()].sort((a, b) => a.orderIndex - b.orderIndex);
+}
 
-    const sortedGroups = [...groups.values()].sort((a, b) => a.orderIndex - b.orderIndex);
+function renderGroupedSections() {
+    const list = document.getElementById("sectionsList");
+    document.getElementById("sectionsPagination").style.display = "none";
+
+    const sortedGroups = getSortedChapterGroups();
     const globalIndexById = buildGlobalIndexMap();
 
     list.innerHTML = sortedGroups.map(group => renderChapterBox(group, globalIndexById)).join("");
@@ -1611,6 +1618,39 @@ function moveCardToLast(sectionId) {
     if (lastCard) selectCard(lastCard.id, { scroll: true });
 }
 
+// Ctrl+↑ / Ctrl+↓ — BO'LIMLAR (chapter box'lar) orasida o'tadi — oddiy
+// ↑/↓ (bitta sahifa) dan farqli, butun Bo'limni almashtiradi. Bo'limsiz
+// (flat) ko'rinishda hech narsa qilmaydi — Bo'lim tushunchasi umuman yo'q.
+// Yangi Bo'limning 1-sahifasidagi BIRINCHI kartasi tanlanadi.
+function moveToAdjacentChapter(sectionId, dir) {
+    const hasAnyChapter = allSections.some(s => s.chapterId != null);
+    if (!hasAnyChapter) return;
+
+    const section = allSections.find(s => s.id === sectionId);
+    if (!section) return;
+
+    const groups = getSortedChapterGroups();
+    const currentKey = section.chapterId != null ? String(section.chapterId) : "none";
+    const idx = groups.findIndex(g => g.key === currentKey);
+    const newIdx = idx + dir;
+    if (idx === -1 || newIdx < 0 || newIdx >= groups.length) return;
+
+    const targetGroup = groups[newIdx];
+    chapterPages[targetGroup.key] = 0;
+    renderGroupedSections();
+
+    const firstItem = targetGroup.items[0];
+    if (firstItem) selectCard(firstItem.id, { scroll: true });
+}
+
+// Enter — tanlangan kartaga "kirish" (sichqon bilan bosgandagi bilan bir
+// xil xulq-atvor: qulflangan bo'lsa hech narsa qilmaydi).
+function openSelectedCard(sectionId) {
+    const section = allSections.find(s => s.id === sectionId);
+    if (!section || section.locked) return;
+    location.href = `/courses/${COURSE_ID}/sections/${sectionId}`;
+}
+
 function onCardKeyDown(event, sectionId) {
     switch (event.key) {
         case "ArrowRight":
@@ -1623,11 +1663,19 @@ function onCardKeyDown(event, sectionId) {
             break;
         case "ArrowDown":
             event.preventDefault();
-            moveCardPage(sectionId, 1);
+            if (event.ctrlKey || event.metaKey) {
+                moveToAdjacentChapter(sectionId, 1);
+            } else {
+                moveCardPage(sectionId, 1);
+            }
             break;
         case "ArrowUp":
             event.preventDefault();
-            moveCardPage(sectionId, -1);
+            if (event.ctrlKey || event.metaKey) {
+                moveToAdjacentChapter(sectionId, -1);
+            } else {
+                moveCardPage(sectionId, -1);
+            }
             break;
         case "Home":
             event.preventDefault();
@@ -1636,6 +1684,10 @@ function onCardKeyDown(event, sectionId) {
         case "End":
             event.preventDefault();
             moveCardToLast(sectionId);
+            break;
+        case "Enter":
+            event.preventDefault();
+            openSelectedCard(sectionId);
             break;
     }
 }
