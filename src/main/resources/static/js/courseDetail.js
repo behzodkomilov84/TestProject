@@ -2094,6 +2094,107 @@ async function syncChapterTopics() {
     }
 }
 
+// ========================================================================
+//     "🔗 Havolalarni tekshirish" — savol izohlaridagi mavzu havolalari
+// ========================================================================
+// Har bir savolning to'g'ri javob izohida "🔗 Mavzuga havola qo'shish"
+// orqali qo'shilgan havola bo'lishi mumkin — bu FAQAT KO'RISH uchun
+// tekshiruv: o'sha havola O'ZINING mavzusiga to'g'ri bog'langanmi
+// (CourseService.auditTopicLinks). Hech narsa avtomatik o'zgartirilmaydi
+// — faqat ➖ (havola yo'q) uchun bulk-qo'shish, ⚠️ (boshqa mavzuga
+// bog'langan) uchun har biriga alohida "✅ To'g'irlash" tugmasi beriladi.
+let topicLinkAuditOpen = false;
+
+function toggleTopicLinkAudit() {
+    topicLinkAuditOpen = !topicLinkAuditOpen;
+    document.getElementById("topicLinkAuditPanel").style.display = topicLinkAuditOpen ? "block" : "none";
+    if (topicLinkAuditOpen) {
+        loadTopicLinkAudit();
+    }
+}
+
+async function loadTopicLinkAudit() {
+    const list = document.getElementById("topicLinkAuditList");
+    list.innerHTML = "<p>Tekshirilmoqda...</p>";
+
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/topic-links/audit`);
+        if (!res.ok) {
+            list.innerHTML = "<p>Tekshirishda xatolik</p>";
+            return;
+        }
+        const topics = await res.json();
+        if (!topics.length) {
+            list.innerHTML = "<p>Bu kursda TEST BOSHQARUVIga bog'langan mavzu yo'q</p>";
+            return;
+        }
+
+        list.innerHTML = topics.map(t => {
+            const hasIssues = t.missingCount > 0 || t.wrongItems.length > 0;
+            const addMissingBtn = t.missingCount > 0
+                ? `<button onclick="addMissingTopicLinks(${t.topicId})">➕ Havola qo'shish (${t.missingCount} ta)</button>`
+                : "";
+            const wrongRows = t.wrongItems.map(item => `
+                <div class="topic-link-wrong-row">
+                    <div class="topic-link-wrong-text">${escapeHtml(item.questionTextSnippet)}</div>
+                    <div class="topic-link-wrong-meta">
+                        ⚠️ Bog'langan: <code>${escapeHtml(item.actualHref)}</code>
+                        — bo'lishi kerak: <code>${escapeHtml(item.expectedHref)}</code>
+                    </div>
+                    <button onclick="fixWrongTopicLink(${item.questionId})">✅ To'g'irlash</button>
+                </div>
+            `).join("");
+
+            return `
+                <div class="row topic-link-audit-row ${hasIssues ? "" : "topic-link-audit-ok"}">
+                    <div class="topic-link-audit-summary">
+                        <b>${escapeHtml(t.topicName)}</b>
+                        — ✅ ${t.okCount} ta to'g'ri
+                        ${t.missingCount > 0 ? `, ➖ ${t.missingCount} ta havolasiz` : ""}
+                        ${t.wrongItems.length > 0 ? `, ⚠️ ${t.wrongItems.length} ta xato havolali` : ""}
+                        ${addMissingBtn}
+                    </div>
+                    ${wrongRows}
+                </div>
+            `;
+        }).join("");
+    } catch (err) {
+        console.error(err);
+        list.innerHTML = "<p>Tarmoq xatoligi</p>";
+    }
+}
+
+async function addMissingTopicLinks(topicId) {
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/topic-links/add-missing?topicId=${topicId}`, { method: "POST" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || "Havola qo'shishda xatolik");
+            return;
+        }
+        alert(`✅ ${data.added} ta savolga havola qo'shildi`);
+        loadTopicLinkAudit();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+async function fixWrongTopicLink(questionId) {
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/topic-links/fix-wrong?questionId=${questionId}`, { method: "POST" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "To'g'irlashda xatolik");
+            return;
+        }
+        loadTopicLinkAudit();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
 function escapeHtml(text) {
     const div = document.createElement("div");
     div.textContent = text;

@@ -47,6 +47,16 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     @Query("select cs from CourseSection cs where cs.linkedTopic.id = :topicId and cs.deletedAt is null")
     Optional<CourseSection> findByLinkedTopic_Id(@Param("topicId") Long topicId);
 
+    // "🔗 Havolalarni tekshirish" — shu kursning TEST BOSHQARUVIga
+    // bog'langan BARCHA bo'limlari (CourseService.auditTopicLinks).
+    @Query("select cs from CourseSection cs where cs.course.id = :courseId and cs.linkedTopic is not null and cs.deletedAt is null")
+    List<CourseSection> findByCourse_IdAndLinkedTopicIsNotNull(@Param("courseId") Long courseId);
+
+    // Bitta aniq mavzu ANIQ shu kursga bog'langanmi (himoya tekshiruvi) —
+    // CourseService.addMissingTopicLinks / fixWrongTopicLink.
+    @Query("select cs from CourseSection cs where cs.course.id = :courseId and cs.linkedTopic.id = :topicId and cs.deletedAt is null")
+    Optional<CourseSection> findByCourse_IdAndLinkedTopic_Id(@Param("courseId") Long courseId, @Param("topicId") Long topicId);
+
     // Shu FANDAGI qaysi mavzular (Topic) biror kurs bo'limiga bog'langanini
     // BULK (bitta so'rov, N+1 emas) topish uchun — topics.html'da "🔗 Kurs:
     // ..." belgisini ko'rsatish (TopicService.getTopicsByScienceId).

@@ -55,6 +55,14 @@
                 <button id="syncChapterTopicsBtn" onclick="syncChapterTopics()" title="Kurs Bo'limlari bilan TEST BOSHQARUVIdagi bog'langan mavzularning Bo'limi orasidagi farqni to'g'rilaydi">
                     🔄 Bo'lim-Mavzu bog'lanishini sinxronlash
                 </button>
+                <!-- Har bir mavzuning savollari to'g'ri javob izohida
+                     "🔗 Mavzuga havola qo'shish" orqali qo'shilgan havola
+                     O'ZINING mavzusiga (emas, boshqa mavzuga) bog'lanib
+                     qolgan bo'lishi mumkin — bu tugma shuni tekshirib,
+                     natijani ko'rsatadi (CourseService.auditTopicLinks). -->
+                <button id="topicLinkAuditBtn" onclick="toggleTopicLinkAudit()" title="Har bir mavzudagi savollarning izohidagi havola O'ZINING mavzusiga to'g'ri bog'langanini tekshiradi — xato/yo'q havolalarni ko'rsatadi va tuzatish tugmalarini beradi">
+                    🔗 Havolalarni tekshirish
+                </button>
                 <!-- Soft-delete qilingan (🗑️ o'chirilgan) kurs mavzulari —
                      "♻️ Tiklash" bilan bir zumda qaytariladi (CourseService.
                      getDeletedSections/restoreSection). -->
@@ -67,6 +75,10 @@
 
             <div id="sectionTrashPanel" style="display:none;">
                 <div id="sectionTrashList"></div>
+            </div>
+
+            <div id="topicLinkAuditPanel" style="display:none;">
+                <div id="topicLinkAuditList"></div>
             </div>
 
         <div id="editCourseForm" class="course-form" style="display:none;">

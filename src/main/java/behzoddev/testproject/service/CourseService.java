@@ -11,10 +11,12 @@ import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
 import behzoddev.testproject.dto.course.*;
 import behzoddev.testproject.dto.question.TopicQuestionCountDto;
+import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Course;
 import behzoddev.testproject.entity.CourseChapter;
 import behzoddev.testproject.entity.CourseSection;
 import behzoddev.testproject.entity.CourseSectionProgress;
+import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.entity.TopicSection;
@@ -29,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,6 +40,8 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -58,6 +63,21 @@ public class CourseService {
     private final TopicRepository topicRepository;
     private final TopicSectionRepository topicSectionRepository;
     private final QuestionRepository questionRepository;
+
+    // "🔗 Mavzuga havola qo'shish" (topicLinkButton.js#buildTopicLinkHtml)
+    // tomonidan izohga qo'shilgan havolani topish uchun — faqat
+    // "/courses/{courseId}/sections/{sectionId}" ko'rinishidagi href'ni
+    // qidiradi (boshqa (masalan tashqi) havolalarga tegmaydi).
+    private static final Pattern TOPIC_LINK_HREF_PATTERN =
+            Pattern.compile("href=\"/courses/(\\d+)/sections/(\\d+)\"");
+
+    // Izohdagi eski/noto'g'ri mavzu havolasi belgisini (badge) olib
+    // tashlash uchun — ixtiyoriy o'rab turuvchi <span>...</span> bilan
+    // birga (agar bor bo'lsa), aks holda faqat <a>...</a>ning o'zi.
+    private static final Pattern TOPIC_LINK_BADGE_PATTERN = Pattern.compile(
+            "(?:<span[^>]*>\\s*)?<a\\s+href=\"/courses/\\d+/sections/\\d+\"[^>]*>.*?</a>(?:\\s*</span>)?",
+            Pattern.DOTALL
+    );
 
     /* ================= KATALOG / KO'RISH ================= */
 
@@ -985,5 +1005,131 @@ public class CourseService {
                 .createdAt(course.getCreatedAt())
                 .deletedAt(course.getDeletedAt())
                 .build();
+    }
+
+    /* ================= "🔗 Mavzuga havola" tekshiruvi ================= */
+
+    // "🔗 Havolalarni tekshirish" (courseDetail.js) — shu kursga bog'langan
+    // har bir mavzuning barcha (faol) savollari to'g'ri javob izohida
+    // O'ZINING mavzusiga havola bor-yo'qligini, bor bo'lsa TO'G'RI
+    // ekanini tekshiradi. Faqat KO'RSATISH uchun — hech narsa o'zgartirmaydi.
+    @Transactional(readOnly = true)
+    public List<TopicLinkAuditDto> auditTopicLinks(Long courseId) {
+        List<CourseSection> linkedSections = courseSectionRepository.findByCourse_IdAndLinkedTopicIsNotNull(courseId);
+
+        List<TopicLinkAuditDto> result = new ArrayList<>();
+        for (CourseSection section : linkedSections) {
+            Topic topic = section.getLinkedTopic();
+            String expectedHref = "/courses/" + courseId + "/sections/" + section.getId();
+
+            List<Question> questions = questionRepository.getQuestionsByTopicId(topic.getId());
+
+            int ok = 0;
+            int missing = 0;
+            List<TopicLinkAuditItemDto> wrong = new ArrayList<>();
+
+            for (Question q : questions) {
+                Answer trueAnswer = findTrueAnswer(q);
+                String commentary = trueAnswer != null ? trueAnswer.getCommentary() : null;
+                Matcher m = commentary != null ? TOPIC_LINK_HREF_PATTERN.matcher(commentary) : null;
+
+                if (m == null || !m.find()) {
+                    missing++;
+                    continue;
+                }
+
+                String actualHref = "/courses/" + m.group(1) + "/sections/" + m.group(2);
+                if (actualHref.equals(expectedHref)) {
+                    ok++;
+                } else {
+                    wrong.add(new TopicLinkAuditItemDto(
+                            q.getId(),
+                            truncateForSnippet(q.getQuestionText()),
+                            actualHref,
+                            expectedHref
+                    ));
+                }
+            }
+
+            result.add(new TopicLinkAuditDto(topic.getId(), topic.getName(), expectedHref, ok, missing, wrong));
+        }
+        return result;
+    }
+
+    // "➕ Havola qo'shish" — shu mavzudagi savollar orasidan izohida HECH
+    // QANDAY mavzu havolasi yo'qlariga to'g'ri havolani qo'shadi (mavjud
+    // havolasi bor savollarga — to'g'ri bo'lsin, noto'g'ri bo'lsin —
+    // TEGILMAYDI, ular uchun alohida "✅ To'g'irlash" — fixWrongTopicLink).
+    // Qaytariladigan son — nechta savolga qo'shilgani.
+    @Transactional
+    public int addMissingTopicLinks(Long courseId, Long topicId) {
+        CourseSection section = courseSectionRepository.findByCourse_IdAndLinkedTopic_Id(courseId, topicId)
+                .orElseThrow(() -> new IllegalArgumentException("❌ Bu mavzu shu kursga bog'lanmagan."));
+
+        String correctBadge = buildTopicLinkBadge(courseId, section.getId(), section.getLinkedTopic().getName());
+
+        List<Question> questions = questionRepository.getQuestionsByTopicId(topicId);
+        int fixed = 0;
+        for (Question q : questions) {
+            Answer trueAnswer = findTrueAnswer(q);
+            if (trueAnswer == null) continue;
+
+            String commentary = trueAnswer.getCommentary();
+            boolean hasLink = commentary != null && TOPIC_LINK_HREF_PATTERN.matcher(commentary).find();
+            if (hasLink) continue;
+
+            trueAnswer.setCommentary((commentary == null ? "" : commentary) + correctBadge);
+            fixed++;
+        }
+        return fixed;
+    }
+
+    // "✅ To'g'irlash" — BITTA savolning izohidagi (boshqa mavzuga
+    // bog'langan, NOTO'G'RI) havola belgisini olib tashlab, o'rniga
+    // O'ZINING mavzusiga TO'G'RI havolani qo'yadi.
+    @Transactional
+    public void fixWrongTopicLink(Long courseId, Long questionId) {
+        Question question = questionRepository.findById(questionId)
+                .orElseThrow(() -> new NoSuchElementException("❌ Savol topilmadi."));
+
+        CourseSection section = courseSectionRepository
+                .findByCourse_IdAndLinkedTopic_Id(courseId, question.getTopic().getId())
+                .orElseThrow(() -> new IllegalArgumentException("❌ Bu savolning mavzusi shu kursga bog'lanmagan."));
+
+        Answer trueAnswer = findTrueAnswer(question);
+        if (trueAnswer == null) {
+            throw new IllegalArgumentException("❌ Bu savolning to'g'ri javobi topilmadi.");
+        }
+
+        String correctBadge = buildTopicLinkBadge(courseId, section.getId(), section.getLinkedTopic().getName());
+        String existing = trueAnswer.getCommentary();
+        String cleaned = existing == null ? "" : TOPIC_LINK_BADGE_PATTERN.matcher(existing).replaceAll("");
+        trueAnswer.setCommentary(cleaned + correctBadge);
+    }
+
+    private Answer findTrueAnswer(Question question) {
+        if (question.getAnswers() == null) return null;
+        return question.getAnswers().stream()
+                .filter(a -> Boolean.TRUE.equals(a.getIsTrue()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String truncateForSnippet(String text) {
+        if (text == null) return "";
+        return text.length() > 80 ? text.substring(0, 80) + "…" : text;
+    }
+
+    // topicLinkButton.js#buildTopicLinkHtml bilan AYNAN bir xil HTML/uslub
+    // — ikkalasi ham sinxron saqlanishi kerak (birida o'zgarish bo'lsa,
+    // ikkinchisida ham qo'lda yangilanishi kerak).
+    private String buildTopicLinkBadge(Long courseId, Long sectionId, String topicName) {
+        String url = "/courses/" + courseId + "/sections/" + sectionId;
+        String safeTitle = topicName.replace("\"", "&quot;");
+        return " <span style=\"display:inline-block;margin-top:6px;padding:4px 10px 4px 8px;" +
+                "background:#e8f5f3;border-left:3px solid #00796b;border-radius:4px;" +
+                "color:#00695c;font-weight:600;font-style:normal;text-decoration:none\">" +
+                "📖 <a href=\"" + url + "\" style=\"color:#00695c;text-decoration:underline\">\"" +
+                safeTitle + "\" mavzusini kursda o'qish</a></span>";
     }
 }
