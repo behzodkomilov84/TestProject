@@ -1862,37 +1862,37 @@ body {
     gap: 8px;
 }
 
-/* "🔗 Havolalarni tekshirish" paneli (courseDetail.js — topicLinkAuditList)
-   — #sectionTrashList'dagi bilan bir xil qator uslubi, lekin xato/yo'q
-   havolalar ko'proq joy egallashi mumkin (savol matni + ikkita href),
-   shuning uchun ustma-ust joylashuv (flex-column). */
+/* "🔗 Havolalarni tekshirish" paneli (courseDetail.js — topicLinkAuditList).
+   Faqat MUAMMOSI BOR mavzular shu batafsil ("row") ko'rinishda chiqadi —
+   to'g'ri bo'lganlari alohida-alohida ko'rsatilmaydi, ".topic-link-audit-
+   ok-summary" bitta qisqa qatorga yig'ib beradi (pastda). */
 .topic-link-audit-row {
     display: flex;
     flex-direction: column;
     align-items: stretch;
     gap: 8px;
     background: #fff;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #fecaca;
+    border-left: 4px solid #dc2626;
     border-radius: 8px;
     padding: 10px 14px;
     margin-bottom: 8px;
 }
 
-/* Muammosi yo'q mavzular — xira, kamroq e'tibor tortadigan qilib
-   ko'rsatiladi (bosh muammoli qatorlar ko'zga birinchi tashlanishi uchun). */
-.topic-link-audit-row.topic-link-audit-ok {
-    opacity: 0.6;
-}
-
-/* "🛠️ Butun kursdagi BARCHA xato havolalarni tuzatish" tugmasi — panel
-   ustida, alohida ajralib turadi (katta ko'lamli amal). */
-.topic-link-audit-fix-all {
-    margin-bottom: 10px;
-}
-
-.topic-link-audit-fix-all button {
-    background: #dc2626;
-    color: #fff;
+/* "✅ N ta mavzuda hammasi joyida" — bitta xotirjam (yashil) qator,
+   muammoli ro'yxatning ustida. */
+.topic-link-audit-ok-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    color: #166534;
+    font-size: 14px;
+    font-weight: 600;
 }
 
 .topic-link-audit-summary {
@@ -1929,8 +1929,64 @@ body {
     font-size: 12px;
 }
 
-.topic-link-wrong-row button {
+/* ===== Havolalarni tekshirish panelidagi amal tugmalari — chiroyli,
+   bir-biridan rangi bilan ajraladigan (yashil=qo'shish, ko'k=tuzatish,
+   qizil=katta ko'lamli tuzatish), boshqa panellardagi tugmalar bilan bir
+   xil andoza (gradient + soya + hover'da yengil ko'tarilish). ===== */
+.topic-link-add-missing-btn,
+.topic-link-fix-all-btn,
+.topic-link-fix-one-btn,
+.topic-link-fix-all-course-btn {
+    border: none;
+    border-radius: 999px;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    white-space: nowrap;
+}
+
+.topic-link-add-missing-btn,
+.topic-link-fix-all-btn {
+    padding: 6px 14px;
+    font-size: 13px;
+}
+
+.topic-link-fix-one-btn {
     align-self: flex-start;
+    padding: 5px 12px;
+    font-size: 12px;
+}
+
+.topic-link-add-missing-btn {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+}
+
+.topic-link-fix-all-btn,
+.topic-link-fix-one-btn {
+    background: linear-gradient(135deg, #0891b2, #06b6d4);
+    box-shadow: 0 2px 8px rgba(8, 145, 178, 0.3);
+}
+
+.topic-link-fix-all-course-btn {
+    padding: 10px 18px;
+    font-size: 14px;
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    box-shadow: 0 3px 10px rgba(220, 38, 38, 0.35);
+}
+
+.topic-link-add-missing-btn:hover,
+.topic-link-fix-all-btn:hover,
+.topic-link-fix-one-btn:hover,
+.topic-link-fix-all-course-btn:hover {
+    transform: translateY(-1px);
+}
+
+/* "🛠️ Butun kursdagi BARCHA xato havolalarni tuzatish" tugmasi — panel
+   ustida, alohida ajralib turadi (katta ko'lamli amal). */
+.topic-link-audit-fix-all {
+    margin-bottom: 14px;
 }
 
 /* Kurs bo'limi (TopicSection)/kurs Bo'limi "🔗 Kurs: ..." belgisi bilan

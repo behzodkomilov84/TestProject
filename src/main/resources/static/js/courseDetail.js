@@ -2129,24 +2129,41 @@ async function loadTopicLinkAudit() {
             return;
         }
 
-        // Katta kurslarda o'nlab mavzuda yuzlab xato havola bir yo'la
-        // topilishi mumkin — har birini alohida bosish o'rniga, BUTUN
-        // kurs bo'yicha bittada tuzatish tugmasi (faqat xato havolalar
-        // bo'lsa ko'rinadi).
-        const totalWrong = topics.reduce((sum, t) => sum + t.wrongItems.length, 0);
-        const fixAllInCourseBtn = totalWrong > 0
-            ? `<div class="topic-link-audit-fix-all">
-                   <button onclick="fixAllWrongTopicLinksInCourse()">🛠️ Butun kursdagi BARCHA xato havolalarni tuzatish (${totalWrong} ta)</button>
+        // Muammosi bor mavzular ALOHIDA-ALOHIDA (batafsil) ko'rsatiladi,
+        // hammasi to'g'ri bo'lgan mavzular esa (ko'pchilik holatda —
+        // asosiy qism) BITTA qisqa izoh qatoriga yig'iladi — foydalanuvchi
+        // so'rovi bo'yicha: o'nlab-yuzlab "hammasi joyida" qatorni birma-bir
+        // ko'rsatish shart emas, faqat muammoli joylar ko'zga tashlansin.
+        const okTopics = topics.filter(t => t.missingCount === 0 && t.wrongItems.length === 0);
+        const issueTopics = topics.filter(t => t.missingCount > 0 || t.wrongItems.length > 0);
+
+        const okSummary = okTopics.length > 0
+            ? `<div class="topic-link-audit-ok-summary">
+                   ✅ ${okTopics.length} ta mavzuda hammasi joyida (jami ${okTopics.reduce((s, t) => s + t.okCount, 0)} ta savol to'g'ri bog'langan)
                </div>`
             : "";
 
-        list.innerHTML = fixAllInCourseBtn + topics.map(t => {
-            const hasIssues = t.missingCount > 0 || t.wrongItems.length > 0;
+        if (issueTopics.length === 0) {
+            list.innerHTML = okSummary || "<p>✅ Barcha mavzularda havolalar to'g'ri!</p>";
+            return;
+        }
+
+        // Katta kurslarda o'nlab mavzuda yuzlab xato havola bir yo'la
+        // topilishi mumkin — har birini alohida bosish o'rniga, BUTUN
+        // kurs bo'yicha bittada tuzatish tugmasi.
+        const totalWrong = topics.reduce((sum, t) => sum + t.wrongItems.length, 0);
+        const fixAllInCourseBtn = totalWrong > 0
+            ? `<div class="topic-link-audit-fix-all">
+                   <button class="topic-link-fix-all-course-btn" onclick="fixAllWrongTopicLinksInCourse()">🛠️ Butun kursdagi BARCHA xato havolalarni tuzatish (${totalWrong} ta)</button>
+               </div>`
+            : "";
+
+        const issueRows = issueTopics.map(t => {
             const addMissingBtn = t.missingCount > 0
-                ? `<button onclick="addMissingTopicLinks(${t.topicId})">➕ Havola qo'shish (${t.missingCount} ta)</button>`
+                ? `<button class="topic-link-add-missing-btn" onclick="addMissingTopicLinks(${t.topicId})">➕ Havola qo'shish (${t.missingCount} ta)</button>`
                 : "";
             const fixAllWrongBtn = t.wrongItems.length > 0
-                ? `<button onclick="fixAllWrongTopicLinks(${t.topicId})">✅ Barchasini to'g'irlash (${t.wrongItems.length} ta)</button>`
+                ? `<button class="topic-link-fix-all-btn" onclick="fixAllWrongTopicLinks(${t.topicId})">✅ Barchasini to'g'irlash (${t.wrongItems.length} ta)</button>`
                 : "";
             const wrongRows = t.wrongItems.map(item => `
                 <div class="topic-link-wrong-row">
@@ -2155,12 +2172,12 @@ async function loadTopicLinkAudit() {
                         ⚠️ Bog'langan: <code>${escapeHtml(item.actualHref)}</code>
                         — bo'lishi kerak: <code>${escapeHtml(item.expectedHref)}</code>
                     </div>
-                    <button onclick="fixWrongTopicLink(${item.questionId})">✅ To'g'irlash</button>
+                    <button class="topic-link-fix-one-btn" onclick="fixWrongTopicLink(${item.questionId})">✅ To'g'irlash</button>
                 </div>
             `).join("");
 
             return `
-                <div class="row topic-link-audit-row ${hasIssues ? "" : "topic-link-audit-ok"}">
+                <div class="row topic-link-audit-row">
                     <div class="topic-link-audit-summary">
                         <b>${escapeHtml(t.topicName)}</b>
                         — ✅ ${t.okCount} ta to'g'ri
@@ -2173,6 +2190,8 @@ async function loadTopicLinkAudit() {
                 </div>
             `;
         }).join("");
+
+        list.innerHTML = okSummary + fixAllInCourseBtn + issueRows;
     } catch (err) {
         console.error(err);
         list.innerHTML = "<p>Tarmoq xatoligi</p>";
