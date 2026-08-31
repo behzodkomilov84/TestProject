@@ -1311,7 +1311,7 @@ function renderSectionCard(s, globalIndexById) {
              data-section-id="${s.id}"
              tabindex="0"
              onkeydown="onCardKeyDown(event, ${s.id})"${cardClick}>
-            <span class="kbd-hint-badge">⌨️</span>
+            <span class="kbd-hint-badge" onclick="event.stopPropagation(); toggleKbdHint(this)" title="Klaviatura yorliqlari">⌨️</span>
             <div class="section-item-top">
                 <div class="section-item-badges">
                     <div class="${indexClass}">${indexIcon}</div>
@@ -1706,6 +1706,27 @@ function selectCard(sectionId, { scroll = false } = {}) {
         if (scroll) el.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 }
+
+// "⌨️" belgisi bosilganda — klaviatura-yo'riqnoma pufakchasini
+// ochadi/yopadi (".kbd-hint-open" klassi, courses.css). Avval hover'da
+// avtomatik ochilardi, lekin ekranni to'sib xalaqit berardi (haqiqiy
+// foydalanuvchi shikoyati) — endi FAQAT shu belgi bosilganda ko'rinadi.
+// Bir vaqtning o'zida faqat BITTA karta yo'riqnomasi ochiq turadi.
+function toggleKbdHint(badgeEl) {
+    const card = badgeEl.closest(".section-item");
+    if (!card) return;
+    const wasOpen = card.classList.contains("kbd-hint-open");
+    document.querySelectorAll(".section-item.kbd-hint-open").forEach(el => el.classList.remove("kbd-hint-open"));
+    if (!wasOpen) card.classList.add("kbd-hint-open");
+}
+
+// Kartadan tashqariga (yoki boshqa joyga) bosilsa — ochiq turgan
+// yo'riqnoma yopiladi.
+document.addEventListener("click", (e) => {
+    if (!e.target.closest(".kbd-hint-badge")) {
+        document.querySelectorAll(".section-item.kbd-hint-open").forEach(el => el.classList.remove("kbd-hint-open"));
+    }
+});
 
 /* ===== Sahifalash tugmalari — flat va guruhlangan ko'rinishlar bir xil ishlatadi ===== */
 

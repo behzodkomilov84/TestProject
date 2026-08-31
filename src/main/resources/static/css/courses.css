@@ -1170,31 +1170,32 @@ body {
 
 /* Kartaning o'ng-yuqori burchagidagi doimiy ko'rinadigan "⌨️" belgisi —
    foydalanuvchiga shu yerda klaviatura yorlig'lari borligini bildirib
-   turadi (hover qilmasa ham ko'rinadi, xira holatda; hover/fokusda
-   yorqinlashadi). O'zi bosilmaydi/hover olmaydi (pointer-events:none) —
-   butun karta allaqachon hover/tooltipni boshqaradi (::after, pastda). */
+   turadi. Endi FAQAT shu belgi BOSILGANDA (toggleKbdHint, courseDetail.js)
+   pastdagi yo'riqnoma ochiladi — avval hover'da avtomatik chiqardi, lekin
+   ekranni to'sib, xalaqit berardi (haqiqiy foydalanuvchi shikoyati). */
 .kbd-hint-badge {
     position: absolute;
     top: 10px;
     right: 10px;
     font-size: 13px;
     opacity: 0.4;
-    pointer-events: none;
+    cursor: pointer;
     transition: opacity 0.15s ease;
     z-index: 31;
 }
 
 .section-item:hover .kbd-hint-badge,
-.section-item:focus .kbd-hint-badge {
+.section-item:focus .kbd-hint-badge,
+.kbd-hint-badge:hover {
     opacity: 0.9;
 }
 
-/* Klaviatura navigatsiyasi yo'riqnomasi — sichqonni kartaga olib borganda
-   (yoki klaviaturada fokus qilinganda), kartaning TEPASIDA "qo'llanma"
-   pufakchasi chiqadi: har bir tugma alohida qatorda, o'qish oson bo'lishi
-   uchun (pre-line — "\A" qator ko'chirish sifatida ishlaydi). Qulflangan
-   kartalarda ham ishlaydi (navigatsiya ular ustida ham ishlaydi, faqat
-   Enter bilan ochilmaydi). CSS-only — JS shart emas. */
+/* Klaviatura navigatsiyasi yo'riqnomasi — "⌨️" belgisi bosilgandagina
+   (".kbd-hint-open" klassi, toggleKbdHint) ochiladi, kartaning TEPASIDA
+   "qo'llanma" pufakchasi bo'lib chiqadi: har bir tugma alohida qatorda,
+   o'qish oson bo'lishi uchun (pre-line — "\A" qator ko'chirish sifatida
+   ishlaydi). Qulflangan kartalarda ham ishlaydi (navigatsiya ular ustida
+   ham ishlaydi, faqat Enter bilan ochilmaydi). */
 .section-item::after {
     content: "⌨️ Klaviatura yorliqlari:\A ←  /  → — mavzular orasida\A ↑  /  ↓ — sahifalar orasida\A Home — 1-mavzu   |   End — oxirgi mavzu\A Ctrl+↑ / Ctrl+↓ — bo'limlar orasida\A Enter — mavzuga kirish";
     position: absolute;
@@ -1220,8 +1221,7 @@ body {
     z-index: 30;
 }
 
-.section-item:hover::after,
-.section-item:focus::after {
+.section-item.kbd-hint-open::after {
     opacity: 1;
     transform: translate(-50%, 0);
 }
