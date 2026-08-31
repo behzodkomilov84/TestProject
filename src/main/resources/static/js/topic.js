@@ -12,7 +12,7 @@ let newName = ""; //for EDIT uses
 // Haqiqiy Excel ilovasi belgisiga o'xshash SVG (yashil hujjat + oq "X") —
 // "📊 Excel'ga eksport" tugmalarida emoji o'rniga ishlatiladi (foydalanuvchi
 // so'rovi bo'yicha — barcha eksport tugmalarida bir xil belgi).
-const EXCEL_ICON_SVG = `<svg width="42" height="42" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+const EXCEL_ICON_SVG = `<svg width="28" height="28" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
     <rect x="4" y="4" width="40" height="40" rx="7" fill="#107C41"/>
     <rect x="4" y="4" width="18" height="40" rx="7" fill="#0B5C31"/>
     <g stroke="#fff" stroke-width="4" stroke-linecap="round">
