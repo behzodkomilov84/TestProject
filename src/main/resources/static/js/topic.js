@@ -643,14 +643,21 @@ function render() {
             ? `<span class="topic-course-badge" title="Bu mavzu kursga bog'langan">🔗 Kurs: ${escapeHtml(s.linkedCourseTitle)}</span>`
             : '';
 
-        // Bo'lim/Kurs belgilari — o'z alohida qatorida (bo'lsagina);
-        // mavzu NOMI esa har doim YANGI qatordan boshlanadi, savol soni
-        // belgisi esa nom bilan bir qatorda, lekin O'NG tomonda (ajralib
-        // turadigan fon bilan) — hammasi bir-biriga "yopishib" ketmasin
-        // deb (item-badges/item-title-row, science.css).
-        const badgesRow = (sectionBadge || courseBadge)
-            ? `<div class="item-badges">${sectionBadge}${courseBadge}</div>`
-            : '';
+        // "📊 Excel'ga eksport" — shu mavzudagi barcha faol testlarni
+        // .xlsx fayl sifatida yuklab olish (question.html'dagi "📥
+        // Excel'ga eksport" bilan bir xil endpoint — /api/export/questions).
+        // Bo'lim/Kurs belgilaridan farqli, BARCHA mavzularda ko'rinadi
+        // (savoli yo'q mavzuda ham — bosilsa shunchaki bo'sh fayl tushadi).
+        const exportBtn = `<button class="topic-export-btn" onclick="event.stopPropagation(); exportTopicQuestions(${s.id})" title="Shu mavzudagi testlarni Excel'ga eksport qilish">📊</button>`;
+
+        // Bo'lim/Kurs belgilari — o'z alohida qatorida; mavzu NOMI esa
+        // har doim YANGI qatordan boshlanadi, savol soni belgisi esa nom
+        // bilan bir qatorda, lekin O'NG tomonda (ajralib turadigan fon
+        // bilan) — hammasi bir-biriga "yopishib" ketmasin deb (item-
+        // badges/item-title-row, science.css). Export tugmasi bo'lgani
+        // uchun endi HAR DOIM ko'rsatiladi (Bo'lim/Kurs belgisi
+        // bo'lmasa ham).
+        const badgesRow = `<div class="item-badges">${sectionBadge}${courseBadge}${exportBtn}</div>`;
 
         row.innerHTML = `
     ${
@@ -718,6 +725,14 @@ function openQuestions(topicId) {
 
     window.location.href = `/question?topicId=${topicId}`;
 } //TODO
+
+// "📊 Excel'ga eksport" — shu mavzudagi barcha faol testlarni .xlsx
+// fayl sifatida yuklab beradi (question.js#exportQuestionsToExcel bilan
+// bir xil endpoint). Oddiy GET + Content-Disposition:attachment orqali —
+// brauzerning o'zi faylni yuklab beradi, fetch/blob shart emas.
+function exportTopicQuestions(topicId) {
+    window.location.href = `/api/export/questions?topicId=${topicId}`;
+}
 
 function hasDuplicate(currentIndex, name) {
 

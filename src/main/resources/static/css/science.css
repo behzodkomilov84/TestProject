@@ -204,9 +204,38 @@ h1 {
 
     /* Bo'lim/Kurs belgilari (topic-section-badge/topic-course-badge) —
        nom USTIDA, o'z alohida qatorida (science.js/topicSection.js/
-       topic.js render() — item-badges). */
+       topic.js render() — item-badges). Endi flex qator — "📊 Excel'ga
+       eksport" tugmasi (topic.js) shu qatorning O'NG chetiga (margin-
+       left:auto orqali) surilishi uchun. */
     .item-badges {
+        display: flex;
+        align-items: center;
         margin-bottom: 6px;
+    }
+
+    /* "📊 Excel'ga eksport" — har bir mavzu qatorida, badge'lar
+       qatorining O'NG chetida (topic.js render()). Belgilar (Bo'lim/
+       Kurs) bo'lmasa ham HAR DOIM ko'rinadi. */
+    .topic-export-btn {
+        margin-left: auto;
+        border: none;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #16a34a, #22c55e);
+        color: #fff;
+        font-size: 13px;
+        width: 26px;
+        height: 26px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(22, 163, 74, 0.3);
+        transition: transform 0.15s ease;
+        flex-shrink: 0;
+    }
+
+    .topic-export-btn:hover {
+        transform: translateY(-1px);
     }
 
     /* Nom + sanoq belgisi bitta qatorda — nom chapda (kerak bo'lsa
