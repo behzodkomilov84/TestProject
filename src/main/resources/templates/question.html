@@ -74,6 +74,11 @@
             <button onclick="sortAllAZ('ZA')">Z→A</button>
         </div>
 
+        <!-- Shu mavzudagi BARCHA faol savollarni Excel (.xlsx) fayl
+             sifatida yuklab olish — import shabloni bilan bir xil
+             formatda, shu sabab keyin qayta import ham qilish mumkin. -->
+        <button id="exportExcelBtn" class="export-excel-btn" onclick="exportQuestionsToExcel()" title="Shu mavzudagi barcha faol savollarni Excel (.xlsx) faylga yuklab olish">📥 Excel'ga eksport</button>
+
         <!-- Kamida bitta savol jadvaldagi checkbox orqali belgilansa
              ko'rinadi (updateBulkDeleteButton, question.js). -->
         <button id="bulkDeleteBtn" class="bulk-delete-btn hidden" onclick="deleteSelectedQuestions()">🗑️ Tanlanganlarni o'chirish (<span id="bulkDeleteCount">0</span>)</button>

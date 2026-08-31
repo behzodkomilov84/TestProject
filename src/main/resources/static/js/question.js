@@ -1157,6 +1157,14 @@ function createTest() {
     window.location.href = `/question/${topicId}/create-test-form`;
 }
 
+// "📥 Excel'ga eksport" — shu mavzudagi barcha faol savollarni .xlsx
+// fayl sifatida yuklab beradi (import shabloni bilan bir xil formatda).
+// Oddiy GET + Content-Disposition:attachment orqali — fetch/blob shart
+// emas, brauzerning o'zi faylni yuklab beradi.
+function exportQuestionsToExcel() {
+    window.location.href = `/api/export/questions?topicId=${topicId}`;
+}
+
 function showAlert(message, type = "error") {
     const box = document.getElementById("alertBox");
     box.textContent = message;

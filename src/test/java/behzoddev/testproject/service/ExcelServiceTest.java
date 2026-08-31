@@ -1,7 +1,10 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dto.excel.ImportResultDto;
 import behzoddev.testproject.dto.question.QuestionSaveDto;
+import behzoddev.testproject.entity.Answer;
+import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.validation.Validation;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -37,6 +40,8 @@ class ExcelServiceTest {
     @Mock
     private QuestionService questionService;
     @Mock
+    private QuestionRepository questionRepository; // faqat exportQuestions() uchun (bu oqimda chaqirilmaydi)
+    @Mock
     private AnswerService excelAnswerService; // ExcelService'ning o'z isUnique() tekshiruvi uchun
     @Mock
     private AnswerService validationAnswerService; // faqat Validation ichida ishlatiladi (bu oqimda chaqirilmaydi)
@@ -48,7 +53,7 @@ class ExcelServiceTest {
     @BeforeEach
     void setUp() {
         Validation validation = new Validation(validationAnswerService);
-        excelService = new ExcelService(questionService, excelAnswerService, validation, clamAvScanService);
+        excelService = new ExcelService(questionService, questionRepository, excelAnswerService, validation, clamAvScanService);
         // Fayl-darajasidagi validatsiya testlari (bo'sh/katta/noto'g'ri kengaytma)
         // qatorlarni umuman o'qishga yetmaydi — shu stublar ular uchun keraksiz
         // bo'lgani uchun lenient qilingan.
@@ -236,5 +241,32 @@ class ExcelServiceTest {
         assertThat(result.success()).isFalse();
         assertThat(result.errors().get(0)).contains("zararli");
         verify(questionService, never()).save(any());
+    }
+
+    // ===== exportQuestions =====
+
+    @Test
+    void exportQuestions_writesHeaderAndRowsMatchingImportFormat() throws IOException {
+        Answer a = Answer.builder().id(1L).answerText("Toshkent").isTrue(false).build();
+        Answer b = Answer.builder().id(2L).answerText("Samarqand").isTrue(true).commentary("To'g'ri, chunki...").build();
+        Question q = Question.builder().id(100L).questionText("Qaysi shahar?").answers(List.of(a, b)).build();
+
+        when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(5L)).thenReturn(List.of(q));
+
+        byte[] result = excelService.exportQuestions(5L);
+
+        try (XSSFWorkbook wb = new XSSFWorkbook(new java.io.ByteArrayInputStream(result))) {
+            Sheet sheet = wb.getSheetAt(0);
+            Row header = sheet.getRow(0);
+            assertThat(header.getCell(0).getStringCellValue()).isEqualTo("Question");
+            assertThat(header.getCell(6).getStringCellValue()).isEqualTo("Correct");
+
+            Row row = sheet.getRow(1);
+            assertThat(row.getCell(0).getStringCellValue()).isEqualTo("Qaysi shahar?");
+            assertThat(row.getCell(1).getStringCellValue()).isEqualTo("Toshkent");
+            assertThat(row.getCell(2).getStringCellValue()).isEqualTo("Samarqand");
+            assertThat(row.getCell(6).getStringCellValue()).isEqualTo("B"); // 2-javob (indeks 1) to'g'ri
+            assertThat(row.getCell(7).getStringCellValue()).isEqualTo("To'g'ri, chunki...");
+        }
     }
 }

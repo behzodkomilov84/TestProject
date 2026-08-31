@@ -38,4 +38,18 @@ public class ExcelImportController {
         return ResponseEntity.ok(excelService.importQuestions(file, topicId));
     }
 
+    // "📥 Excel'ga eksport" — shu mavzudagi barcha faol savollarni import
+    // shabloni bilan bir xil formatdagi .xlsx faylga yozib, yuklab beradi
+    // (question.js — controls qatoridagi tugma).
+    @GetMapping("/export/questions")
+    public ResponseEntity<byte[]> exportQuestions(@RequestParam Long topicId) {
+        byte[] data = excelService.exportQuestions(topicId);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=savollar_" + topicId + ".xlsx")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(data);
+    }
+
 }

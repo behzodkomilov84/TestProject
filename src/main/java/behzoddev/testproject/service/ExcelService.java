@@ -1,12 +1,16 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dto.answer.AnswerShortDto;
 import behzoddev.testproject.dto.excel.ImportResultDto;
 import behzoddev.testproject.dto.question.QuestionSaveDto;
+import behzoddev.testproject.entity.Answer;
+import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.validation.Validation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.tika.Tika;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.stereotype.Service;
@@ -14,8 +18,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
@@ -32,12 +38,84 @@ public class ExcelService {
             "application/x-tika-msoffice" // Tika eski .xls (OLE2) uchun ba'zan shu umumiy turni qaytaradi
     );
 
+    // Import shablonidagi (template_For_Import.xlsx) sarlavhalar bilan
+    // AYNAN bir xil — shu sabab eksport qilingan faylni qayta import
+    // qilib bo'ladi (round-trip).
+    private static final String[] EXPORT_HEADERS =
+            {"Question", "A", "B", "C", "D", "E", "Correct", "Comment (Faqat to'g'ri javob uchun)"};
+    private static final String[] ANSWER_LETTERS = {"A", "B", "C", "D", "E"};
+
     private final QuestionService questionService;
+    private final QuestionRepository questionRepository;
     private final DataFormatter formatter = new DataFormatter();
     private final AnswerService answerService;
     private final Validation validation;
     private final ClamAvScanService clamAvScanService;
     private final Tika tika = new Tika();
+
+    // "📥 Excel'ga eksport" — shu mavzudagi BARCHA faol savollarni import
+    // shablonidagi ustun tartibida (Question/A/B/C/D/E/Correct/Comment)
+    // .xlsx faylga yozadi.
+    @Transactional(readOnly = true)
+    public byte[] exportQuestions(Long topicId) {
+        List<Question> questions = questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(topicId);
+
+        try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = wb.createSheet("Savollar");
+
+            CellStyle headerStyle = wb.createCellStyle();
+            Font headerFont = wb.createFont();
+            headerFont.setBold(true);
+            headerStyle.setFont(headerFont);
+
+            Row header = sheet.createRow(0);
+            for (int i = 0; i < EXPORT_HEADERS.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(EXPORT_HEADERS[i]);
+                cell.setCellStyle(headerStyle);
+            }
+
+            // Sarlavha matni asosida taxminiy kenglik — autoSizeColumn()
+            // AWT shrift kutubxonasiga tayanadi (serverda muammo bo'lishi
+            // mumkin), shu sabab ataylab ishlatilmagan.
+            int[] columnWidthsChars = {50, 25, 25, 25, 25, 25, 10, 40};
+            for (int i = 0; i < columnWidthsChars.length; i++) {
+                sheet.setColumnWidth(i, columnWidthsChars[i] * 256);
+            }
+
+            int rowIdx = 1;
+            for (Question q : questions) {
+                List<Answer> answers = q.getAnswers() == null
+                        ? List.of()
+                        : q.getAnswers().stream()
+                                .sorted(Comparator.comparing(Answer::getId))
+                                .limit(5)
+                                .toList();
+
+                Row row = sheet.createRow(rowIdx++);
+                row.createCell(0).setCellValue(q.getQuestionText());
+
+                String correctLetter = "";
+                String correctComment = "";
+                for (int i = 0; i < answers.size(); i++) {
+                    Answer a = answers.get(i);
+                    row.createCell(i + 1).setCellValue(a.getAnswerText());
+                    if (Boolean.TRUE.equals(a.getIsTrue())) {
+                        correctLetter = ANSWER_LETTERS[i];
+                        correctComment = a.getCommentary() != null ? a.getCommentary() : "";
+                    }
+                }
+                row.createCell(6).setCellValue(correctLetter);
+                row.createCell(7).setCellValue(correctComment);
+            }
+
+            wb.write(out);
+            return out.toByteArray();
+        } catch (IOException e) {
+            log.error("Excelga eksport qilishda xatolik", e);
+            throw new RuntimeException("❌Excelga eksport qilishda xatolik", e);
+        }
+    }
 
     @Transactional
     public ImportResultDto importQuestions(MultipartFile file, Long topicId) {
