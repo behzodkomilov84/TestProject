@@ -738,21 +738,26 @@ td label{
 
 /* "📥 Excel'ga eksport" — .bulk-delete-btn/.restore-bulk-btn bilan bir
    xil o'lcham, lekin yashil (yuklab olish — ijobiy, xavfsiz amal). */
+/* Fon endi oq/och — rangni haqiqiy Excel belgisining o'zi (SVG) olib
+   keladi, tugma foni bilan "yashil-yashil" bo'lib ketmasligi uchun. */
 .export-excel-btn {
-    background: linear-gradient(135deg, #16a34a, #22c55e);
-    color: #fff;
-    border: none;
+    background: #fff;
+    color: #1e293b;
+    border: 1px solid #d5dde8;
     border-radius: 999px;
-    padding: 9px 16px;
+    padding: 8px 16px 8px 12px;
     cursor: pointer;
     font-weight: 600;
     font-size: 13px;
-    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+    display: inline-flex;
+    align-items: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
     transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .export-excel-btn:hover {
     transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(0,0,0,0.12);
 }
 
 /* "Tartib" ustuni (⬆⬇) va A-Z/Z-A saralash — faqat "Hammasi" (isAllMode)

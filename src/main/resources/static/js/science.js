@@ -8,6 +8,19 @@ let focusIndex = null;//для курсора
 
 let oldName = ""; //for EDIT uses
 let newName = ""; //for EDIT uses
+
+// Haqiqiy Excel ilovasi belgisiga o'xshash SVG (yashil hujjat + oq "X") —
+// "Excel'ga eksport" tugmalarida emoji o'rniga ishlatiladi (foydalanuvchi
+// so'rovi bo'yicha — barcha eksport tugmalarida bir xil belgi, topic.js
+// bilan bir xil).
+const EXCEL_ICON_SVG = `<svg width="22" height="22" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <rect x="4" y="4" width="40" height="40" rx="7" fill="#107C41"/>
+    <rect x="4" y="4" width="18" height="40" rx="7" fill="#0B5C31"/>
+    <g stroke="#fff" stroke-width="4" stroke-linecap="round">
+        <line x1="14" y1="16" x2="30" y2="32"/>
+        <line x1="30" y1="16" x2="14" y2="32"/>
+    </g>
+</svg>`;
 // ========================================================================
 
 afterStartPage("/api/science");
@@ -211,7 +224,7 @@ function render() {
                 id="input-${i}"
                 class="topic-name ${inputClass}"
                 tabindex="-1"
-            >${isLink ? `<div class="item-badges"><button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestions(${s.id})" title="Shu fandagi barcha mavzularning testlarini Excel'ga eksport qilish">📊</button></div>` : ""}<div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta bo'lim</span>` : ""}</div></div>
+            >${isLink ? `<div class="item-badges"><button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestions(${s.id})" title="Shu fandagi barcha mavzularning testlarini Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button></div>` : ""}<div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta bo'lim</span>` : ""}</div></div>
         </div>
             `
                 : `
