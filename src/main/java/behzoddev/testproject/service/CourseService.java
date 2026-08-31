@@ -1141,6 +1141,40 @@ public class CourseService {
         return total;
     }
 
+    // "🧹 Takroriy havolalarni tozalash" — TOPIC_LINK_HREF_PATTERN eski
+    // (to'liq URL) formatni tanimasligi sabab (endi tuzatilgan — lekin
+    // shu bug tufayli "➕ Havola qo'shish" avval ISHLATILGAN bo'lsa),
+    // ba'zi savollarning izohida IKKITA (yoki ko'proq) havola belgisi
+    // qolib ketgan bo'lishi mumkin — ikkalasi ham TO'G'RI joyga
+    // bog'langan bo'lsa ham, auditTopicLinks buni alohida ko'rsatmaydi
+    // (faqat BIRINCHI topilgan havolani tekshiradi, "OK" deb hisoblaydi).
+    // Bu metod BARCHA mavzularni ko'rib, bir nechta havolasi bor
+    // savollarni topib, hammasini bittaga tushiradi.
+    @Transactional
+    public int dedupeTopicLinksInCourse(Long courseId) {
+        List<CourseSection> linkedSections = courseSectionRepository.findByCourse_IdAndLinkedTopicIsNotNull(courseId);
+        int total = 0;
+        for (CourseSection section : linkedSections) {
+            List<Question> questions = questionRepository.getQuestionsByTopicId(section.getLinkedTopic().getId());
+            for (Question q : questions) {
+                Answer trueAnswer = findTrueAnswer(q);
+                if (trueAnswer == null) continue;
+
+                String commentary = trueAnswer.getCommentary();
+                if (commentary == null) continue;
+
+                Matcher m = TOPIC_LINK_HREF_PATTERN.matcher(commentary);
+                int count = 0;
+                while (m.find()) count++;
+                if (count <= 1) continue;
+
+                applyCorrectLink(trueAnswer, courseId, section);
+                total++;
+            }
+        }
+        return total;
+    }
+
     // fixAllWrongTopicLinks va fixAllWrongTopicLinksInCourse'ning umumiy
     // ichki qismi — bitta mavzu (allaqachon topilgan CourseSection bilan)
     // doirasidagi barcha xato havolalarni to'g'irlaydi.

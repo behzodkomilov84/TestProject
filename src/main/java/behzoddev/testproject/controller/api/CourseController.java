@@ -189,4 +189,13 @@ public class CourseController {
                 : courseService.fixAllWrongTopicLinksInCourse(courseId);
         return Map.of("fixed", fixed);
     }
+
+    // "🧹 Takroriy havolalarni tozalash" — bir savolda bir nechta mavzu
+    // havolasi belgisi qolib ketgan bo'lsa (masalan eski to'liq-URL
+    // formatidagi bug tufayli), hammasini bittaga tushiradi.
+    @PostMapping("/{courseId}/topic-links/dedupe")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public Map<String, Integer> dedupeTopicLinks(@PathVariable Long courseId) {
+        return Map.of("deduped", courseService.dedupeTopicLinksInCourse(courseId));
+    }
 }

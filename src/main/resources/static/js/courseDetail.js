@@ -2268,6 +2268,27 @@ async function fixAllWrongTopicLinksInCourse() {
     }
 }
 
+// "🧹 Takroriy havolalarni tozalash" — bitta savolda bir nechta mavzu
+// havola belgisi qolib ketgan bo'lsa (auditTopicLinks buni ko'rsatmaydi —
+// faqat BIRINCHI havolani tekshiradi), hammasini bittaga tushiradi.
+async function dedupeTopicLinks() {
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/topic-links/dedupe`, { method: "POST" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || "Tozalashda xatolik");
+            return;
+        }
+        alert(data.deduped > 0
+            ? `✅ ${data.deduped} ta savoldagi takroriy havola tozalandi`
+            : "✅ Takroriy havola topilmadi — hammasi allaqachon toza edi.");
+        if (topicLinkAuditOpen) loadTopicLinkAudit();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
 function escapeHtml(text) {
     const div = document.createElement("div");
     div.textContent = text;

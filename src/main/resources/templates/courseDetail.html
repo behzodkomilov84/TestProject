@@ -63,6 +63,16 @@
                 <button id="topicLinkAuditBtn" onclick="toggleTopicLinkAudit()" title="Har bir mavzudagi savollarning izohidagi havola O'ZINING mavzusiga to'g'ri bog'langanini tekshiradi — xato/yo'q havolalarni ko'rsatadi va tuzatish tugmalarini beradi">
                     🔗 Havolalarni tekshirish
                 </button>
+                <!-- Ba'zi savollarning izohida bir nechta mavzu havola
+                     belgisi (badge) qolib ketishi mumkin (masalan eski
+                     to'liq-URL formatidagi havola tuzatish paytida
+                     tanilmay, ustiga yana biri qo'shilib qolgan bo'lsa) —
+                     auditTopicLinks buni "OK" deb hisoblaydi (faqat
+                     birinchi havolani tekshiradi), shu sabab alohida
+                     tugma bilan tozalanadi. -->
+                <button id="dedupeTopicLinksBtn" onclick="dedupeTopicLinks()" title="Bir savolda bir nechta mavzu havola belgisi qolib ketgan bo'lsa (masalan eski formatdagi bug tufayli), hammasini bittaga tushiradi">
+                    🧹 Takroriy havolalarni tozalash
+                </button>
                 <!-- Soft-delete qilingan (🗑️ o'chirilgan) kurs mavzulari —
                      "♻️ Tiklash" bilan bir zumda qaytariladi (CourseService.
                      getDeletedSections/restoreSection). -->
