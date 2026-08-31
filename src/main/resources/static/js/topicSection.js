@@ -16,7 +16,7 @@ let newName = "";
 // "Excel'ga eksport" tugmalarida emoji o'rniga ishlatiladi (foydalanuvchi
 // so'rovi bo'yicha — barcha eksport tugmalarida bir xil belgi, topic.js
 // bilan bir xil).
-const EXCEL_ICON_SVG = `<svg width="22" height="22" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+const EXCEL_ICON_SVG = `<svg width="30" height="30" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
     <rect x="4" y="4" width="40" height="40" rx="7" fill="#107C41"/>
     <rect x="4" y="4" width="18" height="40" rx="7" fill="#0B5C31"/>
     <g stroke="#fff" stroke-width="4" stroke-linecap="round">
