@@ -934,8 +934,25 @@ async function deleteQuestion(questionId) {
     }
 }
 
+// "← MAVZUGA QAYTISH" — TEST BOSHQARUVI'dagi ("/topics") ANIQ shu mavzu
+// qatoriga qaytaradi (oldin history.back() edi — ba'zan foydalanuvchi
+// kutgan joyga emas, tasodifiy oldingi sahifaga olib borardi; test-form.js
+// #backBtn bilan bir xil yechim). "?focus=" orqali topic.js'ga qaysi
+// mavzuga fokus tushishi kerakligi ham beriladi (topic.js#afterStartPage).
+// Fetch muvaffaqiyatsiz bo'lsa — history.back() eskicha fallback.
 function goBack() {
-    history.back();
+    fetch(`/api/topic/${topicId}/location`)
+        .then(r => r.ok ? r.json() : null)
+        .then(loc => {
+            if (!loc) {
+                history.back();
+                return;
+            }
+            window.location.href = loc.sectionId
+                ? `/topics?scienceId=${loc.scienceId}&sectionId=${loc.sectionId}&focus=${topicId}`
+                : `/topics?scienceId=${loc.scienceId}&focus=${topicId}`;
+        })
+        .catch(() => history.back());
 }
 
 // "🗑️ O'chirilganlar" paneli — soft-delete qilingan savollar ro'yxati

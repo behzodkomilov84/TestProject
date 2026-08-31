@@ -31,6 +31,12 @@ let sectionList = [];
 // nom tekshiruvi butun fan bo'yicha bo'lishi kerak, faqat bitta
 // bo'lim ichida emas, chunki DB'da unique(science_id, name)).
 const filterSectionId = new URLSearchParams(window.location.search).get("sectionId");
+
+// question.html'dagi "← MAVZUGA QAYTISH" tugmasi (question.js#goBack)
+// aynan qaysi mavzudan kelingani "?focus=" orqali beradi — sahifa
+// ochilganda ANIQ shu mavzu qatoriga fokus tushishi uchun (courseDetail.js/
+// science.js'dagi bir xil "?focus=" g'oyasi bilan bir xil).
+const filterFocusId = new URLSearchParams(window.location.search).get("focus");
 // ========================================================================
 
 const scienceId = getScienceId();
@@ -568,7 +574,13 @@ function goToExplanationResult(index) {
 
 function afterStartPage(mapping) {
         reloadFromDb(mapping).then(r => {
-            focusIndex = 0;// выбрать первый элемент
+            // "?focus=" URL'da bo'lsa — ANIQ shu mavzu id'siga mos qatorga
+            // fokus tushadi (question.js'dan "← MAVZUGA QAYTISH" orqali
+            // kelinganda). Topilmasa — eskicha birinchi qatorga.
+            const focusFound = filterFocusId
+                ? itemBlock.findIndex(s => Number(s.id) === Number(filterFocusId))
+                : -1;
+            focusIndex = focusFound !== -1 ? focusFound : 0;
             render();// отрисовать список с выделением
         });
 } //DONE
