@@ -310,14 +310,77 @@ function renderTopicTestLink(data) {
     container.appendChild(btn);
 }
 
-// HTML formatdagi kontent (.docx'dan import qilingan) o'zgartirmasdan,
+// HTML formatdagi kontent (.docx'dan import qilingan yoki qo'lda HTML
+// sifatida saqlangan) — mavjud teglar o'zgartirilmaydi, lekin oddiy
+// matn ko'rinishidagi (hali <a>ga o'ralmagan) http(s) havolalar ham
+// linkifyHtmlContent orqali bosiladigan qilinadi (masalan "PDF: https://...
+// .pdf" kabi qo'lda yozilgan yuklab olish havolalari — foydalanuvchi
+// so'rovi bo'yicha, bunday havolalar HAR DOIM giperssilka bo'lishi kerak).
 // PLAIN (qo'lda yozilgan yoki eski bo'limlar) esa xavfsiz escape+linkify
 // qilingan holda qaytariladi.
 function renderTextContent(data) {
     if (data.textContentFormat === "HTML") {
-        return data.textContent || "";
+        return linkifyHtmlContent(data.textContent || "");
     }
     return linkify(data.textContent || "");
+}
+
+// HTML kontent ichidagi, hali <a> tegiga o'ralmagan oddiy matndagi
+// http(s) havolalarni bosiladigan <a> tegiga aylantiradi. Mavjud
+// teglarga (jumladan allaqachon <a> ichida turgan havolalarga) TEGMAYDI
+// — faqat MATN TUGUNLARI (text node) bo'ylab yuradi (TreeWalker), <a>/
+// <script>/<style> ichidagilarni o'tkazib yuboradi, shu sabab xavfsiz:
+// hech qanday mavjud teg qayta ishlanmaydi yoki qayta escape qilinmaydi
+// (oddiy string.replace() qilsa, mavjud HTML teglari buzilib qolardi).
+function linkifyHtmlContent(html) {
+    const container = document.createElement("div");
+    container.innerHTML = html;
+
+    const urlPattern = /(https?:\/\/[^\s<]+)/g;
+
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+        acceptNode(node) {
+            let parent = node.parentElement;
+            while (parent && parent !== container) {
+                if (parent.tagName === "A" || parent.tagName === "SCRIPT" || parent.tagName === "STYLE") {
+                    return NodeFilter.FILTER_SKIP;
+                }
+                parent = parent.parentElement;
+            }
+            urlPattern.lastIndex = 0;
+            return urlPattern.test(node.textContent) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP;
+        }
+    });
+
+    const textNodes = [];
+    let n;
+    while ((n = walker.nextNode())) textNodes.push(n);
+
+    textNodes.forEach((node) => {
+        urlPattern.lastIndex = 0;
+        const text = node.textContent;
+        const frag = document.createDocumentFragment();
+        let lastIndex = 0;
+        let match;
+        while ((match = urlPattern.exec(text))) {
+            if (match.index > lastIndex) {
+                frag.appendChild(document.createTextNode(text.slice(lastIndex, match.index)));
+            }
+            const a = document.createElement("a");
+            a.href = match[0];
+            a.target = "_blank";
+            a.rel = "noopener noreferrer";
+            a.textContent = match[0];
+            frag.appendChild(a);
+            lastIndex = match.index + match[0].length;
+        }
+        if (lastIndex < text.length) {
+            frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+        }
+        node.parentNode.replaceChild(frag, node);
+    });
+
+    return container.innerHTML;
 }
 
 // Avval xavfsiz escape qilinadi (XSS'dan himoya — matn hech qachon
