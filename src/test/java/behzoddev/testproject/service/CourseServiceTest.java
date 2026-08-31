@@ -15,9 +15,11 @@ import behzoddev.testproject.dto.course.CourseSaveDto;
 import behzoddev.testproject.dto.course.CourseSectionContentDto;
 import behzoddev.testproject.dto.course.CourseSectionSaveDto;
 import behzoddev.testproject.dto.course.CourseSectionSummaryDto;
+import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Course;
 import behzoddev.testproject.entity.CourseChapter;
 import behzoddev.testproject.entity.CourseSection;
+import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.entity.TopicSection;
@@ -808,5 +810,52 @@ class CourseServiceTest {
         courseService.updateCourse(1L, dto, owner());
 
         assertThat(course.getPrice()).isEqualByComparingTo("200000");
+    }
+
+    // ===== dedupeTopicLinksInCourse — 2026-08-31 haqiqiy production bug =====
+    // TOPIC_LINK_BADGE_PATTERN avval "<span[^>]*>\s*<a" edi — \s* faqol
+    // bo'sh joyni tutadi, lekin haqiqiy belgida <span> bilan <a> orasida
+    // "📖 " (emoji) bor edi, shu sabab replaceAll() faqat <a>...</a></span>
+    // qismini olib tashlab, "<span ...>📖 " qismini "yetim" holda
+    // qoldirardi. Bir necha marta takrorlangach — buzuq, ko'p marta
+    // ochilgan-lekin-yopilmagan <span> qatlamlari hosil bo'lgan edi
+    // (Kimyo kursida 270+ ta savolda). Bu test aynan o'sha buzuq holatni
+    // qayta tiklab, tuzatilgan regex uni to'liq (bitta toza belgigacha)
+    // tozalashini tasdiqlaydi.
+    @Test
+    void dedupeTopicLinksInCourse_corruptedOrphanedSpans_fullyRepaired() {
+        Course course = Course.builder().id(2L).title("Kimyo").build();
+        Topic topic = Topic.builder().id(3L).name("2. Prokariotlarning tasnifi").build();
+        CourseSection section = CourseSection.builder().id(2L).course(course).linkedTopic(topic).build();
+
+        String corrupted = "Kislorod elementi haqida. " +
+                "<span style=\"display:inline-block;margin-top:6px;padding:4px 10px 4px 8px;background:#e8f5f3;border-left:3px solid #00796b;border-radius:4px;color:#00695c;font-weight:600\">📖  " +
+                "<span style=\"display:inline-block;margin-top:6px;padding:4px 10px 4px 8px;background:#e8f5f3;border-left:3px solid #00796b;border-radius:4px;color:#00695c;font-weight:600;font-style:normal;text-decoration:none\">📖  " +
+                "<span style=\"display:inline-block;margin-top:6px;padding:4px 10px 4px 8px;background:#e8f5f3;border-left:3px solid #00796b;border-radius:4px;color:#00695c;font-weight:600;font-style:normal;text-decoration:none\">📖 " +
+                "<a href=\"/courses/2/sections/2\" style=\"color:#00695c;text-decoration:underline\">\"1. Modda, atom, molekula\" mavzusini kursda o'qish</a></span>";
+
+        Answer trueAnswer = Answer.builder().id(1L).answerText("To'g'ri").isTrue(true).commentary(corrupted).build();
+        Answer wrongAnswer = Answer.builder().id(2L).answerText("Noto'g'ri").isTrue(false).build();
+        Question question = Question.builder().id(100L).questionText("Savol")
+                .answers(List.of(trueAnswer, wrongAnswer)).build();
+
+        when(courseSectionRepository.findByCourse_IdAndLinkedTopicIsNotNull(2L)).thenReturn(List.of(section));
+        when(questionRepository.getQuestionsByTopicId(3L)).thenReturn(List.of(question));
+
+        int fixed = courseService.dedupeTopicLinksInCourse(2L);
+
+        assertThat(fixed).isEqualTo(1);
+        String result = trueAnswer.getCommentary();
+
+        long spanOpen = result.split("<span", -1).length - 1;
+        long spanClose = result.split("</span>", -1).length - 1;
+        assertThat(spanOpen).as("ochilgan <span> soni yopilgan bilan teng bo'lishi kerak").isEqualTo(spanClose);
+        assertThat(spanOpen).as("aynan BITTA toza belgi qolishi kerak").isEqualTo(1);
+
+        long hrefCount = result.split("href=", -1).length - 1;
+        assertThat(hrefCount).isEqualTo(1);
+        assertThat(result).contains("href=\"/courses/2/sections/2\"");
+        assertThat(result).contains("Kislorod elementi haqida.");
+        assertThat(result).doesNotContain("📖  <span");
     }
 }

@@ -77,12 +77,22 @@ public class CourseService {
             Pattern.compile("href=\"(?:https?://[^/\"]+)?/courses/(\\d+)/sections/(\\d+)\"");
 
     // Izohdagi eski/noto'g'ri mavzu havolasi belgisini (badge) olib
-    // tashlash uchun — ixtiyoriy o'rab turuvchi <span>...</span> bilan
-    // birga (agar bor bo'lsa), aks holda faqat <a>...</a>ning o'zi.
-    // TOPIC_LINK_HREF_PATTERN bilan bir xil (ixtiyoriy domen prefiksli)
-    // qoidaga mos.
+    // tashlash uchun. MUHIM (haqiqiy topilgan bug, 2026-08-31): avval
+    // "<span[^>]*>\s*<a" edi — \s* FAQAT bo'sh joyni tutadi, lekin
+    // haqiqiy belgida <span> bilan <a> orasida "📖 " (emoji + bo'sh joy)
+    // bor — emoji \s* ga mos kelmagani uchun optional span-guruh HECH
+    // QACHON ishlamas edi, natijada replaceAll() faqat <a>...</a></span>
+    // qismini olib tashlab, "<span ...>📖 " qismini "yetim" holda
+    // qoldirib ketardi (buzilgan HTML — bir nechta ochilgan <span> lekin
+    // yopilmagan holda qolib ketgan). Endi "<span>" bilan "<a>" orasida
+    // (va "</a>" bilan "</span>" orasida) IXTIYORIY istalgan matn
+    // (emoji ham) bo'lishi mumkinligi hisobga olingan — shu bilan birga
+    // "background:#e8f5f3" (shu belgiga XOS uslub) orqali ANIQ faqat
+    // O'ZIMIZ yaratgan belgigagina mos kelishi ta'minlangan (izohdagi
+    // boshqa, aloqasiz <span>larga tegmasligi uchun).
     private static final Pattern TOPIC_LINK_BADGE_PATTERN = Pattern.compile(
-            "(?:<span[^>]*>\\s*)?<a\\s+href=\"(?:https?://[^/\"]+)?/courses/\\d+/sections/\\d+\"[^>]*>.*?</a>(?:\\s*</span>)?",
+            "<span[^>]*background:#e8f5f3[^>]*>.*?<a\\s+href=\"(?:https?://[^/\"]+)?/courses/\\d+/sections/\\d+\"[^>]*>.*?</a>.*?</span>" +
+                    "|<a\\s+href=\"(?:https?://[^/\"]+)?/courses/\\d+/sections/\\d+\"[^>]*>.*?</a>",
             Pattern.DOTALL
     );
 
@@ -1148,8 +1158,14 @@ public class CourseService {
     // qolib ketgan bo'lishi mumkin — ikkalasi ham TO'G'RI joyga
     // bog'langan bo'lsa ham, auditTopicLinks buni alohida ko'rsatmaydi
     // (faqat BIRINCHI topilgan havolani tekshiradi, "OK" deb hisoblaydi).
-    // Bu metod BARCHA mavzularni ko'rib, bir nechta havolasi bor
-    // savollarni topib, hammasini bittaga tushiradi.
+    // Bu metod BARCHA mavzularni ko'rib, havolasi (hech bo'lmasa bitta)
+    // bor BARCHA savollarni qayta normallashtiradi (strip + qayta
+    // qo'shish) — shu bilan bir yo'la ham takroriy, ham (avvalgi
+    // TOPIC_LINK_BADGE_PATTERN xatosi tufayli yuzaga kelishi mumkin
+    // bo'lgan) "yetim" (buzuq, yopilmagan) <span> qoldiqlarini ham
+    // tozalaydi — count>=1 shart, faqat >1 emas, chunki buzuq
+    // qoldiqlarda ba'zan bitta haqiqiy href qolib, qolgani "yetim"
+    // bo'lib turishi mumkin.
     @Transactional
     public int dedupeTopicLinksInCourse(Long courseId) {
         List<CourseSection> linkedSections = courseSectionRepository.findByCourse_IdAndLinkedTopicIsNotNull(courseId);
@@ -1163,10 +1179,7 @@ public class CourseService {
                 String commentary = trueAnswer.getCommentary();
                 if (commentary == null) continue;
 
-                Matcher m = TOPIC_LINK_HREF_PATTERN.matcher(commentary);
-                int count = 0;
-                while (m.find()) count++;
-                if (count <= 1) continue;
+                if (!TOPIC_LINK_HREF_PATTERN.matcher(commentary).find()) continue;
 
                 applyCorrectLink(trueAnswer, courseId, section);
                 total++;
