@@ -40,6 +40,10 @@ let sectionList = [];
 // bo'lim ichida emas, chunki DB'da unique(science_id, name)).
 const filterSectionId = new URLSearchParams(window.location.search).get("sectionId");
 
+// "🔗 Kursga bog'lanmagan mavzular" filtri (toggleUnlinkedFilter) — yoqilsa
+// faqat linkedCourseTitle'i YO'Q qatorlar ko'rsatiladi (render()).
+let showOnlyUnlinkedTopics = false;
+
 // question.html'dagi "← MAVZUGA QAYTISH" tugmasi (question.js#goBack)
 // aynan qaysi mavzudan kelingani "?focus=" orqali beradi — sahifa
 // ochilganda ANIQ shu mavzu qatoriga fokus tushishi uchun (courseDetail.js/
@@ -87,6 +91,23 @@ function refreshQuestionScienceTrashBadge() {
         .then(r => r.ok ? r.json() : [])
         .then(items => setTrashBadgeCount("questionScienceTrashBadge", items.length))
         .catch(err => console.error(err));
+}
+
+// "🔗 Kursga bog'lanmagan mavzular" filtri — yoqilganda tugma "faol"
+// ko'rinishga o'tadi (unlinked-filter-btn.active, science.css) va faqat
+// linkedCourseTitle'i yo'q qatorlar qoladi (render()).
+function toggleUnlinkedFilter() {
+    showOnlyUnlinkedTopics = !showOnlyUnlinkedTopics;
+    document.getElementById("unlinkedFilterBtn").classList.toggle("active", showOnlyUnlinkedTopics);
+    render();
+}
+
+// Nechta mavzu hali kursga bog'lanmaganini ko'rsatadi — itemBlock
+// allaqachon frontendda yuklangani uchun (linkedCourseTitle bilan birga),
+// alohida fetch shart emas, oddiy sanash yetarli.
+function refreshUnlinkedTopicBadge() {
+    const count = itemBlock.filter(s => s.id > 0 && !s.linkedCourseTitle).length;
+    setTrashBadgeCount("unlinkedTopicBadge", count);
 }
 
 function showSectionFilterBanner() {
@@ -644,6 +665,13 @@ function render() {
             return;
         }
 
+        // "🔗 Kursga bog'lanmagan mavzular" filtri yoqilgan bo'lsa — faqat
+        // hech qanday kursga bog'lanmagan (linkedCourseTitle yo'q) qatorlar
+        // ko'rsatiladi (toggleUnlinkedFilter).
+        if (showOnlyUnlinkedTopics && s.mode === "VIEW" && s.linkedCourseTitle) {
+            return;
+        }
+
         const row = document.createElement("div");
         row.className = "row";
 
@@ -746,6 +774,8 @@ function render() {
         }
         focusIndex = null;
     }
+
+    refreshUnlinkedTopicBadge();
 } //DONE
 
 function openQuestions(topicId) {

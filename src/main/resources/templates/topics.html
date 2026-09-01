@@ -61,6 +61,12 @@
         <div id="questionScienceTrashList"></div>
     </div>
 
+    <!-- Kursga hali bog'lanmagan mavzularni ajratib ko'rsatish (yoqilsa —
+         faqat ular ko'rinadi) — o'quv rejasini kursga to'liq bog'lab
+         chiqishda qaysi mavzular hali "yetim" ekanini topish uchun
+         (toggleUnlinkedFilter, topic.js). -->
+    <button id="unlinkedFilterBtn" class="unlinked-filter-btn" onclick="toggleUnlinkedFilter()">🔗 Kursga bog'lanmagan mavzular <span id="unlinkedTopicBadge" class="notif-badge" style="display:none;">0</span></button>
+
     <!-- Bo'lim ustidan (Fan -> Bo'lim -> Mavzu) kelinganda ko'rinadi —
          qaysi bo'lim mavzulari filtrlanib ko'rsatilayotganini bildiradi
          (topic.js#DOMContentLoaded to'ldiradi/ko'rsatadi). -->

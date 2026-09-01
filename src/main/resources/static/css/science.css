@@ -461,6 +461,46 @@ h1 {
     .wrapper button:hover{
         background-color: rgb(134, 219, 232);
     }
+
+    /* "🔗 Kursga bog'lanmagan mavzular" filtri (topics.html, topic.js#
+       toggleUnlinkedFilter) — MUHIM: "#unlinkedFilterBtn" ID orqali ANIQ
+       scope qilingan, aks holda ".wrapper button" (0,1,1) oddiy klassdan
+       (0,1,0) kuchliroq bo'lib, fonni aquamarine'ga qaytarib yuborardi
+       (question.css/science.css'da bir necha marta topilgan xuddi shu
+       turdagi bug — bulk-delete/restore tugmalari bilan bir xil sabab).
+       Yoqilmagan holatda — ogohlantiruvchi (amber) konturli, bosilgan
+       (faol) holatda — to'ldirilgan amber fon bilan aniq ko'rinadi. */
+    #unlinkedFilterBtn {
+        background: #fff;
+        color: #92400e;
+        border: 1px solid #fbbf24;
+        border-radius: 999px;
+        padding: 8px 16px;
+        font-weight: 600;
+        font-size: 13px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
+        transition: background .15s ease, color .15s ease, border-color .15s ease,
+                    transform .15s ease, box-shadow .15s ease;
+    }
+
+    #unlinkedFilterBtn:hover {
+        background: #fffbeb;
+        border-color: #f59e0b;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 10px rgba(0, 0, 0, .1);
+    }
+
+    #unlinkedFilterBtn.active {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: #fff;
+        border-color: transparent;
+        box-shadow: 0 4px 12px rgba(217, 119, 6, .35);
+    }
+
+    #unlinkedFilterBtn.active:hover {
+        background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    }
+
     /* Блок для отображения ошибок (оставляем, но скрываем) */
     .error {
         display: none; /* Скрываем блок ошибок, так как используем alert */
