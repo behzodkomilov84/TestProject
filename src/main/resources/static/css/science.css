@@ -231,8 +231,21 @@ h1 {
        O'NG chetida. Belgilar (Bo'lim/Kurs) bo'lmasa ham HAR DOIM
        ko'rinadi. Tugmaning o'zi shaffof — rangni SVG'ning o'zi olib
        keladi (haqiqiy Excel belgisiga o'xshab). */
-    .topic-export-btn {
+    /* Excel/Word eksport tugmalari BIRGALIKDA (guruh sifatida) qatorning
+       O'NG chetiga suriladi (margin-left:auto shu guruhda, alohida-alohida
+       tugmalarda EMAS — aks holda ikkalasi ham o'z-o'zicha auto margin
+       olib, orasidagi bo'sh joyni "teng bo'lib", bir-biridan uzoqlashib
+       ketardi — haqiqiy topilgan bug). Ichida tugmalar orasida kichik
+       bo'shliq (gap) bilan yonma-yon turadi. */
+    .topic-export-btn-group {
         margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .topic-export-btn {
         border: none;
         background: transparent;
         padding: 0;

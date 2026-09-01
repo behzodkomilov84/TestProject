@@ -693,7 +693,7 @@ function render() {
         // badges/item-title-row, science.css). Export tugmasi bo'lgani
         // uchun endi HAR DOIM ko'rsatiladi (Bo'lim/Kurs belgisi
         // bo'lmasa ham).
-        const badgesRow = `<div class="item-badges">${sectionBadge}${courseBadge}${exportBtn}${wordExportBtn}</div>`;
+        const badgesRow = `<div class="item-badges">${sectionBadge}${courseBadge}<div class="topic-export-btn-group">${exportBtn}${wordExportBtn}</div></div>`;
 
         row.innerHTML = `
     ${

@@ -279,7 +279,7 @@ function render() {
         // tugmasi yonida).
         const wordExportBtn = `<button class="topic-export-btn" onclick="event.stopPropagation(); exportSectionQuestionsToWord(${s.id})" title="Shu bo'limdagi barcha mavzularning testlarini Word'ga eksport qilish">${WORD_ICON_SVG}</button>`;
 
-        const badgesRow = `<div class="item-badges">${courseBadge}${exportBtn}${wordExportBtn}</div>`;
+        const badgesRow = `<div class="item-badges">${courseBadge}<div class="topic-export-btn-group">${exportBtn}${wordExportBtn}</div></div>`;
 
         row.innerHTML = `
     ${
