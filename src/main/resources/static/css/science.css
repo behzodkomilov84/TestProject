@@ -752,3 +752,33 @@ h1 {
     cursor: not-allowed;
     transform: none;
 }
+
+/* "Eksport qilish" — oynadagi asosiy (primary) amal, shu sabab "Bekor
+   qilish"dan farqli, TO'LDIRILGAN (filled) gradient fon bilan ajralib
+   turadi — ko'zga birinchi tashlanishi kerak. */
+#wordExportConfirmBtn {
+    background: linear-gradient(135deg, #185ABD, #103F91);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 22px;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: .2px;
+    box-shadow: 0 4px 14px rgba(16, 63, 145, .35);
+}
+
+#wordExportConfirmBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(16, 63, 145, .45);
+}
+
+#wordExportConfirmBtn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(16, 63, 145, .35);
+}
+
+#wordExportConfirmBtn:disabled {
+    background: linear-gradient(135deg, #94a3b8, #64748b);
+    box-shadow: none;
+}
