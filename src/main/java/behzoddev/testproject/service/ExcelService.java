@@ -115,7 +115,7 @@ public class ExcelService {
             }
 
             wb.write(out);
-            return new ExportedFileDto(out.toByteArray(), "savollar_" + ExportFilenameUtil.sanitize(topic.getName()));
+            return new ExportedFileDto(out.toByteArray(), ExportFilenameUtil.sanitize(topic.getName()));
         } catch (IOException e) {
             log.error("Excelga eksport qilishda xatolik", e);
             throw new RuntimeException("❌Excelga eksport qilishda xatolik", e);
@@ -135,7 +135,7 @@ public class ExcelService {
                 .orElseThrow(() -> new RuntimeException("Bo'lim topilmadi: " + sectionId));
         byte[] data = exportQuestionsForTopics("Bo'lim: " + section.getName(),
                 topicRepository.findBySection_IdAndDeletedAtIsNullOrderByOrderIndexAsc(sectionId));
-        return new ExportedFileDto(data, "savollar_bolim_" + ExportFilenameUtil.sanitize(section.getName()));
+        return new ExportedFileDto(data, ExportFilenameUtil.sanitize(section.getName()));
     }
 
     @Transactional(readOnly = true)
@@ -144,7 +144,7 @@ public class ExcelService {
                 .orElseThrow(() -> new RuntimeException("Fan topilmadi: " + scienceId));
         byte[] data = exportQuestionsForTopics("Fan: " + science.getName(),
                 topicRepository.findByScience_IdAndDeletedAtIsNullOrderByOrderIndexAsc(scienceId));
-        return new ExportedFileDto(data, "savollar_fan_" + ExportFilenameUtil.sanitize(science.getName()));
+        return new ExportedFileDto(data, ExportFilenameUtil.sanitize(science.getName()));
     }
 
     // Bu eksport allaqachon import bilan mos EMAS (yuqoridagi izohga

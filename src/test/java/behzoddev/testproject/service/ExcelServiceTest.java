@@ -262,7 +262,7 @@ class ExcelServiceTest {
         when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(5L)).thenReturn(List.of(q));
 
         behzoddev.testproject.dto.export.ExportedFileDto result = excelService.exportQuestions(5L);
-        assertThat(result.filenameBase()).isEqualTo("savollar_Shaharlar");
+        assertThat(result.filenameBase()).isEqualTo("Shaharlar");
 
         try (XSSFWorkbook wb = new XSSFWorkbook(new java.io.ByteArrayInputStream(result.data()))) {
             Sheet sheet = wb.getSheetAt(0);
@@ -305,7 +305,7 @@ class ExcelServiceTest {
         when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(20L)).thenReturn(List.of(q2));
 
         behzoddev.testproject.dto.export.ExportedFileDto result = excelService.exportQuestionsForSection(7L);
-        assertThat(result.filenameBase()).isEqualTo("savollar_bolim_Anatomiya");
+        assertThat(result.filenameBase()).isEqualTo("Anatomiya");
 
         try (XSSFWorkbook wb = new XSSFWorkbook(new java.io.ByteArrayInputStream(result.data()))) {
             Sheet sheet = wb.getSheetAt(0);

@@ -57,7 +57,7 @@ public class WordService {
         List<Question> questions = questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(topicId);
 
         byte[] data = buildDocument("Mavzu: " + topic.getName(), List.of(topic), List.of(questions));
-        return new ExportedFileDto(data, "savollar_" + ExportFilenameUtil.sanitize(topic.getName()));
+        return new ExportedFileDto(data, ExportFilenameUtil.sanitize(topic.getName()));
     }
 
     // Bo'lim miqyosida — shu Bo'limdagi BARCHA mavzularning savollari
@@ -70,7 +70,7 @@ public class WordService {
         List<Topic> topics = topicRepository.findBySection_IdAndDeletedAtIsNullOrderByOrderIndexAsc(sectionId);
 
         byte[] data = buildDocument("Bo'lim: " + section.getName(), topics, questionsPerTopic(topics));
-        return new ExportedFileDto(data, "savollar_bolim_" + ExportFilenameUtil.sanitize(section.getName()));
+        return new ExportedFileDto(data, ExportFilenameUtil.sanitize(section.getName()));
     }
 
     // Fan miqyosida — shu Fandagi BARCHA mavzularning savollari BITTA
@@ -83,7 +83,7 @@ public class WordService {
         List<Topic> topics = topicRepository.findByScience_IdAndDeletedAtIsNullOrderByOrderIndexAsc(scienceId);
 
         byte[] data = buildDocument("Fan: " + science.getName(), topics, questionsPerTopic(topics));
-        return new ExportedFileDto(data, "savollar_fan_" + ExportFilenameUtil.sanitize(science.getName()));
+        return new ExportedFileDto(data, ExportFilenameUtil.sanitize(science.getName()));
     }
 
     private List<List<Question>> questionsPerTopic(List<Topic> topics) {
