@@ -1236,10 +1236,19 @@ function applyFocusFromUrl(sectionId) {
 // ro'yxatdagi haqiqiy o'rniga qarab hisoblash uchun (guruhlangan ko'rinishda
 // bitta bo'lim ichidagi tartib to'liq ro'yxatdagi tartibning bir qismi,
 // xolos — chegara tekshiruvi baribir GLOBAL bo'lishi kerak).
-function renderSectionCard(s, globalIndexById) {
+//
+// "displayNumber" — kartochkada KO'RINADIGAN raqam (ko'k doira ichida).
+// s.orderIndex — BUTUN kurs bo'yicha bitta umumiy, ketma-ket son (backend
+// /sections/reorder shuni kutadi, Bo'lim bo'yicha alohida EMAS — CourseService
+// izohiga qarang), shu sabab 2-bo'lim kartalari "44, 45, 46..." kabi
+// 1-bo'limning davomi bo'lib ko'rinardi (haqiqiy foydalanuvchi shikoyati).
+// Endi har bir chaqiruvchi (renderChapterBox) shu bo'lim ICHIDAGI o'rnini
+// (1'dan boshlab) alohida hisoblab beradi — berilmasa (masalan bo'limsiz
+// tekis ro'yxatda, renderFlatSections), eskicha s.orderIndex ishlatiladi.
+function renderSectionCard(s, globalIndexById, displayNumber) {
     const i = globalIndexById.get(s.id);
     const indexClass = s.completed ? "section-index completed" : "section-index";
-    const indexIcon = s.completed ? "✓" : s.orderIndex;
+    const indexIcon = s.completed ? "✓" : (displayNumber ?? s.orderIndex);
     const typeIcon = s.type === "VIDEO" ? "🎬" : s.type === "MIXED" ? "📄🎬" : "📄";
 
     // Butun karta bosiladigan qilindi (kurslar katalogidagi kartalar
@@ -1441,7 +1450,7 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
     const from = page * CHAPTER_SECTIONS_PER_PAGE;
     const pageItems = group.items.slice(from, from + CHAPTER_SECTIONS_PER_PAGE);
 
-    const cardsHtml = pageItems.map(s => renderSectionCard(s, globalIndexById)).join("");
+    const cardsHtml = pageItems.map((s, idx) => renderSectionCard(s, globalIndexById, from + idx + 1)).join("");
     const paginationHtml = totalPages > 1
         ? buildPaginationHtml(totalPages, page, (p) => `changeChapterPage('${group.key}', ${p})`)
         : "";
