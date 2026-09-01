@@ -44,6 +44,10 @@ class ExcelServiceTest {
     @Mock
     private behzoddev.testproject.dao.TopicRepository topicRepository; // faqat bo'lim/fan eksporti uchun (bu oqimda chaqirilmaydi)
     @Mock
+    private behzoddev.testproject.dao.TopicSectionRepository topicSectionRepository; // faqat bo'lim eksporti uchun (bu oqimda chaqirilmaydi)
+    @Mock
+    private behzoddev.testproject.dao.ScienceRepository scienceRepository; // faqat fan eksporti uchun (bu oqimda chaqirilmaydi)
+    @Mock
     private AnswerService excelAnswerService; // ExcelService'ning o'z isUnique() tekshiruvi uchun
     @Mock
     private AnswerService validationAnswerService; // faqat Validation ichida ishlatiladi (bu oqimda chaqirilmaydi)
@@ -55,7 +59,7 @@ class ExcelServiceTest {
     @BeforeEach
     void setUp() {
         Validation validation = new Validation(validationAnswerService);
-        excelService = new ExcelService(questionService, questionRepository, topicRepository, excelAnswerService, validation, clamAvScanService);
+        excelService = new ExcelService(questionService, questionRepository, topicRepository, topicSectionRepository, scienceRepository, excelAnswerService, validation, clamAvScanService);
         // Fayl-darajasidagi validatsiya testlari (bo'sh/katta/noto'g'ri kengaytma)
         // qatorlarni umuman o'qishga yetmaydi — shu stublar ular uchun keraksiz
         // bo'lgani uchun lenient qilingan.
@@ -252,13 +256,18 @@ class ExcelServiceTest {
         Answer a = Answer.builder().id(1L).answerText("Toshkent").isTrue(false).build();
         Answer b = Answer.builder().id(2L).answerText("Samarqand").isTrue(true).commentary("To'g'ri, chunki...").build();
         Question q = Question.builder().id(100L).questionText("Qaysi shahar?").answers(List.of(a, b)).build();
+        behzoddev.testproject.entity.Topic topic = behzoddev.testproject.entity.Topic.builder().id(5L).name("Shaharlar").build();
 
+        when(topicRepository.findById(5L)).thenReturn(java.util.Optional.of(topic));
         when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(5L)).thenReturn(List.of(q));
 
         byte[] result = excelService.exportQuestions(5L);
 
         try (XSSFWorkbook wb = new XSSFWorkbook(new java.io.ByteArrayInputStream(result))) {
             Sheet sheet = wb.getSheetAt(0);
+            // Mavzu nomi VARAQ (sheet) nomi sifatida — 0-qator hamon
+            // sarlavha, import round-trip buzilmasin deb.
+            assertThat(wb.getSheetName(0)).isEqualTo("Shaharlar");
             Row header = sheet.getRow(0);
             assertThat(header.getCell(0).getStringCellValue()).isEqualTo("Question");
             assertThat(header.getCell(6).getStringCellValue()).isEqualTo("Correct");
@@ -285,6 +294,10 @@ class ExcelServiceTest {
         Answer a2 = Answer.builder().id(2L).answerText("Yo'q").isTrue(true).commentary("izoh2").build();
         Question q2 = Question.builder().id(2L).questionText("2-savol").answers(List.of(a2)).build();
 
+        behzoddev.testproject.entity.TopicSection section =
+                behzoddev.testproject.entity.TopicSection.builder().id(7L).name("Anatomiya").build();
+
+        when(topicSectionRepository.findById(7L)).thenReturn(java.util.Optional.of(section));
         when(topicRepository.findBySection_IdAndDeletedAtIsNullOrderByOrderIndexAsc(7L))
                 .thenReturn(List.of(topic1, topic2));
         when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(10L)).thenReturn(List.of(q1));
@@ -294,17 +307,22 @@ class ExcelServiceTest {
 
         try (XSSFWorkbook wb = new XSSFWorkbook(new java.io.ByteArrayInputStream(result))) {
             Sheet sheet = wb.getSheetAt(0);
-            Row header = sheet.getRow(0);
+            // 0-qator — ustki sarlavha ("Bo'lim: Anatomiya", birlashtirilgan
+            // katak), 1-qator — jadval boshi, 2-qatordan ma'lumot.
+            Row titleRow = sheet.getRow(0);
+            assertThat(titleRow.getCell(0).getStringCellValue()).isEqualTo("Bo'lim: Anatomiya");
+
+            Row header = sheet.getRow(1);
             assertThat(header.getCell(0).getStringCellValue()).isEqualTo("Mavzu");
             assertThat(header.getCell(1).getStringCellValue()).isEqualTo("Question");
 
-            Row row1 = sheet.getRow(1);
+            Row row1 = sheet.getRow(2);
             assertThat(row1.getCell(0).getStringCellValue()).isEqualTo("1-mavzu");
             assertThat(row1.getCell(1).getStringCellValue()).isEqualTo("1-savol");
             assertThat(row1.getCell(2).getStringCellValue()).isEqualTo("Ha");
             assertThat(row1.getCell(7).getStringCellValue()).isEqualTo("A");
 
-            Row row2 = sheet.getRow(2);
+            Row row2 = sheet.getRow(3);
             assertThat(row2.getCell(0).getStringCellValue()).isEqualTo("2-mavzu");
             assertThat(row2.getCell(1).getStringCellValue()).isEqualTo("2-savol");
         }

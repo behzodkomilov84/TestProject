@@ -1,17 +1,23 @@
 package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.QuestionRepository;
+import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
+import behzoddev.testproject.dao.TopicSectionRepository;
 import behzoddev.testproject.dto.answer.AnswerShortDto;
 import behzoddev.testproject.dto.excel.ImportResultDto;
 import behzoddev.testproject.dto.question.QuestionSaveDto;
 import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Question;
+import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
+import behzoddev.testproject.entity.TopicSection;
 import behzoddev.testproject.validation.Validation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.ss.util.WorkbookUtil;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.apache.tika.Tika;
 import org.jetbrains.annotations.Nullable;
@@ -55,6 +61,8 @@ public class ExcelService {
     private final QuestionService questionService;
     private final QuestionRepository questionRepository;
     private final TopicRepository topicRepository;
+    private final TopicSectionRepository topicSectionRepository;
+    private final ScienceRepository scienceRepository;
     private final DataFormatter formatter = new DataFormatter();
     private final AnswerService answerService;
     private final Validation validation;
@@ -63,13 +71,20 @@ public class ExcelService {
 
     // "📥 Excel'ga eksport" — shu mavzudagi BARCHA faol savollarni import
     // shablonidagi ustun tartibida (Question/A/B/C/D/E/Correct/Comment)
-    // .xlsx faylga yozadi.
+    // .xlsx faylga yozadi. DIQQAT: sarlavha QATOR sifatida QO'SHILMAYDI —
+    // importQuestions() 0-qatorni sarlavha, 1-qatordan boshlab ma'lumot
+    // deb o'qiydi (round-trip: shu faylni qayta import qilish mumkin
+    // bo'lishi kerak). Mavzu nomi shu sabab QATOR emas, VARAQ (sheet)
+    // NOMI sifatida qo'yiladi — Excel'da fayl ochilganda pastdagi
+    // tab'da ko'rinadi, import qatorlar tartibiga ta'sir qilmaydi.
     @Transactional(readOnly = true)
     public byte[] exportQuestions(Long topicId) {
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new RuntimeException("Mavzu topilmadi: " + topicId));
         List<Question> questions = questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(topicId);
 
         try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            Sheet sheet = wb.createSheet("Savollar");
+            Sheet sheet = wb.createSheet(WorkbookUtil.createSafeSheetName(topic.getName()));
 
             CellStyle headerStyle = wb.createCellStyle();
             Font headerFont = wb.createFont();
@@ -115,24 +130,47 @@ public class ExcelService {
     // eksport faqat KO'RISH/hisobot uchun, qayta import qilib bo'lmaydi.
     @Transactional(readOnly = true)
     public byte[] exportQuestionsForSection(Long sectionId) {
-        return exportQuestionsForTopics(topicRepository.findBySection_IdAndDeletedAtIsNullOrderByOrderIndexAsc(sectionId));
+        TopicSection section = topicSectionRepository.findById(sectionId)
+                .orElseThrow(() -> new RuntimeException("Bo'lim topilmadi: " + sectionId));
+        return exportQuestionsForTopics("Bo'lim: " + section.getName(),
+                topicRepository.findBySection_IdAndDeletedAtIsNullOrderByOrderIndexAsc(sectionId));
     }
 
     @Transactional(readOnly = true)
     public byte[] exportQuestionsForScience(Long scienceId) {
-        return exportQuestionsForTopics(topicRepository.findByScience_IdAndDeletedAtIsNullOrderByOrderIndexAsc(scienceId));
+        Science science = scienceRepository.findById(scienceId)
+                .orElseThrow(() -> new RuntimeException("Fan topilmadi: " + scienceId));
+        return exportQuestionsForTopics("Fan: " + science.getName(),
+                topicRepository.findByScience_IdAndDeletedAtIsNullOrderByOrderIndexAsc(scienceId));
     }
 
-    private byte[] exportQuestionsForTopics(List<Topic> topics) {
+    // Bu eksport allaqachon import bilan mos EMAS (yuqoridagi izohga
+    // qarang), shu sabab bu yerda — WordService'dagi kabi — ustki
+    // sarlavha (Bo'lim:/Fan: nomi) QATOR sifatida, birlashtirilgan
+    // katakda qo'shiladi (sarlavha uchun 0-qator, jadval boshi 1-qator,
+    // ma'lumot 2-qatordan boshlanadi).
+    private byte[] exportQuestionsForTopics(String title, List<Topic> topics) {
         try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            Sheet sheet = wb.createSheet("Savollar");
+            Sheet sheet = wb.createSheet(WorkbookUtil.createSafeSheetName(title));
+
+            CellStyle titleStyle = wb.createCellStyle();
+            Font titleFont = wb.createFont();
+            titleFont.setBold(true);
+            titleFont.setFontHeightInPoints((short) 14);
+            titleStyle.setFont(titleFont);
+
+            Row titleRow = sheet.createRow(0);
+            Cell titleCell = titleRow.createCell(0);
+            titleCell.setCellValue(title);
+            titleCell.setCellStyle(titleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, MULTI_TOPIC_EXPORT_HEADERS.length - 1));
 
             CellStyle headerStyle = wb.createCellStyle();
             Font headerFont = wb.createFont();
             headerFont.setBold(true);
             headerStyle.setFont(headerFont);
 
-            Row header = sheet.createRow(0);
+            Row header = sheet.createRow(1);
             for (int i = 0; i < MULTI_TOPIC_EXPORT_HEADERS.length; i++) {
                 Cell cell = header.createCell(i);
                 cell.setCellValue(MULTI_TOPIC_EXPORT_HEADERS[i]);
@@ -144,7 +182,7 @@ public class ExcelService {
                 sheet.setColumnWidth(i, columnWidthsChars[i] * 256);
             }
 
-            int rowIdx = 1;
+            int rowIdx = 2;
             for (Topic topic : topics) {
                 List<Question> questions = questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(topic.getId());
                 for (Question q : questions) {
