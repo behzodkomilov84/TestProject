@@ -23,7 +23,7 @@
 
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-<h1>Bo'limlar</h1>
+<h1>Bo'limlar<span id="sectionsSummary" class="topics-summary"></span></h1>
 <input type="hidden" id="scienceId" th:value="${scienceId}">
 <div class="wrapper">
     <button onclick="location.href='/topics?scienceId=' + getScienceId()">📋 Barcha mavzular (bo'limsiz ko'rish)</button>

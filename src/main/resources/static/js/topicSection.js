@@ -328,6 +328,26 @@ function render() {
         }
         focusIndex = null;
     }
+
+    updateSectionsSummary();
+}
+
+// "Bo'limlar" sarlavhasi yonida — nechta bo'lim bor, nechtasi kursga
+// bog'langan, nechtasi bog'lanmagan (topics.html/topic.js#
+// updateTopicsSummary bilan bir xil g'oya — bo'lim darajasida).
+function updateSectionsSummary() {
+    const el = document.getElementById("sectionsSummary");
+    if (!el) return;
+
+    const relevant = itemBlock.filter(s => s.id > 0);
+    if (relevant.length === 0) {
+        el.textContent = "";
+        return;
+    }
+
+    const linked = relevant.filter(s => s.linkedCourseTitle).length;
+    const unlinked = relevant.length - linked;
+    el.textContent = ` (${relevant.length} ta — ${linked} tasi kursga bog'langan, ${unlinked} tasi bog'lanmagan)`;
 }
 
 function openTopics(sectionId) {
