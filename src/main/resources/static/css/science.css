@@ -251,16 +251,24 @@ h1 {
         padding: 0;
         width: 34px;
         height: 34px;
+        border-radius: 50%;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-        transition: transform 0.15s ease;
+        transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
         flex-shrink: 0;
     }
 
     .topic-export-btn:hover {
-        transform: translateY(-1px) scale(1.08);
+        transform: translateY(-1px) scale(1.1);
+        background: #f1f5f9;
+        box-shadow: 0 4px 10px rgba(15, 23, 42, .12);
+    }
+
+    .topic-export-btn:active {
+        transform: translateY(0) scale(1.02);
+        box-shadow: 0 1px 4px rgba(15, 23, 42, .12);
     }
 
     /* Nom + sanoq belgisi bitta qatorda — nom chapda (kerak bo'lsa

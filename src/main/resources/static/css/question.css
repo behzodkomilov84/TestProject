@@ -749,15 +749,32 @@ td label{
     cursor: pointer;
     font-weight: 600;
     font-size: 13px;
+    letter-spacing: .1px;
     display: inline-flex;
     align-items: center;
     box-shadow: 0 1px 4px rgba(0,0,0,0.08);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
 
 .export-excel-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+    box-shadow: 0 3px 10px rgba(0,0,0,0.14);
+}
+
+.export-excel-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+/* Excel (yashil) va Word (ko'k) tugmalari hover'da o'z brendiga mos
+   ramka rangini oladi — ikkalasi bir xil ".export-excel-btn" klassini
+   ishlatgani uchun, faqat id orqali farqlanadi. */
+#exportExcelBtn:hover {
+    border-color: #107C41;
+}
+
+#exportWordBtn:hover {
+    border-color: #185ABD;
 }
 
 /* "📝 Word'ga eksport" oynasidagi "🎲 Variantlar yaratish" bo'limi —
