@@ -1,6 +1,7 @@
 package behzoddev.testproject.controller.api;
 
 import behzoddev.testproject.service.ExcelService;
+import behzoddev.testproject.service.WordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -16,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class ExcelImportController {
 
     private final ExcelService excelService;
+    private final WordService wordService;
 
     @GetMapping("/export/template")
     public ResponseEntity<Resource> downloadTemplate() throws Exception {
@@ -75,6 +77,48 @@ public class ExcelImportController {
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=savollar_fan_" + scienceId + ".xlsx")
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(data);
+    }
+
+    // "📝 Word'ga eksport" — shu mavzudagi barcha faol savollarni chop
+    // etishga tayyor .docx faylga yozib beradi (izohsiz, to'g'ri javobsiz —
+    // question.js, Excel eksport tugmasi yonida).
+    @GetMapping("/export/questions/word")
+    public ResponseEntity<byte[]> exportQuestionsToWord(@RequestParam Long topicId) {
+        byte[] data = wordService.exportQuestionsToWord(topicId);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=savollar_" + topicId + ".docx")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+                .body(data);
+    }
+
+    // "📝 Word'ga eksport" (Bo'lim miqyosida) — shu Bo'limdagi BARCHA
+    // mavzularning savollarini BITTA .docx faylga yig'ib beradi
+    // (topicSection.js), har bir mavzu o'z sahifasida.
+    @GetMapping("/export/questions/word/section")
+    public ResponseEntity<byte[]> exportQuestionsForSectionToWord(@RequestParam Long sectionId) {
+        byte[] data = wordService.exportQuestionsForSection(sectionId);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=savollar_bolim_" + sectionId + ".docx")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+                .body(data);
+    }
+
+    // "📝 Word'ga eksport" (Fan miqyosida) — shu Fandagi BARCHA mavzularning
+    // savollarini BITTA .docx faylga yig'ib beradi (science.js), har bir
+    // mavzu o'z sahifasida.
+    @GetMapping("/export/questions/word/science")
+    public ResponseEntity<byte[]> exportQuestionsForScienceToWord(@RequestParam Long scienceId) {
+        byte[] data = wordService.exportQuestionsForScience(scienceId);
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=savollar_fan_" + scienceId + ".docx")
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
                 .body(data);
     }
 

@@ -21,6 +21,14 @@ const EXCEL_ICON_SVG = `<svg width="28" height="28" viewBox="0 0 48 48" xmlns="h
         <line x1="30" y1="16" x2="14" y2="32"/>
     </g>
 </svg>`;
+
+// Haqiqiy Word ilovasi belgisiga o'xshash SVG (ko'k hujjat + oq "W") —
+// "📝 Word'ga eksport" tugmalarida — EXCEL_ICON_SVG bilan bir xil andoza.
+const WORD_ICON_SVG = `<svg width="28" height="28" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+    <rect x="4" y="4" width="40" height="40" rx="7" fill="#185ABD"/>
+    <rect x="4" y="4" width="18" height="40" rx="7" fill="#103F91"/>
+    <text x="31" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">W</text>
+</svg>`;
 // ========================================================================
 
 afterStartPage("/api/science");
@@ -224,7 +232,7 @@ function render() {
                 id="input-${i}"
                 class="topic-name ${inputClass}"
                 tabindex="-1"
-            ><div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta bo'lim</span>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestions(${s.id})" title="Shu fandagi barcha mavzularning testlarini Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>` : ""}</div></div>
+            ><div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta bo'lim</span>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestions(${s.id})" title="Shu fandagi barcha mavzularning testlarini Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestionsToWord(${s.id})" title="Shu fandagi barcha mavzularning testlarini Word'ga eksport qilish">${WORD_ICON_SVG}</button>` : ""}</div></div>
         </div>
             `
                 : `
@@ -281,6 +289,10 @@ function openTopics(scienceId) {
 // bilan bir xil andoza, faqat butun Fan miqyosida).
 function exportScienceQuestions(scienceId) {
     window.location.href = `/api/export/questions/science?scienceId=${scienceId}`;
+}
+
+function exportScienceQuestionsToWord(scienceId) {
+    window.location.href = `/api/export/questions/word/science?scienceId=${scienceId}`;
 }
 
 function hasDuplicate(currentIndex, name) {

@@ -79,6 +79,13 @@
              formatda, shu sabab keyin qayta import ham qilish mumkin. -->
         <button id="exportExcelBtn" class="export-excel-btn" onclick="exportQuestionsToExcel()" title="Shu mavzudagi barcha faol savollarni Excel (.xlsx) faylga yuklab olish"><svg width="16" height="16" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-3px;margin-right:4px;"><rect x="4" y="4" width="40" height="40" rx="7" fill="#107C41"/><rect x="4" y="4" width="18" height="40" rx="7" fill="#0B5C31"/><g stroke="#fff" stroke-width="4" stroke-linecap="round"><line x1="14" y1="16" x2="30" y2="32"/><line x1="30" y1="16" x2="14" y2="32"/></g></svg>Excel'ga eksport</button>
 
+        <!-- Shu mavzudagi BARCHA faol savollarni chop etishga tayyor
+             .docx fayl sifatida yuklab olish — sarlavhada mavzu nomi,
+             savollar tartib raqami bilan, javoblari A/B/C/D/E sifatida
+             (izohsiz, to'g'ri javobsiz — Excel eksportdan farqli, bu
+             hisobot emas, bosib chiqarish/tarqatish uchun). -->
+        <button id="exportWordBtn" class="export-excel-btn" onclick="exportQuestionsToWord()" title="Shu mavzudagi barcha faol savollarni Word (.docx) faylga yuklab olish"><svg width="16" height="16" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-3px;margin-right:4px;"><rect x="4" y="4" width="40" height="40" rx="7" fill="#185ABD"/><rect x="4" y="4" width="18" height="40" rx="7" fill="#103F91"/><text x="31" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">W</text></svg>Word'ga eksport</button>
+
         <!-- Kamida bitta savol jadvaldagi checkbox orqali belgilansa
              ko'rinadi (updateBulkDeleteButton, question.js). -->
         <button id="bulkDeleteBtn" class="bulk-delete-btn hidden" onclick="deleteSelectedQuestions()">🗑️ Tanlanganlarni o'chirish (<span id="bulkDeleteCount">0</span>)</button>

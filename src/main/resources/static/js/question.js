@@ -1182,6 +1182,13 @@ function exportQuestionsToExcel() {
     window.location.href = `/api/export/questions?topicId=${topicId}`;
 }
 
+// "📝 Word'ga eksport" — shu mavzudagi barcha faol savollarni chop
+// etishga tayyor .docx fayl sifatida yuklab beradi (izohsiz, to'g'ri
+// javobsiz — WordService#exportQuestionsToWord).
+function exportQuestionsToWord() {
+    window.location.href = `/api/export/questions/word?topicId=${topicId}`;
+}
+
 function showAlert(message, type = "error") {
     const box = document.getElementById("alertBox");
     box.textContent = message;
