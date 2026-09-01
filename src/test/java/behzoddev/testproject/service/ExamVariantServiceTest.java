@@ -142,7 +142,9 @@ class ExamVariantServiceTest {
         when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(3L)).thenReturn(questionsFor("T3", 10));
 
         service = service();
-        byte[] zip = service.generateVariantsForScience(9L, 5, 10, false);
+        behzoddev.testproject.dto.export.ExportedFileDto result = service.generateVariantsForScience(9L, 5, 10, false);
+        assertThat(result.filenameBase()).isEqualTo("variantlar_fan_Fan");
+        byte[] zip = result.data();
 
         assertThat(countZipEntries(zip, "Variant_")).isEqualTo(5);
         assertThat(countZipEntries(zip, "Javoblar_kaliti.xlsx")).isEqualTo(1);
@@ -185,7 +187,9 @@ class ExamVariantServiceTest {
 
         service = service();
         // shuffleAnswers=false -> to'g'ri javob har doim birinchi (A) bo'lib qoladi
-        byte[] zip = service.generateVariantsForTopic(1L, 3, 5, false);
+        behzoddev.testproject.dto.export.ExportedFileDto result = service.generateVariantsForTopic(1L, 3, 5, false);
+        assertThat(result.filenameBase()).isEqualTo("variantlar_T1");
+        byte[] zip = result.data();
 
         Workbook wb = null;
         try (ZipInputStream zin = new ZipInputStream(new ByteArrayInputStream(zip))) {
@@ -234,7 +238,7 @@ class ExamVariantServiceTest {
         service = service();
         ReflectionTestUtils.setField(service, "uploadDir", tempDir.toString());
 
-        byte[] zip = service.generateVariantsForTopic(1L, 1, 1, false);
+        byte[] zip = service.generateVariantsForTopic(1L, 1, 1, false).data();
 
         try (ZipInputStream zin = new ZipInputStream(new ByteArrayInputStream(zip))) {
             ZipEntry entry;

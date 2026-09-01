@@ -4,6 +4,7 @@ import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
+import behzoddev.testproject.dto.export.ExportedFileDto;
 import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
@@ -72,26 +73,29 @@ public class ExamVariantService {
     private String uploadDir;
 
     @Transactional(readOnly = true)
-    public byte[] generateVariantsForTopic(Long topicId, int variantCount, int perVariant, boolean shuffleAnswers) {
+    public ExportedFileDto generateVariantsForTopic(Long topicId, int variantCount, int perVariant, boolean shuffleAnswers) {
         Topic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new RuntimeException("Mavzu topilmadi: " + topicId));
-        return generate("Mavzu: " + topic.getName(), List.of(topic), variantCount, perVariant, shuffleAnswers);
+        byte[] data = generate("Mavzu: " + topic.getName(), List.of(topic), variantCount, perVariant, shuffleAnswers);
+        return new ExportedFileDto(data, "variantlar_" + ExportFilenameUtil.sanitize(topic.getName()));
     }
 
     @Transactional(readOnly = true)
-    public byte[] generateVariantsForSection(Long sectionId, int variantCount, int perVariant, boolean shuffleAnswers) {
+    public ExportedFileDto generateVariantsForSection(Long sectionId, int variantCount, int perVariant, boolean shuffleAnswers) {
         TopicSection section = topicSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new RuntimeException("Bo'lim topilmadi: " + sectionId));
         List<Topic> topics = topicRepository.findBySection_IdAndDeletedAtIsNullOrderByOrderIndexAsc(sectionId);
-        return generate("Bo'lim: " + section.getName(), topics, variantCount, perVariant, shuffleAnswers);
+        byte[] data = generate("Bo'lim: " + section.getName(), topics, variantCount, perVariant, shuffleAnswers);
+        return new ExportedFileDto(data, "variantlar_bolim_" + ExportFilenameUtil.sanitize(section.getName()));
     }
 
     @Transactional(readOnly = true)
-    public byte[] generateVariantsForScience(Long scienceId, int variantCount, int perVariant, boolean shuffleAnswers) {
+    public ExportedFileDto generateVariantsForScience(Long scienceId, int variantCount, int perVariant, boolean shuffleAnswers) {
         Science science = scienceRepository.findById(scienceId)
                 .orElseThrow(() -> new RuntimeException("Fan topilmadi: " + scienceId));
         List<Topic> topics = topicRepository.findByScience_IdAndDeletedAtIsNullOrderByOrderIndexAsc(scienceId);
-        return generate("Fan: " + science.getName(), topics, variantCount, perVariant, shuffleAnswers);
+        byte[] data = generate("Fan: " + science.getName(), topics, variantCount, perVariant, shuffleAnswers);
+        return new ExportedFileDto(data, "variantlar_fan_" + ExportFilenameUtil.sanitize(science.getName()));
     }
 
     private byte[] generate(String scopeTitle, List<Topic> topics, int variantCount, int perVariant, boolean shuffleAnswers) {

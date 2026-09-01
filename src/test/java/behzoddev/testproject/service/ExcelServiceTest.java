@@ -261,9 +261,10 @@ class ExcelServiceTest {
         when(topicRepository.findById(5L)).thenReturn(java.util.Optional.of(topic));
         when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(5L)).thenReturn(List.of(q));
 
-        byte[] result = excelService.exportQuestions(5L);
+        behzoddev.testproject.dto.export.ExportedFileDto result = excelService.exportQuestions(5L);
+        assertThat(result.filenameBase()).isEqualTo("savollar_Shaharlar");
 
-        try (XSSFWorkbook wb = new XSSFWorkbook(new java.io.ByteArrayInputStream(result))) {
+        try (XSSFWorkbook wb = new XSSFWorkbook(new java.io.ByteArrayInputStream(result.data()))) {
             Sheet sheet = wb.getSheetAt(0);
             // Mavzu nomi VARAQ (sheet) nomi sifatida — 0-qator hamon
             // sarlavha, import round-trip buzilmasin deb.
@@ -303,9 +304,10 @@ class ExcelServiceTest {
         when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(10L)).thenReturn(List.of(q1));
         when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(20L)).thenReturn(List.of(q2));
 
-        byte[] result = excelService.exportQuestionsForSection(7L);
+        behzoddev.testproject.dto.export.ExportedFileDto result = excelService.exportQuestionsForSection(7L);
+        assertThat(result.filenameBase()).isEqualTo("savollar_bolim_Anatomiya");
 
-        try (XSSFWorkbook wb = new XSSFWorkbook(new java.io.ByteArrayInputStream(result))) {
+        try (XSSFWorkbook wb = new XSSFWorkbook(new java.io.ByteArrayInputStream(result.data()))) {
             Sheet sheet = wb.getSheetAt(0);
             // 0-qator — ustki sarlavha ("Bo'lim: Anatomiya", birlashtirilgan
             // katak), 1-qator — jadval boshi, 2-qatordan ma'lumot.

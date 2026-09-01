@@ -1,16 +1,20 @@
 package behzoddev.testproject.controller.api;
 
+import behzoddev.testproject.dto.export.ExportedFileDto;
 import behzoddev.testproject.service.ExamVariantService;
 import behzoddev.testproject.service.ExcelService;
 import behzoddev.testproject.service.WordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api")
@@ -47,39 +51,24 @@ public class ExcelImportController {
     // (question.js — controls qatoridagi tugma).
     @GetMapping("/export/questions")
     public ResponseEntity<byte[]> exportQuestions(@RequestParam Long topicId) {
-        byte[] data = excelService.exportQuestions(topicId);
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=savollar_" + topicId + ".xlsx")
-                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                .body(data);
+        return attachment(excelService.exportQuestions(topicId), ".xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     }
 
     // "📊 Excel'ga eksport" (Bo'lim miqyosida) — shu Bo'limdagi BARCHA
     // mavzularning savollarini BITTA faylga yig'ib beradi (topicSection.js).
     @GetMapping("/export/questions/section")
     public ResponseEntity<byte[]> exportQuestionsForSection(@RequestParam Long sectionId) {
-        byte[] data = excelService.exportQuestionsForSection(sectionId);
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=savollar_bolim_" + sectionId + ".xlsx")
-                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                .body(data);
+        return attachment(excelService.exportQuestionsForSection(sectionId), ".xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     }
 
     // "📊 Excel'ga eksport" (Fan miqyosida) — shu Fandagi BARCHA
     // mavzularning savollarini BITTA faylga yig'ib beradi (science.js).
     @GetMapping("/export/questions/science")
     public ResponseEntity<byte[]> exportQuestionsForScience(@RequestParam Long scienceId) {
-        byte[] data = excelService.exportQuestionsForScience(scienceId);
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=savollar_fan_" + scienceId + ".xlsx")
-                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                .body(data);
+        return attachment(excelService.exportQuestionsForScience(scienceId), ".xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     }
 
     // "📝 Word'ga eksport" — shu mavzudagi barcha faol savollarni chop
@@ -87,13 +76,8 @@ public class ExcelImportController {
     // question.js, Excel eksport tugmasi yonida).
     @GetMapping("/export/questions/word")
     public ResponseEntity<byte[]> exportQuestionsToWord(@RequestParam Long topicId) {
-        byte[] data = wordService.exportQuestionsToWord(topicId);
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=savollar_" + topicId + ".docx")
-                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
-                .body(data);
+        return attachment(wordService.exportQuestionsToWord(topicId), ".docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     }
 
     // "📝 Word'ga eksport" (Bo'lim miqyosida) — shu Bo'limdagi BARCHA
@@ -101,13 +85,8 @@ public class ExcelImportController {
     // (topicSection.js), har bir mavzu o'z sahifasida.
     @GetMapping("/export/questions/word/section")
     public ResponseEntity<byte[]> exportQuestionsForSectionToWord(@RequestParam Long sectionId) {
-        byte[] data = wordService.exportQuestionsForSection(sectionId);
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=savollar_bolim_" + sectionId + ".docx")
-                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
-                .body(data);
+        return attachment(wordService.exportQuestionsForSection(sectionId), ".docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     }
 
     // "📝 Word'ga eksport" (Fan miqyosida) — shu Fandagi BARCHA mavzularning
@@ -115,13 +94,8 @@ public class ExcelImportController {
     // mavzu o'z sahifasida.
     @GetMapping("/export/questions/word/science")
     public ResponseEntity<byte[]> exportQuestionsForScienceToWord(@RequestParam Long scienceId) {
-        byte[] data = wordService.exportQuestionsForScience(scienceId);
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=savollar_fan_" + scienceId + ".docx")
-                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
-                .body(data);
+        return attachment(wordService.exportQuestionsForScience(scienceId), ".docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     }
 
     // "🎲 Variantlar yaratish" — Word eksport oynasidagi checkbox orqali
@@ -135,8 +109,8 @@ public class ExcelImportController {
             @RequestParam int perVariant,
             @RequestParam(defaultValue = "true") boolean shuffleAnswers
     ) {
-        byte[] data = examVariantService.generateVariantsForTopic(topicId, variantCount, perVariant, shuffleAnswers);
-        return zipAttachment(data, "variantlar_mavzu_" + topicId);
+        return attachment(examVariantService.generateVariantsForTopic(topicId, variantCount, perVariant, shuffleAnswers),
+                ".zip", "application/zip");
     }
 
     @GetMapping("/export/questions/word/variants/section")
@@ -146,8 +120,8 @@ public class ExcelImportController {
             @RequestParam int perVariant,
             @RequestParam(defaultValue = "true") boolean shuffleAnswers
     ) {
-        byte[] data = examVariantService.generateVariantsForSection(sectionId, variantCount, perVariant, shuffleAnswers);
-        return zipAttachment(data, "variantlar_bolim_" + sectionId);
+        return attachment(examVariantService.generateVariantsForSection(sectionId, variantCount, perVariant, shuffleAnswers),
+                ".zip", "application/zip");
     }
 
     @GetMapping("/export/questions/word/variants/science")
@@ -157,15 +131,26 @@ public class ExcelImportController {
             @RequestParam int perVariant,
             @RequestParam(defaultValue = "true") boolean shuffleAnswers
     ) {
-        byte[] data = examVariantService.generateVariantsForScience(scienceId, variantCount, perVariant, shuffleAnswers);
-        return zipAttachment(data, "variantlar_fan_" + scienceId);
+        return attachment(examVariantService.generateVariantsForScience(scienceId, variantCount, perVariant, shuffleAnswers),
+                ".zip", "application/zip");
     }
 
-    private ResponseEntity<byte[]> zipAttachment(byte[] data, String baseFilename) {
+    // Barcha eksport turlari uchun umumiy — fayl nomi mavzu/bo'lim/fan
+    // NOMIDAN olinadi (ExportedFileDto#filenameBase, xizmat qatlamida
+    // hisoblangan). ContentDisposition.filename(..., UTF_8) orqali —
+    // Uzbek nomlar (masalan "Bo'lim: Kimyo") kirill/lotin, apostrof va
+    // boshqa ASCII bo'lmagan belgilar bilan ham TO'G'RI ko'rsatiladi
+    // (RFC 5987 "filename*=UTF-8''..." + eski brauzerlar uchun ASCII
+    // "filename=" fallback'i, ikkalasi ham avtomatik qo'yiladi).
+    private ResponseEntity<byte[]> attachment(ExportedFileDto file, String extension, String contentType) {
+        ContentDisposition disposition = ContentDisposition.attachment()
+                .filename(file.filenameBase() + extension, StandardCharsets.UTF_8)
+                .build();
+
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + baseFilename + ".zip")
-                .contentType(MediaType.parseMediaType("application/zip"))
-                .body(data);
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+                .contentType(MediaType.parseMediaType(contentType))
+                .body(file.data());
     }
 
 }

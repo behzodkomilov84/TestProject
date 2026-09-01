@@ -4,6 +4,7 @@ import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
+import behzoddev.testproject.dto.export.ExportedFileDto;
 import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
@@ -50,36 +51,39 @@ public class WordService {
 
     // Mavzu miqyosida — bitta mavzudagi barcha faol savollar (question.js).
     @Transactional(readOnly = true)
-    public byte[] exportQuestionsToWord(Long topicId) {
+    public ExportedFileDto exportQuestionsToWord(Long topicId) {
         Topic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new RuntimeException("Mavzu topilmadi: " + topicId));
         List<Question> questions = questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(topicId);
 
-        return buildDocument("Mavzu: " + topic.getName(), List.of(topic), List.of(questions));
+        byte[] data = buildDocument("Mavzu: " + topic.getName(), List.of(topic), List.of(questions));
+        return new ExportedFileDto(data, "savollar_" + ExportFilenameUtil.sanitize(topic.getName()));
     }
 
     // Bo'lim miqyosida — shu Bo'limdagi BARCHA mavzularning savollari
     // BITTA faylga yig'iladi, har bir mavzu O'Z sahifasidan boshlanadi
     // (topicSection.js).
     @Transactional(readOnly = true)
-    public byte[] exportQuestionsForSection(Long sectionId) {
+    public ExportedFileDto exportQuestionsForSection(Long sectionId) {
         TopicSection section = topicSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new RuntimeException("Bo'lim topilmadi: " + sectionId));
         List<Topic> topics = topicRepository.findBySection_IdAndDeletedAtIsNullOrderByOrderIndexAsc(sectionId);
 
-        return buildDocument("Bo'lim: " + section.getName(), topics, questionsPerTopic(topics));
+        byte[] data = buildDocument("Bo'lim: " + section.getName(), topics, questionsPerTopic(topics));
+        return new ExportedFileDto(data, "savollar_bolim_" + ExportFilenameUtil.sanitize(section.getName()));
     }
 
     // Fan miqyosida — shu Fandagi BARCHA mavzularning savollari BITTA
     // faylga yig'iladi, har bir mavzu O'Z sahifasidan boshlanadi
     // (science.js).
     @Transactional(readOnly = true)
-    public byte[] exportQuestionsForScience(Long scienceId) {
+    public ExportedFileDto exportQuestionsForScience(Long scienceId) {
         Science science = scienceRepository.findById(scienceId)
                 .orElseThrow(() -> new RuntimeException("Fan topilmadi: " + scienceId));
         List<Topic> topics = topicRepository.findByScience_IdAndDeletedAtIsNullOrderByOrderIndexAsc(scienceId);
 
-        return buildDocument("Fan: " + science.getName(), topics, questionsPerTopic(topics));
+        byte[] data = buildDocument("Fan: " + science.getName(), topics, questionsPerTopic(topics));
+        return new ExportedFileDto(data, "savollar_fan_" + ExportFilenameUtil.sanitize(science.getName()));
     }
 
     private List<List<Question>> questionsPerTopic(List<Topic> topics) {

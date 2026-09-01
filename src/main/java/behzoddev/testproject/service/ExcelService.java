@@ -6,6 +6,7 @@ import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
 import behzoddev.testproject.dto.answer.AnswerShortDto;
 import behzoddev.testproject.dto.excel.ImportResultDto;
+import behzoddev.testproject.dto.export.ExportedFileDto;
 import behzoddev.testproject.dto.question.QuestionSaveDto;
 import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Question;
@@ -78,7 +79,7 @@ public class ExcelService {
     // NOMI sifatida qo'yiladi — Excel'da fayl ochilganda pastdagi
     // tab'da ko'rinadi, import qatorlar tartibiga ta'sir qilmaydi.
     @Transactional(readOnly = true)
-    public byte[] exportQuestions(Long topicId) {
+    public ExportedFileDto exportQuestions(Long topicId) {
         Topic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new RuntimeException("Mavzu topilmadi: " + topicId));
         List<Question> questions = questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(topicId);
@@ -114,7 +115,7 @@ public class ExcelService {
             }
 
             wb.write(out);
-            return out.toByteArray();
+            return new ExportedFileDto(out.toByteArray(), "savollar_" + ExportFilenameUtil.sanitize(topic.getName()));
         } catch (IOException e) {
             log.error("Excelga eksport qilishda xatolik", e);
             throw new RuntimeException("❌Excelga eksport qilishda xatolik", e);
@@ -129,19 +130,21 @@ public class ExcelService {
     // (ustun soni/tartibi boshqacha, "Mavzu" ustuni qo'shilgan) — bu
     // eksport faqat KO'RISH/hisobot uchun, qayta import qilib bo'lmaydi.
     @Transactional(readOnly = true)
-    public byte[] exportQuestionsForSection(Long sectionId) {
+    public ExportedFileDto exportQuestionsForSection(Long sectionId) {
         TopicSection section = topicSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new RuntimeException("Bo'lim topilmadi: " + sectionId));
-        return exportQuestionsForTopics("Bo'lim: " + section.getName(),
+        byte[] data = exportQuestionsForTopics("Bo'lim: " + section.getName(),
                 topicRepository.findBySection_IdAndDeletedAtIsNullOrderByOrderIndexAsc(sectionId));
+        return new ExportedFileDto(data, "savollar_bolim_" + ExportFilenameUtil.sanitize(section.getName()));
     }
 
     @Transactional(readOnly = true)
-    public byte[] exportQuestionsForScience(Long scienceId) {
+    public ExportedFileDto exportQuestionsForScience(Long scienceId) {
         Science science = scienceRepository.findById(scienceId)
                 .orElseThrow(() -> new RuntimeException("Fan topilmadi: " + scienceId));
-        return exportQuestionsForTopics("Fan: " + science.getName(),
+        byte[] data = exportQuestionsForTopics("Fan: " + science.getName(),
                 topicRepository.findByScience_IdAndDeletedAtIsNullOrderByOrderIndexAsc(scienceId));
+        return new ExportedFileDto(data, "savollar_fan_" + ExportFilenameUtil.sanitize(science.getName()));
     }
 
     // Bu eksport allaqachon import bilan mos EMAS (yuqoridagi izohga
