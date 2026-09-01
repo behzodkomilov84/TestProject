@@ -16,11 +16,18 @@ import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,6 +57,9 @@ class ExamVariantServiceTest {
     private TopicSectionRepository topicSectionRepository;
     @Mock
     private ScienceRepository scienceRepository;
+
+    @TempDir
+    Path tempDir;
 
     private ExamVariantService service;
 
@@ -200,5 +210,41 @@ class ExamVariantServiceTest {
             }
         }
         wb.close();
+    }
+
+    @Test
+    void generateVariantsForTopic_questionWithImage_embedsPictureInDocx() throws IOException {
+        Topic t1 = topic(1, "T1");
+
+        Path questionsDir = Files.createDirectories(tempDir.resolve("questions"));
+        Path imageFile = questionsDir.resolve("test.png");
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            BufferedImage image = new BufferedImage(20, 10, BufferedImage.TYPE_INT_RGB);
+            ImageIO.write(image, "png", out);
+            Files.write(imageFile, out.toByteArray());
+        }
+
+        Question q = Question.builder().id(1L).questionText("T1-Q1").imageUrl("/uploads/questions/test.png").build();
+        Answer a = Answer.builder().id(1L).answerText("T1-A0").isTrue(true).question(q).build();
+        q.setAnswers(List.of(a));
+
+        when(topicRepository.findById(1L)).thenReturn(java.util.Optional.of(t1));
+        when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(1L)).thenReturn(List.of(q));
+
+        service = service();
+        ReflectionTestUtils.setField(service, "uploadDir", tempDir.toString());
+
+        byte[] zip = service.generateVariantsForTopic(1L, 1, 1, false);
+
+        try (ZipInputStream zin = new ZipInputStream(new ByteArrayInputStream(zip))) {
+            ZipEntry entry;
+            while ((entry = zin.getNextEntry()) != null) {
+                if (!entry.getName().startsWith("Variant_")) continue;
+
+                try (XWPFDocument doc = new XWPFDocument(new ByteArrayInputStream(zin.readAllBytes()))) {
+                    assertThat(doc.getAllPictures()).hasSize(1);
+                }
+            }
+        }
     }
 }

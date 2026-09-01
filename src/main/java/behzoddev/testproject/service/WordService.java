@@ -16,6 +16,7 @@ import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +42,11 @@ public class WordService {
     private final TopicRepository topicRepository;
     private final TopicSectionRepository topicSectionRepository;
     private final ScienceRepository scienceRepository;
+
+    // Savol/javobga biriktirilgan rasmni diskdan o'qish uchun (DocxImageUtil) —
+    // FileStorageService bilan bir xil manba (application.yaml: app.upload.dir).
+    @Value("${app.upload.dir}")
+    private String uploadDir;
 
     // Mavzu miqyosida — bitta mavzudagi barcha faol savollar (question.js).
     @Transactional(readOnly = true)
@@ -157,6 +163,8 @@ public class WordService {
         questionRun.setBold(true);
         questionRun.setFontSize(12);
 
+        DocxImageUtil.insertImageIfPresent(doc, uploadDir, q.getImageUrl());
+
         List<Answer> answers = q.getAnswers() == null
                 ? List.of()
                 : q.getAnswers().stream()
@@ -165,13 +173,17 @@ public class WordService {
                         .toList();
 
         for (int i = 0; i < answers.size(); i++) {
+            Answer a = answers.get(i);
+
             XWPFParagraph answerPara = doc.createParagraph();
             answerPara.setIndentationLeft(400);
             answerPara.setSpacingAfter(40);
 
             XWPFRun answerRun = answerPara.createRun();
-            answerRun.setText(ANSWER_LETTERS[i] + ") " + answers.get(i).getAnswerText());
+            answerRun.setText(ANSWER_LETTERS[i] + ") " + a.getAnswerText());
             answerRun.setFontSize(11);
+
+            DocxImageUtil.insertImageIfPresent(doc, uploadDir, a.getImageUrl());
         }
     }
 }

@@ -22,6 +22,7 @@ import org.apache.poi.xwpf.usermodel.ParagraphAlignment;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,10 +51,9 @@ import java.util.zip.ZipOutputStream;
 // "Variant_NN.docx" fayllar + "Javoblar_kaliti.xlsx" (o'qituvchi uchun,
 // har bir variant/savol raqami bo'yicha to'g'ri javob harfi).
 //
-// ESLATMA (foydalanuvchiga aytilgan, keyingi bosqichda hal qilinadi):
-// hozircha faqat MATNLI savollar/javoblar eksport qilinadi — rasm/video
-// biriktirilgan savollar variant hujjatiga TUSHMAYDI (WordService bilan
-// bir xil cheklov).
+// Savol/javobga biriktirilgan rasm ham hujjatga qo'shiladi (DocxImageUtil) —
+// video EMAS (Word .docx formatida video ko'rsatib bo'lmaydi, shu sabab
+// har doim o'tkazib yuboriladi).
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -65,6 +65,11 @@ public class ExamVariantService {
     private final TopicRepository topicRepository;
     private final TopicSectionRepository topicSectionRepository;
     private final ScienceRepository scienceRepository;
+
+    // Savol/javobga biriktirilgan rasmni diskdan o'qish uchun (DocxImageUtil) —
+    // FileStorageService bilan bir xil manba (application.yaml: app.upload.dir).
+    @Value("${app.upload.dir}")
+    private String uploadDir;
 
     @Transactional(readOnly = true)
     public byte[] generateVariantsForTopic(Long topicId, int variantCount, int perVariant, boolean shuffleAnswers) {
@@ -249,6 +254,8 @@ public class ExamVariantService {
         questionRun.setBold(true);
         questionRun.setFontSize(12);
 
+        DocxImageUtil.insertImageIfPresent(doc, uploadDir, q.getImageUrl());
+
         List<Answer> answers = q.getAnswers() == null
                 ? new ArrayList<>()
                 : new ArrayList<>(q.getAnswers().stream()
@@ -271,6 +278,8 @@ public class ExamVariantService {
             XWPFRun answerRun = answerPara.createRun();
             answerRun.setText(ANSWER_LETTERS[i] + ") " + a.getAnswerText());
             answerRun.setFontSize(11);
+
+            DocxImageUtil.insertImageIfPresent(doc, uploadDir, a.getImageUrl());
 
             if (Boolean.TRUE.equals(a.getIsTrue())) {
                 correctLetter = ANSWER_LETTERS[i];
