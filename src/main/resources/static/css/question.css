@@ -762,58 +762,133 @@ td label{
 
 /* "📝 Word'ga eksport" oynasidagi "🎲 Variantlar yaratish" bo'limi —
    science.css'da bir xil nomlar bilan takrorlangan (bu sahifa science.css'ni
-   ulamaydi). */
+   ulamaydi). Umumiy ".modal-overlay"/".modal-h2"/".modal-footer" — yuqorida,
+   #commentModal bilan bir xil (specificity bilan faqat kerakli joyi
+   qayta belgilangan, umumiy qoida buzilmasin deb). */
+@keyframes modalPopIn {
+    from { opacity: 0; transform: translateY(10px) scale(.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .word-export-modal {
     width: min(480px, 90vw);
+    height: auto;
     background: #fff;
-    padding: 28px;
-    border-radius: 12px;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, .35);
+    padding: 30px 32px;
+    border-radius: 16px;
+    box-shadow: 0 25px 60px rgba(15, 23, 42, .35);
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 18px;
+    animation: modalPopIn .2s cubic-bezier(.2, .9, .3, 1.2);
+}
+
+.word-export-modal .modal-h2 {
+    font-size: 20px;
+    color: #103F91;
+    letter-spacing: .2px;
 }
 
 .word-export-checkbox-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
     font-weight: 600;
+    font-size: 15px;
+    color: #1e293b;
     cursor: pointer;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, #f4f6f9, #eef2ff);
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    transition: border-color .15s ease, background .15s ease;
+}
+
+.word-export-checkbox-row:hover {
+    border-color: #185ABD;
+}
+
+.word-export-checkbox-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #185ABD;
+    cursor: pointer;
+    flex-shrink: 0;
 }
 
 .word-export-variant-fields {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    padding: 14px;
-    background: #f4f6f9;
-    border-radius: 8px;
+    gap: 14px;
+    padding: 16px;
+    background: #f8fafc;
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    animation: modalPopIn .15s ease;
 }
 
 .word-export-variant-fields label {
     display: flex;
     flex-direction: column;
-    gap: 4px;
-    font-size: 14px;
-    color: #334155;
+    gap: 6px;
+    font-size: 13px;
+    color: #475569;
     font-weight: 600;
     cursor: default;
 }
 
 .word-export-variant-fields input[type="number"] {
-    padding: 8px 10px;
+    padding: 9px 12px;
     border: 1px solid #d5dde8;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 400;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.word-export-variant-fields input[type="number"]:focus {
+    outline: none;
+    border-color: #185ABD;
+    box-shadow: 0 0 0 3px rgba(24, 90, 189, .15);
 }
 
 .word-export-hint {
     font-size: 12px;
     color: #64748b;
     margin: 0;
-    line-height: 1.5;
+    line-height: 1.6;
+    padding-top: 4px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.word-export-modal .modal-footer {
+    margin-top: 4px;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 16px;
+}
+
+.word-export-modal .modal-footer button:first-child {
+    background: #fff;
+    color: #475569;
+    border: 1px solid #d5dde8;
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+}
+
+.word-export-modal .modal-footer button:first-child:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+
+.word-export-modal .export-excel-btn:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+    transform: none;
 }
 
 /* "Tartib" ustuni (⬆⬇) va A-Z/Z-A saralash — faqat "Hammasi" (isAllMode)
