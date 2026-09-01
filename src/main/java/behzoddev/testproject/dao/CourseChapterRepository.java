@@ -18,6 +18,10 @@ public interface CourseChapterRepository extends JpaRepository<CourseChapter, Lo
     // Yangi bo'lim doim oxiriga qo'shiladi.
     Optional<CourseChapter> findTopByCourse_IdOrderByOrderIndexDesc(Long courseId);
 
+    // Bo'limlarni yuqoriga/pastga surish (CourseService.reorderChapters) —
+    // joriy tartibni to'liq olib, keyin qayta yozish uchun.
+    List<CourseChapter> findByCourse_IdOrderByOrderIndexAsc(Long courseId);
+
     // Kursning BARCHA Bo'limlari — hozircha hech qanday mavzuga
     // biriktirilmagan (sectionCount=0, "bo'sh") bo'lganlari ham shu
     // jumladan (courseDetail.js Bo'lim tanlash select'ini to'liq

@@ -565,6 +565,44 @@ class CourseServiceTest {
                 .hasMessageContaining("savatga o'tkazish");
     }
 
+    // ===== reorderChapters =====
+    // "⬆⬇" — Bo'lim "box"larini kurs sahifasida yuqoriga/pastga surish.
+    // TopicService.reorderTopics bilan bir xil andoza: frontend BUTUN
+    // yangi tartibdagi id ro'yxatini yuboradi, backend orderIndex'ni
+    // 1'dan qayta yozadi.
+
+    @Test
+    void reorderChapters_validIds_updatesOrderIndexInGivenOrder() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter c1 = CourseChapter.builder().id(10L).course(course).name("1-bob").orderIndex(1).build();
+        CourseChapter c2 = CourseChapter.builder().id(20L).course(course).name("2-bob").orderIndex(2).build();
+        CourseChapter c3 = CourseChapter.builder().id(30L).course(course).name("3-bob").orderIndex(3).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(c1, c2, c3));
+
+        courseService.reorderChapters(1L, List.of(30L, 10L, 20L), owner());
+
+        assertThat(c3.getOrderIndex()).isEqualTo(1);
+        assertThat(c1.getOrderIndex()).isEqualTo(2);
+        assertThat(c2.getOrderIndex()).isEqualTo(3);
+        org.mockito.Mockito.verify(courseChapterRepository).saveAll(List.of(c1, c2, c3));
+    }
+
+    @Test
+    void reorderChapters_idListDoesNotMatchCourseChapters_throws() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter c1 = CourseChapter.builder().id(10L).course(course).name("1-bob").orderIndex(1).build();
+        CourseChapter c2 = CourseChapter.builder().id(20L).course(course).name("2-bob").orderIndex(2).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(c1, c2));
+
+        assertThatThrownBy(() -> courseService.reorderChapters(1L, List.of(10L, 999L), owner()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("mos kelmayapti");
+    }
+
     // ===== deleteChapterWithLinkedTopics =====
     // Kurs Bo'limi + mavzularini birga o'chirish — CourseSection'lar
     // soft-delete qilinadi, Bo'limning o'zi hard-delete. Foydalanuvchi

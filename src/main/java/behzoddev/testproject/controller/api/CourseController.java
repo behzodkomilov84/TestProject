@@ -105,6 +105,17 @@ public class CourseController {
         courseService.renameChapter(courseId, chapterId, body.get("name"), user);
     }
 
+    // "⬆⬇" — Bo'lim "box"larini kurs sahifasida yuqoriga/pastga surish
+    // (courseDetail.js). "reorder" literal segment — Spring bunday holatda
+    // {chapterId} path-variable'dan ustun qo'yadi ("sync-topics"/"empty"
+    // bilan bir xil andoza).
+    @PutMapping("/{courseId}/chapters/reorder")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public void reorderChapters(@PathVariable Long courseId, @RequestBody List<Long> chapterIds,
+                                 @AuthenticationPrincipal User user) {
+        courseService.reorderChapters(courseId, chapterIds, user);
+    }
+
     // Kurs Bo'limlari bilan TEST BOSHQARUVIdagi Bo'lim (TopicSection)
     // orasidagi bog'lanishni qo'lda majburiy sinxronlashtirish — "🔄
     // Bo'lim-Mavzu bog'lanishini sinxronlash" tugmasi (courseDetail.js).

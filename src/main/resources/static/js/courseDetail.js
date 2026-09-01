@@ -1413,11 +1413,15 @@ function renderGroupedSections() {
 
     const sortedGroups = getSortedChapterGroups();
     const globalIndexById = buildGlobalIndexMap();
+    // "⬆⬇" tugmalari faqat HAQIQIY Bo'limlar orasida ishlaydi — "—
+    // Bo'limsiz mavzular —" psevdo-guruhi (chapterId == null) CourseChapter
+    // yozuvi emas, "surib" bo'lmaydi, shu sabab hisobga olinmaydi.
+    const realChapterGroups = sortedGroups.filter(g => g.chapterId != null);
 
-    list.innerHTML = sortedGroups.map(group => renderChapterBox(group, globalIndexById)).join("");
+    list.innerHTML = sortedGroups.map(group => renderChapterBox(group, globalIndexById, realChapterGroups)).join("");
 }
 
-function renderChapterBox(group, globalIndexById) {
+function renderChapterBox(group, globalIndexById, realChapterGroups) {
     // Shu Bo'limdagi BARCHA mavzularning (TEST BOSHQARUVIga bog'langanlari)
     // testlari yig'indisi — bo'lim sarlavhasida "jami testlar" sifatida
     // ko'rsatish uchun (foydalanuvchi so'rovi bo'yicha).
@@ -1454,6 +1458,21 @@ function renderChapterBox(group, globalIndexById) {
         ? `<button class="chapter-rename-btn danger-btn" onclick="deleteChapterWithLinkedTopics(${group.chapterId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Bo'lim va ichidagi barcha mavzularni (bog'langan bo'lsa, TEST BOSHQARUVIdagi savollari bilan) butunlay o'chirish">🗑️</button>`
         : "";
 
+    // "⬆⬇" — shu Bo'lim "box"ini boshqa Bo'lim bilan o'rin almashtiradi
+    // (moveChapter) — faqat haqiqiy Bo'limlarda (group.chapterId != null)
+    // va kamida 2 ta Bo'lim bo'lganda ko'rinadi. Ro'yxat cheti — tegishli
+    // tugma disabled.
+    let moveBtns = "";
+    if (cachedCourse && cachedCourse.canManage && group.chapterId != null && realChapterGroups.length > 1) {
+        const pos = realChapterGroups.findIndex(g => g.chapterId === group.chapterId);
+        const upDisabled = pos <= 0 ? "disabled" : "";
+        const downDisabled = pos === realChapterGroups.length - 1 ? "disabled" : "";
+        moveBtns = `
+            <button class="chapter-move-btn" onclick="event.stopPropagation(); moveChapter(${group.chapterId}, -1)" ${upDisabled} title="Bo'limni yuqoriga surish">⬆</button>
+            <button class="chapter-move-btn" onclick="event.stopPropagation(); moveChapter(${group.chapterId}, 1)" ${downDisabled} title="Bo'limni pastga surish">⬇</button>
+        `;
+    }
+
     // Har bir Bo'lim — o'zining ALOHIDA "Saralash: A→Z / Z→A" tugmalariga
     // ega (sortChapterSections) — faqat SHU bo'lim ichidagi mavzularni
     // qayta tartiblaydi, boshqa bo'limlarga (yoki bo'limsiz mavzularga)
@@ -1468,7 +1487,7 @@ function renderChapterBox(group, globalIndexById) {
 
     return `
         <div class="chapter-box">
-            <h3 class="chapter-box-title">📂 ${escapeHtml(group.name)} <span class="chapter-box-count">(mavzu — ${group.items.length} ta, jami testlar — ${totalQuestions} ta)</span><span class="chapter-box-actions">${renameBtn}${deleteWithTopicsBtn}</span></h3>
+            <h3 class="chapter-box-title">📂 ${escapeHtml(group.name)} <span class="chapter-box-count">(mavzu — ${group.items.length} ta, jami testlar — ${totalQuestions} ta)</span><span class="chapter-box-actions">${moveBtns}${renameBtn}${deleteWithTopicsBtn}</span></h3>
             ${sortBar}
             <div class="sections-grid">${cardsHtml}</div>
             ${paginationHtml ? `<div class="sections-pagination chapter-box-pagination">${paginationHtml}</div>` : ""}
@@ -2083,6 +2102,38 @@ async function deleteChapterWithLinkedTopics(chapterId, chapterName) {
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
             alert(data.error || "O'chirishda xatolik");
+            return;
+        }
+        loadCourse();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+// "⬆⬇" — Bo'lim "box"ini qo'shni HAQIQIY Bo'lim bilan (bo'limsiz mavzular
+// psevdo-guruhi bilan EMAS) o'rin almashtiradi, so'ng yangi tartibni
+// serverga saqlaydi (/api/courses/{id}/chapters/reorder — topic.js#
+// persistOrder/TopicService#reorderTopics bilan bir xil andoza: backend
+// BUTUN yangi tartibdagi id ro'yxatini kutadi).
+async function moveChapter(chapterId, direction) {
+    const groups = getSortedChapterGroups().filter(g => g.chapterId != null);
+    const pos = groups.findIndex(g => g.chapterId === chapterId);
+    const newPos = pos + direction;
+    if (pos === -1 || newPos < 0 || newPos >= groups.length) return;
+
+    [groups[pos], groups[newPos]] = [groups[newPos], groups[pos]];
+    const orderedChapterIds = groups.map(g => g.chapterId);
+
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/chapters/reorder`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(orderedChapterIds)
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "Bo'limlar tartibini saqlashda xatolik");
             return;
         }
         loadCourse();

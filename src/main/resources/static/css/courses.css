@@ -1125,6 +1125,38 @@ body {
     background: #eef2f7;
 }
 
+/* "⬆⬇" — Bo'lim "box"ini qo'shni Bo'lim bilan o'rin almashtirish
+   (moveChapter, courseDetail.js) — TEST BOSHQARUVIdagi ".order-move-btn"
+   (science.css) bilan bir xil ko'k uslub, faqat sarlavha qatoriga
+   sig'adigan kichikroq o'lchamda. */
+.chapter-move-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: none;
+    background: #4e8cff;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.chapter-move-btn:hover {
+    background: #3b76e0;
+    transform: translateY(-1px);
+}
+
+.chapter-move-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    background: #94a3b8;
+    transform: none;
+}
+
 /* "🗑️ Bo'lim + mavzular" (deleteChapterWithLinkedTopics, courseDetail.js)
    — ✏️ tugmasi yonida, qizil rang bilan ajratilgan (soft-delete bo'lsa
    ham, bir yo'la bir nechta mavzuga ta'sir qilgani uchun eslatma). */

@@ -690,6 +690,33 @@ public class CourseService {
         syncTopicSectionNamesForChapter(chapterId, oldName, trimmedNewName);
     }
 
+    // "⬆⬇" — Bo'lim "box"larini kurs sahifasida yuqoriga/pastga surish
+    // (courseDetail.js). TopicService.reorderTopics bilan bir xil andoza —
+    // frontend BUTUN (yangi tartibdagi) chapter id ro'yxatini yuboradi,
+    // shu yerda ID to'plami kursning haqiqiy Bo'limlariga mos kelishi
+    // tekshiriladi, so'ng orderIndex 1'dan boshlab qayta yoziladi.
+    @Transactional
+    public void reorderChapters(Long courseId, List<Long> orderedChapterIds, User currentUser) {
+        Course course = getCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
+
+        List<CourseChapter> chapters = courseChapterRepository.findByCourse_IdOrderByOrderIndexAsc(courseId);
+        Map<Long, CourseChapter> byId = new LinkedHashMap<>();
+        for (CourseChapter c : chapters) {
+            byId.put(c.getId(), c);
+        }
+
+        if (orderedChapterIds.size() != chapters.size() || !byId.keySet().containsAll(orderedChapterIds)) {
+            throw new IllegalArgumentException("❌ Bo'limlar ro'yxati kursning bo'limlariga mos kelmayapti.");
+        }
+
+        int index = 1;
+        for (Long id : orderedChapterIds) {
+            byId.get(id).setOrderIndex(index++);
+        }
+        courseChapterRepository.saveAll(chapters);
+    }
+
     // renameChapter() tomonidan chaqiriladi — batafsili izoh o'sha yerda.
     private void syncTopicSectionNamesForChapter(Long chapterId, String oldName, String newName) {
         if (oldName.equalsIgnoreCase(newName)) {
