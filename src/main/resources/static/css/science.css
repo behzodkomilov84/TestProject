@@ -29,6 +29,16 @@ h1 {
     text-align: center;
 }
 
+/* "Mavzular" sarlavhasi yonidagi qisqacha statistika — "(N ta — M tasi
+   kursga bog'langan, K tasi bog'lanmagan)" (topics.html, topic.js#
+   updateTopicsSummary). Sarlavhadan ajralib turadigan yumshoqroq rang
+   va kichikroq shrift — bezak emas, qo'shimcha ma'lumot ekanini bildirib. */
+.topics-summary {
+    font-size: 16px;
+    font-weight: 500;
+    color: #64748b;
+}
+
 /* Основной контейнер — kengligi doim kamida ekranning 80%'ini egallaydi
    (foydalanuvchi so'rovi bo'yicha), 1600px'dan keyin esa haddan tashqari
    cho'zilib ketmasin deb chegaralanadi. */

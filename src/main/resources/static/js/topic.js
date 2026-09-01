@@ -110,6 +110,31 @@ function refreshUnlinkedTopicBadge() {
     setTrashBadgeCount("unlinkedTopicBadge", count);
 }
 
+// "Mavzular" sarlavhasi yonida — nechta mavzu bor, nechtasi kursga
+// bog'langan, nechtasi bog'lanmagan (render()'da chaqiriladi). Bo'lim
+// ustidan (filterSectionId) kelingan bo'lsa — faqat SHU bo'lim mavzulari
+// bo'yicha hisoblaydi (ro'yxatda haqiqatan ko'rinayotgan qatorlarga mos
+// bo'lishi uchun) — "🔗 Kursga bog'lanmagan mavzular" filtrining o'zi
+// (showOnlyUnlinkedTopics) esa E'TIBORGA OLINMAYDI, aks holda filtr
+// yoqilganda sarlavha ham har doim "0 ta bog'langan" deb ko'rsatib
+// chalg'itardi.
+function updateTopicsSummary() {
+    const el = document.getElementById("topicsSummary");
+    if (!el) return;
+
+    const relevant = itemBlock.filter(s =>
+        s.id > 0 && (!filterSectionId || Number(s.sectionId) === Number(filterSectionId)));
+
+    if (relevant.length === 0) {
+        el.textContent = "";
+        return;
+    }
+
+    const linked = relevant.filter(s => s.linkedCourseTitle).length;
+    const unlinked = relevant.length - linked;
+    el.textContent = ` (${relevant.length} ta — ${linked} tasi kursga bog'langan, ${unlinked} tasi bog'lanmagan)`;
+}
+
 function showSectionFilterBanner() {
     const banner = document.getElementById("sectionFilterBanner");
     if (!filterSectionId) {
@@ -780,6 +805,7 @@ function render() {
     }
 
     refreshUnlinkedTopicBadge();
+    updateTopicsSummary();
 } //DONE
 
 function openQuestions(topicId) {
