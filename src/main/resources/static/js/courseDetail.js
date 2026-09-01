@@ -992,8 +992,12 @@ function onTopicLinkToggle(mode) {
     fields.style.display = checkbox.checked ? "block" : "none";
 }
 
+// Promise QAYTARADI — chaqiruvchilar render tugashini kutib, keyin
+// selectCard() bilan kerakli kartaga fokus qaytarishi mumkin bo'lishi
+// uchun (masalan submitEditSection() — tahrirlab saqlagandan keyin
+// AYNAN o'sha kartaga qaytarish, haqiqiy foydalanuvchi shikoyati).
 function loadCourse() {
-    fetch(`/api/courses/${COURSE_ID}`)
+    return fetch(`/api/courses/${COURSE_ID}`)
         .then(r => {
             if (!r.ok) throw new Error("Kurs topilmadi yoki ruxsat yo'q");
             return r.json();
@@ -3118,8 +3122,15 @@ async function submitEditSection() {
             return;
         }
 
+        // "editingSectionId" closeEditSectionForm() ichida null qilib
+        // qo'yiladi — shu sabab qayta chizishdan (loadCourse) keyin, AYNAN
+        // shu kartaga fokus qaytarish uchun oldindan saqlab olinadi
+        // (haqiqiy foydalanuvchi shikoyati: tahrirlab saqlagandan keyin
+        // fokus o'sha mavzuga kelmayotgan edi).
+        const savedSectionId = editingSectionId;
         closeEditSectionForm();
-        loadCourse();
+        await loadCourse();
+        selectCard(savedSectionId, { scroll: true });
         loadScienceNamesList();
     } catch (err) {
         console.error(err);
