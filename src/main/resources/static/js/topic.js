@@ -657,18 +657,22 @@ function render() {
     list.innerHTML = "";
 
     itemBlock.forEach((s, i) => {
-        // Bo'lim ustidan kelingan bo'lsa — faqat shu bo'limga tegishli
-        // (yoki hali saqlanmagan NEW) qatorlar ko'rsatiladi. itemBlock'ning
-        // o'zi to'liq qoladi (dublikat nom tekshiruvi butun fan bo'yicha
-        // ishlashi kerak), shu sabab faqat CHIZISHDA o'tkazib yuboriladi.
-        if (filterSectionId && s.mode === "VIEW" && Number(s.sectionId) !== Number(filterSectionId)) {
-            return;
-        }
-
-        // "🔗 Kursga bog'lanmagan mavzular" filtri yoqilgan bo'lsa — faqat
-        // hech qanday kursga bog'lanmagan (linkedCourseTitle yo'q) qatorlar
-        // ko'rsatiladi (toggleUnlinkedFilter).
-        if (showOnlyUnlinkedTopics && s.mode === "VIEW" && s.linkedCourseTitle) {
+        // "🔗 Kursga bog'lanmagan mavzular" filtri YOQILGANDA — butun FAN
+        // bo'yicha qidiradi, bo'lim filtrini (filterSectionId) E'TIBORGA
+        // OLMAYDI. Aks holda: "yetim" mavzu joriy filtrlangan bo'limdan
+        // BOSHQA bo'limda (yoki bo'limsiz) bo'lsa, hisoblagichda (badge)
+        // soni ko'rinib turib, ro'yxatning o'zi bo'sh chiqib qolardi —
+        // haqiqiy topilgan bug (foydalanuvchi "ajratib bermadi" deb
+        // xabar berdi).
+        if (showOnlyUnlinkedTopics) {
+            if (s.mode === "VIEW" && s.linkedCourseTitle) {
+                return;
+            }
+        } else if (filterSectionId && s.mode === "VIEW" && Number(s.sectionId) !== Number(filterSectionId)) {
+            // Bo'lim ustidan kelingan bo'lsa — faqat shu bo'limga tegishli
+            // (yoki hali saqlanmagan NEW) qatorlar ko'rsatiladi. itemBlock'ning
+            // o'zi to'liq qoladi (dublikat nom tekshiruvi butun fan bo'yicha
+            // ishlashi kerak), shu sabab faqat CHIZISHDA o'tkazib yuboriladi.
             return;
         }
 
