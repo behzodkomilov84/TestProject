@@ -119,6 +119,15 @@
             <version>5.2.5</version>
         </dependency>
 
+        <!-- Kurs mavzusi matnini (HTML — rich-text-editor/.docx import orqali
+             saqlangan) .docx eksportga o'girish uchun (CourseWordExportService/
+             HtmlToDocxConverter) — DOM daraxtini xavfsiz va qulay o'qish. -->
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.17.2</version>
+        </dependency>
+
         <dependency>
             <groupId>org.telegram</groupId>
             <artifactId>telegrambots-spring-boot-starter</artifactId>

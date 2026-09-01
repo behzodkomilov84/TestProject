@@ -55,6 +55,13 @@
                 <button id="syncChapterTopicsBtn" onclick="syncChapterTopics()" title="Kurs Bo'limlari bilan TEST BOSHQARUVIdagi bog'langan mavzularning Bo'limi orasidagi farqni to'g'rilaydi">
                     🔄 Bo'lim-Mavzu bog'lanishini sinxronlash
                 </button>
+                <!-- Butun kursni BITTA .docx faylga: kurs mavzulari (matn/
+                     video), ularga bog'langan testlar va (eng oxirida,
+                     alohida bo'lim) javoblar — har biri mustaqil checkbox
+                     orqali (openCourseWordExportModal, courseDetail.js). -->
+                <button id="courseWordExportBtn" onclick="openCourseWordExportModal()" title="Butun kursni Word (.docx) faylga eksport qilish">
+                    📝 Kursni Word'ga eksport qilish
+                </button>
                 <!-- Har bir mavzuning savollari to'g'ri javob izohida
                      "🔗 Mavzuga havola qo'shish" orqali qo'shilgan havola
                      O'ZINING mavzusiga (emas, boshqa mavzuga) bog'lanib
@@ -462,6 +469,41 @@
         <div class="video-insert-modal-actions">
             <button type="button" onclick="confirmVideoInsert()">✅ Qo'shish</button>
             <button type="button" onclick="closeVideoInsertModal()">Bekor qilish</button>
+        </div>
+    </div>
+</div>
+
+<!-- "📝 Kursni Word'ga eksport qilish" oynasi — 3 mustaqil checkbox
+     (barchasi default belgilangan): kurs mavzulari, testlar, test
+     javoblari. "Test javoblari" faqat "Testlar" belgilanganda ma'noga
+     ega (courseDetail.js#onCourseExportTestsToggle avtomatik
+     o'chiradi/yoqadi). -->
+<div id="courseWordExportModal" class="modal-overlay">
+    <div class="word-export-modal">
+        <h2 class="modal-h2">📝 Kursni Word'ga eksport qilish</h2>
+
+        <label class="word-export-checkbox-row">
+            <input type="checkbox" id="courseExportContent" checked>
+            📄 Kurs mavzulari (dars matni/video)
+        </label>
+        <label class="word-export-checkbox-row">
+            <input type="checkbox" id="courseExportTests" checked onchange="onCourseExportTestsToggle()">
+            📝 Testlar (mavzularga bog'langan savollar)
+        </label>
+        <label class="word-export-checkbox-row">
+            <input type="checkbox" id="courseExportAnswers" checked>
+            ✅ Test javoblari (alohida, hujjat OXIRIDA)
+        </label>
+
+        <p class="word-export-hint">
+            Tartib har doim shunday: avval kurs mavzulari, keyin testlar
+            (to'g'ri javob BELGILANMAGAN holda), eng oxirida — alohida
+            bo'lim sifatida — javoblar.
+        </p>
+
+        <div class="modal-footer">
+            <button type="button" onclick="closeCourseWordExportModal()">Bekor qilish</button>
+            <button type="button" id="courseWordExportConfirmBtn" class="export-excel-btn" onclick="confirmCourseWordExport()">Eksport qilish</button>
         </div>
     </div>
 </div>

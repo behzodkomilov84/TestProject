@@ -5,15 +5,22 @@ import behzoddev.testproject.dto.course.CourseDetailDto;
 import behzoddev.testproject.dto.course.CourseDto;
 import behzoddev.testproject.dto.course.CourseSaveDto;
 import behzoddev.testproject.dto.course.TopicLinkAuditDto;
+import behzoddev.testproject.dto.export.ExportedFileDto;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.CourseService;
+import behzoddev.testproject.service.CourseWordExportService;
 import behzoddev.testproject.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -30,6 +37,7 @@ public class CourseController {
 
     private final CourseService courseService;
     private final FileStorageService fileStorageService;
+    private final CourseWordExportService courseWordExportService;
 
     @GetMapping
     public List<CourseDto> list(@AuthenticationPrincipal User user) {
@@ -91,6 +99,32 @@ public class CourseController {
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
     public Map<String, String> uploadCover(@RequestParam("image") MultipartFile image) {
         return Map.of("url", fileStorageService.storeCourseCoverImage(image));
+    }
+
+    // "📝 Kursni Word'ga eksport qilish" (courseDetail.js) — butun kursni
+    // BITTA .docx faylga: kurs mavzulari (matn/video), ularga bog'langan
+    // testlar va (eng oxirida, alohida bo'lim) javoblar — har biri
+    // mustaqil checkbox orqali yoqilib/o'chirilib tanlanadi (default —
+    // barchasi yoqilgan).
+    @GetMapping("/{courseId}/export/word")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public ResponseEntity<byte[]> exportCourseToWord(
+            @PathVariable Long courseId,
+            @RequestParam(defaultValue = "true") boolean includeContent,
+            @RequestParam(defaultValue = "true") boolean includeTests,
+            @RequestParam(defaultValue = "true") boolean includeAnswers,
+            @AuthenticationPrincipal User user
+    ) {
+        ExportedFileDto file = courseWordExportService.exportCourse(courseId, includeContent, includeTests, includeAnswers, user);
+
+        ContentDisposition disposition = ContentDisposition.attachment()
+                .filename(file.filenameBase() + ".docx", StandardCharsets.UTF_8)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+                .body(file.data());
     }
 
     // Bo'lim (CourseChapter) nomini o'zgartirish — CourseChapter BITTA

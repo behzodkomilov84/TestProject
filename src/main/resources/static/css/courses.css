@@ -2052,3 +2052,152 @@ body {
     cursor: not-allowed;
     opacity: 0.6;
 }
+
+/* ========================================================================
+   "📝 Kursni Word'ga eksport qilish" oynasi (courseDetail.js) —
+   science.css/question.css'dagi ".modal-overlay"/".word-export-modal"
+   bilan bir xil andoza, bu sahifa o'sha fayllarni ulamagani uchun shu
+   yerda ham (takrorlangan holda) e'lon qilingan.
+   ======================================================================== */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, .55);
+    backdrop-filter: blur(2px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.modal-overlay.show {
+    display: flex;
+    animation: modalOverlayFadeIn .18s ease;
+}
+
+@keyframes modalOverlayFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes modalPopIn {
+    from { opacity: 0; transform: translateY(10px) scale(.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-h2 {
+    text-align: center;
+    margin: 0;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.word-export-modal {
+    width: min(480px, 90vw);
+    background: #fff;
+    padding: 30px 32px;
+    border-radius: 16px;
+    box-shadow: 0 25px 60px rgba(15, 23, 42, .35);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    animation: modalPopIn .2s cubic-bezier(.2, .9, .3, 1.2);
+}
+
+.word-export-modal .modal-h2 {
+    font-size: 20px;
+    color: #103F91;
+    letter-spacing: .2px;
+}
+
+.word-export-checkbox-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 15px;
+    color: #1e293b;
+    cursor: pointer;
+    padding: 12px 14px;
+    background: linear-gradient(135deg, #f4f6f9, #eef2ff);
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    transition: border-color .15s ease, background .15s ease;
+}
+
+.word-export-checkbox-row:hover {
+    border-color: #185ABD;
+}
+
+.word-export-checkbox-row input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #185ABD;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.word-export-checkbox-row input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+}
+
+.word-export-hint {
+    font-size: 12px;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.6;
+    padding-top: 4px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.word-export-modal .modal-footer {
+    margin-top: 4px;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 16px;
+}
+
+.word-export-modal .modal-footer button:first-child {
+    background: #fff;
+    color: #475569;
+    border: 1px solid #d5dde8;
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+}
+
+.word-export-modal .modal-footer button:first-child:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+
+/* "Eksport qilish" — oynadagi asosiy (primary) amal, shu sabab "Bekor
+   qilish"dan farqli, TO'LDIRILGAN (filled) gradient fon bilan ajralib
+   turadi — science.css'dagi #wordExportConfirmBtn bilan bir xil uslub. */
+#courseWordExportConfirmBtn {
+    background: linear-gradient(135deg, #185ABD, #103F91);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 22px;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: .2px;
+    box-shadow: 0 4px 14px rgba(16, 63, 145, .35);
+}
+
+#courseWordExportConfirmBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(16, 63, 145, .45);
+}
+
+#courseWordExportConfirmBtn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(16, 63, 145, .35);
+}

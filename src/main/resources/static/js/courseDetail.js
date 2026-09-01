@@ -2180,6 +2180,52 @@ async function syncChapterTopics() {
 }
 
 // ========================================================================
+//     "📝 Kursni Word'ga eksport qilish" — butun kursni BITTA .docx
+//     faylga: kurs mavzulari, testlar va (eng oxirida, alohida bo'lim)
+//     javoblar — har biri mustaqil checkbox orqali (default — barchasi
+//     yoqilgan).
+// ========================================================================
+
+function openCourseWordExportModal() {
+    document.getElementById("courseExportContent").checked = true;
+    document.getElementById("courseExportTests").checked = true;
+
+    const answersCheckbox = document.getElementById("courseExportAnswers");
+    answersCheckbox.checked = true;
+    answersCheckbox.disabled = false;
+
+    document.getElementById("courseWordExportModal").classList.add("show");
+}
+
+function closeCourseWordExportModal() {
+    document.getElementById("courseWordExportModal").classList.remove("show");
+}
+
+// "Testlar" o'chirilsa — "Test javoblari" ma'nosiz bo'lib qoladi
+// (testsiz javob bo'lmaydi), shu sabab avtomatik o'chadi va bloklanadi.
+function onCourseExportTestsToggle() {
+    const testsChecked = document.getElementById("courseExportTests").checked;
+    const answersCheckbox = document.getElementById("courseExportAnswers");
+    answersCheckbox.disabled = !testsChecked;
+    if (!testsChecked) {
+        answersCheckbox.checked = false;
+    }
+}
+
+// Oddiy GET + Content-Disposition:attachment orqali — fetch/blob shart
+// emas, brauzerning o'zi faylni yuklab beradi (question.js#
+// exportQuestionsToExcel bilan bir xil andoza).
+function confirmCourseWordExport() {
+    const includeContent = document.getElementById("courseExportContent").checked;
+    const includeTests = document.getElementById("courseExportTests").checked;
+    const includeAnswers = document.getElementById("courseExportAnswers").checked;
+
+    const params = new URLSearchParams({ includeContent, includeTests, includeAnswers });
+    window.location.href = `/api/courses/${COURSE_ID}/export/word?${params.toString()}`;
+    closeCourseWordExportModal();
+}
+
+// ========================================================================
 //     "🔗 Havolalarni tekshirish" — savol izohlaridagi mavzu havolalari
 // ========================================================================
 // Har bir savolning to'g'ri javob izohida "🔗 Mavzuga havola qo'shish"

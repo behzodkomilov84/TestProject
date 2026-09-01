@@ -391,6 +391,17 @@ public class CourseService {
         }
     }
 
+    // getCourseOrThrow + checkCanManage — boshqarish huquqi kerak bo'lgan,
+    // lekin CourseService'ning o'zida joylashmagan boshqaruv amallari
+    // uchun (masalan CourseWordExportService — butun kursni Word'ga
+    // eksport qilish, faqat OWNER yoki shu kursni yaratgan ADMIN uchun).
+    @Transactional(readOnly = true)
+    public Course requireManageableCourse(Long courseId, User currentUser) {
+        Course course = getCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
+        return course;
+    }
+
     @Transactional
     public CourseSectionSummaryDto addSection(Long courseId, CourseSectionSaveDto dto, User currentUser) {
         Course course = getCourseOrThrow(courseId);
