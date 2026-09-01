@@ -1,5 +1,6 @@
 package behzoddev.testproject.controller.api;
 
+import behzoddev.testproject.service.ExamVariantService;
 import behzoddev.testproject.service.ExcelService;
 import behzoddev.testproject.service.WordService;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ public class ExcelImportController {
 
     private final ExcelService excelService;
     private final WordService wordService;
+    private final ExamVariantService examVariantService;
 
     @GetMapping("/export/template")
     public ResponseEntity<Resource> downloadTemplate() throws Exception {
@@ -119,6 +121,50 @@ public class ExcelImportController {
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "attachment; filename=savollar_fan_" + scienceId + ".docx")
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+                .body(data);
+    }
+
+    // "🎲 Variantlar yaratish" — Word eksport oynasidagi checkbox orqali
+    // (question.js/topic.js/topicSection.js/science.js). Har biri BOSHQA
+    // savollardan iborat "variantCount" ta .docx + javoblar kaliti,
+    // BITTA .zip faylga yig'ilgan holda qaytariladi.
+    @GetMapping("/export/questions/word/variants")
+    public ResponseEntity<byte[]> exportVariantsForTopic(
+            @RequestParam Long topicId,
+            @RequestParam int variantCount,
+            @RequestParam int perVariant,
+            @RequestParam(defaultValue = "true") boolean shuffleAnswers
+    ) {
+        byte[] data = examVariantService.generateVariantsForTopic(topicId, variantCount, perVariant, shuffleAnswers);
+        return zipAttachment(data, "variantlar_mavzu_" + topicId);
+    }
+
+    @GetMapping("/export/questions/word/variants/section")
+    public ResponseEntity<byte[]> exportVariantsForSection(
+            @RequestParam Long sectionId,
+            @RequestParam int variantCount,
+            @RequestParam int perVariant,
+            @RequestParam(defaultValue = "true") boolean shuffleAnswers
+    ) {
+        byte[] data = examVariantService.generateVariantsForSection(sectionId, variantCount, perVariant, shuffleAnswers);
+        return zipAttachment(data, "variantlar_bolim_" + sectionId);
+    }
+
+    @GetMapping("/export/questions/word/variants/science")
+    public ResponseEntity<byte[]> exportVariantsForScience(
+            @RequestParam Long scienceId,
+            @RequestParam int variantCount,
+            @RequestParam int perVariant,
+            @RequestParam(defaultValue = "true") boolean shuffleAnswers
+    ) {
+        byte[] data = examVariantService.generateVariantsForScience(scienceId, variantCount, perVariant, shuffleAnswers);
+        return zipAttachment(data, "variantlar_fan_" + scienceId);
+    }
+
+    private ResponseEntity<byte[]> zipAttachment(byte[] data, String baseFilename) {
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=" + baseFilename + ".zip")
+                .contentType(MediaType.parseMediaType("application/zip"))
                 .body(data);
     }
 

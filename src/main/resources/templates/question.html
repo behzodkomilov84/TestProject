@@ -84,12 +84,51 @@
              savollar tartib raqami bilan, javoblari A/B/C/D/E sifatida
              (izohsiz, to'g'ri javobsiz — Excel eksportdan farqli, bu
              hisobot emas, bosib chiqarish/tarqatish uchun). -->
-        <button id="exportWordBtn" class="export-excel-btn" onclick="exportQuestionsToWord()" title="Shu mavzudagi barcha faol savollarni Word (.docx) faylga yuklab olish"><svg width="16" height="16" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-3px;margin-right:4px;"><rect x="4" y="4" width="40" height="40" rx="7" fill="#185ABD"/><rect x="4" y="4" width="18" height="40" rx="7" fill="#103F91"/><text x="31" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">W</text></svg>Word'ga eksport</button>
+        <button id="exportWordBtn" class="export-excel-btn" onclick="openWordExportModal()" title="Shu mavzudagi barcha faol savollarni Word (.docx) faylga yuklab olish"><svg width="16" height="16" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-3px;margin-right:4px;"><rect x="4" y="4" width="40" height="40" rx="7" fill="#185ABD"/><rect x="4" y="4" width="18" height="40" rx="7" fill="#103F91"/><text x="31" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">W</text></svg>Word'ga eksport</button>
 
         <!-- Kamida bitta savol jadvaldagi checkbox orqali belgilansa
              ko'rinadi (updateBulkDeleteButton, question.js). -->
         <button id="bulkDeleteBtn" class="bulk-delete-btn hidden" onclick="deleteSelectedQuestions()">🗑️ Tanlanganlarni o'chirish (<span id="bulkDeleteCount">0</span>)</button>
 
+    </div>
+
+    <!-- "📝 Word'ga eksport" oynasi — ichida "🎲 Variantlar yaratish"
+         checkbox'i (galochka qo'yilmasa oddiy bitta faylli eksport,
+         qo'yilsa har biri boshqa savollardan iborat bir nechta variant +
+         javoblar kaliti, ZIP holida — question.js#confirmWordExport). -->
+    <div id="wordExportModal" class="modal-overlay">
+        <div class="word-export-modal">
+            <h2 class="modal-h2">📝 Word'ga eksport</h2>
+
+            <label class="word-export-checkbox-row">
+                <input type="checkbox" id="wordExportVariantsCheckbox" onchange="toggleWordExportVariantFields()">
+                🎲 Variantlar yaratish (har bir talaba uchun boshqa-boshqa variant)
+            </label>
+
+            <div id="wordExportVariantFields" class="word-export-variant-fields hidden">
+                <label>
+                    Nechta variant (talabalar soni)
+                    <input type="number" id="wordExportVariantCount" min="1" value="30">
+                </label>
+                <label>
+                    Har bir variantga nechta savol
+                    <input type="number" id="wordExportPerVariant" min="1" value="50">
+                </label>
+                <label class="word-export-checkbox-row">
+                    <input type="checkbox" id="wordExportShuffleAnswers" checked>
+                    Javob variantlari (A,B,C,D,E) tartibi ham aralashtirilsin
+                </label>
+                <p class="word-export-hint">
+                    Savollar shu mavzudan tasodifiy tanlanadi. Natija — har biri
+                    alohida .docx fayl bo'lgan ZIP arxiv + javoblar kaliti (Excel).
+                </p>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" onclick="closeWordExportModal()">Bekor qilish</button>
+                <button type="button" id="wordExportConfirmBtn" class="export-excel-btn" onclick="confirmWordExport()">Eksport qilish</button>
+            </div>
+        </div>
     </div>
 
     <div class="table-wrapper">

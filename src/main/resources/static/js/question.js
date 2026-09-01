@@ -1182,11 +1182,88 @@ function exportQuestionsToExcel() {
     window.location.href = `/api/export/questions?topicId=${topicId}`;
 }
 
-// "📝 Word'ga eksport" — shu mavzudagi barcha faol savollarni chop
-// etishga tayyor .docx fayl sifatida yuklab beradi (izohsiz, to'g'ri
-// javobsiz — WordService#exportQuestionsToWord).
-function exportQuestionsToWord() {
-    window.location.href = `/api/export/questions/word?topicId=${topicId}`;
+// "📝 Word'ga eksport" oynasi — galochka qo'yilmasa oddiy bitta faylli
+// eksport (WordService#exportQuestionsToWord), qo'yilsa "🎲 Variantlar
+// yaratish" — har biri BOSHQA savollardan iborat bir nechta imtihon
+// varianti (ExamVariantService), ZIP + javoblar kaliti holida.
+function openWordExportModal() {
+    document.getElementById("wordExportVariantsCheckbox").checked = false;
+    document.getElementById("wordExportVariantFields").classList.add("hidden");
+    document.getElementById("wordExportModal").classList.add("show");
+}
+
+function closeWordExportModal() {
+    document.getElementById("wordExportModal").classList.remove("show");
+}
+
+function toggleWordExportVariantFields() {
+    const useVariants = document.getElementById("wordExportVariantsCheckbox").checked;
+    document.getElementById("wordExportVariantFields").classList.toggle("hidden", !useVariants);
+}
+
+async function confirmWordExport() {
+    const useVariants = document.getElementById("wordExportVariantsCheckbox").checked;
+
+    if (!useVariants) {
+        window.location.href = `/api/export/questions/word?topicId=${topicId}`;
+        closeWordExportModal();
+        return;
+    }
+
+    const variantCount = Number(document.getElementById("wordExportVariantCount").value);
+    const perVariant = Number(document.getElementById("wordExportPerVariant").value);
+    const shuffleAnswers = document.getElementById("wordExportShuffleAnswers").checked;
+
+    if (!variantCount || variantCount < 1) {
+        alert("Nechta variant kerakligini kiriting");
+        return;
+    }
+    if (!perVariant || perVariant < 1) {
+        alert("Har bir variantga nechta savol kerakligini kiriting");
+        return;
+    }
+
+    await downloadWordVariants(
+        `/api/export/questions/word/variants?topicId=${topicId}&variantCount=${variantCount}&perVariant=${perVariant}&shuffleAnswers=${shuffleAnswers}`,
+        "variantlar.zip"
+    );
+}
+
+// ZIP faylni fetch orqali yuklab olish — oddiy window.location.href
+// ISHLATILMAYDI, chunki backend xato bo'lsa (masalan "savol yetmadi")
+// {"error": "..."} JSON qaytaradi, buni foydalanuvchiga ko'rsatish uchun
+// javobni avval o'qib chiqish kerak (GlobalRestExceptionHandler).
+async function downloadWordVariants(url, filename) {
+    const btn = document.getElementById("wordExportConfirmBtn");
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Tayyorlanmoqda...";
+
+    try {
+        const res = await fetch(url);
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "Eksport qilishda xatolik");
+            return;
+        }
+
+        const blob = await res.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(objectUrl);
+        closeWordExportModal();
+    } catch (e) {
+        console.error(e);
+        alert("Tarmoq xatoligi");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
 }
 
 function showAlert(message, type = "error") {

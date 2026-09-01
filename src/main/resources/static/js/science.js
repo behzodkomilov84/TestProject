@@ -232,7 +232,7 @@ function render() {
                 id="input-${i}"
                 class="topic-name ${inputClass}"
                 tabindex="-1"
-            ><div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta bo'lim</span>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestions(${s.id})" title="Shu fandagi barcha mavzularning testlarini Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestionsToWord(${s.id})" title="Shu fandagi barcha mavzularning testlarini Word'ga eksport qilish">${WORD_ICON_SVG}</button>` : ""}</div></div>
+            ><div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta bo'lim</span>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestions(${s.id})" title="Shu fandagi barcha mavzularning testlarini Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); openWordExportModal(${s.id})" title="Shu fandagi barcha mavzularning testlarini Word'ga eksport qilish">${WORD_ICON_SVG}</button>` : ""}</div></div>
         </div>
             `
                 : `
@@ -291,8 +291,92 @@ function exportScienceQuestions(scienceId) {
     window.location.href = `/api/export/questions/science?scienceId=${scienceId}`;
 }
 
-function exportScienceQuestionsToWord(scienceId) {
-    window.location.href = `/api/export/questions/word/science?scienceId=${scienceId}`;
+// "📝 Word'ga eksport" oynasi — galochka qo'yilmasa oddiy bitta faylli
+// eksport, qo'yilsa "🎲 Variantlar yaratish" — har biri BOSHQA
+// savollardan iborat bir nechta imtihon varianti (ExamVariantService),
+// ZIP + javoblar kaliti holida. Qator tugmasi bosilganda openWordExportModal
+// aynan qaysi FAN uchun ekanini saqlab qo'yadi (wordExportScienceId).
+let wordExportScienceId = null;
+
+function openWordExportModal(scienceId) {
+    wordExportScienceId = scienceId;
+    document.getElementById("wordExportVariantsCheckbox").checked = false;
+    document.getElementById("wordExportVariantFields").classList.add("hidden");
+    document.getElementById("wordExportModal").classList.add("show");
+}
+
+function closeWordExportModal() {
+    document.getElementById("wordExportModal").classList.remove("show");
+}
+
+function toggleWordExportVariantFields() {
+    const useVariants = document.getElementById("wordExportVariantsCheckbox").checked;
+    document.getElementById("wordExportVariantFields").classList.toggle("hidden", !useVariants);
+}
+
+async function confirmWordExport() {
+    const useVariants = document.getElementById("wordExportVariantsCheckbox").checked;
+
+    if (!useVariants) {
+        window.location.href = `/api/export/questions/word/science?scienceId=${wordExportScienceId}`;
+        closeWordExportModal();
+        return;
+    }
+
+    const variantCount = Number(document.getElementById("wordExportVariantCount").value);
+    const perVariant = Number(document.getElementById("wordExportPerVariant").value);
+    const shuffleAnswers = document.getElementById("wordExportShuffleAnswers").checked;
+
+    if (!variantCount || variantCount < 1) {
+        alert("Nechta variant kerakligini kiriting");
+        return;
+    }
+    if (!perVariant || perVariant < 1) {
+        alert("Har bir variantga nechta savol kerakligini kiriting");
+        return;
+    }
+
+    await downloadWordVariants(
+        `/api/export/questions/word/variants/science?scienceId=${wordExportScienceId}&variantCount=${variantCount}&perVariant=${perVariant}&shuffleAnswers=${shuffleAnswers}`,
+        "variantlar.zip"
+    );
+}
+
+// ZIP faylni fetch orqali yuklab olish — oddiy window.location.href
+// ISHLATILMAYDI, chunki backend xato bo'lsa (masalan "savol yetmadi")
+// {"error": "..."} JSON qaytaradi, buni foydalanuvchiga ko'rsatish uchun
+// javobni avval o'qib chiqish kerak (GlobalRestExceptionHandler).
+async function downloadWordVariants(url, filename) {
+    const btn = document.getElementById("wordExportConfirmBtn");
+    const originalText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Tayyorlanmoqda...";
+
+    try {
+        const res = await fetch(url);
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "Eksport qilishda xatolik");
+            return;
+        }
+
+        const blob = await res.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = objectUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(objectUrl);
+        closeWordExportModal();
+    } catch (e) {
+        console.error(e);
+        alert("Tarmoq xatoligi");
+    } finally {
+        btn.disabled = false;
+        btn.textContent = originalText;
+    }
 }
 
 function hasDuplicate(currentIndex, name) {
