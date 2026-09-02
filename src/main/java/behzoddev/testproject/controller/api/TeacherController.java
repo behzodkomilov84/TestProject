@@ -13,6 +13,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /*
 Teacher API
@@ -84,6 +85,22 @@ public class TeacherController {
     @GetMapping("/questionsets")
     public List<QuestionSetDto> getQuestionSetsForSelect(@AuthenticationPrincipal User teacher) {
         return teacherService.getSets(teacher);
+    }
+
+    // "✏️" — savollar paketi nomini o'zgartirish ("Savollar to'plami" sahifasi).
+    @PatchMapping("/questionsets/{id}")
+    public ResponseEntity<Void> renameQuestionSet(@PathVariable Long id, @RequestBody Map<String, String> body,
+                                                   @AuthenticationPrincipal User teacher) {
+        teacherService.renameQuestionSet(id, body.get("name"), teacher);
+        return ResponseEntity.ok().build();
+    }
+
+    // "🗑️" — savollar paketini o'chirish (allaqachon topshiriqda
+    // ishlatilgan bo'lsa TeacherService bloklaydi).
+    @DeleteMapping("/questionsets/{id}")
+    public ResponseEntity<Void> deleteQuestionSet(@PathVariable Long id, @AuthenticationPrincipal User teacher) {
+        teacherService.deleteQuestionSet(id, teacher);
+        return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/groups/{groupId}")

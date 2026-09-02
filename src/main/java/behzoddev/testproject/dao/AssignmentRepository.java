@@ -44,6 +44,10 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
             LocalDateTime dueDate
     );
 
+    // Savollar paketini o'chirishdan oldin — allaqachon biror topshiriqda
+    // ishlatilgan bo'lsa o'chirib bo'lmaydi (TeacherService.deleteQuestionSet).
+    boolean existsByQuestionSetId(Long setId);
+
     @Query("""
         SELECT DISTINCT a
         FROM Assignment a

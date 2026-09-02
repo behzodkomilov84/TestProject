@@ -134,6 +134,69 @@ class TeacherServiceTest {
         assertThat(result.questionCount()).isEqualTo(2);
     }
 
+    // ===== renameQuestionSet / deleteQuestionSet ("Savollar to'plami" sahifasi) =====
+
+    @Test
+    void renameQuestionSet_owner_updatesName() {
+        User teacher = adminRoleUser(1L);
+        QuestionSet set = QuestionSet.builder().id(1L).teacher(teacher).name("Eski nom").build();
+        when(questionSetRepository.findById(1L)).thenReturn(Optional.of(set));
+
+        teacherService.renameQuestionSet(1L, "Yangi nom", teacher);
+
+        assertThat(set.getName()).isEqualTo("Yangi nom");
+    }
+
+    @Test
+    void renameQuestionSet_notOwner_throwsAccessDenied() {
+        User owner = adminRoleUser(1L);
+        User other = adminRoleUser(2L);
+        QuestionSet set = QuestionSet.builder().id(1L).teacher(owner).name("Set1").build();
+        when(questionSetRepository.findById(1L)).thenReturn(Optional.of(set));
+
+        assertThatThrownBy(() -> teacherService.renameQuestionSet(1L, "Yangi nom", other))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void deleteQuestionSet_owner_notUsedInAssignment_deletes() {
+        User teacher = adminRoleUser(1L);
+        QuestionSet set = QuestionSet.builder().id(1L).teacher(teacher).name("Set1").build();
+        when(questionSetRepository.findById(1L)).thenReturn(Optional.of(set));
+        when(assignmentRepository.existsByQuestionSetId(1L)).thenReturn(false);
+
+        teacherService.deleteQuestionSet(1L, teacher);
+
+        verify(questionSetRepository).delete(set);
+    }
+
+    @Test
+    void deleteQuestionSet_alreadyAssigned_throwsAndDoesNotDelete() {
+        User teacher = adminRoleUser(1L);
+        QuestionSet set = QuestionSet.builder().id(1L).teacher(teacher).name("Set1").build();
+        when(questionSetRepository.findById(1L)).thenReturn(Optional.of(set));
+        when(assignmentRepository.existsByQuestionSetId(1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> teacherService.deleteQuestionSet(1L, teacher))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("topshiriq");
+
+        verify(questionSetRepository, never()).delete(any());
+    }
+
+    @Test
+    void deleteQuestionSet_notOwner_throwsAccessDenied() {
+        User owner = adminRoleUser(1L);
+        User other = adminRoleUser(2L);
+        QuestionSet set = QuestionSet.builder().id(1L).teacher(owner).name("Set1").build();
+        when(questionSetRepository.findById(1L)).thenReturn(Optional.of(set));
+
+        assertThatThrownBy(() -> teacherService.deleteQuestionSet(1L, other))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(questionSetRepository, never()).delete(any());
+    }
+
     // ===== inviteStudent (holat mashinasi) =====
 
     @Test

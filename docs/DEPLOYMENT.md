@@ -62,6 +62,25 @@ docker compose -f docker-compose.prod.yml up -d --build
 chaqiradi — sertifikat muddati (90 kun) tugashiga ~30 kun qolganda
 avtomatik yangilanadi. Qo'lda hech narsa qilish shart emas.
 
+## 5. Docker build cache tozalash
+
+Har bir `--build` deploy'da yangi build-cache qatlamlari qo'shiladi,
+eskilari o'zidan-o'zi o'chmaydi — vaqt o'tishi bilan bir necha
+GIGABAYTgacha yig'ilib, disk joyini band qilib qo'yishi mumkin
+(haqiqiy hodisa: 2026-09-02, 23GB'gacha yetgan edi).
+
+`scripts/docker-cleanup.sh` — FAQAT ishlatilmayotgan build cache'ni
+tozalaydi (image/konteyner/hajmlarga tegmaydi). Serverda har kuni
+avtomatik ishga tushishi uchun root crontab'ga bir marta qo'shiladi:
+
+```bash
+crontab -e
+# quyidagi qatorni qo'shing (har kuni 04:00'da, kunlik backup'dan keyin):
+0 4 * * * /opt/studygrow/scripts/docker-cleanup.sh >> /var/log/docker-cleanup.log 2>&1
+```
+
+Qo'lda darhol ishga tushirish: `/opt/studygrow/scripts/docker-cleanup.sh`.
+
 ## Muhim: dev vs prod farqi
 
 - **`docker-compose.yml`** (dev) — `app` va `mysql` to'g'ridan-to'g'ri

@@ -101,6 +101,42 @@ public class TeacherService {
                 .toList();
     }
 
+    // "✏️" — savollar paketi nomini o'zgartirish ("Savollar to'plami"
+    // sahifasi) — updateGroup bilan bir xil andoza: faqat egasi (teacher).
+    @Transactional
+    public void renameQuestionSet(Long setId, String newName, User teacher) {
+        QuestionSet set = questionSetRepository.findById(setId)
+                .orElseThrow(() -> new IllegalArgumentException("Savollar paketi topilmadi."));
+
+        if (!set.getTeacher().getId().equals(teacher.getId())) {
+            throw new AccessDeniedException("Bu sizning paketingiz emas.");
+        }
+
+        validation.textFieldMustNotBeEmpty(newName);
+        set.setName(newName.trim());
+    }
+
+    // "🗑️" — savollar paketini o'chirish. Allaqachon biror topshiriqda
+    // ishlatilgan bo'lsa o'chirib bo'lmaydi (Assignment.questionSet FK —
+    // aks holda bazada RESTRICT xatoligiga uchraydi, bu yerda oldindan,
+    // tushunarli xabar bilan bloklanadi).
+    @Transactional
+    public void deleteQuestionSet(Long setId, User teacher) {
+        QuestionSet set = questionSetRepository.findById(setId)
+                .orElseThrow(() -> new IllegalArgumentException("Savollar paketi topilmadi."));
+
+        if (!set.getTeacher().getId().equals(teacher.getId())) {
+            throw new AccessDeniedException("Bu sizning paketingiz emas.");
+        }
+
+        if (assignmentRepository.existsByQuestionSetId(setId)) {
+            throw new IllegalArgumentException(
+                    "❌ Bu paket allaqachon topshiriq sifatida berilgan — avval topshiriqni o'chiring.");
+        }
+
+        questionSetRepository.delete(set);
+    }
+
     /* ================= PUPILS ================= */
     @Transactional
     public void inviteStudent(Long groupId, Long pupilId) {
