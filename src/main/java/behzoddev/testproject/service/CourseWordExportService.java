@@ -129,6 +129,24 @@ public class CourseWordExportService {
         return new ExportedFileDto(data, ExportFilenameUtil.sanitize(chapter.getName()));
     }
 
+    // "📝 Mavzuni Word'ga eksport qilish" — courseDetail.js'dagi HAR BIR
+    // mavzu (CourseSection) kartochkasida ham xuddi shu 3-checkbox modal —
+    // farqi shu: BUTUN Bo'lim emas, FAQAT shu bitta mavzu eksport qilinadi.
+    @Transactional(readOnly = true)
+    public ExportedFileDto exportSection(Long courseId, Long sectionId, boolean includeContent, boolean includeTests,
+                                          boolean includeAnswers, User currentUser) {
+        courseService.requireManageableCourse(courseId, currentUser);
+
+        CourseSection section = courseSectionRepository.findById(sectionId)
+                .filter(s -> s.getCourse().getId().equals(courseId) && s.getDeletedAt() == null)
+                .orElseThrow(() -> new NoSuchElementException("Mavzu topilmadi"));
+
+        List<ChapterGroup> groups = List.of(new ChapterGroup(section.getChapter(), List.of(section)));
+
+        byte[] data = buildDocument(section.getTitle(), groups, includeContent, includeTests, includeAnswers);
+        return new ExportedFileDto(data, ExportFilenameUtil.sanitize(section.getTitle()));
+    }
+
     private List<ChapterGroup> groupByChapter(List<CourseSection> sections) {
         Map<Long, ChapterGroup> byChapterId = new LinkedHashMap<>();
         List<CourseSection> unlinked = new ArrayList<>();

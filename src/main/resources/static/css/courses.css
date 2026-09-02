@@ -1483,11 +1483,13 @@ body {
     background: #dbeafe;
 }
 
-/* Test tugmasidan pastda, kichik grid ko'rinishida. */
+/* Test tugmasidan pastda, kichik tugmalar qatorida. Avval qattiq
+   "repeat(4, auto)" grid edi — 5-tugma (📝 Word'ga eksport) qo'shilganda
+   keyingi qatorga tushib, tekislanishi buzilardi; endi flex-wrap — nechta
+   tugma bo'lishidan qat'i nazar to'g'ri joylashadi. */
 .section-manage-actions {
-    display: grid;
-    grid-template-columns: repeat(4, auto);
-    justify-content: start;
+    display: flex;
+    flex-wrap: wrap;
     gap: 10px;
 }
 

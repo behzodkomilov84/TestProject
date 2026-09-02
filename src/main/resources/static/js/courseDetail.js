@@ -1317,6 +1317,7 @@ function renderSectionCard(s, globalIndexById, displayNumber) {
                <button onclick="moveSectionUp(${s.id})" title="Yuqoriga" ${i === 0 ? "disabled" : ""}>⬆️</button>
                <button onclick="moveSectionDown(${s.id})" title="Pastga" ${i === allSections.length - 1 ? "disabled" : ""}>⬇️</button>
                <button onclick="openEditSectionForm(${s.id})" title="Tahrirlash">✏️</button>
+               <button onclick="openSectionWordExportModal(${s.id}, ${JSON.stringify(s.title).replace(/"/g, "&quot;")})" title="Shu mavzuni Word (.docx) faylga eksport qilish"><svg width="14" height="14" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-2px;"><rect x="4" y="4" width="40" height="40" rx="7" fill="#185ABD"/><rect x="4" y="4" width="18" height="40" rx="7" fill="#103F91"/><text x="31" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">W</text></svg></button>
                <button onclick="deleteSection(${s.id})" title="O'chirish">🗑️</button>
            </div>`
         : "";
@@ -2346,14 +2347,34 @@ async function syncChapterTopics() {
 // (confirmCourseWordExport shu bo'yicha to'g'ri URL yasaydi).
 let wordExportChapterId = null;
 let wordExportChapterName = "";
+// "📝" — bitta ANIQ mavzuni (CourseSection) eksport qilish uchun — chapter
+// bilan bir xilda, lekin mustaqil (ikkalasi bir vaqtda tanlangan bo'lmaydi).
+let wordExportSectionId = null;
+let wordExportSectionName = "";
 
 function openCourseWordExportModal(chapterId, chapterName) {
     wordExportChapterId = chapterId != null ? chapterId : null;
     wordExportChapterName = chapterName || "";
+    wordExportSectionId = null;
+    wordExportSectionName = "";
 
-    document.getElementById("courseWordExportModalTitle").textContent = wordExportChapterId != null
+    showWordExportModal(wordExportChapterId != null
         ? `📝 "${wordExportChapterName}" bo'limini Word'ga eksport qilish`
-        : "📝 Kursni Word'ga eksport qilish";
+        : "📝 Kursni Word'ga eksport qilish");
+}
+
+// Bitta mavzu kartochkasidagi "📝" ikonkasidan — renderSectionCard.
+function openSectionWordExportModal(sectionId, sectionName) {
+    wordExportSectionId = sectionId;
+    wordExportSectionName = sectionName || "";
+    wordExportChapterId = null;
+    wordExportChapterName = "";
+
+    showWordExportModal(`📝 "${wordExportSectionName}" mavzusini Word'ga eksport qilish`);
+}
+
+function showWordExportModal(title) {
+    document.getElementById("courseWordExportModalTitle").textContent = title;
 
     document.getElementById("courseExportContent").checked = true;
     document.getElementById("courseExportTests").checked = true;
@@ -2389,9 +2410,11 @@ function confirmCourseWordExport() {
     const includeAnswers = document.getElementById("courseExportAnswers").checked;
 
     const params = new URLSearchParams({ includeContent, includeTests, includeAnswers });
-    const url = wordExportChapterId != null
-        ? `/api/courses/${COURSE_ID}/chapters/${wordExportChapterId}/export/word?${params.toString()}`
-        : `/api/courses/${COURSE_ID}/export/word?${params.toString()}`;
+    const url = wordExportSectionId != null
+        ? `/api/courses/${COURSE_ID}/sections/${wordExportSectionId}/export/word?${params.toString()}`
+        : wordExportChapterId != null
+            ? `/api/courses/${COURSE_ID}/chapters/${wordExportChapterId}/export/word?${params.toString()}`
+            : `/api/courses/${COURSE_ID}/export/word?${params.toString()}`;
     window.location.href = url;
     closeCourseWordExportModal();
 }

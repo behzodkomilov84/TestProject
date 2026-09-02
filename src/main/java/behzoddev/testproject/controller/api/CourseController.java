@@ -170,6 +170,31 @@ public class CourseController {
                 .body(file.data());
     }
 
+    // "📝 Mavzuni Word'ga eksport qilish" — yuqoridagilar bilan bir xil,
+    // farqi: BUTUN Bo'lim emas, FAQAT shu bitta mavzu (CourseSection)
+    // bitta .docx faylga eksport qilinadi.
+    @GetMapping("/{courseId}/sections/{sectionId}/export/word")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public ResponseEntity<byte[]> exportSectionToWord(
+            @PathVariable Long courseId,
+            @PathVariable Long sectionId,
+            @RequestParam(defaultValue = "true") boolean includeContent,
+            @RequestParam(defaultValue = "true") boolean includeTests,
+            @RequestParam(defaultValue = "true") boolean includeAnswers,
+            @AuthenticationPrincipal User user
+    ) {
+        ExportedFileDto file = courseWordExportService.exportSection(courseId, sectionId, includeContent, includeTests, includeAnswers, user);
+
+        ContentDisposition disposition = ContentDisposition.attachment()
+                .filename(file.filenameBase() + ".docx", StandardCharsets.UTF_8)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+                .body(file.data());
+    }
+
     // Bo'lim (CourseChapter) nomini o'zgartirish — CourseChapter BITTA
     // umumiy yozuv bo'lgani uchun, shu bir chaqiruv bilan unga biriktirilgan
     // BARCHA mavzularda nom avtomatik yangilanadi (mavzularni birma-bir

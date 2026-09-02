@@ -280,4 +280,59 @@ class CourseWordExportServiceTest {
         assertThatThrownBy(() -> service.exportChapter(1L, 10L, true, true, true, owner))
                 .isInstanceOf(java.util.NoSuchElementException.class);
     }
+
+    // "📝 Mavzuni Word'ga eksport qilish" — FAQAT shu bitta mavzu yoziladi.
+    @Test
+    void exportSection_writesOnlyThatSectionAndUsesSectionTitleAsFilename() throws IOException {
+        User owner = owner();
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner).build();
+        CourseChapter chapter = CourseChapter.builder().id(10L).course(course).name("1-bob").orderIndex(1).build();
+        CourseSection section = CourseSection.builder().id(100L).course(course).chapter(chapter)
+                .title("Yolg'iz mavzu").orderIndex(1).type(CourseSectionType.TEXT)
+                .textContent("yolg'iz mavzu matni").textContentFormat(CourseSectionContentFormat.PLAIN)
+                .build();
+
+        when(courseService.requireManageableCourse(1L, owner)).thenReturn(course);
+        when(courseSectionRepository.findById(100L)).thenReturn(java.util.Optional.of(section));
+
+        CourseWordExportService service = service();
+        ExportedFileDto result = service.exportSection(1L, 100L, true, false, false, owner);
+
+        assertThat(result.filenameBase()).isEqualTo("Yolg'iz_mavzu");
+        List<String> texts = paragraphTexts(result.data());
+        assertThat(texts).contains("Yolg'iz mavzu", "Bo'lim: 1-bob", "yolg'iz mavzu matni");
+        org.mockito.Mockito.verifyNoInteractions(questionRepository);
+    }
+
+    @Test
+    void exportSection_sectionBelongsToDifferentCourse_throws() {
+        User owner = owner();
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner).build();
+        Course otherCourse = Course.builder().id(2L).title("Boshqa kurs").createdBy(owner).build();
+        CourseSection section = CourseSection.builder().id(100L).course(otherCourse)
+                .title("Mavzu").orderIndex(1).type(CourseSectionType.TEXT).build();
+
+        when(courseService.requireManageableCourse(1L, owner)).thenReturn(course);
+        when(courseSectionRepository.findById(100L)).thenReturn(java.util.Optional.of(section));
+
+        CourseWordExportService service = service();
+        assertThatThrownBy(() -> service.exportSection(1L, 100L, true, true, true, owner))
+                .isInstanceOf(java.util.NoSuchElementException.class);
+    }
+
+    @Test
+    void exportSection_softDeletedSection_throws() {
+        User owner = owner();
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner).build();
+        CourseSection section = CourseSection.builder().id(100L).course(course)
+                .title("Mavzu").orderIndex(1).type(CourseSectionType.TEXT)
+                .deletedAt(java.time.LocalDateTime.now()).build();
+
+        when(courseService.requireManageableCourse(1L, owner)).thenReturn(course);
+        when(courseSectionRepository.findById(100L)).thenReturn(java.util.Optional.of(section));
+
+        CourseWordExportService service = service();
+        assertThatThrownBy(() -> service.exportSection(1L, 100L, true, true, true, owner))
+                .isInstanceOf(java.util.NoSuchElementException.class);
+    }
 }
