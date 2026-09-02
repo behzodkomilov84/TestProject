@@ -63,4 +63,18 @@ public class Course {
     // mumkin bo'lishi uchun. NULL — o'chirilmagan (odatiy holat).
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    // ROLE_ADMIN o'z kursini "🗑️ Butunlay o'chirish" desa — ROLE_OWNER'dan
+    // farqli, HAQIQIY (bazadan) o'chirilmaydi: shu maydonlar to'ldiriladi
+    // (CourseService.permanentlyDeleteCourse), kurs shu ADMIN va
+    // katalogdan yo'qoladi, lekin ROLE_OWNER hali ham ko'ra oladi (kim,
+    // qachon o'chirgani bilan) va xohlasa o'z nomiga o'tkazib qayta
+    // tiklashi mumkin (reclaimArchivedCourse). NULL — arxivlanmagan
+    // (odatiy holat).
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "archived_by_admin_id")
+    private User archivedByAdmin;
+
+    @Column(name = "archived_at")
+    private LocalDateTime archivedAt;
 }

@@ -356,10 +356,20 @@ public class CourseService {
 
     // "🗑️ Butunlay o'chirish" — FAQAT allaqachon "O'chirilganlar savati"da
     // turgan kursga nisbatan (ikki bosqichli himoya — tasodifan bosib
-    // yubormaslik uchun). Bu amal QAYTARIB BO'LMAYDI: bo'limlar, obunalar
+    // yubormaslik uchun).
+    //
+    // ROLE_OWNER uchun — bu amal QAYTARIB BO'LMAYDI: bo'limlar, obunalar
     // va bo'lim-progress yozuvlari FK RESTRICT bilan bog'langani uchun
     // (courses.sql'da ON DELETE CASCADE yo'q), avval ULARNI, keyin
     // kursning o'zini o'chiramiz.
+    //
+    // ROLE_ADMIN uchun — foydalanuvchi ANIQ talabi bo'yicha HAQIQIY
+    // o'chirilmaydi: kurs shu ADMIN'dan (getDeletedCourses) va katalogdan
+    // yo'qoladi, lekin ma'lumotlari BUTUNLAY saqlanadi — faqat "arxivlangan"
+    // deb belgilanadi (archiveCourseAsAdmin). ROLE_OWNER buni "🗑️
+    // O'chirilganlar" sahifasida alohida ro'yxatda (kim/qachon arxivlagani
+    // bilan) ko'rib turadi, xohlasa reclaimArchivedCourse orqali o'z
+    // nomiga o'tkazib qaytadan tiklashi mumkin.
     @Transactional
     public void permanentlyDeleteCourse(Long courseId, User currentUser) {
         Course course = getAnyCourseOrThrow(courseId);
@@ -370,11 +380,54 @@ public class CourseService {
                     "❌ Bu kursni butunlay o'chirishdan oldin, avval oddiy \"O'chirish\" orqali savatga o'tkazish kerak.");
         }
 
+        if (!currentUser.hasRole("ROLE_OWNER")) {
+            course.setArchivedByAdmin(currentUser);
+            course.setArchivedAt(LocalDateTime.now());
+            courseRepository.save(course);
+            return;
+        }
+
         courseSectionProgressRepository.deleteBySection_Course_Id(courseId);
         courseSubscriptionRepository.deleteByCourse_Id(courseId);
         courseSectionRepository.deleteByCourse_Id(courseId);
         courseChapterRepository.deleteByCourse_Id(courseId);
         courseRepository.delete(course);
+    }
+
+    // Faqat ROLE_OWNER uchun — ADMIN'lar arxivlagan (permanentlyDeleteCourse)
+    // kurslar ro'yxati, kim/qachon arxivlagani bilan.
+    @Transactional(readOnly = true)
+    public List<CourseArchivedByAdminDto> getAdminArchivedCourses(User currentUser) {
+        if (!currentUser.hasRole("ROLE_OWNER")) {
+            throw new AccessDeniedException("⛔ Faqat OWNER ko'ra oladi.");
+        }
+        return courseRepository.findArchivedByAdminOrderByArchivedAtDesc().stream()
+                .map(c -> new CourseArchivedByAdminDto(c.getId(), c.getTitle(), c.getArchivedByAdmin().getUsername(), c.getArchivedAt()))
+                .toList();
+    }
+
+    // "📤 O'zim nomimdan qayta nashr qilish" — faqat ROLE_OWNER, faqat
+    // ADMIN arxivlagan kursga nisbatan: egasi (createdBy) OWNER'ning
+    // o'ziga o'tkaziladi, arxiv/o'chirilgan belgilari tozalanadi (kurs
+    // qaytadan ko'rinadigan bo'ladi). "published" ATAYLAB avtomatik
+    // yoqilmaydi — OWNER buni alohida, o'zi xohlagan payt (odatiy
+    // "✏️ Tahrirlash"/"Chop etish" tugmasi orqali) yoqadi.
+    @Transactional
+    public void reclaimArchivedCourse(Long courseId, User currentUser) {
+        if (!currentUser.hasRole("ROLE_OWNER")) {
+            throw new AccessDeniedException("⛔ Faqat OWNER qayta tiklashi mumkin.");
+        }
+
+        Course course = getAnyCourseOrThrow(courseId);
+        if (course.getArchivedByAdmin() == null) {
+            throw new IllegalArgumentException("❌ Bu kurs arxivlangan emas.");
+        }
+
+        course.setCreatedBy(currentUser);
+        course.setArchivedByAdmin(null);
+        course.setArchivedAt(null);
+        course.setDeletedAt(null);
+        courseRepository.save(course);
     }
 
     // ADMIN faqat O'ZI yaratgan kursni boshqarishi (ko'rish/tahrirlash/

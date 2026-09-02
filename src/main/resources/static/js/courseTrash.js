@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (ROLE === "ROLE_OWNER") {
         document.querySelectorAll(".owner-only-el").forEach(el => el.style.display = "");
         loadBackupFiles();
+        loadAdminArchivedCourses();
     }
 });
 
@@ -79,11 +80,19 @@ async function restoreCourse(courseId) {
 }
 
 async function permanentlyDeleteCourse(courseId, title) {
-    // Ikki bosqichli tasdiqlash — bu amal QAYTARIB BO'LMAYDI.
-    if (!confirm(`⚠️ "${title}" kursini BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi (backup orqali qo'lda tiklashdan boshqa).`)) {
+    // ROLE_ADMIN uchun bu amal endi ENDI QAYTARIB BO'LMAYDIGAN emas —
+    // kurs shu ADMIN'dan/katalogdan yo'qoladi, lekin bazada saqlanadi,
+    // ROLE_OWNER xohlasa qaytadan tiklashi mumkin (CourseService#
+    // permanentlyDeleteCourse). Shu sabab ogohlantirish matni ROLE'ga
+    // qarab farq qiladi — ADMIN'ni behuda cho'chitmaslik uchun.
+    const isOwner = ROLE === "ROLE_OWNER";
+    const warning = isOwner
+        ? `⚠️ "${title}" kursini BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi (backup orqali qo'lda tiklashdan boshqa).`
+        : `⚠️ "${title}" kursini butunlay o'chirmoqchimisiz?\n\nKurs sizda va katalogda ENDI ko'rinmaydi. Ma'lumotlari bazada saqlanadi — faqat OWNER xohlasa, qaytadan tiklashi mumkin.`;
+    if (!confirm(warning)) {
         return;
     }
-    if (!confirm("Haqiqatan ham ishonchingiz komilmi? Barcha bo'lim/mavzu/obuna/progress ma'lumotlari abadiy yo'qoladi.")) {
+    if (isOwner && !confirm("Haqiqatan ham ishonchingiz komilmi? Barcha bo'lim/mavzu/obuna/progress ma'lumotlari abadiy yo'qoladi.")) {
         return;
     }
 
@@ -112,6 +121,67 @@ function formatDate(isoString) {
     if (!isoString) return "";
     const d = new Date(isoString);
     return d.toLocaleDateString("uz-UZ") + " " + d.toLocaleTimeString("uz-UZ", { hour: "2-digit", minute: "2-digit" });
+}
+
+// ========================================================================
+//         "🗄️ Adminlar butunlay o'chirgan kurslar" (FAQAT ROLE_OWNER)
+// ========================================================================
+// ROLE_ADMIN "🗑️ Butunlay o'chirish"ni bosganda kurs HAQIQIY o'chmaydi —
+// shu ADMIN'dan va katalogdan yo'qoladi, lekin bazada to'liq saqlanadi
+// (CourseService.permanentlyDeleteCourse). Faqat ROLE_OWNER shu ro'yxatda
+// ko'radi, xohlasa "📤 O'zim nomimdan qayta nashr qilish" bilan tiklaydi.
+
+function loadAdminArchivedCourses() {
+    fetch("/api/courses/archived-by-admin")
+        .then(r => r.ok ? r.json() : [])
+        .then(renderAdminArchivedCourses)
+        .catch(err => {
+            console.error(err);
+            document.getElementById("adminArchivedList").innerHTML =
+                `<p class="error">Yuklashda xatolik</p>`;
+        });
+}
+
+function renderAdminArchivedCourses(courses) {
+    const list = document.getElementById("adminArchivedList");
+
+    if (!courses.length) {
+        list.innerHTML = `<p>Hech qanday admin arxivlagan kurs yo'q</p>`;
+        return;
+    }
+
+    list.innerHTML = `
+        <ul>
+            ${courses.map(c => `
+                <li>
+                    <b>${escapeHtml(c.title)}</b>
+                    — O'chirgan: ${escapeHtml(c.archivedByAdminName)}, ${formatDate(c.archivedAt)}
+                    <button onclick="reclaimArchivedCourse(${c.id}, ${JSON.stringify(c.title).replace(/"/g, "&quot;")})">📤 O'zim nomimdan qayta nashr qilish</button>
+                </li>
+            `).join("")}
+        </ul>
+    `;
+}
+
+async function reclaimArchivedCourse(courseId, title) {
+    if (!confirm(`"${title}" kursini o'z nomingizga o'tkazib, qaytadan tiklamoqchimisiz?\n\n(Chop etish keyin alohida yoqiladi — hozircha qoralama sifatida qoladi.)`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/courses/${courseId}/reclaim`, { method: "POST" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "Tiklashda xatolik");
+            return;
+        }
+        alert("✅ Kurs sizning nomingizga o'tkazildi va tiklandi (qoralama sifatida).");
+        loadAdminArchivedCourses();
+        loadTrash();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
 }
 
 // ========================================================================

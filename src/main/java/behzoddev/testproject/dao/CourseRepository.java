@@ -25,12 +25,25 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     List<Course> findByPublishedTrueOrCreatedBy_IdOrderByCreatedAtDesc(@Param("createdById") Long createdById);
 
     // "O'chirilganlar savati" — OWNER uchun BARCHA soft-delete qilingan
-    // kurslar (kim yaratganidan qat'i nazar).
-    @Query("SELECT c FROM Course c WHERE c.deletedAt IS NOT NULL ORDER BY c.deletedAt DESC")
+    // kurslar (kim yaratganidan qat'i nazar). ADMIN allaqachon "Butunlay
+    // o'chirish" qilib ARXIVLAGAN kurslar (archivedByAdmin != null) bu
+    // yerda emas, ALOHIDA ro'yxatda (findArchivedByAdminOrderByArchivedAtDesc) —
+    // ikkalasi aralashib ketmasin deb.
+    @Query("SELECT c FROM Course c WHERE c.deletedAt IS NOT NULL AND c.archivedByAdmin IS NULL ORDER BY c.deletedAt DESC")
     List<Course> findAllDeletedOrderByDeletedAtDesc();
 
     // "O'chirilganlar savati" — ADMIN uchun faqat O'ZI yaratgan
-    // soft-delete qilingan kurslar.
-    @Query("SELECT c FROM Course c WHERE c.deletedAt IS NOT NULL AND c.createdBy.id = :createdById ORDER BY c.deletedAt DESC")
+    // soft-delete qilingan kurslar. Bu yerda ham archivedByAdmin != null
+    // bo'lganlari chetlab o'tiladi — ADMIN "Butunlay o'chirish"ni bosgach,
+    // bu kurs ENDI O'ZIDAN ham yo'qolishi kerak (foydalanuvchi ANIQ talabi).
+    @Query("SELECT c FROM Course c WHERE c.deletedAt IS NOT NULL AND c.createdBy.id = :createdById AND c.archivedByAdmin IS NULL ORDER BY c.deletedAt DESC")
     List<Course> findDeletedByCreatedBy_IdOrderByDeletedAtDesc(@Param("createdById") Long createdById);
+
+    // Faqat ROLE_OWNER uchun — ADMIN'lar "Butunlay o'chirish" orqali
+    // arxivlagan (lekin bazadan HAQIQIY o'chirilmagan) kurslar ro'yxati
+    // (CourseService.getAdminArchivedCourses) — kim/qachon arxivlagani
+    // bilan, xohlasa o'z nomiga o'tkazib qayta tiklashi mumkin
+    // (reclaimArchivedCourse).
+    @Query("SELECT c FROM Course c WHERE c.archivedByAdmin IS NOT NULL ORDER BY c.archivedAt DESC")
+    List<Course> findArchivedByAdminOrderByArchivedAtDesc();
 }

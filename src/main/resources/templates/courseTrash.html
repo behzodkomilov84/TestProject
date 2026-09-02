@@ -32,6 +32,22 @@
         <div class="courses-empty">Yuklanmoqda...</div>
     </div>
 
+    <!-- FAQAT ROLE_OWNER — ADMIN'lar "🗑️ Butunlay o'chirish" orqali
+         arxivlagan (lekin bazadan HAQIQIY o'chirilmagan) kurslar. Bu
+         yerdan tashqari hech qayerda ko'rinmaydi (na admin'ning o'zida,
+         na katalogda) — foydalanuvchi ANIQ talabi. -->
+    <section id="adminArchivedPanel" class="owner-only-el" style="display:none;">
+        <hr>
+        <h2>🗄️ Adminlar butunlay o'chirgan kurslar</h2>
+        <p class="course-description">
+            Bu kurslarni tegishli ADMIN "🗑️ Butunlay o'chirish" orqali o'chirgan — ular ENDI o'sha ADMIN'da
+            va katalogda ko'rinmaydi, lekin ma'lumotlari bazada TO'LIQ saqlanib turibdi. Xohlasangiz,
+            "📤 O'zim nomimdan qayta nashr qilish" orqali o'z nomingizga o'tkazib qaytadan tiklashingiz mumkin
+            (chop etishni keyin alohida yoqasiz).
+        </p>
+        <div id="adminArchivedList"></div>
+    </section>
+
     <!-- FAQAT ROLE_OWNER (backendda ham shunday cheklangan — BackupController).
          "O'chirilganlar savati" YETARLI bo'lmagan holatlar uchun: kurs
          BUTUNLAY o'chirilgan yoki bu funksiya yaratilishidan OLDIN yo'qolgan

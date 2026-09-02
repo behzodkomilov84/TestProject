@@ -463,6 +463,87 @@ class CourseServiceTest {
         org.mockito.Mockito.verify(courseRepository, org.mockito.Mockito.never()).delete(org.mockito.Mockito.any());
     }
 
+    // ===== ADMIN "Butunlay o'chirish"i — HAQIQIY o'chirmaydi, ARXIVLAYDI =====
+    // Foydalanuvchi ANIQ talabi: ROLE_ADMIN o'z kursini "Butunlay o'chirish"
+    // desa, kurs shu ADMIN'dan (va katalogdan) yo'qoladi, lekin bazadan
+    // HAQIQIY o'chirilmaydi — ROLE_OWNER hali ham ko'ra oladi, xohlasa
+    // o'z nomiga o'tkazib qayta tiklashi mumkin. ROLE_OWNER'ning o'zi
+    // bosganda esa (yuqoridagi ikkita test) — o'zgarishsiz, haqiqiy o'chirish.
+
+    @Test
+    void permanentlyDeleteCourse_calledByAdmin_archivesInsteadOfHardDelete() {
+        User admin = admin();
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(admin)
+                .deletedAt(java.time.LocalDateTime.now()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        courseService.permanentlyDeleteCourse(1L, admin);
+
+        assertThat(course.getArchivedByAdmin()).isEqualTo(admin);
+        assertThat(course.getArchivedAt()).isNotNull();
+        // Haqiqiy (bazadan) o'chirish HECH QANDAY chaqiruvi bo'lmasligi kerak.
+        org.mockito.Mockito.verify(courseRepository, org.mockito.Mockito.never()).delete(org.mockito.Mockito.any());
+        org.mockito.Mockito.verifyNoInteractions(courseSectionProgressRepository, courseSubscriptionRepository,
+                courseSectionRepository, courseChapterRepository);
+        org.mockito.Mockito.verify(courseRepository).save(course);
+    }
+
+    @Test
+    void getAdminArchivedCourses_calledByNonOwner_throwsAccessDenied() {
+        assertThatThrownBy(() -> courseService.getAdminArchivedCourses(admin()))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    }
+
+    @Test
+    void getAdminArchivedCourses_calledByOwner_returnsArchivedListWithAdminName() {
+        User admin = admin();
+        Course archived = Course.builder().id(1L).title("Arxivlangan kurs").createdBy(admin)
+                .archivedByAdmin(admin).archivedAt(java.time.LocalDateTime.now()).build();
+        when(courseRepository.findArchivedByAdminOrderByArchivedAtDesc()).thenReturn(List.of(archived));
+
+        var result = courseService.getAdminArchivedCourses(owner());
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).title()).isEqualTo("Arxivlangan kurs");
+        assertThat(result.get(0).archivedByAdminName()).isEqualTo("teacher");
+    }
+
+    @Test
+    void reclaimArchivedCourse_calledByOwner_transfersOwnershipAndClearsArchiveFlags() {
+        User admin = admin();
+        User owner = owner();
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(admin).published(false)
+                .archivedByAdmin(admin).archivedAt(java.time.LocalDateTime.now())
+                .deletedAt(java.time.LocalDateTime.now()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        courseService.reclaimArchivedCourse(1L, owner);
+
+        assertThat(course.getCreatedBy()).isEqualTo(owner);
+        assertThat(course.getArchivedByAdmin()).isNull();
+        assertThat(course.getArchivedAt()).isNull();
+        assertThat(course.getDeletedAt()).isNull();
+        // "published" ATAYLAB avtomatik yoqilmasligi kerak — OWNER buni
+        // alohida o'zi yoqadi (foydalanuvchi ANIQ talabi).
+        assertThat(course.isPublished()).isFalse();
+    }
+
+    @Test
+    void reclaimArchivedCourse_courseNotArchived_throws() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> courseService.reclaimArchivedCourse(1L, owner()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("arxivlangan emas");
+    }
+
+    @Test
+    void reclaimArchivedCourse_calledByNonOwner_throwsAccessDenied() {
+        assertThatThrownBy(() -> courseService.reclaimArchivedCourse(1L, admin()))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+    }
+
     // ===== ADMIN faqat o'zi yaratgan kursni boshqara oladi =====
 
     private User admin() {
@@ -660,6 +741,42 @@ class CourseServiceTest {
         assertThatThrownBy(() -> courseService.reorderChapters(1L, List.of(10L, 999L), owner()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("mos kelmayapti");
+    }
+
+    // ===== deleteChapter (FAQAT bo'sh bo'lim) =====
+    // Foydalanuvchi so'rovi bo'yicha tekshirilgan/tasdiqlangan himoya:
+    // ichida mavzular bor Bo'limni o'chirib bo'lmaydi (avval mavzularni
+    // ko'chirish/o'chirish kerak — buni ATAYLAB qiladigan yo'l esa
+    // alohida, deleteChapterWithLinkedTopics).
+
+    @Test
+    void deleteChapter_hasSections_throwsAndDoesNotDelete() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter chapter = CourseChapter.builder().id(10L).course(course).name("Bo'lim").orderIndex(1).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findById(10L)).thenReturn(Optional.of(chapter));
+        when(courseSectionRepository.existsByChapter_Id(10L)).thenReturn(true);
+
+        assertThatThrownBy(() -> courseService.deleteChapter(1L, 10L, owner()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("mavzular bor");
+
+        org.mockito.Mockito.verify(courseChapterRepository, org.mockito.Mockito.never()).delete(any());
+    }
+
+    @Test
+    void deleteChapter_empty_deletesSuccessfully() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter chapter = CourseChapter.builder().id(10L).course(course).name("Bo'lim").orderIndex(1).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findById(10L)).thenReturn(Optional.of(chapter));
+        when(courseSectionRepository.existsByChapter_Id(10L)).thenReturn(false);
+
+        courseService.deleteChapter(1L, 10L, owner());
+
+        org.mockito.Mockito.verify(courseChapterRepository).delete(chapter);
     }
 
     // ===== deleteChapterWithLinkedTopics =====

@@ -1885,6 +1885,49 @@ body {
     font-weight: 600;
 }
 
+/* "🗄️ Adminlar butunlay o'chirgan kurslar" (courseTrash.html/.js, FAQAT
+   ROLE_OWNER) — #backupPreviewResult bilan bir xil qator uslubi, faqat
+   "📤 O'zim nomimdan qayta nashr qilish" tugmasi asosiy (primary) amal
+   sifatida ajralib turadi. */
+#adminArchivedList ul {
+    list-style: none;
+    padding: 0;
+    margin: 12px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#adminArchivedList li {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: space-between;
+}
+
+#adminArchivedList button {
+    background: linear-gradient(135deg, #185ABD, #103F91);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 8px 16px;
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(16, 63, 145, .3);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+#adminArchivedList button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(16, 63, 145, .4);
+}
+
 /* "🗑️ O'chirilgan mavzular" paneli (courseDetail.js — sectionTrashList) —
    #backupPreviewResult'dagi bilan bir xil oddiy qator uslubi. */
 #sectionTrashList .row {

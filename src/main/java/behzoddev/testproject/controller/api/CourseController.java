@@ -1,5 +1,6 @@
 package behzoddev.testproject.controller.api;
 
+import behzoddev.testproject.dto.course.CourseArchivedByAdminDto;
 import behzoddev.testproject.dto.course.CourseChapterDto;
 import behzoddev.testproject.dto.course.CourseDetailDto;
 import behzoddev.testproject.dto.course.CourseDto;
@@ -92,6 +93,23 @@ public class CourseController {
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
     public void permanentDelete(@PathVariable Long id, @AuthenticationPrincipal User user) {
         courseService.permanentlyDeleteCourse(id, user);
+    }
+
+    // Faqat ROLE_OWNER uchun — ADMIN'lar "🗑️ Butunlay o'chirish" orqali
+    // arxivlagan (lekin bazadan HAQIQIY o'chirilmagan) kurslar ro'yxati.
+    @GetMapping("/archived-by-admin")
+    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    public List<CourseArchivedByAdminDto> archivedByAdmin(@AuthenticationPrincipal User user) {
+        return courseService.getAdminArchivedCourses(user);
+    }
+
+    // "📤 O'zim nomimdan qayta nashr qilish" — faqat ROLE_OWNER, ADMIN
+    // arxivlagan kursni o'z nomiga o'tkazib qaytadan tiklaydi ("published"
+    // avtomatik yoqilmaydi — OWNER buni alohida bosadi).
+    @PostMapping("/{id}/reclaim")
+    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    public void reclaim(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        courseService.reclaimArchivedCourse(id, user);
     }
 
     // Kurs muqova rasmini yuklash — qaytgan URL CourseSaveDto.coverImageUrl'ga qo'yiladi.
