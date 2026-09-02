@@ -189,7 +189,7 @@ class TelegramTeacherServiceTest {
 
         assertThat(msg.getText()).contains("savollar paketi");
         assertThat(msg.getText()).doesNotContain("(/teacher)");
-        verify(autoLoginService).buildLoginUrl(teacher, "/teacher");
+        verify(autoLoginService).buildLoginUrl(teacher, "/teacher/builder");
     }
 
     @Test

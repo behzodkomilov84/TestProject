@@ -185,7 +185,7 @@ public class TelegramTeacherService {
         msg.setChatId(chatId.toString());
 
         if (sets.isEmpty()) {
-            String url = autoLoginService.buildLoginUrl(teacher, "/teacher");
+            String url = autoLoginService.buildLoginUrl(teacher, "/teacher/builder");
             msg.setText("📝 Sizda hali savollar paketi (question set) yo'q. Avval saytda yarating: " + url);
             msg.setDisableWebPagePreview(true);
             return msg;

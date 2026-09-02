@@ -1,0 +1,359 @@
+/* ========================================================================
+   "/teacher/groups", "/teacher/builder", "/teacher/assign" — umumiy
+   uslub. Avvalgi bitta "/teacher" sahifasi 3-panelli, sichqoncha bilan
+   kengligi o'zgartiriladigan "workbench" edi — mobilda ishlatib
+   bo'lmasdi (sidebar kengligi mobilda o'zgarmasdi, Fan/Mavzu tanlash
+   qatori pastma-past tushmasdi — haqiqiy tekshiruv). Endi har biri
+   ALOHIDA, TO'LIQ kenglikdagi, oddiy vertikal scroll'li sahifa —
+   resizable panel yo'q.
+   ======================================================================== */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    background: #f5f6f8;
+    font-family: "Segoe UI", system-ui, sans-serif;
+    margin: 0;
+}
+
+.teacher-page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 96px 16px 48px;
+}
+
+.teacher-page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.teacher-page-header h1 {
+    font-size: 22px;
+    margin: 0;
+}
+
+/* Boshqa 2 sahifaga tez o'tish — har bir sahifa o'zi qaysi bosqichda
+   ekanini bilish oson bo'lishi uchun (foydalanuvchi ANIQ o'quv oqimi:
+   avval guruh, keyin savollar to'plami, keyin topshiriq). */
+.teacher-page-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.teacher-page-nav a {
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid #d5dde8;
+    background: #fff;
+    color: #334155;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    transition: background .15s ease, border-color .15s ease;
+}
+
+.teacher-page-nav a:hover {
+    background: #eef2f7;
+}
+
+.teacher-page-nav a.active {
+    background: #4e8cff;
+    border-color: #4e8cff;
+    color: #fff;
+}
+
+.teacher-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 3px 10px rgba(0,0,0,.06);
+    padding: 18px;
+    margin-bottom: 20px;
+}
+
+.teacher-card h2 {
+    font-size: 16px;
+    margin: 0 0 14px;
+    text-transform: uppercase;
+    color: #475569;
+}
+
+.teacher-empty {
+    color: #94a3b8;
+    font-style: italic;
+    text-align: center;
+    padding: 24px 0;
+}
+
+/* ---- Forma elementlari ---- */
+
+.teacher-field-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.teacher-field-row input,
+.teacher-field-row select {
+    flex: 1 1 200px;
+}
+
+.teacher-page input[type="text"],
+.teacher-page input[type="number"],
+.teacher-page input[type="datetime-local"],
+.teacher-page select {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid #d5dde8;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.teacher-page label {
+    display: block;
+    font-weight: 600;
+    font-size: 13px;
+    color: #475569;
+    margin: 10px 0 4px;
+}
+
+.teacher-page button {
+    padding: 9px 16px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: transform .12s ease, background .12s ease;
+}
+
+.teacher-btn-primary {
+    background: linear-gradient(135deg, #4e8cff, #2f6fe0);
+    color: #fff;
+}
+
+.teacher-btn-primary:hover {
+    transform: translateY(-1px);
+}
+
+.teacher-btn-primary:disabled {
+    opacity: .4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.teacher-btn-danger {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca !important;
+}
+
+.teacher-btn-danger:hover {
+    background: #fee2e2;
+}
+
+.teacher-icon-btn {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.teacher-icon-btn:hover {
+    background: #f1f5f9;
+}
+
+/* ---- Guruh kartochkasi (teacher-groups.html) ---- */
+
+.teacher-group-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    overflow: hidden;
+}
+
+.teacher-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.teacher-group-header:hover {
+    background: #f8fafc;
+}
+
+.teacher-group-chevron {
+    color: #94a3b8;
+    transition: transform .15s ease;
+    flex-shrink: 0;
+}
+
+.teacher-group-card.expanded .teacher-group-chevron {
+    transform: rotate(90deg);
+}
+
+.teacher-group-name {
+    flex: 1;
+    font-weight: 600;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.teacher-group-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.teacher-group-body {
+    display: none;
+    padding: 0 14px 14px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.teacher-group-card.expanded .teacher-group-body {
+    display: block;
+}
+
+.teacher-member-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f8fafc;
+    font-size: 14px;
+}
+
+.teacher-member-row:last-child {
+    border-bottom: none;
+}
+
+.teacher-member-status {
+    margin-left: auto;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 999px;
+}
+
+.teacher-member-status.accepted {
+    color: #16a34a;
+    background: #dcfce7;
+}
+
+.teacher-member-status.pending {
+    color: #d97706;
+    background: #fef3c7;
+}
+
+/* ---- Savol/mavzu ro'yxati (teacher-builder.html) ---- */
+
+.teacher-question-box {
+    max-height: 340px;
+    overflow-y: auto;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px;
+    background: #fafafa;
+}
+
+.teacher-question-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px;
+    margin-bottom: 4px;
+    background: #fff;
+    border-radius: 6px;
+    border: 1px solid #eee;
+    cursor: pointer;
+}
+
+.teacher-question-item:hover {
+    background: #f5f7ff;
+}
+
+.teacher-question-item input {
+    margin-top: 3px;
+    flex-shrink: 0;
+}
+
+.teacher-set-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.teacher-set-row:last-child {
+    border-bottom: none;
+}
+
+.teacher-set-name {
+    flex: 1;
+    font-weight: 600;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.teacher-set-count {
+    color: #94a3b8;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+/* ---- O'quvchilar (teacher-assign.html) — jadval EMAS, karta ro'yxati ---- */
+
+.teacher-student-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    margin-bottom: 6px;
+}
+
+.teacher-student-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.teacher-select-all-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #e2e8f0;
+    font-weight: 600;
+    font-size: 13px;
+    color: #475569;
+}
+
+@media (max-width: 640px) {
+    .teacher-page {
+        padding-top: 84px;
+    }
+}

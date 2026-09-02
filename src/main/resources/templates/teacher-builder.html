@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <title>Savollar to'plami</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/teacher-pages.css">
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="teacher-page">
+    <div class="teacher-page-header">
+        <h1>📝 Savollar to'plami</h1>
+    </div>
+
+    <nav class="teacher-page-nav">
+        <a href="/teacher/groups">👥 Guruhlarim</a>
+        <a href="/teacher/builder" class="active">📝 Savollar to'plami</a>
+        <a href="/teacher/assign">📤 Topshiriq berish</a>
+        <a href="/admin-assignment">📊 Topshiriqlar</a>
+    </nav>
+
+    <div class="teacher-card">
+        <h2>Yangi to'plam tuzish</h2>
+
+        <label for="scienceSelect">Fan</label>
+        <select id="scienceSelect"></select>
+
+        <label for="topicSelect">Mavzu</label>
+        <select id="topicSelect"></select>
+
+        <label>Savollar</label>
+        <div id="questions" class="teacher-question-box">
+            <div class="teacher-empty">Avval fan va mavzuni tanlang</div>
+        </div>
+
+        <label for="selectedList">Tanlangan savollar (<b id="counter">0</b> ta)</label>
+        <div id="selectedList" class="teacher-question-box"></div>
+
+        <label for="setName">To'plam nomi</label>
+        <div class="teacher-field-row">
+            <input id="setName" type="text" placeholder="Masalan: 1-mavzu — asosiy testlar">
+            <button class="teacher-btn-primary" onclick="saveSet()">💾 Saqlash</button>
+        </div>
+    </div>
+
+    <div class="teacher-card">
+        <h2>Mavjud to'plamlar</h2>
+        <div id="setsList"></div>
+    </div>
+</div>
+
+<script th:src="@{/js/navbar.js}"></script>
+<script th:src="@{/js/teacher-builder.js}"></script>
+</body>
+</html>

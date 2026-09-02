@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <title>Topshiriq berish</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/teacher-pages.css">
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="teacher-page">
+    <div class="teacher-page-header">
+        <h1>📤 Topshiriq berish</h1>
+    </div>
+
+    <nav class="teacher-page-nav">
+        <a href="/teacher/groups">👥 Guruhlarim</a>
+        <a href="/teacher/builder">📝 Savollar to'plami</a>
+        <a href="/teacher/assign" class="active">📤 Topshiriq berish</a>
+        <a href="/admin-assignment">📊 Topshiriqlar</a>
+    </nav>
+
+    <div class="teacher-card">
+        <h2>1. Guruhni tanlang</h2>
+        <select id="groupSelect"></select>
+
+        <div id="studentsSection" class="hidden" style="display:none; margin-top:14px;">
+            <div class="teacher-select-all-row">
+                <input type="checkbox" id="selectAllStudents">
+                <label style="margin:0;">Hammasini belgilash</label>
+            </div>
+            <div id="studentsList"></div>
+        </div>
+    </div>
+
+    <div class="teacher-card">
+        <h2>2. Test paketi va muddat</h2>
+        <label for="setSelect">Savollar to'plami</label>
+        <select id="setSelect"></select>
+
+        <label for="dueDate">Topshiriq muddati</label>
+        <input type="datetime-local" id="dueDate">
+
+        <button class="teacher-btn-primary" id="assignBtn" onclick="assignTest()" style="margin-top:16px;" disabled>
+            📤 Topshiriq berish
+        </button>
+    </div>
+</div>
+
+<script th:src="@{/js/navbar.js}"></script>
+<script th:src="@{/js/teacher-assign.js}"></script>
+</body>
+</html>
