@@ -431,6 +431,15 @@
         <button onclick="sortSections('ZA')">Z→A</button>
     </div>
 
+    <!-- Guruhlangan (Bo'limli) ko'rinishda GINA ko'rinadi — Bo'lim nomi
+         bo'yicha tez qidirish (onChapterSearchInput, courseDetail.js).
+         Statik element sifatida (har safar qayta chizilmaydi) — aks
+         holda har harf terilganda fokus/kursor pozitsiyasi yo'qolib
+         qolardi. -->
+    <div id="chapterSearchBox" class="explanation-search-box" style="display:none;">
+        <input type="text" id="chapterSearchInput" class="explanation-search-input"
+               placeholder="🔍 Bo'lim nomi bo'yicha qidirish..." oninput="onChapterSearchInput(this.value)">
+    </div>
 
     <!-- Kursda kamida bitta mavzu biror Bo'limga biriktirilgan bo'lsa —
          mavzular shu bo'limlar bo'yicha alohida "box"larga guruhlanadi

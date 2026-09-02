@@ -19,6 +19,18 @@ let sectionsPage = 0;
 const CHAPTER_SECTIONS_PER_PAGE = 4;
 let chapterPages = {};
 
+// Bo'lim ro'yxati endi accordion (yig'ma) ko'rinishida — sarlavhaga
+// bosilganda O'SHA bo'limning mavzular ("box" ichidagi hammasi — saralash,
+// kartochkalar, sahifalash) ochiladi/yopiladi. Bir nechtasi bir vaqtda
+// ochiq turishi mumkin. FAQAT shu sahifa (sessiya) davomida eslab qolinadi
+// (chapterKey -> true) — sahifa qayta yuklansa hammasi yana yopiq holatdan
+// boshlanadi (selectCard'dagi avtomatik ochish bundan mustasno).
+let expandedChapterKeys = new Set();
+
+// "🔍 Bo'lim qidirish" (onChapterSearchInput) — bo'lim nomi bo'yicha
+// filtr, katta-kichik harfga sezgir emas. Bo'sh bo'lsa — filtr yo'q.
+let chapterSearchQuery = "";
+
 // Klaviatura bilan mavzu kartochkalari orasida navigatsiya (←/→ — joriy
 // sahifa/Bo'lim ichida oldingi-keyingi kartaga, ↑/↓ — oldingi/keyingi
 // sahifa, Home — 1-sahifa). Tanlangan kartaning id'si — qayta chizishlar
@@ -1170,6 +1182,9 @@ function renderSections(sections) {
     // uchun.
     document.getElementById("sectionsSortBar").style.display = (canManage && !hasAnyChapter) ? "flex" : "none";
 
+    // "🔍 Bo'lim qidirish" — faqat guruhlangan (Bo'limli) ko'rinishda ma'noli.
+    document.getElementById("chapterSearchBox").style.display = hasAnyChapter ? "block" : "none";
+
     // "Kurs ichidan mavzu yoritmasi bo'yicha qidiruv" — tahrirlashga
     // aloqasi yo'q, oddiy o'qish/qidiruv, shuning uchun sortBar'dan
     // farqli faqat boshqaruvchilarga emas — istalgan foydalanuvchiga
@@ -1432,38 +1447,103 @@ function renderGroupedSections() {
     const globalIndexById = buildGlobalIndexMap();
     // "⬆⬇" tugmalari faqat HAQIQIY Bo'limlar orasida ishlaydi — "—
     // Bo'limsiz mavzular —" psevdo-guruhi (chapterId == null) CourseChapter
-    // yozuvi emas, "surib" bo'lmaydi, shu sabab hisobga olinmaydi.
+    // yozuvi emas, "surib" bo'lmaydi, shu sabab hisobga olinmaydi. TO'LIQ
+    // (filtrlanmagan) ro'yxatdan hisoblanadi — qidiruv faqat KO'RINISHNI
+    // toraytiradi, haqiqiy tartibga ta'sir qilmaydi.
     const realChapterGroups = sortedGroups.filter(g => g.chapterId != null);
 
-    list.innerHTML = sortedGroups.map(group => renderChapterBox(group, globalIndexById, realChapterGroups)).join("");
+    const query = chapterSearchQuery.trim().toLowerCase();
+    const visibleGroups = query
+        ? sortedGroups.filter(g => g.name.toLowerCase().includes(query))
+        : sortedGroups;
+
+    if (query && visibleGroups.length === 0) {
+        list.innerHTML = `<div class="courses-empty">"${escapeHtml(chapterSearchQuery)}" bo'yicha bo'lim topilmadi</div>`;
+        return;
+    }
+
+    list.innerHTML = visibleGroups.map(group => renderChapterBox(group, globalIndexById, realChapterGroups)).join("");
+}
+
+// "🔍 Bo'lim qidirish" — teriladigan har harfda chaqiriladi (input
+// statik, qayta chizilmaydi — shu sabab fokus/kursor yo'qolmaydi).
+// Qidiruv FAOL bo'lganda — mos kelgan bo'limlar avtomatik OCHIQ holda
+// ko'rsatiladi (renderChapterBox), qo'shimcha bosish shart emas.
+function onChapterSearchInput(value) {
+    chapterSearchQuery = value;
+    renderGroupedSections();
+}
+
+// Bo'lim sarlavhasiga bosilganda — shu bo'limning mavzular ro'yxati
+// ochiladi/yopiladi (accordion). Bir nechtasi bir vaqtda ochiq turishi
+// mumkin (faqat bittasi bilan cheklanmagan).
+function toggleChapterBox(key) {
+    if (expandedChapterKeys.has(key)) {
+        expandedChapterKeys.delete(key);
+    } else {
+        expandedChapterKeys.add(key);
+    }
+    renderGroupedSections();
 }
 
 function renderChapterBox(group, globalIndexById, realChapterGroups) {
+    // Endi accordion — sarlavha bosilganda ochiladi/yopiladi (toggleChapterBox).
+    // Qidiruv FAOL bo'lsa (chapterSearchQuery) — mos kelgan bo'limlar
+    // avtomatik OCHIQ ko'rsatiladi (natijani ko'rish uchun qo'shimcha
+    // bosish shart emas).
+    const isExpanded = expandedChapterKeys.has(group.key) || chapterSearchQuery.trim() !== "";
+
     // Shu Bo'limdagi BARCHA mavzularning (TEST BOSHQARUVIga bog'langanlari)
     // testlari yig'indisi — bo'lim sarlavhasida "jami testlar" sifatida
-    // ko'rsatish uchun (foydalanuvchi so'rovi bo'yicha).
+    // ko'rsatish uchun (foydalanuvchi so'rovi bo'yicha) — YOPIQ holatda ham
+    // ko'rinadi, ochmasdan turib ham asosiy ma'lumot bilinishi uchun.
     const totalQuestions = group.items.reduce(
         (sum, s) => sum + (s.linkedTopicId != null ? (s.linkedTopicQuestionCount || 0) : 0), 0);
 
-    const totalPages = Math.max(1, Math.ceil(group.items.length / CHAPTER_SECTIONS_PER_PAGE));
-    let page = chapterPages[group.key] || 0;
-    if (page >= totalPages) page = totalPages - 1;
-    if (page < 0) page = 0;
-    chapterPages[group.key] = page;
+    // Kartochkalar/sahifalash — FAQAT ochiq bo'lsa hisoblanadi (yopiq
+    // bo'limlarda keraksiz DOM/CPU sarflanmasin, ayniqsa ko'p bo'limli
+    // kurslarda).
+    let bodyHtml = "";
+    if (isExpanded) {
+        const totalPages = Math.max(1, Math.ceil(group.items.length / CHAPTER_SECTIONS_PER_PAGE));
+        let page = chapterPages[group.key] || 0;
+        if (page >= totalPages) page = totalPages - 1;
+        if (page < 0) page = 0;
+        chapterPages[group.key] = page;
 
-    const from = page * CHAPTER_SECTIONS_PER_PAGE;
-    const pageItems = group.items.slice(from, from + CHAPTER_SECTIONS_PER_PAGE);
+        const from = page * CHAPTER_SECTIONS_PER_PAGE;
+        const pageItems = group.items.slice(from, from + CHAPTER_SECTIONS_PER_PAGE);
 
-    const cardsHtml = pageItems.map((s, idx) => renderSectionCard(s, globalIndexById, from + idx + 1)).join("");
-    const paginationHtml = totalPages > 1
-        ? buildPaginationHtml(totalPages, page, (p) => `changeChapterPage('${group.key}', ${p})`)
-        : "";
+        const cardsHtml = pageItems.map((s, idx) => renderSectionCard(s, globalIndexById, from + idx + 1)).join("");
+        const paginationHtml = totalPages > 1
+            ? buildPaginationHtml(totalPages, page, (p) => `changeChapterPage('${group.key}', ${p})`)
+            : "";
+
+        // Har bir Bo'lim — o'zining ALOHIDA "Saralash: A→Z / Z→A" tugmalariga
+        // ega (sortChapterSections) — faqat SHU bo'lim ichidagi mavzularni
+        // qayta tartiblaydi, boshqa bo'limlarga (yoki bo'limsiz mavzularga)
+        // hech qanday ta'sir qilmaydi.
+        const sortBar = (cachedCourse && cachedCourse.canManage && group.items.length > 1)
+            ? `<div class="chapter-box-sort" onclick="event.stopPropagation()">
+                   <span>Saralash:</span>
+                   <button onclick="sortChapterSections('${group.key}', 'AZ')">A→Z</button>
+                   <button onclick="sortChapterSections('${group.key}', 'ZA')">Z→A</button>
+               </div>`
+            : "";
+
+        bodyHtml = `
+            <div class="chapter-box-body">
+                ${sortBar}
+                <div class="sections-grid">${cardsHtml}</div>
+                ${paginationHtml ? `<div class="sections-pagination chapter-box-pagination">${paginationHtml}</div>` : ""}
+            </div>`;
+    }
 
     // "✏️" — faqat haqiqiy bo'limlarda (group.chapterId != null), "—
     // Bo'limsiz mavzular —" psevdo-guruhida ko'rsatilmaydi (uni "qayta
     // nomlash" mantiqsiz — u umuman CourseChapter yozuvi emas).
     const renameBtn = (cachedCourse && cachedCourse.canManage && group.chapterId != null)
-        ? `<button class="chapter-rename-btn" onclick="renameChapterPrompt(${group.chapterId})" title="Bo'lim nomini tahrirlash">✏️</button>`
+        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); renameChapterPrompt(${group.chapterId})" title="Bo'lim nomini tahrirlash">✏️</button>`
         : "";
 
     // "🗑️ Bo'lim + mavzular" — deleteSelectedChapter (Bo'lim tanlash
@@ -1472,7 +1552,7 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
     // BOSHQARUVIdagi mos mavzu+savollarni ham) birga o'chiradi. Foydalanuvchi
     // so'rovi bo'yicha ATAYLAB shu yerda (TEST BOSHQARUVIda EMAS).
     const deleteWithTopicsBtn = (cachedCourse && cachedCourse.canManage && group.chapterId != null)
-        ? `<button class="chapter-rename-btn danger-btn" onclick="deleteChapterWithLinkedTopics(${group.chapterId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Bo'lim va ichidagi barcha mavzularni (bog'langan bo'lsa, TEST BOSHQARUVIdagi savollari bilan) butunlay o'chirish">🗑️</button>`
+        ? `<button class="chapter-rename-btn danger-btn" onclick="event.stopPropagation(); deleteChapterWithLinkedTopics(${group.chapterId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Bo'lim va ichidagi barcha mavzularni (bog'langan bo'lsa, TEST BOSHQARUVIdagi savollari bilan) butunlay o'chirish">🗑️</button>`
         : "";
 
     // Rasmiy Word ikonkasi — faqat SHU Bo'limni Word'ga eksport qilish
@@ -1498,24 +1578,15 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
         `;
     }
 
-    // Har bir Bo'lim — o'zining ALOHIDA "Saralash: A→Z / Z→A" tugmalariga
-    // ega (sortChapterSections) — faqat SHU bo'lim ichidagi mavzularni
-    // qayta tartiblaydi, boshqa bo'limlarga (yoki bo'limsiz mavzularga)
-    // hech qanday ta'sir qilmaydi.
-    const sortBar = (cachedCourse && cachedCourse.canManage && group.items.length > 1)
-        ? `<div class="chapter-box-sort" onclick="event.stopPropagation()">
-               <span>Saralash:</span>
-               <button onclick="sortChapterSections('${group.key}', 'AZ')">A→Z</button>
-               <button onclick="sortChapterSections('${group.key}', 'ZA')">Z→A</button>
-           </div>`
-        : "";
-
     return `
-        <div class="chapter-box">
-            <h3 class="chapter-box-title">📂 ${escapeHtml(group.name)} <span class="chapter-box-count">(mavzu — ${group.items.length} ta, jami testlar — ${totalQuestions} ta)</span><span class="chapter-box-actions">${moveBtns}${exportChapterBtn}${renameBtn}${deleteWithTopicsBtn}</span></h3>
-            ${sortBar}
-            <div class="sections-grid">${cardsHtml}</div>
-            ${paginationHtml ? `<div class="sections-pagination chapter-box-pagination">${paginationHtml}</div>` : ""}
+        <div class="chapter-box ${isExpanded ? "expanded" : "collapsed"}">
+            <h3 class="chapter-box-title" onclick="toggleChapterBox('${group.key}')" title="${isExpanded ? "Yig'ish" : "Ochish"}">
+                <span class="chapter-box-chevron">▸</span>
+                📂 ${escapeHtml(group.name)}
+                <span class="chapter-box-count">(mavzu — ${group.items.length} ta, jami testlar — ${totalQuestions} ta)</span>
+                <span class="chapter-box-actions">${moveBtns}${exportChapterBtn}${renameBtn}${deleteWithTopicsBtn}</span>
+            </h3>
+            ${bodyHtml}
         </div>
     `;
 }
@@ -1742,8 +1813,28 @@ function onCardKeyDown(event, sectionId) {
 // almashganda yangi kartani ekranga ko'rinadigan joyga olib kelish uchun.
 function selectCard(sectionId, { scroll = false } = {}) {
     selectedSectionId = sectionId;
-    document.querySelectorAll(".section-item.selected").forEach(el => el.classList.remove("selected"));
-    const el = document.querySelector(`.section-item[data-section-id="${sectionId}"]`);
+
+    // Karta hozir YOPIQ (collapsed) Bo'lim ichida bo'lishi mumkin — endi
+    // bo'limlar accordion, shu sabab DOM'da bo'lmasligi mumkin. Shu
+    // bo'limni ochib, qayta chizib, keyin yana qidiramiz — bu bitta joyda
+    // qilingani uchun (fokus qaytariladigan BARCHA joylar: "?focus=",
+    // tahrirlab saqlagandan keyin, Ctrl+↑/↓ bo'lim navigatsiyasi va h.k.)
+    // ularning har birini alohida o'zgartirish shart emas.
+    let el = document.querySelector(`.section-item[data-section-id="${sectionId}"]`);
+    if (!el) {
+        const section = allSections.find(s => s.id === sectionId);
+        const hasAnyChapter = allSections.some(s => s.chapterId != null);
+        if (section && hasAnyChapter) {
+            const key = section.chapterId != null ? String(section.chapterId) : "none";
+            if (!expandedChapterKeys.has(key)) {
+                expandedChapterKeys.add(key);
+                renderGroupedSections();
+                el = document.querySelector(`.section-item[data-section-id="${sectionId}"]`);
+            }
+        }
+    }
+
+    document.querySelectorAll(".section-item.selected").forEach(x => x.classList.remove("selected"));
     if (el) {
         el.classList.add("selected");
         el.focus({ preventScroll: !scroll });

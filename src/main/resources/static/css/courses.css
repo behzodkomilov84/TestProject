@@ -1086,6 +1086,42 @@ body {
     margin: 0 0 14px;
     font-size: 17px;
     color: #1e293b;
+    /* Endi accordion sarlavhasi — bosilsa bo'lim ochiladi/yopiladi
+       (toggleChapterBox, courseDetail.js). */
+    cursor: pointer;
+    user-select: none;
+    border-radius: 8px;
+    padding: 4px 6px;
+    margin-left: -6px;
+    margin-right: -6px;
+    transition: background 0.12s ease;
+}
+
+.chapter-box-title:hover {
+    background: #eef2f7;
+}
+
+/* Yopiq (collapsed) bo'limda — ".chapter-box-body" umuman DOM'da yo'q,
+   shu sabab sarlavha ostidagi bo'shliq ham keraksiz. */
+.chapter-box.collapsed .chapter-box-title {
+    margin-bottom: 0;
+}
+
+/* "▸" — ochiq holatda 90° buriladi ("▾" ko'rinishini beradi). */
+.chapter-box-chevron {
+    display: inline-block;
+    color: #94a3b8;
+    font-size: 13px;
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+}
+
+.chapter-box.expanded .chapter-box-chevron {
+    transform: rotate(90deg);
+}
+
+.chapter-box-body {
+    margin-top: 4px;
 }
 
 .chapter-box-count {
