@@ -10,6 +10,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
+    margin: 12px 0 20px;
 }
 
 .search-boxes-row .explanation-search-box {
@@ -17,9 +18,12 @@
     /* Bazaviy qoidadagi max-width:480px shu yerda BEKOR qilinadi — aks
        holda ikkala quti chapga "yopishib", o'ngda katta bo'sh joy qolib
        ketardi (haqiqiy foydalanuvchi shikoyati). Endi ikkovi qatorni
-       TENG bo'lib to'ldiradi. */
+       TENG bo'lib to'ldiradi. Tashqi bo'shliq (margin) endi ATAYLAB
+       shu yerda EMAS, balki qatorning o'zida (.search-boxes-row) — aks
+       holda pastdagi mavzu ro'yxati bilan orada bo'shliq qolmay,
+       "yopishib" qolgan edi (haqiqiy foydalanuvchi shikoyati). */
     max-width: none;
-    margin: 12px 0 0;
+    margin: 0;
 }
 
 .explanation-search-box {
