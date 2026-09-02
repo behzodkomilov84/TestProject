@@ -254,6 +254,20 @@ body {
     margin-bottom: 20px;
 }
 
+/* "➕ Mavzu qo'shish" — endi modal (#addSectionForm.modal-overlay ichida).
+   ".section-form"ning o'zi (fon/padding/gap) shu bilan birga qo'llanadi —
+   bu yerda faqat modal ichida markazlashtirish/o'lcham/scroll/animatsiya
+   uchun qo'shimcha. Boshqa modallar (.word-export-modal) bilan bir xil
+   uslub — faqat kenglik kattaroq (forma rich-text-editor/toolbar bilan
+   ancha katta). */
+.section-form-modal {
+    width: min(760px, 95vw);
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: 0;
+    animation: modalPopIn .2s cubic-bezier(.2, .9, .3, 1.2);
+}
+
 .course-form input, .course-form textarea,
 .section-form input, .section-form select, .section-form textarea {
     /* width:100% shart — #textFields/#videoFields kabi ichki "wrapper"

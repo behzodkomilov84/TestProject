@@ -127,7 +127,11 @@
             </div>
         </div>
 
-        <div id="addSectionForm" class="section-form" style="display:none;">
+        <!-- "➕ Mavzu qo'shish" — modal (overlay) sifatida ochiladi
+             (openAddSectionForm/closeAddSectionForm, courseDetail.js —
+             boshqa modallar bilan bir xil ".modal-overlay"/".show" andozasi). -->
+        <div id="addSectionForm" class="modal-overlay">
+        <div class="section-form section-form-modal">
             <label class="field-label" for="newSectionTitle">Mavzu nomi</label>
             <input type="text" id="newSectionTitle" placeholder="Mavzu nomi" maxlength="500" oninput="onSectionTitleInput('new')">
 
@@ -269,6 +273,7 @@
                 <button onclick="submitAddSection()">✅ Mavzuni qo'shish</button>
                 <button onclick="closeAddSectionForm()">Bekor qilish</button>
             </div>
+        </div>
         </div>
 
         <!-- Mavzuni tahrirlash — "✏️" tugmasi bosilganda shu bitta forma

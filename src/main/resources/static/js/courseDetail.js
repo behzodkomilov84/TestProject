@@ -2937,9 +2937,7 @@ async function openAddSectionForm(forceChapterId) {
     }
 
     onChapterSelectChange("new");
-    document.getElementById("addSectionForm").style.display = "flex";
-    document.getElementById("openAddSectionBtn").style.display = "none";
-    document.getElementById("addSectionForm").scrollIntoView({ behavior: "smooth", block: "start" });
+    document.getElementById("addSectionForm").classList.add("show");
 }
 
 // Bo'lim select'i nomi bo'yicha tanlanadi ("id:"/"name:" qiymatlaridan
@@ -2982,8 +2980,7 @@ function currentChapterSelectionName(mode) {
 }
 
 function closeAddSectionForm() {
-    document.getElementById("addSectionForm").style.display = "none";
-    document.getElementById("openAddSectionBtn").style.display = "";
+    document.getElementById("addSectionForm").classList.remove("show");
 }
 
 // Matn va video mustaqil checkbox'lar — bittasi yoki ikkalasi ham
