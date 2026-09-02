@@ -245,9 +245,22 @@ public class CourseWordExportService {
 
     // Bitta mavzu (matn/video/rasm/jadval) tugab, keyingisi boshlanishidan
     // oldin ko'zga tashlanadigan bo'shliq — foydalanuvchi aniq so'ragan
-    // ("orasiga 2-3 bo'sh qator qo'yiб ketish kerak").
+    // ("orasiga 2-3 bo'sh qator qo'yib ketish kerak"). O'rtasida ajratuvchi
+    // chiziq (bo'sh joyning ANIQ o'rtasida turishi uchun — bo'sh paragraf,
+    // chiziq, bo'sh paragraf).
+    private static final String TOPIC_SEPARATOR_LINE =
+            "==============================================";
+
     private void writeTopicSpacer(XWPFDocument doc) {
         doc.createParagraph();
+
+        XWPFParagraph sep = doc.createParagraph();
+        sep.setAlignment(ParagraphAlignment.CENTER);
+        XWPFRun sepRun = sep.createRun();
+        sepRun.setText(TOPIC_SEPARATOR_LINE);
+        sepRun.setColor("A6A6A6");
+        sepRun.setFontSize(10);
+
         doc.createParagraph();
     }
 

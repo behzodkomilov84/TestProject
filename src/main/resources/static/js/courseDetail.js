@@ -1471,10 +1471,12 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
         ? `<button class="chapter-rename-btn danger-btn" onclick="deleteChapterWithLinkedTopics(${group.chapterId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Bo'lim va ichidagi barcha mavzularni (bog'langan bo'lsa, TEST BOSHQARUVIdagi savollari bilan) butunlay o'chirish">🗑️</button>`
         : "";
 
-    // "📝" — faqat SHU Bo'limni Word'ga eksport qilish (courseWordExportModal
-    // — butun kurs eksporti bilan bir xil oyna, faqat ko'lami boshqacha).
+    // Rasmiy Word ikonkasi — faqat SHU Bo'limni Word'ga eksport qilish
+    // (courseWordExportModal — butun kurs eksporti bilan bir xil oyna,
+    // faqat ko'lami boshqacha; ikonka question.html'dagi Word eksport
+    // tugmasi bilan bir xil SVG).
     const exportChapterBtn = (group.chapterId != null)
-        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openCourseWordExportModal(${group.chapterId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Shu bo'limni Word (.docx) faylga eksport qilish">📝</button>`
+        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openCourseWordExportModal(${group.chapterId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Shu bo'limni Word (.docx) faylga eksport qilish"><svg width="14" height="14" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-2px;"><rect x="4" y="4" width="40" height="40" rx="7" fill="#185ABD"/><rect x="4" y="4" width="18" height="40" rx="7" fill="#103F91"/><text x="31" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">W</text></svg></button>`
         : "";
 
     // "⬆⬇" — shu Bo'lim "box"ini boshqa Bo'lim bilan o'rin almashtiradi
