@@ -161,7 +161,7 @@ function renderSets(list) {
         <div class="teacher-set-row">
             <span class="teacher-set-name">${escapeHtml(s.name)}</span>
             <span class="teacher-set-count">${s.questionIds.length} ta savol</span>
-            <button class="teacher-icon-btn" onclick="renameSetPrompt(${s.id}, ${JSON.stringify(s.name)})" title="Nomini tahrirlash">✏️</button>
+            <button class="teacher-icon-btn" onclick="renameSetPrompt(${s.id}, ${JSON.stringify(s.name).replace(/"/g, "&quot;")})" title="Nomini tahrirlash">✏️</button>
             <button class="teacher-icon-btn teacher-btn-danger" onclick="deleteSet(${s.id})" title="O'chirish">🗑</button>
         </div>
     `).join("");
