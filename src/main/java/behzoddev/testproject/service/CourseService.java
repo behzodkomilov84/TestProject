@@ -1045,6 +1045,7 @@ public class CourseService {
 
     private CourseDto toDto(Course course, User currentUser) {
         int sectionCount = (int) courseSectionRepository.countByCourse_Id(course.getId());
+        int chapterCount = (int) courseChapterRepository.countByCourse_Id(course.getId());
         boolean subscribed = currentUser != null && isSubscribed(currentUser, course);
 
         return CourseDto.builder()
@@ -1056,6 +1057,7 @@ public class CourseService {
                 .free(course.isFree())
                 .price(course.getPrice())
                 .sectionCount(sectionCount)
+                .chapterCount(chapterCount)
                 .subscribed(subscribed)
                 .createdAt(course.getCreatedAt())
                 .deletedAt(course.getDeletedAt())

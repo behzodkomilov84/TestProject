@@ -565,6 +565,28 @@ class CourseServiceTest {
                 .hasMessageContaining("savatga o'tkazish");
     }
 
+    // ===== listCatalog (kartochkadagi "N ta bo'lim, M ta mavzu") =====
+    // Haqiqiy foydalanuvchi shikoyati: kartochkada FAQAT sectionCount
+    // (mavzular soni) "N ta bo'lim" deb NOTO'G'RI belgilab ko'rsatilardi.
+    // Endi ikkalasi ALOHIDA — chapterCount (haqiqiy CourseChapter soni)
+    // va sectionCount (CourseSection soni) — chalkashmasligini tekshiradi.
+
+    @Test
+    void listCatalog_populatesBothChapterCountAndSectionCountSeparately() {
+        User owner = owner();
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner).build();
+
+        when(courseRepository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of(course));
+        when(courseSectionRepository.countByCourse_Id(1L)).thenReturn(12L);
+        when(courseChapterRepository.countByCourse_Id(1L)).thenReturn(3L);
+
+        List<CourseDto> result = courseService.listCatalog(owner);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).chapterCount()).isEqualTo(3);
+        assertThat(result.get(0).sectionCount()).isEqualTo(12);
+    }
+
     // ===== reorderChapters =====
     // "⬆⬇" — Bo'lim "box"larini kurs sahifasida yuqoriga/pastga surish.
     // TopicService.reorderTopics bilan bir xil andoza: frontend BUTUN

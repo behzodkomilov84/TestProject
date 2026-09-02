@@ -22,6 +22,9 @@ public interface CourseChapterRepository extends JpaRepository<CourseChapter, Lo
     // joriy tartibni to'liq olib, keyin qayta yozish uchun.
     List<CourseChapter> findByCourse_IdOrderByOrderIndexAsc(Long courseId);
 
+    // Kurs katalogi kartochkasida "N ta bo'lim" (courses.js) — CourseDto.chapterCount.
+    long countByCourse_Id(Long courseId);
+
     // Kursning BARCHA Bo'limlari — hozircha hech qanday mavzuga
     // biriktirilmagan (sectionCount=0, "bo'sh") bo'lganlari ham shu
     // jumladan (courseDetail.js Bo'lim tanlash select'ini to'liq

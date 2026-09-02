@@ -79,7 +79,7 @@ function renderCourses(courses) {
                     <h3 class="course-card-title">${escapeHtml(c.title)}</h3>
                     <p class="course-card-desc">${escapeHtml(c.description || "")}</p>
                     <div class="course-card-footer">
-                        <span>${c.sectionCount} bo'lim</span>
+                        <span>${c.chapterCount} ta bo'lim, ${c.sectionCount} ta mavzu</span>
                         ${badge}
                     </div>
                 </div>
