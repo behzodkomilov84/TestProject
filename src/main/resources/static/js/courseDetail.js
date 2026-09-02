@@ -1247,8 +1247,12 @@ function applyFocusFromUrl(sectionId) {
 // tekis ro'yxatda, renderFlatSections), eskicha s.orderIndex ishlatiladi.
 function renderSectionCard(s, globalIndexById, displayNumber) {
     const i = globalIndexById.get(s.id);
+    // "Tugallandi" (completed) holati endi RAQAMNI TO'SIB QO'YMAYDI — faqat
+    // doiraning fonini yashilga o'zgartiradi, tartib raqamining o'zi doim
+    // ko'rinib turadi (foydalanuvchi: "galochka tartib raqamini to'sib
+    // qo'ygan").
     const indexClass = s.completed ? "section-index completed" : "section-index";
-    const indexIcon = s.completed ? "✓" : (displayNumber ?? s.orderIndex);
+    const indexIcon = displayNumber ?? s.orderIndex;
     const typeIcon = s.type === "VIDEO" ? "🎬" : s.type === "MIXED" ? "📄🎬" : "📄";
 
     // Butun karta bosiladigan qilindi (kurslar katalogidagi kartalar
