@@ -33,11 +33,11 @@ log() {
 log "Docker build cache tozalash boshlandi..."
 
 before=$(docker system df --format '{{.Type}}: {{.Size}} (reclaimable {{.Reclaimable}})' 2>/dev/null | grep -i "build cache" || true)
-log "Oldin: ${before:-noma'lum}"
+log "Oldin: ${before:-aniqlanmadi}"
 
 docker builder prune -f
 
 after=$(docker system df --format '{{.Type}}: {{.Size}} (reclaimable {{.Reclaimable}})' 2>/dev/null | grep -i "build cache" || true)
-log "Keyin: ${after:-noma'lum}"
+log "Keyin: ${after:-aniqlanmadi}"
 
 log "Tozalash yakunlandi."
