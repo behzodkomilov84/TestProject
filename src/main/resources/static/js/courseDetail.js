@@ -1539,6 +1539,13 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
             </div>`;
     }
 
+    // "➕" — ANIQ shu Bo'limga mavzu qo'shish (openAddSectionForm forceChapterId
+    // bilan) — bosilganda "Bo'lim" tanlovi avtomatik shu bo'limga o'rnatiladi,
+    // qayta tanlash shart emas (foydalanuvchi ANIQ shuni so'ragan).
+    const addTopicBtn = (cachedCourse && cachedCourse.canManage && group.chapterId != null)
+        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openAddSectionForm(${group.chapterId})" title="Shu bo'limga mavzu qo'shish">➕</button>`
+        : "";
+
     // "✏️" — faqat haqiqiy bo'limlarda (group.chapterId != null), "—
     // Bo'limsiz mavzular —" psevdo-guruhida ko'rsatilmaydi (uni "qayta
     // nomlash" mantiqsiz — u umuman CourseChapter yozuvi emas).
@@ -1584,7 +1591,7 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
                 <span class="chapter-box-chevron">▸</span>
                 📂 ${escapeHtml(group.name)}
                 <span class="chapter-box-count">(mavzu — ${group.items.length} ta, jami testlar — ${totalQuestions} ta)</span>
-                <span class="chapter-box-actions">${moveBtns}${exportChapterBtn}${renameBtn}${deleteWithTopicsBtn}</span>
+                <span class="chapter-box-actions">${moveBtns}${addTopicBtn}${exportChapterBtn}${renameBtn}${deleteWithTopicsBtn}</span>
             </h3>
             ${bodyHtml}
         </div>
@@ -2195,6 +2202,50 @@ async function renameChapter(chapterId, newName) {
             return;
         }
         loadCourse();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+// "➕ Bo'lim qo'shish" ("Kursni boshqarish" paneli) — bo'sh (mavzusiz)
+// Bo'limni to'g'ridan-to'g'ri yaratadi (createChapter). Yaratilgandan
+// keyin — shu Bo'lim darhol OCHIQ holatda ko'rsatiladi (hozircha bo'sh
+// bo'lsa ham — foydalanuvchi darhol "➕ Mavzu qo'shish" ikonkasi orqali
+// ichiga mavzu qo'sha boshlashi mumkin).
+function createChapterPrompt() {
+    const name = prompt("Yangi bo'lim nomini kiriting:");
+    if (name === null) return; // bekor qilindi
+
+    const trimmed = name.trim();
+    if (!trimmed) {
+        alert("❌ Bo'lim nomi bo'sh bo'lishi mumkin emas.");
+        return;
+    }
+
+    createChapter(trimmed);
+}
+
+async function createChapter(name) {
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/chapters`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || "Bo'lim yaratishda xatolik");
+            return;
+        }
+
+        // Bo'lim hozircha BO'SH — hech qanday mavzuga ega emas, shu sabab
+        // asosiy ro'yxatda ("box" sifatida) ko'rinmaydi (guruhlar FAQAT
+        // mavjud mavzulardan hisoblanadi). Shu sabab foydalanuvchini
+        // darhol ANIQ shu bo'limga mavzu qo'shish formasiga yo'naltiramiz
+        // — "bo'lim yaratildimi?" degan noaniqlik qolmaydi.
+        await loadCourse();
+        openAddSectionForm(data.id);
     } catch (err) {
         console.error(err);
         alert("Tarmoq xatoligi");
@@ -2847,7 +2898,12 @@ function expandManagePanel() {
 // saqlanmaydi — shunchaki qo'l qisqartirish).
 let lastLinkTopicChoice = null; // {scienceName, chapterName} | null
 
-async function openAddSectionForm() {
+// "forceChapterId" — bitta ANIQ Bo'limning "➕" (kartochka sarlavhasidagi)
+// ikonkasidan ochilganda beriladi: Bo'lim tanlash avtomatik ANIQ shu
+// bo'limga o'rnatiladi (Fan/bog'lash checkbox esa hamon lastLinkTopicChoice
+// bo'yicha — bular mustaqil narsalar). Argumentsiz chaqirilsa (tepadagi
+// umumiy "➕ Mavzu qo'shish" tugmasi) — avvalgidek.
+async function openAddSectionForm(forceChapterId) {
     document.getElementById("newSectionTextEditor").innerHTML = "";
     document.getElementById("newSectionTopicName").value = "";
     newTopicNameManuallyEdited = false;
@@ -2871,9 +2927,19 @@ async function openAddSectionForm() {
         onTopicLinkToggle("new");
         await populateChapterSelect("newSectionChapterSelect", null, "new");
     }
+
+    if (forceChapterId != null) {
+        // "id:<id>" — populateChapterSelect'da HAR BIR kurs Bo'limi
+        // (bo'sh bo'lganlari ham) shu formatda ro'yxatda bor, Fan
+        // tanlovidan qat'i nazar (courseChapters — kurs bo'yicha,
+        // Fan'ga bog'liq emas).
+        document.getElementById("newSectionChapterSelect").value = `id:${forceChapterId}`;
+    }
+
     onChapterSelectChange("new");
     document.getElementById("addSectionForm").style.display = "flex";
     document.getElementById("openAddSectionBtn").style.display = "none";
+    document.getElementById("addSectionForm").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 // Bo'lim select'i nomi bo'yicha tanlanadi ("id:"/"name:" qiymatlaridan

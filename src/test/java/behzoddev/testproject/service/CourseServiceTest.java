@@ -9,6 +9,7 @@ import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
+import behzoddev.testproject.dto.course.CourseChapterDto;
 import behzoddev.testproject.dto.course.CourseDetailDto;
 import behzoddev.testproject.dto.course.CourseDto;
 import behzoddev.testproject.dto.course.CourseSaveDto;
@@ -777,6 +778,57 @@ class CourseServiceTest {
         courseService.deleteChapter(1L, 10L, owner());
 
         org.mockito.Mockito.verify(courseChapterRepository).delete(chapter);
+    }
+
+    // ===== createChapter ("➕ Bo'lim qo'shish" — bo'sh bo'limni
+    // to'g'ridan-to'g'ri yaratish) =====
+
+    @Test
+    void createChapter_validName_savesWithNextOrderIndexAndReturnsDto() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter existingLast = CourseChapter.builder().id(9L).course(course).name("1-bob").orderIndex(3).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findByCourse_IdAndNameIgnoreCase(1L, "2-bob")).thenReturn(Optional.empty());
+        when(courseChapterRepository.findTopByCourse_IdOrderByOrderIndexDesc(1L)).thenReturn(Optional.of(existingLast));
+        when(courseChapterRepository.save(any(CourseChapter.class))).thenAnswer(inv -> {
+            CourseChapter c = inv.getArgument(0);
+            c.setId(10L);
+            return c;
+        });
+
+        CourseChapterDto result = courseService.createChapter(1L, "2-bob", owner());
+
+        assertThat(result.id()).isEqualTo(10L);
+        assertThat(result.name()).isEqualTo("2-bob");
+        assertThat(result.orderIndex()).isEqualTo(4);
+        assertThat(result.sectionCount()).isZero();
+    }
+
+    @Test
+    void createChapter_blankName_throws() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> courseService.createChapter(1L, "   ", owner()))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        org.mockito.Mockito.verify(courseChapterRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
+    void createChapter_duplicateName_throwsAndDoesNotSave() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter existing = CourseChapter.builder().id(9L).course(course).name("1-bob").orderIndex(1).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findByCourse_IdAndNameIgnoreCase(1L, "1-bob")).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> courseService.createChapter(1L, "1-bob", owner()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("allaqachon mavjud");
+
+        org.mockito.Mockito.verify(courseChapterRepository, org.mockito.Mockito.never()).save(any());
     }
 
     // ===== deleteChapterWithLinkedTopics =====

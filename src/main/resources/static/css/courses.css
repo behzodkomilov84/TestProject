@@ -917,12 +917,13 @@ body {
     display: none;
 }
 
-/* "➕ Bo'lim qo'shish" va "💳 Obunalarni boshqarish" tugmalari — endi
-   yuqoridagi 3 tasi bilan BIRGA, bitta gorizontal (siqiq) qatorda
-   (.manage-actions-row, flex-wrap) — avval alohida, to'liq kenglikdagi
-   "blok" tugmalar sifatida pastda joylashib, panelni keraksiz uzun qilib
-   qo'yardi. */
+/* "➕ Mavzu qo'shish"/"➕ Bo'lim qo'shish" va "💳 Obunalarni boshqarish"
+   tugmalari — endi yuqoridagi 3 tasi bilan BIRGA, bitta gorizontal (siqiq)
+   qatorda (.manage-actions-row, flex-wrap) — avval alohida, to'liq
+   kenglikdagi "blok" tugmalar sifatida pastda joylashib, panelni keraksiz
+   uzun qilib qo'yardi. */
 #openAddSectionBtn,
+#openAddChapterBtn,
 #manageSubscriptionsBtn {
     padding: 9px 16px;
     border: none;
@@ -939,12 +940,21 @@ body {
     box-shadow: 0 3px 10px rgba(22, 163, 74, 0.3);
 }
 
+/* "➕ Bo'lim qo'shish" — "➕ Mavzu qo'shish"ning yashil rangidan ATAYLAB
+   farqli (ko'zga chalinib, chalkashmasin — ikkovi qatorda yonma-yon
+   turadi), lekin bir xil "yaratish" ma'nosidagi issiq rang oilasidan. */
+#openAddChapterBtn {
+    background: linear-gradient(135deg, #d97706, #f59e0b);
+    box-shadow: 0 3px 10px rgba(217, 119, 6, 0.3);
+}
+
 #manageSubscriptionsBtn {
     background: linear-gradient(135deg, #7c3aed, #a855f7);
     box-shadow: 0 3px 10px rgba(124, 58, 237, 0.3);
 }
 
 #openAddSectionBtn:hover,
+#openAddChapterBtn:hover,
 #manageSubscriptionsBtn:hover {
     transform: translateY(-1px);
 }

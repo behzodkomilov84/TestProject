@@ -850,6 +850,38 @@ public class CourseService {
         return courseChapterRepository.findByCourseIdWithSectionCount(courseId);
     }
 
+    // "➕ Bo'lim qo'shish" (courseDetail.js) — avval Bo'lim FAQAT bitta
+    // mavzu qo'shish/tahrirlash payti ("➕ Yangi bo'lim yaratish..."
+    // varianti orqali) yaratilar edi. Endi to'g'ridan-to'g'ri, mavzusiz
+    // (bo'sh) yaratish ham mumkin — foydalanuvchi avval bo'lim tuzilmasini
+    // qurib, keyin har biriga alohida mavzu qo'shishni xohlaydi.
+    @Transactional
+    public CourseChapterDto createChapter(Long courseId, String name, User currentUser) {
+        Course course = getCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
+
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("❌ Bo'lim nomini kiriting.");
+        }
+        String trimmed = name.trim();
+
+        if (courseChapterRepository.findByCourse_IdAndNameIgnoreCase(courseId, trimmed).isPresent()) {
+            throw new IllegalArgumentException("❌ Bu nomli bo'lim allaqachon mavjud.");
+        }
+
+        int nextOrder = courseChapterRepository.findTopByCourse_IdOrderByOrderIndexDesc(courseId)
+                .map(c -> c.getOrderIndex() + 1)
+                .orElse(1);
+
+        CourseChapter chapter = courseChapterRepository.save(CourseChapter.builder()
+                .course(course)
+                .name(trimmed)
+                .orderIndex(nextOrder)
+                .build());
+
+        return new CourseChapterDto(chapter.getId(), chapter.getName(), chapter.getOrderIndex(), 0L);
+    }
+
     // Faqat BO'SH (hech qanday mavzuga biriktirilmagan) Bo'limni
     // o'chirishga ruxsat beradi — "🗑️" tugmasi (courseDetail.js, Bo'lim
     // tanlash select'i yonida). Foydali mavzular bilan band bo'lgan

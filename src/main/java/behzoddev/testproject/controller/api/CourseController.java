@@ -210,6 +210,17 @@ public class CourseController {
         return courseService.getChapters(courseId, user);
     }
 
+    // "➕ Bo'lim qo'shish" — "Kursni boshqarish" panelidagi tugma
+    // (courseDetail.js) — bo'sh (mavzusiz) Bo'limni to'g'ridan-to'g'ri
+    // yaratadi, avval faqat mavzu qo'shish/tahrirlash payti bilvosita
+    // yaratilardi.
+    @PostMapping("/{courseId}/chapters")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public CourseChapterDto createChapter(@PathVariable Long courseId, @RequestBody Map<String, String> body,
+                                           @AuthenticationPrincipal User user) {
+        return courseService.createChapter(courseId, body.get("name"), user);
+    }
+
     // Shu kursda hech qanday mavzuga biriktirilmagan BARCHA Bo'limlarni
     // bir yo'la o'chirish — "/{chapterId}" bilan chalkashmasligi uchun
     // aniq literal yo'l ("empty"), Spring bunday holatlarda literal

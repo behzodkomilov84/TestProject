@@ -43,6 +43,11 @@
                 <button onclick="togglePublish()" id="togglePublishBtn">—</button>
                 <button onclick="openEditCourseForm()">✏️ Tahrirlash</button>
                 <button id="openAddSectionBtn" onclick="openAddSectionForm()">➕ Mavzu qo'shish</button>
+                <!-- Bo'sh (mavzusiz) Bo'limni to'g'ridan-to'g'ri yaratadi
+                     (createChapterPrompt, courseDetail.js) — avval Bo'lim
+                     FAQAT mavzu qo'shish payti ("➕ Yangi bo'lim yaratish...")
+                     bilvosita yaratilardi. -->
+                <button id="openAddChapterBtn" onclick="createChapterPrompt()">➕ Bo'lim qo'shish</button>
                 <button id="manageSubscriptionsBtn" onclick="location.href='/courses/subscriptions?courseId=' + COURSE_ID">
                     💳 Obunalarni boshqarish
                 </button>
