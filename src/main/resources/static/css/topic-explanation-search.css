@@ -14,6 +14,11 @@
 
 .search-boxes-row .explanation-search-box {
     flex: 1 1 320px;
+    /* Bazaviy qoidadagi max-width:480px shu yerda BEKOR qilinadi — aks
+       holda ikkala quti chapga "yopishib", o'ngda katta bo'sh joy qolib
+       ketardi (haqiqiy foydalanuvchi shikoyati). Endi ikkovi qatorni
+       TENG bo'lib to'ldiradi. */
+    max-width: none;
     margin: 12px 0 0;
 }
 
