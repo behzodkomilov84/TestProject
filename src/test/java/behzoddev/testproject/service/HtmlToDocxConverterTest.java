@@ -143,6 +143,48 @@ class HtmlToDocxConverterTest {
         assertThat(table.getCTTbl().getTblGrid().sizeOfGridColArray()).isEqualTo(2);
     }
 
+    // Haqiqiy foydalanuvchi shikoyati: kurs matnida jadval sifatida
+    // ko'ringan kontent eksportda jadvaldan TASHQARIDA chiqib qolgan.
+    // Sabab — <td> ICHIDA <p> bor edi (masalan .docx import qilinganda —
+    // mammoth.js har bir katak kontentini ham <p> bilan o'raydi); oddiy
+    // inline render buni "bloklovchi" tag deb topib, katakning EMAS,
+    // HUJJATNING O'ZIGA yangi xatboshi qo'shib yuborardi.
+    @Test
+    void convert_tableCellWithParagraphWrapper_keepsTextInsideCell() {
+        XWPFDocument doc = new XWPFDocument();
+        HtmlToDocxConverter.convert(doc,
+                "<table><tr><td><p>Mezon</p></td><td><p>ISO 15189 (Tibbiy)</p></td></tr>"
+                        + "<tr><td><p>Asosiy diqqat markazi</p></td><td><p>Bemor xavfsizligi.</p></td></tr></table>",
+                CourseSectionContentFormat.HTML, tempDir.toString());
+
+        assertThat(doc.getTables()).hasSize(1);
+        XWPFTable table = doc.getTables().get(0);
+        assertThat(table.getRow(0).getCell(0).getText()).isEqualTo("Mezon");
+        assertThat(table.getRow(0).getCell(1).getText()).isEqualTo("ISO 15189 (Tibbiy)");
+        assertThat(table.getRow(1).getCell(0).getText()).isEqualTo("Asosiy diqqat markazi");
+        assertThat(table.getRow(1).getCell(1).getText()).isEqualTo("Bemor xavfsizligi.");
+
+        // Jadvaldan tashqarida (hujjat asosiy oqimida) shu matnlardan
+        // HECH biri qayta chiqmasligi kerak — faqat jadvaldan keyingi
+        // bo'sh xatboshi (renderTable oxiridagi ajratuvchi) qolishi mumkin.
+        List<String> bodyTexts = doc.getParagraphs().stream().map(XWPFParagraph::getText).filter(t -> !t.isBlank()).toList();
+        assertThat(bodyTexts).isEmpty();
+    }
+
+    // Xuddi shu turkumdagi bug — <li> ICHIDA <p> bo'lsa (masalan mammoth.js
+    // Word ro'yxatlarini shunday o'giradi), matn bullet qatoridan
+    // TASHQARIGA (hujjatning o'ziga, bo'lakcha belgisisiz) chiqib qolardi.
+    @Test
+    void convert_listItemWithParagraphWrapper_keepsTextOnBulletLine() {
+        XWPFDocument doc = new XWPFDocument();
+        HtmlToDocxConverter.convert(doc,
+                "<ul><li><p>Birinchi band</p></li><li><p>Ikkinchi band</p></li></ul>",
+                CourseSectionContentFormat.HTML, tempDir.toString());
+
+        List<String> texts = doc.getParagraphs().stream().map(XWPFParagraph::getText).toList();
+        assertThat(texts).containsExactly("• Birinchi band", "• Ikkinchi band");
+    }
+
     @Test
     void convert_standaloneImageAsBase64DataUri_embedsPicture() throws IOException {
         XWPFDocument doc = new XWPFDocument();

@@ -257,10 +257,27 @@ final class HtmlToDocxConverter {
                 if (child instanceof Element childEl && ("ul".equalsIgnoreCase(childEl.tagName()) || "ol".equalsIgnoreCase(childEl.tagName()))) {
                     renderList(doc, childEl, uploadDir, depth + 1, "ol".equalsIgnoreCase(childEl.tagName()));
                 } else {
-                    renderInlineNode(doc, p, child, uploadDir, InlineStyle.PLAIN);
+                    renderListItemInline(doc, p, child, uploadDir, InlineStyle.PLAIN);
                 }
             }
         }
+    }
+
+    // <li> matni ko'pincha <p>/<div> bilan o'ralgan bo'ladi (masalan
+    // mammoth.js .docx import qilganda). Oddiy renderInlineNode buni
+    // "bloklovchi" tag deb topib, doc.createParagraph() orqali HUJJATGA
+    // yangi (bullet'siz) xatboshi qo'shib yuborardi — ro'yxat qatori
+    // bo'sh, matn esa undan KEYIN, alohida qatorda chiqib qolardi. Shu
+    // sabab <p>/<div> shu yerda TEKISLANADI (farzandlari to'g'ridan-
+    // to'g'ri shu bitta bullet qatorining o'ziga yoziladi).
+    private static void renderListItemInline(XWPFDocument doc, XWPFParagraph p, Node node, String uploadDir, InlineStyle style) {
+        if (node instanceof Element el && ("p".equalsIgnoreCase(el.tagName()) || "div".equalsIgnoreCase(el.tagName()))) {
+            for (Node child : List.copyOf(el.childNodes())) {
+                renderListItemInline(doc, p, child, uploadDir, style);
+            }
+            return;
+        }
+        renderInlineNode(doc, p, node, uploadDir, style);
     }
 
     private static void renderTable(XWPFDocument doc, Element tableEl, String uploadDir) {
@@ -297,18 +314,44 @@ final class HtmlToDocxConverter {
             List<Element> cells = rows.get(r).select("> td, > th");
             for (int c = 0; c < colCount; c++) {
                 XWPFTableCell cell = row.getCell(c);
-                // POI har bir yangi katakka avtomatik bitta bo'sh xatboshi
-                // qo'yadi — o'sha xatboshining o'ziga yozamiz (ustma-ust
-                // bo'sh qatorlar hosil bo'lmasin deb).
-                XWPFParagraph p = cell.getParagraphs().get(0);
                 if (c < cells.size()) {
-                    renderInlineChildren(doc, p, cells.get(c), uploadDir, InlineStyle.PLAIN);
+                    renderTableCellContent(doc, cell, cells.get(c), uploadDir);
                 }
             }
         }
 
         // Jadvaldan keyin bo'sh xatboshi — matn jadvalga "yopishib" qolmasin deb.
         doc.createParagraph();
+    }
+
+    // <td>/<th> matni ko'pincha <p> bilan o'ralgan bo'ladi (masalan
+    // mammoth.js .docx import qilganda — har bir katak kontenti ham
+    // OOXML'da alohida abzats). Oddiy renderInlineChildren(doc, ...) buni
+    // "bloklovchi" tag deb topib, doc.createParagraph() orqali HUJJATNING
+    // O'ZIGA (katakning EMAS) yangi xatboshi qo'shib yuborardi — natijada
+    // katak matni JADVALDAN TASHQARIDA chiqib qolardi (haqiqiy
+    // foydalanuvchi shikoyati). Shu sabab har bir <p>/<div> farzand
+    // katakning O'Z alohida xatboshisiga (cell.addParagraph()) yoziladi.
+    private static void renderTableCellContent(XWPFDocument doc, XWPFTableCell cell, Element cellEl, String uploadDir) {
+        List<Element> blockChildren = cellEl.children().stream()
+                .filter(e -> "p".equalsIgnoreCase(e.tagName()) || "div".equalsIgnoreCase(e.tagName()))
+                .toList();
+
+        // POI har bir yangi katakka avtomatik bitta bo'sh xatboshi qo'yadi
+        // — birinchi paragraf uchun o'sha xatboshining o'zi ishlatiladi
+        // (ustma-ust bo'sh qatorlar hosil bo'lmasin deb).
+        if (blockChildren.isEmpty()) {
+            XWPFParagraph p = cell.getParagraphs().get(0);
+            renderInlineChildren(doc, p, cellEl, uploadDir, InlineStyle.PLAIN);
+            return;
+        }
+
+        boolean first = true;
+        for (Element block : blockChildren) {
+            XWPFParagraph p = first ? cell.getParagraphs().get(0) : cell.addParagraph();
+            first = false;
+            renderInlineChildren(doc, p, block, uploadDir, InlineStyle.PLAIN);
+        }
     }
 
     // ===================== Inline (qator ichi) darajasi =====================
