@@ -99,7 +99,7 @@ function onUserSearchInput() {
     }
 
     box.innerHTML = matches.map(u => `
-        <div class="user-suggestion-item" onclick="selectGrantUser(${u.id}, '${escapeHtml(u.username)}')">
+        <div class="user-suggestion-item" onclick="selectGrantUser(${u.id}, ${JSON.stringify(u.username).replace(/"/g, "&quot;")})">
             ${escapeHtml(u.username)}
             <span class="user-suggestion-roles">${(u.roles || []).map(r => r.replace("ROLE_", "")).join(", ")}</span>
         </div>
