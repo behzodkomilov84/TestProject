@@ -1260,8 +1260,19 @@ function applyFocusFromUrl(sectionId) {
 // Endi har bir chaqiruvchi (renderChapterBox) shu bo'lim ICHIDAGI o'rnini
 // (1'dan boshlab) alohida hisoblab beradi — berilmasa (masalan bo'limsiz
 // tekis ro'yxatda, renderFlatSections), eskicha s.orderIndex ishlatiladi.
-function renderSectionCard(s, globalIndexById, displayNumber) {
+// "groupBounds" — {isFirst, isLast}: shu karta o'z guruhi (guruhlangan
+// ko'rinishda — bo'lim, sahifalashdan qat'i nazar TO'LIQ bo'lim ro'yxati
+// bo'yicha; berilmasa — GLOBAL, butun kurs bo'yicha) ichida birinchi/oxirgi
+// o'rindami — ⬆️/⬇️ tugmalarini shunga qarab o'chiradi (disabled). Avval
+// har doim GLOBAL (butun kurs) chegara ishlatilardi — guruhlangan
+// ko'rinishda bu chalkash edi: masalan 2-bo'limning BIRINCHI mavzusi
+// "yuqoriga" tugmasi yoqilgan ko'rinardi (global birinchi emasligi uchun),
+// lekin bosilganda 1-bo'lim bilan chegarada hech qanday KO'RINADIGAN
+// o'zgarish bermасdi (haqiqiy foydalanuvchi shikoyati).
+function renderSectionCard(s, globalIndexById, displayNumber, groupBounds) {
     const i = globalIndexById.get(s.id);
+    const isFirstInGroup = groupBounds ? groupBounds.isFirst : (i === 0);
+    const isLastInGroup = groupBounds ? groupBounds.isLast : (i === allSections.length - 1);
     // "Tugallandi" (completed) holati endi RAQAMNI TO'SIB QO'YMAYDI — faqat
     // doiraning fonini yashilga o'zgartiradi, tartib raqamining o'zi doim
     // ko'rinib turadi (foydalanuvchi: "galochka tartib raqamini to'sib
@@ -1314,8 +1325,8 @@ function renderSectionCard(s, globalIndexById, displayNumber) {
     // event.stopPropagation() qo'yiladi.
     const manageActions = cachedCourse && cachedCourse.canManage
         ? `<div class="section-manage-actions" onclick="event.stopPropagation()">
-               <button onclick="moveSectionUp(${s.id})" title="Yuqoriga" ${i === 0 ? "disabled" : ""}>⬆️</button>
-               <button onclick="moveSectionDown(${s.id})" title="Pastga" ${i === allSections.length - 1 ? "disabled" : ""}>⬇️</button>
+               <button onclick="moveSectionUp(${s.id})" title="Yuqoriga" ${isFirstInGroup ? "disabled" : ""}>⬆️</button>
+               <button onclick="moveSectionDown(${s.id})" title="Pastga" ${isLastInGroup ? "disabled" : ""}>⬇️</button>
                <button onclick="openEditSectionForm(${s.id})" title="Tahrirlash">✏️</button>
                <button onclick="openSectionWordExportModal(${s.id}, ${JSON.stringify(s.title).replace(/"/g, "&quot;")})" title="Shu mavzuni Word (.docx) faylga eksport qilish"><svg width="14" height="14" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-2px;"><rect x="4" y="4" width="40" height="40" rx="7" fill="#185ABD"/><rect x="4" y="4" width="18" height="40" rx="7" fill="#103F91"/><text x="31" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">W</text></svg></button>
                <button onclick="deleteSection(${s.id})" title="O'chirish">🗑️</button>
@@ -1515,7 +1526,10 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
         const from = page * CHAPTER_SECTIONS_PER_PAGE;
         const pageItems = group.items.slice(from, from + CHAPTER_SECTIONS_PER_PAGE);
 
-        const cardsHtml = pageItems.map((s, idx) => renderSectionCard(s, globalIndexById, from + idx + 1)).join("");
+        const cardsHtml = pageItems.map((s, idx) => renderSectionCard(s, globalIndexById, from + idx + 1, {
+            isFirst: from + idx === 0,
+            isLast: from + idx === group.items.length - 1
+        })).join("");
         const paginationHtml = totalPages > 1
             ? buildPaginationHtml(totalPages, page, (p) => `changeChapterPage('${group.key}', ${p})`)
             : "";
