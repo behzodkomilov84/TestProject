@@ -58,9 +58,21 @@ final class DocxImageUtil {
 
     // 96 DPI'dagi standart piksel->EMU nisbati (Word/OOXML o'lchov birligi).
     private static final int EMU_PER_PIXEL = 9525;
-    // Sahifaga sig'ishi uchun eng katta kenglik (~3.8 dyuym) — bundan
-    // kattaroq rasmlar shu kenglikkacha (nisbatini saqlagan holda) kichraytiriladi.
+    // Savol/javob rasmlari uchun eng katta kenglik (~3.8 dyuym) — test
+    // varag'ida rasm butun sahifani egallab ketmasin deb ATAYLAB kichik
+    // (insertImageIfPresent — WordService/ExamVariantService/
+    // CourseWordExportService'ning TESTLAR qismi).
     private static final int MAX_WIDTH_EMU = 3_500_000;
+    // Kurs mavzusi matni ICHIDAGI (inline) rasm uchun — hujjatning HAQIQIY
+    // varag'i kengligi (Letter, standart 1 dyuymlik chetlar bilan: 8.5in -
+    // 2*1in = 6.5in). Bu yerdagi hujjatlarda (XWPFDocument()) sahifa
+    // o'lchami ANIQ belgilanmagan (Word o'zining standart sozlamasini
+    // qo'llaydi) — shu standart bilan BIR XIL songa moslashtirilgan.
+    // Foydalanuvchi ANIQ shikoyati: kursda (brauzerda) rasm butun eni
+    // bilan (konteynerga to'liq) chiqadi, lekin eksportda tor bo'lib
+    // qolardi — chunki avval BARCHA (o'lchami o'zgartirilmagan) rasmlar
+    // shu YUQORIDAGI kichik (~3.8in) chegaraga tushib qolardi.
+    private static final int PAGE_CONTENT_WIDTH_EMU = 5_943_600;
 
     private record ResolvedImage(byte[] bytes, int pictureType, String filenameHint) {
     }
@@ -88,7 +100,7 @@ final class DocxImageUtil {
         imagePara.setSpacingBefore(60);
         imagePara.setSpacingAfter(100);
         XWPFRun imageRun = imagePara.createRun();
-        addPicture(imageRun, resolved);
+        addPicture(imageRun, resolved, null, MAX_WIDTH_EMU);
     }
 
     /**
@@ -98,14 +110,20 @@ final class DocxImageUtil {
      * qo'lda o'lchami o'zgartirilgan bo'lsa (rich-img-wrap {@code <img
      * style="width:...px">}), o'sha kenglik ishlatiladi; {@code null}
      * bo'lsa — rasmning haqiqiy o'lchami (sahifa kengligiga qadar
-     * kichraytirilib). Muvaffaqiyatli qo'shilsa {@code true} qaytaradi.
+     * kichraytirilib). Ikkala holatda ham — kurs (brauzer) ko'rinishida
+     * rasm o'z konteyneri (sahifa) eniga qadar cho'zilishi mumkin, shu
+     * sabab bu yerda ANIQ sahifa kengligi (PAGE_CONTENT_WIDTH_EMU) chegara
+     * sifatida olinadi — savol/javob rasmlaridagi kichikroq chegara EMAS
+     * (aks holda kursda keng chiqqan rasm eksportda tor bo'lib qolardi —
+     * haqiqiy foydalanuvchi shikoyati). Muvaffaqiyatli qo'shilsa
+     * {@code true} qaytaradi.
      */
     static boolean insertInlinePicture(XWPFRun run, String uploadDir, String src, Integer overrideWidthPx) {
         ResolvedImage resolved = resolve(uploadDir, src);
         if (resolved == null) {
             return false;
         }
-        return addPicture(run, resolved, overrideWidthPx);
+        return addPicture(run, resolved, overrideWidthPx, PAGE_CONTENT_WIDTH_EMU);
     }
 
     private static ResolvedImage resolve(String uploadDir, String src) {
@@ -163,11 +181,7 @@ final class DocxImageUtil {
         }
     }
 
-    private static boolean addPicture(XWPFRun run, ResolvedImage resolved) {
-        return addPicture(run, resolved, null);
-    }
-
-    private static boolean addPicture(XWPFRun run, ResolvedImage resolved, Integer overrideWidthPx) {
+    private static boolean addPicture(XWPFRun run, ResolvedImage resolved, Integer overrideWidthPx, int maxWidthEmu) {
         try {
             BufferedImage image;
             try (ByteArrayInputStream probe = new ByteArrayInputStream(resolved.bytes())) {
@@ -180,8 +194,8 @@ final class DocxImageUtil {
 
             int naturalWidthEmu = image.getWidth() * EMU_PER_PIXEL;
             int widthEmu = overrideWidthPx != null
-                    ? Math.min(MAX_WIDTH_EMU, overrideWidthPx * EMU_PER_PIXEL)
-                    : Math.min(MAX_WIDTH_EMU, naturalWidthEmu);
+                    ? Math.min(maxWidthEmu, overrideWidthPx * EMU_PER_PIXEL)
+                    : Math.min(maxWidthEmu, naturalWidthEmu);
             int heightEmu = (int) ((long) widthEmu * image.getHeight() / image.getWidth());
 
             try (ByteArrayInputStream imgStream = new ByteArrayInputStream(resolved.bytes())) {
