@@ -2745,21 +2745,83 @@ function expandManagePanel() {
     }
 }
 
-function openAddSectionForm() {
+// Ketma-ket bir nechta mavzu qo'shilganda — odatda HAMMASI bir xil
+// Fan+Bo'limga bog'lanadi (masalan bitta imtihon bo'limining barcha
+// savollarini kiritish) — shu sabab har safar Fan/Bo'lim/bog'lash
+// checkbox'ini qaytadan qo'lda tanlash noqulay (foydalanuvchi shikoyati).
+// Oxirgi MUVAFFAQIYATLI qo'shilgan mavzuning tanlovi shu yerda eslab
+// qolinadi (submitAddSection) va KEYINGI "➕ Mavzu qo'shish" formasi
+// ochilganda standart sifatida qo'llaniladi (openAddSectionForm).
+// Sahifa yangilanguncha amal qiladi (sessiya davomida, backendga
+// saqlanmaydi — shunchaki qo'l qisqartirish).
+let lastLinkTopicChoice = null; // {scienceName, chapterName} | null
+
+async function openAddSectionForm() {
     document.getElementById("newSectionTextEditor").innerHTML = "";
     document.getElementById("newSectionTopicName").value = "";
     newTopicNameManuallyEdited = false;
     attachImageResizeHandlers("newSectionTextEditor");
-    // Default — shu kursning o'zi nomi (odatda kurs mavzusi = fan nomi) —
-    // checkbox belgilansa shu tayyor turadi, lekin checkbox o'zi
-    // boshlanishda O'CHIRILGAN (bog'lash ixtiyoriy, avtomatik emas).
-    applyScienceSelection("new", cachedCourse ? cachedCourse.title : "");
-    document.getElementById("newSectionLinkTopic").checked = false;
-    onTopicLinkToggle("new");
-    populateChapterSelect("newSectionChapterSelect", null, "new");
+
+    if (lastLinkTopicChoice) {
+        // Oxirgi marta tanlangan Fan+Bo'lim+bog'lash holati standart
+        // qilib qo'yiladi — foydalanuvchi ketma-ket mavzu qo'shsa, har
+        // safar qaytadan tanlashi shart emas.
+        applyScienceSelection("new", lastLinkTopicChoice.scienceName || (cachedCourse ? cachedCourse.title : ""));
+        document.getElementById("newSectionLinkTopic").checked = true;
+        onTopicLinkToggle("new");
+        await populateChapterSelect("newSectionChapterSelect", null, "new");
+        selectChapterOptionByName("newSectionChapterSelect", lastLinkTopicChoice.chapterName);
+    } else {
+        // Default — shu kursning o'zi nomi (odatda kurs mavzusi = fan
+        // nomi) — checkbox belgilansa shu tayyor turadi, lekin checkbox
+        // o'zi boshlanishda O'CHIRILGAN (bog'lash ixtiyoriy, avtomatik emas).
+        applyScienceSelection("new", cachedCourse ? cachedCourse.title : "");
+        document.getElementById("newSectionLinkTopic").checked = false;
+        onTopicLinkToggle("new");
+        await populateChapterSelect("newSectionChapterSelect", null, "new");
+    }
     onChapterSelectChange("new");
     document.getElementById("addSectionForm").style.display = "flex";
     document.getElementById("openAddSectionBtn").style.display = "none";
+}
+
+// Bo'lim select'i nomi bo'yicha tanlanadi ("id:"/"name:" qiymatlaridan
+// qat'i nazar — populateChapterSelect har safar qaytadan to'ldirilgani
+// uchun eski xom qiymat endi noto'g'ri bo'lishi mumkin, shu sabab NOM
+// orqali qidiriladi). Ro'yxatda topilmasa (masalan bo'lim orada
+// o'chirilgan bo'lsa) — "➕ Yangi bo'lim yaratish..." orqali xuddi shu
+// nom bilan xavfsiz qayta tiklanadi.
+function selectChapterOptionByName(selectId, name) {
+    if (!name) return;
+    const select = document.getElementById(selectId);
+    const normalized = name.trim().toLowerCase();
+
+    for (const opt of select.options) {
+        const optText = opt.textContent.replace(/\s*\(bo'sh\)\s*$/, "").trim().toLowerCase();
+        if (optText === normalized) {
+            select.value = opt.value;
+            return;
+        }
+    }
+
+    select.value = NEW_CHAPTER_OPTION;
+    const newInput = document.getElementById(selectId.replace("Select", "NewInput"));
+    if (newInput) newInput.value = name;
+}
+
+// Hozir formada tanlangan Bo'limning NOMINI qaytaradi (id/name qiymatidan
+// qat'i nazar) — lastLinkTopicChoice'ga saqlash uchun (submitAddSection).
+function currentChapterSelectionName(mode) {
+    const select = document.getElementById(mode + "SectionChapterSelect");
+    const value = select.value;
+
+    if (value === NEW_CHAPTER_OPTION) {
+        return document.getElementById(mode + "SectionChapterNewInput").value.trim() || null;
+    }
+    if (!value) return null;
+
+    const text = select.selectedOptions[0] ? select.selectedOptions[0].textContent : "";
+    return text.replace(/\s*\(bo'sh\)\s*$/, "").trim() || null;
 }
 
 function closeAddSectionForm() {
@@ -2888,6 +2950,13 @@ async function submitAddSection() {
             alert(data.error || "Mavzu qo'shishda xatolik");
             return;
         }
+
+        // Keyingi "➕ Mavzu qo'shish" uchun standart sifatida eslab qolinadi
+        // (openAddSectionForm) — pastdagi tozalashdan OLDIN, hali forma
+        // qiymatlari qo'lda o'chirilmagan holatda.
+        lastLinkTopicChoice = linkTopic
+            ? { scienceName: getSelectedScienceName("new"), chapterName: currentChapterSelectionName("new") }
+            : null;
 
         document.getElementById("newSectionTitle").value = "";
         document.getElementById("newSectionTextEditor").innerHTML = "";
