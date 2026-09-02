@@ -2782,11 +2782,11 @@ function openEditCourseForm() {
         preview.style.display = "none";
     }
 
-    document.getElementById("editCourseForm").style.display = "flex";
+    document.getElementById("editCourseForm").classList.add("show");
 }
 
 function closeEditCourseForm() {
-    document.getElementById("editCourseForm").style.display = "none";
+    document.getElementById("editCourseForm").classList.remove("show");
 }
 
 // "🆓 Bepul kurs" belgilansa — narx maydoni keraksiz, yashiriladi.

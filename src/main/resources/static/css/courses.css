@@ -254,14 +254,15 @@ body {
     margin-bottom: 20px;
 }
 
-/* "➕ Mavzu qo'shish" — endi modal (#addSectionForm.modal-overlay ichida).
-   ".section-form"ning o'zi (fon/padding/gap) shu bilan birga qo'llanadi —
+/* "➕ Mavzu qo'shish" / "✏️ Kursni tahrirlash" — endi modal
+   (#addSectionForm/#editCourseForm, .modal-overlay ichida). ".section-form"/
+   ".course-form"ning o'zi (fon/padding/gap) shu bilan birga qo'llanadi —
    bu yerda faqat modal ichida markazlashtirish/o'lcham/scroll/animatsiya
-   uchun qo'shimcha. Boshqa modallar (.word-export-modal) bilan bir xil
-   uslub — faqat kenglik kattaroq (forma rich-text-editor/toolbar bilan
-   ancha katta). */
-.section-form-modal {
-    width: min(760px, 95vw);
+   uchun qo'shimcha. Kenglik — A4 varag'i eni (210mm ≈ 794px, 96dpi) —
+   foydalanuvchi ANIQ shuni so'ragan ("eni A4 razmerida bo'lsin"). */
+.section-form-modal,
+.course-form-modal {
+    width: min(794px, 95vw);
     max-height: 90vh;
     overflow-y: auto;
     margin: 0;

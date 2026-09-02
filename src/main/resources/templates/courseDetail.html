@@ -101,7 +101,10 @@
                 <div id="topicLinkAuditList"></div>
             </div>
 
-        <div id="editCourseForm" class="course-form" style="display:none;">
+        <!-- "✏️ Tahrirlash" (kursning o'zi) — modal (overlay) sifatida
+             ochiladi, "➕ Mavzu qo'shish" bilan bir xil andoza. -->
+        <div id="editCourseForm" class="modal-overlay">
+        <div class="course-form course-form-modal">
             <label class="field-label" for="editCourseTitle">Kurs nomi</label>
             <input type="text" id="editCourseTitle" placeholder="Kurs nomi">
 
@@ -125,6 +128,7 @@
                 <button onclick="submitEditCourse()">✅ Saqlash</button>
                 <button onclick="closeEditCourseForm()">Bekor qilish</button>
             </div>
+        </div>
         </div>
 
         <!-- "➕ Mavzu qo'shish" — modal (overlay) sifatida ochiladi
