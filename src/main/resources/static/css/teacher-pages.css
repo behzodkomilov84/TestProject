@@ -332,6 +332,14 @@ body {
     margin-bottom: 6px;
 }
 
+/* Hali taklifni qabul qilmagan (PENDING) o'quvchi — checkbox'i
+   "disabled" (teacher-assign.js), shu holatni ko'zga ko'rsatish uchun. */
+.teacher-student-disabled {
+    opacity: .55;
+    cursor: not-allowed;
+    background: #f8fafc;
+}
+
 .teacher-student-name {
     flex: 1;
     min-width: 0;

@@ -14,7 +14,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("dueDate").addEventListener("input", updateAssignButtonState);
 
     document.getElementById("selectAllStudents").addEventListener("change", e => {
-        document.querySelectorAll(".student-checkbox").forEach(cb => cb.checked = e.target.checked);
+        // ":not(:disabled)" — PENDING (hali qabul qilmagan) o'quvchilar
+        // "Hammasini belgilash" bilan ham belgilanib qolmasin.
+        document.querySelectorAll(".student-checkbox:not(:disabled)").forEach(cb => cb.checked = e.target.checked);
         updateAssignButtonState();
     });
 
@@ -79,13 +81,23 @@ async function loadGroupStudents(groupId) {
             return;
         }
 
-        list.innerHTML = students.map(s => `
-            <label class="teacher-student-card">
-                <input type="checkbox" class="student-checkbox" data-id="${s.pupilId}">
+        // FAQAT taklifni QABUL QILGAN (ACCEPTED) o'quvchilarga topshiriq
+        // berish mumkin — backend shuni tekshiradi (TeacherGroup.pupils —
+        // faqat qabul qilinganda GroupMember yaratiladi). Avval PENDING
+        // o'quvchi ham belgilanardi, "Topshiriq berish" bosilgandagina
+        // (oxirida) inglizcha "Some students not in this group" xatosi
+        // chiqardi — endi PENDING o'quvchi checkbox'i boshidanoq
+        // belgilanmaydigan (disabled), tushunarli izoh bilan.
+        list.innerHTML = students.map(s => {
+            const isAccepted = s.status === "ACCEPTED";
+            return `
+            <label class="teacher-student-card ${isAccepted ? "" : "teacher-student-disabled"}"
+                   title="${isAccepted ? "" : "Bu o'quvchi hali taklifni qabul qilmagan — topshiriq berib bo'lmaydi"}">
+                <input type="checkbox" class="student-checkbox" data-id="${s.pupilId}" ${isAccepted ? "" : "disabled"}>
                 <span class="teacher-student-name">${escapeHtml(s.username)}</span>
-                <span class="teacher-member-status ${s.status === "ACCEPTED" ? "accepted" : "pending"}">${s.status}</span>
-            </label>
-        `).join("");
+                <span class="teacher-member-status ${isAccepted ? "accepted" : "pending"}">${s.status}</span>
+            </label>`;
+        }).join("");
         updateAssignButtonState();
     } catch (err) {
         console.error("O'quvchilarni yuklashda xatolik:", err);
