@@ -10,6 +10,7 @@ import org.apache.poi.xwpf.usermodel.XWPFRun;
 import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.apache.poi.xwpf.usermodel.XWPFTableCell;
 import org.apache.poi.xwpf.usermodel.XWPFTableRow;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTTblGrid;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -276,6 +277,20 @@ final class HtmlToDocxConverter {
 
         XWPFTable table = doc.createTable(rows.size(), colCount);
         table.setTableAlignment(TableRowAlign.CENTER);
+
+        // MUHIM: POI createTable() "<w:tblGrid>"ni O'ZI YOZMAYDI — bu esa
+        // OOXML sxemasida "<w:tbl>"ning MAJBURIY farzandi. Uning yo'qligi
+        // POI'ning o'z XWPFDocument o'qishida sezilmaydi (o'zi yozgan
+        // faylni "yumshoq" qayta o'qiydi), lekin BOSHQA har qanday qattiq
+        // (standartga rioya qiluvchi) o'quvchi — Microsoft Word, LibreOffice,
+        // python-docx va h.k. — buni BUZILGAN fayl deb rad etadi (haqiqiy
+        // topilgan bug: python-docx bilan qo'lda tekshirilganda "required
+        // <w:tblGrid> child element not present" xatosi bilan aniqlangan).
+        CTTblGrid grid = table.getCTTbl().addNewTblGrid();
+        int colWidthTwips = Math.max(600, 9000 / colCount);
+        for (int c = 0; c < colCount; c++) {
+            grid.addNewGridCol().setW(java.math.BigInteger.valueOf(colWidthTwips));
+        }
 
         for (int r = 0; r < rows.size(); r++) {
             XWPFTableRow row = table.getRow(r);

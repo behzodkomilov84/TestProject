@@ -130,6 +130,17 @@ class HtmlToDocxConverterTest {
         assertThat(table.getRow(0).getCell(1).getText()).isEqualTo("B1");
         assertThat(table.getRow(1).getCell(0).getText()).isEqualTo("A2");
         assertThat(table.getRow(1).getCell(1).getText()).isEqualTo("B2");
+
+        // Haqiqiy topilgan bug (python-docx bilan qo'lda tekshirilganda
+        // aniqlangan — POI createTable() "<w:tblGrid>"ni O'ZI YOZMAYDI,
+        // garchi OOXML sxemasida bu "<w:tbl>"ning MAJBURIY farzandi
+        // bo'lsa ham): uning yo'qligi POI'ning o'z XWPFDocument o'qishida
+        // sezilmaydi, lekin Microsoft Word/LibreOffice/python-docx kabi
+        // qattiq (sxemaga rioya qiluvchi) o'quvchilar faylni BUZILGAN deb
+        // rad etadi. renderTable() shu sabab tblGrid'ni QO'LDA qo'shadi —
+        // shu tekshiruv buni ANIQ tasdiqlaydi.
+        assertThat(table.getCTTbl().getTblGrid()).isNotNull();
+        assertThat(table.getCTTbl().getTblGrid().sizeOfGridColArray()).isEqualTo(2);
     }
 
     @Test
