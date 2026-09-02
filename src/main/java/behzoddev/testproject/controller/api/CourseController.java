@@ -145,6 +145,31 @@ public class CourseController {
                 .body(file.data());
     }
 
+    // "📝 Bo'limni Word'ga eksport qilish" — yuqoridagi exportCourseToWord
+    // bilan bir xil, farqi: BUTUN kurs emas, FAQAT shu bitta Bo'lim
+    // (CourseChapter) mavzulari bitta .docx faylga eksport qilinadi.
+    @GetMapping("/{courseId}/chapters/{chapterId}/export/word")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public ResponseEntity<byte[]> exportChapterToWord(
+            @PathVariable Long courseId,
+            @PathVariable Long chapterId,
+            @RequestParam(defaultValue = "true") boolean includeContent,
+            @RequestParam(defaultValue = "true") boolean includeTests,
+            @RequestParam(defaultValue = "true") boolean includeAnswers,
+            @AuthenticationPrincipal User user
+    ) {
+        ExportedFileDto file = courseWordExportService.exportChapter(courseId, chapterId, includeContent, includeTests, includeAnswers, user);
+
+        ContentDisposition disposition = ContentDisposition.attachment()
+                .filename(file.filenameBase() + ".docx", StandardCharsets.UTF_8)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+                .body(file.data());
+    }
+
     // Bo'lim (CourseChapter) nomini o'zgartirish — CourseChapter BITTA
     // umumiy yozuv bo'lgani uchun, shu bir chaqiruv bilan unga biriktirilgan
     // BARCHA mavzularda nom avtomatik yangilanadi (mavzularni birma-bir

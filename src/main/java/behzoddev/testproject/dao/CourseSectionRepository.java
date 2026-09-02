@@ -73,6 +73,10 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     @Query("select cs from CourseSection cs where cs.chapter.id = :chapterId and cs.linkedTopic is not null and cs.deletedAt is null")
     List<CourseSection> findByChapter_IdAndLinkedTopicIsNotNull(@Param("chapterId") Long chapterId);
 
+    // "📝 Bo'limni Word'ga eksport qilish" (CourseWordExportService) —
+    // shu Bo'lim ICHIDAGI mavzular, tartib bo'yicha.
+    List<CourseSection> findByChapter_IdOrderByOrderIndexAsc(@Param("chapterId") Long chapterId);
+
     // Bo'sh (hech qanday mavzuga biriktirilmagan) Bo'limni o'chirish
     // xavfsizligini tekshirish uchun (CourseService.deleteChapter).
     @Query("select case when count(cs) > 0 then true else false end from CourseSection cs where cs.chapter.id = :chapterId and cs.deletedAt is null")

@@ -1471,6 +1471,12 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
         ? `<button class="chapter-rename-btn danger-btn" onclick="deleteChapterWithLinkedTopics(${group.chapterId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Bo'lim va ichidagi barcha mavzularni (bog'langan bo'lsa, TEST BOSHQARUVIdagi savollari bilan) butunlay o'chirish">🗑️</button>`
         : "";
 
+    // "📝" — faqat SHU Bo'limni Word'ga eksport qilish (courseWordExportModal
+    // — butun kurs eksporti bilan bir xil oyna, faqat ko'lami boshqacha).
+    const exportChapterBtn = (group.chapterId != null)
+        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openCourseWordExportModal(${group.chapterId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Shu bo'limni Word (.docx) faylga eksport qilish">📝</button>`
+        : "";
+
     // "⬆⬇" — shu Bo'lim "box"ini boshqa Bo'lim bilan o'rin almashtiradi
     // (moveChapter) — faqat haqiqiy Bo'limlarda (group.chapterId != null)
     // va kamida 2 ta Bo'lim bo'lganda ko'rinadi. Ro'yxat cheti — tegishli
@@ -1500,7 +1506,7 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
 
     return `
         <div class="chapter-box">
-            <h3 class="chapter-box-title">📂 ${escapeHtml(group.name)} <span class="chapter-box-count">(mavzu — ${group.items.length} ta, jami testlar — ${totalQuestions} ta)</span><span class="chapter-box-actions">${moveBtns}${renameBtn}${deleteWithTopicsBtn}</span></h3>
+            <h3 class="chapter-box-title">📂 ${escapeHtml(group.name)} <span class="chapter-box-count">(mavzu — ${group.items.length} ta, jami testlar — ${totalQuestions} ta)</span><span class="chapter-box-actions">${moveBtns}${exportChapterBtn}${renameBtn}${deleteWithTopicsBtn}</span></h3>
             ${sortBar}
             <div class="sections-grid">${cardsHtml}</div>
             ${paginationHtml ? `<div class="sections-pagination chapter-box-pagination">${paginationHtml}</div>` : ""}
@@ -2186,7 +2192,21 @@ async function syncChapterTopics() {
 //     yoqilgan).
 // ========================================================================
 
-function openCourseWordExportModal() {
+// Bitta modal — BUTUN kurs ("📝 Kursni Word'ga eksport qilish" tugmasi) va
+// ALOHIDA bo'lim ("📝" — renderChapterBox) ikkalasi ham shu modaldan
+// foydalanadi. Qaysi ko'lamda ekanini shu 2 ta o'zgaruvchi eslab qoladi
+// (confirmCourseWordExport shu bo'yicha to'g'ri URL yasaydi).
+let wordExportChapterId = null;
+let wordExportChapterName = "";
+
+function openCourseWordExportModal(chapterId, chapterName) {
+    wordExportChapterId = chapterId != null ? chapterId : null;
+    wordExportChapterName = chapterName || "";
+
+    document.getElementById("courseWordExportModalTitle").textContent = wordExportChapterId != null
+        ? `📝 "${wordExportChapterName}" bo'limini Word'ga eksport qilish`
+        : "📝 Kursni Word'ga eksport qilish";
+
     document.getElementById("courseExportContent").checked = true;
     document.getElementById("courseExportTests").checked = true;
 
@@ -2221,7 +2241,10 @@ function confirmCourseWordExport() {
     const includeAnswers = document.getElementById("courseExportAnswers").checked;
 
     const params = new URLSearchParams({ includeContent, includeTests, includeAnswers });
-    window.location.href = `/api/courses/${COURSE_ID}/export/word?${params.toString()}`;
+    const url = wordExportChapterId != null
+        ? `/api/courses/${COURSE_ID}/chapters/${wordExportChapterId}/export/word?${params.toString()}`
+        : `/api/courses/${COURSE_ID}/export/word?${params.toString()}`;
+    window.location.href = url;
     closeCourseWordExportModal();
 }
 

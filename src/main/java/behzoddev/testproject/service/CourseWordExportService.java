@@ -1,5 +1,6 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.CourseChapterRepository;
 import behzoddev.testproject.dao.CourseSectionRepository;
 import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dto.export.ExportedFileDto;
@@ -19,17 +20,28 @@ import org.apache.poi.xwpf.usermodel.UnderlinePatterns;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFParagraph;
 import org.apache.poi.xwpf.usermodel.XWPFRun;
+import org.apache.poi.xwpf.usermodel.XWPFStyle;
+import org.apache.poi.xwpf.usermodel.XWPFStyles;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTDecimalNumber;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTHpsMeasure;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTPPrGeneral;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTRPr;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTString;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.CTStyle;
+import org.openxmlformats.schemas.wordprocessingml.x2006.main.STStyleType;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 // "📝 Kursni Word'ga eksport qilish" (courseDetail.js) — BUTUN kursni
 // bitta .docx faylga yig'adi, 3 ta mustaqil qism (checkbox orqali
@@ -54,8 +66,19 @@ public class CourseWordExportService {
 
     private static final String[] ANSWER_LETTERS = {"A", "B", "C", "D", "E"};
 
+    // FAQAT "KURS" qismidagi mavzu nomlariga ("N. Mavzu nomi") qo'yiladigan
+    // HAQIQIY Word uslubi ID'si — shu tufayli Word'ning "Navigatsiya" paneli
+    // (Ko'rinish > Navigatsiya paneli) va "Mundarija"da har bir mavzu
+    // ro'yxatda chiqadi, material katta bo'lsa mavzuni topish oson bo'ladi.
+    // Bo'lim sarlavhalari, "TESTLAR"/"JAVOBLAR" va testlar/javoblar
+    // qismidagi mavzu nomlari ATAYLAB shu uslubda emas (foydalanuvchi aniq
+    // so'ragan — aks holda Navigatsiya har bir mavzuni 3 marta ko'rsatib,
+    // chalkash bo'lib qolardi).
+    private static final String TOPIC_HEADING_STYLE_ID = "Heading1";
+
     private final CourseService courseService;
     private final CourseSectionRepository courseSectionRepository;
+    private final CourseChapterRepository courseChapterRepository;
     private final QuestionRepository questionRepository;
 
     // Savol/javob va kurs matni ichidagi (diskdagi) rasmlarni o'qish uchun
@@ -82,6 +105,28 @@ public class CourseWordExportService {
 
         byte[] data = buildDocument(course.getTitle(), groups, includeContent, includeTests, includeAnswers);
         return new ExportedFileDto(data, ExportFilenameUtil.sanitize(course.getTitle()));
+    }
+
+    // "📝 Bo'limni Word'ga eksport qilish" — courseDetail.js'dagi HAR BIR
+    // Bo'lim (CourseChapter) kartochkasida ham xuddi shu 3-checkbox modal —
+    // farqi shu: BUTUN kurs emas, FAQAT shu bitta Bo'limning mavzulari
+    // eksport qilinadi. buildDocument()ning o'zi o'zgarmaydi — faqat BITTA
+    // elementli ChapterGroup ro'yxati beriladi, chunki ichkarida u ALLAQACHON
+    // Bo'lim bo'yicha guruhlab yozadi.
+    @Transactional(readOnly = true)
+    public ExportedFileDto exportChapter(Long courseId, Long chapterId, boolean includeContent, boolean includeTests,
+                                          boolean includeAnswers, User currentUser) {
+        courseService.requireManageableCourse(courseId, currentUser);
+
+        CourseChapter chapter = courseChapterRepository.findById(chapterId)
+                .filter(c -> c.getCourse().getId().equals(courseId))
+                .orElseThrow(() -> new NoSuchElementException("Bo'lim topilmadi"));
+
+        List<CourseSection> sections = courseSectionRepository.findByChapter_IdOrderByOrderIndexAsc(chapterId);
+        List<ChapterGroup> groups = List.of(new ChapterGroup(chapter, sections));
+
+        byte[] data = buildDocument(chapter.getName(), groups, includeContent, includeTests, includeAnswers);
+        return new ExportedFileDto(data, ExportFilenameUtil.sanitize(chapter.getName()));
     }
 
     private List<ChapterGroup> groupByChapter(List<CourseSection> sections) {
@@ -182,6 +227,62 @@ public class CourseWordExportService {
         run.setFontSize(13);
     }
 
+    // "KURS" qismidagi mavzu sarlavhasi — writeTopicSubheading bilan bir xil
+    // ko'rinish (qalin, 13pt), farqi: paragrafga haqiqiy "Heading1" uslubi
+    // ham qo'yiladi — Word Navigatsiya panelida/Mundarijada ko'rinishi uchun.
+    private void writeTopicHeading(XWPFDocument doc, String text) {
+        ensureTopicHeadingStyleRegistered(doc);
+
+        XWPFParagraph p = doc.createParagraph();
+        p.setStyle(TOPIC_HEADING_STYLE_ID);
+        p.setSpacingBefore(160);
+        p.setSpacingAfter(80);
+        XWPFRun run = p.createRun();
+        run.setText(text);
+        run.setBold(true);
+        run.setFontSize(13);
+    }
+
+    // Bitta mavzu (matn/video/rasm/jadval) tugab, keyingisi boshlanishidan
+    // oldin ko'zga tashlanadigan bo'shliq — foydalanuvchi aniq so'ragan
+    // ("orasiga 2-3 bo'sh qator qo'yiб ketish kerak").
+    private void writeTopicSpacer(XWPFDocument doc) {
+        doc.createParagraph();
+        doc.createParagraph();
+    }
+
+    // Yangi XWPFDocument'da styles.xml umuman bo'lmaydi — shu sabab
+    // "Heading1" uslubini (nomi, outline darajasi 0 — Navigatsiya/Mundarija
+    // shuni ANIQ shu orqali taniydi) hujjatga bir marta, qo'lda ro'yxatdan
+    // o'tkazish kerak.
+    private void ensureTopicHeadingStyleRegistered(XWPFDocument doc) {
+        XWPFStyles styles = doc.getStyles();
+        if (styles == null) {
+            styles = doc.createStyles();
+        }
+        if (styles.styleExist(TOPIC_HEADING_STYLE_ID)) {
+            return;
+        }
+
+        CTStyle ctStyle = CTStyle.Factory.newInstance();
+        ctStyle.setStyleId(TOPIC_HEADING_STYLE_ID);
+        ctStyle.setType(STStyleType.PARAGRAPH);
+
+        CTString name = ctStyle.addNewName();
+        name.setVal("heading 1");
+
+        CTPPrGeneral ppr = ctStyle.addNewPPr();
+        CTDecimalNumber outlineLvl = ppr.addNewOutlineLvl();
+        outlineLvl.setVal(BigInteger.ZERO);
+
+        CTRPr rpr = ctStyle.addNewRPr();
+        rpr.addNewB().setVal(Boolean.TRUE);
+        CTHpsMeasure sz = rpr.addNewSz();
+        sz.setVal(BigInteger.valueOf(26));
+
+        styles.addStyle(new XWPFStyle(ctStyle));
+    }
+
     // ===================== 1) KURS =====================
 
     private void writeContentSection(XWPFDocument doc, List<ChapterGroup> groups) {
@@ -195,7 +296,7 @@ public class CourseWordExportService {
 
             int number = 1;
             for (CourseSection s : group.items()) {
-                writeTopicSubheading(doc, number++ + ". " + s.getTitle());
+                writeTopicHeading(doc, number++ + ". " + s.getTitle());
 
                 if (s.getType() == CourseSectionType.VIDEO || s.getType() == CourseSectionType.MIXED) {
                     writeVideoNote(doc, s);
@@ -203,6 +304,8 @@ public class CourseWordExportService {
                 if (s.getType() == CourseSectionType.TEXT || s.getType() == CourseSectionType.MIXED) {
                     HtmlToDocxConverter.convert(doc, s.getTextContent(), s.getTextContentFormat(), uploadDir);
                 }
+
+                writeTopicSpacer(doc);
             }
         }
     }

@@ -1,5 +1,6 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.CourseChapterRepository;
 import behzoddev.testproject.dao.CourseSectionRepository;
 import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dto.export.ExportedFileDto;
@@ -43,10 +44,12 @@ class CourseWordExportServiceTest {
     @Mock
     private CourseSectionRepository courseSectionRepository;
     @Mock
+    private CourseChapterRepository courseChapterRepository;
+    @Mock
     private QuestionRepository questionRepository;
 
     private CourseWordExportService service() {
-        CourseWordExportService s = new CourseWordExportService(courseService, courseSectionRepository, questionRepository);
+        CourseWordExportService s = new CourseWordExportService(courseService, courseSectionRepository, courseChapterRepository, questionRepository);
         ReflectionTestUtils.setField(s, "uploadDir", "uploads");
         ReflectionTestUtils.setField(s, "publicBaseUrl", "https://study-grow.uz");
         return s;
@@ -170,5 +173,111 @@ class CourseWordExportServiceTest {
         // Javoblar bo'limida — "1. B" (savol raqami + to'g'ri harf), lekin
         // TESTLAR bo'limidagi savol matnining o'zida hech qanday belgi yo'q.
         assertThat(texts).contains("1. B");
+    }
+
+    // "KURS" qismidagi mavzu sarlavhalariga ("N. Mavzu") HAQIQIY Word
+    // "Heading1" uslubi qo'yilishi kerak (Navigatsiya panel/Mundarija) —
+    // lekin Bo'lim sarlavhasiga ("Bo'lim: ...") EMAS, foydalanuvchi aniq
+    // shu farqni so'ragan.
+    @Test
+    void exportCourse_topicHeadingUsesHeadingStyle_butChapterHeadingDoesNot() throws IOException {
+        User owner = owner();
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner).build();
+        CourseChapter chapter = CourseChapter.builder().id(10L).course(course).name("1-bob").orderIndex(1).build();
+        CourseSection section = CourseSection.builder().id(100L).course(course).chapter(chapter)
+                .title("Kirish darsi").orderIndex(1).type(CourseSectionType.TEXT)
+                .textContent("matn").textContentFormat(CourseSectionContentFormat.PLAIN)
+                .build();
+
+        when(courseService.requireManageableCourse(1L, owner)).thenReturn(course);
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(section));
+
+        CourseWordExportService service = service();
+        ExportedFileDto result = service.exportCourse(1L, true, false, false, owner);
+
+        try (XWPFDocument doc = new XWPFDocument(new ByteArrayInputStream(result.data()))) {
+            XWPFParagraph topicHeading = doc.getParagraphs().stream()
+                    .filter(p -> p.getText().trim().equals("1. Kirish darsi"))
+                    .findFirst().orElseThrow();
+            assertThat(topicHeading.getStyle()).isEqualTo("Heading1");
+
+            XWPFParagraph chapterHeading = doc.getParagraphs().stream()
+                    .filter(p -> p.getText().trim().equals("Bo'lim: 1-bob"))
+                    .findFirst().orElseThrow();
+            assertThat(chapterHeading.getStyle()).isNull();
+        }
+    }
+
+    // Mavzu matni tugab, keyingi mavzu boshlanishidan oldin ko'zga
+    // tashlanadigan bo'sh joy bo'lishi kerak (foydalanuvchi so'rovi).
+    @Test
+    void exportCourse_betweenTwoTopics_hasBlankSpacerParagraphs() throws IOException {
+        User owner = owner();
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner).build();
+        CourseChapter chapter = CourseChapter.builder().id(10L).course(course).name("1-bob").orderIndex(1).build();
+        CourseSection s1 = CourseSection.builder().id(100L).course(course).chapter(chapter)
+                .title("Birinchi").orderIndex(1).type(CourseSectionType.TEXT)
+                .textContent("matn1").textContentFormat(CourseSectionContentFormat.PLAIN).build();
+        CourseSection s2 = CourseSection.builder().id(101L).course(course).chapter(chapter)
+                .title("Ikkinchi").orderIndex(2).type(CourseSectionType.TEXT)
+                .textContent("matn2").textContentFormat(CourseSectionContentFormat.PLAIN).build();
+
+        when(courseService.requireManageableCourse(1L, owner)).thenReturn(course);
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(s1, s2));
+
+        CourseWordExportService service = service();
+        ExportedFileDto result = service.exportCourse(1L, true, false, false, owner);
+
+        try (XWPFDocument doc = new XWPFDocument(new ByteArrayInputStream(result.data()))) {
+            List<String> texts = doc.getParagraphs().stream().map(p -> p.getText().trim()).toList();
+            int firstTopicContentIdx = texts.indexOf("matn1");
+            int secondTopicHeadingIdx = texts.indexOf("2. Ikkinchi");
+
+            assertThat(firstTopicContentIdx).isGreaterThanOrEqualTo(0);
+            assertThat(secondTopicHeadingIdx).isGreaterThan(firstTopicContentIdx);
+            // Orada kamida 2 ta bo'sh paragraf bo'lishi kerak.
+            List<String> between = texts.subList(firstTopicContentIdx + 1, secondTopicHeadingIdx);
+            assertThat(between).filteredOn(String::isEmpty).hasSizeGreaterThanOrEqualTo(2);
+        }
+    }
+
+    // "📝 Bo'limni Word'ga eksport qilish" — FAQAT shu bitta bo'limning
+    // mavzulari yoziladi, boshqa bo'limlar (yoki bo'limsiz mavzular) YO'Q.
+    @Test
+    void exportChapter_writesOnlyThatChapterAndUsesChapterNameAsFilename() throws IOException {
+        User owner = owner();
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner).build();
+        CourseChapter chapter = CourseChapter.builder().id(10L).course(course).name("2-bob").orderIndex(2).build();
+        CourseSection section = CourseSection.builder().id(100L).course(course).chapter(chapter)
+                .title("Shu bo'lim darsi").orderIndex(1).type(CourseSectionType.TEXT)
+                .textContent("shu bo'lim matni").textContentFormat(CourseSectionContentFormat.PLAIN)
+                .build();
+
+        when(courseService.requireManageableCourse(1L, owner)).thenReturn(course);
+        when(courseChapterRepository.findById(10L)).thenReturn(java.util.Optional.of(chapter));
+        when(courseSectionRepository.findByChapter_IdOrderByOrderIndexAsc(10L)).thenReturn(List.of(section));
+
+        CourseWordExportService service = service();
+        ExportedFileDto result = service.exportChapter(1L, 10L, true, false, false, owner);
+
+        assertThat(result.filenameBase()).isEqualTo("2-bob");
+        List<String> texts = paragraphTexts(result.data());
+        assertThat(texts).contains("2-bob", "Bo'lim: 2-bob", "1. Shu bo'lim darsi", "shu bo'lim matni");
+        org.mockito.Mockito.verifyNoInteractions(questionRepository);
+    }
+
+    @Test
+    void exportChapter_chapterBelongsToDifferentCourse_throws() {
+        User owner = owner();
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner).build();
+        Course otherCourse = Course.builder().id(2L).title("Boshqa kurs").createdBy(owner).build();
+        CourseChapter chapter = CourseChapter.builder().id(10L).course(otherCourse).name("Bob").orderIndex(1).build();
+
+        when(courseService.requireManageableCourse(1L, owner)).thenReturn(course);
+        when(courseChapterRepository.findById(10L)).thenReturn(java.util.Optional.of(chapter));
+
+        CourseWordExportService service = service();
+        assertThatThrownBy(() -> service.exportChapter(1L, 10L, true, true, true, owner))
+                .isInstanceOf(java.util.NoSuchElementException.class);
     }
 }
