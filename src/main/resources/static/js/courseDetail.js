@@ -2279,14 +2279,21 @@ async function loadTopicLinkAudit() {
             return;
         }
 
-        // Katta kurslarda o'nlab mavzuda yuzlab xato havola bir yo'la
-        // topilishi mumkin — har birini alohida bosish o'rniga, BUTUN
-        // kurs bo'yicha bittada tuzatish tugmasi.
+        // Katta kurslarda o'nlab mavzuda yuzlab havola (xato yoki umuman
+        // yo'q) bir yo'la topilishi mumkin (haqiqiy holat: 290 ta mavzuli
+        // kursda o'nlab yangi mavzuda havola umuman yo'q edi, birma-bir
+        // "➕ Havola qo'shish"ni bosib chiqish amaliy emas) — har birini
+        // alohida bosish o'rniga, BUTUN kurs bo'yicha bittada tugmalar.
         const totalWrong = topics.reduce((sum, t) => sum + t.wrongItems.length, 0);
-        const fixAllInCourseBtn = totalWrong > 0
-            ? `<div class="topic-link-audit-fix-all">
-                   <button class="topic-link-fix-all-course-btn" onclick="fixAllWrongTopicLinksInCourse()">🛠️ Butun kursdagi BARCHA xato havolalarni tuzatish (${totalWrong} ta)</button>
-               </div>`
+        const totalMissing = topics.reduce((sum, t) => sum + t.missingCount, 0);
+        const addAllMissingInCourseBtn = totalMissing > 0
+            ? `<button class="topic-link-add-missing-btn" onclick="addMissingTopicLinks()">➕ Butun kursda BARCHASIGA havola qo'shish (${totalMissing} ta)</button>`
+            : "";
+        const fixAllWrongInCourseBtn = totalWrong > 0
+            ? `<button class="topic-link-fix-all-course-btn" onclick="fixAllWrongTopicLinksInCourse()">🛠️ Butun kursdagi BARCHA xato havolalarni tuzatish (${totalWrong} ta)</button>`
+            : "";
+        const fixAllInCourseBtn = (totalMissing > 0 || totalWrong > 0)
+            ? `<div class="topic-link-audit-fix-all">${addAllMissingInCourseBtn}${fixAllWrongInCourseBtn}</div>`
             : "";
 
         const issueRows = issueTopics.map(t => {
@@ -2329,9 +2336,16 @@ async function loadTopicLinkAudit() {
     }
 }
 
+// topicId berilsa — FAQAT shu mavzudagi (mavzu qatoridagi tugma),
+// berilmasa — BUTUN kursdagi barcha havolasiz savollarga (yuqoridagi
+// "➕ Butun kursda BARCHASIGA havola qo'shish" tugmasi).
 async function addMissingTopicLinks(topicId) {
+    const url = topicId
+        ? `/api/courses/${COURSE_ID}/topic-links/add-missing?topicId=${topicId}`
+        : `/api/courses/${COURSE_ID}/topic-links/add-missing`;
+
     try {
-        const res = await fetch(`/api/courses/${COURSE_ID}/topic-links/add-missing?topicId=${topicId}`, { method: "POST" });
+        const res = await fetch(url, { method: "POST" });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
             alert(data.error || "Havola qo'shishda xatolik");

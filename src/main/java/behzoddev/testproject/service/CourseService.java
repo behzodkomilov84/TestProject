@@ -1122,8 +1122,28 @@ public class CourseService {
     public int addMissingTopicLinks(Long courseId, Long topicId) {
         CourseSection section = courseSectionRepository.findByCourse_IdAndLinkedTopic_Id(courseId, topicId)
                 .orElseThrow(() -> new IllegalArgumentException("❌ Bu mavzu shu kursga bog'lanmagan."));
+        return addMissingLinksForSection(courseId, section);
+    }
 
-        List<Question> questions = questionRepository.getQuestionsByTopicId(topicId);
+    // "➕ Barchasiga havola qo'shish" — auditTopicLinks bilan bir xil
+    // ko'lamda (shu kursga bog'langan HAMMA mavzular), har birida
+    // topilgan (izohida HECH QANDAY mavzu havolasi yo'q) savollarga
+    // to'g'ri havolani bir yo'la qo'shadi — fixAllWrongTopicLinksInCourse
+    // bilan bir xil andoza (haqiqiy holat: yangi qo'shilgan yuzlab
+    // mavzu/savolda havola umuman yo'q edi, birma-bir "➕ Havola
+    // qo'shish"ni bosib chiqish o'ninchi mavzudan keyin amaliy emas).
+    @Transactional
+    public int addAllMissingTopicLinksInCourse(Long courseId) {
+        List<CourseSection> linkedSections = courseSectionRepository.findByCourse_IdAndLinkedTopicIsNotNull(courseId);
+        int total = 0;
+        for (CourseSection section : linkedSections) {
+            total += addMissingLinksForSection(courseId, section);
+        }
+        return total;
+    }
+
+    private int addMissingLinksForSection(Long courseId, CourseSection section) {
+        List<Question> questions = questionRepository.getQuestionsByTopicId(section.getLinkedTopic().getId());
         int fixed = 0;
         for (Question q : questions) {
             Answer trueAnswer = findTrueAnswer(q);

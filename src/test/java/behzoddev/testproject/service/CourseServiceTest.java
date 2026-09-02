@@ -565,6 +565,43 @@ class CourseServiceTest {
                 .hasMessageContaining("savatga o'tkazish");
     }
 
+    // ===== addAllMissingTopicLinksInCourse =====
+    // "➕ Butun kursda BARCHASIGA havola qo'shish" — bir nechta bog'langan
+    // mavzu bo'ylab, HAR BIRIDA havolasi yo'q savollarga to'g'ri havolani
+    // bir yo'lda qo'shishi kerak (haqiqiy holat: 290 mavzuli kursda
+    // o'nlab yangi mavzuda havola umuman yo'q edi).
+
+    @Test
+    void addAllMissingTopicLinksInCourse_multipleSections_addsLinkToEveryQuestionMissingOne() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+
+        Topic topic1 = Topic.builder().id(10L).name("1-mavzu").build();
+        CourseSection section1 = CourseSection.builder().id(100L).course(course).linkedTopic(topic1).orderIndex(1).build();
+        Answer a1 = Answer.builder().id(1L).answerText("Ha").isTrue(true).commentary(null).build();
+        Question q1 = Question.builder().id(1L).questionText("1-savol").topic(topic1).answers(List.of(a1)).build();
+
+        Topic topic2 = Topic.builder().id(20L).name("2-mavzu").build();
+        CourseSection section2 = CourseSection.builder().id(200L).course(course).linkedTopic(topic2).orderIndex(2).build();
+        // Bu savolda HAR BIR javob "isTrue=false" — findTrueAnswer null
+        // qaytaradi, shu sabab O'TKAZIB YUBORILISHI kerak (xato bermasdan).
+        Answer a2NoTrue = Answer.builder().id(2L).answerText("Yo'q").isTrue(false).build();
+        Question q2NoTrueAnswer = Question.builder().id(2L).questionText("2-savol (to'g'ri javobsiz)").topic(topic2).answers(List.of(a2NoTrue)).build();
+        // Bu savolda allaqachon TO'G'RI havola bor — TEGILMASLIGI kerak.
+        Answer a3Linked = Answer.builder().id(3L).answerText("Ha").isTrue(true)
+                .commentary(" <span>...<a href=\"/courses/1/sections/200\">...</a></span>").build();
+        Question q3AlreadyLinked = Question.builder().id(3L).questionText("3-savol (allaqachon bog'langan)").topic(topic2).answers(List.of(a3Linked)).build();
+
+        when(courseSectionRepository.findByCourse_IdAndLinkedTopicIsNotNull(1L)).thenReturn(List.of(section1, section2));
+        when(questionRepository.getQuestionsByTopicId(10L)).thenReturn(List.of(q1));
+        when(questionRepository.getQuestionsByTopicId(20L)).thenReturn(List.of(q2NoTrueAnswer, q3AlreadyLinked));
+
+        int added = courseService.addAllMissingTopicLinksInCourse(1L);
+
+        assertThat(added).isEqualTo(1);
+        assertThat(a1.getCommentary()).contains("/courses/1/sections/100").contains("1-mavzu");
+        assertThat(a3Linked.getCommentary()).isEqualTo(" <span>...<a href=\"/courses/1/sections/200\">...</a></span>");
+    }
+
     // ===== listCatalog (kartochkadagi "N ta bo'lim, M ta mavzu") =====
     // Haqiqiy foydalanuvchi shikoyati: kartochkada FAQAT sectionCount
     // (mavzular soni) "N ta bo'lim" deb NOTO'G'RI belgilab ko'rsatilardi.

@@ -206,12 +206,18 @@ public class CourseController {
         return courseService.auditTopicLinks(courseId);
     }
 
-    // "➕ Havola qo'shish" — shu mavzudagi izohida HECH QANDAY mavzu
-    // havolasi yo'q savollarga to'g'ri havolani bittada qo'shadi.
+    // "➕ Havola qo'shish" — topicId berilsa FAQAT shu mavzudagi, berilmasa
+    // BUTUN kursdagi (izohida HECH QANDAY mavzu havolasi yo'q) barcha
+    // savollarga to'g'ri havolani bittada qo'shadi (fixAllWrongTopicLinks
+    // bilan bir xil andoza).
     @PostMapping("/{courseId}/topic-links/add-missing")
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
-    public Map<String, Integer> addMissingTopicLinks(@PathVariable Long courseId, @RequestParam Long topicId) {
-        return Map.of("added", courseService.addMissingTopicLinks(courseId, topicId));
+    public Map<String, Integer> addMissingTopicLinks(@PathVariable Long courseId,
+                                                       @RequestParam(required = false) Long topicId) {
+        int added = topicId != null
+                ? courseService.addMissingTopicLinks(courseId, topicId)
+                : courseService.addAllMissingTopicLinksInCourse(courseId);
+        return Map.of("added", added);
     }
 
     // "✅ To'g'irlash" — bitta savolning izohidagi noto'g'ri mavzu havolasini
