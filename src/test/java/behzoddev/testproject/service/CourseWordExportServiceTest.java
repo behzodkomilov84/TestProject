@@ -103,7 +103,7 @@ class CourseWordExportServiceTest {
         assertThat(result.filenameBase()).isEqualTo("Bakteriologiya_kursi");
 
         List<String> texts = paragraphTexts(result.data());
-        assertThat(texts).contains("Bakteriologiya kursi", "Bo'lim: 1-bob", "1. Kirish darsi", "Oddiy matn kontenti");
+        assertThat(texts).contains("Bakteriologiya kursi", "Bo'lim: 1-bob", "Kirish darsi", "Oddiy matn kontenti");
         assertThat(texts).noneMatch(t -> t.equals("TESTLAR") || t.equals("JAVOBLAR"));
         org.mockito.Mockito.verifyNoInteractions(questionRepository);
     }
@@ -164,7 +164,7 @@ class CourseWordExportServiceTest {
 
         int testsIdx = texts.indexOf("TESTLAR");
         int answersIdx = texts.indexOf("JAVOBLAR");
-        int contentTitleIdx = texts.indexOf("1. Dars");
+        int contentTitleIdx = texts.indexOf("Dars");
 
         assertThat(contentTitleIdx).isGreaterThanOrEqualTo(0);
         assertThat(testsIdx).isGreaterThan(contentTitleIdx);
@@ -197,7 +197,7 @@ class CourseWordExportServiceTest {
 
         try (XWPFDocument doc = new XWPFDocument(new ByteArrayInputStream(result.data()))) {
             XWPFParagraph topicHeading = doc.getParagraphs().stream()
-                    .filter(p -> p.getText().trim().equals("1. Kirish darsi"))
+                    .filter(p -> p.getText().trim().equals("Kirish darsi"))
                     .findFirst().orElseThrow();
             assertThat(topicHeading.getStyle()).isEqualTo("Heading1");
 
@@ -231,7 +231,7 @@ class CourseWordExportServiceTest {
         try (XWPFDocument doc = new XWPFDocument(new ByteArrayInputStream(result.data()))) {
             List<String> texts = doc.getParagraphs().stream().map(p -> p.getText().trim()).toList();
             int firstTopicContentIdx = texts.indexOf("matn1");
-            int secondTopicHeadingIdx = texts.indexOf("2. Ikkinchi");
+            int secondTopicHeadingIdx = texts.indexOf("Ikkinchi");
 
             assertThat(firstTopicContentIdx).isGreaterThanOrEqualTo(0);
             assertThat(secondTopicHeadingIdx).isGreaterThan(firstTopicContentIdx);
@@ -262,7 +262,7 @@ class CourseWordExportServiceTest {
 
         assertThat(result.filenameBase()).isEqualTo("2-bob");
         List<String> texts = paragraphTexts(result.data());
-        assertThat(texts).contains("2-bob", "Bo'lim: 2-bob", "1. Shu bo'lim darsi", "shu bo'lim matni");
+        assertThat(texts).contains("2-bob", "Bo'lim: 2-bob", "Shu bo'lim darsi", "shu bo'lim matni");
         org.mockito.Mockito.verifyNoInteractions(questionRepository);
     }
 

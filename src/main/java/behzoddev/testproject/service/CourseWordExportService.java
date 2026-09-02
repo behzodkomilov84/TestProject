@@ -294,9 +294,12 @@ public class CourseWordExportService {
             writeChapterHeading(doc, chapterLabel(group), !first);
             first = false;
 
-            int number = 1;
             for (CourseSection s : group.items()) {
-                writeTopicHeading(doc, number++ + ". " + s.getTitle());
+                // Tartib raqami QO'YILMAYDI — mavzu nomining O'ZIDA allaqachon
+                // o'z raqami bor (masalan "001. Pseudomonas...") — foydalanuvchi
+                // aniq shuni ko'rsatdi (Word Navigatsiya panelida "1. 001. ..."
+                // bo'lib qo'sh-raqamlanib ketmasin).
+                writeTopicHeading(doc, s.getTitle());
 
                 if (s.getType() == CourseSectionType.VIDEO || s.getType() == CourseSectionType.MIXED) {
                     writeVideoNote(doc, s);
