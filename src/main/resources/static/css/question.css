@@ -863,14 +863,13 @@ td label{
     gap: 8px;
 }
 
-/* HTML tartibi (radio, keyin matn) o'zgarmaydi — faqat VIZUAL tartib
-   teskarilanadi (row-reverse), shunda matn har doim CHAP chetda, radio
-   esa O'NG chetda (justify-content:space-between orqali) turadi — ikkala
-   qatorda ham konteyner kengligi bir xil bo'lgani uchun radio doiralari
-   TIK USTUN bo'lib bir xil X nuqtada tekislanadi. */
+/* Radio doirasi BIRINCHI (eng chapda), undan keyin matn — ikkalasi ham
+   qatorning CHAP chetiga yopishgan holda (justify-content standart
+   flex-start, o'ngda bo'sh joy qoladi). Radio kengligi va gap doim bir
+   xil bo'lgani uchun ikkala qatordagi doiralar bir xil X nuqtada
+   (tik ustun) tekislanadi. */
 .word-export-variant-fields .word-export-radio-row {
-    flex-direction: row-reverse;
-    justify-content: space-between;
+    flex-direction: row;
     align-items: center;
     gap: 10px;
     font-size: 14px;
