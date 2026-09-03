@@ -4,12 +4,21 @@
 
 const selectedMap = new Map();
 
+// Joriy tanlangan Fan uchun TO'LIQ mavzular ro'yxati (Bo'lim ma'lumoti
+// bilan birga) — sectionSelect/topicSelect ikkalasi ham shundan
+// (qayta so'rovsiz) to'ldiriladi.
+let cachedTopics = [];
+
 document.addEventListener("DOMContentLoaded", () => {
     loadSciences();
     loadSets();
 
     document.getElementById("scienceSelect").addEventListener("change", e => {
-        if (e.target.value) loadTopics(e.target.value);
+        if (e.target.value) {
+            loadTopics(e.target.value);
+        } else {
+            resetSectionAndBelow();
+        }
     });
 });
 
@@ -20,7 +29,7 @@ function escapeHtml(s) {
 }
 
 //--------------------------------------------------------
-//          FAN / MAVZU / SAVOL TANLASH
+//          FAN → BO'LIM → MAVZU → SAVOL (ketma-ket tanlash)
 //--------------------------------------------------------
 function loadSciences() {
     const select = document.getElementById("scienceSelect");
@@ -33,22 +42,82 @@ function loadSciences() {
         .catch(err => console.error(err));
 }
 
+// Fan tanlangach — mavzularni (Bo'lim ma'lumoti bilan) bir yo'la
+// yuklab, keyin "Bo'lim" select'ini to'ldiradi (Mavzu select'i FAQAT
+// Bo'lim tanlangandan keyin to'ldiriladi — foydalanuvchi ANIQ shu
+// ketma-ketlikni so'radi: Fan → Bo'lim → Mavzu).
 function loadTopics(scienceId) {
-    const topicSelect = document.getElementById("topicSelect");
     fetch(`/api/teacher/topics/${scienceId}`)
         .then(r => r.json())
         .then(list => {
-            const totalQuestions = list.reduce((sum, t) => sum + (t.questionCount || 0), 0);
-            topicSelect.innerHTML = `<option value="">--Mavzuni tanlang-- (jami ${totalQuestions} ta test)</option>` +
-                list.map(t => `<option value="${t.id}">${escapeHtml(t.name)} (${t.questionCount} ta)</option>`).join("");
-            topicSelect.onchange = () => loadQuestions(topicSelect.value);
-        });
+            cachedTopics = list;
+            populateSectionSelect();
+        })
+        .catch(err => console.error(err));
+}
+
+function populateSectionSelect() {
+    const sectionSelect = document.getElementById("sectionSelect");
+
+    const sectionsById = new Map();
+    let hasUnlinked = false;
+    cachedTopics.forEach(t => {
+        if (t.sectionId != null) {
+            if (!sectionsById.has(t.sectionId)) {
+                sectionsById.set(t.sectionId, { id: t.sectionId, name: t.sectionName, orderIndex: t.sectionOrderIndex });
+            }
+        } else {
+            hasUnlinked = true;
+        }
+    });
+    const sections = [...sectionsById.values()].sort((a, b) => a.orderIndex - b.orderIndex);
+
+    let options = `<option value="">--Bo'limni tanlang--</option>`;
+    options += sections.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join("");
+    if (hasUnlinked) {
+        options += `<option value="none">— Bo'limsiz mavzular —</option>`;
+    }
+    sectionSelect.innerHTML = options;
+    sectionSelect.onchange = () => populateTopicSelect(sectionSelect.value);
+
+    resetTopicAndBelow();
+}
+
+function populateTopicSelect(sectionValue) {
+    const topicSelect = document.getElementById("topicSelect");
+
+    if (!sectionValue) {
+        resetTopicAndBelow();
+        return;
+    }
+
+    const filtered = sectionValue === "none"
+        ? cachedTopics.filter(t => t.sectionId == null)
+        : cachedTopics.filter(t => String(t.sectionId) === sectionValue);
+
+    const totalQuestions = filtered.reduce((sum, t) => sum + Number(t.questionCount || 0), 0);
+    topicSelect.innerHTML = `<option value="">--Mavzuni tanlang-- (jami ${totalQuestions} ta test)</option>` +
+        filtered.map(t => `<option value="${t.id}">${escapeHtml(t.name)} (${t.questionCount} ta)</option>`).join("");
+    topicSelect.onchange = () => loadQuestions(topicSelect.value);
+
+    loadQuestions("");
+}
+
+function resetSectionAndBelow() {
+    cachedTopics = [];
+    document.getElementById("sectionSelect").innerHTML = `<option value="">--Avval fanni tanlang--</option>`;
+    resetTopicAndBelow();
+}
+
+function resetTopicAndBelow() {
+    document.getElementById("topicSelect").innerHTML = `<option value="">--Avval bo'limni tanlang--</option>`;
+    loadQuestions("");
 }
 
 function loadQuestions(topicId) {
     const box = document.getElementById("questions");
     if (!topicId) {
-        box.innerHTML = `<div class="teacher-empty">Avval fan va mavzuni tanlang</div>`;
+        box.innerHTML = `<div class="teacher-empty">Avval fan, bo'lim va mavzuni tanlang</div>`;
         return;
     }
 
