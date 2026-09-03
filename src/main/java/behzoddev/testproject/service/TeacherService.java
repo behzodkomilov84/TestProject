@@ -103,6 +103,48 @@ public class TeacherService {
 
     // "✏️" — savollar paketi nomini o'zgartirish ("Savollar to'plami"
     // sahifasi) — updateGroup bilan bir xil andoza: faqat egasi (teacher).
+    // "Avtomatik tanlash" — "Savollar to'plami" sahifasida bir nechta
+    // Bo'lim/Mavzu belgilab, jami nechta savol kerakligini kiritsa, HAR
+    // BIR MAVZUGA TENG bo'lib (savollar soniga qarab EMAS — "Variantlar
+    // yaratish" bilan bir xil "suv quyish" algoritmi, QuestionAllocationUtil)
+    // tasodifiy savollarni tanlab beradi. Natija — oddiy ro'yxat, hech
+    // narsa avtomatik SAQLANMAYDI (o'qituvchi ko'rib chiqib, xohlasa
+    // qo'shimcha qo'shishi/olib tashlashi, keyin nomini kiritib
+    // "Saqlash"ni bosishi kerak — mavjud oqim o'zgarishsiz).
+    @Transactional(readOnly = true)
+    public List<ResponseQuestionTextDto> autoSelectQuestions(List<Long> topicIds, int totalCount) {
+        if (topicIds == null || topicIds.isEmpty()) {
+            throw new IllegalArgumentException("❌ Kamida bitta mavzu tanlang.");
+        }
+        if (totalCount < 1) {
+            throw new IllegalArgumentException("❌ Jami savollar soni kamida 1 bo'lishi kerak.");
+        }
+
+        Map<Long, List<Question>> questionsByTopic = new LinkedHashMap<>();
+        for (Long topicId : topicIds) {
+            questionsByTopic.put(topicId, questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(topicId));
+        }
+
+        Map<Long, Integer> capacity = new LinkedHashMap<>();
+        questionsByTopic.forEach((id, list) -> capacity.put(id, list.size()));
+
+        Map<Long, Integer> allocation = QuestionAllocationUtil.allocateEqually(topicIds, capacity, totalCount);
+
+        Random random = new Random();
+        List<Question> selected = new ArrayList<>();
+        for (Long topicId : topicIds) {
+            List<Question> pool = new ArrayList<>(questionsByTopic.get(topicId));
+            Collections.shuffle(pool, random);
+            int take = allocation.getOrDefault(topicId, 0);
+            selected.addAll(pool.subList(0, Math.min(take, pool.size())));
+        }
+        Collections.shuffle(selected, random);
+
+        return selected.stream()
+                .map(q -> new ResponseQuestionTextDto(q.getId(), q.getQuestionText()))
+                .toList();
+    }
+
     @Transactional
     public void renameQuestionSet(Long setId, String newName, User teacher) {
         QuestionSet set = questionSetRepository.findById(setId)

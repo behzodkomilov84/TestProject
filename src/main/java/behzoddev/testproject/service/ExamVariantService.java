@@ -33,11 +33,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -161,51 +159,21 @@ public class ExamVariantService {
     // kam bo'lsa — aniq xato bilan to'xtaydi (o'zi tasodifiy kamaytirib
     // qo'ymaydi).
     private Map<Long, Integer> allocateEqually(List<Topic> topics, Map<Long, List<Question>> questionsByTopic, int perVariant) {
+        List<Long> ids = topics.stream().map(Topic::getId).toList();
         Map<Long, Integer> capacity = new LinkedHashMap<>();
-        Map<Long, Integer> allocated = new LinkedHashMap<>();
         for (Topic t : topics) {
             capacity.put(t.getId(), questionsByTopic.getOrDefault(t.getId(), List.of()).size());
-            allocated.put(t.getId(), 0);
         }
-
-        Set<Long> active = new LinkedHashSet<>();
-        for (Topic t : topics) {
-            if (capacity.get(t.getId()) > 0) active.add(t.getId());
-        }
-
-        int remaining = perVariant;
-        while (remaining > 0 && !active.isEmpty()) {
-            int share = remaining / active.size();
-
-            if (share == 0) {
-                int given = 0;
-                for (Long id : active) {
-                    if (given >= remaining) break;
-                    allocated.merge(id, 1, Integer::sum);
-                    given++;
-                }
-                remaining -= given;
-                break;
-            }
-
-            for (Long id : new ArrayList<>(active)) {
-                int room = capacity.get(id) - allocated.get(id);
-                int give = Math.min(share, room);
-                allocated.merge(id, give, Integer::sum);
-                remaining -= give;
-                if (allocated.get(id) >= capacity.get(id)) {
-                    active.remove(id);
-                }
-            }
-        }
-
-        if (remaining > 0) {
+        // QuestionAllocationUtil IllegalArgumentException otadi (RuntimeException
+        // avlodi) — bu yerdagi eski xabar matni ("...har bir variant uchun...")
+        // saqlab qolinishi uchun shu yerda ATAYLAB alohida ushlanadi.
+        try {
+            return QuestionAllocationUtil.allocateEqually(ids, capacity, perVariant);
+        } catch (IllegalArgumentException e) {
             int totalCapacity = capacity.values().stream().mapToInt(Integer::intValue).sum();
             throw new RuntimeException("❌ Yetarli savol yo'q: shu doirada jami " + totalCapacity +
-                    " ta faol savol bor, lekin har bir variant uchun " + perVariant + " ta so'ralgan.");
+                    " ta faol savol bor, lekin har bir variant uchun " + perVariant + " ta so'ralgan.", e);
         }
-
-        return allocated;
     }
 
     private byte[] buildVariantDocument(String scopeTitle, int variantNumber, List<Question> questions,

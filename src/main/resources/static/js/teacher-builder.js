@@ -52,8 +52,32 @@ function loadTopics(scienceId) {
         .then(list => {
             cachedTopics = list;
             populateSectionSelect();
+            renderTopicTree();
         })
         .catch(err => console.error(err));
+}
+
+// cachedTopics'ni Bo'lim bo'yicha guruhlaydi (sectionSelect ham,
+// "🎲 Avtomatik tanlash" daraxti ham shundan foydalanadi) — bo'limsiz
+// mavzular oxirida, "— Bo'limsiz mavzular —" psevdo-guruh sifatida.
+function groupTopicsBySection() {
+    const sectionsById = new Map();
+    const unlinked = [];
+    cachedTopics.forEach(t => {
+        if (t.sectionId != null) {
+            if (!sectionsById.has(t.sectionId)) {
+                sectionsById.set(t.sectionId, { id: String(t.sectionId), name: t.sectionName, orderIndex: t.sectionOrderIndex, topics: [] });
+            }
+            sectionsById.get(t.sectionId).topics.push(t);
+        } else {
+            unlinked.push(t);
+        }
+    });
+    const groups = [...sectionsById.values()].sort((a, b) => a.orderIndex - b.orderIndex);
+    if (unlinked.length) {
+        groups.push({ id: "none", name: "— Bo'limsiz mavzular —", topics: unlinked });
+    }
+    return groups;
 }
 
 function populateSectionSelect() {
@@ -106,12 +130,159 @@ function populateTopicSelect(sectionValue) {
 function resetSectionAndBelow() {
     cachedTopics = [];
     document.getElementById("sectionSelect").innerHTML = `<option value="">--Avval fanni tanlang--</option>`;
+    document.getElementById("topicTree").innerHTML = `<div class="teacher-empty">Avval fanni tanlang</div>`;
     resetTopicAndBelow();
 }
 
 function resetTopicAndBelow() {
     document.getElementById("topicSelect").innerHTML = `<option value="">--Avval bo'limni tanlang--</option>`;
     loadQuestions("");
+}
+
+//--------------------------------------------------------
+//          "🎲 Avtomatik tanlash" — Bo'lim/Mavzu checkbox daraxti
+//--------------------------------------------------------
+
+// Bo'lim guruhlari — teacher-groups.js'dagi "guruh a'zolari" accordion
+// bilan BIR XIL ".teacher-group-card/.teacher-group-header/..." uslubi
+// (qayta yozilmagan, CSS ham umumiy). YOPIQ holatda boshlanadi (150+
+// mavzuli bo'lim ham bo'lishi mumkin — hammasini ochiq qilib yuborish
+// sahifani og'ir qilardi), lekin checkbox holati yopiq bo'lsa ham
+// to'g'ri ishlaydi.
+function renderTopicTree() {
+    const container = document.getElementById("topicTree");
+    if (!cachedTopics.length) {
+        container.innerHTML = `<div class="teacher-empty">Bu fanda mavzu yo'q</div>`;
+        return;
+    }
+
+    const groups = groupTopicsBySection();
+
+    container.innerHTML = groups.map(g => {
+        const totalQuestions = g.topics.reduce((sum, t) => sum + Number(t.questionCount || 0), 0);
+        const topicsHtml = g.topics.map(t => `
+            <label class="teacher-question-item">
+                <input type="checkbox" class="topic-checkbox" data-topic-id="${t.id}" checked>
+                <span>${escapeHtml(t.name)} (${t.questionCount} ta)</span>
+            </label>
+        `).join("");
+
+        return `
+        <div class="teacher-group-card">
+            <div class="teacher-group-header" onclick="toggleTopicGroupExpand(this)">
+                <span class="teacher-group-chevron">▸</span>
+                <span class="teacher-group-name">${escapeHtml(g.name)}</span>
+                <span class="teacher-set-count">(${g.topics.length} mavzu, ${totalQuestions} test)</span>
+                <span class="teacher-group-actions" onclick="event.stopPropagation()">
+                    <input type="checkbox" class="section-checkbox" checked>
+                </span>
+            </div>
+            <div class="teacher-group-body">${topicsHtml}</div>
+        </div>`;
+    }).join("");
+
+    container.querySelectorAll(".section-checkbox").forEach(cb => {
+        cb.addEventListener("change", () => onSectionCheckboxToggle(cb));
+    });
+    container.querySelectorAll(".topic-checkbox").forEach(cb => {
+        cb.addEventListener("change", () => onTopicCheckboxToggle(cb));
+    });
+
+    updateToggleAllButtonLabel();
+}
+
+function toggleTopicGroupExpand(headerEl) {
+    headerEl.closest(".teacher-group-card").classList.toggle("expanded");
+}
+
+// Bo'lim checkbox'i bosilganda — shu bo'limning BARCHA mavzu
+// checkbox'lari ham shunga qarab belgilanadi/bekor qilinadi.
+function onSectionCheckboxToggle(sectionCheckbox) {
+    const group = sectionCheckbox.closest(".teacher-group-card");
+    group.querySelectorAll(".topic-checkbox").forEach(tcb => tcb.checked = sectionCheckbox.checked);
+    sectionCheckbox.indeterminate = false;
+    updateToggleAllButtonLabel();
+}
+
+// Bitta mavzu checkbox'i qo'lda o'zgartirilsa — Bo'lim checkbox'ining
+// holati shunga qarab yangilanadi (hammasi belgilangan/hech biri/
+// qisman — oxirgisi uchun "indeterminate" ko'rinishi ishlatiladi).
+function onTopicCheckboxToggle(topicCheckbox) {
+    const group = topicCheckbox.closest(".teacher-group-card");
+    const topicBoxes = [...group.querySelectorAll(".topic-checkbox")];
+    const checkedCount = topicBoxes.filter(t => t.checked).length;
+    const sectionCheckbox = group.querySelector(".section-checkbox");
+    sectionCheckbox.checked = checkedCount === topicBoxes.length;
+    sectionCheckbox.indeterminate = checkedCount > 0 && checkedCount < topicBoxes.length;
+    updateToggleAllButtonLabel();
+}
+
+// "❌ Barchasini bekor qilish" / "✅ Barchasini belgilash" — bitta
+// tugma, joriy holatga qarab ikkalasini ham bajaradi (foydalanuvchi
+// ANIQ shuni so'ragan: "bitta knopka bilan barcha tanlovni olib
+// tashlash ham mumkin bo'lsin").
+function toggleAllTopics() {
+    const allBoxes = document.querySelectorAll("#topicTree input[type=checkbox]");
+    const anyChecked = [...allBoxes].some(cb => cb.checked);
+    const newState = !anyChecked;
+    allBoxes.forEach(cb => {
+        cb.checked = newState;
+        cb.indeterminate = false;
+    });
+    updateToggleAllButtonLabel();
+}
+
+function updateToggleAllButtonLabel() {
+    const btn = document.getElementById("toggleAllTopicsBtn");
+    if (!btn) return;
+    const allBoxes = document.querySelectorAll("#topicTree input[type=checkbox]");
+    const anyChecked = [...allBoxes].some(cb => cb.checked);
+    btn.textContent = anyChecked ? "❌ Barchasini bekor qilish" : "✅ Barchasini belgilash";
+}
+
+// Belgilangan mavzular orasidan, HAR BIRIGA TENG bo'lib (savollar
+// soniga qarab EMAS — "🎲 Variantlar yaratish" bilan bir xil "suv
+// quyish" algoritmi), jami kiritilgan sonda tasodifiy savol tanlab,
+// "Tanlangan savollar" ro'yxatiga QO'SHADI (mavjudlarini o'chirmaydi —
+// bir necha marta bosib, sonini oshirib borish mumkin).
+async function autoSelectQuestions() {
+    const topicIds = [...document.querySelectorAll("#topicTree .topic-checkbox:checked")]
+        .map(cb => Number(cb.dataset.topicId));
+
+    if (!topicIds.length) {
+        alert("Kamida bitta mavzuni belgilang.");
+        return;
+    }
+
+    const totalCount = Number(document.getElementById("autoSelectCount").value);
+    if (!totalCount || totalCount < 1) {
+        alert("Jami nechta savol kerakligini kiriting.");
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/teacher/questions/auto-select", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ topicIds, totalCount })
+        });
+
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || "Avtomatik tanlashda xatolik");
+        }
+
+        const questions = await res.json();
+        questions.forEach(q => {
+            const safeText = escapeHtml(q.questionText);
+            selectedMap.set(q.id, { id: q.id, text: safeText });
+            addSelectedUI(q.id, safeText);
+        });
+        updateCounter();
+        alert(`✅ ${questions.length} ta savol avtomatik tanlandi va "Tanlangan savollar"ga qo'shildi.`);
+    } catch (err) {
+        alert(err.message || "Avtomatik tanlashda xatolik");
+    }
 }
 
 function loadQuestions(topicId) {

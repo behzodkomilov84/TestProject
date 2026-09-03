@@ -134,6 +134,14 @@ public class TeacherController {
         return questionService.getQuestionsByTopic(topicId);
     }
 
+    // "🎲 Avtomatik tanlash" — belgilangan mavzular orasidan, har biriga
+    // TENG bo'lib, jami "totalCount" ta savolni tasodifiy tanlab beradi
+    // ("Savollar to'plami" sahifasi).
+    @PostMapping("/questions/auto-select")
+    public List<ResponseQuestionTextDto> autoSelectQuestions(@RequestBody AutoSelectQuestionsDto dto) {
+        return teacherService.autoSelectQuestions(dto.topicIds(), dto.totalCount());
+    }
+
     @PostMapping("/group/{groupId}/invite")
     public ResponseEntity<Void> invite(
             @PathVariable Long groupId,

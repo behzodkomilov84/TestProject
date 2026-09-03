@@ -13,6 +13,7 @@ import behzoddev.testproject.dto.teacher.AssignmentStudentDetailDto;
 import behzoddev.testproject.dto.teacher.CreateQuestionSetDto;
 import behzoddev.testproject.dto.teacher.GroupStudentRowDto;
 import behzoddev.testproject.dto.teacher.QuestionSetResponseDto;
+import behzoddev.testproject.dto.teacher.ResponseQuestionTextDto;
 import behzoddev.testproject.dto.teacher.UpdateTeacherGroupDto;
 import behzoddev.testproject.entity.Assignment;
 import behzoddev.testproject.entity.AssignmentAttempt;
@@ -132,6 +133,66 @@ class TeacherServiceTest {
 
         assertThat(result.name()).isEqualTo("Set1");
         assertThat(result.questionCount()).isEqualTo(2);
+    }
+
+    // ===== autoSelectQuestions ("🎲 Avtomatik tanlash") =====
+
+    @Test
+    void autoSelectQuestions_equalCapacity_splitsEquallyBetweenTopics() {
+        List<Question> topicAQuestions = java.util.stream.LongStream.rangeClosed(1, 5)
+                .mapToObj(i -> Question.builder().id(i).questionText("A" + i).build()).toList();
+        List<Question> topicBQuestions = java.util.stream.LongStream.rangeClosed(101, 105)
+                .mapToObj(i -> Question.builder().id(i).questionText("B" + i).build()).toList();
+
+        when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(10L)).thenReturn(topicAQuestions);
+        when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(20L)).thenReturn(topicBQuestions);
+
+        List<ResponseQuestionTextDto> result = teacherService.autoSelectQuestions(List.of(10L, 20L), 4);
+
+        assertThat(result).hasSize(4);
+        long fromA = result.stream().filter(q -> q.id() <= 5).count();
+        long fromB = result.stream().filter(q -> q.id() >= 101).count();
+        assertThat(fromA).isEqualTo(2);
+        assertThat(fromB).isEqualTo(2);
+    }
+
+    @Test
+    void autoSelectQuestions_oneTopicShort_redistributesToOthers() {
+        // 10-mavzuda faqat 1 ta savol bor — yetmagan 3 tasi 20-mavzuga qayta taqsimlanadi.
+        List<Question> topicAQuestions = List.of(Question.builder().id(1L).questionText("A1").build());
+        List<Question> topicBQuestions = java.util.stream.LongStream.rangeClosed(101, 110)
+                .mapToObj(i -> Question.builder().id(i).questionText("B" + i).build()).toList();
+
+        when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(10L)).thenReturn(topicAQuestions);
+        when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(20L)).thenReturn(topicBQuestions);
+
+        List<ResponseQuestionTextDto> result = teacherService.autoSelectQuestions(List.of(10L, 20L), 4);
+
+        assertThat(result).hasSize(4);
+        assertThat(result.stream().filter(q -> q.id() == 1L).count()).isEqualTo(1);
+        assertThat(result.stream().filter(q -> q.id() >= 101).count()).isEqualTo(3);
+    }
+
+    @Test
+    void autoSelectQuestions_insufficientTotalCapacity_throws() {
+        when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(10L))
+                .thenReturn(List.of(Question.builder().id(1L).questionText("A1").build()));
+
+        assertThatThrownBy(() -> teacherService.autoSelectQuestions(List.of(10L), 5))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Yetarli savol yo'q");
+    }
+
+    @Test
+    void autoSelectQuestions_emptyTopicList_throws() {
+        assertThatThrownBy(() -> teacherService.autoSelectQuestions(List.of(), 5))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void autoSelectQuestions_zeroTotalCount_throws() {
+        assertThatThrownBy(() -> teacherService.autoSelectQuestions(List.of(10L), 0))
+                .isInstanceOf(IllegalArgumentException.class);
     }
 
     // ===== renameQuestionSet / deleteQuestionSet ("Savollar to'plami" sahifasi) =====

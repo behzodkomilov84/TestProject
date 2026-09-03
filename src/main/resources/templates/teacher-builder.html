@@ -30,6 +30,37 @@
 
         <label for="scienceSelect">Fan</label>
         <select id="scienceSelect"></select>
+    </div>
+
+    <!-- "🎲 Avtomatik tanlash" — Fan tanlangach, shu Fanning BARCHA
+         Bo'lim/Mavzulari checkbox ko'rinishida chiqadi (default —
+         hammasi belgilangan). Jami nechta savol kerakligini kiritib,
+         tugma bosilsa — belgilangan mavzular orasida HAR BIRIGA TENG
+         bo'lib (savollar soniga qarab EMAS) tasodifiy savollar tanlab,
+         "Tanlangan savollar" ro'yxatiga qo'shadi. -->
+    <div class="teacher-card">
+        <h2>🎲 Avtomatik tanlash</h2>
+        <div class="teacher-field-row" style="margin-bottom:10px;">
+            <button type="button" class="teacher-icon-btn" id="toggleAllTopicsBtn" onclick="toggleAllTopics()">
+                ❌ Barchasini bekor qilish
+            </button>
+        </div>
+        <div id="topicTree" class="teacher-question-box">
+            <div class="teacher-empty">Avval fanni tanlang</div>
+        </div>
+
+        <label for="autoSelectCount">Jami nechta savol</label>
+        <div class="teacher-field-row">
+            <input id="autoSelectCount" type="number" min="1" placeholder="Masalan: 100">
+            <button class="teacher-btn-primary" onclick="autoSelectQuestions()">🎲 Avtomatik tanlash</button>
+        </div>
+    </div>
+
+    <!-- "✋ Bittalab ko'rib tanlash" — bitta Bo'lim/Mavzuni tanlab, uning
+         savollarini ko'rib chiqib, xohlaganlarini qo'lda belgilash
+         (avtomatik tanlashdan tashqari, qo'shimcha aniqlashtirish uchun). -->
+    <div class="teacher-card">
+        <h2>✋ Bittalab ko'rib tanlash</h2>
 
         <label for="sectionSelect">Bo'lim</label>
         <select id="sectionSelect"><option value="">--Avval fanni tanlang--</option></select>
@@ -41,7 +72,9 @@
         <div id="questions" class="teacher-question-box">
             <div class="teacher-empty">Avval fan, bo'lim va mavzuni tanlang</div>
         </div>
+    </div>
 
+    <div class="teacher-card">
         <label for="selectedList">Tanlangan savollar (<b id="counter">0</b> ta)</label>
         <div id="selectedList" class="teacher-question-box"></div>
 
