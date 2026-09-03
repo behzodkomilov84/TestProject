@@ -825,12 +825,17 @@ td label{
     border-color: #185ABD;
 }
 
+/* flex-grow:0/flex-basis ATAYLAB aniq ko'rsatilgan — science.css'dagi
+   global "input { flex: 1; }" qoidasidan himoyalanish uchun (bu fayl
+   o'sha qoidani ulamasa-da, izchillik uchun shu yerda ham takrorlanadi). */
 .word-export-checkbox-row input[type="checkbox"] {
     width: 18px;
     height: 18px;
     accent-color: #185ABD;
     cursor: pointer;
+    flex-grow: 0;
     flex-shrink: 0;
+    flex-basis: 18px;
 }
 
 .word-export-variant-fields {

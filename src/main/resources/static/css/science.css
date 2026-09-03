@@ -720,12 +720,19 @@ h1 {
     border-color: #185ABD;
 }
 
+/* flex-grow:0/flex-basis ATAYLAB aniq ko'rsatilgan — bu faylda BUTUN
+   "input" elementiga qo'llanadigan "input { flex: 1; }" qoidasi bor
+   (fan/bo'lim boshqaruv formalari uchun); shu meros checkbox kengligini
+   (18px o'rniga) beqaror qilib, oyna kengligiga qarab matn 1/2 qatorga
+   o'ralib, karta balandligi o'zgarib turishiga sabab bo'lardi. */
 .word-export-checkbox-row input[type="checkbox"] {
     width: 18px;
     height: 18px;
     accent-color: #185ABD;
     cursor: pointer;
+    flex-grow: 0;
     flex-shrink: 0;
+    flex-basis: 18px;
 }
 
 .word-export-variant-fields {
