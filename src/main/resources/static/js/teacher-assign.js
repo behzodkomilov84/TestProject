@@ -45,13 +45,26 @@ async function loadGroupSelect() {
     }
 }
 
+// ADMIN — FAQAT o'zi yaratgan to'plamlarni topshiriq qilib bera oladi
+// (avvalgidek). OWNER esa BARCHA o'qituvchilarning to'plamlarini —
+// foydalanuvchi ANIQ shuni so'ragan. Rol document.body'dagi
+// "data-role"dan (TeacherPageController.assignPage) o'qiladi.
 function loadSets() {
-    fetch("/api/teacher/questionsets")
+    const isOwner = document.body.dataset.role === "ROLE_OWNER";
+    const url = isOwner ? "/api/teacher/questionsets/all" : "/api/teacher/questionsets";
+
+    fetch(url)
         .then(r => r.json())
         .then(list => {
             const select = document.getElementById("setSelect");
             select.innerHTML = `<option value="">--Savollar to'plamini tanlang--</option>` +
-                list.map(s => `<option value="${s.id}">${escapeHtml(s.name)} (${s.questionIds.length} ta)</option>`).join("");
+                list.map(s => {
+                    const count = isOwner ? s.questionCount : s.questionIds.length;
+                    const label = isOwner
+                        ? `${escapeHtml(s.name)} — ${escapeHtml(s.teacherUsername)} (${count} ta)`
+                        : `${escapeHtml(s.name)} (${count} ta)`;
+                    return `<option value="${s.id}">${label}</option>`;
+                }).join("");
         })
         .catch(err => console.error("To'plamlarni yuklashda xatolik:", err));
 }

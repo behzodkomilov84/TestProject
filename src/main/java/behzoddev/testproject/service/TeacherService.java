@@ -178,7 +178,13 @@ public class TeacherService {
         QuestionSet set = questionSetRepository.fetchFullById(setId)
                 .orElseThrow(() -> new IllegalArgumentException("Savollar paketi topilmadi."));
 
-        if (!set.getTeacher().getId().equals(teacher.getId())) {
+        // OWNER — istisno: BOSHQA o'qituvchining to'plamini ham KO'RA oladi
+        // (faqat ko'rish — "/teacher/all-sets" sahifasida tarkibni ochib
+        // ko'rish uchun, foydalanuvchi ANIQ so'ragan). Tahrirlash/o'chirish
+        // esa hamon FAQAT egasiga (renameQuestionSet/deleteQuestionSet/
+        // updateQuestionSet — bu yerga tegilmagan).
+        boolean isOwnerOfSet = set.getTeacher().getId().equals(teacher.getId());
+        if (!isOwnerOfSet && !teacher.hasRole("ROLE_OWNER")) {
             throw new AccessDeniedException("Bu sizning paketingiz emas.");
         }
 

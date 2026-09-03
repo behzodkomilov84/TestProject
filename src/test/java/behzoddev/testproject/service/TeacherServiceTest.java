@@ -12,6 +12,7 @@ import behzoddev.testproject.dto.teacher.AssignResultDto;
 import behzoddev.testproject.dto.teacher.AssignmentStudentDetailDto;
 import behzoddev.testproject.dto.teacher.CreateQuestionSetDto;
 import behzoddev.testproject.dto.teacher.GroupStudentRowDto;
+import behzoddev.testproject.dto.teacher.QuestionSetAdminRowDto;
 import behzoddev.testproject.dto.teacher.QuestionSetDetailDto;
 import behzoddev.testproject.dto.teacher.QuestionSetResponseDto;
 import behzoddev.testproject.dto.teacher.ResponseQuestionTextDto;
@@ -88,6 +89,11 @@ class TeacherServiceTest {
     private User adminRoleUser(long id) {
         return User.builder().id(id).username("teacher" + id).roles(new HashSet<>(Set.of(
                 Role.builder().id(1L).roleName("ROLE_ADMIN").build()))).build();
+    }
+
+    private User ownerRoleUser(long id) {
+        return User.builder().id(id).username("owner" + id).roles(new HashSet<>(Set.of(
+                Role.builder().id(3L).roleName("ROLE_OWNER").build()))).build();
     }
 
     // ===== createGroup =====
@@ -325,6 +331,34 @@ class TeacherServiceTest {
 
         assertThatThrownBy(() -> teacherService.getSetDetail(5L, other))
                 .isInstanceOf(AccessDeniedException.class);
+    }
+
+    // OWNER — istisno: BOSHQA o'qituvchining to'plamini ham KO'RA oladi
+    // ("/teacher/all-sets" sahifasida tarkibni ochib ko'rish uchun,
+    // foydalanuvchi ANIQ so'ragan).
+    @Test
+    void getSetDetail_owner_canViewAnotherTeachersSet() {
+        User admin = adminRoleUser(1L);
+        User owner = ownerRoleUser(99L);
+        Question q1 = Question.builder().id(1L).questionText("Savol 1").build();
+        QuestionSet set = QuestionSet.builder().id(5L).teacher(admin).name("Admin to'plami")
+                .questions(new HashSet<>(Set.of(q1))).build();
+        when(questionSetRepository.fetchFullById(5L)).thenReturn(Optional.of(set));
+
+        QuestionSetDetailDto result = teacherService.getSetDetail(5L, owner);
+
+        assertThat(result.name()).isEqualTo("Admin to'plami");
+        assertThat(result.questions()).hasSize(1);
+    }
+
+    @Test
+    void getAllSetsForOwner_delegatesToRepository() {
+        QuestionSetAdminRowDto row = new QuestionSetAdminRowDto(1L, "Set1", "teacher1", 5L, null);
+        when(questionSetRepository.findAllForAdmin()).thenReturn(List.of(row));
+
+        List<QuestionSetAdminRowDto> result = teacherService.getAllSetsForOwner();
+
+        assertThat(result).containsExactly(row);
     }
 
     @Test

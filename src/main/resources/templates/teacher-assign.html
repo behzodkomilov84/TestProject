@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/teacher-pages.css">
 </head>
-<body>
+<body th:attr="data-role=${role}">
 
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 

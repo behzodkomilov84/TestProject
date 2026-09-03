@@ -107,6 +107,10 @@
                         <div class="sub-dropdown-content">
                             <a href="/users">Foydalanuvchilar</a>
                             <a href="/payments">To'lov tarixi</a>
+                            <!-- FAQAT OWNER ko'radigan sahifalar — Admin Panel'da
+                                 EMAS, shu yerda (ADMIN'ga umuman ko'rinmasligi
+                                 kerak, foydalanuvchi ANIQ shuni so'ragan). -->
+                            <a href="/teacher/all-sets">Barcha savol to'plamlari</a>
                         </div>
                     </div>
 
@@ -119,7 +123,6 @@
                             <a href="/teacher/builder">Savollar to'plami</a>
                             <a href="/teacher/assign">Topshiriq berish</a>
                             <a href="/admin-assignment">Topshiriqlar</a>
-                            <a href="/teacher/all-sets" sec:authorize="hasAuthority('ROLE_OWNER')">Barcha savol to'plamlari</a>
                         </div>
                     </div>
 

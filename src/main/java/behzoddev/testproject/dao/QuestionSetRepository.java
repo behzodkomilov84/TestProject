@@ -29,7 +29,7 @@ public interface QuestionSetRepository extends JpaRepository<QuestionSet, Long> 
     // lekin OWNER hammasini (kim nechta to'plam yaratgani, nechta savol
     // borligi) bitta ro'yxatda ko'rishi kerak.
     @Query("select new behzoddev.testproject.dto.teacher.QuestionSetAdminRowDto(" +
-            "qs.id, qs.name, qs.teacher.username, size(qs.questions)) " +
+            "qs.id, qs.name, qs.teacher.username, size(qs.questions), qs.createdAt) " +
             "from QuestionSet qs order by qs.teacher.username, qs.name")
     List<QuestionSetAdminRowDto> findAllForAdmin();
 }
