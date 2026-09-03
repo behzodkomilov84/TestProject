@@ -103,6 +103,7 @@ class CourseServiceTest {
         when(courseSectionProgressRepository.existsByUser_IdAndSection_Id(1L, 1L)).thenReturn(false);
         when(courseSectionRepository.findByCourse_IdAndOrderIndex(1L, 0)).thenReturn(Optional.empty());
         when(courseSectionRepository.findByCourse_IdAndOrderIndex(1L, 2)).thenReturn(Optional.empty());
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(section1));
 
         CourseSectionContentDto result = courseService.getSectionContent(1L, 1L, user);
 
@@ -121,8 +122,8 @@ class CourseServiceTest {
         when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
                 eq(1L), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(true);
         CourseSection section1 = CourseSection.builder().id(1L).course(course).orderIndex(1).build();
-        when(courseSectionRepository.findByCourse_IdAndOrderIndex(1L, 1)).thenReturn(Optional.of(section1));
         when(courseSectionProgressRepository.existsByUser_IdAndSection_Id(1L, 1L)).thenReturn(false);
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(section1, section2));
 
         assertThatThrownBy(() -> courseService.getSectionContent(1L, 2L, user))
                 .isInstanceOf(AccessDeniedException.class);
@@ -144,6 +145,7 @@ class CourseServiceTest {
         when(courseSectionProgressRepository.existsByUser_IdAndSection_Id(1L, 1L)).thenReturn(true); // 1-bo'lim tugatilgan
         when(courseSectionProgressRepository.existsByUser_IdAndSection_Id(1L, 2L)).thenReturn(false);
         when(courseSectionRepository.findByCourse_IdAndOrderIndex(1L, 3)).thenReturn(Optional.empty());
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(section1, section2));
 
         CourseSectionContentDto result = courseService.getSectionContent(1L, 2L, user);
 
@@ -186,6 +188,88 @@ class CourseServiceTest {
         assertThat(result.title()).isEqualTo("2-bo'lim");
     }
 
+    // ===== Bo'limlar (CourseChapter) bir-biridan MUSTAQIL ochiladi =====
+    // (foydalanuvchi so'rovi bo'yicha, 2026-09-03: "kurs bo'limlari bir
+    // biriga bog'liq emas, barcha bo'limlarni birinchi mavzusi ochiq
+    // bo'lsin" — avval BUTUN kurs bo'ylab bitta ketma-ket zanjir edi,
+    // 2-Bo'limning 1-mavzusi ham 1-Bo'limni to'liq tugatishni talab
+    // qilardi).
+
+    @Test
+    void getSectionContent_secondChapterFirstSection_unlockedWithoutCompletingFirstChapter() {
+        User user = subscriber();
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter chapter1 = CourseChapter.builder().id(10L).course(course).name("1-bob").orderIndex(1).build();
+        CourseChapter chapter2 = CourseChapter.builder().id(20L).course(course).name("2-bob").orderIndex(2).build();
+        CourseSection s1 = CourseSection.builder().id(1L).course(course).chapter(chapter1).orderIndex(1)
+                .type(CourseSectionType.TEXT).textContent("matn").build();
+        CourseSection s2 = CourseSection.builder().id(2L).course(course).chapter(chapter1).orderIndex(2)
+                .type(CourseSectionType.TEXT).textContent("matn").build();
+        CourseSection s3 = CourseSection.builder().id(3L).course(course).chapter(chapter2).title("2-bob, 1-mavzu")
+                .orderIndex(3).type(CourseSectionType.TEXT).textContent("matn").build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findById(3L)).thenReturn(Optional.of(s3));
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+                eq(1L), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(true);
+        // 1-Bob HALI tugatilmagan (s1/s2 uchun progress yo'q) — shunga
+        // qaramay 2-Bobning 1-mavzusi (s3) ochiq bo'lishi kerak.
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(s1, s2, s3));
+        when(courseSectionProgressRepository.existsByUser_IdAndSection_Id(1L, 3L)).thenReturn(false);
+        when(courseSectionRepository.findByCourse_IdAndOrderIndex(1L, 2)).thenReturn(Optional.of(s2));
+        when(courseSectionRepository.findByCourse_IdAndOrderIndex(1L, 4)).thenReturn(Optional.empty());
+
+        CourseSectionContentDto result = courseService.getSectionContent(1L, 3L, user);
+
+        assertThat(result.title()).isEqualTo("2-bob, 1-mavzu");
+    }
+
+    @Test
+    void getSectionContent_secondSectionInSameChapter_stillRequiresFirstCompleted() {
+        User user = subscriber();
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter chapter1 = CourseChapter.builder().id(10L).course(course).name("1-bob").orderIndex(1).build();
+        CourseSection s1 = CourseSection.builder().id(1L).course(course).chapter(chapter1).orderIndex(1).build();
+        CourseSection s2 = CourseSection.builder().id(2L).course(course).chapter(chapter1)
+                .orderIndex(2).type(CourseSectionType.TEXT).textContent("matn").build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findById(2L)).thenReturn(Optional.of(s2));
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+                eq(1L), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(true);
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(s1, s2));
+        when(courseSectionProgressRepository.existsByUser_IdAndSection_Id(1L, 1L)).thenReturn(false);
+
+        // BIR XIL Bo'lim ichida ketma-ketlik hali ham saqlanishi kerak.
+        assertThatThrownBy(() -> courseService.getSectionContent(1L, 2L, user))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void getDetail_secondChapterFirstSection_notLockedEvenIfFirstChapterIncomplete() {
+        User user = subscriber();
+        Course course = Course.builder().id(1L).title("Kurs").published(true).createdBy(owner()).build();
+        CourseChapter chapter1 = CourseChapter.builder().id(10L).course(course).name("1-bob").orderIndex(1).build();
+        CourseChapter chapter2 = CourseChapter.builder().id(20L).course(course).name("2-bob").orderIndex(2).build();
+        CourseSection s1 = CourseSection.builder().id(1L).course(course).chapter(chapter1).orderIndex(1)
+                .type(CourseSectionType.TEXT).build();
+        CourseSection s2 = CourseSection.builder().id(2L).course(course).chapter(chapter2).orderIndex(2)
+                .type(CourseSectionType.TEXT).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+                anyLong(), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(true);
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(s1, s2));
+        when(courseSectionProgressRepository.existsByUser_IdAndSection_Id(anyLong(), anyLong())).thenReturn(false);
+
+        CourseDetailDto result = courseService.getDetail(1L, user);
+
+        CourseSectionSummaryDto s1Dto = result.sections().stream().filter(s -> s.id().equals(1L)).findFirst().orElseThrow();
+        CourseSectionSummaryDto s2Dto = result.sections().stream().filter(s -> s.id().equals(2L)).findFirst().orElseThrow();
+        assertThat(s1Dto.locked()).isFalse(); // 1-Bobning 1-mavzusi
+        assertThat(s2Dto.locked()).isFalse(); // 2-Bobning 1-mavzusi — 1-Bob tugallanmagan bo'lsa ham ochiq
+    }
+
     // ===== markSectionCompleted =====
 
     @Test
@@ -200,6 +284,7 @@ class CourseServiceTest {
         when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
                 eq(1L), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(true);
         when(courseSectionProgressRepository.existsByUser_IdAndSection_Id(1L, 1L)).thenReturn(false);
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(section1));
 
         courseService.markSectionCompleted(1L, 1L, user);
 
@@ -218,6 +303,7 @@ class CourseServiceTest {
         when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
                 eq(1L), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(true);
         when(courseSectionProgressRepository.existsByUser_IdAndSection_Id(1L, 1L)).thenReturn(true);
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(section1));
 
         courseService.markSectionCompleted(1L, 1L, user);
 
@@ -1005,6 +1091,7 @@ class CourseServiceTest {
         when(courseSectionProgressRepository.existsByUser_IdAndSection_Id(1L, 1L)).thenReturn(true);
         when(courseSectionProgressRepository.existsByUser_IdAndSection_Id(1L, 2L)).thenReturn(false);
         when(courseSectionRepository.findByCourse_IdAndOrderIndex(1L, 3)).thenReturn(Optional.empty());
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(section1, section2));
 
         CourseSectionContentDto result = courseService.getSectionContent(1L, 2L, user);
 

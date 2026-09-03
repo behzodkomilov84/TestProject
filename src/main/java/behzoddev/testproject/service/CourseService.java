@@ -47,8 +47,13 @@ import java.util.stream.Collectors;
 /**
  * JavaRush uslubidagi online kurslar — OWNER yaratadi/tahrirlaydi, ADMIN/USER
  * obuna orqali kirish huquqini sotib oladi (CourseSubscription, faqat OWNER
- * qo'lda tasdiqlaydi). Bo'limlar ketma-ket ochiladi: 1-bo'lim obunadan
- * keyin darhol, keyingilari — oldingisi "tugatilgach" (CourseSectionProgress).
+ * qo'lda tasdiqlaydi). Mavzular (CourseSection) o'z BO'LIMI (CourceChapter)
+ * ICHIDA ketma-ket ochiladi: har bir Bo'limning 1-mavzusi obunadan keyin
+ * darhol ochiq, keyingilari — o'sha BO'LIM ICHIDAGI oldingisi "tugatilgach"
+ * (CourseSectionProgress). Bo'limlar bir-biridan MUSTAQIL — bitta Bo'limni
+ * oxirigacha tugatmaslik boshqa Bo'limlarning 1-mavzusini bloklamaydi
+ * (foydalanuvchi so'rovi bo'yicha, 2026-09-03; "Bo'limsiz" — chapter=null —
+ * mavzular ham o'zaro bitta mustaqil guruh hisoblanadi).
  */
 @Service
 @RequiredArgsConstructor
@@ -143,13 +148,20 @@ public class CourseService {
                 : questionRepository.countByTopicIdsGrouped(linkedTopicIds).stream()
                         .collect(Collectors.toMap(TopicQuestionCountDto::topicId, TopicQuestionCountDto::count));
 
+        // Har bir mavzu uchun, O'ZINING BO'LIMI (chapter) ICHIDAGI undan
+        // oldingi eng yaqin mavzuni bitta marta (N+1 so'rovsiz) hisoblab
+        // qo'yamiz — Bo'limlar bir-biridan mustaqil ochilishi shu orqali
+        // ta'minlanadi (computePreviousInChapterMap izohiga qarang).
+        Map<Long, CourseSection> previousInChapterBySectionId = computePreviousInChapterMap(sections);
+
         List<CourseSectionSummaryDto> sectionDtos = sections.stream()
                 .map(s -> CourseSectionSummaryDto.builder()
                         .id(s.getId())
                         .title(s.getTitle())
                         .orderIndex(s.getOrderIndex())
                         .type(s.getType().name())
-                        .locked(!canManage && !isSectionUnlocked(currentUser, s, subscribed))
+                        .locked(!canManage && !isSectionUnlockedGivenPrev(
+                                currentUser, previousInChapterBySectionId.get(s.getId()), subscribed))
                         .completed(courseSectionProgressRepository
                                 .existsByUser_IdAndSection_Id(currentUser.getId(), s.getId()))
                         .linkedTopicId(s.getLinkedTopic() != null ? s.getLinkedTopic().getId() : null)
@@ -185,7 +197,15 @@ public class CourseService {
         boolean subscribed = isSubscribed(currentUser, course);
         boolean canManage = canManageCourse(course, currentUser);
 
-        if (!canManage && !isSectionUnlocked(currentUser, section, subscribed)) {
+        // Bitta so'rov bilan olingan ro'yxatdan hisoblangan xarita — SHU
+        // mavzuning o'ziga kirish huquqini TEKSHIRISH uchun HAM, pastdagi
+        // "Keyingi mavzu" tugmasi holatini (nextUnlocked) TO'G'RI (Bo'lim
+        // chegarasidan mustaqil) hisoblash uchun HAM qayta ishlatiladi.
+        List<CourseSection> ordered = courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(courseId);
+        Map<Long, CourseSection> previousInChapterBySectionId = computePreviousInChapterMap(ordered);
+
+        if (!canManage && !isSectionUnlockedGivenPrev(
+                currentUser, previousInChapterBySectionId.get(section.getId()), subscribed)) {
             throw new AccessDeniedException("⛔ Bu mavzu hali ochilmagan. Avval oldingi mavzuni tugatish kerak.");
         }
 
@@ -198,6 +218,13 @@ public class CourseService {
         CourseSection next = courseSectionRepository
                 .findByCourse_IdAndOrderIndex(courseId, section.getOrderIndex() + 1)
                 .orElse(null);
+
+        // "Keyingi mavzu" tugmasi — agar keyingisi BOSHQA (mustaqil)
+        // Bo'limning 1-mavzusi bo'lsa, u SHU mavzu tugatilishini kutmasdan
+        // ham allaqachon ochiq bo'lishi mumkin (masalan sahifa birinchi
+        // marta ochilganda, video hali ko'rilmagan holatda ham).
+        boolean nextUnlocked = next != null && (canManage || isSectionUnlockedGivenPrev(
+                currentUser, previousInChapterBySectionId.get(next.getId()), subscribed));
 
         return CourseSectionContentDto.builder()
                 .id(section.getId())
@@ -223,7 +250,7 @@ public class CourseService {
                 .completed(completed)
                 .prevSectionId(prev != null ? prev.getId() : null)
                 .nextSectionId(next != null ? next.getId() : null)
-                .nextUnlocked(next != null && (canManage || completed))
+                .nextUnlocked(nextUnlocked)
                 .build();
     }
 
@@ -259,15 +286,48 @@ public class CourseService {
                 user.getId(), course.getId(), CourseSubscriptionStatus.CONFIRMED, LocalDateTime.now());
     }
 
+    // Bitta mavzu uchun (getSectionContent/markSectionCompleted — loop
+    // ICHIDA emas, bitta so'rov uchun bemalol) — kursning BUTUN tartiblangan
+    // ro'yxatini olib, shu mavzuning o'z BO'LIMI ICHIDAGI oldingisini topadi.
+    // Ko'p mavzuni BIRGALIKDA hisoblash kerak bo'lganda (getDetail) buning
+    // o'rniga computePreviousInChapterMap() + isSectionUnlockedGivenPrev()
+    // ishlatiladi (N+1 so'rovning oldini olish uchun).
     private boolean isSectionUnlocked(User user, CourseSection section, boolean subscribed) {
-        if (!subscribed) return false;
-        if (section.getOrderIndex() <= 1) return true;
+        List<CourseSection> ordered = courseSectionRepository
+                .findByCourse_IdOrderByOrderIndexAsc(section.getCourse().getId());
+        CourseSection prevInChapter = computePreviousInChapterMap(ordered).get(section.getId());
+        return isSectionUnlockedGivenPrev(user, prevInChapter, subscribed);
+    }
 
-        return courseSectionRepository
-                .findByCourse_IdAndOrderIndex(section.getCourse().getId(), section.getOrderIndex() - 1)
-                .map(prev -> courseSectionProgressRepository
-                        .existsByUser_IdAndSection_Id(user.getId(), prev.getId()))
-                .orElse(true); // oldingi bo'lim topilmasa (data xatosi bo'lmasa kerak) — bloklamaymiz
+    private boolean isSectionUnlockedGivenPrev(User user, CourseSection prevInChapter, boolean subscribed) {
+        if (!subscribed) return false;
+        if (prevInChapter == null) return true; // shu Bo'lim (yoki "bo'limsizlar" guruhi) ICHIDAGI birinchi mavzu
+
+        return courseSectionProgressRepository.existsByUser_IdAndSection_Id(user.getId(), prevInChapter.getId());
+    }
+
+    // Kurs ichidagi (orderIndex bo'yicha saralangan) mavzular ro'yxatida,
+    // har bir mavzuni O'ZINING BO'LIMI (chapter) bilan guruhlab, shu
+    // BO'LIM ICHIDAGI eng yaqin OLDINGI mavzusini topib beradi (birinchisi
+    // uchun xarita'da yozuv umuman bo'lmaydi — "oldingisi yo'q" degani).
+    // Bo'limlar bir-biridan MUSTAQIL: masalan II Bo'limning 3-mavzusi
+    // uchun oldingi — II Bo'limning 2-mavzusi, I Bo'limning oxirgi mavzusi
+    // EMAS (garchi orderIndex bo'yicha undan oldin kelsa ham). "Bo'limsiz"
+    // (chapter=null) mavzular ham o'zaro bitta mustaqil guruh hisoblanadi.
+    private Map<Long, CourseSection> computePreviousInChapterMap(List<CourseSection> orderedSections) {
+        Map<Long, CourseSection> lastSeenByChapterId = new LinkedHashMap<>();
+        Map<Long, CourseSection> previousBySectionId = new LinkedHashMap<>();
+
+        for (CourseSection s : orderedSections) {
+            Long chapterKey = s.getChapter() != null ? s.getChapter().getId() : 0L;
+            CourseSection prev = lastSeenByChapterId.get(chapterKey);
+            if (prev != null) {
+                previousBySectionId.put(s.getId(), prev);
+            }
+            lastSeenByChapterId.put(chapterKey, s);
+        }
+
+        return previousBySectionId;
     }
 
     /* ================= OWNER: CRUD ================= */
