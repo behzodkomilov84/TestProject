@@ -109,9 +109,9 @@ public class ExamVariantService {
             questionsByTopic.put(t.getId(), questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(t.getId()));
         }
 
-        Map<Long, Integer> allocation = allocateEqually(topics, questionsByTopic, perVariant);
-
         Random random = new Random();
+        Map<Long, Integer> allocation = allocateEqually(topics, questionsByTopic, perVariant, random);
+
         int digits = String.valueOf(variantCount).length();
         List<Map<Integer, String>> answerKeys = new ArrayList<>();
 
@@ -158,7 +158,7 @@ public class ExamVariantService {
     // algoritmi). Agar shu doiradagi JAMI savollar soni ham perVariant'dan
     // kam bo'lsa — aniq xato bilan to'xtaydi (o'zi tasodifiy kamaytirib
     // qo'ymaydi).
-    private Map<Long, Integer> allocateEqually(List<Topic> topics, Map<Long, List<Question>> questionsByTopic, int perVariant) {
+    private Map<Long, Integer> allocateEqually(List<Topic> topics, Map<Long, List<Question>> questionsByTopic, int perVariant, Random random) {
         List<Long> ids = topics.stream().map(Topic::getId).toList();
         Map<Long, Integer> capacity = new LinkedHashMap<>();
         for (Topic t : topics) {
@@ -168,7 +168,7 @@ public class ExamVariantService {
         // avlodi) — bu yerdagi eski xabar matni ("...har bir variant uchun...")
         // saqlab qolinishi uchun shu yerda ATAYLAB alohida ushlanadi.
         try {
-            return QuestionAllocationUtil.allocateEqually(ids, capacity, perVariant);
+            return QuestionAllocationUtil.allocateEqually(ids, capacity, perVariant, random);
         } catch (IllegalArgumentException e) {
             int totalCapacity = capacity.values().stream().mapToInt(Integer::intValue).sum();
             throw new RuntimeException("❌ Yetarli savol yo'q: shu doirada jami " + totalCapacity +

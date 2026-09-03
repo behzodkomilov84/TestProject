@@ -128,9 +128,9 @@ public class TeacherService {
         Map<Long, Integer> capacity = new LinkedHashMap<>();
         questionsByTopic.forEach((id, list) -> capacity.put(id, list.size()));
 
-        Map<Long, Integer> allocation = QuestionAllocationUtil.allocateEqually(topicIds, capacity, totalCount);
-
         Random random = new Random();
+        Map<Long, Integer> allocation = QuestionAllocationUtil.allocateEqually(topicIds, capacity, totalCount, random);
+
         List<Question> selected = new ArrayList<>();
         for (Long topicId : topicIds) {
             List<Question> pool = new ArrayList<>(questionsByTopic.get(topicId));

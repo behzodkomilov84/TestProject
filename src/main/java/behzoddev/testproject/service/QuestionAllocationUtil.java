@@ -1,10 +1,12 @@
 package behzoddev.testproject.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.Set;
 
 // "Suv quyish" (water-filling) taqsimlash algoritmi — bir nechta ID
@@ -26,7 +28,7 @@ final class QuestionAllocationUtil {
     private QuestionAllocationUtil() {
     }
 
-    static Map<Long, Integer> allocateEqually(List<Long> ids, Map<Long, Integer> capacityById, int totalWanted) {
+    static Map<Long, Integer> allocateEqually(List<Long> ids, Map<Long, Integer> capacityById, int totalWanted, Random random) {
         Map<Long, Integer> allocated = new LinkedHashMap<>();
         for (Long id : ids) {
             allocated.put(id, 0);
@@ -44,8 +46,18 @@ final class QuestionAllocationUtil {
             int share = remaining / active.size();
 
             if (share == 0) {
+                // ID'lar soni talabdan ko'p bo'lganda (masalan 400 ta mavzu
+                // belgilangan, lekin jami 60 ta savol so'ralgan) — HAR
+                // BIRIGA yetmaydi, faqat "remaining" tasiga tegadi. QAYSI
+                // ID'lar tegishini ATAYLAB ARALASHTIRIB (shuffle) tanlaymiz —
+                // aks holda har doim RO'YXATNING BOSHIDAGI ID'lar ustunlik
+                // topib, oxiridagilarga HECH QACHON tegmasdi (haqiqiy
+                // topilgan production bug — "tasodifiy tanlash" degan
+                // da'voga zid edi).
+                List<Long> shuffled = new ArrayList<>(active);
+                Collections.shuffle(shuffled, random);
                 int given = 0;
-                for (Long id : active) {
+                for (Long id : shuffled) {
                     if (given >= remaining) break;
                     allocated.merge(id, 1, Integer::sum);
                     given++;

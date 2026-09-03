@@ -195,6 +195,45 @@ class TeacherServiceTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    // Haqiqiy topilgan bug (2026-09-03, brauzerda sinovdan o'tkazilganda):
+    // mavzular soni so'ralgan savollar sonidan KO'P bo'lganda (masalan 400
+    // ta mavzu belgilangan, jami 60 ta savol so'ralgan), avval HAR DOIM
+    // FAQAT ro'yxatning BOSHIDAGI (masalan birinchi bo'lim) mavzulariga
+    // teginardi — RANDOM emas edi (LinkedHashSet, kiritilgan tartibda).
+    // Endi bir necha marta chaqirib, natija HAR SAFAR bir xil bo'lib
+    // qolmasligini (ya'ni haqiqatan aralashtirilganini) tekshiramiz.
+    @Test
+    void autoSelectQuestions_moreTopicsThanWanted_pickIsRandomNotAlwaysFirstTopics() {
+        // 50 ta mavzu, har birida 1 tadan savol, jami 10 ta savol so'raladi —
+        // demak har safar 10 tasi tanlanadi, 40 tasi qoladi.
+        List<Long> topicIds = new ArrayList<>();
+        for (long i = 1; i <= 50; i++) {
+            topicIds.add(i);
+            when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(i))
+                    .thenReturn(List.of(Question.builder().id(i).questionText("Q" + i).build()));
+        }
+
+        Set<Long> firstRunIds = new java.util.HashSet<>(
+                teacherService.autoSelectQuestions(topicIds, 10).stream().map(ResponseQuestionTextDto::id).toList());
+
+        // Bir necha marta qayta chaqirib, kamida BITTASI birinchi urinishdan
+        // FARQLI natija berishini kutamiz ("har doim xuddi shu birinchi 10 ta
+        // mavzu" bo'lib qolmasligi kerak).
+        boolean sawDifferentResult = false;
+        for (int attempt = 0; attempt < 20; attempt++) {
+            Set<Long> ids = new java.util.HashSet<>(
+                    teacherService.autoSelectQuestions(topicIds, 10).stream().map(ResponseQuestionTextDto::id).toList());
+            if (!ids.equals(firstRunIds)) {
+                sawDifferentResult = true;
+                break;
+            }
+        }
+
+        assertThat(sawDifferentResult)
+                .as("50 ta mavzudan 10 tasi tanlanganda, natija tasodifiy bo'lishi kerak (har doim bir xil emas)")
+                .isTrue();
+    }
+
     // ===== renameQuestionSet / deleteQuestionSet ("Savollar to'plami" sahifasi) =====
 
     @Test
