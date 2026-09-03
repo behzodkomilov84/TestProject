@@ -317,11 +317,25 @@ function toggleWordExportVariantFields() {
 }
 
 // Tanlangan rejimga ("different"/"same") qarab izoh matnini yangilaydi.
+// Ikki matn UZUNLIGI har xil (bittasi ko'proq qatorga o'raladi) —
+// shunchaki almashtirsak, modal balandligi rejim tanlanganda "sakrab"
+// qolar edi. Shu sabab har ikkalasining tabiiy balandligini o'lchab,
+// KATTASINI min-height sifatida qotirib qo'yamiz (ekran kengligidan
+// qat'i nazar to'g'ri ishlashi uchun har chaqiriqda qayta o'lchanadi).
 function updateWordExportHint() {
     const sameQuestions = document.querySelector('input[name="wordExportVariantMode"]:checked').value === "same";
-    document.getElementById("wordExportHint").textContent = sameQuestions
-        ? "Savollar shu fandagi BARCHA mavzular bo'yicha TENG taqsimlanib BIR MARTA tanlanadi va BARCHA nusxada bir xil bo'ladi — faqat savollar (va javob variantlari) tartibi har bir nusxada alohida aralashtiriladi."
-        : "Savollar shu fandagi BARCHA mavzular bo'yicha TENG taqsimlanadi (mavzuda savol yetmasa, qolgan qismi boshqa mavzularga teng bo'lib beriladi). Natija — har biri alohida .docx fayl bo'lgan ZIP arxiv + javoblar kaliti (Excel).";
+    const textDifferent = "Savollar shu fandagi BARCHA mavzular bo'yicha TENG taqsimlanadi (mavzuda savol yetmasa, qolgan qismi boshqa mavzularga teng bo'lib beriladi). Natija — har biri alohida .docx fayl bo'lgan ZIP arxiv + javoblar kaliti (Excel).";
+    const textSame = "Savollar shu fandagi BARCHA mavzular bo'yicha TENG taqsimlanib BIR MARTA tanlanadi va BARCHA nusxada bir xil bo'ladi — faqat savollar (va javob variantlari) tartibi har bir nusxada alohida aralashtiriladi.";
+
+    const hint = document.getElementById("wordExportHint");
+    hint.style.minHeight = "";
+    hint.textContent = textDifferent;
+    const hDifferent = hint.offsetHeight;
+    hint.textContent = textSame;
+    const hSame = hint.offsetHeight;
+    hint.style.minHeight = Math.max(hDifferent, hSame) + "px";
+
+    hint.textContent = sameQuestions ? textSame : textDifferent;
 }
 
 async function confirmWordExport() {
