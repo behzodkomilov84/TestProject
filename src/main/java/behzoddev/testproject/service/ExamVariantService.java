@@ -39,12 +39,21 @@ import java.util.Random;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-// "🎲 Variantlar yaratish" — bir nechta O'QUVCHI uchun BIR XIL sondagi,
-// lekin HAR XIL savollardan iborat imtihon variantlarini bir yo'la
-// yaratadi (masalan 30 talaba, har biriga 50 tadan savol). Tanlov barcha
-// MAVZULAR bo'yicha TENG taqsimlanadi (savollar soniga QARAB EMAS) —
-// mavzuda savol yetmasa, yetmagan qism boshqa mavzularga (ularda ham
-// joy bo'lsa) teng bo'lib qayta taqsimlanadi (allocateEqually()).
+// "🎲 Variantlar yaratish" — bir nechta O'QUVCHI uchun BIR XIL sondagi
+// imtihon variantlarini bir yo'la yaratadi (masalan 30 talaba, har
+// biriga 50 tadan savol). Ikki rejim bor:
+//   - sameQuestions=false (default, "har biriga boshqa-boshqa savollar"):
+//     har bir nusxa o'zining HAR XIL tasodifiy savol to'plamiga ega.
+//   - sameQuestions=true ("barchasiga bir xil savollar"): savollar
+//     TANLOVI faqat BIR MARTA qilinadi (barcha nusxa uchun bir xil —
+//     baholash adolatli bo'lishi uchun), har bir nusxada esa faqat
+//     savollar TARTIBI (va shuffleAnswers yoqilgan bo'lsa javoblar
+//     tartibi ham) alohida aralashtiriladi — ko'chirib javob berishni
+//     qiyinlashtirish uchun.
+// Ikkala rejimda ham savollar tanlovi barcha MAVZULAR bo'yicha TENG
+// taqsimlanadi (savollar soniga QARAB EMAS) — mavzuda savol yetmasa,
+// yetmagan qism boshqa mavzularga (ularda ham joy bo'lsa) teng bo'lib
+// qayta taqsimlanadi (allocateEqually()).
 //
 // Natija — BITTA .zip fayl: har biri alohida .docx bo'lgan
 // "Variant_NN.docx" fayllar + "Javoblar_kaliti.xlsx" (o'qituvchi uchun,
@@ -71,32 +80,32 @@ public class ExamVariantService {
     private String uploadDir;
 
     @Transactional(readOnly = true)
-    public ExportedFileDto generateVariantsForTopic(Long topicId, int variantCount, int perVariant, boolean shuffleAnswers) {
+    public ExportedFileDto generateVariantsForTopic(Long topicId, int variantCount, int perVariant, boolean shuffleAnswers, boolean sameQuestions) {
         Topic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new RuntimeException("Mavzu topilmadi: " + topicId));
-        byte[] data = generate("Mavzu: " + topic.getName(), List.of(topic), variantCount, perVariant, shuffleAnswers);
+        byte[] data = generate("Mavzu: " + topic.getName(), List.of(topic), variantCount, perVariant, shuffleAnswers, sameQuestions);
         return new ExportedFileDto(data, "variantlar_" + ExportFilenameUtil.sanitize(topic.getName()));
     }
 
     @Transactional(readOnly = true)
-    public ExportedFileDto generateVariantsForSection(Long sectionId, int variantCount, int perVariant, boolean shuffleAnswers) {
+    public ExportedFileDto generateVariantsForSection(Long sectionId, int variantCount, int perVariant, boolean shuffleAnswers, boolean sameQuestions) {
         TopicSection section = topicSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new RuntimeException("Bo'lim topilmadi: " + sectionId));
         List<Topic> topics = topicRepository.findBySection_IdAndDeletedAtIsNullOrderByOrderIndexAsc(sectionId);
-        byte[] data = generate("Bo'lim: " + section.getName(), topics, variantCount, perVariant, shuffleAnswers);
+        byte[] data = generate("Bo'lim: " + section.getName(), topics, variantCount, perVariant, shuffleAnswers, sameQuestions);
         return new ExportedFileDto(data, "variantlar_bolim_" + ExportFilenameUtil.sanitize(section.getName()));
     }
 
     @Transactional(readOnly = true)
-    public ExportedFileDto generateVariantsForScience(Long scienceId, int variantCount, int perVariant, boolean shuffleAnswers) {
+    public ExportedFileDto generateVariantsForScience(Long scienceId, int variantCount, int perVariant, boolean shuffleAnswers, boolean sameQuestions) {
         Science science = scienceRepository.findById(scienceId)
                 .orElseThrow(() -> new RuntimeException("Fan topilmadi: " + scienceId));
         List<Topic> topics = topicRepository.findByScience_IdAndDeletedAtIsNullOrderByOrderIndexAsc(scienceId);
-        byte[] data = generate("Fan: " + science.getName(), topics, variantCount, perVariant, shuffleAnswers);
+        byte[] data = generate("Fan: " + science.getName(), topics, variantCount, perVariant, shuffleAnswers, sameQuestions);
         return new ExportedFileDto(data, "variantlar_fan_" + ExportFilenameUtil.sanitize(science.getName()));
     }
 
-    private byte[] generate(String scopeTitle, List<Topic> topics, int variantCount, int perVariant, boolean shuffleAnswers) {
+    private byte[] generate(String scopeTitle, List<Topic> topics, int variantCount, int perVariant, boolean shuffleAnswers, boolean sameQuestions) {
         if (variantCount < 1) {
             throw new RuntimeException("❌ Variantlar soni kamida 1 bo'lishi kerak");
         }
@@ -112,19 +121,22 @@ public class ExamVariantService {
         Random random = new Random();
         Map<Long, Integer> allocation = allocateEqually(topics, questionsByTopic, perVariant, random);
 
+        // sameQuestions=true bo'lsa — savollar TANLOVI shu yerda BIR MARTA
+        // qilinadi va pastda HAR BIR nusxa uchun shu ro'yxatning faqat
+        // TARTIBI aralashtiriladi (tarkibi emas).
+        List<Question> sharedSelection = sameQuestions
+                ? pickFromTopics(topics, questionsByTopic, allocation, random)
+                : null;
+
         int digits = String.valueOf(variantCount).length();
         List<Map<Integer, String>> answerKeys = new ArrayList<>();
 
         ByteArrayOutputStream zipBytes = new ByteArrayOutputStream();
         try (ZipOutputStream zip = new ZipOutputStream(zipBytes)) {
             for (int v = 1; v <= variantCount; v++) {
-                List<Question> selected = new ArrayList<>();
-                for (Topic t : topics) {
-                    List<Question> pool = new ArrayList<>(questionsByTopic.get(t.getId()));
-                    Collections.shuffle(pool, random);
-                    int take = allocation.getOrDefault(t.getId(), 0);
-                    selected.addAll(pool.subList(0, Math.min(take, pool.size())));
-                }
+                List<Question> selected = sameQuestions
+                        ? new ArrayList<>(sharedSelection)
+                        : pickFromTopics(topics, questionsByTopic, allocation, random);
                 Collections.shuffle(selected, random);
 
                 Map<Integer, String> variantKey = new LinkedHashMap<>();
@@ -174,6 +186,23 @@ public class ExamVariantService {
             throw new RuntimeException("❌ Yetarli savol yo'q: shu doirada jami " + totalCapacity +
                     " ta faol savol bor, lekin har bir variant uchun " + perVariant + " ta so'ralgan.", e);
         }
+    }
+
+    // allocation'ga (har mavzuga nechta savol) muvofiq, har mavzudan
+    // TASODIFIY (pool shuffle qilingandan keyingi boshidan) savol tanlaydi.
+    // sameQuestions=false rejimida har chaqiriqda BOSHQA natija beradi
+    // (chunki pool har safar qayta shuffle qilinadi) — sameQuestions=true
+    // rejimida esa faqat BIR MARTA chaqiriladi.
+    private List<Question> pickFromTopics(List<Topic> topics, Map<Long, List<Question>> questionsByTopic,
+                                           Map<Long, Integer> allocation, Random random) {
+        List<Question> picked = new ArrayList<>();
+        for (Topic t : topics) {
+            List<Question> pool = new ArrayList<>(questionsByTopic.get(t.getId()));
+            Collections.shuffle(pool, random);
+            int take = allocation.getOrDefault(t.getId(), 0);
+            picked.addAll(pool.subList(0, Math.min(take, pool.size())));
+        }
+        return picked;
     }
 
     private byte[] buildVariantDocument(String scopeTitle, int variantNumber, List<Question> questions,

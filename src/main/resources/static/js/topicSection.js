@@ -377,6 +377,8 @@ function openWordExportModal(sectionId) {
     wordExportSectionId = sectionId;
     document.getElementById("wordExportVariantsCheckbox").checked = false;
     document.getElementById("wordExportVariantFields").classList.add("hidden");
+    document.querySelector('input[name="wordExportVariantMode"][value="different"]').checked = true;
+    updateWordExportHint();
     document.getElementById("wordExportModal").classList.add("show");
 }
 
@@ -387,6 +389,14 @@ function closeWordExportModal() {
 function toggleWordExportVariantFields() {
     const useVariants = document.getElementById("wordExportVariantsCheckbox").checked;
     document.getElementById("wordExportVariantFields").classList.toggle("hidden", !useVariants);
+}
+
+// Tanlangan rejimga ("different"/"same") qarab izoh matnini yangilaydi.
+function updateWordExportHint() {
+    const sameQuestions = document.querySelector('input[name="wordExportVariantMode"]:checked').value === "same";
+    document.getElementById("wordExportHint").textContent = sameQuestions
+        ? "Savollar shu bo'limdagi BARCHA mavzular bo'yicha TENG taqsimlanib BIR MARTA tanlanadi va BARCHA nusxada bir xil bo'ladi — faqat savollar (va javob variantlari) tartibi har bir nusxada alohida aralashtiriladi."
+        : "Savollar shu bo'limdagi BARCHA mavzular bo'yicha TENG taqsimlanadi (mavzuda savol yetmasa, qolgan qismi boshqa mavzularga teng bo'lib beriladi). Natija — har biri alohida .docx fayl bo'lgan ZIP arxiv + javoblar kaliti (Excel).";
 }
 
 async function confirmWordExport() {
@@ -401,6 +411,7 @@ async function confirmWordExport() {
     const variantCount = Number(document.getElementById("wordExportVariantCount").value);
     const perVariant = Number(document.getElementById("wordExportPerVariant").value);
     const shuffleAnswers = document.getElementById("wordExportShuffleAnswers").checked;
+    const sameQuestions = document.querySelector('input[name="wordExportVariantMode"]:checked').value === "same";
 
     if (!variantCount || variantCount < 1) {
         alert("Nechta variant kerakligini kiriting");
@@ -412,7 +423,7 @@ async function confirmWordExport() {
     }
 
     await downloadWordVariants(
-        `/api/export/questions/word/variants/section?sectionId=${wordExportSectionId}&variantCount=${variantCount}&perVariant=${perVariant}&shuffleAnswers=${shuffleAnswers}`,
+        `/api/export/questions/word/variants/section?sectionId=${wordExportSectionId}&variantCount=${variantCount}&perVariant=${perVariant}&shuffleAnswers=${shuffleAnswers}&sameQuestions=${sameQuestions}`,
         "variantlar.zip"
     );
 }

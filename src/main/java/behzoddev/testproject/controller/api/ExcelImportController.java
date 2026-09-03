@@ -101,15 +101,19 @@ public class ExcelImportController {
     // "🎲 Variantlar yaratish" — Word eksport oynasidagi checkbox orqali
     // (question.js/topic.js/topicSection.js/science.js). Har biri BOSHQA
     // savollardan iborat "variantCount" ta .docx + javoblar kaliti,
-    // BITTA .zip faylga yig'ilgan holda qaytariladi.
+    // BITTA .zip faylga yig'ilgan holda qaytariladi. sameQuestions=true
+    // bo'lsa — barcha nusxada BIR XIL savollar, faqat tartibi (va
+    // shuffleAnswers yoqilgan bo'lsa javoblar tartibi ham) har birida
+    // alohida aralashtiriladi (ExamVariantService).
     @GetMapping("/export/questions/word/variants")
     public ResponseEntity<byte[]> exportVariantsForTopic(
             @RequestParam Long topicId,
             @RequestParam int variantCount,
             @RequestParam int perVariant,
-            @RequestParam(defaultValue = "true") boolean shuffleAnswers
+            @RequestParam(defaultValue = "true") boolean shuffleAnswers,
+            @RequestParam(defaultValue = "false") boolean sameQuestions
     ) {
-        return attachment(examVariantService.generateVariantsForTopic(topicId, variantCount, perVariant, shuffleAnswers),
+        return attachment(examVariantService.generateVariantsForTopic(topicId, variantCount, perVariant, shuffleAnswers, sameQuestions),
                 ".zip", "application/zip");
     }
 
@@ -118,9 +122,10 @@ public class ExcelImportController {
             @RequestParam Long sectionId,
             @RequestParam int variantCount,
             @RequestParam int perVariant,
-            @RequestParam(defaultValue = "true") boolean shuffleAnswers
+            @RequestParam(defaultValue = "true") boolean shuffleAnswers,
+            @RequestParam(defaultValue = "false") boolean sameQuestions
     ) {
-        return attachment(examVariantService.generateVariantsForSection(sectionId, variantCount, perVariant, shuffleAnswers),
+        return attachment(examVariantService.generateVariantsForSection(sectionId, variantCount, perVariant, shuffleAnswers, sameQuestions),
                 ".zip", "application/zip");
     }
 
@@ -129,9 +134,10 @@ public class ExcelImportController {
             @RequestParam Long scienceId,
             @RequestParam int variantCount,
             @RequestParam int perVariant,
-            @RequestParam(defaultValue = "true") boolean shuffleAnswers
+            @RequestParam(defaultValue = "true") boolean shuffleAnswers,
+            @RequestParam(defaultValue = "false") boolean sameQuestions
     ) {
-        return attachment(examVariantService.generateVariantsForScience(scienceId, variantCount, perVariant, shuffleAnswers),
+        return attachment(examVariantService.generateVariantsForScience(scienceId, variantCount, perVariant, shuffleAnswers, sameQuestions),
                 ".zip", "application/zip");
     }
 

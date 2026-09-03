@@ -749,6 +749,46 @@ h1 {
     cursor: default;
 }
 
+/* "Har biriga boshqa savollar" / "Barchasiga bir xil savollar" tanlovi —
+   .word-export-variant-fields label'ning column yo'nalishini bekor qilib,
+   radio + matn bir qatorda joylashishi uchun. */
+.word-export-mode-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.word-export-variant-fields .word-export-radio-row {
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: #334155;
+    cursor: pointer;
+    padding: 10px 12px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    transition: border-color .15s ease, background .15s ease;
+}
+
+.word-export-variant-fields .word-export-radio-row:hover {
+    border-color: #185ABD;
+}
+
+.word-export-variant-fields .word-export-radio-row:has(input:checked) {
+    border-color: #185ABD;
+    background: #eef2ff;
+}
+
+.word-export-radio-row input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #185ABD;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
 .word-export-variant-fields input[type="number"] {
     padding: 9px 12px;
     border: 1px solid #d5dde8;

@@ -135,11 +135,23 @@
                 Har bir variantga nechta savol
                 <input type="number" id="wordExportPerVariant" min="1" value="50">
             </label>
+
+            <div class="word-export-mode-group">
+                <label class="word-export-radio-row">
+                    <input type="radio" name="wordExportVariantMode" value="different" checked onchange="updateWordExportHint()">
+                    🔀 Har biriga boshqa-boshqa savollar
+                </label>
+                <label class="word-export-radio-row">
+                    <input type="radio" name="wordExportVariantMode" value="same" onchange="updateWordExportHint()">
+                    🎯 Barchasiga bir xil savollar (faqat tartibi aralashtiriladi)
+                </label>
+            </div>
+
             <label class="word-export-checkbox-row">
                 <input type="checkbox" id="wordExportShuffleAnswers" checked>
                 Javob variantlari (A,B,C,D,E) tartibi ham aralashtirilsin
             </label>
-            <p class="word-export-hint">
+            <p class="word-export-hint" id="wordExportHint">
                 Savollar shu mavzudan tasodifiy tanlanadi. Natija — har biri
                 alohida .docx fayl bo'lgan ZIP arxiv + javoblar kaliti (Excel).
             </p>

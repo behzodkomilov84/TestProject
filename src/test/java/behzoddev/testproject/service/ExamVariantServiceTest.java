@@ -142,7 +142,7 @@ class ExamVariantServiceTest {
         when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(3L)).thenReturn(questionsFor("T3", 10));
 
         service = service();
-        behzoddev.testproject.dto.export.ExportedFileDto result = service.generateVariantsForScience(9L, 5, 10, false);
+        behzoddev.testproject.dto.export.ExportedFileDto result = service.generateVariantsForScience(9L, 5, 10, false, false);
         assertThat(result.filenameBase()).isEqualTo("variantlar_fan_Fan");
         byte[] zip = result.data();
 
@@ -159,6 +159,60 @@ class ExamVariantServiceTest {
         }
     }
 
+    // Zip'dan har bir "Variant_*.docx" ichidagi savol matnlarini
+    // KETMA-KETLIGI bilan (ro'yxat sifatida) o'qiydi — sameQuestions=true
+    // rejimida "bir xil savollar, boshqa tartib"ni tekshirish uchun.
+    private List<List<String>> readVariantQuestionOrders(byte[] zipBytes) throws IOException {
+        List<List<String>> result = new ArrayList<>();
+        try (ZipInputStream zip = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
+            ZipEntry entry;
+            while ((entry = zip.getNextEntry()) != null) {
+                if (!entry.getName().startsWith("Variant_")) continue;
+
+                byte[] docBytes = zip.readAllBytes();
+                List<String> order = new ArrayList<>();
+                try (XWPFDocument doc = new XWPFDocument(new ByteArrayInputStream(docBytes))) {
+                    for (XWPFParagraph p : doc.getParagraphs()) {
+                        String text = p.getText();
+                        if (text.matches("^\\d+\\.\\s+T\\d+-Q\\d+$")) {
+                            order.add(text.replaceAll("^\\d+\\.\\s+", ""));
+                        }
+                    }
+                }
+                result.add(order);
+            }
+        }
+        return result;
+    }
+
+    @Test
+    void generateVariantsForTopic_sameQuestionsTrue_sameContentDifferentOrderAcrossVariants() throws IOException {
+        Topic t1 = topic(1, "T1");
+
+        when(topicRepository.findById(1L)).thenReturn(java.util.Optional.of(t1));
+        // Tartib aralashtirilishi ko'zga tashlanishi uchun yetarlicha katta pool
+        when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(1L)).thenReturn(questionsFor("T1", 20));
+
+        service = service();
+        byte[] zip = service.generateVariantsForTopic(1L, 10, 20, false, true).data();
+
+        List<List<String>> orders = readVariantQuestionOrders(zip);
+        assertThat(orders).hasSize(10);
+
+        // Tarkib (savollar TO'PLAMI) barcha nusxada BIR XIL bo'lishi kerak
+        List<String> firstAsSet = orders.get(0).stream().sorted().toList();
+        for (List<String> order : orders) {
+            assertThat(order.stream().sorted().toList()).isEqualTo(firstAsSet);
+        }
+
+        // Lekin TARTIB kamida bitta juftlikda farq qilishi kerak
+        // (20 ta savolning tasodifiy tartibi 10 marta bir xil chiqishi
+        // amalda ehtimoldan yiroq — flaky bo'lmasligi uchun shunchaki
+        // "kamida bitta farq bor"ligini tekshiramiz).
+        boolean anyDifferentOrder = orders.stream().anyMatch(o -> !o.equals(orders.get(0)));
+        assertThat(anyDifferentOrder).isTrue();
+    }
+
     @Test
     void generateVariantsForScience_notEnoughQuestionsOverall_throwsClearError() {
         Topic t1 = topic(1, "T1");
@@ -172,7 +226,7 @@ class ExamVariantServiceTest {
 
         service = service();
 
-        assertThatThrownBy(() -> service.generateVariantsForScience(9L, 3, 10, false))
+        assertThatThrownBy(() -> service.generateVariantsForScience(9L, 3, 10, false, false))
                 .isInstanceOf(RuntimeException.class)
                 .hasMessageContaining("Yetarli savol yo'q")
                 .hasMessageContaining("jami 6");
@@ -187,7 +241,7 @@ class ExamVariantServiceTest {
 
         service = service();
         // shuffleAnswers=false -> to'g'ri javob har doim birinchi (A) bo'lib qoladi
-        behzoddev.testproject.dto.export.ExportedFileDto result = service.generateVariantsForTopic(1L, 3, 5, false);
+        behzoddev.testproject.dto.export.ExportedFileDto result = service.generateVariantsForTopic(1L, 3, 5, false, false);
         assertThat(result.filenameBase()).isEqualTo("variantlar_T1");
         byte[] zip = result.data();
 
@@ -238,7 +292,7 @@ class ExamVariantServiceTest {
         service = service();
         ReflectionTestUtils.setField(service, "uploadDir", tempDir.toString());
 
-        byte[] zip = service.generateVariantsForTopic(1L, 1, 1, false).data();
+        byte[] zip = service.generateVariantsForTopic(1L, 1, 1, false, false).data();
 
         try (ZipInputStream zin = new ZipInputStream(new ByteArrayInputStream(zip))) {
             ZipEntry entry;
