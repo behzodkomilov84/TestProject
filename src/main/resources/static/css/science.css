@@ -787,12 +787,21 @@ h1 {
     background: #eef2ff;
 }
 
+/* flex-grow:0 (va flex-basis) ATAYLAB aniq ko'rsatilgan — sahifada
+   BUTUN "input" elementiga umumiy qo'llanadigan "input { flex: 1; }"
+   qoidasi bor (fan/bo'lim boshqaruv formalari uchun), shu global qoida
+   flex-grow:1'ni meros qilib qoldirmasligi uchun (aks holda radio matni
+   QISQA qatorda ko'proq BO'SH JOYGA cho'zilib, ikkinchi (matni uzunroq,
+   bo'sh joyi kamroq) qator bilan solishtirganda X o'qi bo'yicha
+   TEKISLANMAY qolar edi). */
 .word-export-radio-row input[type="radio"] {
     width: 16px;
     height: 16px;
     accent-color: #185ABD;
     cursor: pointer;
+    flex-grow: 0;
     flex-shrink: 0;
+    flex-basis: 16px;
 }
 
 .word-export-variant-fields input[type="number"] {

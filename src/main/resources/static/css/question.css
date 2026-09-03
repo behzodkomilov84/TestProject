@@ -892,12 +892,19 @@ td label{
     background: #eef2ff;
 }
 
+/* flex-grow:0/flex-basis ATAYLAB aniq ko'rsatilgan — science.css'da
+   BUTUN "input" elementiga qo'llanadigan "input { flex: 1; }" qoidasi
+   bor (fan/bo'lim boshqaruv formalari uchun); bu fayl o'sha qoidani
+   ulamasa-da, bir xil himoya shu yerda ham (kelajakda meros
+   qolib ketmasligi uchun) takrorlanadi. */
 .word-export-radio-row input[type="radio"] {
     width: 16px;
     height: 16px;
     accent-color: #185ABD;
     cursor: pointer;
+    flex-grow: 0;
     flex-shrink: 0;
+    flex-basis: 16px;
 }
 
 .word-export-variant-fields input[type="number"] {
