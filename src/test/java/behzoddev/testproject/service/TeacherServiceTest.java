@@ -12,6 +12,7 @@ import behzoddev.testproject.dto.teacher.AssignResultDto;
 import behzoddev.testproject.dto.teacher.AssignmentStudentDetailDto;
 import behzoddev.testproject.dto.teacher.CreateQuestionSetDto;
 import behzoddev.testproject.dto.teacher.GroupStudentRowDto;
+import behzoddev.testproject.dto.teacher.QuestionSetDetailDto;
 import behzoddev.testproject.dto.teacher.QuestionSetResponseDto;
 import behzoddev.testproject.dto.teacher.ResponseQuestionTextDto;
 import behzoddev.testproject.dto.teacher.UpdateTeacherGroupDto;
@@ -295,6 +296,84 @@ class TeacherServiceTest {
                 .isInstanceOf(AccessDeniedException.class);
 
         verify(questionSetRepository, never()).delete(any());
+    }
+
+    // ===== getSetDetail / updateQuestionSet ("📂 Tarkibini tahrirlash") =====
+
+    @Test
+    void getSetDetail_owner_returnsNameAndQuestionTexts() {
+        User teacher = adminRoleUser(1L);
+        Question q1 = Question.builder().id(1L).questionText("Savol 1").build();
+        Question q2 = Question.builder().id(2L).questionText("Savol 2").build();
+        QuestionSet set = QuestionSet.builder().id(5L).teacher(teacher).name("To'plam")
+                .questions(new HashSet<>(Set.of(q1, q2))).build();
+        when(questionSetRepository.fetchFullById(5L)).thenReturn(Optional.of(set));
+
+        QuestionSetDetailDto result = teacherService.getSetDetail(5L, teacher);
+
+        assertThat(result.name()).isEqualTo("To'plam");
+        assertThat(result.questions()).extracting(ResponseQuestionTextDto::id)
+                .containsExactlyInAnyOrder(1L, 2L);
+    }
+
+    @Test
+    void getSetDetail_notOwner_throwsAccessDenied() {
+        User owner = adminRoleUser(1L);
+        User other = adminRoleUser(2L);
+        QuestionSet set = QuestionSet.builder().id(5L).teacher(owner).name("To'plam").build();
+        when(questionSetRepository.fetchFullById(5L)).thenReturn(Optional.of(set));
+
+        assertThatThrownBy(() -> teacherService.getSetDetail(5L, other))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void updateQuestionSet_owner_replacesNameAndQuestions() {
+        User teacher = adminRoleUser(1L);
+        QuestionSet set = QuestionSet.builder().id(5L).teacher(teacher).name("Eski nom")
+                .questions(new HashSet<>(Set.of(Question.builder().id(1L).questionText("Q1").build()))).build();
+        Question q2 = Question.builder().id(2L).questionText("Q2").build();
+        Question q3 = Question.builder().id(3L).questionText("Q3").build();
+
+        when(questionSetRepository.findById(5L)).thenReturn(Optional.of(set));
+        when(assignmentRepository.existsByQuestionSetId(5L)).thenReturn(false);
+        when(questionRepository.findAllById(Set.of(2L, 3L))).thenReturn(List.of(q2, q3));
+
+        QuestionSetResponseDto result = teacherService.updateQuestionSet(5L, teacher,
+                new CreateQuestionSetDto("Yangi nom", Set.of(2L, 3L)));
+
+        assertThat(result.name()).isEqualTo("Yangi nom");
+        assertThat(result.questionCount()).isEqualTo(2);
+        assertThat(set.getQuestions()).extracting(Question::getId).containsExactlyInAnyOrder(2L, 3L);
+    }
+
+    @Test
+    void updateQuestionSet_alreadyAssigned_throwsAndDoesNotChange() {
+        User teacher = adminRoleUser(1L);
+        QuestionSet set = QuestionSet.builder().id(5L).teacher(teacher).name("Eski nom")
+                .questions(new HashSet<>(Set.of(Question.builder().id(1L).questionText("Q1").build()))).build();
+
+        when(questionSetRepository.findById(5L)).thenReturn(Optional.of(set));
+        when(assignmentRepository.existsByQuestionSetId(5L)).thenReturn(true);
+
+        assertThatThrownBy(() -> teacherService.updateQuestionSet(5L, teacher,
+                new CreateQuestionSetDto("Yangi nom", Set.of(2L))))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("topshiriq");
+
+        assertThat(set.getName()).isEqualTo("Eski nom");
+    }
+
+    @Test
+    void updateQuestionSet_notOwner_throwsAccessDenied() {
+        User owner = adminRoleUser(1L);
+        User other = adminRoleUser(2L);
+        QuestionSet set = QuestionSet.builder().id(5L).teacher(owner).name("To'plam").build();
+        when(questionSetRepository.findById(5L)).thenReturn(Optional.of(set));
+
+        assertThatThrownBy(() -> teacherService.updateQuestionSet(5L, other,
+                new CreateQuestionSetDto("Yangi nom", Set.of(2L))))
+                .isInstanceOf(AccessDeniedException.class);
     }
 
     // ===== inviteStudent (holat mashinasi) =====

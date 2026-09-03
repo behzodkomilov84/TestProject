@@ -348,12 +348,32 @@ function updateCounter() {
     document.getElementById("counter").innerText = String(selectedMap.size);
 }
 
+// Hozir "📂 Tarkibini tahrirlash" orqali ochilgan MAVJUD to'plam ID'si —
+// null bo'lsa, "Saqlash" YANGI to'plam yaratadi (avvalgidek); ID
+// berilgan bo'lsa, "Saqlash" (endi "Yangilash" deb ko'rinadi) O'SHA
+// to'plamning nomi VA savollarini ALMASHTIRADI.
+let editingSetId = null;
+
 function resetBuilder() {
     selectedMap.clear();
     document.getElementById("selectedList").innerHTML = "";
     updateCounter();
     document.getElementById("setName").value = "";
     document.querySelectorAll("#questions input").forEach(cb => cb.checked = false);
+    editingSetId = null;
+    updateSaveButtonMode();
+}
+
+function updateSaveButtonMode() {
+    const saveBtn = document.getElementById("saveSetBtn");
+    const cancelBtn = document.getElementById("cancelEditBtn");
+    if (editingSetId != null) {
+        saveBtn.textContent = "💾 Yangilash";
+        cancelBtn.style.display = "inline-flex";
+    } else {
+        saveBtn.textContent = "💾 Saqlash";
+        cancelBtn.style.display = "none";
+    }
 }
 
 //--------------------------------------------------------
@@ -366,21 +386,58 @@ function saveSet() {
         return;
     }
 
-    fetch("/api/teacher/questionset", {
-        method: "POST",
+    const isEditing = editingSetId != null;
+    const url = isEditing ? `/api/teacher/questionsets/${editingSetId}` : "/api/teacher/questionset";
+    const method = isEditing ? "PUT" : "POST";
+
+    fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, questionIds: [...selectedMap.keys()] })
     })
-        .then(r => {
-            if (!r.ok) throw new Error("Saqlashda xatolik");
+        .then(async r => {
+            if (!r.ok) {
+                const data = await r.json().catch(() => ({}));
+                throw new Error(data.error || "Saqlashda xatolik");
+            }
             resetBuilder();
             loadSets();
-            alert("Savollar to'plami muvaffaqiyatli saqlandi!");
+            alert(isEditing ? "Savollar to'plami muvaffaqiyatli yangilandi!" : "Savollar to'plami muvaffaqiyatli saqlandi!");
         })
         .catch(err => {
             console.error(err);
-            alert("Saqlashda xatolik yuz berdi.");
+            alert(err.message || "Saqlashda xatolik yuz berdi.");
         });
+}
+
+// "📂 Tarkibini tahrirlash" — mavjud to'plamning nomi va savollarini
+// (matni bilan) qurilmaga qayta yuklaydi — o'qituvchi qo'shimcha savol
+// qo'sha oladi (Fan/Bo'lim/Mavzu orqali yoki avtomatik tanlash bilan)
+// yoki "✖" bilan mavjudlarini olib tashlay oladi, keyin "Yangilash"ni bosadi.
+async function openSetForEditing(id) {
+    try {
+        const res = await fetch(`/api/teacher/questionsets/${id}`);
+        if (!res.ok) throw new Error("Yuklashda xatolik");
+        const detail = await res.json();
+
+        selectedMap.clear();
+        document.getElementById("selectedList").innerHTML = "";
+        detail.questions.forEach(q => {
+            const safeText = escapeHtml(q.questionText);
+            selectedMap.set(q.id, { id: q.id, text: safeText });
+            addSelectedUI(q.id, safeText);
+        });
+        updateCounter();
+
+        document.getElementById("setName").value = detail.name;
+        editingSetId = detail.id;
+        updateSaveButtonMode();
+
+        document.getElementById("selectedList").scrollIntoView({ behavior: "smooth", block: "center" });
+    } catch (err) {
+        console.error(err);
+        alert("Tarkibini yuklashda xatolik");
+    }
 }
 
 function loadSets() {
@@ -401,7 +458,8 @@ function renderSets(list) {
         <div class="teacher-set-row">
             <span class="teacher-set-name">${escapeHtml(s.name)}</span>
             <span class="teacher-set-count">${s.questionIds.length} ta savol</span>
-            <button class="teacher-icon-btn" onclick="renameSetPrompt(${s.id}, ${JSON.stringify(s.name).replace(/"/g, "&quot;")})" title="Nomini tahrirlash">✏️</button>
+            <button class="teacher-icon-btn" onclick="openSetForEditing(${s.id})" title="Tarkibini (savollarini) tahrirlash">📂</button>
+            <button class="teacher-icon-btn" onclick="renameSetPrompt(${s.id}, ${JSON.stringify(s.name).replace(/"/g, "&quot;")})" title="Faqat nomini tahrirlash">✏️</button>
             <button class="teacher-icon-btn teacher-btn-danger" onclick="deleteSet(${s.id})" title="O'chirish">🗑</button>
         </div>
     `).join("");

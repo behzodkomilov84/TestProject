@@ -81,7 +81,10 @@
         <label for="setName">To'plam nomi</label>
         <div class="teacher-field-row">
             <input id="setName" type="text" placeholder="Masalan: 1-mavzu — asosiy testlar">
-            <button class="teacher-btn-primary" onclick="saveSet()">💾 Saqlash</button>
+            <button class="teacher-btn-primary" id="saveSetBtn" onclick="saveSet()">💾 Saqlash</button>
+            <button class="teacher-icon-btn" id="cancelEditBtn" onclick="resetBuilder()" style="display:none;">
+                ❌ Tahrirlashni bekor qilish
+            </button>
         </div>
     </div>
 

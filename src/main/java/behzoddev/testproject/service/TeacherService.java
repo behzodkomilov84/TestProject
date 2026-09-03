@@ -101,7 +101,17 @@ public class TeacherService {
                 .toList();
     }
 
-    // "✏️" — savollar paketi nomini o'zgartirish ("Savollar to'plami"
+    // "Barcha savol to'plamlari" — FAQAT ROLE_OWNER (@PreAuthorize
+    // controller darajasida). Har bir o'qituvchi/admin getSets()'da
+    // FAQAT o'zinikini ko'radi (findByTeacher) — bu OWNER uchun HAMMASINI
+    // (kim nechta to'plam yaratgani, nechta savol borligi) bir joyda
+    // ko'rsatadi.
+    @Transactional(readOnly = true)
+    public List<QuestionSetAdminRowDto> getAllSetsForOwner() {
+        return questionSetRepository.findAllForAdmin();
+    }
+
+    // savollar paketi nomini o'zgartirish ("Savollar to'plami"
     // sahifasi) — updateGroup bilan bir xil andoza: faqat egasi (teacher).
     // "Avtomatik tanlash" — "Savollar to'plami" sahifasida bir nechta
     // Bo'lim/Mavzu belgilab, jami nechta savol kerakligini kiritsa, HAR
@@ -156,6 +166,57 @@ public class TeacherService {
 
         validation.textFieldMustNotBeEmpty(newName);
         set.setName(newName.trim());
+    }
+
+    // "📂 Tarkibini tahrirlash" — mavjud to'plamni TO'LIQ (nomi + har bir
+    // savol matni bilan) qaytaradi, "Savollar to'plami" sahifasidagi
+    // qurilmaga qayta yuklab, savol qo'shish/olib tashlashga (foydalanuvchi
+    // ANIQ so'ragan: "ичидаги саволларини таҳрирлашнинг иложи бўлмаяпти")
+    // imkon berish uchun.
+    @Transactional(readOnly = true)
+    public QuestionSetDetailDto getSetDetail(Long setId, User teacher) {
+        QuestionSet set = questionSetRepository.fetchFullById(setId)
+                .orElseThrow(() -> new IllegalArgumentException("Savollar paketi topilmadi."));
+
+        if (!set.getTeacher().getId().equals(teacher.getId())) {
+            throw new AccessDeniedException("Bu sizning paketingiz emas.");
+        }
+
+        List<ResponseQuestionTextDto> questions = set.getQuestions().stream()
+                .map(q -> new ResponseQuestionTextDto(q.getId(), q.getQuestionText()))
+                .toList();
+
+        return new QuestionSetDetailDto(set.getId(), set.getName(), questions);
+    }
+
+    // getSetDetail bilan ochilgan to'plamni "Saqlash" (endi "Yangilash")
+    // bosilganda — nomi VA savollar ro'yxati (butunlay ALMASHTIRILADI,
+    // eskisiga qo'shilmaydi — frontend "Tanlangan savollar"ning JORIY
+    // to'liq holatini yuboradi). Allaqachon topshiriq sifatida berilgan
+    // bo'lsa — deleteQuestionSet bilan bir xil sababga ko'ra (o'quvchilar
+    // ko'rgan/yechgan tarkib "orqadan" o'zgarib qolmasin deb) bloklanadi.
+    @Transactional
+    public QuestionSetResponseDto updateQuestionSet(Long setId, User teacher, CreateQuestionSetDto dto) {
+        QuestionSet set = questionSetRepository.findById(setId)
+                .orElseThrow(() -> new IllegalArgumentException("Savollar paketi topilmadi."));
+
+        if (!set.getTeacher().getId().equals(teacher.getId())) {
+            throw new AccessDeniedException("Bu sizning paketingiz emas.");
+        }
+
+        if (assignmentRepository.existsByQuestionSetId(setId)) {
+            throw new IllegalArgumentException(
+                    "❌ Bu paket allaqachon topshiriq sifatida berilgan — tarkibini o'zgartirib bo'lmaydi " +
+                            "(faqat nomini o'zgartirish mumkin, \"✏️\" orqali).");
+        }
+
+        validation.textFieldMustNotBeEmpty(dto.name());
+
+        Set<Question> questions = new HashSet<>(questionRepository.findAllById(dto.questionIds()));
+        set.setName(dto.name().trim());
+        set.setQuestions(questions);
+
+        return new QuestionSetResponseDto(set.getId(), set.getName(), set.getQuestions().size());
     }
 
     // "🗑️" — savollar paketini o'chirish. Allaqachon biror topshiriqda

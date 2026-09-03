@@ -87,12 +87,38 @@ public class TeacherController {
         return teacherService.getSets(teacher);
     }
 
+    // "Barcha savol to'plamlari" — FAQAT ROLE_OWNER (sinf darajasidagi
+    // "ROLE_ADMIN yoki ROLE_OWNER"dan bu yerda ATAYLAB qattiqroq qilib
+    // qo'yilgan) — "/questionsets/{id}" bilan chalkashmasligi uchun aniq
+    // literal yo'l ("all"), Spring bunday holatlarda literal segmentni
+    // {id} path-variable'dan avtomatik ustun qo'yadi.
+    @GetMapping("/questionsets/all")
+    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    public List<QuestionSetAdminRowDto> getAllQuestionSetsForOwner() {
+        return teacherService.getAllSetsForOwner();
+    }
+
     // "✏️" — savollar paketi nomini o'zgartirish ("Savollar to'plami" sahifasi).
     @PatchMapping("/questionsets/{id}")
     public ResponseEntity<Void> renameQuestionSet(@PathVariable Long id, @RequestBody Map<String, String> body,
                                                    @AuthenticationPrincipal User teacher) {
         teacherService.renameQuestionSet(id, body.get("name"), teacher);
         return ResponseEntity.ok().build();
+    }
+
+    // "📂 Tarkibini tahrirlash" — to'plamni TO'LIQ (nomi + har bir savol
+    // matni bilan) qaytaradi, qurilmaga qayta yuklash uchun.
+    @GetMapping("/questionsets/{id}")
+    public QuestionSetDetailDto getQuestionSetDetail(@PathVariable Long id, @AuthenticationPrincipal User teacher) {
+        return teacherService.getSetDetail(id, teacher);
+    }
+
+    // "📂 Tarkibini tahrirlash" oynasidan "Yangilash" bosilganda — nomi VA
+    // savollar ro'yxati (butunlay ALMASHTIRILADI) saqlanadi.
+    @PutMapping("/questionsets/{id}")
+    public ResponseEntity<QuestionSetResponseDto> updateQuestionSet(@PathVariable Long id, @RequestBody @Valid CreateQuestionSetDto dto,
+                                                                      @AuthenticationPrincipal User teacher) {
+        return ResponseEntity.ok(teacherService.updateQuestionSet(id, teacher, dto));
     }
 
     // "🗑️" — savollar paketini o'chirish (allaqachon topshiriqda

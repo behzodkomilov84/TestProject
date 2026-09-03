@@ -33,4 +33,14 @@ public class TeacherPageController {
     public String assignPage() {
         return "teacher-assign";
     }
+
+    // "Barcha savollar to'plamlari" — FAQAT ROLE_OWNER (API darajasida
+    // @PreAuthorize bilan tekshiriladi — TeacherController.
+    // getAllQuestionSetsForOwner; sahifaning o'zi ADMIN uchun ham
+    // ochiladi, lekin API 403 qaytaradi, teacher-all-sets.js shuni
+    // ko'rsatadi — boshqa sahifalar bilan bir xil andoza).
+    @GetMapping("/teacher/all-sets")
+    public String allSetsPage() {
+        return "teacher-all-sets";
+    }
 }
