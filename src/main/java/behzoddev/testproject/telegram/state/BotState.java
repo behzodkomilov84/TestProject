@@ -16,7 +16,7 @@ public enum BotState {
     AWAITING_CURRENT_PASSWORD,
     AWAITING_NEW_PASSWORD,
 
-    // ===== Mustaqil test (fan/savol soni tanlash inline tugmalar orqali,
+    // ===== Mustaqil test (bo'lim/savol soni tanlash inline tugmalar orqali,
     // lekin bu holat "/cancel" va boshqa menyu tugmalarini bloklash uchun) =====
     IN_PRACTICE_TEST,
     // Foydalanuvchi tayyor tugmalar o'rniga savollar sonini o'zi qo'lda

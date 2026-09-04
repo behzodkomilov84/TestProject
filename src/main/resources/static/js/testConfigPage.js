@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
         topicSection.style.display = "none";
     }
 
-    // Faqat kurs mavzusidan ("🎯 Mavzuga oid testlarni yechish") kelinganda
+    // Faqat kurs darsidan ("🎯 Darsga oid testlarni yechish") kelinganda
     // ko'rinadi — boshqa hollarda (bosh menyudan to'g'ridan-to'g'ri
     // kirilganda, courseId URL'da bo'lmaydi) butunlay yashirin qoladi.
     if (returnCourseId) {

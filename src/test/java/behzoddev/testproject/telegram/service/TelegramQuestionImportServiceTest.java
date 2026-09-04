@@ -68,7 +68,7 @@ class TelegramQuestionImportServiceTest {
 
         SendMessage msg = importService.startFlow(CHAT_ID);
 
-        assertThat(msg.getText()).contains("fanlar mavjud emas");
+        assertThat(msg.getText()).contains("bo'limlar mavjud emas");
     }
 
     @Test
@@ -86,7 +86,7 @@ class TelegramQuestionImportServiceTest {
 
         SendMessage msg = importService.selectScience(CHAT_ID, 1L);
 
-        assertThat(msg.getText()).contains("mavzu yo'q");
+        assertThat(msg.getText()).contains("dars yo'q");
         // "(/science)" kabi yalang'och buyruq matni Telegram tomonidan
         // noma'lum bot buyrug'i sifatida talqin qilinardi.
         assertThat(msg.getText()).doesNotContain("(/science)");
@@ -124,7 +124,7 @@ class TelegramQuestionImportServiceTest {
 
         SendMessage msg = importService.importFile(CHAT_ID, "content".getBytes(), "questions.xlsx");
 
-        assertThat(msg.getText()).contains("Mavzu tanlanmagan");
+        assertThat(msg.getText()).contains("Dars tanlanmagan");
         verifyNoInteractions(excelService);
     }
 

@@ -147,7 +147,7 @@ public class TelegramMenuService {
         if (user.hasRole("ROLE_USER")) {
             sb.append("📚 Mening topshiriqlarim — sizga berilgan testlar.\n");
             sb.append("📊 Natijalarim — o'tgan testlaringiz natijalari.\n");
-            sb.append("🎯 Mustaqil test — fan tanlab, tasodifiy savollar bilan mashq.\n");
+            sb.append("🎯 Mustaqil test — bo'lim tanlab, tasodifiy savollar bilan mashq.\n");
             sb.append("📨 Guruh takliflari — sizga yuborilgan guruh takliflarini qabul/rad etish.\n");
             sb.append("💳 Obunam — ADMIN huquqini onlayn sotib olish.\n");
         }
@@ -323,7 +323,7 @@ public class TelegramMenuService {
         StringBuilder sb = new StringBuilder("📚 <b>Mavjud kurslar</b>\n\n");
         for (CourseDto c : courses) {
             sb.append(c.subscribed() ? "✅ " : "🔒 ").append(escape(c.title()))
-                    .append(" (").append(c.sectionCount()).append(" bo'lim)\n");
+                    .append(" (").append(c.sectionCount()).append(" dars)\n");
         }
 
         String url = autoLoginService.buildLoginUrl(user, "/courses");

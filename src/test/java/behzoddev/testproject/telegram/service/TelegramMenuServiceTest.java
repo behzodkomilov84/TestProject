@@ -263,7 +263,7 @@ class TelegramMenuServiceTest {
 
         SendMessage msg = menuService.showCourses(user);
 
-        assertThat(msg.getText()).contains("Java Asoslari").contains("5 bo'lim");
+        assertThat(msg.getText()).contains("Java Asoslari").contains("5 dars");
         // /courses kabi "yalang'och" buyruq matni Telegram tomonidan noma'lum
         // bot buyrug'i sifatida talqin qilinardi — endi haqiqiy avtomatik
         // login havolasi qo'yiladi.

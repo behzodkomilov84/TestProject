@@ -12,9 +12,9 @@ public record CourseSectionSummaryDto(
         String type,
         boolean locked,
         boolean completed,
-        // Shu bo'lim aynan bitta mavzuga (Topic) bog'langan bo'lsa — kurs
-        // dasturi ro'yxatida ham "🎯 Mavzuga oid testlarni yechish"
-        // tugmasini ko'rsatish uchun (avval faqat bo'limni ochgach ko'rinardi).
+        // Shu dars aynan bitta Topic'ga (test-bankdagi Dars) bog'langan bo'lsa
+        // — kurs dasturi ro'yxatida ham "🎯 Darsga oid testlarni yechish"
+        // tugmasini ko'rsatish uchun (avval faqat darsni ochgach ko'rinardi).
         Long linkedTopicId,
         Long linkedScienceId,
         // linkedTopicId bog'langan bo'lsa — shu mavzuning nechta faol

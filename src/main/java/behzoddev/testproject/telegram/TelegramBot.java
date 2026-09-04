@@ -194,11 +194,11 @@ public class TelegramBot extends TelegramLongPollingBot {
                 }
 
                 // ===== Kurslarni botda o'qish (obuna bor yoki bepul bo'lsa) =====
-                // Har bir navigatsiya qadamida (ro'yxat -> kurs -> mavzular ->
-                // mavzu -> keyingi mavzu) OLDINGI ekranning BARCHA xabarlari
-                // o'chiriladi — aks holda "Keyingi mavzu" bosilgan sayin
+                // Har bir navigatsiya qadamida (ro'yxat -> kurs -> darslar ->
+                // dars -> keyingi dars) OLDINGI ekranning BARCHA xabarlari
+                // o'chiriladi — aks holda "Keyingi dars" bosilgan sayin
                 // chatda o'nlab eski xabar to'planib qolardi. DIQQAT: bitta
-                // mavzu matni uzun bo'lsa, Telegram xabar chegarasi (~4096
+                // dars matni uzun bo'lsa, Telegram xabar chegarasi (~4096
                 // belgi) tufayli 2-3 xabarga bo'linib yuboriladi — faqat
                 // OXIRGISIDA tugmalar bo'ladi. Shuning uchun oddiy
                 // deleteMessageSafely(callbackMsgId) yetarli emas (faqat
@@ -269,7 +269,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                     trackCourseMessages(chatId, sentIds);
                     return;
                 }
-                // ===== Kurs bo'limidagi mavzuga oid testni botning o'zida yechish =====
+                // ===== Kurs darsidagi darsga oid testni botning o'zida yechish =====
                 if (data.startsWith("course_test_")) {
                     Long topicId = Long.parseLong(data.replace("course_test_", ""));
                     deleteTrackedCourseMessages(chatId);
@@ -277,7 +277,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                     return;
                 }
 
-                // ===== Mustaqil test (rejim -> fan -> bo'lim -> mavzu -> savol soni -> savol-javob) =====
+                // ===== Mustaqil test (rejim -> bo'lim -> mavzu -> dars -> savol soni -> savol-javob) =====
                 if (data.startsWith("pt_mode_")) {
                     String mode = data.replace("pt_mode_", "");
                     deleteMessageSafely(chatId, callbackMsgId);
@@ -285,7 +285,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                     return;
                 }
                 // "🔙 Orqaga" tugmalari — bosqichma-bosqich orqaga qaytish
-                // (rejim tanlash -> fan ro'yxati -> bo'lim ro'yxati).
+                // (rejim tanlash -> bo'lim ro'yxati -> mavzu ro'yxati).
                 if (data.equals("pt_back_mode")) {
                     deleteMessageSafely(chatId, callbackMsgId);
                     execute(practiceTestService.startFlow(chatId));
@@ -309,7 +309,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                     return;
                 }
                 // "pt_section_<scienceId>_<sectionValue>" — sectionValue "all"
-                // (butun fan), "none" (bo'limsiz mavzular) yoki bo'lim id'si.
+                // (butun bo'lim), "none" (mavzusiz darslar) yoki mavzu id'si.
                 if (data.startsWith("pt_section_")) {
                     String rest = data.replace("pt_section_", "");
                     int sep = rest.indexOf('_');
@@ -436,7 +436,7 @@ public class TelegramBot extends TelegramLongPollingBot {
                     return;
                 }
 
-                // ===== ADMIN: Savollar boshqaruvi (Excel import) — Fan -> Bo'lim -> Mavzu =====
+                // ===== ADMIN: Savollar boshqaruvi (Excel import) — Bo'lim -> Mavzu -> Dars =====
                 if (data.startsWith("tg_import_science_")) {
                     Long scienceId = Long.parseLong(data.replace("tg_import_science_", ""));
                     deleteMessageSafely(chatId, callbackMsgId);
@@ -454,13 +454,13 @@ public class TelegramBot extends TelegramLongPollingBot {
                     execute(questionImportService.selectSection(chatId, scienceId, sectionValue));
                     return;
                 }
-                // "tg_import_back_science" — Fan ro'yxatiga qaytish.
+                // "tg_import_back_science" — Bo'lim ro'yxatiga qaytish.
                 if (data.equals("tg_import_back_science")) {
                     deleteMessageSafely(chatId, callbackMsgId);
                     execute(questionImportService.startFlow(chatId));
                     return;
                 }
-                // "tg_import_back_section_<scienceId>" — Bo'lim ro'yxatiga qaytish.
+                // "tg_import_back_section_<scienceId>" — Mavzu ro'yxatiga qaytish.
                 if (data.startsWith("tg_import_back_section_")) {
                     Long scienceId = Long.parseLong(data.replace("tg_import_back_section_", ""));
                     deleteMessageSafely(chatId, callbackMsgId);
@@ -745,7 +745,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         return telegramUserService.handleMessage(msg);
     }
 
-    // "🗂 Savollar boshqaruvi" oqimida (mavzu tanlangandan keyin) foydalanuvchi
+    // "🗂 Savollar boshqaruvi" oqimida (dars tanlangandan keyin) foydalanuvchi
     // .xlsx faylni to'g'ridan-to'g'ri chatga yuborsa — shu yerda ishlanadi.
     // Boshqa har qanday holatda kelgan hujjat e'tiborsiz qoldiriladi (eslatma bilan).
     private SendMessage handleDocument(Long chatId, Document document) {
@@ -883,7 +883,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         return false;
     }
 
-    // Kurs bo'limlarini o'qishda navigatsiya qadamlarida oldingi xabarni
+    // Kurs darslarini o'qishda navigatsiya qadamlarida oldingi xabarni
     // olib tashlash uchun. Xato bo'lsa (masalan xabar 48 soatdan eski —
     // Telegram bunday xabarlarni o'chirishga ruxsat bermaydi, yoki
     // foydalanuvchi allaqachon o'chirib yuborgan) — jim o'tkazib yuboramiz,
@@ -896,7 +896,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         }
     }
 
-    // Kurs mavzusi (bo'lim) matni uzun bo'lsa, Telegram xabar chegarasi
+    // Kurs darsi matni uzun bo'lsa, Telegram xabar chegarasi
     // tufayli bir necha (2-3) xabarga bo'linib yuboriladi — tugmalar esa
     // faqat ENG OXIRGISIDA bo'ladi. Shuning uchun keyingi navigatsiyada
     // (callback'ning o'zi qaysi xabarda bosilganidan qat'iy nazar) OLDINGI

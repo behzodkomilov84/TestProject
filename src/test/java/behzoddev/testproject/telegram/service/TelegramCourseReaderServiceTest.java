@@ -243,7 +243,7 @@ class TelegramCourseReaderServiceTest {
         SendMessage msg = courseReaderService.openCourse(user, 5L);
 
         // To'liq (uzun) nom xabar matnida butunligicha ko'rinadi.
-        assertThat(msg.getText()).contains("Bepul kurs").contains("Mavzuni tanlang").contains(longTitle);
+        assertThat(msg.getText()).contains("Bepul kurs").contains("Darsni tanlang").contains(longTitle);
         InlineKeyboardMarkup markup = (InlineKeyboardMarkup) msg.getReplyMarkup();
         // Tugma matni endi faqat kompakt belgi+raqam — uzun nomni o'zida saqlamaydi.
         assertThat(markup.getKeyboard().get(0).get(0).getText()).isEqualTo("▫️ 1");

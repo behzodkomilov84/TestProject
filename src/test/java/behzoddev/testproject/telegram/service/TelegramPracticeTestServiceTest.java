@@ -103,7 +103,7 @@ class TelegramPracticeTestServiceTest {
 
         SendMessage msg = practiceTestService.selectMode(CHAT_ID, "practice");
 
-        assertThat(msg.getText()).contains("fanlar mavjud emas");
+        assertThat(msg.getText()).contains("bo'limlar mavjud emas");
     }
 
     @Test
@@ -112,7 +112,7 @@ class TelegramPracticeTestServiceTest {
 
         SendMessage msg = practiceTestService.selectMode(CHAT_ID, "practice");
 
-        assertThat(msg.getText()).contains("fanni tanlang");
+        assertThat(msg.getText()).contains("bo'limni tanlang");
         assertThat(msg.getReplyMarkup()).isNotNull();
     }
 

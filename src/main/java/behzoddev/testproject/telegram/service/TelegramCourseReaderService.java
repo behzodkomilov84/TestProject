@@ -33,8 +33,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 // Botda "📚 Kurslar" — kurslarni to'g'ridan-to'g'ri Telegram ichida o'qish
-// (saytga o'tishga hojatsiz): kurslar ro'yxati -> mavzular ro'yxati
-// (sahifalab) -> mavzu matni. Faqat OBUNA BOR yoki BEPUL (free) yoki
+// (saytga o'tishga hojatsiz): kurslar ro'yxati -> darslar ro'yxati
+// (sahifalab) -> dars matni. Faqat OBUNA BOR yoki BEPUL (free) yoki
 // canManage kurslar to'liq ochiladi — CourseService.isSubscribed() shu
 // mantiqni allaqachon hisoblaydi (free kurs uchun har doim true), shuning
 // uchun bu servis saytdagi bilan bir xil ruxsat qoidalariga amal qiladi.
@@ -47,7 +47,7 @@ public class TelegramCourseReaderService {
     private String uploadDir;
 
     private static final int SECTIONS_PER_PAGE = 8;
-    // Kurs/mavzu tanlash tugmalari endi yonma-yon (avval har biri alohida
+    // Kurs/dars tanlash tugmalari endi yonma-yon (avval har biri alohida
     // qatorda, ustma-ust turardi).
     private static final int BUTTONS_PER_ROW = 4;
     // Telegram xabar chegarasi 4096 belgi — ehtiyot uchun pastroq chegara
@@ -209,7 +209,7 @@ public class TelegramCourseReaderService {
         return msg;
     }
 
-    /* ================= 3. Mavzular ro'yxati (sahifalab) ================= */
+    /* ================= 3. Darslar ro'yxati (sahifalab) ================= */
 
     public SendMessage showSectionsPage(User user, Long courseId, int page) {
         CourseDetailDto course;
@@ -234,7 +234,7 @@ public class TelegramCourseReaderService {
         msg.setParseMode("HTML");
 
         if (sections.isEmpty()) {
-            msg.setText("📋 <b>" + escape(course.title()) + "</b>\n\nHali bo'lim yo'q.");
+            msg.setText("📋 <b>" + escape(course.title()) + "</b>\n\nHali dars yo'q.");
             msg.setReplyMarkup(backToCoursesMarkup());
             return msg;
         }
@@ -244,12 +244,12 @@ public class TelegramCourseReaderService {
         int from = safePage * SECTIONS_PER_PAGE;
         int to = Math.min(from + SECTIONS_PER_PAGE, sections.size());
 
-        // To'liq mavzu nomi — chapga tekislangan, o'zi kerakli qatorlarga
+        // To'liq dars nomi — chapga tekislangan, o'zi kerakli qatorlarga
         // bo'linadigan oddiy xabar matni sifatida (inline tugma matni
         // Telegram tomonidan markazlashtiriladi va bitta qatorga
         // kesiladi — uzun nomlar to'liq ko'rinmasdi). Tugmalar endi faqat
         // raqam bilan tanlash uchun.
-        StringBuilder sb = new StringBuilder("📋 <b>" + escape(course.title()) + "</b>\n\nMavzuni tanlang (" +
+        StringBuilder sb = new StringBuilder("📋 <b>" + escape(course.title()) + "</b>\n\nDarsni tanlang (" +
                 (safePage + 1) + "/" + totalPages + "-sahifa):\n\n");
 
         List<InlineKeyboardButton> buttons = new ArrayList<>();
@@ -281,7 +281,7 @@ public class TelegramCourseReaderService {
         return msg;
     }
 
-    /* ================= 4. Mavzu matnini ko'rsatish ================= */
+    /* ================= 4. Dars matnini ko'rsatish ================= */
 
     public List<SendMessage> openSection(User user, Long courseId, Long sectionId) {
         CourseSectionContentDto section;
@@ -290,10 +290,10 @@ public class TelegramCourseReaderService {
         } catch (AccessDeniedException e) {
             return List.of(simpleMessage(user, "⛔ " + e.getMessage()));
         } catch (NoSuchElementException e) {
-            return List.of(simpleMessage(user, "❌ Bo'lim topilmadi."));
+            return List.of(simpleMessage(user, "❌ Dars topilmadi."));
         }
 
-        // TEXT bo'lim — saytdagi kabi ochilgan zahoti "tugatilgan" deb
+        // TEXT dars — saytdagi kabi ochilgan zahoti "tugatilgan" deb
         // belgilanadi (CourseSectionView.js'dagi markCompleted() bilan bir xil).
         if ("TEXT".equals(section.type()) && !section.completed()) {
             courseService.markSectionCompleted(courseId, sectionId, user);
@@ -312,7 +312,7 @@ public class TelegramCourseReaderService {
         return openSection(user, courseId, sectionId);
     }
 
-    // "📥 Kitobni to'liq yuklab olish" kabi PDF/DOCX/ZIP havolalari bo'lim
+    // "📥 Kitobni to'liq yuklab olish" kabi PDF/DOCX/ZIP havolalari dars
     // matnida bo'lsa — ularni oddiy matn linki sifatida qoldirish o'rniga
     // (bosilganda tashqi brauzerga o'tkazadi), fayl to'g'ridan-to'g'ri
     // botning o'zida (hujjat sifatida) yuboriladi. Telegram serveri
@@ -440,9 +440,9 @@ public class TelegramCourseReaderService {
 
         // Saytga o'tkazuvchi havola o'rniga — to'g'ridan-to'g'ri botning
         // o'zida (TelegramPracticeTestService.startForTopic orqali) shu
-        // mavzu bo'yicha testni yechish imkoniyati.
+        // dars bo'yicha testni yechish imkoniyati.
         if (section.linkedTopicId() != null) {
-            rows.add(List.of(button("🎯 Mavzuga oid testlarni yechish", "course_test_" + section.linkedTopicId())));
+            rows.add(List.of(button("🎯 Darsga oid testlarni yechish", "course_test_" + section.linkedTopicId())));
         }
 
         List<InlineKeyboardButton> navRow = new ArrayList<>();
@@ -454,7 +454,7 @@ public class TelegramCourseReaderService {
         }
         if (!navRow.isEmpty()) rows.add(navRow);
 
-        rows.add(List.of(button("📋 Mavzular ro'yxati", "course_secs_" + section.courseId() + "_0")));
+        rows.add(List.of(button("📋 Darslar ro'yxati", "course_secs_" + section.courseId() + "_0")));
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(rows);
@@ -493,7 +493,7 @@ public class TelegramCourseReaderService {
         if (rawContent == null) return "";
 
         if (!"HTML".equals(textContentFormat)) {
-            // PLAIN — xom matn (hali WYSIWYG'gacha yozilgan eski bo'limlar),
+            // PLAIN — xom matn (hali WYSIWYG'gacha yozilgan eski darslar),
             // hech qanday HTML tegi yo'q — Telegram HTML rejimida buzilib
             // ketmasligi uchun xavfsiz escape qilinadi. Telegram bare
             // http(s) havolalarni o'zi ham avtomatik bosiladigan qiladi.
@@ -559,7 +559,7 @@ public class TelegramCourseReaderService {
     }
 
     // Tekis tugmalar ro'yxatini BUTTONS_PER_ROW tadan qatorlarga bo'ladi
-    // (kurslar/mavzular ro'yxatida yonma-yon ko'rinishi uchun).
+    // (kurslar/darslar ro'yxatida yonma-yon ko'rinishi uchun).
     private List<List<InlineKeyboardButton>> chunkIntoRows(List<InlineKeyboardButton> buttons) {
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
         for (int i = 0; i < buttons.size(); i += BUTTONS_PER_ROW) {

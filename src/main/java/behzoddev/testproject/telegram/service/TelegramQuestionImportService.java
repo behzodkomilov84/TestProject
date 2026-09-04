@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 // Botda "🗂 Savollar boshqaruvi" — hozircha faqat Excel fayl orqali import
-// (saytga kirmasdan): fan -> mavzu tanlab, .xlsx faylni botga yuborish
+// (saytga kirmasdan): bo'lim -> dars tanlab, .xlsx faylni botga yuborish
 // yetarli. Haqiqiy ExcelService orqali — saytdagi bilan bir xil
 // validatsiya (magic-byte, ClamAV, qator-qator xatolik izolyatsiyasi).
 @Slf4j
@@ -40,12 +40,12 @@ public class TelegramQuestionImportService {
     private static final String TEMPLATE_CLASSPATH = "templates/template_For_Import.xlsx";
     private static final String TEMPLATE_FILE_NAME = "template_For_Import.xlsx";
 
-    // Mavzular ro'yxati sahifalanadi (masalan Kimyo'da 45 ta mavzu bor —
+    // Darslar ro'yxati sahifalanadi (masalan Kimyo'da 45 ta dars bor —
     // bittasi bitta xabarda hammasi chiqsa, juda uzun/noqulay ro'yxat
     // bo'lib qolardi). TelegramCourseReaderService.SECTIONS_PER_PAGE bilan
     // bir xil konvensiya.
     private static final int TOPICS_PER_PAGE = 8;
-    // Fan/Bo'lim/Mavzu ro'yxatlari RAQAMLI, gorizontal katakcha ko'rinishida
+    // Bo'lim/Mavzu/Dars ro'yxatlari RAQAMLI, gorizontal katakcha ko'rinishida
     // (TelegramPracticeTestService/TelegramCourseReaderService bilan bir xil g'oya).
     private static final int BUTTONS_PER_ROW = 4;
 
@@ -63,13 +63,13 @@ public class TelegramQuestionImportService {
         msg.setChatId(chatId.toString());
 
         if (sciences.isEmpty()) {
-            msg.setText("🗂 Hozircha fanlar mavjud emas.");
+            msg.setText("🗂 Hozircha bo'limlar mavjud emas.");
             return msg;
         }
 
-        // To'liq fan nomlari matnda raqamlangan ro'yxat sifatida, tugmalar
+        // To'liq bo'lim nomlari matnda raqamlangan ro'yxat sifatida, tugmalar
         // faqat mos raqam bilan (gorizontal katakcha).
-        StringBuilder sb = new StringBuilder("🗂 Savol import qilmoqchi bo'lgan fanni tanlang:\n\n");
+        StringBuilder sb = new StringBuilder("🗂 Savol import qilmoqchi bo'lgan bo'limni tanlang:\n\n");
         List<InlineKeyboardButton> buttons = new ArrayList<>();
         int i = 1;
         for (ScienceIdAndNameDto science : sciences) {
@@ -85,10 +85,10 @@ public class TelegramQuestionImportService {
         return msg;
     }
 
-    // Fan tanlangach — agar shu fanda Bo'lim(lar) bo'lsa (masalan Kimyo),
-    // avval Bo'lim tanlanadi (TelegramPracticeTestService bilan bir xil
-    // mantiq); Bo'limi yo'q fanlarda bu qadam o'tkazib yuboriladi va
-    // to'g'ridan-to'g'ri (eskicha) mavzu ro'yxatiga o'tiladi.
+    // Bo'lim tanlangach — agar shu bo'limda Mavzu(lar) bo'lsa (masalan Kimyo),
+    // avval Mavzu tanlanadi (TelegramPracticeTestService bilan bir xil
+    // mantiq); Mavzusi yo'q bo'limlarda bu qadam o'tkazib yuboriladi va
+    // to'g'ridan-to'g'ri (eskicha) dars ro'yxatiga o'tiladi.
     public SendMessage selectScience(Long chatId, Long scienceId) {
         List<TopicWithQuestionCountDto> topics = topicService.getTopicsWithQuestionCount(scienceId);
 
@@ -97,7 +97,7 @@ public class TelegramQuestionImportService {
             msg.setChatId(chatId.toString());
             User user = getUserByChatId(chatId);
             String url = autoLoginService.buildLoginUrl(user, "/science");
-            msg.setText("🗂 Bu fanda hozircha mavzu yo'q. Avval saytda mavzu yarating: " + url);
+            msg.setText("🗂 Bu bo'limda hozircha dars yo'q. Avval saytda dars yarating: " + url);
             msg.setDisableWebPagePreview(true);
             return msg;
         }
@@ -127,7 +127,7 @@ public class TelegramQuestionImportService {
                         java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder())))
                 .toList();
 
-        StringBuilder sb = new StringBuilder("🗂 Bo'limni tanlang:\n\n");
+        StringBuilder sb = new StringBuilder("🗂 Mavzuni tanlang:\n\n");
         List<InlineKeyboardButton> buttons = new ArrayList<>();
         int i = 1;
         for (SectionInfo sec : sorted) {
@@ -136,11 +136,11 @@ public class TelegramQuestionImportService {
             i++;
         }
         if (hasUnassigned) {
-            sb.append(i).append(". — Bo'limsiz mavzular —\n");
+            sb.append(i).append(". — Mavzusiz darslar —\n");
             buttons.add(button(String.valueOf(i), "tg_import_section_" + scienceId + "_none"));
             i++;
         }
-        sb.append(i).append(". 🔷 Barchasi (shu fan bo'yicha)\n");
+        sb.append(i).append(". 🔷 Barchasi (shu bo'lim bo'yicha)\n");
         buttons.add(button(String.valueOf(i), "tg_import_section_" + scienceId + "_all"));
 
         SendMessage msg = new SendMessage();
@@ -156,7 +156,7 @@ public class TelegramQuestionImportService {
         return msg;
     }
 
-    // Bo'lim tanlangach — sectionValue "all"/"none"/haqiqiy bo'lim id'si
+    // Mavzu tanlangach — sectionValue "all"/"none"/haqiqiy mavzu id'si
     // (TelegramPracticeTestService.selectSection bilan bir xil qoida).
     public SendMessage selectSection(Long chatId, Long scienceId, String sectionValue) {
         return selectSciencePage(chatId, scienceId, sectionValue, 0);
@@ -173,7 +173,7 @@ public class TelegramQuestionImportService {
         msg.setChatId(chatId.toString());
 
         if (topics.isEmpty()) {
-            msg.setText("🗂 Bu bo'limda hozircha mavzu yo'q.");
+            msg.setText("🗂 Bu mavzuda hozircha dars yo'q.");
             InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
             markup.setKeyboard(List.of(List.of(button("🔙 Orqaga", backCallback))));
             msg.setReplyMarkup(markup);
@@ -185,12 +185,12 @@ public class TelegramQuestionImportService {
         int from = safePage * TOPICS_PER_PAGE;
         int to = Math.min(from + TOPICS_PER_PAGE, topics.size());
 
-        // Mavzu nomlari matnda raqamlangan ro'yxat sifatida (sahifalar
+        // Dars nomlari matnda raqamlangan ro'yxat sifatida (sahifalar
         // bo'ylab ketma-ket raqamlanadi), tugmalar faqat mos raqam bilan
         // (gorizontal katakcha).
         StringBuilder sb = new StringBuilder(totalPages > 1
-                ? "🗂 Mavzuni tanlang (" + (safePage + 1) + "/" + totalPages + "-sahifa):\n\n"
-                : "🗂 Mavzuni tanlang:\n\n");
+                ? "🗂 Darsni tanlang (" + (safePage + 1) + "/" + totalPages + "-sahifa):\n\n"
+                : "🗂 Darsni tanlang:\n\n");
 
         List<InlineKeyboardButton> buttons = new ArrayList<>();
         int i = from + 1;
@@ -277,7 +277,7 @@ public class TelegramQuestionImportService {
         msg.setChatId(chatId.toString());
 
         if (topicIdStr == null) {
-            msg.setText("⚠️ Mavzu tanlanmagan. 🗂 Savollar boshqaruvi bo'limidan qaytadan boshlang.");
+            msg.setText("⚠️ Dars tanlanmagan. 🗂 Savollar boshqaruvi bo'limidan qaytadan boshlang.");
             return msg;
         }
 
@@ -302,11 +302,11 @@ public class TelegramQuestionImportService {
     public SendMessage notWaitingForFile(Long chatId) {
         SendMessage msg = new SendMessage();
         msg.setChatId(chatId.toString());
-        msg.setText("🗂 Fayl yuborishdan oldin avval fan/mavzuni tanlang (🗂 Savollar boshqaruvi).");
+        msg.setText("🗂 Fayl yuborishdan oldin avval bo'lim/darsni tanlang (🗂 Savollar boshqaruvi).");
         return msg;
     }
 
-    // Mavzu tanlangan, lekin foydalanuvchi fayl o'rniga oddiy matn yozganda.
+    // Dars tanlangan, lekin foydalanuvchi fayl o'rniga oddiy matn yozganda.
     public SendMessage remindToSendFile(Long chatId) {
         SendMessage msg = new SendMessage();
         msg.setChatId(chatId.toString());

@@ -66,10 +66,10 @@ public class CourseSection {
     @Column(name = "video_duration_seconds")
     private Integer videoDurationSeconds;
 
-    // Shu bo'lim aynan bitta mavzuga (Topic) bog'liq bo'lsa — bo'lim
-    // ko'rinishida "🎯 Mavzuga oid testlarni yechish" tugmasi chiqadi
-    // (saytning haqiqiy test tizimiga, shu mavzu tanlangan holda). Ixtiyoriy —
-    // hamma bo'lim ham biror mavzuga bog'liq bo'lishi shart emas.
+    // Shu dars aynan bitta Topic'ga (test-bankdagi Dars) bog'liq bo'lsa —
+    // dars ko'rinishida "🎯 Darsga oid testlarni yechish" tugmasi chiqadi
+    // (saytning haqiqiy test tizimiga, shu Topic tanlangan holda). Ixtiyoriy —
+    // hamma dars ham biror Topic'ga bog'liq bo'lishi shart emas.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "linked_topic_id")
     private Topic linkedTopic;
