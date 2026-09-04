@@ -8,7 +8,7 @@
     <meta name="description" content="Описание страницы">
     <meta name="author" content="Автор">
 
-    <title>Bo'limlar</title>
+    <title>Mavzular</title>
 
     <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/science.css">
@@ -23,16 +23,16 @@
 
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-<h1>Bo'limlar<span id="sectionsSummary" class="topics-summary"></span></h1>
+<h1>Mavzular<span id="sectionsSummary" class="topics-summary"></span></h1>
 <input type="hidden" id="scienceId" th:value="${scienceId}">
 <div class="wrapper">
-    <button onclick="location.href='/topics?scienceId=' + getScienceId()">📋 Barcha mavzular (bo'limsiz ko'rish)</button>
-    <!-- Shu Fandagi hech qanday mavzuga biriktirilmagan (bo'sh) BARCHA
-         bo'limlarni bir yo'la o'chiradi (deleteEmptySections, topicSection.js). -->
-    <button onclick="deleteEmptySections()">🗑️ Bo'sh bo'limlarni o'chirish</button>
-    <!-- Soft-delete qilingan (🗑️ o'chirilgan) Bo'limlar — "♻️ Tiklash"
+    <button onclick="location.href='/topics?scienceId=' + getScienceId()">📋 Barcha darslar (mavzusiz ko'rish)</button>
+    <!-- Shu Bo'limdagi hech qanday darsga biriktirilmagan (bo'sh) BARCHA
+         mavzularni bir yo'la o'chiradi (deleteEmptySections, topicSection.js). -->
+    <button onclick="deleteEmptySections()">🗑️ Bo'sh mavzularni o'chirish</button>
+    <!-- Soft-delete qilingan (🗑️ o'chirilgan) Mavzular — "♻️ Tiklash"
          bilan bir zumda qaytariladi (TopicSectionService.getDeletedSections/restoreSection). -->
-    <button onclick="toggleSectionTrash()">🗑️ O'chirilgan bo'limlar <span id="sectionTrashBadge" class="notif-badge" style="display:none;">0</span></button>
+    <button onclick="toggleSectionTrash()">🗑️ O'chirilgan mavzular <span id="sectionTrashBadge" class="notif-badge" style="display:none;">0</span></button>
 
     <div id="sectionTrashPanel" style="display:none;">
         <div id="sectionTrashList"></div>
@@ -97,9 +97,9 @@
                 Javob variantlari (A,B,C,D,E) tartibi ham aralashtirilsin
             </label>
             <p class="word-export-hint" id="wordExportHint">
-                Savollar shu bo'limdagi BARCHA mavzular bo'yicha TENG
-                taqsimlanadi (mavzuda savol yetmasa, qolgan qismi boshqa
-                mavzularga teng bo'lib beriladi). Natija — har biri alohida
+                Savollar shu mavzudagi BARCHA darslar bo'yicha TENG
+                taqsimlanadi (darsda savol yetmasa, qolgan qismi boshqa
+                darslarga teng bo'lib beriladi). Natija — har biri alohida
                 .docx fayl bo'lgan ZIP arxiv + javoblar kaliti (Excel).
             </p>
         </div>

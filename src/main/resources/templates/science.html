@@ -11,7 +11,7 @@
     <meta name="author" content="Автор">
 
     <!-- Заголовок страницы -->
-    <title>Science</title>
+    <title>Bo'limlar</title>
 
     <!-- Подключение CSS, JS -->
     <link rel="stylesheet" href="/css/science.css">
@@ -32,7 +32,7 @@
 
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-<h1>Fanlar</h1>
+<h1>Bo'limlar</h1>
 
 <!-- ОСНОВНОЙ КОНТЕЙНЕР -->
 <div class="wrapper">
@@ -43,7 +43,7 @@
     -->
     <!-- Soft-delete qilingan (🗑️ o'chirilgan) fanlar — "♻️ Tiklash" bilan
          bir zumda qaytariladi (ScienceService.getDeletedSciences/restoreScience). -->
-    <button onclick="toggleScienceTrash()">🗑️ O'chirilgan fanlar <span id="scienceTrashBadge" class="notif-badge" style="display:none;">0</span></button>
+    <button onclick="toggleScienceTrash()">🗑️ O'chirilgan bo'limlar <span id="scienceTrashBadge" class="notif-badge" style="display:none;">0</span></button>
 
     <div id="scienceTrashPanel" style="display:none;">
         <div id="scienceTrashList"></div>
@@ -112,9 +112,9 @@
                 Javob variantlari (A,B,C,D,E) tartibi ham aralashtirilsin
             </label>
             <p class="word-export-hint" id="wordExportHint">
-                Savollar shu fandagi BARCHA mavzular bo'yicha TENG
-                taqsimlanadi (mavzuda savol yetmasa, qolgan qismi boshqa
-                mavzularga teng bo'lib beriladi). Natija — har biri alohida
+                Savollar shu bo'limdagi BARCHA darslar bo'yicha TENG
+                taqsimlanadi (darsda savol yetmasa, qolgan qismi boshqa
+                darslarga teng bo'lib beriladi). Natija — har biri alohida
                 .docx fayl bo'lgan ZIP arxiv + javoblar kaliti (Excel).
             </p>
         </div>

@@ -141,9 +141,9 @@ function showSectionFilterBanner() {
         banner.classList.add("hidden");
         return;
     }
-    const name = sectionNameById(filterSectionId) || "Bo'lim";
-    banner.innerHTML = `🔎 <b>${escapeHtml(name)}</b> mavzulari ko'rsatilmoqda — ` +
-        `<a href="/topics?scienceId=${scienceId}">barcha mavzularni ko'rish</a>`;
+    const name = sectionNameById(filterSectionId) || "Mavzu";
+    banner.innerHTML = `🔎 <b>${escapeHtml(name)}</b> darslari ko'rsatilmoqda — ` +
+        `<a href="/topics?scienceId=${scienceId}">barcha darslarni ko'rish</a>`;
     banner.classList.remove("hidden");
 }
 
@@ -153,7 +153,7 @@ async function loadSections() {
         if (!response.ok) throw new Error(`Server error: ${response.status}`);
         sectionList = await response.json();
     } catch (err) {
-        console.error("Bo'limlarni yuklashda xatolik:", err);
+        console.error("Mavzularni yuklashda xatolik:", err);
         sectionList = [];
     }
 }
@@ -196,11 +196,11 @@ async function deleteQuestionlessTopics() {
 
     const candidateCount = itemBlock.filter(s => s.id > 0 && (s.questionCount || 0) === 0).length;
     if (candidateCount === 0) {
-        alert("ℹ️ Testi yo'q mavzu topilmadi.");
+        alert("ℹ️ Testi yo'q dars topilmadi.");
         return;
     }
 
-    if (!confirm(`⚠️ Testi yo'q ${candidateCount} ta mavzuni o'chirmoqchimisiz?\n\n(Kursga bog'langan mavzular, agar bo'lsa, avtomatik chetlab o'tiladi.)\n\nBu amalni bekor qilib bo'lmaydi.`)) {
+    if (!confirm(`⚠️ Testi yo'q ${candidateCount} ta darsni o'chirmoqchimisiz?\n\n(Kursga bog'langan darslar, agar bo'lsa, avtomatik chetlab o'tiladi.)\n\nBu amalni bekor qilib bo'lmaydi.`)) {
         return;
     }
 
@@ -211,7 +211,7 @@ async function deleteQuestionlessTopics() {
             alert(data.error || "O'chirishda xatolik");
             return;
         }
-        showToast('success', `✅ ${data.deleted} ta mavzu o'chirildi`, 4000);
+        showToast('success', `✅ ${data.deleted} ta dars o'chirildi`, 4000);
         await reloadFromDb(`/api/topic?scienceId=${getScienceId()}`);
         focusIndex = 0;
         render();
@@ -248,7 +248,7 @@ async function loadTopicTrash() {
         const items = await res.json();
         setTrashBadgeCount("topicTrashBadge", items.length);
         if (!items.length) {
-            list.innerHTML = "<p>O'chirilgan mavzu yo'q</p>";
+            list.innerHTML = "<p>O'chirilgan dars yo'q</p>";
             return;
         }
         list.innerHTML = items.map(t => `
@@ -273,7 +273,7 @@ function formatTopicTrashDate(isoString) {
 }
 
 async function restoreTopic(topicId) {
-    if (!confirm("Bu mavzuni tiklamoqchimisiz?")) return;
+    if (!confirm("Bu darsni tiklamoqchimisiz?")) return;
 
     try {
         const res = await fetch(`/api/topic/${topicId}/restore`, { method: "POST" });
@@ -707,7 +707,7 @@ function render() {
         const isView = s.mode === "VIEW";
         const isLink = isView && s.id !== null;
         const isNew = s.mode === "NEW";
-        const placeholder = isNew ? 'placeholder="Yangi mavzu nomini kiriting"' : '';
+        const placeholder = isNew ? 'placeholder="Yangi dars nomini kiriting"' : '';
 
         // Проверяем дубликаты для текущего элемента
         const hasDup = !isView && hasDuplicate(i, s.name);
@@ -729,7 +729,7 @@ function render() {
         // shu mavzuni o'chirsa/nomini butunlay o'zgartirsa, kursdagi
         // bog'lanish "yetim" qolib ketishi mumkinligini eslatib turadi.
         const courseBadge = s.linkedCourseTitle
-            ? `<span class="topic-course-badge" title="Bu mavzu kursga bog'langan">🔗 Kurs: ${escapeHtml(s.linkedCourseTitle)}</span>`
+            ? `<span class="topic-course-badge" title="Bu dars kursga bog'langan">🔗 Kurs: ${escapeHtml(s.linkedCourseTitle)}</span>`
             : '';
 
         // "📊 Excel'ga eksport" — shu mavzudagi barcha faol testlarni
@@ -737,11 +737,11 @@ function render() {
         // Excel'ga eksport" bilan bir xil endpoint — /api/export/questions).
         // Bo'lim/Kurs belgilaridan farqli, BARCHA mavzularda ko'rinadi
         // (savoli yo'q mavzuda ham — bosilsa shunchaki bo'sh fayl tushadi).
-        const exportBtn = `<button class="topic-export-btn" onclick="event.stopPropagation(); exportTopicQuestions(${s.id})" title="Shu mavzudagi testlarni Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>`;
+        const exportBtn = `<button class="topic-export-btn" onclick="event.stopPropagation(); exportTopicQuestions(${s.id})" title="Shu darsdagi testlarni Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>`;
 
         // "📝 Word'ga eksport" — shu mavzudagi testlarni chop etishga
         // tayyor .docx fayl sifatida (Excel eksport tugmasi yonida).
-        const wordExportBtn = `<button class="topic-export-btn" onclick="event.stopPropagation(); openWordExportModal(${s.id})" title="Shu mavzudagi testlarni Word'ga eksport qilish">${WORD_ICON_SVG}</button>`;
+        const wordExportBtn = `<button class="topic-export-btn" onclick="event.stopPropagation(); openWordExportModal(${s.id})" title="Shu darsdagi testlarni Word'ga eksport qilish">${WORD_ICON_SVG}</button>`;
 
         // Bo'lim/Kurs belgilari — o'z alohida qatorida; mavzu NOMI esa
         // har doim YANGI qatordan boshlanadi, savol soni belgisi esa nom
@@ -779,7 +779,7 @@ function render() {
                 onkeydown="onClickKey(event, ${i})"
                 id="input-${i}"
             >${escapeHtml(s.name)}</textarea>
-            <select class="topic-section-select" onchange="itemBlock[${i}].sectionId=this.value?Number(this.value):null" title="Bo'lim">
+            <select class="topic-section-select" onchange="itemBlock[${i}].sectionId=this.value?Number(this.value):null" title="Mavzu">
                 ${sectionOptionsHtml(s.sectionId)}
             </select>
             `
@@ -863,8 +863,8 @@ function toggleWordExportVariantFields() {
 // qat'i nazar to'g'ri ishlashi uchun har chaqiriqda qayta o'lchanadi).
 function updateWordExportHint() {
     const sameQuestions = document.querySelector('input[name="wordExportVariantMode"]:checked').value === "same";
-    const textDifferent = "Savollar shu mavzudan tasodifiy tanlanadi. Natija — har biri alohida .docx fayl bo'lgan ZIP arxiv + javoblar kaliti (Excel).";
-    const textSame = "Savollar shu mavzudan BIR MARTA tanlanadi va BARCHA nusxada bir xil bo'ladi — faqat savollar (va javob variantlari) tartibi har bir nusxada alohida aralashtiriladi.";
+    const textDifferent = "Savollar shu darsdan tasodifiy tanlanadi. Natija — har biri alohida .docx fayl bo'lgan ZIP arxiv + javoblar kaliti (Excel).";
+    const textSame = "Savollar shu darsdan BIR MARTA tanlanadi va BARCHA nusxada bir xil bo'ladi — faqat savollar (va javob variantlari) tartibi har bir nusxada alohida aralashtiriladi.";
 
     const hint = document.getElementById("wordExportHint");
     hint.style.minHeight = "";
@@ -1041,7 +1041,7 @@ function removeFromUi(i) {
         render();
         return;
     }
-    const topicName = itemBlock[i].name || "Bu mavzu";
+    const topicName = itemBlock[i].name || "Bu dars";
     const confirmDelete = confirm(`⚠️ "${topicName}"ni o'chirishni tasdiqlaysizmi?\n\nKeyin bu amalni bekor qilib bo'lmaydi.`);
     if (confirmDelete) {
         const removedTopic = itemBlock[i];
@@ -1051,7 +1051,7 @@ function removeFromUi(i) {
         }
 
         itemBlock.splice(i, 1);
-        showToast('success', `"${removedTopic.name || 'Mavzu'}" o'chirildi`, 2000);
+        showToast('success', `"${removedTopic.name || 'Dars'}" o'chirildi`, 2000);
         render();
     } else {
         cancel(i);
@@ -1251,16 +1251,16 @@ function saveOnClientSide(i) {
 
 
     if (newName === "") {
-        alert('❌ Mavzu matni bo\'sh bo\'lishi mumkin emas!');
+        alert('❌ Dars nomi bo\'sh bo\'lishi mumkin emas!');
         focusIndex = i;
-        console.error("Mavzu matni bo\'sh bo\'lishi mumkin emas!");
+        console.error("Dars nomi bo\'sh bo\'lishi mumkin emas!");
 
         return;
     }
 
     // проверка дубликатов на фронте
     if (hasDuplicate(i, newName)) {
-        alert('❌ Bu mavzu nomi allaqachon mavjud!');
+        alert('❌ Bu dars nomi allaqachon mavjud!');
         focusIndex = i;
         console.log("hasDuplicate = true");
         return;
@@ -1280,15 +1280,15 @@ function saveOnClientSide(i) {
         if (newName === oldName) {
             showToast('info', 'O\'zgarish bo\'lmadi', 3000);
         } else {
-            showToast('info', 'Yangi mavzu o\'zgardi', 3000);
+            showToast('info', 'Yangi dars o\'zgardi', 3000);
         }
-        showToast('success', 'Yangi mavzu saqlandi \n\n(bazaga saqlash uchun "Bazaga saqlash" tugmasini bosing)', 3000);
+        showToast('success', 'Yangi dars saqlandi \n\n(bazaga saqlash uchun "Bazaga saqlash" tugmasini bosing)', 3000);
     } else {
         // Существующая запись из БД
         if (newName === oldName) {
             showToast('warm', 'O\'zgarish bo\'lmadi', 3000);
         } else {
-            showToast('success', 'Mavzu muvaffaqiyatli saqlandi', 3000);
+            showToast('success', 'Dars muvaffaqiyatli saqlandi', 3000);
         }
 
     }

@@ -86,11 +86,11 @@ async function deleteEmptySections() {
 
     const emptyCount = itemBlock.filter(s => s.id > 0 && (s.topicCount || 0) === 0).length;
     if (emptyCount === 0) {
-        alert("ℹ️ Bo'sh bo'lim topilmadi.");
+        alert("ℹ️ Bo'sh mavzu topilmadi.");
         return;
     }
 
-    if (!confirm(`⚠️ ${emptyCount} ta bo'sh bo'limni o'chirmoqchimisiz?\n\nBu amalni bekor qilib bo'lmaydi.`)) {
+    if (!confirm(`⚠️ ${emptyCount} ta bo'sh mavzuni o'chirmoqchimisiz?\n\nBu amalni bekor qilib bo'lmaydi.`)) {
         return;
     }
 
@@ -101,7 +101,7 @@ async function deleteEmptySections() {
             alert(data.error || "O'chirishda xatolik");
             return;
         }
-        showToast('success', `✅ ${data.deleted} ta bo'sh bo'lim o'chirildi`, 4000);
+        showToast('success', `✅ ${data.deleted} ta bo'sh mavzu o'chirildi`, 4000);
         await reloadFromDb(`/api/topic-section?scienceId=${getScienceId()}`);
         focusIndex = 0;
         render();
@@ -143,7 +143,7 @@ async function loadSectionTrash() {
         const items = await res.json();
         setTrashBadgeCount("sectionTrashBadge", items.length);
         if (!items.length) {
-            list.innerHTML = "<p>O'chirilgan bo'lim yo'q</p>";
+            list.innerHTML = "<p>O'chirilgan mavzu yo'q</p>";
             return;
         }
         list.innerHTML = items.map(s => `
@@ -168,7 +168,7 @@ function formatSectionTrashDate(isoString) {
 }
 
 async function restoreSectionFromTrash(sectionId) {
-    if (!confirm("Bu bo'limni tiklamoqchimisiz?")) return;
+    if (!confirm("Bu mavzuni tiklamoqchimisiz?")) return;
 
     try {
         const res = await fetch(`/api/topic-section/${sectionId}/restore`, { method: "POST" });
@@ -187,7 +187,7 @@ async function restoreSectionFromTrash(sectionId) {
 }
 
 async function permanentlyDeleteSectionFromTrash(sectionId, name) {
-    if (!confirm(`⚠️ "${name}" bo'limini BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi. (Mavzulari o'chmaydi, faqat "bo'limsiz" bo'lib qoladi.)`)) return;
+    if (!confirm(`⚠️ "${name}" mavzusini BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi. (Darslari o'chmaydi, faqat "mavzusiz" bo'lib qoladi.)`)) return;
 
     try {
         const res = await fetch(`/api/topic-section/${sectionId}/permanent`, { method: "DELETE" });
@@ -251,7 +251,7 @@ function render() {
         const isView = s.mode === "VIEW";
         const isLink = isView && s.id !== null;
         const isNew = s.mode === "NEW";
-        const placeholder = isNew ? 'placeholder="Yangi bo\'lim nomini kiriting"' : '';
+        const placeholder = isNew ? 'placeholder="Yangi mavzu nomini kiriting"' : '';
 
         const hasDup = !isView && hasDuplicate(i, s.name);
         const inputClass = `
@@ -265,19 +265,19 @@ function render() {
         // NOMI har doim YANGI qatordan boshlanishi uchun — item-badges/
         // item-title-row, science.css).
         const courseBadge = s.linkedCourseTitle
-            ? `<span class="topic-course-badge" title="Bu bo'lim kursga bog'langan, faqat kurs ichidan tahrirlanadi">🔗 Kurs: ${escapeHtml(s.linkedCourseTitle)}</span>`
+            ? `<span class="topic-course-badge" title="Bu mavzu kursga bog'langan, faqat kurs ichidan tahrirlanadi">🔗 Kurs: ${escapeHtml(s.linkedCourseTitle)}</span>`
             : '';
 
-        // "📊 Excel'ga eksport" — shu Bo'limdagi BARCHA mavzularning
+        // "📊 Excel'ga eksport" — shu Mavzudagi BARCHA darslarning
         // savollarini BITTA faylga yig'ib yuklab beradi. Kurs belgisi
-        // bo'lmasa ham HAR DOIM ko'rinadi (topic.js'dagi mavzu-darajali
+        // bo'lmasa ham HAR DOIM ko'rinadi (topic.js'dagi dars-darajali
         // eksport bilan bir xil uslub).
-        const exportBtn = `<button class="topic-export-btn" onclick="event.stopPropagation(); exportSectionQuestions(${s.id})" title="Shu bo'limdagi barcha mavzularning testlarini Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>`;
+        const exportBtn = `<button class="topic-export-btn" onclick="event.stopPropagation(); exportSectionQuestions(${s.id})" title="Shu mavzudagi barcha darslarning testlarini Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>`;
 
-        // "📝 Word'ga eksport" — shu Bo'limdagi barcha mavzularning
+        // "📝 Word'ga eksport" — shu Mavzudagi barcha darslarning
         // savollarini chop etishga tayyor .docx faylga (Excel eksport
         // tugmasi yonida).
-        const wordExportBtn = `<button class="topic-export-btn" onclick="event.stopPropagation(); openWordExportModal(${s.id})" title="Shu bo'limdagi barcha mavzularning testlarini Word'ga eksport qilish">${WORD_ICON_SVG}</button>`;
+        const wordExportBtn = `<button class="topic-export-btn" onclick="event.stopPropagation(); openWordExportModal(${s.id})" title="Shu mavzudagi barcha darslarning testlarini Word'ga eksport qilish">${WORD_ICON_SVG}</button>`;
 
         const badgesRow = `<div class="item-badges">${courseBadge}<div class="topic-export-btn-group">${exportBtn}${wordExportBtn}</div></div>`;
 
@@ -290,13 +290,13 @@ function render() {
             tabindex="0"
             ondblclick="openTopics(${s.id})"
             onkeydown="onViewKeyDown(event, ${i})"
-            title="Enter — Mavzularni ochish | ↑ ↓ — navigatsiya | Home/End — birinchi/oxirgi"
+            title="Enter — Darslarni ochish | ↑ ↓ — navigatsiya | Home/End — birinchi/oxirgi"
         >
             <div
                 id="input-${i}"
                 class="topic-name ${inputClass}"
                 tabindex="-1"
-            >${badgesRow}<div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span><span class="item-count-badge">${s.topicCount} ta mavzu</span></div></div>
+            >${badgesRow}<div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span><span class="item-count-badge">${s.topicCount} ta dars</span></div></div>
         </div>
             `
                 : `
@@ -352,7 +352,7 @@ function updateSectionsSummary() {
 
 function openTopics(sectionId) {
     if (!sectionId || sectionId < 0) {
-        alert("❗ Avval bo'limni bazaga saqlang");
+        alert("❗ Avval mavzuni bazaga saqlang");
         return;
     }
     // Faqat shu bo'limga tegishli mavzularni ko'rsatadigan holatda ochiladi.
@@ -399,8 +399,8 @@ function toggleWordExportVariantFields() {
 // qat'i nazar to'g'ri ishlashi uchun har chaqiriqda qayta o'lchanadi).
 function updateWordExportHint() {
     const sameQuestions = document.querySelector('input[name="wordExportVariantMode"]:checked').value === "same";
-    const textDifferent = "Savollar shu bo'limdagi BARCHA mavzular bo'yicha TENG taqsimlanadi (mavzuda savol yetmasa, qolgan qismi boshqa mavzularga teng bo'lib beriladi). Natija — har biri alohida .docx fayl bo'lgan ZIP arxiv + javoblar kaliti (Excel).";
-    const textSame = "Savollar shu bo'limdagi BARCHA mavzular bo'yicha TENG taqsimlanib BIR MARTA tanlanadi va BARCHA nusxada bir xil bo'ladi — faqat savollar (va javob variantlari) tartibi har bir nusxada alohida aralashtiriladi.";
+    const textDifferent = "Savollar shu mavzudagi BARCHA darslar bo'yicha TENG taqsimlanadi (darsda savol yetmasa, qolgan qismi boshqa darslarga teng bo'lib beriladi). Natija — har biri alohida .docx fayl bo'lgan ZIP arxiv + javoblar kaliti (Excel).";
+    const textSame = "Savollar shu mavzudagi BARCHA darslar bo'yicha TENG taqsimlanib BIR MARTA tanlanadi va BARCHA nusxada bir xil bo'ladi — faqat savollar (va javob variantlari) tartibi har bir nusxada alohida aralashtiriladi.";
 
     const hint = document.getElementById("wordExportHint");
     hint.style.minHeight = "";
@@ -562,8 +562,8 @@ function removeFromUi(i) {
         render();
         return;
     }
-    const sectionName = itemBlock[i].name || "Bu bo'lim";
-    const confirmDelete = confirm(`⚠️ "${sectionName}"ni o'chirishni tasdiqlaysizmi?\n\nBo'limdagi mavzular O'CHMAYDI — faqat bo'limsiz bo'lib qoladi.\n\nKeyin bu amalni bekor qilib bo'lmaydi.`);
+    const sectionName = itemBlock[i].name || "Bu mavzu";
+    const confirmDelete = confirm(`⚠️ "${sectionName}"ni o'chirishni tasdiqlaysizmi?\n\nMavzudagi darslar O'CHMAYDI — faqat mavzusiz bo'lib qoladi.\n\nKeyin bu amalni bekor qilib bo'lmaydi.`);
     if (confirmDelete) {
         const removed = itemBlock[i];
 

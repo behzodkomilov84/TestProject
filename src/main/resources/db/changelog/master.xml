@@ -41,6 +41,7 @@
     <include file="/db/changelog/science-question-order-index.sql"/>
     <include file="/db/changelog/course-admin-archive.sql"/>
     <include file="/db/changelog/course-fields.sql"/>
+    <include file="/db/changelog/science-field.sql"/>
 
 
 </databaseChangeLog>

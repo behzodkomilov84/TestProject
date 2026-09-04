@@ -34,12 +34,15 @@ public interface ScienceRepository extends JpaRepository<Science, Long> {
     Optional<Science> findByIdWithTopics(Long id);
 
 
-    // sectionCount — shu fandagi Bo'limlar (TopicSection) soni, science.html
-    // fan qatorida ko'rsatish uchun ("(N ta bo'lim)"). Korrelyatsiyalangan
-    // subso'rov (har bir fan uchun bitta son qaytaradi — count() doim
-    // aniq bitta qatorli, fan-out xavfi yo'q).
+    // sectionCount — shu fandagi Bo'limlar (TopicSection, UI'da "Mavzu")
+    // soni, science.html qatorida ko'rsatish uchun ("(N ta mavzu)").
+    // Korrelyatsiyalangan subso'rov (har bir fan uchun bitta son
+    // qaytaradi — count() doim aniq bitta qatorli, fan-out xavfi yo'q).
+    // fieldId/fieldName — science.js#renderFieldBox Yo'nalish bo'yicha
+    // guruhlashi uchun.
     @Query("select new behzoddev.testproject.dto.science.ScienceIdAndNameDto(s.id, s.name, " +
-            "(select count(ts) from TopicSection ts where ts.science = s and ts.deletedAt is null)) " +
+            "(select count(ts) from TopicSection ts where ts.science = s and ts.deletedAt is null), " +
+            "s.field.id, s.field.name) " +
             "from Science s where s.deletedAt is null order by s.orderIndex")
     Set<ScienceIdAndNameDto> findAllScienceNames();
 

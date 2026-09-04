@@ -2331,10 +2331,11 @@ async function moveChapter(chapterId, direction) {
     }
 }
 
-// "🔄 Bo'lim-Mavzu bog'lanishini sinxronlash" — Bo'lim-Mavzu bog'lanishi
-// odatda avtomatik sinxron turadi (mavzu saqlanganda), lekin vaqt o'tishi
-// bilan farq (drift) paydo bo'lib qolishi mumkin — shu tugma BARCHA kurs
-// mavzularini joriy Bo'lim holatiga qarab qayta to'g'rilaydi (kurs —
+// "🔄 Mavzu nomlarini TEST BOSHQARUVI bilan sinxronlash" — kurs Mavzusi
+// (CourseChapter) nomi bilan TEST BOSHQARUVIdagi Bo'lim (TopicSection)
+// nomi odatda avtomatik sinxron turadi (dars saqlanganda), lekin vaqt
+// o'tishi bilan farq (drift) paydo bo'lib qolishi mumkin — shu tugma
+// BARCHA darslarni joriy Mavzu holatiga qarab qayta to'g'rilaydi (kurs —
 // "haqiqiy manba", TEST BOSHQARUVI shunga moslashtiriladi).
 async function syncChapterTopics() {
     try {
@@ -2345,7 +2346,7 @@ async function syncChapterTopics() {
             return;
         }
         alert(data.updated > 0
-            ? `✅ ${data.updated} ta mavzuning Bo'limi TEST BOSHQARUVIDA to'g'rilandi.`
+            ? `✅ ${data.updated} ta darsning Bo'limi TEST BOSHQARUVIDA to'g'rilandi.`
             : "✅ Hammasi allaqachon sinxron edi — o'zgarish kerak bo'lmadi.");
         loadCourse();
     } catch (err) {

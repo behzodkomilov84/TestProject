@@ -87,7 +87,7 @@ async function loadScienceTrash() {
         const items = await res.json();
         setTrashBadgeCount("scienceTrashBadge", items.length);
         if (!items.length) {
-            list.innerHTML = "<p>O'chirilgan fan yo'q</p>";
+            list.innerHTML = "<p>O'chirilgan bo'lim yo'q</p>";
             return;
         }
         list.innerHTML = items.map(s => `
@@ -112,7 +112,7 @@ function formatScienceTrashDate(isoString) {
 }
 
 async function restoreScienceFromTrash(scienceId) {
-    if (!confirm("Bu fanni tiklamoqchimisiz?")) return;
+    if (!confirm("Bu bo'limni tiklamoqchimisiz?")) return;
 
     try {
         const res = await fetch(`/api/science/${scienceId}/restore`, { method: "POST" });
@@ -131,7 +131,7 @@ async function restoreScienceFromTrash(scienceId) {
 }
 
 async function permanentlyDeleteScienceFromTrash(scienceId, name) {
-    if (!confirm(`⚠️ "${name}" fanini BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.\n\n(Agar bu fanda hali Bo'lim/mavzu bo'lsa, avval ularni o'chirish kerak bo'ladi.)`)) return;
+    if (!confirm(`⚠️ "${name}" bo'limini BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.\n\n(Agar bu bo'limda hali Mavzu/dars bo'lsa, avval ularni o'chirish kerak bo'ladi.)`)) return;
 
     try {
         const res = await fetch(`/api/science/${scienceId}/permanent`, { method: "DELETE" });
@@ -176,7 +176,7 @@ async function reloadFromDb(mapping) {
         }
     } catch (err) {
         console.error('Yuklash xatosi:', err);
-        showToast('error', `Fanlarni yuklashda xatolik`, 4000);
+        showToast('error', `Bo'limlarni yuklashda xatolik`, 4000);
     }
 
     const data = await response.json();
@@ -208,7 +208,7 @@ function render() {
 
         const isLink = isView && s.id !== null;
         const isNew = s.mode === "NEW";
-        const placeholder = isNew ? 'placeholder="Yangi fan nomini kiriting"' : '';
+        const placeholder = isNew ? 'placeholder="Yangi bo\'lim nomini kiriting"' : '';
 
         // Проверяем дубликаты для текущего элемента
         const hasDup = !isView && hasDuplicate(i, s.name);
@@ -232,7 +232,7 @@ function render() {
                 id="input-${i}"
                 class="topic-name ${inputClass}"
                 tabindex="-1"
-            ><div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta bo'lim</span>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestions(${s.id})" title="Shu fandagi barcha mavzularning testlarini Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); openWordExportModal(${s.id})" title="Shu fandagi barcha mavzularning testlarini Word'ga eksport qilish">${WORD_ICON_SVG}</button>` : ""}</div></div>
+            ><div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta mavzu</span>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestions(${s.id})" title="Shu bo'limdagi barcha darslarning testlarini Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); openWordExportModal(${s.id})" title="Shu bo'limdagi barcha darslarning testlarini Word'ga eksport qilish">${WORD_ICON_SVG}</button>` : ""}</div></div>
         </div>
             `
                 : `
@@ -271,7 +271,7 @@ function render() {
 function openTopics(scienceId) {
     if (!scienceId || scienceId < 0) {
         // ВАРИАНТ 1 — запрет
-        alert("❗ Бу фан базада йўқ");
+        alert("❗ Бу бўлим базада йўқ");
         return;
 
         // ВАРИАНТ 2 — разрешить пустые темы
@@ -324,8 +324,8 @@ function toggleWordExportVariantFields() {
 // qat'i nazar to'g'ri ishlashi uchun har chaqiriqda qayta o'lchanadi).
 function updateWordExportHint() {
     const sameQuestions = document.querySelector('input[name="wordExportVariantMode"]:checked').value === "same";
-    const textDifferent = "Savollar shu fandagi BARCHA mavzular bo'yicha TENG taqsimlanadi (mavzuda savol yetmasa, qolgan qismi boshqa mavzularga teng bo'lib beriladi). Natija — har biri alohida .docx fayl bo'lgan ZIP arxiv + javoblar kaliti (Excel).";
-    const textSame = "Savollar shu fandagi BARCHA mavzular bo'yicha TENG taqsimlanib BIR MARTA tanlanadi va BARCHA nusxada bir xil bo'ladi — faqat savollar (va javob variantlari) tartibi har bir nusxada alohida aralashtiriladi.";
+    const textDifferent = "Savollar shu bo'limdagi BARCHA darslar bo'yicha TENG taqsimlanadi (darsda savol yetmasa, qolgan qismi boshqa darslarga teng bo'lib beriladi). Natija — har biri alohida .docx fayl bo'lgan ZIP arxiv + javoblar kaliti (Excel).";
+    const textSame = "Savollar shu bo'limdagi BARCHA darslar bo'yicha TENG taqsimlanib BIR MARTA tanlanadi va BARCHA nusxada bir xil bo'ladi — faqat savollar (va javob variantlari) tartibi har bir nusxada alohida aralashtiriladi.";
 
     const hint = document.getElementById("wordExportHint");
     hint.style.minHeight = "";
@@ -496,7 +496,7 @@ function removeFromUi(i) {
         render();
         return;
     }
-    const subjectName = itemBlock[i].name || "Bu fan";
+    const subjectName = itemBlock[i].name || "Bu bo'lim";
     const confirmDelete = confirm(`⚠️ "${subjectName}"ni o'chirishni tasdiqlaysizmi?\n\nBu amalni bekor qilib bo'lmaydi.`);
     if (confirmDelete) {
         const removedSubject = itemBlock[i];
@@ -506,7 +506,7 @@ function removeFromUi(i) {
         }
 
         itemBlock.splice(i, 1);
-        showToast('success', `"${removedSubject.name || 'Fan'}" o'chirildi`, 2000);
+        showToast('success', `"${removedSubject.name || 'Bo\'lim'}" o'chirildi`, 2000);
         render();
     } else {
         cancel(i);
@@ -661,16 +661,16 @@ function saveOnClientSide(i) {
 
 
     if (newName === "") {
-        alert('❌ Fan nomi bo\'sh bo\'lishi mumkin emas!');
+        alert('❌ Bo\'lim nomi bo\'sh bo\'lishi mumkin emas!');
         focusIndex = i;
-        console.error("Fan nomi bo\'sh bo\'lishi mumkin emas!");
+        console.error("Bo'lim nomi bo\'sh bo\'lishi mumkin emas!");
 
         return;
     }
 
     // проверка дубликатов на фронте
     if (hasDuplicate(i, newName)) {
-        alert('❌ Bu fan nomi allaqachon mavjud!');
+        alert('❌ Bu bo\'lim nomi allaqachon mavjud!');
         focusIndex = i;
         console.log("hasDuplicate = true");
         return;
@@ -693,15 +693,15 @@ function saveOnClientSide(i) {
         if (newName === oldName) {
             showToast('info', 'O\'zgarish bo\'lmadi', 3000);
         } else {
-            showToast('info', 'Yangi fan o\'zgardi', 3000);
+            showToast('info', 'Yangi bo\'lim o\'zgardi', 3000);
         }
-        showToast('success', 'Yangi fan saqlandi \n\n(bazaga saqlash uchun "Bazaga saqlash" tugmasini bosing)', 3000);
+        showToast('success', 'Yangi bo\'lim saqlandi \n\n(bazaga saqlash uchun "Bazaga saqlash" tugmasini bosing)', 3000);
     } else {
         // Существующая запись из БД
         if (newName === oldName) {
             showToast('warm', 'O\'zgarish bo\'lmadi', 3000);
         } else {
-            showToast('success', 'Fan muvaffaqiyatli saqlandi', 3000);
+            showToast('success', 'Bo\'lim muvaffaqiyatli saqlandi', 3000);
         }
 
     }

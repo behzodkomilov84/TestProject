@@ -32,11 +32,18 @@ public class Science {
     @ToString.Exclude
     private Set<Topic> topics;
 
-    // Fanlar ro'yxatidagi tartib raqami — A-Z/Z-A saralash va qo'lda
-    // tartiblash (⬆⬇) imkoniyati uchun (TopicSection.orderIndex bilan
-    // bir xil konvensiya).
+    // Fanlar (UI'da "Bo'lim") ro'yxatidagi tartib raqami — A-Z/Z-A
+    // saralash va qo'lda tartiblash (⬆⬇) imkoniyati uchun
+    // (TopicSection.orderIndex bilan bir xil konvensiya).
     @Column(name = "order_index")
     private Integer orderIndex;
+
+    // Qaysi Yo'nalishga (CourseField, Kurslar bilan UMUMIY) tegishli —
+    // ixtiyoriy (foydalanuvchi so'rovi, 2026-09-04). NULL — hali
+    // Yo'nalishga tayinlanmagan (eski, migratsiyadan oldingi) fanlar.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "field_id")
+    private CourseField field;
 
     // "O'chirilganlar savati" — Course.deletedAt bilan bir xil g'oya:
     // o'chirilganda DARHOL butunlay o'chmaydi (Bo'lim/mavzu/savollari
