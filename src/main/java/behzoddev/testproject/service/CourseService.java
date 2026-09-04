@@ -1478,6 +1478,6 @@ public class CourseService {
                 "background:#e8f5f3;border-left:3px solid #00796b;border-radius:4px;" +
                 "color:#00695c;font-weight:600;font-style:normal;text-decoration:none\">" +
                 "📖 <a href=\"" + url + "\" style=\"color:#00695c;text-decoration:underline\">\"" +
-                safeTitle + "\" mavzusini kursda o'qish</a></span>";
+                safeTitle + "\" darsini kursda o'qish</a></span>";
     }
 }

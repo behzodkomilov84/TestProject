@@ -158,9 +158,9 @@ function resetVideoUpload(container) {
     removeBtn.classList.add("hidden");
 }
 
-// ================= "🔗 Mavzuga havola qo'shish" =================
+// ================= "🔗 Darsga havola qo'shish" =================
 // Izohga qo'lda <a href="..."> yozish o'rniga — bitta tugma bosilsa,
-// joriy savol tegishli bo'lgan mavzuning kursdagi bo'limiga to'g'ri
+// joriy savol tegishli bo'lgan darsning kursdagi darsiga to'g'ri
 // havola cursor turgan joyga qo'yiladi. Mavzu hech qaysi kurs bo'limiga
 // bog'lanmagan bo'lsa (topicCourseLink == null), tugma yashirin qoladi.
 // (fetchTopicCourseLink / buildTopicLinkHtml / insertTextAtCursor —

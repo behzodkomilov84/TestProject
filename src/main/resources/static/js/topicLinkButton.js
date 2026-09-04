@@ -1,10 +1,10 @@
-// "🔗 Mavzuga havola qo'shish" — bir nechta sahifada ishlatiladi (test
+// "🔗 Darsga havola qo'shish" — bir nechta sahifada ishlatiladi (test
 // yaratish formasi — test-form.js, va savollar jadvalidagi izohni
-// tahrirlash oynasi — question.js). Joriy mavzuga (topicId) bog'langan
-// kurs bo'limi mavjud bo'lsa, izohga ALOHIDA ko'rinishdagi (rang/format
-// bilan boshqa matndan ajralib turadigan, "belgi/badge" ko'rinishidagi)
-// havola qo'shish imkonini beradi — o'qituvchi HTML tegini qo'lda
-// yozmaydi, faqat tugmani bosadi.
+// tahrirlash oynasi — question.js). Joriy darsga (topicId) bog'langan
+// kurs mavzusi (CourseChapter) mavjud bo'lsa, izohga ALOHIDA ko'rinishdagi
+// (rang/format bilan boshqa matndan ajralib turadigan, "belgi/badge"
+// ko'rinishidagi) havola qo'shish imkonini beradi — o'qituvchi HTML
+// tegini qo'lda yozmaydi, faqat tugmani bosadi.
 
 // Diqqat: bu yerdagi rang/format o'zgarsa, avval import qilingan
 // (bulk-import) savollardagi eski (formatlanmagan) havolalar bilan
@@ -21,7 +21,7 @@ async function fetchTopicCourseLink(topicId) {
 
     try {
         const res = await fetch(`/api/topic/${topicId}/course-link`);
-        if (!res.ok) return null; // 404 — mavzu hech qaysi bo'limga bog'lanmagan
+        if (!res.ok) return null; // 404 — dars hech qaysi mavzuga bog'lanmagan
         return await res.json();
     } catch (err) {
         console.error(err);
@@ -32,7 +32,7 @@ async function fetchTopicCourseLink(topicId) {
 function buildTopicLinkHtml(courseLink) {
     const url = `/courses/${courseLink.courseId}/sections/${courseLink.sectionId}`;
     const title = courseLink.topicName.replace(/"/g, "&quot;");
-    return ` <span style="${TOPIC_LINK_BADGE_STYLE}">📖 <a href="${url}" style="${TOPIC_LINK_ANCHOR_STYLE}">"${title}" mavzusini kursda o'qish</a></span>`;
+    return ` <span style="${TOPIC_LINK_BADGE_STYLE}">📖 <a href="${url}" style="${TOPIC_LINK_ANCHOR_STYLE}">"${title}" darsini kursda o'qish</a></span>`;
 }
 
 function insertTextAtCursor(textarea, text) {

@@ -1212,8 +1212,8 @@ function toggleWordExportVariantFields() {
 // qat'i nazar to'g'ri ishlashi uchun har chaqiriqda qayta o'lchanadi).
 function updateWordExportHint() {
     const sameQuestions = document.querySelector('input[name="wordExportVariantMode"]:checked').value === "same";
-    const textDifferent = "Savollar shu mavzudan tasodifiy tanlanadi. Natija — har biri alohida .docx fayl bo'lgan ZIP arxiv + javoblar kaliti (Excel).";
-    const textSame = "Savollar shu mavzudan BIR MARTA tanlanadi va BARCHA nusxada bir xil bo'ladi — faqat savollar (va javob variantlari) tartibi har bir nusxada alohida aralashtiriladi.";
+    const textDifferent = "Savollar shu darsdan tasodifiy tanlanadi. Natija — har biri alohida .docx fayl bo'lgan ZIP arxiv + javoblar kaliti (Excel).";
+    const textSame = "Savollar shu darsdan BIR MARTA tanlanadi va BARCHA nusxada bir xil bo'ladi — faqat savollar (va javob variantlari) tartibi har bir nusxada alohida aralashtiriladi.";
 
     const hint = document.getElementById("wordExportHint");
     hint.style.minHeight = "";
@@ -1319,8 +1319,8 @@ let currentAnswerId = null;
 let currentQuestionId = null;
 let originalText = "";
 
-// "🔗 Mavzuga havola qo'shish" — joriy sahifadagi barcha savollar bitta
-// mavzuga tegishli bo'lgani uchun (URL'dagi topicId), bir marta
+// "🔗 Darsga havola qo'shish" — joriy sahifadagi barcha savollar bitta
+// darsga tegishli bo'lgani uchun (URL'dagi topicId), bir marta
 // yuklanadi (fetchTopicCourseLink / buildTopicLinkHtml / insertTextAtCursor
 // — topicLinkButton.js'da, test-form.js bilan umumiy).
 let modalTopicCourseLink = null;

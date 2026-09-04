@@ -36,7 +36,7 @@ function loadSciences() {
     fetch("/api/teacher/sciences")
         .then(r => r.ok ? r.json() : [])
         .then(list => {
-            select.innerHTML = `<option value="">--Fanni tanlang--</option>` +
+            select.innerHTML = `<option value="">--Bo'limni tanlang--</option>` +
                 list.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join("");
         })
         .catch(err => console.error(err));
@@ -75,7 +75,7 @@ function groupTopicsBySection() {
     });
     const groups = [...sectionsById.values()].sort((a, b) => a.orderIndex - b.orderIndex);
     if (unlinked.length) {
-        groups.push({ id: "none", name: "— Bo'limsiz mavzular —", topics: unlinked });
+        groups.push({ id: "none", name: "— Mavzusiz darslar —", topics: unlinked });
     }
     return groups;
 }
@@ -129,18 +129,18 @@ function populateTopicSelect(sectionValue) {
 
 function resetSectionAndBelow() {
     cachedTopics = [];
-    document.getElementById("sectionSelect").innerHTML = `<option value="">--Avval fanni tanlang--</option>`;
-    document.getElementById("topicTree").innerHTML = `<div class="teacher-empty">Avval fanni tanlang</div>`;
+    document.getElementById("sectionSelect").innerHTML = `<option value="">--Avval bo'limni tanlang--</option>`;
+    document.getElementById("topicTree").innerHTML = `<div class="teacher-empty">Avval bo'limni tanlang</div>`;
     resetTopicAndBelow();
 }
 
 function resetTopicAndBelow() {
-    document.getElementById("topicSelect").innerHTML = `<option value="">--Avval bo'limni tanlang--</option>`;
+    document.getElementById("topicSelect").innerHTML = `<option value="">--Avval mavzuni tanlang--</option>`;
     loadQuestions("");
 }
 
 //--------------------------------------------------------
-//          "🎲 Avtomatik tanlash" — Bo'lim/Mavzu checkbox daraxti
+//          "🎲 Avtomatik tanlash" — Mavzu/Dars checkbox daraxti
 //--------------------------------------------------------
 
 // Bo'lim guruhlari — teacher-groups.js'dagi "guruh a'zolari" accordion
@@ -250,7 +250,7 @@ async function autoSelectQuestions() {
         .map(cb => Number(cb.dataset.topicId));
 
     if (!topicIds.length) {
-        alert("Kamida bitta mavzuni belgilang.");
+        alert("Kamida bitta darsni belgilang.");
         return;
     }
 
@@ -288,7 +288,7 @@ async function autoSelectQuestions() {
 function loadQuestions(topicId) {
     const box = document.getElementById("questions");
     if (!topicId) {
-        box.innerHTML = `<div class="teacher-empty">Avval fan, bo'lim va mavzuni tanlang</div>`;
+        box.innerHTML = `<div class="teacher-empty">Avval bo'lim, mavzu va darsni tanlang</div>`;
         return;
     }
 

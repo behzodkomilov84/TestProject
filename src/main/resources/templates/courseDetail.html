@@ -235,47 +235,48 @@
                 <input type="number" id="newSectionVideoDuration" placeholder="Video davomiyligi (soniya) — faqat 'Boshqa manba' uchun" style="display:none;">
             </div>
 
-            <!-- Mavzuni TEST BOSHQARUVI'dagi Fan/Bo'lim/Mavzu bilan bog'lash —
+            <!-- Darsni TEST BOSHQARUVI'dagi Bo'lim/Mavzu/Dars bilan bog'lash —
                  ixtiyoriy. Kiritilgan nom mavjud bo'lmasa, avtomatik
-                 yaratiladi. Fan — tanlov (default — shu kurs nomi),
+                 yaratiladi. Bo'lim — tanlov (default — shu kurs nomi),
                  "Boshqa" tanlansa erkin nom kiritish maydoni chiqadi.
-                 Bo'lim — ANIQ TANLOV (select, erkin matn emas — yozuvdagi
-                 kichik farq tufayli tasodifan dublikat bo'lim yaratilib
-                 ketmasligi uchun), "➕ Yangi bo'lim yaratish..." tanlansa,
+                 Mavzu — ANIQ TANLOV (select, erkin matn emas — yozuvdagi
+                 kichik farq tufayli tasodifan dublikat mavzu yaratilib
+                 ketmasligi uchun), "➕ Yangi mavzu yaratish..." tanlansa,
                  nom kiritish maydoni ochiladi (populateChapterSelect/
-                 onChapterSelectChange, courseDetail.js). Fan va Mavzu
-                 orasida joylashtirilgan — ierarxiya "Fan → Bo'lim → Mavzu"
-                 tartibida ko'rinishi uchun. Mavzu nomi — default sifatida
-                 bo'lim (mavzu kartasi) nomi bilan bir xil (u o'zgarsa, bu
-                 ham qo'lda tahrirlanmagan bo'lsa, avtomatik yangilanadi).
+                 onChapterSelectChange, courseDetail.js). Bo'lim va Dars
+                 orasida joylashtirilgan — ierarxiya "Bo'lim → Mavzu → Dars"
+                 tartibida ko'rinishi uchun. Dars nomi — default sifatida
+                 Mavzu (kurs mavzusi kartasi) nomi bilan bir xil (u
+                 o'zgarsa, bu ham qo'lda tahrirlanmagan bo'lsa, avtomatik
+                 yangilanadi).
             -->
             <label class="content-toggle-label">
-                <input type="checkbox" id="newSectionLinkTopic" onchange="onTopicLinkToggle('new')"> 🎯 Mavzuga oid testlar bilan bog'lash (ixtiyoriy)
+                <input type="checkbox" id="newSectionLinkTopic" onchange="onTopicLinkToggle('new')"> 🎯 Darsga oid testlar bilan bog'lash (ixtiyoriy)
             </label>
             <div id="newSectionTopicFields" style="display:none;">
-                <label class="field-label" for="newSectionScienceSelect">Fan</label>
+                <label class="field-label" for="newSectionScienceSelect">Bo'lim</label>
                 <select id="newSectionScienceSelect" onchange="onScienceSelectChange('new')"></select>
-                <input type="text" id="newSectionScienceOther" placeholder="Fan nomi" style="display:none;">
+                <input type="text" id="newSectionScienceOther" placeholder="Bo'lim nomi" style="display:none;">
                 <div class="field-hint">Masalan: Kimyo</div>
 
                 <label class="field-label" for="newSectionChapterSelect">Mavzu (ixtiyoriy)</label>
                 <div class="chapter-select-row">
                     <select id="newSectionChapterSelect" onchange="onChapterSelectChange('new')"></select>
-                    <!-- Faqat tanlangan Bo'lim BO'SH (hech qanday mavzuga
+                    <!-- Faqat tanlangan Mavzu BO'SH (hech qanday darsga
                          biriktirilmagan) bo'lsa ko'rinadi (onChapterSelectChange). -->
                     <button type="button" id="newSectionChapterDeleteBtn" class="chapter-select-delete-btn"
                             style="display:none;" onclick="deleteSelectedChapter('new')"
                             title="Bu bo'sh mavzuni o'chirish">🗑️</button>
-                    <!-- Kursdagi BARCHA bo'sh (hech qanday mavzuga
-                         biriktirilmagan) Bo'limlarni bir yo'la o'chiradi. -->
+                    <!-- Kursdagi BARCHA bo'sh (hech qanday darsga
+                         biriktirilmagan) Mavzularni bir yo'la o'chiradi. -->
                     <button type="button" class="chapter-select-delete-btn" onclick="deleteEmptyChapters()"
                             title="Kursdagi barcha bo'sh mavzularni o'chirish">🗑️ Bo'shlarni tozalash</button>
                 </div>
                 <input type="text" id="newSectionChapterNewInput" style="display:none;"
                        placeholder="📂 Yangi mavzu nomi (masalan: 1-BOB)" maxlength="255">
 
-                <label class="field-label" for="newSectionTopicName">Mavzu nomi</label>
-                <input type="text" id="newSectionTopicName" placeholder="Mavzu nomi" oninput="onTopicNameInput('new')">
+                <label class="field-label" for="newSectionTopicName">Dars nomi</label>
+                <input type="text" id="newSectionTopicName" placeholder="Dars nomi" oninput="onTopicNameInput('new')">
                 <div class="field-hint">Mavjud bo'lmasa, avtomatik yaratiladi</div>
             </div>
 
@@ -380,14 +381,14 @@
                 <input type="number" id="editSectionVideoDuration" placeholder="Video davomiyligi (soniya) — faqat 'Boshqa manba' uchun" style="display:none;">
             </div>
 
-            <!-- Fan → Bo'lim → Mavzu tartibida — addSectionForm bilan bir xil. -->
+            <!-- Bo'lim → Mavzu → Dars tartibida — addSectionForm bilan bir xil. -->
             <label class="content-toggle-label">
-                <input type="checkbox" id="editSectionLinkTopic" onchange="onTopicLinkToggle('edit')"> 🎯 Mavzuga oid testlar bilan bog'lash (ixtiyoriy)
+                <input type="checkbox" id="editSectionLinkTopic" onchange="onTopicLinkToggle('edit')"> 🎯 Darsga oid testlar bilan bog'lash (ixtiyoriy)
             </label>
             <div id="editSectionTopicFields" style="display:none;">
-                <label class="field-label" for="editSectionScienceSelect">Fan</label>
+                <label class="field-label" for="editSectionScienceSelect">Bo'lim</label>
                 <select id="editSectionScienceSelect" onchange="onScienceSelectChange('edit')"></select>
-                <input type="text" id="editSectionScienceOther" placeholder="Fan nomi" style="display:none;">
+                <input type="text" id="editSectionScienceOther" placeholder="Bo'lim nomi" style="display:none;">
                 <div class="field-hint">Masalan: Kimyo</div>
 
                 <label class="field-label" for="editSectionChapterSelect">Mavzu (ixtiyoriy)</label>
@@ -402,8 +403,8 @@
                 <input type="text" id="editSectionChapterNewInput" style="display:none;"
                        placeholder="📂 Yangi mavzu nomi (masalan: 1-BOB)" maxlength="255">
 
-                <label class="field-label" for="editSectionTopicName">Mavzu nomi</label>
-                <input type="text" id="editSectionTopicName" placeholder="Mavzu nomi" oninput="onTopicNameInput('edit')">
+                <label class="field-label" for="editSectionTopicName">Dars nomi</label>
+                <input type="text" id="editSectionTopicName" placeholder="Dars nomi" oninput="onTopicNameInput('edit')">
                 <div class="field-hint">Mavjud bo'lmasa, avtomatik yaratiladi</div>
             </div>
 

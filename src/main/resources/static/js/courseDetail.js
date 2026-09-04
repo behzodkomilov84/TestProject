@@ -2321,7 +2321,7 @@ async function moveChapter(chapterId, direction) {
         });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Bo'limlar tartibini saqlashda xatolik");
+            alert(data.error || "Mavzular tartibini saqlashda xatolik");
             return;
         }
         loadCourse();
@@ -2443,9 +2443,9 @@ function confirmCourseWordExport() {
 // ========================================================================
 //     "🔗 Havolalarni tekshirish" — savol izohlaridagi mavzu havolalari
 // ========================================================================
-// Har bir savolning to'g'ri javob izohida "🔗 Mavzuga havola qo'shish"
+// Har bir savolning to'g'ri javob izohida "🔗 Darsga havola qo'shish"
 // orqali qo'shilgan havola bo'lishi mumkin — bu FAQAT KO'RISH uchun
-// tekshiruv: o'sha havola O'ZINING mavzusiga to'g'ri bog'langanmi
+// tekshiruv: o'sha havola O'ZINING darsiga to'g'ri bog'langanmi
 // (CourseService.auditTopicLinks). Hech narsa avtomatik o'zgartirilmaydi
 // — faqat ➖ (havola yo'q) uchun bulk-qo'shish, ⚠️ (boshqa mavzuga
 // bog'langan) uchun har biriga alohida "✅ To'g'irlash" tugmasi beriladi.
@@ -2688,7 +2688,7 @@ async function runExplanationSearch(query) {
 
     if (topicIds.length === 0) {
         resultsEl.classList.remove("hidden");
-        resultsEl.innerHTML = `<div class="explanation-search-empty">Bu kursda mavzuga bog'langan bo'lim yo'q</div>`;
+        resultsEl.innerHTML = `<div class="explanation-search-empty">Bu kursda TEST BOSHQARUVIga bog'langan dars yo'q</div>`;
         return;
     }
 

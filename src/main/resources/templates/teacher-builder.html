@@ -28,14 +28,14 @@
     <div class="teacher-card">
         <h2>Yangi to'plam tuzish</h2>
 
-        <label for="scienceSelect">Fan</label>
+        <label for="scienceSelect">Bo'lim</label>
         <select id="scienceSelect"></select>
     </div>
 
-    <!-- "🎲 Avtomatik tanlash" — Fan tanlangach, shu Fanning BARCHA
-         Bo'lim/Mavzulari checkbox ko'rinishida chiqadi (default —
+    <!-- "🎲 Avtomatik tanlash" — Bo'lim tanlangach, shu Bo'limning BARCHA
+         Mavzu/Darslari checkbox ko'rinishida chiqadi (default —
          hammasi belgilangan). Jami nechta savol kerakligini kiritib,
-         tugma bosilsa — belgilangan mavzular orasida HAR BIRIGA TENG
+         tugma bosilsa — belgilangan darslar orasida HAR BIRIGA TENG
          bo'lib (savollar soniga qarab EMAS) tasodifiy savollar tanlab,
          "Tanlangan savollar" ro'yxatiga qo'shadi. -->
     <div class="teacher-card">
@@ -46,7 +46,7 @@
             </button>
         </div>
         <div id="topicTree" class="teacher-question-box">
-            <div class="teacher-empty">Avval fanni tanlang</div>
+            <div class="teacher-empty">Avval bo'limni tanlang</div>
         </div>
 
         <label for="autoSelectCount">Jami nechta savol</label>
@@ -56,21 +56,21 @@
         </div>
     </div>
 
-    <!-- "✋ Bittalab ko'rib tanlash" — bitta Bo'lim/Mavzuni tanlab, uning
+    <!-- "✋ Bittalab ko'rib tanlash" — bitta Mavzu/Darsni tanlab, uning
          savollarini ko'rib chiqib, xohlaganlarini qo'lda belgilash
          (avtomatik tanlashdan tashqari, qo'shimcha aniqlashtirish uchun). -->
     <div class="teacher-card">
         <h2>✋ Bittalab ko'rib tanlash</h2>
 
-        <label for="sectionSelect">Bo'lim</label>
-        <select id="sectionSelect"><option value="">--Avval fanni tanlang--</option></select>
+        <label for="sectionSelect">Mavzu</label>
+        <select id="sectionSelect"><option value="">--Avval bo'limni tanlang--</option></select>
 
-        <label for="topicSelect">Mavzu</label>
-        <select id="topicSelect"><option value="">--Avval bo'limni tanlang--</option></select>
+        <label for="topicSelect">Dars</label>
+        <select id="topicSelect"><option value="">--Avval mavzuni tanlang--</option></select>
 
         <label>Savollar</label>
         <div id="questions" class="teacher-question-box">
-            <div class="teacher-empty">Avval fan, bo'lim va mavzuni tanlang</div>
+            <div class="teacher-empty">Avval bo'lim, mavzu va darsni tanlang</div>
         </div>
     </div>
 
@@ -80,7 +80,7 @@
 
         <label for="setName">To'plam nomi</label>
         <div class="teacher-field-row">
-            <input id="setName" type="text" placeholder="Masalan: 1-mavzu — asosiy testlar">
+            <input id="setName" type="text" placeholder="Masalan: 1-dars — asosiy testlar">
             <button class="teacher-btn-primary" id="saveSetBtn" onclick="saveSet()">💾 Saqlash</button>
             <button class="teacher-icon-btn" id="cancelEditBtn" onclick="resetBuilder()" style="display:none;">
                 ❌ Tahrirlashni bekor qilish
