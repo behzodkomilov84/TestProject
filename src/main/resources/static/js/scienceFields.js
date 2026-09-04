@@ -18,6 +18,12 @@ let allFields = [];
 // (Yo'nalish IXTIYORIY bo'lgani uchun har doim bo'lishi mumkin).
 let unassignedCount = 0;
 
+// science.js#applyFieldScope'dan "← Yo'nalishlar" bosilganda "?focus=<id>"
+// (yoki "none") beriladi — o'sha Yo'nalish kartasi ajratib ko'rsatiladi
+// (courses.js#focusCourseId bilan bir xil g'oya, foydalanuvchi so'rovi
+// 2026-09-05).
+let focusFieldKey = new URLSearchParams(window.location.search).get("focus");
+
 document.addEventListener("DOMContentLoaded", () => {
     loadAndRender();
 });
@@ -65,7 +71,7 @@ function render() {
 
     if (unassignedCount > 0) {
         html += `
-            <div class="field-card" onclick="openField('none')">
+            <div class="field-card" id="field-card-none" onclick="openField('none')">
                 <div class="field-card-main">
                     <span class="field-card-icon">🧭</span>
                     <span class="field-card-name">— Yo'nalishsiz bo'limlar —</span>
@@ -76,13 +82,25 @@ function render() {
     }
 
     list.innerHTML = html || `<div class="courses-empty">Hali Yo'nalish yo'q — "+ Yangi Yo'nalish" tugmasi bilan qo'shing.</div>`;
+
+    if (focusFieldKey != null) {
+        const card = document.getElementById(`field-card-${focusFieldKey}`);
+        if (card) {
+            card.scrollIntoView({ behavior: "smooth", block: "center" });
+            card.classList.add("field-card-focused");
+            setTimeout(() => card.classList.remove("field-card-focused"), 2000);
+        }
+        // Faqat BIRINCHI render'da qo'llaniladi (courses.js#focusCourseId
+        // bilan bir xil sabab).
+        focusFieldKey = null;
+    }
 }
 
 function renderFieldCard(f, idx, total) {
     const upDisabled = idx === 0 ? "disabled" : "";
     const downDisabled = idx === total - 1 ? "disabled" : "";
     return `
-        <div class="field-card" onclick="openField(${f.id})">
+        <div class="field-card" id="field-card-${f.id}" onclick="openField(${f.id})">
             <div class="field-card-main">
                 <span class="field-card-icon">🧭</span>
                 <span class="field-card-name">${escapeHtml(f.name)}</span>

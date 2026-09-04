@@ -226,9 +226,17 @@ function applyFieldScope() {
     const nameEl = document.getElementById("fieldScopeName");
     const createBtn = document.getElementById("createFieldBtn");
     const title = document.getElementById("pageTitle");
+    const backLink = document.getElementById("fieldScopeBackLink");
 
     bar.classList.remove("hidden");
     if (createBtn) createBtn.style.display = "none";
+
+    // "← Yo'nalishlar"ga qaytilganda o'sha Yo'nalish kartasi topilib,
+    // ajratib ko'rsatilsin deb ("courses.js#focusCourseId bilan bir xil
+    // g'oya) — foydalanuvchi so'rovi, 2026-09-05.
+    if (backLink) {
+        backLink.href = "/science/fields?focus=" + (pageFieldId === null ? "none" : pageFieldId);
+    }
 
     if (pageFieldId === null) {
         nameEl.textContent = "— Yo'nalishsiz bo'limlar —";
