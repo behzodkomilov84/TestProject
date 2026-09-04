@@ -3011,7 +3011,16 @@ async function openAddSectionForm(forceChapterId) {
     }
 
     onChapterSelectChange("new");
+
+    // "Kursni boshqarish" paneli yig'ilgan (collapsed) holatda bo'lsa —
+    // addSectionForm o'sha panelning ICHIDA joylashgani uchun "show"
+    // klassi qo'shilsa ham yig'ilgan ota-element (.manage-panel-body{
+    // display:none}) uni baribir yashirib turardi (real bug: chapter-box
+    // sarlavhasidagi "➕" — forceChapterId bilan — bosilganda hech narsa
+    // ko'rinmasdi). openEditSectionForm bilan bir xil yechim.
+    expandManagePanel();
     document.getElementById("addSectionForm").classList.add("show");
+    document.getElementById("addSectionForm").scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 // Mavzu select'i nomi bo'yicha tanlanadi ("id:"/"name:" qiymatlaridan
