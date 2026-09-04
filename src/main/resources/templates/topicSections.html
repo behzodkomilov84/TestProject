@@ -26,7 +26,7 @@
 <h1>Mavzular<span id="sectionsSummary" class="topics-summary"></span></h1>
 <input type="hidden" id="scienceId" th:value="${scienceId}">
 <div class="wrapper">
-    <button onclick="location.href='/topics?scienceId=' + getScienceId()">📋 Barcha darslar (mavzusiz ko'rish)</button>
+    <button onclick="location.href='/topics?scienceId=' + getScienceId() + fieldQuery">📋 Barcha darslar (mavzusiz ko'rish)</button>
     <!-- Shu Bo'limdagi hech qanday darsga biriktirilmagan (bo'sh) BARCHA
          mavzularni bir yo'la o'chiradi (deleteEmptySections, topicSection.js). -->
     <button onclick="deleteEmptySections()">🗑️ Bo'sh mavzularni o'chirish</button>

@@ -1,6 +1,7 @@
-// "Bo'lim" (TopicSection) CRUD — topic.js bilan bir xil andoza
-// (itemBlock[] + mode VIEW/NEW/EDIT + saveToDb()), + tartib
-// o'zgartirish (yuqoriga/pastga) tugmalari.
+// "Mavzu" (TopicSection — Bo'lim ICHIDAGI guruh, "Bo'lim -> Mavzu -> Dars"
+// ierarxiyasida) CRUD — topic.js bilan bir xil andoza (itemBlock[] + mode
+// VIEW/NEW/EDIT + saveToDb()), + tartib o'zgartirish (yuqoriga/pastga)
+// tugmalari.
 // ========================================================================
 //                     Global fields
 // ========================================================================
@@ -35,6 +36,12 @@ const WORD_ICON_SVG = `<svg width="28" height="28" viewBox="0 0 48 48" xmlns="ht
 // ========================================================================
 
 const scienceId = getScienceId();
+
+// science.js#openTopics'dan "&fieldId=..." bilan kelgan bo'lsa — shu
+// Yo'nalish qamrovi "Orqaga"/"📋 Barcha darslar" havolalarida saqlab
+// qolinadi (topic.js'ga ham shu tarzda uzatiladi).
+const pageFieldId = new URLSearchParams(window.location.search).get("fieldId");
+const fieldQuery = pageFieldId != null ? `&fieldId=${pageFieldId}` : "";
 
 if (!scienceId) {
     alert("❌ scienceId topilmadi (HTML dan)");
@@ -355,8 +362,8 @@ function openTopics(sectionId) {
         alert("❗ Avval mavzuni bazaga saqlang");
         return;
     }
-    // Faqat shu bo'limga tegishli mavzularni ko'rsatadigan holatda ochiladi.
-    window.location.href = `/topics?scienceId=${scienceId}&sectionId=${sectionId}`;
+    // Faqat shu mavzuga tegishli darslarni ko'rsatadigan holatda ochiladi.
+    window.location.href = `/topics?scienceId=${scienceId}&sectionId=${sectionId}${fieldQuery}`;
 }
 
 // "📊 Excel'ga eksport" — shu Bo'limdagi BARCHA mavzularning savollarini
@@ -843,12 +850,13 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!btnBack) return;
 
     btnBack.onclick = () => {
-        // Bo'limlar sahifasi endi Fan va Mavzular o'rtasida turadi
-        // (Fan -> Bo'lim -> Mavzu) — shu sabab "Orqaga" Fanlar ro'yxatiga
-        // qaytaradi.
+        // Mavzu guruhlari (TopicSection) sahifasi Bo'lim va Darslar
+        // o'rtasida turadi (Bo'lim -> Mavzu -> Dars) — shu sabab "Orqaga"
+        // Bo'limlar ro'yxatiga (kelingan Yo'nalish qamrovini saqlagan
+        // holda) qaytaradi.
         const scienceId =
             new URLSearchParams(window.location.search).get("scienceId");
 
-        window.location.href = scienceId ? `/science?focus=${scienceId}` : "/science";
+        window.location.href = scienceId ? `/science?focus=${scienceId}${fieldQuery}` : `/science${pageFieldId != null ? "?fieldId=" + pageFieldId : ""}`;
     };
 });

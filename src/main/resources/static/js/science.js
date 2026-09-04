@@ -474,9 +474,15 @@ function openTopics(scienceId) {
         // return;
     }
 
-    // Endi to'g'ridan-to'g'ri mavzular emas, avval Bo'limlar sahifasiga
-    // o'tiladi (Fan -> Bo'lim -> Mavzu ierarxiyasi).
-    window.location.href = `/topic-sections?scienceId=${scienceId}`;
+    // Endi to'g'ridan-to'g'ri mavzular emas, avval Mavzu guruhlari
+    // (TopicSection) sahifasiga o'tiladi (Bo'lim -> Mavzu -> Dars
+    // ierarxiyasi). fieldId — joriy Yo'nalish qamrovi (agar bo'lsa) —
+    // "Orqaga" zanjiri bo'ylab olib o'tiladi, shu sabab "Bo'lim -> Mavzu
+    // -> Dars"dan "Orqaga" bosilganda foydalanuvchi tanlagan Yo'nalish
+    // yo'qolib qolmaydi (topicSection.js/topic.js shu parametrni o'qiydi).
+    const fieldQuery = typeof pageFieldId === "number" ? `&fieldId=${pageFieldId}`
+        : pageFieldId === null ? `&fieldId=none` : "";
+    window.location.href = `/topic-sections?scienceId=${scienceId}${fieldQuery}`;
 }
 
 // "📊 Excel'ga eksport" — shu Fandagi BARCHA mavzularning savollarini

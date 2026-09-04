@@ -38,7 +38,7 @@
 <input type="hidden" id="scienceId" th:value="${scienceId}">
 <!-- ОСНОВНОЙ КОНТЕЙНЕР -->
 <div class="wrapper">
-    <button id="btnSections" onclick="location.href='/topic-sections?scienceId=' + getScienceId()">📂 Mavzular</button>
+    <button id="btnSections" onclick="location.href='/topic-sections?scienceId=' + getScienceId() + fieldQuery">📂 Mavzular</button>
     <!-- Shu Bo'limdagi hech qanday savoli (testi) yo'q BARCHA darslarni
          bir yo'la o'chiradi (deleteQuestionlessTopics, topic.js). -->
     <button onclick="deleteQuestionlessTopics()">🗑️ Testi yo'q darslarni o'chirish</button>

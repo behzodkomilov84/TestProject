@@ -29,16 +29,21 @@ const WORD_ICON_SVG = `<svg width="28" height="28" viewBox="0 0 48 48" xmlns="ht
     <text x="31" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">W</text>
 </svg>`;
 
-// Fan ichidagi Bo'limlar ro'yxati — "— Bo'limsiz —" varianti bilan
-// birga tanlash dropdown'ini to'ldirish uchun (loadSections()).
+// Bo'lim ichidagi Mavzular (TopicSection) ro'yxati — "— Mavzusiz —"
+// varianti bilan birga tanlash dropdown'ini to'ldirish uchun (loadSections()).
 let sectionList = [];
 
-// Bo'limlar sahifasidan (Fan -> Bo'lim -> Mavzu) kelinganda URL'da
-// "sectionId" beriladi — shu bo'limga tegishli mavzular bo'lim ustida
+// Mavzu guruhlari (TopicSection) sahifasidan (Bo'lim -> Mavzu -> Dars)
+// kelinganda URL'da "sectionId" beriladi — shu Mavzuga tegishli darslar
 // FAQAT KO'RSATILADI (itemBlock'ning o'zi to'liq qoladi — dublikat
-// nom tekshiruvi butun fan bo'yicha bo'lishi kerak, faqat bitta
-// bo'lim ichida emas, chunki DB'da unique(science_id, name)).
+// nom tekshiruvi butun Bo'lim bo'yicha bo'lishi kerak, faqat bitta
+// Mavzu ichida emas, chunki DB'da unique(science_id, name)).
 const filterSectionId = new URLSearchParams(window.location.search).get("sectionId");
+
+// science.js/topicSection.js'dan "&fieldId=..." bilan kelgan bo'lsa — shu
+// Yo'nalish qamrovi "Orqaga"/"📂 Mavzular" havolalarida saqlab qolinadi.
+const pageFieldId = new URLSearchParams(window.location.search).get("fieldId");
+const fieldQuery = pageFieldId != null ? `&fieldId=${pageFieldId}` : "";
 
 // "🔗 Kursga bog'lanmagan mavzular" filtri (toggleUnlinkedFilter) — yoqilsa
 // faqat linkedCourseTitle'i YO'Q qatorlar ko'rsatiladi (render()).
@@ -159,7 +164,7 @@ async function loadSections() {
 }
 
 function sectionOptionsHtml(selectedSectionId) {
-    let options = `<option value="" ${!selectedSectionId ? "selected" : ""}>— Bo'limsiz —</option>`;
+    let options = `<option value="" ${!selectedSectionId ? "selected" : ""}>— Mavzusiz —</option>`;
     sectionList.forEach(sec => {
         const selected = Number(selectedSectionId) === Number(sec.id) ? "selected" : "";
         options += `<option value="${sec.id}" ${selected}>${escapeHtml(sec.name)}</option>`;
@@ -1405,11 +1410,12 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // Bo'lim ichidan kelingan bo'lsa (Fan -> Bo'lim -> Mavzu) — Bo'limlar
-        // ro'yxatiga qaytariladi, aks holda to'g'ridan-to'g'ri Fanlarga.
+        // Mavzu ichidan kelingan bo'lsa (Bo'lim -> Mavzu -> Dars) — Mavzu
+        // guruhlari ro'yxatiga qaytariladi, aks holda to'g'ridan-to'g'ri
+        // Bo'limlarga (ikkalasida ham joriy Yo'nalish qamrovi saqlanadi).
         window.location.href = filterSectionId
-            ? `/topic-sections?scienceId=${scienceId}`
-            : `/science?focus=${scienceId}`;
+            ? `/topic-sections?scienceId=${scienceId}${fieldQuery}`
+            : `/science?focus=${scienceId}${fieldQuery}`;
     };
 });
 //===========================================================================
