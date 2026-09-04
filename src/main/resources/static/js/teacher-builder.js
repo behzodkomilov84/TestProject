@@ -96,10 +96,10 @@ function populateSectionSelect() {
     });
     const sections = [...sectionsById.values()].sort((a, b) => a.orderIndex - b.orderIndex);
 
-    let options = `<option value="">--Bo'limni tanlang--</option>`;
+    let options = `<option value="">--Mavzuni tanlang--</option>`;
     options += sections.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join("");
     if (hasUnlinked) {
-        options += `<option value="none">— Bo'limsiz mavzular —</option>`;
+        options += `<option value="none">— Mavzusiz darslar —</option>`;
     }
     sectionSelect.innerHTML = options;
     sectionSelect.onchange = () => populateTopicSelect(sectionSelect.value);
@@ -120,7 +120,7 @@ function populateTopicSelect(sectionValue) {
         : cachedTopics.filter(t => String(t.sectionId) === sectionValue);
 
     const totalQuestions = filtered.reduce((sum, t) => sum + Number(t.questionCount || 0), 0);
-    topicSelect.innerHTML = `<option value="">--Mavzuni tanlang-- (jami ${totalQuestions} ta test)</option>` +
+    topicSelect.innerHTML = `<option value="">--Darsni tanlang-- (jami ${totalQuestions} ta test)</option>` +
         filtered.map(t => `<option value="${t.id}">${escapeHtml(t.name)} (${t.questionCount} ta)</option>`).join("");
     topicSelect.onchange = () => loadQuestions(topicSelect.value);
 
@@ -152,7 +152,7 @@ function resetTopicAndBelow() {
 function renderTopicTree() {
     const container = document.getElementById("topicTree");
     if (!cachedTopics.length) {
-        container.innerHTML = `<div class="teacher-empty">Bu fanda mavzu yo'q</div>`;
+        container.innerHTML = `<div class="teacher-empty">Bu bo'limda dars yo'q</div>`;
         return;
     }
 
@@ -172,7 +172,7 @@ function renderTopicTree() {
             <div class="teacher-group-header" onclick="toggleTopicGroupExpand(this)">
                 <span class="teacher-group-chevron">▸</span>
                 <span class="teacher-group-name">${escapeHtml(g.name)}</span>
-                <span class="teacher-set-count">(${g.topics.length} mavzu, ${totalQuestions} test)</span>
+                <span class="teacher-set-count">(${g.topics.length} dars, ${totalQuestions} test)</span>
                 <span class="teacher-group-actions" onclick="event.stopPropagation()">
                     <input type="checkbox" class="section-checkbox" checked>
                 </span>
@@ -195,7 +195,7 @@ function toggleTopicGroupExpand(headerEl) {
     headerEl.closest(".teacher-group-card").classList.toggle("expanded");
 }
 
-// Bo'lim checkbox'i bosilganda — shu bo'limning BARCHA mavzu
+// Mavzu checkbox'i bosilganda — shu mavzuning BARCHA dars
 // checkbox'lari ham shunga qarab belgilanadi/bekor qilinadi.
 function onSectionCheckboxToggle(sectionCheckbox) {
     const group = sectionCheckbox.closest(".teacher-group-card");
@@ -240,7 +240,7 @@ function updateToggleAllButtonLabel() {
     btn.textContent = anyChecked ? "❌ Barchasini bekor qilish" : "✅ Barchasini belgilash";
 }
 
-// Belgilangan mavzular orasidan, HAR BIRIGA TENG bo'lib (savollar
+// Belgilangan darslar orasidan, HAR BIRIGA TENG bo'lib (savollar
 // soniga qarab EMAS — "🎲 Variantlar yaratish" bilan bir xil "suv
 // quyish" algoritmi), jami kiritilgan sonda tasodifiy savol tanlab,
 // "Tanlangan savollar" ro'yxatiga QO'SHADI (mavjudlarini o'chirmaydi —
