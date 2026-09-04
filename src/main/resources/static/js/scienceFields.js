@@ -2,9 +2,10 @@
 // "Yo'nalishlar" — TEST BOSHQARUVIning ENG BIRINCHI sahifasi (foydalanuvchi
 // so'rovi, 2026-09-05: "Test boshqaruvi"ni bosganda avval shu sahifa
 // ochilsin, kurslardagi bilan bir xil Yo'nalish -> Bo'lim -> Mavzu -> Dars
-// ierarxiyasi uchun). Yo'nalish CRUD funksiyalari (openCreateFieldForm/
-// submitCreateField/renameFieldPrompt/deleteFieldPrompt/moveField)
-// science.js'dagi bilan AYNAN bir xil andoza — /api/course-fields UMUMIY
+// ierarxiyasi uchun). Yo'nalish CRUD funksiyalari (submitCreateField/
+// renameFieldPrompt/deleteFieldPrompt/moveField — barchasi showPromptModal
+// markazlashtirilgan modali orqali) science.js/courses.js'dagi bilan AYNAN
+// bir xil andoza — /api/course-fields UMUMIY
 // endpoint (kurslar VA TEST BOSHQARUVI uchun), shu sabab ataylab
 // nusxalangan (loyihadagi mavjud "har bir sahifa mustaqil kichik JS fayl"
 // konvensiyasiga ko'ra), faqat re-render() logikasi accordion emas,

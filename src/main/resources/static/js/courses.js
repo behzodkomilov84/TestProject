@@ -201,18 +201,14 @@ function formatPrice(price) {
 
 /* ===== OWNER/ADMIN: Yo'nalish CRUD ===== */
 
-function openCreateFieldForm() {
-    document.getElementById("createFieldForm").style.display = "flex";
-}
-
-function closeCreateFieldForm() {
-    document.getElementById("createFieldForm").style.display = "none";
-    document.getElementById("newFieldName").value = "";
-}
-
+// Ilgari inline forma (#createFieldForm) edi — endi science-fields.js bilan
+// bir xil andoza: showPromptModal (sayt bo'ylab BARCHA prompt() o'rniga
+// ishlatiladigan, markazlashtirilgan modal) orqali (foydalanuvchi so'rovi,
+// 2026-09-05).
 async function submitCreateField() {
-    const name = document.getElementById("newFieldName").value.trim();
-    if (!name) {
+    const name = await showPromptModal("Yangi Yo'nalish nomi:", "");
+    if (name == null) return; // bekor qilindi
+    if (!name.trim()) {
         alert("❌ Yo'nalish nomini kiriting");
         return;
     }
@@ -221,7 +217,7 @@ async function submitCreateField() {
         const res = await fetch("/api/course-fields", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name })
+            body: JSON.stringify({ name: name.trim() })
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -229,7 +225,6 @@ async function submitCreateField() {
             return;
         }
 
-        closeCreateFieldForm();
         loadCourses();
     } catch (err) {
         console.error(err);

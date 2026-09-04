@@ -25,22 +25,13 @@
             <!-- "Yo'nalish" (soha) — Kurslar (Bo'limlar) katalogini
                  kattaroq guruhga bo'ladi, turli sohalarga tegishli kurslar
                  aralashib ketmasin deb (foydalanuvchi so'rovi, 2026-09-04). -->
-            <button id="createFieldBtn" class="owner-only-el" style="display:none;" onclick="openCreateFieldForm()">+ Yangi Yo'nalish</button>
+            <button id="createFieldBtn" class="owner-only-el" style="display:none;" onclick="submitCreateField()">+ Yangi Yo'nalish</button>
             <button id="createCourseBtn" class="owner-only-el" style="display:none;" onclick="openCreateCourseForm()">+ Yangi kurs</button>
             <!-- Faqat OWNER/ADMIN uchun — soft-delete qilingan kurslarni
                  ko'rish/tiklash (courseTrash.html). -->
             <button id="trashBtn" class="owner-only-el" style="display:none;" onclick="location.href='/courses/trash'">🗑️ O'chirilganlar <span id="courseTrashBadge" class="notif-badge" style="display:none;">0</span></button>
         </div>
     </header>
-
-    <!-- OWNER/ADMIN uchun — yangi Yo'nalish yaratish formasi -->
-    <div id="createFieldForm" class="course-form" style="display:none;">
-        <input type="text" id="newFieldName" placeholder="Yo'nalish nomi (masalan: Sanitariya epidemiologiya xizmati)">
-        <div class="course-form-actions">
-            <button onclick="submitCreateField()">✅ Yaratish</button>
-            <button onclick="closeCreateFieldForm()">Bekor qilish</button>
-        </div>
-    </div>
 
     <!-- OWNER/ADMIN uchun — yangi kurs (Bo'lim) yaratish formasi -->
     <div id="createCourseForm" class="course-form" style="display:none;">
