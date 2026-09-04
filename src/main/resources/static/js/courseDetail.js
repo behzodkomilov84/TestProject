@@ -1182,6 +1182,11 @@ function renderSections(sections) {
     // uchun.
     document.getElementById("sectionsSortBar").style.display = (canManage && !hasAnyChapter) ? "flex" : "none";
 
+    // Sahifa sarlavhasi — Bo'limli kursda endi pastda TO'G'RIDAN-TO'G'RI
+    // mavzu kartalari emas, Bo'lim "box"lari ko'rinadi (📋 Mavzular
+    // sarlavhasi endi har bir OCHILGAN bo'lim ICHIDA, renderChapterBox).
+    document.getElementById("curriculumTitle").textContent = hasAnyChapter ? "📂 Bo'limlar" : "📋 Mavzular";
+
     // "🔍 Bo'lim qidirish" — faqat guruhlangan (Bo'limli) ko'rinishda ma'noli.
     document.getElementById("chapterSearchBox").style.display = hasAnyChapter ? "block" : "none";
 
@@ -1549,6 +1554,7 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
         bodyHtml = `
             <div class="chapter-box-body">
                 ${sortBar}
+                <h4 class="chapter-box-mavzular-title">📋 Mavzular</h4>
                 <div class="sections-grid">${cardsHtml}</div>
                 ${paginationHtml ? `<div class="sections-pagination chapter-box-pagination">${paginationHtml}</div>` : ""}
             </div>`;

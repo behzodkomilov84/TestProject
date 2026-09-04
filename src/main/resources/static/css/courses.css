@@ -1149,6 +1149,18 @@ body {
     margin-top: 4px;
 }
 
+/* "📋 Mavzular" — ochilgan Bo'lim ICHIDA, o'sha bo'limning mavzu
+   kartalari (.sections-grid) tepasida (foydalanuvchi so'rovi bo'yicha —
+   avval sahifa boshida BITTA umumiy sarlavha edi, endi har bir bo'lim
+   o'zining "Mavzular" yorlig'iga ega). .curriculum-title bilan bir xil
+   ruhda, lekin bo'lim ichiga mos kichikroq/xiralashgan uslubda. */
+.chapter-box-mavzular-title {
+    margin: 0 0 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #64748b;
+}
+
 .chapter-box-count {
     font-weight: 400;
     font-size: 13px;

@@ -424,7 +424,13 @@
         </div>
     </div>
 
-    <h2 class="curriculum-title">📋 Mavzular</h2>
+    <!-- Matni dinamik (courseDetail.js#renderSections): kursda kamida
+         bitta Bo'lim bo'lsa "📂 Bo'limlar" (chunki pastda endi bo'lim
+         "box"lari ko'rinadi, to'g'ridan-to'g'ri mavzu kartalari emas),
+         aks holda (bo'limsiz, tekis ro'yxat) "📋 Mavzular" — foydalanuvchi
+         so'rovi bo'yicha, "📋 Mavzular" endi HAR BIR ochilgan Bo'lim
+         ICHIDA, o'sha bo'limning mavzu kartalari ustida ko'rinadi. -->
+    <h2 id="curriculumTitle" class="curriculum-title">📋 Mavzular</h2>
 
     <!-- Ikkala qidiruv qutisi (kurs ichidan qidirish + bo'lim qidirish)
          yonma-yon (tor ekranda pastma-past tushadi — .search-boxes-row,
