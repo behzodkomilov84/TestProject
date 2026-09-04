@@ -37,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (testState.topicIds.length === 0) {
-        alert("Нет выбранных тем. Вернитесь на предыдущую страницу.");
+        showAlertModal("Нет выбранных тем. Вернитесь на предыдущую страницу.");
         window.location.href = "/testConfigPage";
         return;
     }
@@ -72,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
         })
         .catch(err => {
             console.error(err);
-            alert(err);
+            showAlertModal(err);
             document.getElementById("questions").innerHTML = "<p class='empty'>❌ Ошибка загрузки теста</p>";
         });
 
@@ -318,7 +318,7 @@ function finishTest() {
 
     const unanswered = testState.questions.filter(q => !testState.answers.has(q.id));
     if (unanswered.length > 0) {
-        alert(`❗ Barcha savollarga javob bering, (${unanswered.length} ta qoldi)`);
+        showAlertModal(`❗ Barcha savollarga javob bering, (${unanswered.length} ta qoldi)`);
         return;
     }
 
@@ -512,7 +512,7 @@ function showWrongAnswers() {
 function repeatWrongOnly() {
     const wrongQuestions = getWrongQuestions();
     if (wrongQuestions.length === 0) {
-        alert("🎉 Xato savollar yo‘q");
+        showAlertModal("🎉 Xato savollar yo‘q");
         return;
     }
 
@@ -671,7 +671,7 @@ function updateProgress() {
     if (answered === total && !testState.allAnsweredNotified) {
         testState.allAnsweredNotified = true;
         const timeNote = testState.mode === "practice" ? "" : " Vaqtingiz hali bor —";
-        alert(`✅ Siz barcha savollarga javob berdingiz!\n\n${timeNote} xohlasangiz javoblaringizni qayta ko'rib chiqishingiz mumkin ("AVVALGI"/"KEYINGI" tugmalari bilan). Tayyor bo'lsangiz, "Test Natijasi" tugmasini bosing.`);
+        showAlertModal(`✅ Siz barcha savollarga javob berdingiz!\n\n${timeNote} xohlasangiz javoblaringizni qayta ko'rib chiqishingiz mumkin ("AVVALGI"/"KEYINGI" tugmalari bilan). Tayyor bo'lsangiz, "Test Natijasi" tugmasini bosing.`);
     }
 }
 
@@ -681,7 +681,7 @@ function openCommentModal(button) {
     const videoUrl = decodeURIComponent(button.dataset.commentVideo || "");
 
     if (!comment.trim() && !imageUrl && !videoUrl) {
-        alert("Izoh mavjud emas");
+        showAlertModal("Izoh mavjud emas");
         return;
     }
 

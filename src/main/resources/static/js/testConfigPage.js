@@ -383,12 +383,12 @@ function startTest() {
     const timeValue = Number(document.getElementById("time").value);
 
     if (topicIds.length === 0) {
-        alert("Dars tanlang!");
+        showAlertModal("Dars tanlang!");
         return;
     }
 
     if (limit <= 0) {
-        alert("Test sonini kiriting");
+        showAlertModal("Test sonini kiriting");
         return;
     }
 

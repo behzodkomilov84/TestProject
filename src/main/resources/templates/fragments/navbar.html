@@ -73,6 +73,17 @@
             }
         </script>
         <script src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" async></script>
+        <!-- Sayt bo'ylab BARCHA sahifalarda (navbar bor joyda) prompt()/
+             confirm()/alert() o'rniga markazlashtirilgan modal (promptModal.js)
+             ishlatilishi uchun — shu fragment orqali BIR MARTA ulanadi
+             (foydalanuvchi so'rovi, 2026-09-05). DIQQAT: sahifaning o'z
+             <head>'ida ham shu skriptni QAYTA ULAMANG — "let" bilan
+             e'lon qilingan o'zgaruvchi ikki marta yuklansa brauzer
+             "Identifier has already been declared" xatosi berib, BUTUN
+             sahifa JS'ini to'xtatib qo'yadi (faqat navbar'siz sahifalar,
+             masalan test-form.html, o'zining alohida <script> tegini
+             saqlab qoladi). -->
+        <script src="/js/promptModal.js" defer></script>
 
         <button class="burger" onclick="toggleMenu()">☰</button>
         <nav id="nav-menu" class="nav-items">

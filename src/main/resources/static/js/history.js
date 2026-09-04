@@ -55,7 +55,7 @@ function loadHistory(page) {
         })
         .catch(err => {
             console.error("❌ History load error:", err);
-            alert("Test tarixi yuklanmadi. Qayta urinib ko‘ring.");
+            showAlertModal("Test tarixi yuklanmadi. Qayta urinib ko‘ring.");
         });
 }
 
@@ -161,7 +161,7 @@ function loadDetails(testId) {
         })
         .catch(err => {
             console.error("❌ Details load error:", err);
-            alert("Test tafsilotlari yuklanmadi");
+            showAlertModal("Test tafsilotlari yuklanmadi");
         });
 }
 

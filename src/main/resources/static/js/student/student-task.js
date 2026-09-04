@@ -460,7 +460,7 @@ async function loadCurrentTaskQuestions(taskId) {
     try {
         const task = taskStore.byId.get(taskId);
         if (!task) {
-            alert("Topshiriq topilmadi");
+            showAlertModal("Topshiriq topilmadi");
             return;
         }
 
@@ -482,7 +482,7 @@ async function loadCurrentTaskQuestions(taskId) {
 
     } catch (err) {
         console.error(err);
-        alert("Topshiriqni yuklashda xatolik yuz berdi.");
+        showAlertModal("Topshiriqni yuklashda xatolik yuz berdi.");
     }
 }
 
@@ -837,7 +837,7 @@ async function finishTaskSession() {
 
         console.error("FINISH FAILED:", err);
 
-        alert("Testni yakunlab bo‘lmadi. Qayta urinib ko‘ring.");
+        showAlertModal("Testni yakunlab bo‘lmadi. Qayta urinib ko‘ring.");
 
         // ❗ если finish не удался — разрешаем повторную попытку
         currentTask.finishing = false;
@@ -928,7 +928,7 @@ async function showTaskResult(taskId) {
 
     } catch (e) {
         console.error(e);
-        alert("Natijani yuklashda xatolik yuz berdi.");
+        showAlertModal("Natijani yuklashda xatolik yuz berdi.");
     }
 }
 
@@ -1080,7 +1080,7 @@ async function continueTaskSession(taskId) {
     } catch (err) {
 
         console.error("CONTINUE FAILED:", err);
-        alert("Testni davom ettirib bo‘lmadi");
+        showAlertModal("Testni davom ettirib bo‘lmadi");
 
     }
 }

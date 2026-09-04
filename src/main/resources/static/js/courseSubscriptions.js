@@ -127,12 +127,12 @@ async function submitGrantSubscription() {
     const note = document.getElementById("grantNote").value.trim();
 
     if (!courseIds.length) {
-        alert("❌ Kamida bitta kursni tanlang");
+        showAlertModal("❌ Kamida bitta kursni tanlang");
         return;
     }
 
     if (!userId) {
-        alert("❌ Foydalanuvchini qidirib, ro'yxatdan tanlang");
+        showAlertModal("❌ Foydalanuvchini qidirib, ro'yxatdan tanlang");
         return;
     }
 
@@ -166,9 +166,9 @@ async function submitGrantSubscription() {
     if (okTitles.length) {
         let msg = `✅ ${okTitles.length} ta kursga obuna berildi (${durationMonths} oy):\n` + okTitles.join(", ");
         if (errors.length) msg += `\n\n⚠️ Xatoliklar:\n` + errors.join("\n");
-        alert(msg);
+        showAlertModal(msg);
     } else {
-        alert("❌ Hech qaysi kursga obuna berilmadi:\n" + errors.join("\n"));
+        showAlertModal("❌ Hech qaysi kursga obuna berilmadi:\n" + errors.join("\n"));
     }
 
     document.getElementById("grantUserSearch").value = "";
@@ -251,7 +251,7 @@ async function confirmRequest(subscriptionId) {
 
     const amount = Number(amountStr);
     if (isNaN(amount) || amount < 0) {
-        alert("❌ Noto'g'ri summa");
+        showAlertModal("❌ Noto'g'ri summa");
         return;
     }
 
@@ -270,31 +270,31 @@ async function confirmRequest(subscriptionId) {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-            alert(data.error || "Xatolik yuz berdi");
+            showAlertModal(data.error || "Xatolik yuz berdi");
             return;
         }
 
-        alert("✅ Obuna tasdiqlandi");
+        showAlertModal("✅ Obuna tasdiqlandi");
         loadSubscribers();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
 async function cancelSubscription(id) {
-    if (!confirm("Obunani bekor qilmoqchimisiz?")) return;
+    if (!await showConfirmModal("Obunani bekor qilmoqchimisiz?")) return;
 
     try {
         const res = await fetch(`/api/course-subscriptions/${id}/cancel`, { method: "POST" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Xatolik yuz berdi");
+            showAlertModal(data.error || "Xatolik yuz berdi");
             return;
         }
         loadSubscribers();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }

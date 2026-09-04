@@ -153,7 +153,7 @@ async function submitCreateField() {
     const name = await showPromptModal("Yangi Yo'nalish nomi:", "");
     if (name == null) return; // bekor qilindi
     if (!name.trim()) {
-        alert("❌ Yo'nalish nomini kiriting");
+        showAlertModal("❌ Yo'nalish nomini kiriting");
         return;
     }
 
@@ -165,14 +165,14 @@ async function submitCreateField() {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "Yo'nalish yaratishda xatolik");
+            showAlertModal(data.error || "Yo'nalish yaratishda xatolik");
             return;
         }
 
         await loadAndRender();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -181,7 +181,7 @@ async function renameFieldPrompt(fieldId) {
     const newName = await showPromptModal("Yangi Yo'nalish nomi:", field ? field.name : "");
     if (newName == null) return; // bekor qilindi
     if (!newName.trim()) {
-        alert("❌ Yo'nalish nomi bo'sh bo'lishi mumkin emas");
+        showAlertModal("❌ Yo'nalish nomi bo'sh bo'lishi mumkin emas");
         return;
     }
 
@@ -193,30 +193,30 @@ async function renameFieldPrompt(fieldId) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "Nomini o'zgartirishda xatolik");
+            showAlertModal(data.error || "Nomini o'zgartirishda xatolik");
             return;
         }
         await loadAndRender();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
 async function deleteFieldPrompt(fieldId, fieldName) {
-    if (!confirm(`"${fieldName}" Yo'nalishini o'chirmoqchimisiz?\n\n(Faqat bo'sh — hech qanday kursi/bo'limi yo'q Yo'nalishni o'chirish mumkin.)`)) return;
+    if (!await showConfirmModal(`"${fieldName}" Yo'nalishini o'chirmoqchimisiz?\n\n(Faqat bo'sh — hech qanday kursi/bo'limi yo'q Yo'nalishni o'chirish mumkin.)`, { danger: true })) return;
 
     try {
         const res = await fetch(`/api/course-fields/${fieldId}`, { method: "DELETE" });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "O'chirishda xatolik");
+            showAlertModal(data.error || "O'chirishda xatolik");
             return;
         }
         await loadAndRender();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -237,12 +237,12 @@ async function moveField(fieldId, direction) {
         });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Tartibni o'zgartirishda xatolik");
+            showAlertModal(data.error || "Tartibni o'zgartirishda xatolik");
             return;
         }
         await loadAndRender();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }

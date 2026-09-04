@@ -59,7 +59,7 @@ const filterFocusId = new URLSearchParams(window.location.search).get("focus");
 const scienceId = getScienceId();
 
 if (!scienceId) {
-    alert("❌ scienceId topilmadi (HTML dan)");
+    showAlertModal("❌ scienceId topilmadi (HTML dan)");
 } else {
     loadSections().then(() => {
         showSectionFilterBanner();
@@ -195,17 +195,17 @@ function getScienceId() {
 // o'tiladi (TopicService.deleteQuestionlessTopics).
 async function deleteQuestionlessTopics() {
     if (itemBlock.some(s => s.mode !== "VIEW")) {
-        alert("❌ Avval tahrirlashni yakuniga yetkazing (yoki saqlang)!");
+        showAlertModal("❌ Avval tahrirlashni yakuniga yetkazing (yoki saqlang)!");
         return;
     }
 
     const candidateCount = itemBlock.filter(s => s.id > 0 && (s.questionCount || 0) === 0).length;
     if (candidateCount === 0) {
-        alert("ℹ️ Testi yo'q dars topilmadi.");
+        showAlertModal("ℹ️ Testi yo'q dars topilmadi.");
         return;
     }
 
-    if (!confirm(`⚠️ Testi yo'q ${candidateCount} ta darsni o'chirmoqchimisiz?\n\n(Kursga bog'langan darslar, agar bo'lsa, avtomatik chetlab o'tiladi.)\n\nBu amalni bekor qilib bo'lmaydi.`)) {
+    if (!await showConfirmModal(`⚠️ Testi yo'q ${candidateCount} ta darsni o'chirmoqchimisiz?\n\n(Kursga bog'langan darslar, agar bo'lsa, avtomatik chetlab o'tiladi.)\n\nBu amalni bekor qilib bo'lmaydi.`, { danger: true })) {
         return;
     }
 
@@ -213,7 +213,7 @@ async function deleteQuestionlessTopics() {
         const res = await fetch(`/api/topic/questionless?scienceId=${getScienceId()}`, { method: "DELETE" });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "O'chirishda xatolik");
+            showAlertModal(data.error || "O'chirishda xatolik");
             return;
         }
         showToast('success', `✅ ${data.deleted} ta dars o'chirildi`, 4000);
@@ -223,7 +223,7 @@ async function deleteQuestionlessTopics() {
         refreshTopicTrashBadge();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -278,13 +278,13 @@ function formatTopicTrashDate(isoString) {
 }
 
 async function restoreTopic(topicId) {
-    if (!confirm("Bu darsni tiklamoqchimisiz?")) return;
+    if (!await showConfirmModal("Bu darsni tiklamoqchimisiz?")) return;
 
     try {
         const res = await fetch(`/api/topic/${topicId}/restore`, { method: "POST" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Tiklashda xatolik");
+            showAlertModal(data.error || "Tiklashda xatolik");
             return;
         }
         loadTopicTrash();
@@ -292,25 +292,25 @@ async function restoreTopic(topicId) {
         render();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
 async function permanentlyDeleteTopic(topicId, name) {
-    if (!confirm(`⚠️ "${name}" mavzusini BUTUNLAY (savollari bilan birga) o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`)) return;
-    if (!confirm("Haqiqatan ham ishonchingiz komilmi?")) return;
+    if (!await showConfirmModal(`⚠️ "${name}" mavzusini BUTUNLAY (savollari bilan birga) o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`, { danger: true })) return;
+    if (!await showConfirmModal("Haqiqatan ham ishonchingiz komilmi?", { danger: true })) return;
 
     try {
         const res = await fetch(`/api/topic/${topicId}/permanent`, { method: "DELETE" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "O'chirishda xatolik");
+            showAlertModal(data.error || "O'chirishda xatolik");
             return;
         }
         loadTopicTrash();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -444,39 +444,39 @@ function updateScienceTrashBulkButtons() {
 }
 
 async function restoreScienceTrashQuestion(questionId) {
-    if (!confirm("Bu testni tiklamoqchimisiz?")) return;
+    if (!await showConfirmModal("Bu testni tiklamoqchimisiz?")) return;
 
     try {
         const res = await fetch(`/api/question/${questionId}/restore`, { method: "POST" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Tiklashda xatolik");
+            showAlertModal(data.error || "Tiklashda xatolik");
             return;
         }
         loadQuestionScienceTrash();
         await refreshTopicsAfterScienceTrashChange();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
 async function permanentlyDeleteScienceTrashQuestion(questionId) {
-    if (!confirm("⚠️ Bu testni BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.")) return;
-    if (!confirm("Haqiqatan ham ishonchingiz komilmi?")) return;
+    if (!await showConfirmModal("⚠️ Bu testni BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.", { danger: true })) return;
+    if (!await showConfirmModal("Haqiqatan ham ishonchingiz komilmi?", { danger: true })) return;
 
     try {
         const res = await fetch(`/api/question/${questionId}/permanent`, { method: "DELETE" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "O'chirishda xatolik");
+            showAlertModal(data.error || "O'chirishda xatolik");
             return;
         }
         loadQuestionScienceTrash();
         await refreshTopicsAfterScienceTrashChange();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -484,7 +484,7 @@ async function restoreSelectedScienceTrashQuestions() {
     const ids = [...selectedScienceTrashQuestionIds];
     if (!ids.length) return;
 
-    if (!confirm(`${ids.length} ta testni tiklamoqchimisiz?`)) return;
+    if (!await showConfirmModal(`${ids.length} ta testni tiklamoqchimisiz?`)) return;
 
     try {
         const res = await fetch("/api/question/bulk/restore", {
@@ -501,7 +501,7 @@ async function restoreSelectedScienceTrashQuestions() {
         await refreshTopicsAfterScienceTrashChange();
     } catch (err) {
         console.error(err);
-        alert(err.message || "Tarmoq xatoligi");
+        showAlertModal(err.message || "Tarmoq xatoligi");
     }
 }
 
@@ -509,10 +509,10 @@ async function permanentlyDeleteSelectedScienceTrashQuestions() {
     const ids = [...selectedScienceTrashQuestionIds];
     if (!ids.length) return;
 
-    if (!confirm(`⚠️ ${ids.length} ta testni BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`)) {
+    if (!await showConfirmModal(`⚠️ ${ids.length} ta testni BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`, { danger: true })) {
         return;
     }
-    if (!confirm("Haqiqatan ham ishonchingiz komilmi?")) {
+    if (!await showConfirmModal("Haqiqatan ham ishonchingiz komilmi?", { danger: true })) {
         return;
     }
 
@@ -531,7 +531,7 @@ async function permanentlyDeleteSelectedScienceTrashQuestions() {
         await refreshTopicsAfterScienceTrashChange();
     } catch (err) {
         console.error(err);
-        alert(err.message || "Tarmoq xatoligi");
+        showAlertModal(err.message || "Tarmoq xatoligi");
     }
 }
 
@@ -816,7 +816,7 @@ function render() {
 function openQuestions(topicId) {
     if (!topicId || topicId < 0) {
         // ВАРИАНТ 1 — запрет
-        alert("❗ Бу мавзу бўйича саволлар базада йўқ");
+        showAlertModal("❗ Бу мавзу бўйича саволлар базада йўқ");
         return;
 
         // ВАРИАНТ 2 — разрешить пустые темы
@@ -897,11 +897,11 @@ async function confirmWordExport() {
     const sameQuestions = document.querySelector('input[name="wordExportVariantMode"]:checked').value === "same";
 
     if (!variantCount || variantCount < 1) {
-        alert("Nechta variant kerakligini kiriting");
+        showAlertModal("Nechta variant kerakligini kiriting");
         return;
     }
     if (!perVariant || perVariant < 1) {
-        alert("Har bir variantga nechta savol kerakligini kiriting");
+        showAlertModal("Har bir variantga nechta savol kerakligini kiriting");
         return;
     }
 
@@ -925,7 +925,7 @@ async function downloadWordVariants(url, filename) {
         const res = await fetch(url);
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Eksport qilishda xatolik");
+            showAlertModal(data.error || "Eksport qilishda xatolik");
             return;
         }
 
@@ -941,7 +941,7 @@ async function downloadWordVariants(url, filename) {
         closeWordExportModal();
     } catch (e) {
         console.error(e);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     } finally {
         btn.disabled = false;
         btn.textContent = originalText;
@@ -1040,14 +1040,14 @@ function undoAll() {
     showToast('info', 'Ma\'lumotlar bazasidan qayta yuklandi ', 4000);
 }//DONE
 
-function removeFromUi(i) {
+async function removeFromUi(i) {
     if (itemBlock[i].mode === "NEW") {
         itemBlock.splice(i, 1);
         render();
         return;
     }
     const topicName = itemBlock[i].name || "Bu dars";
-    const confirmDelete = confirm(`⚠️ "${topicName}"ni o'chirishni tasdiqlaysizmi?\n\nKeyin bu amalni bekor qilib bo'lmaydi.`);
+    const confirmDelete = await showConfirmModal(`⚠️ "${topicName}"ni o'chirishni tasdiqlaysizmi?\n\nKeyin bu amalni bekor qilib bo'lmaydi.`, { danger: true });
     if (confirmDelete) {
         const removedTopic = itemBlock[i];
 
@@ -1151,7 +1151,7 @@ async function persistOrder() {
 // bilan bir xil "slot almashtirish" texnikasi).
 function sortAllAZ(dir) {
     if (itemBlock.some(s => s.mode !== "VIEW")) {
-        alert("❌ Avval tahrirlashni yakuniga yetkazing (yoki saqlang)!");
+        showAlertModal("❌ Avval tahrirlashni yakuniga yetkazing (yoki saqlang)!");
         return;
     }
     const visibleIndices = getVisibleIndices();
@@ -1174,7 +1174,7 @@ function edit(i) {
     // — bu yerdagi tekshiruv foydalanuvchiga darhol, saqlashga
     // urinmasdan tushuntirish beradi.
     if (itemBlock[i].linkedCourseTitle) {
-        alert(`❌ Bu mavzu "${itemBlock[i].linkedCourseTitle}" kursiga bog'langan.\n\nUni (nomini ham, Bo'limini ham) faqat shu kurs ichidan (kurs sahifasidagi mavzu ✏️ tugmasi orqali) tahrirlashingiz mumkin.`);
+        showAlertModal(`❌ Bu mavzu "${itemBlock[i].linkedCourseTitle}" kursiga bog'langan.\n\nUni (nomini ham, Bo'limini ham) faqat shu kurs ichidan (kurs sahifasidagi mavzu ✏️ tugmasi orqali) tahrirlashingiz mumkin.`);
         return;
     }
 
@@ -1256,7 +1256,7 @@ function saveOnClientSide(i) {
 
 
     if (newName === "") {
-        alert('❌ Dars nomi bo\'sh bo\'lishi mumkin emas!');
+        showAlertModal('❌ Dars nomi bo\'sh bo\'lishi mumkin emas!');
         focusIndex = i;
         console.error("Dars nomi bo\'sh bo\'lishi mumkin emas!");
 
@@ -1265,7 +1265,7 @@ function saveOnClientSide(i) {
 
     // проверка дубликатов на фронте
     if (hasDuplicate(i, newName)) {
-        alert('❌ Bu dars nomi allaqachon mavjud!');
+        showAlertModal('❌ Bu dars nomi allaqachon mavjud!');
         focusIndex = i;
         console.log("hasDuplicate = true");
         return;
@@ -1305,7 +1305,7 @@ async function saveToDb() {
 
     // Запрет: есть незавершённые записи
     if (itemBlock.some(s => s.mode !== "VIEW")) {
-        alert('❌ Avval tahrirlashni yakuniga yetkazing!');
+        showAlertModal('❌ Avval tahrirlashni yakuniga yetkazing!');
         focusIndex = itemBlock.findIndex(s => s.mode !== "VIEW");
         render();
         return;
@@ -1335,12 +1335,12 @@ async function saveToDb() {
         payload.new.length === 0 &&
         payload.updated.length === 0 &&
         deletedTopicIds.length === 0) {
-        alert('ℹ️ Saqlash uchun o‘zgarishlar yo‘q');
+        showAlertModal('ℹ️ Saqlash uchun o‘zgarishlar yo‘q');
         return;
     }
 
     // 5. Подтверждение
-    const confirmed = confirm(
+    const confirmed = await showConfirmModal(
         `Yangi: ${payload.new.length} ta\n` +
         `O\'zgartirilgan: ${payload.updated.length} ta\n\n` +
         `O\'chirilgan: ${deletedTopicIds.length} ta\n\n` +
@@ -1388,7 +1388,7 @@ async function saveToDb() {
     } catch (err) {
         console.error(err);
         showToast('error', err.message || 'Saqlashda xatolik', 7000);
-        alert(err.message);
+        showAlertModal(err.message);
     }
 }//DONE
 

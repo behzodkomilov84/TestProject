@@ -129,10 +129,10 @@ function updateAssignButtonState() {
 async function assignTest() {
     try {
         const groupId = Number(document.getElementById("groupSelect").value);
-        if (!groupId) return alert("Guruhni tanlang");
+        if (!groupId) return showAlertModal("Guruhni tanlang");
 
         const setId = Number(document.getElementById("setSelect").value);
-        if (!setId) return alert("Savollar to'plamini tanlang");
+        if (!setId) return showAlertModal("Savollar to'plamini tanlang");
 
         const dueDateInput = document.getElementById("dueDate").value;
         const dueDate = dueDateInput ? new Date(dueDateInput).toISOString() : null;
@@ -141,7 +141,7 @@ async function assignTest() {
             .map(cb => Number(cb.dataset.id))
             .filter(Boolean);
 
-        if (studentIds.length === 0) return alert("Kamida bitta o'quvchini tanlang");
+        if (studentIds.length === 0) return showAlertModal("Kamida bitta o'quvchini tanlang");
 
         const res = await fetch("/api/teacher/assign", {
             method: "POST",
@@ -154,12 +154,12 @@ async function assignTest() {
             throw new Error(data.error || "Topshiriq berishda xatolik");
         }
 
-        alert("Test topshirig'i muvaffaqiyatli jo'natildi!");
+        showAlertModal("Test topshirig'i muvaffaqiyatli jo'natildi!");
         document.querySelectorAll(".student-checkbox:checked").forEach(cb => cb.checked = false);
         document.getElementById("selectAllStudents").checked = false;
         updateAssignButtonState();
     } catch (err) {
         console.error(err);
-        alert("Topshiriq berishda xatolik: " + (err.message || err));
+        showAlertModal("Topshiriq berishda xatolik: " + (err.message || err));
     }
 }

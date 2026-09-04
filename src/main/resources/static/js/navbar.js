@@ -186,14 +186,14 @@ async function linkTelegram() {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok || !data.code) {
-            alert(data.error || "❌ Kod olishda xatolik yuz berdi. Qayta urinib ko'ring.");
+            showAlertModal(data.error || "❌ Kod olishda xatolik yuz berdi. Qayta urinib ko'ring.");
             return;
         }
 
-        alert("Botga ulanish uchun botga quyidagini yozing: /link " + data.code);
+        showAlertModal("Botga ulanish uchun botga quyidagini yozing: /link " + data.code);
     } catch (err) {
         console.error(err);
-        alert("❌ Tarmoq xatoligi — qayta urinib ko'ring.");
+        showAlertModal("❌ Tarmoq xatoligi — qayta urinib ko'ring.");
     }
 }
 

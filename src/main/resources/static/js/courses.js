@@ -237,7 +237,7 @@ async function submitCreateField() {
     const name = await showPromptModal("Yangi Yo'nalish nomi:", "");
     if (name == null) return; // bekor qilindi
     if (!name.trim()) {
-        alert("❌ Yo'nalish nomini kiriting");
+        showAlertModal("❌ Yo'nalish nomini kiriting");
         return;
     }
 
@@ -249,14 +249,14 @@ async function submitCreateField() {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "Yo'nalish yaratishda xatolik");
+            showAlertModal(data.error || "Yo'nalish yaratishda xatolik");
             return;
         }
 
         loadCourses();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -265,7 +265,7 @@ async function renameFieldPrompt(fieldId) {
     const newName = await showPromptModal("Yangi Yo'nalish nomi:", field ? field.name : "");
     if (newName == null) return; // bekor qilindi
     if (!newName.trim()) {
-        alert("❌ Yo'nalish nomi bo'sh bo'lishi mumkin emas");
+        showAlertModal("❌ Yo'nalish nomi bo'sh bo'lishi mumkin emas");
         return;
     }
 
@@ -277,30 +277,30 @@ async function renameFieldPrompt(fieldId) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "Nomini o'zgartirishda xatolik");
+            showAlertModal(data.error || "Nomini o'zgartirishda xatolik");
             return;
         }
         loadCourses();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
 async function deleteFieldPrompt(fieldId, fieldName) {
-    if (!confirm(`"${fieldName}" Yo'nalishini o'chirmoqchimisiz?\n\n(Faqat bo'sh — hech qanday kursi yo'q Yo'nalishni o'chirish mumkin.)`)) return;
+    if (!await showConfirmModal(`"${fieldName}" Yo'nalishini o'chirmoqchimisiz?\n\n(Faqat bo'sh — hech qanday kursi yo'q Yo'nalishni o'chirish mumkin.)`, { danger: true })) return;
 
     try {
         const res = await fetch(`/api/course-fields/${fieldId}`, { method: "DELETE" });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "O'chirishda xatolik");
+            showAlertModal(data.error || "O'chirishda xatolik");
             return;
         }
         loadCourses();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -323,13 +323,13 @@ async function moveField(fieldId, direction) {
         });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Tartibni o'zgartirishda xatolik");
+            showAlertModal(data.error || "Tartibni o'zgartirishda xatolik");
             return;
         }
         loadCourses();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -366,11 +366,11 @@ async function submitCreateCourse() {
     const fileInput = document.getElementById("newCourseCoverFile");
 
     if (!title) {
-        alert("❌ Kurs nomini kiriting");
+        showAlertModal("❌ Kurs nomini kiriting");
         return;
     }
     if (!fieldId) {
-        alert("❌ Yo'nalishni tanlang");
+        showAlertModal("❌ Yo'nalishni tanlang");
         return;
     }
 
@@ -384,7 +384,7 @@ async function submitCreateCourse() {
             const uploadRes = await fetch("/api/courses/upload-cover", { method: "POST", body: formData });
             const uploadData = await uploadRes.json().catch(() => ({}));
             if (!uploadRes.ok) {
-                alert(uploadData.error || "Rasm yuklashda xatolik");
+                showAlertModal(uploadData.error || "Rasm yuklashda xatolik");
                 return;
             }
             coverImageUrl = uploadData.url;
@@ -403,13 +403,13 @@ async function submitCreateCourse() {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-            alert(data.error || "Kurs yaratishda xatolik");
+            showAlertModal(data.error || "Kurs yaratishda xatolik");
             return;
         }
 
         location.href = "/courses/" + data.id;
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }

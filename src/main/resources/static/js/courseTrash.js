@@ -60,7 +60,7 @@ function renderTrash(courses) {
 }
 
 async function restoreCourse(courseId) {
-    if (!confirm("Bu kursni tiklamoqchimisiz? Mavzulari, darslari, obunalari va o'quvchilar progressi ham birga qaytadi.")) {
+    if (!await showConfirmModal("Bu kursni tiklamoqchimisiz? Mavzulari, darslari, obunalari va o'quvchilar progressi ham birga qaytadi.")) {
         return;
     }
 
@@ -68,14 +68,14 @@ async function restoreCourse(courseId) {
         const res = await fetch(`/api/courses/${courseId}/restore`, { method: "POST" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Tiklashda xatolik");
+            showAlertModal(data.error || "Tiklashda xatolik");
             return;
         }
-        alert("✅ Kurs tiklandi.");
+        showAlertModal("✅ Kurs tiklandi.");
         loadTrash();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -89,10 +89,10 @@ async function permanentlyDeleteCourse(courseId, title) {
     const warning = isOwner
         ? `⚠️ "${title}" kursini BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi (backup orqali qo'lda tiklashdan boshqa).`
         : `⚠️ "${title}" kursini butunlay o'chirmoqchimisiz?\n\nKurs sizda va katalogda ENDI ko'rinmaydi. Ma'lumotlari bazada saqlanadi — faqat OWNER xohlasa, qaytadan tiklashi mumkin.`;
-    if (!confirm(warning)) {
+    if (!await showConfirmModal(warning, { danger: true })) {
         return;
     }
-    if (isOwner && !confirm("Haqiqatan ham ishonchingiz komilmi? Barcha mavzu/dars/obuna/progress ma'lumotlari abadiy yo'qoladi.")) {
+    if (isOwner && !await showConfirmModal("Haqiqatan ham ishonchingiz komilmi? Barcha mavzu/dars/obuna/progress ma'lumotlari abadiy yo'qoladi.", { danger: true })) {
         return;
     }
 
@@ -100,14 +100,14 @@ async function permanentlyDeleteCourse(courseId, title) {
         const res = await fetch(`/api/courses/${courseId}/permanent`, { method: "DELETE" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "O'chirishda xatolik");
+            showAlertModal(data.error || "O'chirishda xatolik");
             return;
         }
-        alert("✅ Kurs butunlay o'chirildi.");
+        showAlertModal("✅ Kurs butunlay o'chirildi.");
         loadTrash();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -164,7 +164,7 @@ function renderAdminArchivedCourses(courses) {
 }
 
 async function reclaimArchivedCourse(courseId, title) {
-    if (!confirm(`"${title}" kursini o'z nomingizga o'tkazib, qaytadan tiklamoqchimisiz?\n\n(Chop etish keyin alohida yoqiladi — hozircha qoralama sifatida qoladi.)`)) {
+    if (!await showConfirmModal(`"${title}" kursini o'z nomingizga o'tkazib, qaytadan tiklamoqchimisiz?\n\n(Chop etish keyin alohida yoqiladi — hozircha qoralama sifatida qoladi.)`)) {
         return;
     }
 
@@ -172,15 +172,15 @@ async function reclaimArchivedCourse(courseId, title) {
         const res = await fetch(`/api/courses/${courseId}/reclaim`, { method: "POST" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Tiklashda xatolik");
+            showAlertModal(data.error || "Tiklashda xatolik");
             return;
         }
-        alert("✅ Kurs sizning nomingizga o'tkazildi va tiklandi (qoralama sifatida).");
+        showAlertModal("✅ Kurs sizning nomingizga o'tkazildi va tiklandi (qoralama sifatida).");
         loadAdminArchivedCourses();
         loadTrash();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -244,11 +244,11 @@ async function previewBackupCourses() {
     const resultDiv = document.getElementById("backupPreviewResult");
 
     if (!fileName) {
-        alert("❌ Avval backup faylni tanlang.");
+        showAlertModal("❌ Avval backup faylni tanlang.");
         return;
     }
     if (!from || !to) {
-        alert("❌ Vaqt oralig'ini (Dan/Gacha) to'liq kiriting.");
+        showAlertModal("❌ Vaqt oralig'ini (Dan/Gacha) to'liq kiriting.");
         return;
     }
 
@@ -306,13 +306,13 @@ async function previewBackupCourses() {
 // olinadi) va sababini alert orqali tushuntiradi.
 function explainBackupCheckboxBlocked(checkbox, courseId) {
     checkbox.checked = false;
-    alert(`❌ #${courseId} kursi jonli bazada ALLAQACHON bor (faol yoki "O'chirilganlar savati"da) — shu sabab backup'dan tiklab bo'lmaydi, checkbox band qilingan.\n\nAgar bu kursni backup'dagi holatiga qaytarmoqchi bo'lsangiz, avval uni joriy holatidan olib tashlash (masalan butunlay o'chirish) kerak — bu funksiya mavjud kursning USTIGA yozmaydi.`);
+    showAlertModal(`❌ #${courseId} kursi jonli bazada ALLAQACHON bor (faol yoki "O'chirilganlar savati"da) — shu sabab backup'dan tiklab bo'lmaydi, checkbox band qilingan.\n\nAgar bu kursni backup'dagi holatiga qaytarmoqchi bo'lsangiz, avval uni joriy holatidan olib tashlash (masalan butunlay o'chirish) kerak — bu funksiya mavjud kursning USTIGA yozmaydi.`);
     return false;
 }
 
 async function applyBackupRestore() {
     if (!lastPreviewRange) {
-        alert("❌ Avval \"🔍 Ko'rish\" tugmasini bosing.");
+        showAlertModal("❌ Avval \"🔍 Ko'rish\" tugmasini bosing.");
         return;
     }
 
@@ -320,11 +320,11 @@ async function applyBackupRestore() {
         .map(el => Number(el.value));
 
     if (!courseIds.length) {
-        alert("❌ Tiklash uchun kamida bitta kursni belgilang.");
+        showAlertModal("❌ Tiklash uchun kamida bitta kursni belgilang.");
         return;
     }
 
-    if (!confirm(`⚠️ ${courseIds.length} ta kursni backupdan jonli bazaga tiklamoqchimisiz?\n\nBu amal jonli bazaga to'g'ridan-to'g'ri yozadi.`)) {
+    if (!await showConfirmModal(`⚠️ ${courseIds.length} ta kursni backupdan jonli bazaga tiklamoqchimisiz?\n\nBu amal jonli bazaga to'g'ridan-to'g'ri yozadi.`, { danger: true })) {
         return;
     }
 
@@ -336,11 +336,11 @@ async function applyBackupRestore() {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "Tiklashda xatolik");
+            showAlertModal(data.error || "Tiklashda xatolik");
             return;
         }
 
-        alert(
+        showAlertModal(
             `✅ Tiklandi:\n` +
             `Kurslar — ${data.restoredCourses}\n` +
             `Mavzular — ${data.restoredChapters}\n` +
@@ -357,6 +357,6 @@ async function applyBackupRestore() {
         loadTrash();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }

@@ -44,7 +44,7 @@ const pageFieldId = new URLSearchParams(window.location.search).get("fieldId");
 const fieldQuery = pageFieldId != null ? `&fieldId=${pageFieldId}` : "";
 
 if (!scienceId) {
-    alert("❌ scienceId topilmadi (HTML dan)");
+    showAlertModal("❌ scienceId topilmadi (HTML dan)");
 } else {
     afterStartPage(`/api/topic-section?scienceId=${scienceId}`);
     refreshSectionTrashBadge();
@@ -87,17 +87,17 @@ function getScienceId() {
 // — chalkashmasin deb, ular haqida ogohlantiriladi.
 async function deleteEmptySections() {
     if (itemBlock.some(s => s.mode !== "VIEW")) {
-        alert("❌ Avval tahrirlashni yakuniga yetkazing (yoki saqlang)!");
+        showAlertModal("❌ Avval tahrirlashni yakuniga yetkazing (yoki saqlang)!");
         return;
     }
 
     const emptyCount = itemBlock.filter(s => s.id > 0 && (s.topicCount || 0) === 0).length;
     if (emptyCount === 0) {
-        alert("ℹ️ Bo'sh mavzu topilmadi.");
+        showAlertModal("ℹ️ Bo'sh mavzu topilmadi.");
         return;
     }
 
-    if (!confirm(`⚠️ ${emptyCount} ta bo'sh mavzuni o'chirmoqchimisiz?\n\nBu amalni bekor qilib bo'lmaydi.`)) {
+    if (!await showConfirmModal(`⚠️ ${emptyCount} ta bo'sh mavzuni o'chirmoqchimisiz?\n\nBu amalni bekor qilib bo'lmaydi.`, { danger: true })) {
         return;
     }
 
@@ -105,7 +105,7 @@ async function deleteEmptySections() {
         const res = await fetch(`/api/topic-section/empty?scienceId=${getScienceId()}`, { method: "DELETE" });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "O'chirishda xatolik");
+            showAlertModal(data.error || "O'chirishda xatolik");
             return;
         }
         showToast('success', `✅ ${data.deleted} ta bo'sh mavzu o'chirildi`, 4000);
@@ -115,7 +115,7 @@ async function deleteEmptySections() {
         refreshSectionTrashBadge();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -175,13 +175,13 @@ function formatSectionTrashDate(isoString) {
 }
 
 async function restoreSectionFromTrash(sectionId) {
-    if (!confirm("Bu mavzuni tiklamoqchimisiz?")) return;
+    if (!await showConfirmModal("Bu mavzuni tiklamoqchimisiz?")) return;
 
     try {
         const res = await fetch(`/api/topic-section/${sectionId}/restore`, { method: "POST" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Tiklashda xatolik");
+            showAlertModal(data.error || "Tiklashda xatolik");
             return;
         }
         loadSectionTrash();
@@ -189,24 +189,24 @@ async function restoreSectionFromTrash(sectionId) {
         render();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
 async function permanentlyDeleteSectionFromTrash(sectionId, name) {
-    if (!confirm(`⚠️ "${name}" mavzusini BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi. (Darslari o'chmaydi, faqat "mavzusiz" bo'lib qoladi.)`)) return;
+    if (!await showConfirmModal(`⚠️ "${name}" mavzusini BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi. (Darslari o'chmaydi, faqat "mavzusiz" bo'lib qoladi.)`, { danger: true })) return;
 
     try {
         const res = await fetch(`/api/topic-section/${sectionId}/permanent`, { method: "DELETE" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "O'chirishda xatolik");
+            showAlertModal(data.error || "O'chirishda xatolik");
             return;
         }
         loadSectionTrash();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -359,7 +359,7 @@ function updateSectionsSummary() {
 
 function openTopics(sectionId) {
     if (!sectionId || sectionId < 0) {
-        alert("❗ Avval mavzuni bazaga saqlang");
+        showAlertModal("❗ Avval mavzuni bazaga saqlang");
         return;
     }
     // Faqat shu mavzuga tegishli darslarni ko'rsatadigan holatda ochiladi.
@@ -435,11 +435,11 @@ async function confirmWordExport() {
     const sameQuestions = document.querySelector('input[name="wordExportVariantMode"]:checked').value === "same";
 
     if (!variantCount || variantCount < 1) {
-        alert("Nechta variant kerakligini kiriting");
+        showAlertModal("Nechta variant kerakligini kiriting");
         return;
     }
     if (!perVariant || perVariant < 1) {
-        alert("Har bir variantga nechta savol kerakligini kiriting");
+        showAlertModal("Har bir variantga nechta savol kerakligini kiriting");
         return;
     }
 
@@ -463,7 +463,7 @@ async function downloadWordVariants(url, filename) {
         const res = await fetch(url);
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Eksport qilishda xatolik");
+            showAlertModal(data.error || "Eksport qilishda xatolik");
             return;
         }
 
@@ -479,7 +479,7 @@ async function downloadWordVariants(url, filename) {
         closeWordExportModal();
     } catch (e) {
         console.error(e);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     } finally {
         btn.disabled = false;
         btn.textContent = originalText;
@@ -563,14 +563,14 @@ function undoAll() {
     showToast('info', 'Ma\'lumotlar bazasidan qayta yuklandi ', 4000);
 }
 
-function removeFromUi(i) {
+async function removeFromUi(i) {
     if (itemBlock[i].mode === "NEW") {
         itemBlock.splice(i, 1);
         render();
         return;
     }
     const sectionName = itemBlock[i].name || "Bu mavzu";
-    const confirmDelete = confirm(`⚠️ "${sectionName}"ni o'chirishni tasdiqlaysizmi?\n\nMavzudagi darslar O'CHMAYDI — faqat mavzusiz bo'lib qoladi.\n\nKeyin bu amalni bekor qilib bo'lmaydi.`);
+    const confirmDelete = await showConfirmModal(`⚠️ "${sectionName}"ni o'chirishni tasdiqlaysizmi?\n\nMavzudagi darslar O'CHMAYDI — faqat mavzusiz bo'lib qoladi.\n\nKeyin bu amalni bekor qilib bo'lmaydi.`, { danger: true });
     if (confirmDelete) {
         const removed = itemBlock[i];
 
@@ -623,7 +623,7 @@ function edit(i) {
     // (TopicSectionService.updateSectionName) — bu yerdagi tekshiruv
     // foydalanuvchiga darhol, saqlashga urinmasdan tushuntirish beradi.
     if (itemBlock[i].linkedCourseTitle) {
-        alert(`❌ Bu bo'lim "${itemBlock[i].linkedCourseTitle}" kursiga bog'langan.\n\nUni faqat shu kurs ichidan (kurs sahifasidagi Bo'lim ✏️ tugmasi orqali) tahrirlashingiz mumkin.`);
+        showAlertModal(`❌ Bu bo'lim "${itemBlock[i].linkedCourseTitle}" kursiga bog'langan.\n\nUni faqat shu kurs ichidan (kurs sahifasidagi Bo'lim ✏️ tugmasi orqali) tahrirlashingiz mumkin.`);
         return;
     }
 
@@ -680,7 +680,7 @@ async function persistOrder() {
 // avval ularni yakunlash so'raladi.
 function sortAllAZ(dir) {
     if (itemBlock.some(s => s.mode !== "VIEW")) {
-        alert("❌ Avval tahrirlashni yakuniga yetkazing (yoki saqlang)!");
+        showAlertModal("❌ Avval tahrirlashni yakuniga yetkazing (yoki saqlang)!");
         return;
     }
 
@@ -741,13 +741,13 @@ function saveOnClientSide(i) {
     newName = s.name.trim();
 
     if (newName === "") {
-        alert('❌ Bo\'lim nomi bo\'sh bo\'lishi mumkin emas!');
+        showAlertModal('❌ Bo\'lim nomi bo\'sh bo\'lishi mumkin emas!');
         focusIndex = i;
         return;
     }
 
     if (hasDuplicate(i, newName)) {
-        alert('❌ Bu bo\'lim nomi allaqachon mavjud!');
+        showAlertModal('❌ Bu bo\'lim nomi allaqachon mavjud!');
         focusIndex = i;
         return;
     }
@@ -771,7 +771,7 @@ function saveOnClientSide(i) {
 async function saveToDb() {
 
     if (itemBlock.some(s => s.mode !== "VIEW")) {
-        alert('❌ Avval tahrirlashni yakuniga yetkazing!');
+        showAlertModal('❌ Avval tahrirlashni yakuniga yetkazing!');
         focusIndex = itemBlock.findIndex(s => s.mode !== "VIEW");
         render();
         return;
@@ -790,11 +790,11 @@ async function saveToDb() {
     };
 
     if (payload.new.length === 0 && payload.updated.length === 0 && deletedSectionIds.length === 0) {
-        alert('ℹ️ Saqlash uchun o‘zgarishlar yo‘q');
+        showAlertModal('ℹ️ Saqlash uchun o‘zgarishlar yo‘q');
         return;
     }
 
-    const confirmed = confirm(
+    const confirmed = await showConfirmModal(
         `Yangi: ${payload.new.length} ta\n` +
         `O\'zgartirilgan: ${payload.updated.length} ta\n\n` +
         `O\'chirilgan: ${deletedSectionIds.length} ta\n\n` +
@@ -837,7 +837,7 @@ async function saveToDb() {
     } catch (err) {
         console.error(err);
         showToast('error', err.message || 'Saqlashda xatolik', 7000);
-        alert(err.message);
+        showAlertModal(err.message);
     }
 }
 

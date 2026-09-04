@@ -250,13 +250,13 @@ async function autoSelectQuestions() {
         .map(cb => Number(cb.dataset.topicId));
 
     if (!topicIds.length) {
-        alert("Kamida bitta darsni belgilang.");
+        showAlertModal("Kamida bitta darsni belgilang.");
         return;
     }
 
     const totalCount = Number(document.getElementById("autoSelectCount").value);
     if (!totalCount || totalCount < 1) {
-        alert("Jami nechta savol kerakligini kiriting.");
+        showAlertModal("Jami nechta savol kerakligini kiriting.");
         return;
     }
 
@@ -279,9 +279,9 @@ async function autoSelectQuestions() {
             addSelectedUI(q.id, safeText);
         });
         updateCounter();
-        alert(`✅ ${questions.length} ta savol avtomatik tanlandi va "Tanlangan savollar"ga qo'shildi.`);
+        showAlertModal(`✅ ${questions.length} ta savol avtomatik tanlandi va "Tanlangan savollar"ga qo'shildi.`);
     } catch (err) {
-        alert(err.message || "Avtomatik tanlashda xatolik");
+        showAlertModal(err.message || "Avtomatik tanlashda xatolik");
     }
 }
 
@@ -382,7 +382,7 @@ function updateSaveButtonMode() {
 function saveSet() {
     const name = document.getElementById("setName").value.trim();
     if (!name || selectedMap.size === 0) {
-        alert("To'plam nomini kiriting va kamida bitta savolni tanlang.");
+        showAlertModal("To'plam nomini kiriting va kamida bitta savolni tanlang.");
         return;
     }
 
@@ -402,11 +402,11 @@ function saveSet() {
             }
             resetBuilder();
             loadSets();
-            alert(isEditing ? "Savollar to'plami muvaffaqiyatli yangilandi!" : "Savollar to'plami muvaffaqiyatli saqlandi!");
+            showAlertModal(isEditing ? "Savollar to'plami muvaffaqiyatli yangilandi!" : "Savollar to'plami muvaffaqiyatli saqlandi!");
         })
         .catch(err => {
             console.error(err);
-            alert(err.message || "Saqlashda xatolik yuz berdi.");
+            showAlertModal(err.message || "Saqlashda xatolik yuz berdi.");
         });
 }
 
@@ -436,7 +436,7 @@ async function openSetForEditing(id) {
         document.getElementById("selectedList").scrollIntoView({ behavior: "smooth", block: "center" });
     } catch (err) {
         console.error(err);
-        alert("Tarkibini yuklashda xatolik");
+        showAlertModal("Tarkibini yuklashda xatolik");
     }
 }
 
@@ -480,11 +480,11 @@ async function renameSetPrompt(id, oldName) {
             if (!r.ok) throw new Error();
             loadSets();
         })
-        .catch(() => alert("Nomini o'zgartirishda xatolik"));
+        .catch(() => showAlertModal("Nomini o'zgartirishda xatolik"));
 }
 
-function deleteSet(id) {
-    if (!confirm("Bu to'plamni o'chirmoqchimisiz?")) return;
+async function deleteSet(id) {
+    if (!await showConfirmModal("Bu to'plamni o'chirmoqchimisiz?", { danger: true })) return;
 
     fetch(`/api/teacher/questionsets/${id}`, { method: "DELETE" })
         .then(async r => {
@@ -494,5 +494,5 @@ function deleteSet(id) {
             }
             loadSets();
         })
-        .catch(err => alert(err.message || "O'chirishda xatolik"));
+        .catch(err => showAlertModal(err.message || "O'chirishda xatolik"));
 }

@@ -3,7 +3,7 @@ const ROLE = document.body.dataset.role;
 
 // Если роль не OWNER — редирект на логин
 if (ROLE !== "ROLE_OWNER") {
-    alert("⛔ Доступ запрещён");
+    showAlertModal("⛔ Доступ запрещён");
     location.href = "/login";
 }
 
@@ -33,7 +33,7 @@ function loadUsers() {
             populateManualUserSelect(users);
         })
         .catch(err => {
-            alert("Ошибка загрузки пользователей");
+            showAlertModal("Ошибка загрузки пользователей");
             console.error(err);
         });
 }
@@ -207,35 +207,35 @@ async function confirmSubscription(id) {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-            alert(data.error || "Xatolik yuz berdi");
+            showAlertModal(data.error || "Xatolik yuz berdi");
             return;
         }
 
-        alert("✅ Tasdiqlandi, ADMIN huquqi berildi.");
+        showAlertModal("✅ Tasdiqlandi, ADMIN huquqi berildi.");
         loadPendingSubscriptions();
         loadUsers();
     } catch (err) {
         console.error(err);
-        alert("Network error");
+        showAlertModal("Network error");
     }
 }
 
 async function cancelSubscription(id) {
-    if (!confirm("So'rovni rad etmoqchimisiz?")) return;
+    if (!await showConfirmModal("So'rovni rad etmoqchimisiz?")) return;
 
     try {
         const res = await fetch(`/api/subscriptions/${id}/cancel`, { method: "POST" });
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-            alert(data.error || "Xatolik yuz berdi");
+            showAlertModal(data.error || "Xatolik yuz berdi");
             return;
         }
 
         loadPendingSubscriptions();
     } catch (err) {
         console.error(err);
-        alert("Network error");
+        showAlertModal("Network error");
     }
 }
 
@@ -246,7 +246,7 @@ async function createManualSubscription() {
     const note = document.getElementById("manualNote").value.trim();
 
     if (!userId || !amount || amount <= 0) {
-        alert("❌ Foydalanuvchi va to'g'ri summani kiriting");
+        showAlertModal("❌ Foydalanuvchi va to'g'ri summani kiriting");
         return;
     }
 
@@ -260,18 +260,18 @@ async function createManualSubscription() {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-            alert(data.error || "Xatolik yuz berdi");
+            showAlertModal(data.error || "Xatolik yuz berdi");
             return;
         }
 
-        alert("✅ To'lov qayd qilindi, ADMIN huquqi berildi.");
+        showAlertModal("✅ To'lov qayd qilindi, ADMIN huquqi berildi.");
         document.getElementById("manualAmount").value = "";
         document.getElementById("manualNote").value = "";
         loadUsers();
         loadRoleAudit();
     } catch (err) {
         console.error(err);
-        alert("Network error");
+        showAlertModal("Network error");
     }
 }
 
@@ -286,14 +286,14 @@ async function toggleRole(userId, roleName, checkbox) {
 
         if (response.status === 403) {
             const data = await response.json();
-            alert(data.error); // ⛔ Siz o'z rolingizni o'zgartira olmaysiz
+            showAlertModal(data.error); // ⛔ Siz o'z rolingizni o'zgartira olmaysiz
             checkbox.checked = !adding; // eski holatga qaytaramiz
             return;
         }
 
         if (!response.ok) {
             const data = await response.json().catch(() => ({}));
-            alert(data.error || "Xatolik yuz berdi");
+            showAlertModal(data.error || "Xatolik yuz berdi");
             checkbox.checked = !adding; // eski holatga qaytaramiz
             return;
         }
@@ -303,7 +303,7 @@ async function toggleRole(userId, roleName, checkbox) {
         loadRoleAudit();
     } catch (err) {
         console.error(err);
-        alert("Network error");
+        showAlertModal("Network error");
         checkbox.checked = !adding;
     }
 }
@@ -350,7 +350,7 @@ async function saveMinAmount() {
     const value = Number(document.getElementById("minAmountInput").value);
 
     if (!value || value <= 0) {
-        alert("❌ To'g'ri summa kiriting");
+        showAlertModal("❌ To'g'ri summa kiriting");
         return;
     }
 
@@ -364,42 +364,42 @@ async function saveMinAmount() {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-            alert(data.error || "Xatolik yuz berdi");
+            showAlertModal(data.error || "Xatolik yuz berdi");
             return;
         }
 
-        alert("✅ Minimal summa saqlandi: " + data.minAmountSom + " so'm");
+        showAlertModal("✅ Minimal summa saqlandi: " + data.minAmountSom + " so'm");
     } catch (err) {
         console.error(err);
-        alert("Network error");
+        showAlertModal("Network error");
     }
 }
 
 async function unlockUser(id) {
-    if (!confirm("Foydalanuvchini blokdan chiqarmoqchimisiz?")) return;
+    if (!await showConfirmModal("Foydalanuvchini blokdan chiqarmoqchimisiz?")) return;
 
     try {
         const res = await fetch(`/api/users/${id}/unlock`, { method: "POST" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Xatolik yuz berdi");
+            showAlertModal(data.error || "Xatolik yuz berdi");
             return;
         }
         loadUsers();
     } catch (err) {
         console.error(err);
-        alert("Network error");
+        showAlertModal("Network error");
     }
 }
 
 async function deleteUser(id) {
-    if (!confirm("Foydalanuvchini o'chirmoqchimisiz?")) return;
+    if (!await showConfirmModal("Foydalanuvchini o'chirmoqchimisiz?", { danger: true })) return;
 
     const response = await fetch(`/api/users/${id}`,
         {method: "DELETE"});
     if (response.status === 403) {
         const data = await response.json();
-        alert(data.error); // ⛔ You cannot delete yourself
+        showAlertModal(data.error); // ⛔ You cannot delete yourself
     } else if (response.ok) {
         // Успешно — удаляем строку из таблицы
         loadUsers();

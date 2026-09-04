@@ -132,7 +132,7 @@ async function bulkReassign() {
     const ids = getSelectedIds();
 
     if (ids.length === 0) {
-        alert("Avval topshiriqni belgilang!!!");
+        showAlertModal("Avval topshiriqni belgilang!!!");
         return;
     }
 
@@ -150,12 +150,12 @@ async function bulkExtend() {
     const ids = getSelectedIds();
 
     if (ids.length === 0) {
-        alert("Avval topshiriqni belgilang!!!");
+        showAlertModal("Avval topshiriqni belgilang!!!");
         return;
     }
 
     if (ids.length > 1) {
-        alert("Bir vaqtda bittadan ortiq topshiriqni muddatini o'zgartira olmaysiz.");
+        showAlertModal("Bir vaqtda bittadan ortiq topshiriqni muddatini o'zgartira olmaysiz.");
         return;
     }
 
@@ -286,11 +286,11 @@ async function deleteAssignment() {
     const ids = getSelectedIds();
 
     if (ids.length === 0) {
-        alert("Avval topshiriqni tanlang!!!");
+        showAlertModal("Avval topshiriqni tanlang!!!");
         return;
     }
 
-    if (!confirm(`Haqiqatan ham ${ids.length} ta topshiriqni o‘chirmoqchimisiz?`))
+    if (!await showConfirmModal(`Haqiqatan ham ${ids.length} ta topshiriqni o‘chirmoqchimisiz?`, { danger: true }))
         return;
 
     try {
@@ -311,7 +311,7 @@ async function deleteAssignment() {
     } catch (e) {
 
         console.error(e);
-        alert("O‘chirishda xatolik yuz berdi");
+        showAlertModal("O‘chirishda xatolik yuz berdi");
     }
 }
 

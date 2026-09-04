@@ -103,7 +103,7 @@ async function loadGroupMembers(groupId) {
 function createGroup() {
     const nameInput = document.getElementById("groupName");
     const name = nameInput.value.trim();
-    if (!name) return alert("Guruh nomini kiriting");
+    if (!name) return showAlertModal("Guruh nomini kiriting");
 
     fetch("/api/teacher/create-group", {
         method: "POST",
@@ -117,12 +117,12 @@ function createGroup() {
         })
         .catch(err => {
             console.error(err);
-            alert("Guruh yaratishda xatolik yuz berdi.");
+            showAlertModal("Guruh yaratishda xatolik yuz berdi.");
         });
 }
 
-function deleteGroup(id) {
-    if (!confirm("Bu guruhni o'chirmoqchimisiz?")) return;
+async function deleteGroup(id) {
+    if (!await showConfirmModal("Bu guruhni o'chirmoqchimisiz?", { danger: true })) return;
     fetch(`/api/teacher/groups/${id}`, { method: "DELETE" })
         .then(() => loadGroups());
 }
@@ -177,7 +177,7 @@ function saveInlineEdit(groupId, input, oldValue) {
             replaceWithSpan(input, groupId, newName);
         })
         .catch(() => {
-            alert("Saqlashda xatolik");
+            showAlertModal("Saqlashda xatolik");
             replaceWithSpan(input, groupId, oldValue);
         });
 }
@@ -232,7 +232,7 @@ function inviteStudent(pupilId) {
             if (expandedGroups.has(String(currentGroupId))) {
                 loadGroupMembers(currentGroupId);
             }
-            alert("Taklif yuborildi");
+            showAlertModal("Taklif yuborildi");
         })
-        .catch(() => alert("Taklifda xatolik"));
+        .catch(() => showAlertModal("Taklifda xatolik"));
 }

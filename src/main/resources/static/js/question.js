@@ -305,7 +305,7 @@ async function deleteSelectedQuestions() {
     const ids = [...selectedQuestionIds];
     if (!ids.length) return;
 
-    if (!confirm(`⚠️ ${ids.length} ta savolni o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — "🗑️ O'chirilganlar" panelidan qaytarish mumkin.)`)) {
+    if (!await showConfirmModal(`⚠️ ${ids.length} ta savolni o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — "🗑️ O'chirilganlar" panelidan qaytarish mumkin.)`, { danger: true })) {
         return;
     }
 
@@ -382,7 +382,7 @@ function pageBtn(text, page) {
 
     btn.onclick = () => {
         if (editingRow) {
-            alert("Avval tahrirni yakunlang!");
+            showAlertModal("Avval tahrirni yakunlang!");
             return;
         }
         loadQuestions(topicId, page);
@@ -428,7 +428,7 @@ async function loadPage() {
     const res = await fetch(`/api/question?${params}`);
 
     if (!res.ok) {
-        alert("Xatolik yuz berdi");
+        showAlertModal("Xatolik yuz berdi");
         return;
     }
 
@@ -645,7 +645,7 @@ document.addEventListener("change", async (e) => {
             const data = await res.json();
 
             if (!res.ok) {
-                alert(data.error || "❌ Rasmni yuklab bo'lmadi");
+                showAlertModal(data.error || "❌ Rasmni yuklab bo'lmadi");
                 return;
             }
 
@@ -656,7 +656,7 @@ document.addEventListener("change", async (e) => {
             container.querySelector(".inline-remove-image-btn").classList.remove("hidden");
         } catch (err) {
             console.error(err);
-            alert("❌ Rasmni yuklashda tarmoq xatoligi");
+            showAlertModal("❌ Rasmni yuklashda tarmoq xatoligi");
         } finally {
             uploadBtn.disabled = false;
             uploadBtn.textContent = originalLabel;
@@ -681,7 +681,7 @@ document.addEventListener("change", async (e) => {
             const data = await res.json();
 
             if (!res.ok) {
-                alert(data.error || "❌ Videoni yuklab bo'lmadi");
+                showAlertModal(data.error || "❌ Videoni yuklab bo'lmadi");
                 return;
             }
 
@@ -692,7 +692,7 @@ document.addEventListener("change", async (e) => {
             container.querySelector(".inline-remove-video-btn").classList.remove("hidden");
         } catch (err) {
             console.error(err);
-            alert("❌ Videoni yuklashda tarmoq xatoligi");
+            showAlertModal("❌ Videoni yuklashda tarmoq xatoligi");
         } finally {
             uploadBtn.disabled = false;
             uploadBtn.textContent = originalLabel;
@@ -708,7 +708,7 @@ function enableInlineEdit(btn) {
 
     // запрет на редактирование, если уже редактируется другая строка
     if (editingRow && editingRow !== row) {
-        alert("Avval tahrirlanayotgan satrni yakuniga yetkazing!");
+        showAlertModal("Avval tahrirlanayotgan satrni yakuniga yetkazing!");
         return;
     }
 
@@ -887,7 +887,7 @@ function saveInlineEdit(btn, questionId) {
 
             loadQuestions(topicId, currentPage);
         })
-        .catch(e => alert(e.message));
+        .catch(e => showAlertModal(e.message));
 }
 
 function toggleButtons(row, isEditing) {
@@ -913,7 +913,7 @@ function hideCommentColumn() {
 // qaytariladi (QuestionService.deleteQuestion).
 async function deleteQuestion(questionId) {
 
-    if (!confirm("Rostdan ham savolni o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — \"🗑️ O'chirilganlar\" panelidan qaytarish mumkin.)")) return;
+    if (!await showConfirmModal("Rostdan ham savolni o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — \"🗑️ O'chirilganlar\" panelidan qaytarish mumkin.)", { danger: true })) return;
 
     try {
         const res = await fetch(`/api/question/${questionId}`, {method: "DELETE"});
@@ -930,7 +930,7 @@ async function deleteQuestion(questionId) {
         await loadQuestions(topicId, currentPage);
         refreshQuestionTrashBadge();
     } catch (e) {
-        alert(e.message);
+        showAlertModal(e.message);
     }
 }
 
@@ -1073,7 +1073,7 @@ async function restoreSelectedQuestions() {
     const ids = [...selectedTrashQuestionIds];
     if (!ids.length) return;
 
-    if (!confirm(`${ids.length} ta savolni tiklamoqchimisiz?`)) return;
+    if (!await showConfirmModal(`${ids.length} ta savolni tiklamoqchimisiz?`)) return;
 
     try {
         const res = await fetch("/api/question/bulk/restore", {
@@ -1090,7 +1090,7 @@ async function restoreSelectedQuestions() {
         await loadQuestions(topicId, currentPage);
     } catch (err) {
         console.error(err);
-        alert(err.message || "Tarmoq xatoligi");
+        showAlertModal(err.message || "Tarmoq xatoligi");
     }
 }
 
@@ -1103,10 +1103,10 @@ async function permanentlyDeleteSelectedQuestions() {
     const ids = [...selectedTrashQuestionIds];
     if (!ids.length) return;
 
-    if (!confirm(`⚠️ ${ids.length} ta savolni BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`)) {
+    if (!await showConfirmModal(`⚠️ ${ids.length} ta savolni BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`, { danger: true })) {
         return;
     }
-    if (!confirm("Haqiqatan ham ishonchingiz komilmi?")) {
+    if (!await showConfirmModal("Haqiqatan ham ishonchingiz komilmi?", { danger: true })) {
         return;
     }
 
@@ -1124,7 +1124,7 @@ async function permanentlyDeleteSelectedQuestions() {
         loadQuestionTrash();
     } catch (err) {
         console.error(err);
-        alert(err.message || "Tarmoq xatoligi");
+        showAlertModal(err.message || "Tarmoq xatoligi");
     }
 }
 
@@ -1135,38 +1135,38 @@ function formatQuestionTrashDate(isoString) {
 }
 
 async function restoreQuestion(questionId) {
-    if (!confirm("Bu savolni tiklamoqchimisiz?")) return;
+    if (!await showConfirmModal("Bu savolni tiklamoqchimisiz?")) return;
 
     try {
         const res = await fetch(`/api/question/${questionId}/restore`, { method: "POST" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Tiklashda xatolik");
+            showAlertModal(data.error || "Tiklashda xatolik");
             return;
         }
         loadQuestionTrash();
         await loadQuestions(topicId, currentPage);
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
 async function permanentlyDeleteQuestion(questionId) {
-    if (!confirm("⚠️ Bu savolni BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.")) return;
-    if (!confirm("Haqiqatan ham ishonchingiz komilmi?")) return;
+    if (!await showConfirmModal("⚠️ Bu savolni BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.", { danger: true })) return;
+    if (!await showConfirmModal("Haqiqatan ham ishonchingiz komilmi?", { danger: true })) return;
 
     try {
         const res = await fetch(`/api/question/${questionId}/permanent`, { method: "DELETE" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "O'chirishda xatolik");
+            showAlertModal(data.error || "O'chirishda xatolik");
             return;
         }
         loadQuestionTrash();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -1241,11 +1241,11 @@ async function confirmWordExport() {
     const sameQuestions = document.querySelector('input[name="wordExportVariantMode"]:checked').value === "same";
 
     if (!variantCount || variantCount < 1) {
-        alert("Nechta variant kerakligini kiriting");
+        showAlertModal("Nechta variant kerakligini kiriting");
         return;
     }
     if (!perVariant || perVariant < 1) {
-        alert("Har bir variantga nechta savol kerakligini kiriting");
+        showAlertModal("Har bir variantga nechta savol kerakligini kiriting");
         return;
     }
 
@@ -1269,7 +1269,7 @@ async function downloadWordVariants(url, filename) {
         const res = await fetch(url);
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Eksport qilishda xatolik");
+            showAlertModal(data.error || "Eksport qilishda xatolik");
             return;
         }
 
@@ -1285,7 +1285,7 @@ async function downloadWordVariants(url, filename) {
         closeWordExportModal();
     } catch (e) {
         console.error(e);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     } finally {
         btn.disabled = false;
         btn.textContent = originalText;
@@ -1356,7 +1356,7 @@ function openCommentModal(btn) {
     const commentVideoUrl = decodeURIComponent(btn.dataset.commentVideo || "");
 
     if (!answerId) {
-        alert("❌ Правильный ответ не найден, комментарий отсутствует.");
+        showAlertModal("❌ Правильный ответ не найден, комментарий отсутствует.");
         return;
     }
 
@@ -1443,7 +1443,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const data = await res.json();
                 if (!res.ok) {
-                    alert(data.error || "Ошибка сохранения");
+                    showAlertModal(data.error || "Ошибка сохранения");
                     return;
                 }
                 showAlert(data.message, "success");
@@ -1459,7 +1459,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (topicId) await loadQuestions(topicId, currentPage);
 
             } catch (e) {
-                alert("Ошибка сети");
+                showAlertModal("Ошибка сети");
             }
         };
     }

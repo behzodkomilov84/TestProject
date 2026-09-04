@@ -133,13 +133,13 @@ function formatScienceTrashDate(isoString) {
 }
 
 async function restoreScienceFromTrash(scienceId) {
-    if (!confirm("Bu bo'limni tiklamoqchimisiz?")) return;
+    if (!await showConfirmModal("Bu bo'limni tiklamoqchimisiz?")) return;
 
     try {
         const res = await fetch(`/api/science/${scienceId}/restore`, { method: "POST" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Tiklashda xatolik");
+            showAlertModal(data.error || "Tiklashda xatolik");
             return;
         }
         loadScienceTrash();
@@ -147,24 +147,24 @@ async function restoreScienceFromTrash(scienceId) {
         render();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
 async function permanentlyDeleteScienceFromTrash(scienceId, name) {
-    if (!confirm(`⚠️ "${name}" bo'limini BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.\n\n(Agar bu bo'limda hali Mavzu/dars bo'lsa, avval ularni o'chirish kerak bo'ladi.)`)) return;
+    if (!await showConfirmModal(`⚠️ "${name}" bo'limini BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.\n\n(Agar bu bo'limda hali Mavzu/dars bo'lsa, avval ularni o'chirish kerak bo'ladi.)`, { danger: true })) return;
 
     try {
         const res = await fetch(`/api/science/${scienceId}/permanent`, { method: "DELETE" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "O'chirishda xatolik");
+            showAlertModal(data.error || "O'chirishda xatolik");
             return;
         }
         loadScienceTrash();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -474,7 +474,7 @@ function fieldSelectHtml(s, i) {
 function openTopics(scienceId) {
     if (!scienceId || scienceId < 0) {
         // ВАРИАНТ 1 — запрет
-        alert("❗ Бу бўлим базада йўқ");
+        showAlertModal("❗ Бу бўлим базада йўқ");
         return;
 
         // ВАРИАНТ 2 — разрешить пустые темы
@@ -562,11 +562,11 @@ async function confirmWordExport() {
     const sameQuestions = document.querySelector('input[name="wordExportVariantMode"]:checked').value === "same";
 
     if (!variantCount || variantCount < 1) {
-        alert("Nechta variant kerakligini kiriting");
+        showAlertModal("Nechta variant kerakligini kiriting");
         return;
     }
     if (!perVariant || perVariant < 1) {
-        alert("Har bir variantga nechta savol kerakligini kiriting");
+        showAlertModal("Har bir variantga nechta savol kerakligini kiriting");
         return;
     }
 
@@ -590,7 +590,7 @@ async function downloadWordVariants(url, filename) {
         const res = await fetch(url);
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Eksport qilishda xatolik");
+            showAlertModal(data.error || "Eksport qilishda xatolik");
             return;
         }
 
@@ -606,7 +606,7 @@ async function downloadWordVariants(url, filename) {
         closeWordExportModal();
     } catch (e) {
         console.error(e);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     } finally {
         btn.disabled = false;
         btn.textContent = originalText;
@@ -700,14 +700,14 @@ function undoAll() {
     showToast('info', 'Ma\'lumotlar bazasidan qayta yuklandi ', 4000);
 }
 
-function removeFromUi(i) {
+async function removeFromUi(i) {
     if (itemBlock[i].mode === "NEW") {
         itemBlock.splice(i, 1);
         render();
         return;
     }
     const subjectName = itemBlock[i].name || "Bu bo'lim";
-    const confirmDelete = confirm(`⚠️ "${subjectName}"ni o'chirishni tasdiqlaysizmi?\n\nBu amalni bekor qilib bo'lmaydi.`);
+    const confirmDelete = await showConfirmModal(`⚠️ "${subjectName}"ni o'chirishni tasdiqlaysizmi?\n\nBu amalni bekor qilib bo'lmaydi.`, { danger: true });
     if (confirmDelete) {
         const removedSubject = itemBlock[i];
 
@@ -814,7 +814,7 @@ async function persistOrder() {
 // bo'limlarni o'chirish bilan bir xil ehtiyot chorasi).
 function sortAllAZ(dir) {
     if (itemBlock.some(s => s.mode !== "VIEW")) {
-        alert("❌ Avval tahrirlashni yakuniga yetkazing (yoki saqlang)!");
+        showAlertModal("❌ Avval tahrirlashni yakuniga yetkazing (yoki saqlang)!");
         return;
     }
 
@@ -903,7 +903,7 @@ function saveOnClientSide(i) {
 
 
     if (newName === "") {
-        alert('❌ Bo\'lim nomi bo\'sh bo\'lishi mumkin emas!');
+        showAlertModal('❌ Bo\'lim nomi bo\'sh bo\'lishi mumkin emas!');
         focusIndex = i;
         console.error("Bo'lim nomi bo\'sh bo\'lishi mumkin emas!");
 
@@ -912,7 +912,7 @@ function saveOnClientSide(i) {
 
     // проверка дубликатов на фронте
     if (hasDuplicate(i, newName)) {
-        alert('❌ Bu bo\'lim nomi allaqachon mavjud!');
+        showAlertModal('❌ Bu bo\'lim nomi allaqachon mavjud!');
         focusIndex = i;
         console.log("hasDuplicate = true");
         return;
@@ -955,7 +955,7 @@ async function saveToDb() {
 
     // Запрет: есть незавершённые записи
     if (itemBlock.some(s => s.mode !== "VIEW")) {
-        alert('❌ Avval tahrirlashni yakuniga yetkazing!');
+        showAlertModal('❌ Avval tahrirlashni yakuniga yetkazing!');
         focusIndex = itemBlock.findIndex(s => s.mode !== "VIEW");
         render();
         return;
@@ -988,12 +988,12 @@ async function saveToDb() {
         payload.new.length === 0 &&
         payload.updated.length === 0 &&
         deletedSubjectIds.length === 0) {
-        alert('ℹ️ Saqlash uchun o‘zgarishlar yo‘q');
+        showAlertModal('ℹ️ Saqlash uchun o‘zgarishlar yo‘q');
         return;
     }
 
     // 5. Подтверждение
-    const confirmed = confirm(
+    const confirmed = await showConfirmModal(
         `Yangi: ${payload.new.length} ta\n` +
         `O\'zgartirilgan: ${payload.updated.length} ta\n\n` +
         `O\'chirilgan: ${deletedSubjectIds.length} ta\n\n` +
@@ -1037,7 +1037,7 @@ async function saveToDb() {
     } catch (err) {
         console.error(err);
         showToast('error', err.message || 'Saqlashda xatolik', 7000);
-        alert(err.message);
+        showAlertModal(err.message);
     }
 }
 
@@ -1057,7 +1057,7 @@ function closeCreateFieldForm() {
 async function submitCreateField() {
     const name = document.getElementById("newFieldName").value.trim();
     if (!name) {
-        alert("❌ Yo'nalish nomini kiriting");
+        showAlertModal("❌ Yo'nalish nomini kiriting");
         return;
     }
 
@@ -1069,7 +1069,7 @@ async function submitCreateField() {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "Yo'nalish yaratishda xatolik");
+            showAlertModal(data.error || "Yo'nalish yaratishda xatolik");
             return;
         }
 
@@ -1078,7 +1078,7 @@ async function submitCreateField() {
         render();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -1087,7 +1087,7 @@ async function renameFieldPrompt(fieldId) {
     const newName = await showPromptModal("Yangi Yo'nalish nomi:", field ? field.name : "");
     if (newName == null) return; // bekor qilindi
     if (!newName.trim()) {
-        alert("❌ Yo'nalish nomi bo'sh bo'lishi mumkin emas");
+        showAlertModal("❌ Yo'nalish nomi bo'sh bo'lishi mumkin emas");
         return;
     }
 
@@ -1099,25 +1099,25 @@ async function renameFieldPrompt(fieldId) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "Nomini o'zgartirishda xatolik");
+            showAlertModal(data.error || "Nomini o'zgartirishda xatolik");
             return;
         }
         await reloadAll("/api/science");
         render();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
 async function deleteFieldPrompt(fieldId, fieldName) {
-    if (!confirm(`"${fieldName}" Yo'nalishini o'chirmoqchimisiz?\n\n(Faqat bo'sh — hech qanday kursi/bo'limi yo'q Yo'nalishni o'chirish mumkin.)`)) return;
+    if (!await showConfirmModal(`"${fieldName}" Yo'nalishini o'chirmoqchimisiz?\n\n(Faqat bo'sh — hech qanday kursi/bo'limi yo'q Yo'nalishni o'chirish mumkin.)`, { danger: true })) return;
 
     try {
         const res = await fetch(`/api/course-fields/${fieldId}`, { method: "DELETE" });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "O'chirishda xatolik");
+            showAlertModal(data.error || "O'chirishda xatolik");
             return;
         }
         expandedFieldKeys.delete(String(fieldId));
@@ -1125,7 +1125,7 @@ async function deleteFieldPrompt(fieldId, fieldName) {
         render();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -1148,14 +1148,14 @@ async function moveField(fieldId, direction) {
         });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Tartibni o'zgartirishda xatolik");
+            showAlertModal(data.error || "Tartibni o'zgartirishda xatolik");
             return;
         }
         await reloadAll("/api/science");
         render();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 

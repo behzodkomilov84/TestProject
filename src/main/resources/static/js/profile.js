@@ -84,7 +84,7 @@ function saveEmail() {
     const newEmail = document.getElementById("email-input").value.trim();
 
     if (!newEmail || !newEmail.includes("@")) {
-        alert("To'g'ri email kiriting");
+        showAlertModal("To'g'ri email kiriting");
         return;
     }
 
@@ -106,10 +106,10 @@ function saveEmail() {
             document.getElementById("email-view").style.display = "inline";
             document.getElementById("edit-email").style.display = "inline";
 
-            alert("✅ Email saqlandi. Endi parolni tiklashda zaxira kanal sifatida ishlatiladi.");
+            showAlertModal("✅ Email saqlandi. Endi parolni tiklashda zaxira kanal sifatida ishlatiladi.");
         })
         .catch(err => {
-            alert(err.message || "Bu email band yoki xatolik");
+            showAlertModal(err.message || "Bu email band yoki xatolik");
         });
 }
 
@@ -160,7 +160,7 @@ function savePhone() {
     const rawNumber = document.getElementById("phone-input").value.trim();
 
     if (!rawNumber) {
-        alert("Telefon raqamni kiriting");
+        showAlertModal("Telefon raqamni kiriting");
         return;
     }
 
@@ -184,10 +184,10 @@ function savePhone() {
             document.getElementById("phone-view").style.display = "inline";
             document.getElementById("edit-phone").style.display = "inline";
 
-            alert("✅ Telefon raqam saqlandi");
+            showAlertModal("✅ Telefon raqam saqlandi");
         })
         .catch(err => {
-            alert(err.message || "Telefon raqamda xatolik");
+            showAlertModal(err.message || "Telefon raqamda xatolik");
         });
 }
 
@@ -195,7 +195,7 @@ function saveUsername() {
     const newUsername = document.getElementById("username-input").value.trim();
 
     if (newUsername.length < 3) {
-        alert("Username juda qisqa");
+        showAlertModal("Username juda qisqa");
         return;
     }
 
@@ -215,10 +215,10 @@ function saveUsername() {
             document.getElementById("username-view").style.display = "inline";
             document.getElementById("edit").style.display = "inline";
 
-            alert("Username o'zgartirildi");
+            showAlertModal("Username o'zgartirildi");
         })
         .catch(() => {
-            alert("Bu username band yoki xatolik");
+            showAlertModal("Bu username band yoki xatolik");
         });
 }
 
@@ -246,12 +246,12 @@ function changePassword() {
     const newPassword = document.getElementById("newPassword").value;
 
     if (!currentPassword || !newPassword) {
-        alert("Barcha maydonlarni to‘ldiring");
+        showAlertModal("Barcha maydonlarni to‘ldiring");
         return;
     }
 
     if (newPassword.length < 6) {
-        alert("Parol kamida 6 belgidan iborat bo‘lishi kerak");
+        showAlertModal("Parol kamida 6 belgidan iborat bo‘lishi kerak");
         return;
     }
 
@@ -265,11 +265,11 @@ function changePassword() {
     })
         .then(r => {
             if (!r.ok) throw new Error();
-            alert("Parol o‘zgartirildi. Qayta kiring.");
+            showAlertModal("Parol o‘zgartirildi. Qayta kiring.");
             location.href = "/logout";
         })
         .catch(() => {
-            alert("Hozirgi parol noto‘g‘ri");
+            showAlertModal("Hozirgi parol noto‘g‘ri");
         });
 }
 //=========================================================
@@ -306,13 +306,13 @@ async function startPayment(provider) {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-            alert(data.error || "Xatolik yuz berdi");
+            showAlertModal(data.error || "Xatolik yuz berdi");
             return;
         }
 
         location.href = data.checkoutUrl;
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }

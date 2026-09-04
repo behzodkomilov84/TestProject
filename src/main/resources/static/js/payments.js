@@ -2,7 +2,7 @@
 const ROLE = document.body.dataset.role;
 
 if (ROLE !== "ROLE_OWNER") {
-    alert("⛔ Доступ запрещён");
+    showAlertModal("⛔ Доступ запрещён");
     location.href = "/login";
 }
 
@@ -22,14 +22,14 @@ async function emailReport() {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-            alert(data.error || "❌ Xatolik yuz berdi");
+            showAlertModal(data.error || "❌ Xatolik yuz berdi");
             return;
         }
 
-        alert(data.message || "✅ Yuborildi");
+        showAlertModal(data.message || "✅ Yuborildi");
     } catch (err) {
         console.error(err);
-        alert("❌ Tarmoq xatoligi");
+        showAlertModal("❌ Tarmoq xatoligi");
     }
 }
 
@@ -52,7 +52,7 @@ function loadStats() {
         .then(renderStats)
         .catch(err => {
             console.error(err);
-            alert("Statistikani yuklashda xatolik");
+            showAlertModal("Statistikani yuklashda xatolik");
         });
 }
 

@@ -39,7 +39,7 @@ function setupImageUpload(container) {
             const data = await res.json();
 
             if (!res.ok) {
-                alert(data.error || "❌ Rasmni yuklab bo'lmadi");
+                showAlertModal(data.error || "❌ Rasmni yuklab bo'lmadi");
                 fileInput.value = "";
                 return;
             }
@@ -51,7 +51,7 @@ function setupImageUpload(container) {
 
         } catch (err) {
             console.error(err);
-            alert("❌ Rasmni yuklashda tarmoq xatoligi");
+            showAlertModal("❌ Rasmni yuklashda tarmoq xatoligi");
         } finally {
             uploadBtn.disabled = false;
             uploadBtn.textContent = originalLabel;
@@ -113,7 +113,7 @@ function setupVideoUpload(container) {
             const data = await res.json();
 
             if (!res.ok) {
-                alert(data.error || "❌ Videoni yuklab bo'lmadi");
+                showAlertModal(data.error || "❌ Videoni yuklab bo'lmadi");
                 fileInput.value = "";
                 return;
             }
@@ -125,7 +125,7 @@ function setupVideoUpload(container) {
 
         } catch (err) {
             console.error(err);
-            alert("❌ Videoni yuklashda tarmoq xatoligi");
+            showAlertModal("❌ Videoni yuklashda tarmoq xatoligi");
         } finally {
             uploadBtn.disabled = false;
             uploadBtn.textContent = originalLabel;
@@ -263,7 +263,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const correctRadio = document.querySelector("input[name='correct']:checked");
 
         if (!correctRadio) {
-            alert("❌ To‘g‘ri javobni tanlang");
+            showAlertModal("❌ To‘g‘ri javobni tanlang");
             return;
         }
 
@@ -277,7 +277,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const value = ta.value.trim();
 
             if (!value) {
-                alert("❌ Barcha javoblarni to‘ldiring");
+                showAlertModal("❌ Barcha javoblarni to‘ldiring");
                 ta.focus();
                 throw new Error("Validation failed");
             }
@@ -287,7 +287,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // уникальность
         if (new Set(texts).size !== texts.length) {
-            alert("❌ Javob variantlari bir xil bo‘lishi mumkin emas");
+            showAlertModal("❌ Javob variantlari bir xil bo‘lishi mumkin emas");
             return;
         }
 
@@ -348,7 +348,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 throw new Error(data.message || data.error || "Saqlashda xatolik");
             }
 
-            alert("✅ Test muvaffaqiyatli saqlandi");
+            showAlertModal("✅ Test muvaffaqiyatli saqlandi");
             form.reset();
             document.querySelectorAll(".image-upload").forEach(resetImageUpload);
             document.querySelectorAll(".video-upload").forEach(resetVideoUpload);
@@ -356,7 +356,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         } catch (err) {
             console.error(err);
-            alert("❌ " + (err.message || "Saqlashda xatolik"));
+            showAlertModal("❌ " + (err.message || "Saqlashda xatolik"));
         }
     });
 

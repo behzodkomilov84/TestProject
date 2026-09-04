@@ -393,7 +393,7 @@ async function richInsertImage(editorId, fileInput) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "❌ Rasm yuklashda xatolik");
+            showAlertModal(data.error || "❌ Rasm yuklashda xatolik");
             return;
         }
         const url = escapeHtml(data.url);
@@ -410,7 +410,7 @@ async function richInsertImage(editorId, fileInput) {
         injectCaptions(editorId);
     } catch (err) {
         console.error(err);
-        alert("❌ Rasm yuklashda tarmoq xatoligi");
+        showAlertModal("❌ Rasm yuklashda tarmoq xatoligi");
     } finally {
         fileInput.value = "";
     }
@@ -459,7 +459,7 @@ function confirmVideoInsert() {
     const width = normalizeVideoWidth(document.getElementById("videoInsertWidthInput").value);
 
     if (!url && !hasFile) {
-        alert("❌ Video havolasini kiriting yoki video fayl tanlang");
+        showAlertModal("❌ Video havolasini kiriting yoki video fayl tanlang");
         return;
     }
 
@@ -590,7 +590,7 @@ async function richInsertUploadedVideo(editorId, fileInput) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "❌ Video yuklashda xatolik");
+            showAlertModal(data.error || "❌ Video yuklashda xatolik");
             return;
         }
         const url = escapeHtml(data.url);
@@ -604,7 +604,7 @@ async function richInsertUploadedVideo(editorId, fileInput) {
         injectCaptions(editorId);
     } catch (err) {
         console.error(err);
-        alert("❌ Video yuklashda tarmoq xatoligi");
+        showAlertModal("❌ Video yuklashda tarmoq xatoligi");
     } finally {
         fileInput.value = "";
     }
@@ -641,13 +641,13 @@ async function richInsertPpt(editorId, fileInput) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "❌ Taqdimotni import qilishda xatolik");
+            showAlertModal(data.error || "❌ Taqdimotni import qilishda xatolik");
             return;
         }
 
         const slides = data.slideUrls || [];
         if (!slides.length) {
-            alert("❌ Taqdimotda hech qanday slayd topilmadi");
+            showAlertModal("❌ Taqdimotda hech qanday slayd topilmadi");
             return;
         }
 
@@ -655,7 +655,7 @@ async function richInsertPpt(editorId, fileInput) {
         insertPptSlideshowHtml(editorId, slides);
     } catch (err) {
         console.error(err);
-        alert("❌ Taqdimotni import qilishda tarmoq xatoligi");
+        showAlertModal("❌ Taqdimotni import qilishda tarmoq xatoligi");
     } finally {
         fileInput.value = "";
     }
@@ -875,7 +875,7 @@ async function importDocxFile(fileInput, editorId) {
     const actionsId = editorId === "newSectionTextEditor" ? "newSectionImportActions" : "editSectionImportActions";
 
     if (typeof mammoth === "undefined") {
-        alert("❌ Import kutubxonasi yuklanmadi. Internet aloqasini tekshirib, sahifani qayta yuklang.");
+        showAlertModal("❌ Import kutubxonasi yuklanmadi. Internet aloqasini tekshirib, sahifani qayta yuklang.");
         fileInput.value = "";
         document.getElementById(actionsId).classList.add('hidden');
         return;
@@ -895,7 +895,7 @@ async function importDocxFile(fileInput, editorId) {
         document.getElementById(editorId).innerHTML = result.value.replace(/<br\s*\/?>/gi, ' ');
     } catch (err) {
         console.error(err);
-        alert("❌ Faylni import qilishda xatolik: " + err.message);
+        showAlertModal("❌ Faylni import qilishda xatolik: " + err.message);
     } finally {
         fileInput.value = "";
         document.getElementById(actionsId).classList.add('hidden');
@@ -1131,14 +1131,14 @@ async function payWithClick() {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-            alert(data.error || "To'lovni boshlashda xatolik");
+            showAlertModal(data.error || "To'lovni boshlashda xatolik");
             return;
         }
 
         location.href = data.checkoutUrl;
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -1148,15 +1148,15 @@ async function requestSubscription() {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-            alert(data.error || "Xatolik yuz berdi");
+            showAlertModal(data.error || "Xatolik yuz berdi");
             return;
         }
 
-        alert("✅ So'rovingiz yuborildi. Administrator (OWNER) ko'rib chiqib, obunani tasdiqlaydi.");
+        showAlertModal("✅ So'rovingiz yuborildi. Administrator (OWNER) ko'rib chiqib, obunani tasdiqlaydi.");
         loadCourse();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -2120,19 +2120,19 @@ async function deleteSelectedChapter(mode) {
     const chapterId = deleteBtn.dataset.chapterId;
     if (!chapterId) return;
 
-    if (!confirm("Bu bo'sh mavzuni o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.")) return;
+    if (!await showConfirmModal("Bu bo'sh mavzuni o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.", { danger: true })) return;
 
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/chapters/${chapterId}`, { method: "DELETE" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Mavzuni o'chirishda xatolik");
+            showAlertModal(data.error || "Mavzuni o'chirishda xatolik");
             return;
         }
         await populateChapterSelect(mode + "SectionChapterSelect", null, mode);
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -2142,7 +2142,7 @@ async function deleteSelectedChapter(mode) {
 // bu yerda CourseChapter uchun). Ochiq turgan har ikkala forma
 // (yangi/tahrirlash) select'i ham qayta yuklanadi.
 async function deleteEmptyChapters() {
-    if (!confirm("Kursdagi barcha bo'sh (hech qanday darsga biriktirilmagan) mavzularni o'chirmoqchimisiz?\n\nBu amalni bekor qilib bo'lmaydi.")) {
+    if (!await showConfirmModal("Kursdagi barcha bo'sh (hech qanday darsga biriktirilmagan) mavzularni o'chirmoqchimisiz?\n\nBu amalni bekor qilib bo'lmaydi.", { danger: true })) {
         return;
     }
 
@@ -2150,11 +2150,11 @@ async function deleteEmptyChapters() {
         const res = await fetch(`/api/courses/${COURSE_ID}/chapters/empty`, { method: "DELETE" });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "O'chirishda xatolik");
+            showAlertModal(data.error || "O'chirishda xatolik");
             return;
         }
 
-        alert(data.deleted > 0
+        showAlertModal(data.deleted > 0
             ? `✅ ${data.deleted} ta bo'sh mavzu o'chirildi.`
             : "ℹ️ Bo'sh mavzu topilmadi.");
 
@@ -2166,7 +2166,7 @@ async function deleteEmptyChapters() {
         }
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -2204,7 +2204,7 @@ async function renameChapterPrompt(chapterId) {
 
     const trimmed = newName.trim();
     if (!trimmed) {
-        alert("❌ Mavzu nomi bo'sh bo'lishi mumkin emas.");
+        showAlertModal("❌ Mavzu nomi bo'sh bo'lishi mumkin emas.");
         return;
     }
 
@@ -2220,13 +2220,13 @@ async function renameChapter(chapterId, newName) {
         });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Mavzu nomini o'zgartirishda xatolik");
+            showAlertModal(data.error || "Mavzu nomini o'zgartirishda xatolik");
             return;
         }
         loadCourse();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -2241,7 +2241,7 @@ async function createChapterPrompt() {
 
     const trimmed = name.trim();
     if (!trimmed) {
-        alert("❌ Mavzu nomi bo'sh bo'lishi mumkin emas.");
+        showAlertModal("❌ Mavzu nomi bo'sh bo'lishi mumkin emas.");
         return;
     }
 
@@ -2257,7 +2257,7 @@ async function createChapter(name) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "Mavzu yaratishda xatolik");
+            showAlertModal(data.error || "Mavzu yaratishda xatolik");
             return;
         }
 
@@ -2270,7 +2270,7 @@ async function createChapter(name) {
         openAddSectionForm(data.id);
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -2282,7 +2282,7 @@ async function createChapter(name) {
 // tegilmaydi — bog'langan Topic bo'lsa ham, faqat bog'lanishning o'zi
 // (avtomatik) uziladi, savollar o'z joyida, butun holda qolaveradi.
 async function deleteChapterWithLinkedTopics(chapterId, chapterName) {
-    if (!confirm(`"${chapterName}" mavzusini ICHIDAGI barcha darslari bilan o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — "🗑️ O'chirilgan darslar" panelidan qaytarish mumkin. TEST BOSHQARUVIdagi savollarga tegilmaydi.)`)) {
+    if (!await showConfirmModal(`"${chapterName}" mavzusini ICHIDAGI barcha darslari bilan o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — "🗑️ O'chirilgan darslar" panelidan qaytarish mumkin. TEST BOSHQARUVIdagi savollarga tegilmaydi.)`, { danger: true })) {
         return;
     }
 
@@ -2290,13 +2290,13 @@ async function deleteChapterWithLinkedTopics(chapterId, chapterName) {
         const res = await fetch(`/api/courses/${COURSE_ID}/chapters/${chapterId}/with-topics`, { method: "DELETE" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "O'chirishda xatolik");
+            showAlertModal(data.error || "O'chirishda xatolik");
             return;
         }
         loadCourse();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -2322,13 +2322,13 @@ async function moveChapter(chapterId, direction) {
         });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Mavzular tartibini saqlashda xatolik");
+            showAlertModal(data.error || "Mavzular tartibini saqlashda xatolik");
             return;
         }
         loadCourse();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -2343,16 +2343,16 @@ async function syncChapterTopics() {
         const res = await fetch(`/api/courses/${COURSE_ID}/chapters/sync-topics`, { method: "POST" });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "Sinxronlashda xatolik");
+            showAlertModal(data.error || "Sinxronlashda xatolik");
             return;
         }
-        alert(data.updated > 0
+        showAlertModal(data.updated > 0
             ? `✅ ${data.updated} ta darsning Mavzusi TEST BOSHQARUVIDA to'g'rilandi.`
             : "✅ Hammasi allaqachon sinxron edi — o'zgarish kerak bo'lmadi.");
         loadCourse();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -2564,14 +2564,14 @@ async function addMissingTopicLinks(topicId) {
         const res = await fetch(url, { method: "POST" });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "Havola qo'shishda xatolik");
+            showAlertModal(data.error || "Havola qo'shishda xatolik");
             return;
         }
-        alert(`✅ ${data.added} ta savolga havola qo'shildi`);
+        showAlertModal(`✅ ${data.added} ta savolga havola qo'shildi`);
         loadTopicLinkAudit();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -2580,13 +2580,13 @@ async function fixWrongTopicLink(questionId) {
         const res = await fetch(`/api/courses/${COURSE_ID}/topic-links/fix-wrong?questionId=${questionId}`, { method: "POST" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "To'g'irlashda xatolik");
+            showAlertModal(data.error || "To'g'irlashda xatolik");
             return;
         }
         loadTopicLinkAudit();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -2597,35 +2597,35 @@ async function fixAllWrongTopicLinks(topicId) {
         const res = await fetch(`/api/courses/${COURSE_ID}/topic-links/fix-all-wrong?topicId=${topicId}`, { method: "POST" });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "To'g'irlashda xatolik");
+            showAlertModal(data.error || "To'g'irlashda xatolik");
             return;
         }
-        alert(`✅ ${data.fixed} ta savolning havolasi to'g'irlandi`);
+        showAlertModal(`✅ ${data.fixed} ta savolning havolasi to'g'irlandi`);
         loadTopicLinkAudit();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
 // "🛠️ Butun kursdagi BARCHA xato havolalarni tuzatish" — kattaroq amal
 // (yuzlab savolga tegishi mumkin), shuning uchun tasdiqlash so'raladi.
 async function fixAllWrongTopicLinksInCourse() {
-    if (!confirm("⚠️ Butun kursdagi BARCHA xato havolali savollarni to'g'irlamoqchimisiz?\n\nBu amalni bekor qilib bo'lmaydi (lekin har bir havola o'zining darsiga to'g'irlanadi, xavfsiz).")) {
+    if (!await showConfirmModal("⚠️ Butun kursdagi BARCHA xato havolali savollarni to'g'irlamoqchimisiz?\n\nBu amalni bekor qilib bo'lmaydi (lekin har bir havola o'zining darsiga to'g'irlanadi, xavfsiz).")) {
         return;
     }
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/topic-links/fix-all-wrong`, { method: "POST" });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "To'g'irlashda xatolik");
+            showAlertModal(data.error || "To'g'irlashda xatolik");
             return;
         }
-        alert(`✅ ${data.fixed} ta savolning havolasi to'g'irlandi`);
+        showAlertModal(`✅ ${data.fixed} ta savolning havolasi to'g'irlandi`);
         loadTopicLinkAudit();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -2637,16 +2637,16 @@ async function dedupeTopicLinks() {
         const res = await fetch(`/api/courses/${COURSE_ID}/topic-links/dedupe`, { method: "POST" });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "Tozalashda xatolik");
+            showAlertModal(data.error || "Tozalashda xatolik");
             return;
         }
-        alert(data.deduped > 0
+        showAlertModal(data.deduped > 0
             ? `✅ ${data.deduped} ta savoldagi takroriy havola tozalandi`
             : "✅ Takroriy havola topilmadi — hammasi allaqachon toza edi.");
         if (topicLinkAuditOpen) loadTopicLinkAudit();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -2779,14 +2779,14 @@ async function togglePublish() {
 
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Xatolik yuz berdi");
+            showAlertModal(data.error || "Xatolik yuz berdi");
             return;
         }
 
         loadCourse();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -2857,11 +2857,11 @@ async function submitEditCourse() {
     const fieldId = document.getElementById("editCourseField").value;
 
     if (!title) {
-        alert("❌ Kurs nomini kiriting");
+        showAlertModal("❌ Kurs nomini kiriting");
         return;
     }
     if (!fieldId) {
-        alert("❌ Yo'nalishni tanlang");
+        showAlertModal("❌ Yo'nalishni tanlang");
         return;
     }
 
@@ -2876,7 +2876,7 @@ async function submitEditCourse() {
             const uploadRes = await fetch("/api/courses/upload-cover", { method: "POST", body: formData });
             const uploadData = await uploadRes.json().catch(() => ({}));
             if (!uploadRes.ok) {
-                alert(uploadData.error || "Rasm yuklashda xatolik");
+                showAlertModal(uploadData.error || "Rasm yuklashda xatolik");
                 document.getElementById("editCourseCoverStatus").textContent = "";
                 return;
             }
@@ -2901,7 +2901,7 @@ async function submitEditCourse() {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-            alert(data.error || "Xatolik yuz berdi");
+            showAlertModal(data.error || "Xatolik yuz berdi");
             return;
         }
 
@@ -2909,7 +2909,7 @@ async function submitEditCourse() {
         loadCourse();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -2917,19 +2917,19 @@ async function submitEditCourse() {
 // butunlay o'chmaydi, /courses/trash sahifasidan "♻️ Tiklash" bilan
 // bir zumda qaytariladi (CourseService.deleteCourse).
 async function deleteCourse() {
-    if (!confirm("Kursni \"O'chirilganlar savati\"ga o'tkazmoqchimisiz?\n\n(Butunlay o'chmaydi — /courses/trash sahifasidan istalgan payt qaytarish mumkin.)")) return;
+    if (!await showConfirmModal("Kursni \"O'chirilganlar savati\"ga o'tkazmoqchimisiz?\n\n(Butunlay o'chmaydi — /courses/trash sahifasidan istalgan payt qaytarish mumkin.)", { danger: true })) return;
 
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}`, { method: "DELETE" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Xatolik yuz berdi");
+            showAlertModal(data.error || "Xatolik yuz berdi");
             return;
         }
         location.href = "/courses";
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -3103,12 +3103,12 @@ async function submitAddSection() {
     const includeVideo = document.getElementById("includeVideo").checked;
 
     if (!title) {
-        alert("❌ Dars nomini kiriting");
+        showAlertModal("❌ Dars nomini kiriting");
         return;
     }
 
     if (!includeText && !includeVideo) {
-        alert("❌ Kamida bittasini tanlang: Matn yoki Video");
+        showAlertModal("❌ Kamida bittasini tanlang: Matn yoki Video");
         return;
     }
 
@@ -3125,7 +3125,7 @@ async function submitAddSection() {
     if (includeText) {
         const editor = document.getElementById("newSectionTextEditor");
         if (!editor.innerText.trim()) {
-            alert("❌ Matn kontentini kiriting");
+            showAlertModal("❌ Matn kontentini kiriting");
             return;
         }
         cleanupEmptyCaptions("newSectionTextEditor");
@@ -3139,7 +3139,7 @@ async function submitAddSection() {
         if (source === "UPLOAD") {
             const fileInput = document.getElementById("newSectionVideoFile");
             if (!fileInput.files[0]) {
-                alert("❌ Video faylni tanlang");
+                showAlertModal("❌ Video faylni tanlang");
                 return;
             }
             try {
@@ -3150,19 +3150,19 @@ async function submitAddSection() {
                 });
                 const uploadData = await uploadRes.json().catch(() => ({}));
                 if (!uploadRes.ok) {
-                    alert(uploadData.error || "Video yuklashda xatolik");
+                    showAlertModal(uploadData.error || "Video yuklashda xatolik");
                     return;
                 }
                 payload.videoUrl = uploadData.url;
             } catch (err) {
                 console.error(err);
-                alert("Video yuklashda tarmoq xatoligi");
+                showAlertModal("Video yuklashda tarmoq xatoligi");
                 return;
             }
         } else {
             payload.videoUrl = document.getElementById("newSectionVideoUrl").value.trim();
             if (!payload.videoUrl) {
-                alert("❌ Video URL/ID ni kiriting");
+                showAlertModal("❌ Video URL/ID ni kiriting");
                 return;
             }
             if (source === "YOUTUBE") {
@@ -3184,7 +3184,7 @@ async function submitAddSection() {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-            alert(data.error || "Dars qo'shishda xatolik");
+            showAlertModal(data.error || "Dars qo'shishda xatolik");
             return;
         }
 
@@ -3213,7 +3213,7 @@ async function submitAddSection() {
         loadScienceNamesList();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -3221,19 +3221,19 @@ async function submitAddSection() {
 // o'chmaydi, "🗑️ O'chirilgan darslar" panelidan ("♻️ Tiklash") bir
 // zumda qaytariladi (CourseService.deleteSection).
 async function deleteSection(sectionId) {
-    if (!confirm("Darsni o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — \"🗑️ O'chirilgan darslar\" panelidan qaytarish mumkin.)")) return;
+    if (!await showConfirmModal("Darsni o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — \"🗑️ O'chirilgan darslar\" panelidan qaytarish mumkin.)", { danger: true })) return;
 
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/sections/${sectionId}`, { method: "DELETE" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Xatolik yuz berdi");
+            showAlertModal(data.error || "Xatolik yuz berdi");
             return;
         }
         loadCourse();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -3288,38 +3288,38 @@ function formatSectionTrashDate(isoString) {
 }
 
 async function restoreSection(sectionId) {
-    if (!confirm("Bu darsni tiklamoqchimisiz?")) return;
+    if (!await showConfirmModal("Bu darsni tiklamoqchimisiz?")) return;
 
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/sections/${sectionId}/restore`, { method: "POST" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Tiklashda xatolik");
+            showAlertModal(data.error || "Tiklashda xatolik");
             return;
         }
         loadSectionTrash();
         loadCourse();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
 async function permanentlyDeleteSection(sectionId, title) {
-    if (!confirm(`⚠️ "${title}" darsini BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`)) return;
-    if (!confirm("Haqiqatan ham ishonchingiz komilmi?")) return;
+    if (!await showConfirmModal(`⚠️ "${title}" darsini BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`, { danger: true })) return;
+    if (!await showConfirmModal("Haqiqatan ham ishonchingiz komilmi?", { danger: true })) return;
 
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/sections/${sectionId}/permanent`, { method: "DELETE" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "O'chirishda xatolik");
+            showAlertModal(data.error || "O'chirishda xatolik");
             return;
         }
         loadSectionTrash();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -3331,7 +3331,7 @@ async function openEditSectionForm(sectionId) {
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/sections/${sectionId}`);
         if (!res.ok) {
-            alert("Dars ma'lumotlarini yuklab bo'lmadi");
+            showAlertModal("Dars ma'lumotlarini yuklab bo'lmadi");
             return;
         }
         const section = await res.json();
@@ -3388,7 +3388,7 @@ async function openEditSectionForm(sectionId) {
         document.getElementById("editSectionForm").scrollIntoView({ behavior: "smooth", block: "center" });
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -3440,12 +3440,12 @@ async function submitEditSection() {
     const includeVideo = document.getElementById("editIncludeVideo").checked;
 
     if (!title) {
-        alert("❌ Dars nomini kiriting");
+        showAlertModal("❌ Dars nomini kiriting");
         return;
     }
 
     if (!includeText && !includeVideo) {
-        alert("❌ Kamida bittasini tanlang: Matn yoki Video");
+        showAlertModal("❌ Kamida bittasini tanlang: Matn yoki Video");
         return;
     }
 
@@ -3462,7 +3462,7 @@ async function submitEditSection() {
     if (includeText) {
         const editor = document.getElementById("editSectionTextEditor");
         if (!editor.innerText.trim()) {
-            alert("❌ Matn kontentini kiriting");
+            showAlertModal("❌ Matn kontentini kiriting");
             return;
         }
         cleanupEmptyCaptions("editSectionTextEditor");
@@ -3484,13 +3484,13 @@ async function submitEditSection() {
                     });
                     const uploadData = await uploadRes.json().catch(() => ({}));
                     if (!uploadRes.ok) {
-                        alert(uploadData.error || "Video yuklashda xatolik");
+                        showAlertModal(uploadData.error || "Video yuklashda xatolik");
                         return;
                     }
                     payload.videoUrl = uploadData.url;
                 } catch (err) {
                     console.error(err);
-                    alert("Video yuklashda tarmoq xatoligi");
+                    showAlertModal("Video yuklashda tarmoq xatoligi");
                     return;
                 }
             } else {
@@ -3500,7 +3500,7 @@ async function submitEditSection() {
         } else {
             payload.videoUrl = document.getElementById("editSectionVideoUrl").value.trim();
             if (!payload.videoUrl) {
-                alert("❌ Video URL/ID ni kiriting");
+                showAlertModal("❌ Video URL/ID ni kiriting");
                 return;
             }
             if (source === "YOUTUBE") {
@@ -3522,7 +3522,7 @@ async function submitEditSection() {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-            alert(data.error || "Darsni saqlashda xatolik");
+            showAlertModal(data.error || "Darsni saqlashda xatolik");
             return;
         }
 
@@ -3538,7 +3538,7 @@ async function submitEditSection() {
         loadScienceNamesList();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -3553,13 +3553,13 @@ async function reorderTo(sectionIds) {
         });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Tartibni saqlashda xatolik");
+            showAlertModal(data.error || "Tartibni saqlashda xatolik");
             return;
         }
         loadCourse();
     } catch (err) {
         console.error(err);
-        alert("Tarmoq xatoligi");
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
