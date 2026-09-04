@@ -26,7 +26,10 @@ public class Question {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    // 255 emas — uzun (masalan klinik holat tavsifli) savollar MySQL
+    // "Data too long" xatosiga olib kelib, butun Excel importni buzardi
+    // (question-text-length.sql#91).
+    @Column(nullable = false, length = 2000)
     private String questionText;
 
     // Savolga biriktirilgan rasm (masalan, geometrik chizma). Ixtiyoriy —

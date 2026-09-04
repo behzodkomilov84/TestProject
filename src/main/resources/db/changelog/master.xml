@@ -42,6 +42,7 @@
     <include file="/db/changelog/course-admin-archive.sql"/>
     <include file="/db/changelog/course-fields.sql"/>
     <include file="/db/changelog/science-field.sql"/>
+    <include file="/db/changelog/question-text-length.sql"/>
 
 
 </databaseChangeLog>

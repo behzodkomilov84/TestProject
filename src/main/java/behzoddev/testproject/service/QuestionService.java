@@ -22,6 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -149,7 +150,15 @@ public class QuestionService {
         return questionMapper.mapQuestiontoQuestionDto(question);
     }
 
-    @Transactional
+    // REQUIRES_NEW: ExcelService.importQuestions() har bir qatorni shu
+    // metod orqali saqlaydi. Agar oddiy @Transactional (REQUIRED) bo'lsa,
+    // bitta qatordagi DB xatosi (masalan "Data too long") butun tashqi
+    // tranzaksiyani "rollback-only" qilib qo'yardi — natijada BARCHA
+    // qatorlar (hatto to'g'rilari ham) import qilinmay qolardi va
+    // foydalanuvchiga "hech narsa o'zgarmadi" bo'lib ko'rinardi. Har bir
+    // savol O'Z ALOHIDA tranzaksiyasida saqlansa, bitta yomon qator
+    // faqat O'ZINI buzadi — qolganlari muvaffaqiyatli import bo'ladi.
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void save(QuestionSaveDto questionSaveDto) {
         Topic topic = topicRepository.getTopicById(questionSaveDto.topicId());
 

@@ -421,8 +421,19 @@ function showResult(data) {
         title.textContent = "Import successful";
         body.textContent = `Imported: ${data.imported} questions`;
     } else {
+        // GlobalRestExceptionHandler kutilmagan xatolikda ImportResultDto
+        // emas, oddiy {"error": "..."} shaklida javob qaytarishi mumkin —
+        // shu holatda data.errors bo'lmaydi, .join() esa TypeError berib
+        // hech narsa ko'rsatmasdi ("hech narsa o'zgarmagandek" tuyulardi).
         title.textContent = "Import errors";
-        body.textContent = data.errors.join("\n");
+        if (Array.isArray(data.errors) && data.errors.length) {
+            const importedCount = typeof data.imported === "number" ? data.imported : 0;
+            body.textContent = `Imported: ${importedCount}\n\n` + data.errors.join("\n");
+        } else if (data.error) {
+            body.textContent = data.error;
+        } else {
+            body.textContent = "Noma'lum xatolik yuz berdi.";
+        }
     }
 
     modal.classList.remove("hidden");

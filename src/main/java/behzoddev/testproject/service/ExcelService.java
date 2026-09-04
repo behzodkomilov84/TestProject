@@ -230,7 +230,11 @@ public class ExcelService {
         row.createCell(startCol + 6).setCellValue(correctComment);
     }
 
-    @Transactional
+    // DIQQAT: bu metod ATAYIN @Transactional EMAS — har bir qator
+    // QuestionService.save() ichida O'Z ALOHIDA (REQUIRES_NEW)
+    // tranzaksiyasida saqlanadi, shu sabab bitta qatordagi xatolik
+    // qolgan qatorlarning import bo'lishiga xalaqit bermaydi (pastdagi
+    // izohga qarang).
     public ImportResultDto importQuestions(MultipartFile file, Long topicId) {
 
         byte[] content;
