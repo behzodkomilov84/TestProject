@@ -1,11 +1,11 @@
-// Kurs bo'limidagi "🎯 Mavzuga oid testlarni yechish" tugmasidan kelinganda —
-// URL'da ?scienceId=&topicId= beriladi, shu fan/mavzu avtomatik tanlanadi
+// Kurs darsidagi "🎯 Darsga oid testlarni yechish" tugmasidan kelinganda —
+// URL'da ?scienceId=&topicId= beriladi, shu bo'lim/dars avtomatik tanlanadi
 // (Practice rejimida — vaqt chegarasisiz, sodda oqim).
 const urlParams = new URLSearchParams(window.location.search);
 const preselectScienceId = urlParams.get("scienceId");
 const preselectTopicId = urlParams.get("topicId");
-// Shu kurs (mazkur "🎯 Mavzuga oid testlarni yechish" tugmasi qaysi
-// kursdan bosilgan bo'lsa) — "🔙 Mavzularga qaytish" tugmasini
+// Shu kurs (mazkur "🎯 Darsga oid testlarni yechish" tugmasi qaysi
+// kursdan bosilgan bo'lsa) — "🔙 Darsga qaytish" tugmasini
 // ko'rsatish/qayerga qaytarishni bilish uchun (pastda, DOMContentLoaded).
 // Test boshlangandan keyin ham (testSession.js) ko'rinib turishi uchun
 // startTest()'da sessionStorage'ga ham yozib qo'yiladi.
@@ -105,11 +105,11 @@ function resetTestConfig() {
     document.getElementById("topicDropdown").innerHTML = "";
 
     // Labelni qayta tiklash
-    document.getElementById("topicLabel").innerText = "Mavzularni tanlang";
+    document.getElementById("topicLabel").innerText = "Darslarni tanlang";
 
-    // Bo'lim tanlash qadamini yashirish/tozalash
+    // Mavzu tanlash qadamini yashirish/tozalash
     document.getElementById("bolimSection").classList.add("hidden");
-    document.getElementById("sectionSelect").innerHTML = '<option value="">-- Bo\'limni tanlang --</option>';
+    document.getElementById("sectionSelect").innerHTML = '<option value="">-- Mavzuni tanlang --</option>';
 
     // Max testlarni 0 qilish
     document.getElementById("max").innerText = "0";
@@ -202,14 +202,14 @@ function loadTopics(id) {
             if (hasUnassigned) {
                 const opt = document.createElement("option");
                 opt.value = "__none__";
-                opt.textContent = "— Bo'limsiz mavzular —";
+                opt.textContent = "— Mavzusiz darslar —";
                 sectionSelect.appendChild(opt);
             }
 
-            // Kurs bo'limidan kelib, mavzu avtomatik belgilangan bo'lsa —
-            // uning Bo'limini avtomatik tanlab, to'g'ridan-to'g'ri o'sha
-            // bo'limning mavzular ro'yxatini ochamiz (foydalanuvchi qo'lda
-            // Bo'lim tanlashini kutib o'tirmasdan).
+            // Kurs darsidan kelib, dars avtomatik belgilangan bo'lsa —
+            // uning Mavzusini avtomatik tanlab, to'g'ridan-to'g'ri o'sha
+            // mavzuning darslar ro'yxatini ochamiz (foydalanuvchi qo'lda
+            // Mavzu tanlashini kutib o'tirmasdan).
             if (preselectTopicId) {
                 const preselected = data.find(t => Number(t.id) === Number(preselectTopicId));
                 if (preselected) {
@@ -221,14 +221,14 @@ function loadTopics(id) {
         });
 }
 
-// Bo'lim tanlangach — faqat o'sha bo'limga tegishli mavzular ko'rsatiladi
+// Mavzu tanlangach — faqat o'sha mavzuga tegishli darslar ko'rsatiladi
 // (qayta server so'rovi shart emas, currentTopicsData'dan filtrlanadi).
 function onSectionSelectChange() {
     const sectionValue = document.getElementById("sectionSelect").value;
 
     if (!sectionValue) {
         document.getElementById("topicDropdown").innerHTML = "";
-        document.getElementById("topicLabel").innerText = "Mavzularni tanlang";
+        document.getElementById("topicLabel").innerText = "Darslarni tanlang";
         updateMax();
         return;
     }
@@ -284,12 +284,12 @@ function updateTopicLabel() {
     const checked = [...document.querySelectorAll("#topicDropdown input:checked")];
 
     if (checked.length === 0) {
-        document.getElementById("topicLabel").innerText = "--Mavzuni tanlash uchun bosing--";
+        document.getElementById("topicLabel").innerText = "--Darslarni tanlash uchun bosing--";
         return;
     }
 
     document.getElementById("topicLabel").innerText =
-        checked.length + " ta mavzu tanlandi";
+        checked.length + " ta dars tanlandi";
 }
 
 function updateMax(forcedIds = null) {
@@ -383,7 +383,7 @@ function startTest() {
     const timeValue = Number(document.getElementById("time").value);
 
     if (topicIds.length === 0) {
-        alert("Mavzu tanlang!");
+        alert("Dars tanlang!");
         return;
     }
 

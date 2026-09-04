@@ -27,39 +27,39 @@
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
 <div class="container">
-    <!-- Faqat kurs mavzusidagi "🎯 Mavzuga oid testlarni yechish"
+    <!-- Faqat kurs darsidagi "🎯 Mavzuga oid testlarni yechish"
          tugmasidan kelinganda ko'rinadi (URL'da courseId bo'lsa) — testni
          boshlamasdan, brauzer "orqaga"siga tayanmasdan kursga qaytish
          uchun (testConfigPage.js#DOMContentLoaded). Boshqa hollarda
          (masalan bosh menyudan to'g'ridan-to'g'ri kirilganda) butunlay
          yashirin qoladi. -->
-    <button id="backToCourseBtn" class="back-to-course-btn hidden">🔙 Mavzularga qaytish</button>
+    <button id="backToCourseBtn" class="back-to-course-btn hidden">🔙 Darsga qaytish</button>
 
     <h2>Bilimingizni sinab ko'ring</h2>
 
     <div class="section">
-        <div class="section-title">Fanni tanlang</div>
-        <select id="scienceSelect" onchange="loadTopicsFromSelect()">
-            <option value="">-- Fanni tanlang --</option>
-        </select>
-    </div>
-
-    <!-- Fan Bo'limlarga ega bo'lsagina ko'rinadi (masalan Kimyo) — avval
-         Bo'lim tanlanadi, keyingina o'sha bo'limdagi mavzular chiqadi.
-         Bo'limi yo'q fanlarda bu qadam butunlay o'tkazib yuboriladi
-         (bo'limSection.js#loadTopics — hidden class bilan yashiriladi). -->
-    <div class="section hidden" id="bolimSection">
         <div class="section-title">Bo'limni tanlang</div>
-        <select id="sectionSelect" onchange="onSectionSelectChange()">
+        <select id="scienceSelect" onchange="loadTopicsFromSelect()">
             <option value="">-- Bo'limni tanlang --</option>
         </select>
     </div>
 
+    <!-- Bo'lim Mavzularga ega bo'lsagina ko'rinadi (masalan Kimyo) — avval
+         Mavzu tanlanadi, keyingina o'sha mavzudagi darslar chiqadi.
+         Mavzusi yo'q bo'limlarda bu qadam butunlay o'tkazib yuboriladi
+         (testConfigPage.js#loadTopics — hidden class bilan yashiriladi). -->
+    <div class="section hidden" id="bolimSection">
+        <div class="section-title">Mavzuni tanlang</div>
+        <select id="sectionSelect" onchange="onSectionSelectChange()">
+            <option value="">-- Mavzuni tanlang --</option>
+        </select>
+    </div>
+
     <div class="section" id="topicSection">
-        <div class="section-title">Mavzularni tanlang</div>
+        <div class="section-title">Darslarni tanlang</div>
         <div class="multiselect" id="topicMultiselect">
             <div class="selectBox" onclick="toggleTopics()">
-                <span id="topicLabel">--Mavzuni tanlash uchun bosing--</span>
+                <span id="topicLabel">--Darslarni tanlash uchun bosing--</span>
                 <div class="arrow"></div>
             </div>
 

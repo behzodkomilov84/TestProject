@@ -78,7 +78,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
-// "🔙 Mavzuga qaytish" — kurs darsidan ("🎯 Mavzuga oid testlarni
+// "🔙 Darsga qaytish" — kurs darsidan ("🎯 Mavzuga oid testlarni
 // yechish") kelingan bo'lsa (testConfigPage.js#startTest sessionStorage'ga
 // yozib qo'ygan), test sessiyasining OXIRIGACHA (5-savolni yechayotganda
 // ham) ko'rinib turadi — foydalanuvchi so'rovi bo'yicha. Boshqa hollarda
@@ -88,7 +88,7 @@ function setupReturnToTopicButton() {
     if (!courseId) return;
 
     const sectionId = sessionStorage.getItem("returnSectionId");
-    // Kurs sahifasidagi mavzu KARTOCHKALARI ro'yxatidan ("🎯 Mavzuga oid
+    // Kurs sahifasidagi dars KARTOCHKALARI ro'yxatidan ("🎯 Mavzuga oid
     // testlarni yechish", courseDetail.js) kelingan bo'lsa — "sectionId"
     // (dars sahifasi) o'rniga shu kartochkaning o'zi (testConfigPage.js
     // #returnFocusSectionId orqali sessionStorage'ga yozilgan). Qaytishda
@@ -238,7 +238,7 @@ function showQuestion(index) {
     active.style.display = 'block';
 
     // Har bir savol ko'rsatilganda sahifa ENG TEPAGA (rejim yorlig'i +
-    // "🔙 Mavzuga qaytish" tugmasi ham ko'rinadigan holatda) qaytadi —
+    // "🔙 Darsga qaytish" tugmasi ham ko'rinadigan holatda) qaytadi —
     // avval bu yerda "active.scrollIntoView({block:'start'})" ishlatilgan
     // edi, lekin u savol blokini navbar OSTIGA "yashiruvchi" (haqiqiy
     // production bug — foydalanuvchi HAR safar yangi savolga o'tganda

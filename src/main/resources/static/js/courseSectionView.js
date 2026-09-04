@@ -288,10 +288,10 @@ function renderTopicTestLink(data) {
     if (!data.linkedTopicId) return;
 
     const btn = document.createElement("button");
-    btn.textContent = "🎯 Mavzuga oid testlarni yechish";
+    btn.textContent = "🎯 Darsga oid testlarni yechish";
     btn.className = "topic-test-btn";
     btn.onclick = () => {
-        // "courseId" — testConfigPage'da "🔙 Mavzularga qaytish" tugmasini
+        // "courseId" — testConfigPage'da "🔙 Darsga qaytish" tugmasini
         // ko'rsatish uchun (foydalanuvchi testni boshlamasdan, brauzer
         // "orqaga"siga tayanmasdan, kursga qaytishi uchun).
         const params = new URLSearchParams({

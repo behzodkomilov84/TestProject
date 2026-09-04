@@ -1,5 +1,5 @@
 // "O'chirilganlar savati" — soft-delete qilingan kurslar ro'yxati,
-// "♻️ Tiklash" (bo'lim/mavzu/obuna/progress — hech qachon o'chirilmagan,
+// "♻️ Tiklash" (mavzu/dars/obuna/progress — hech qachon o'chirilmagan,
 // darhol qaytadi) va "🗑️ Butunlay o'chirish" (qaytarib bo'lmaydi) amallari.
 //
 // "📦 Backup orqali tiklash" (pastda) — FAQAT ROLE_OWNER (backendda ham
@@ -47,7 +47,7 @@ function renderTrash(courses) {
                     <h3 class="course-card-title">${escapeHtml(c.title)}</h3>
                     <p class="course-card-desc">${escapeHtml(c.description || "")}</p>
                     <div class="course-card-footer">
-                        <span>${c.sectionCount} bo'lim • ${formatDate(c.deletedAt)}da o'chirilgan</span>
+                        <span>${c.sectionCount} dars • ${formatDate(c.deletedAt)}da o'chirilgan</span>
                     </div>
                     <div class="course-form-actions">
                         <button onclick="restoreCourse(${c.id})">♻️ Tiklash</button>
@@ -60,7 +60,7 @@ function renderTrash(courses) {
 }
 
 async function restoreCourse(courseId) {
-    if (!confirm("Bu kursni tiklamoqchimisiz? Bo'limlari, mavzulari, obunalari va o'quvchilar progressi ham birga qaytadi.")) {
+    if (!confirm("Bu kursni tiklamoqchimisiz? Mavzulari, darslari, obunalari va o'quvchilar progressi ham birga qaytadi.")) {
         return;
     }
 
@@ -92,7 +92,7 @@ async function permanentlyDeleteCourse(courseId, title) {
     if (!confirm(warning)) {
         return;
     }
-    if (isOwner && !confirm("Haqiqatan ham ishonchingiz komilmi? Barcha bo'lim/mavzu/obuna/progress ma'lumotlari abadiy yo'qoladi.")) {
+    if (isOwner && !confirm("Haqiqatan ham ishonchingiz komilmi? Barcha mavzu/dars/obuna/progress ma'lumotlari abadiy yo'qoladi.")) {
         return;
     }
 
@@ -343,8 +343,8 @@ async function applyBackupRestore() {
         alert(
             `✅ Tiklandi:\n` +
             `Kurslar — ${data.restoredCourses}\n` +
-            `Bo'limlar — ${data.restoredChapters}\n` +
-            `Mavzular (dars) — ${data.restoredSections}\n` +
+            `Mavzular — ${data.restoredChapters}\n` +
+            `Darslar — ${data.restoredSections}\n` +
             `Obunalar — ${data.restoredSubscriptions}\n` +
             `Progress yozuvlari — ${data.restoredProgress}` +
             (data.skippedCourseIds && data.skippedCourseIds.length
