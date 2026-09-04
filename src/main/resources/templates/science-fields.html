@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <meta name="description" content="Описание страницы">
+    <meta name="author" content="Автор">
+
+    <title>Yo'nalishlar</title>
+
+    <link rel="stylesheet" href="/css/science.css">
+    <link rel="stylesheet" href="/css/navbar.css">
+
+    <script src="/js/navbar.js" defer></script>
+    <script src="/js/promptModal.js" defer></script>
+    <script src="/js/scienceFields.js" defer></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+</head>
+
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<!-- "TEST BOSHQARUVI"ning ENG BIRINCHI sahifasi (foydalanuvchi so'rovi,
+     2026-09-05: kurslardagi bilan bir xil ierarxiya — Yo'nalish -> Bo'lim
+     -> Mavzu -> Dars). Har bir kartani bosish o'sha Yo'nalishning
+     Bo'limlariga (/science?fieldId=<id>) olib boradi — Yo'nalish CRUD'i
+     (/api/course-fields) courses.js/science.js bilan BIR XIL, UMUMIY
+     endpoint orqali. -->
+<h1>Yo'nalishlar</h1>
+
+<div class="wrapper">
+    <button onclick="openCreateFieldForm()">+ Yangi Yo'nalish</button>
+
+    <div id="createFieldForm" class="course-form" style="display:none;">
+        <input type="text" id="newFieldName" placeholder="Yo'nalish nomi (masalan: Sanitariya epidemiologiya xizmati)">
+        <div class="course-form-actions">
+            <button onclick="submitCreateField()">✅ Yaratish</button>
+            <button onclick="closeCreateFieldForm()">Bekor qilish</button>
+        </div>
+    </div>
+
+    <div id="fieldsList" class="field-card-list"></div>
+</div>
+
+<div id="toast-container"></div>
+
+</body>
+</html>

@@ -33,7 +33,16 @@
 
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-<h1>Bo'limlar</h1>
+<!-- ?fieldId=<id> bilan kelinganda (odatiy holat — /science/fields
+     sahifasidan bosib kelinadi) faqat shu Yo'nalishning Bo'limlari
+     ko'rsatiladi, va yuqorida "← Yo'nalishlar"ga qaytish havolasi +
+     Yo'nalish nomi chiqadi (science.js#applyFieldScope to'ldiradi). -->
+<div id="fieldScopeBar" class="field-scope-bar hidden">
+    <a href="/science/fields" class="field-scope-back">← Yo'nalishlar</a>
+    <span id="fieldScopeName" class="field-scope-name"></span>
+</div>
+
+<h1 id="pageTitle">Bo'limlar</h1>
 
 <!-- ОСНОВНОЙ КОНТЕЙНЕР -->
 <div class="wrapper">
@@ -44,8 +53,10 @@
     -->
     <!-- "Yo'nalish" — Bo'limlar (Science) ro'yxatini kattaroq guruhga
          bo'ladi, kurslar katalogidagi bilan BIR XIL Yo'nalish (umumiy —
-         foydalanuvchi so'rovi, 2026-09-05). -->
-    <button onclick="openCreateFieldForm()">+ Yangi Yo'nalish</button>
+         foydalanuvchi so'rovi, 2026-09-05). fieldId bilan (bitta
+         Yo'nalish ichida) ko'rsatilganda bu tugma yashiriladi — Yo'nalish
+         boshqaruvi endi /science/fields sahifasida (science.js#applyFieldScope). -->
+    <button id="createFieldBtn" onclick="openCreateFieldForm()">+ Yangi Yo'nalish</button>
     <!-- Soft-delete qilingan (🗑️ o'chirilgan) fanlar — "♻️ Tiklash" bilan
          bir zumda qaytariladi (ScienceService.getDeletedSciences/restoreScience). -->
     <button onclick="toggleScienceTrash()">🗑️ O'chirilgan bo'limlar <span id="scienceTrashBadge" class="notif-badge" style="display:none;">0</span></button>

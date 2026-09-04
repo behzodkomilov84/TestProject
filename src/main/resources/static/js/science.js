@@ -13,6 +13,20 @@ let focusIndex = null;//для курсора
 let allFields = [];
 const expandedFieldKeys = new Set();
 
+// ?fieldId=<id> — /science/fields sahifasidan bitta Yo'nalishni bosib
+// kirilganda shu Yo'nalishning Bo'limlarigina ko'rsatiladi (foydalanuvchi
+// so'rovi, 2026-09-05: "Test boshqaruvi"ni bosganda AVVAL Yo'nalishlarga
+// kirsin). "none" — "— Yo'nalishsiz bo'limlar —" psevdo-guruhi uchun.
+// undefined — fieldId UMUMAN berilmagan (masalan eski bookmark) — bu
+// holda ORQAGA MOSLIK uchun BARCHA Bo'limlar, filtrsiz, ko'rsatiladi.
+const pageFieldId = (() => {
+    const raw = new URLSearchParams(window.location.search).get("fieldId");
+    if (raw == null) return undefined;
+    if (raw === "none") return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : undefined;
+})();
+
 let oldName = ""; //for EDIT uses
 let newName = ""; //for EDIT uses
 
@@ -179,6 +193,7 @@ function afterStartPage(mapping) {
 // (courses.js#loadCourses bilan bir xil g'oya).
 async function reloadAll(mapping) {
     await Promise.all([reloadFromDb(mapping), loadFields()]);
+    applyFieldScope();
 }
 
 async function loadFields() {
@@ -188,6 +203,39 @@ async function loadFields() {
     } catch (err) {
         console.error(err);
         allFields = [];
+    }
+    // pageFieldId bilan (bitta Yo'nalish ichida) ko'rsatilganda —
+    // getSortedFieldGroups() faqat SHU Yo'nalishni (yoki hech qaysini,
+    // "Yo'nalishsiz" rejimida) ko'rsin, boshqa Yo'nalishlar accordion'da
+    // chiqmasin.
+    if (pageFieldId === null) {
+        allFields = [];
+    } else if (typeof pageFieldId === "number") {
+        allFields = allFields.filter(f => f.id === pageFieldId);
+    }
+}
+
+// Sahifa yuqorisidagi "← Yo'nalishlar" panelini va sarlavhani
+// pageFieldId'ga qarab to'ldiradi/yashiradi ("+ Yangi Yo'nalish" tugmasi
+// ham shu bitta Yo'nalish ichida ma'nosiz — yashiriladi, Yo'nalish
+// boshqaruvi endi /science/fields sahifasida).
+function applyFieldScope() {
+    if (pageFieldId === undefined) return; // eski, filtrsiz rejim
+
+    const bar = document.getElementById("fieldScopeBar");
+    const nameEl = document.getElementById("fieldScopeName");
+    const createBtn = document.getElementById("createFieldBtn");
+    const title = document.getElementById("pageTitle");
+
+    bar.classList.remove("hidden");
+    if (createBtn) createBtn.style.display = "none";
+
+    if (pageFieldId === null) {
+        nameEl.textContent = "— Yo'nalishsiz bo'limlar —";
+    } else {
+        const field = allFields[0];
+        nameEl.textContent = field ? field.name : "";
+        if (field) title.textContent = `${field.name} — Bo'limlar`;
     }
 }
 
@@ -222,6 +270,14 @@ async function reloadFromDb(mapping) {
         mode: "VIEW"
     }));
 
+    // pageFieldId bilan (bitta Yo'nalish ichida) ko'rsatilganda — faqat
+    // shu Yo'nalishga (yoki "none" bo'lsa, hech qaysiga) tegishli
+    // Bo'limlar qoladi.
+    if (pageFieldId === null) {
+        itemBlock = itemBlock.filter(s => s.fieldId == null);
+    } else if (typeof pageFieldId === "number") {
+        itemBlock = itemBlock.filter(s => s.fieldId === pageFieldId);
+    }
 }
 
 function render() {
@@ -815,7 +871,10 @@ function add() {
         id: tempId, // Временный ID
         name: "",
         original: "",
-        fieldId: null,
+        // Bitta Yo'nalish ichida (pageFieldId) turilganda — yangi Bo'lim
+        // AVTOMATIK shu Yo'nalishga tegishli bo'ladi (select orqali
+        // baribir o'zgartirish mumkin).
+        fieldId: typeof pageFieldId === "number" ? pageFieldId : null,
         originalFieldId: null,
         mode: "NEW"
     });

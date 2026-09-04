@@ -1073,3 +1073,129 @@ h1 {
     font-family: inherit;
     margin-top: 6px;
 }
+
+/* ============================================================
+   Yo'nalish qamrovi paneli (science.html#fieldScopeBar) — /science/fields
+   sahifasidan bitta Yo'nalishni bosib kirilganda "← Yo'nalishlar" havolasi
+   + Yo'nalish nomi shu yerda ko'rinadi (foydalanuvchi so'rovi, 2026-09-05).
+   ============================================================ */
+.field-scope-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 20px 0;
+    font-size: 14px;
+}
+
+.field-scope-back {
+    color: #1976d2;
+    text-decoration: none;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.field-scope-back:hover {
+    text-decoration: underline;
+}
+
+.field-scope-name {
+    color: #64748b;
+}
+
+.field-scope-name::before {
+    content: "/";
+    margin-right: 10px;
+    color: #cbd5e1;
+}
+
+/* ============================================================
+   Yo'nalishlar sahifasi (science-fields.html) — har bir Yo'nalish
+   alohida bosiladigan karta sifatida, .chapter-box oilasi bilan bir xil
+   rangda/uslubda (ammo accordion emas — bosilganda to'g'ridan-to'g'ri
+   o'sha Yo'nalishning Bo'limlariga o'tadi).
+   ============================================================ */
+.field-card-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.field-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 18px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: box-shadow 0.15s, border-color 0.15s;
+}
+
+.field-card:hover {
+    border-color: #1976d2;
+    box-shadow: 0 2px 10px rgba(25, 118, 210, 0.12);
+}
+
+.field-card-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+}
+
+.field-card-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+}
+
+.field-card-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.field-card-count {
+    color: #64748b;
+    font-size: 13px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.field-card-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.field-card-actions button {
+    border: 1px solid #d5dde8;
+    background: #fff;
+    border-radius: 6px;
+    padding: 6px 9px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.field-card-actions button:hover:not(:disabled) {
+    background: #f1f5f9;
+}
+
+.field-card-actions button:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.field-card-actions button.danger-btn {
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
+.field-card-actions button.danger-btn:hover {
+    background: #fef2f2;
+}
