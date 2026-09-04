@@ -14,6 +14,7 @@ import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.TeacherGroup;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.TeacherService;
+import behzoddev.testproject.telegram.state.BotState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -228,6 +229,56 @@ class TelegramTeacherServiceTest {
 
         verify(sessionService).clear(CHAT_ID);
         assertThat(msg.getText()).contains("❌").contains("allaqachon");
+    }
+
+    // ===== "✏️ O'zi kiritish" — ANIQ muddat qo'lda kiritish =====
+
+    @Test
+    void promptCustomDueDate_setsStateAndAsksForDateTime() {
+        SendMessage msg = telegramTeacherService.promptCustomDueDate(CHAT_ID);
+
+        verify(sessionService).setState(CHAT_ID, BotState.AWAITING_ASSIGN_CUSTOM_DUE_DATE);
+        assertThat(msg.getText()).contains("kun.oy.yil soat:daqiqa");
+    }
+
+    @Test
+    void applyCustomDueDate_validFutureDate_assignsWithThatExactDueDate() {
+        when(userRepository.findByTelegramId(CHAT_ID)).thenReturn(Optional.of(teacher));
+        when(sessionService.getTempData(CHAT_ID)).thenReturn(Map.of(
+                "tg_assignGroupId", "5", "tg_assignSetId", "50"));
+
+        String future = java.time.LocalDateTime.now().plusYears(1).format(
+                java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
+
+        SendMessage msg = telegramTeacherService.applyCustomDueDate(CHAT_ID, future);
+
+        var captor = org.mockito.ArgumentCaptor.forClass(AssignDto.class);
+        verify(teacherService).assignQuestionSetToStudents(eq(teacher), captor.capture());
+        assertThat(captor.getValue().dueDate().format(
+                java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"))).isEqualTo(future);
+        verify(sessionService).clear(CHAT_ID);
+        assertThat(msg.getText()).contains("✅").contains(future);
+    }
+
+    @Test
+    void applyCustomDueDate_malformedText_asksAgainWithoutAssigning() {
+        SendMessage msg = telegramTeacherService.applyCustomDueDate(CHAT_ID, "ertaga kechqurun");
+
+        verify(teacherService, never()).assignQuestionSetToStudents(any(), any());
+        verify(sessionService, never()).clear(CHAT_ID);
+        assertThat(msg.getText()).contains("❌").contains("format");
+    }
+
+    @Test
+    void applyCustomDueDate_pastDate_rejectsWithoutAssigning() {
+        String past = java.time.LocalDateTime.now().minusDays(1).format(
+                java.time.format.DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm"));
+
+        SendMessage msg = telegramTeacherService.applyCustomDueDate(CHAT_ID, past);
+
+        verify(teacherService, never()).assignQuestionSetToStudents(any(), any());
+        verify(sessionService, never()).clear(CHAT_ID);
+        assertThat(msg.getText()).contains("❌").contains("kelajakda");
     }
 
     // ===== Natijalar =====

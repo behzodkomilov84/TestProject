@@ -31,6 +31,10 @@ public enum BotState {
     AWAITING_INVITE_USERNAME,
     AWAITING_CHAT_MESSAGE,
     AWAITING_EXCEL_FILE,
+    // "📝 Topshiriq berish" oqimida "✏️ O'zi kiritish" bosilgandan keyin —
+    // muddatni tayyor variantlar (1 kun/3 kun/1 hafta/2 hafta) o'rniga
+    // aniq sana+soat sifatida qo'lda kiritayotgan holat (foydalanuvchi so'rovi).
+    AWAITING_ASSIGN_CUSTOM_DUE_DATE,
 
     // ===== OWNER: foydalanuvchilar, sozlamalar, e'lon =====
     AWAITING_USER_SEARCH,

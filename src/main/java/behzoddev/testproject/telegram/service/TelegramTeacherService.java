@@ -215,18 +215,60 @@ public class TelegramTeacherService {
         for (Map.Entry<Integer, String> e : DUE_LABELS.entrySet()) {
             row.add(button(e.getValue(), "tg_assign_due_" + e.getKey()));
         }
+        InlineKeyboardButton customBtn = button("✏️ O'zi kiritish", "tg_assign_due_custom");
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        markup.setKeyboard(List.of(row));
+        markup.setKeyboard(List.of(row, List.of(customBtn)));
         msg.setReplyMarkup(markup);
         return msg;
     }
 
+    // "✏️ O'zi kiritish" bosilganda — tayyor variantlar (1 kun/3 kun/...)
+    // o'rniga ANIQ sana+soat kiritish imkoniyati (foydalanuvchi so'rovi:
+    // "хоҳлаган муддатни қўя олишим керак, соатигача").
+    public SendMessage promptCustomDueDate(Long chatId) {
+        sessionService.setState(chatId, BotState.AWAITING_ASSIGN_CUSTOM_DUE_DATE);
+
+        SendMessage msg = new SendMessage();
+        msg.setChatId(chatId.toString());
+        msg.setText("✏️ Muddatni \"" + DATE_FORMAT.format(LocalDateTime.now()) + "\" ko'rinishida " +
+                "(kun.oy.yil soat:daqiqa) yozib yuboring — masalan: 31.12.2026 18:00\n\n" +
+                "(Bekor qilish uchun /cancel)");
+        return msg;
+    }
+
+    // Foydalanuvchi qo'lda yozgan sanani qabul qiladi — noto'g'ri formatda
+    // yoki o'tmishda bo'lsa, qaytadan so'raymiz (holat o'zgarmay qoladi).
+    public SendMessage applyCustomDueDate(Long chatId, String text) {
+        LocalDateTime dueDate;
+        try {
+            dueDate = LocalDateTime.parse(text.trim(), DATE_FORMAT);
+        } catch (Exception e) {
+            SendMessage msg = new SendMessage();
+            msg.setChatId(chatId.toString());
+            msg.setText("❌ Sana formati noto'g'ri. \"kun.oy.yil soat:daqiqa\" ko'rinishida yozing " +
+                    "— masalan: 31.12.2026 18:00");
+            return msg;
+        }
+
+        if (!dueDate.isAfter(LocalDateTime.now())) {
+            SendMessage msg = new SendMessage();
+            msg.setChatId(chatId.toString());
+            msg.setText("❌ Muddat kelajakda bo'lishi kerak. Qaytadan yozing.");
+            return msg;
+        }
+
+        return finalizeAssign(chatId, dueDate);
+    }
+
     public SendMessage finalizeAssign(Long chatId, int days) {
+        return finalizeAssign(chatId, LocalDateTime.now().plusDays(days));
+    }
+
+    private SendMessage finalizeAssign(Long chatId, LocalDateTime dueDate) {
         User teacher = getUserByChatId(chatId);
         Map<String, String> temp = sessionService.getTempData(chatId);
         Long groupId = Long.valueOf(temp.get("tg_assignGroupId"));
         Long setId = Long.valueOf(temp.get("tg_assignSetId"));
-        LocalDateTime dueDate = LocalDateTime.now().plusDays(days);
 
         SendMessage msg = new SendMessage();
         msg.setChatId(chatId.toString());

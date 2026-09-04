@@ -413,6 +413,11 @@ public class TelegramBot extends TelegramLongPollingBot {
                     execute(teacherService.selectAssignSet(chatId, setId));
                     return;
                 }
+                if (data.equals("tg_assign_due_custom")) {
+                    deleteMessageSafely(chatId, callbackMsgId);
+                    execute(teacherService.promptCustomDueDate(chatId));
+                    return;
+                }
                 if (data.startsWith("tg_assign_due_")) {
                     int days = Integer.parseInt(data.replace("tg_assign_due_", ""));
                     deleteMessageSafely(chatId, callbackMsgId);
@@ -785,6 +790,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             case AWAITING_PT_CUSTOM_TIME -> practiceTestService.applyCustomTimeLimit(chatId, text);
             case AWAITING_GROUP_NAME -> teacherService.applyGroupName(chatId, text);
             case AWAITING_INVITE_USERNAME -> teacherService.applyInviteUsername(chatId, text);
+            case AWAITING_ASSIGN_CUSTOM_DUE_DATE -> teacherService.applyCustomDueDate(chatId, text);
             case AWAITING_CHAT_MESSAGE -> chatService.sendReply(chatId, text);
             case AWAITING_EXCEL_FILE -> questionImportService.remindToSendFile(chatId);
             case AWAITING_USER_SEARCH -> ownerService.applyUserSearch(chatId, text);
