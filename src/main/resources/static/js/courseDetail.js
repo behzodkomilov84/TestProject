@@ -1,40 +1,40 @@
 let cachedCourse = null;
 let clickPaymentEnabled = false;
 
-// Mavzular ro'yxati sahifalanadi — bitta sahifada shuncha karta ko'rsatiladi
+// Darslar ro'yxati sahifalanadi — bitta sahifada shuncha karta ko'rsatiladi
 // (renderSections/changeSectionsPage). Sahifa raqami 0'dan boshlanadi. Bu —
-// hech qaysi mavzu biror Bo'limga biriktirilmagan (eski/oddiy) kurslar
+// hech qaysi dars biror Mavzuga biriktirilmagan (eski/oddiy) kurslar
 // uchun — bitta tekis grid + bitta umumiy sahifalash.
 const SECTIONS_PER_PAGE = 12;
 let sectionsPage = 0;
 
-// Kursda Bo'lim(lar) bo'lsa — har bir Bo'lim o'z alohida "box"ida, o'z
+// Kursda Mavzu(lar) bo'lsa — har bir Mavzu o'z alohida "box"ida, o'z
 // sahifalash tugmalari bilan ko'rsatiladi (renderGroupedSections). Har bir
-// Bo'lim uchun joriy sahifa alohida saqlanadi: chapterPages[chapterKey].
+// Mavzu uchun joriy sahifa alohida saqlanadi: chapterPages[chapterKey].
 // Umumiy .sections-grid javobgar panjarasi 1200px+'da 4 ustunli bo'ladi —
 // shu sabab 4 ta tanlangan: har bir sahifa aynan BITTA TO'LIQ qatorni
 // tashkil qiladi (qatorni "yorib chiqmaydi", qo'shimcha skroll ham shart
-// emas). Torroq ekranlarda (kamroq ustunli) 4 ta mavzu shunchaki 2-4
+// emas). Torroq ekranlarda (kamroq ustunli) 4 ta dars shunchaki 2-4
 // qatorga o'z-o'zidan bo'linadi — bu normal, kutilgan holat.
 const CHAPTER_SECTIONS_PER_PAGE = 4;
 let chapterPages = {};
 
-// Bo'lim ro'yxati endi accordion (yig'ma) ko'rinishida — sarlavhaga
-// bosilganda O'SHA bo'limning mavzular ("box" ichidagi hammasi — saralash,
+// Mavzu ro'yxati endi accordion (yig'ma) ko'rinishida — sarlavhaga
+// bosilganda O'SHA mavzuning darslari ("box" ichidagi hammasi — saralash,
 // kartochkalar, sahifalash) ochiladi/yopiladi. Bir nechtasi bir vaqtda
 // ochiq turishi mumkin. FAQAT shu sahifa (sessiya) davomida eslab qolinadi
 // (chapterKey -> true) — sahifa qayta yuklansa hammasi yana yopiq holatdan
 // boshlanadi (selectCard'dagi avtomatik ochish bundan mustasno).
 let expandedChapterKeys = new Set();
 
-// "🔍 Bo'lim qidirish" (onChapterSearchInput) — bo'lim nomi bo'yicha
+// "🔍 Mavzu qidirish" (onChapterSearchInput) — mavzu nomi bo'yicha
 // filtr, katta-kichik harfga sezgir emas. Bo'sh bo'lsa — filtr yo'q.
 let chapterSearchQuery = "";
 
-// Klaviatura bilan mavzu kartochkalari orasida navigatsiya (←/→ — joriy
-// sahifa/Bo'lim ichida oldingi-keyingi kartaga, ↑/↓ — oldingi/keyingi
+// Klaviatura bilan dars kartochkalari orasida navigatsiya (←/→ — joriy
+// sahifa/Mavzu ichida oldingi-keyingi kartaga, ↑/↓ — oldingi/keyingi
 // sahifa, Home — 1-sahifa). Tanlangan kartaning id'si — qayta chizishlar
-// (sahifa/Bo'lim almashganda) orasida ham saqlanib qoladi.
+// (sahifa/Mavzu almashganda) orasida ham saqlanib qoladi.
 let selectedSectionId = null;
 
 // "🔙 Kursga qaytish" (test-form.js) dan "?focus=<sectionId>" bilan
@@ -902,8 +902,8 @@ async function importDocxFile(fileInput, editorId) {
     }
 }
 
-// "Fan nomi" endi tanlov (select) — mavjud fanlar ro'yxati + "➕ Boshqa..."
-// (erkin nom kiritish uchun, agar kerakli fan ro'yxatda bo'lmasa).
+// "Bo'lim" endi tanlov (select) — mavjud bo'limlar ro'yxati + "➕ Boshqa..."
+// (erkin nom kiritish uchun, agar kerakli bo'lim ro'yxatda bo'lmasa).
 let cachedSciences = [];
 const OTHER_SCIENCE_VALUE = "__other__";
 
@@ -931,10 +931,10 @@ function onScienceSelectChange(mode) {
     const otherInput = document.getElementById(mode === "new" ? "newSectionScienceOther" : "editSectionScienceOther");
     otherInput.style.display = select.value === OTHER_SCIENCE_VALUE ? "block" : "none";
 
-    // Fan o'zgartirilganda — Bo'lim ro'yxati ham shu YANGI Fanda TEST
-    // BOSHQARUVIda mavjud Bo'limlar bilan qayta to'ldiriladi
+    // Bo'lim o'zgartirilganda — Mavzu ro'yxati ham shu YANGI Bo'limda TEST
+    // BOSHQARUVIda mavjud Mavzular bilan qayta to'ldiriladi
     // (populateChapterSelect). Joriy tanlov ("id:<id>" bo'lsa — kursning
-    // o'z Bo'limi, Fan o'zgarsa ham hamon amal qiladi) saqlanadi.
+    // o'z Mavzusi, Bo'lim o'zgarsa ham hamon amal qiladi) saqlanadi.
     const chapterSelectId = mode === "new" ? "newSectionChapterSelect" : "editSectionChapterSelect";
     const currentValue = document.getElementById(chapterSelectId).value;
     const currentChapterId = currentValue.startsWith("id:") ? Number(currentValue.slice(3)) : null;
@@ -942,7 +942,7 @@ function onScienceSelectChange(mode) {
 }
 
 // Formani ochishda chaqiriladi — agar berilgan nom (masalan shu kursning
-// o'zi nomi, yoki bo'limga allaqachon bog'langan fan) ro'yxatda mavjud
+// o'zi nomi, yoki darsga allaqachon bog'langan bo'lim) ro'yxatda mavjud
 // bo'lsa, o'sha tanlanadi; aks holda "Boshqa" tanlanib, erkin maydonga
 // o'sha nom qo'yiladi (foydalanuvchi kerak bo'lsa o'zgartirishi mumkin).
 function applyScienceSelection(mode, preferredName) {
@@ -972,9 +972,10 @@ function getSelectedScienceName(mode) {
     return select.value || null;
 }
 
-// Mavzu nomi — default sifatida bo'lim nomi bilan bir xil bo'lib turadi,
-// foydalanuvchi maydonni o'zi qo'lda tahrirlagunga qadar (shundan keyin
-// bo'lim nomi o'zgarsa ham, mavzu nomi endi avtomatik qayta yozilmaydi).
+// Dars nomi (Topic) — default sifatida dars nomi (CourseSection title)
+// bilan bir xil bo'lib turadi, foydalanuvchi maydonni o'zi qo'lda
+// tahrirlagunga qadar (shundan keyin dars nomi o'zgarsa ham, Topic nomi
+// endi avtomatik qayta yozilmaydi).
 let newTopicNameManuallyEdited = false;
 let editTopicNameManuallyEdited = false;
 
@@ -993,11 +994,11 @@ function onTopicNameInput(mode) {
     else editTopicNameManuallyEdited = true;
 }
 
-// "🎯 Mavzuga oid testlar bilan bog'lash" — checkbox belgilanmagan bo'lsa
-// fan/mavzu maydonlari yashirin turadi VA saqlashda umuman yuborilmaydi
+// "🎯 Darsga oid testlar bilan bog'lash" — checkbox belgilanmagan bo'lsa
+// bo'lim/dars maydonlari yashirin turadi VA saqlashda umuman yuborilmaydi
 // (getSelectedScienceName/topicName checkbox holatini submitAddSection /
 // submitEditSection'da tekshiradi) — shunda tasodifan (checkbox
-// belgilanmasdan) bo'lim boshqa fan/mavzuga bog'lanib qolmaydi.
+// belgilanmasdan) dars boshqa bo'lim/Topic'ga bog'lanib qolmaydi.
 function onTopicLinkToggle(mode) {
     const checkbox = document.getElementById(mode === "new" ? "newSectionLinkTopic" : "editSectionLinkTopic");
     const fields = document.getElementById(mode === "new" ? "newSectionTopicFields" : "editSectionTopicFields");
@@ -1035,10 +1036,10 @@ function renderCourse(course) {
     const managePanel = document.getElementById("manageCoursePanel");
     managePanel.style.display = course.canManage ? "block" : "none";
     // Umumiy "Saralash" panelining ko'rinish-yo'qligi shu YERDA emas,
-    // renderSections() ichida hal qilinadi: guruhlangan (Bo'limli) kursda
-    // bu umumiy panel BUTUNLAY yashiriladi — har bir Bo'lim o'zining
+    // renderSections() ichida hal qilinadi: guruhlangan (Mavzuli) kursda
+    // bu umumiy panel BUTUNLAY yashiriladi — har bir Mavzu o'zining
     // alohida "Saralash" tugmalariga ega bo'ladi (renderChapterBox —
-    // sortChapterSections). Faqat bo'limsiz (flat) kursda ko'rinadi.
+    // sortChapterSections). Faqat mavzusiz (flat) kursda ko'rinadi.
 
     // Panel yig'ilgan/ochiq holati — saqlangan tanlov bo'lsa o'shanga
     // qarab, aks holda HTML'dagi standart (yig'ilgan) holatda qoladi.
@@ -1159,17 +1160,17 @@ async function requestSubscription() {
     }
 }
 
-// "sections" — HAR DOIM kursning TO'LIQ (sahifalanmagan) mavzular ro'yxati.
+// "sections" — HAR DOIM kursning TO'LIQ (sahifalanmagan) darslar ro'yxati.
 // Joriy sahifa (sectionsPage) shu funksiya ichida keyingi chaqiruvlargacha
 // eslab qolinadi (loadCourse() -> renderCourse() har safar to'liq
 // ro'yxatni qayta beradi, lekin foydalanuvchi qaysi sahifada turgani
-// o'zgarmasligi kerak — masalan bo'lim tahrirlangandan keyin).
+// o'zgarmasligi kerak — masalan mavzu tahrirlangandan keyin).
 let allSections = [];
 
 function renderSections(sections) {
     allSections = sections;
 
-    // Kursda kamida bitta mavzu biror Bo'limga biriktirilgan bo'lsagina
+    // Kursda kamida bitta dars biror Mavzuga biriktirilgan bo'lsagina
     // guruhlangan ("box"li) ko'rinishga o'tiladi — aks holda (standart,
     // hozirgi barcha kurslar) 100% eskidek, bitta tekis grid.
     const hasAnyChapter = sections.some(s => s.chapterId != null);
@@ -1177,20 +1178,20 @@ function renderSections(sections) {
 
     // Umumiy (butun kurs bo'yicha) "Saralash" — faqat GURUHLANMAGAN
     // (flat) ko'rinishda ma'noli, chunki guruhlangan ko'rinishda har bir
-    // Bo'lim endi O'ZINING alohida "Saralash" tugmalariga ega
+    // Mavzu endi O'ZINING alohida "Saralash" tugmalariga ega
     // (renderChapterBox), bittasi butun kursni aralashtirib yubormasligi
     // uchun.
     document.getElementById("sectionsSortBar").style.display = (canManage && !hasAnyChapter) ? "flex" : "none";
 
-    // Sahifa sarlavhasi — Bo'limli kursda endi pastda TO'G'RIDAN-TO'G'RI
-    // mavzu kartalari emas, Bo'lim "box"lari ko'rinadi (📋 Mavzular
-    // sarlavhasi endi har bir OCHILGAN bo'lim ICHIDA, renderChapterBox).
+    // Sahifa sarlavhasi — Mavzuli kursda endi pastda TO'G'RIDAN-TO'G'RI
+    // dars kartalari emas, Mavzu "box"lari ko'rinadi (📋 Darslar
+    // sarlavhasi endi har bir OCHILGAN mavzu ICHIDA, renderChapterBox).
     document.getElementById("curriculumTitle").textContent = hasAnyChapter ? "📂 Mavzular" : "📋 Darslar";
 
-    // "🔍 Bo'lim qidirish" — faqat guruhlangan (Bo'limli) ko'rinishda ma'noli.
+    // "🔍 Mavzu qidirish" — faqat guruhlangan (Mavzuli) ko'rinishda ma'noli.
     document.getElementById("chapterSearchBox").style.display = hasAnyChapter ? "block" : "none";
 
-    // "Kurs ichidan mavzu yoritmasi bo'yicha qidiruv" — tahrirlashga
+    // "Kurs ichidan dars yoritmasi bo'yicha qidiruv" — tahrirlashga
     // aloqasi yo'q, oddiy o'qish/qidiruv, shuning uchun sortBar'dan
     // farqli faqat boshqaruvchilarga emas — istalgan foydalanuvchiga
     // (OWNER/ADMIN/USER) ko'rinadi (flat/guruhlangan ko'rinishdan qat'i nazar).
@@ -1205,7 +1206,7 @@ function renderSections(sections) {
     // Sahifa birinchi ochilganda — bir marta: "?focus=" bo'lsa o'sha
     // kartaga, bo'lmasa DEFAULT holatda birinchi (ekranda ko'rinadigan
     // eng birinchi) kartaga fokus/belgilash qo'yiladi (foydalanuvchi
-    // so'rovi bo'yicha). Keyingi qayta chizishlarda (masalan bo'lim
+    // so'rovi bo'yicha). Keyingi qayta chizishlarda (masalan mavzu
     // tahrirlangandan keyin) takrorlanmaydi.
     if (!pendingFocusApplied) {
         pendingFocusApplied = true;
@@ -1219,7 +1220,7 @@ function renderSections(sections) {
 
 // DOM'dagi (haqiqiy ko'rinadigan) ENG BIRINCHI kartani tanlangan/fokusda
 // deb belgilaydi — allSections[0]'ga emas, DOM tartibiga tayanadi, chunki
-// guruhlangan ko'rinishda Bo'lim qutilari tartibi allSections'ning xom
+// guruhlangan ko'rinishda Mavzu qutilari tartibi allSections'ning xom
 // tartibidan farq qilishi mumkin (renderGroupedSections — orderIndex
 // bo'yicha saralaydi).
 function selectFirstCardByDefault() {
@@ -1228,7 +1229,7 @@ function selectFirstCardByDefault() {
 }
 
 // "?focus=<sectionId>" — sahifa birinchi ochilganda, o'sha kartani o'zi
-// turgan sahifa/Bo'limga o'tkazib (agar hozirgi sahifada bo'lmasa),
+// turgan sahifa/Mavzuga o'tkazib (agar hozirgi sahifada bo'lmasa),
 // ekranga chiqarib, "tanlangan" holatda belgilaydi (selectCard).
 function applyFocusFromUrl(sectionId) {
     const section = allSections.find(s => s.id === sectionId);
@@ -1250,29 +1251,29 @@ function applyFocusFromUrl(sectionId) {
     selectCard(sectionId, { scroll: true });
 }
 
-// Har bir mavzu-tugmalar-karta shablonini bir joyda ushlab turadi — flat
-// va guruhlangan (bo'limli) ko'rinishlar ikkalasi ham shundan foydalanadi.
+// Har bir dars-tugmalar-karta shablonini bir joyda ushlab turadi — flat
+// va guruhlangan (mavzuli) ko'rinishlar ikkalasi ham shundan foydalanadi.
 // globalIndexById — ⬆️/⬇️ chegaralarini (birinchi/oxirgi) TO'LIQ (allSections)
 // ro'yxatdagi haqiqiy o'rniga qarab hisoblash uchun (guruhlangan ko'rinishda
-// bitta bo'lim ichidagi tartib to'liq ro'yxatdagi tartibning bir qismi,
+// bitta mavzu ichidagi tartib to'liq ro'yxatdagi tartibning bir qismi,
 // xolos — chegara tekshiruvi baribir GLOBAL bo'lishi kerak).
 //
 // "displayNumber" — kartochkada KO'RINADIGAN raqam (ko'k doira ichida).
 // s.orderIndex — BUTUN kurs bo'yicha bitta umumiy, ketma-ket son (backend
-// /sections/reorder shuni kutadi, Bo'lim bo'yicha alohida EMAS — CourseService
-// izohiga qarang), shu sabab 2-bo'lim kartalari "44, 45, 46..." kabi
-// 1-bo'limning davomi bo'lib ko'rinardi (haqiqiy foydalanuvchi shikoyati).
-// Endi har bir chaqiruvchi (renderChapterBox) shu bo'lim ICHIDAGI o'rnini
-// (1'dan boshlab) alohida hisoblab beradi — berilmasa (masalan bo'limsiz
+// /sections/reorder shuni kutadi, Mavzu bo'yicha alohida EMAS — CourseService
+// izohiga qarang), shu sabab 2-mavzu kartalari "44, 45, 46..." kabi
+// 1-mavzuning davomi bo'lib ko'rinardi (haqiqiy foydalanuvchi shikoyati).
+// Endi har bir chaqiruvchi (renderChapterBox) shu mavzu ICHIDAGI o'rnini
+// (1'dan boshlab) alohida hisoblab beradi — berilmasa (masalan mavzusiz
 // tekis ro'yxatda, renderFlatSections), eskicha s.orderIndex ishlatiladi.
 // "groupBounds" — {isFirst, isLast}: shu karta o'z guruhi (guruhlangan
-// ko'rinishda — bo'lim, sahifalashdan qat'i nazar TO'LIQ bo'lim ro'yxati
+// ko'rinishda — mavzu, sahifalashdan qat'i nazar TO'LIQ mavzu ro'yxati
 // bo'yicha; berilmasa — GLOBAL, butun kurs bo'yicha) ichida birinchi/oxirgi
 // o'rindami — ⬆️/⬇️ tugmalarini shunga qarab o'chiradi (disabled). Avval
 // har doim GLOBAL (butun kurs) chegara ishlatilardi — guruhlangan
-// ko'rinishda bu chalkash edi: masalan 2-bo'limning BIRINCHI mavzusi
+// ko'rinishda bu chalkash edi: masalan 2-mavzuning BIRINCHI darsi
 // "yuqoriga" tugmasi yoqilgan ko'rinardi (global birinchi emasligi uchun),
-// lekin bosilganda 1-bo'lim bilan chegarada hech qanday KO'RINADIGAN
+// lekin bosilganda 1-mavzu bilan chegarada hech qanday KO'RINADIGAN
 // o'zgarish bermасdi (haqiqiy foydalanuvchi shikoyati).
 function renderSectionCard(s, globalIndexById, displayNumber, groupBounds) {
     const i = globalIndexById.get(s.id);
@@ -1291,33 +1292,33 @@ function renderSectionCard(s, globalIndexById, displayNumber, groupBounds) {
     // emas, oddiy matn; hover effekti ham shu tashqi kartada.
     const titleEl = `<span class="section-title-text" title="${escapeHtml(s.title)}">${escapeHtml(s.title)}</span>`;
     // Bosilganda — avval "tanlangan" deb belgilaymiz (selectCard),
-    // qulflanmagan bo'lsa keyin darhol o'sha mavzuga o'tadi (qulflangan
+    // qulflanmagan bo'lsa keyin darhol o'sha darsga o'tadi (qulflangan
     // bo'lsa faqat tanlash — klaviatura navigatsiyasi shu yerdan davom etadi).
     const cardClick = s.locked
         ? ` onclick="selectCard(${s.id})"`
         : ` onclick="selectCard(${s.id}); location.href='/courses/${COURSE_ID}/sections/${s.id}'"`;
 
-    // Shu mavzu TEST BOSHQARUVIga bog'langan bo'lsa — nechta faol savoli
-    // borligi (foydalanuvchi so'rovi bo'yicha: har bir mavzu kartochkasida
+    // Shu dars TEST BOSHQARUVIga bog'langan bo'lsa — nechta faol savoli
+    // borligi (foydalanuvchi so'rovi bo'yicha: har bir dars kartochkasida
     // ko'rinishi kerak). linkedTopicQuestionCount backend'da BULK
     // hisoblanadi (CourseService.getDetail).
     const questionCountBadge = s.linkedTopicId != null
         ? `<span class="section-question-count-badge">📝 ${s.linkedTopicQuestionCount} ta test</span>`
         : "";
 
-    // Shu mavzu haqiqiy test tizimidagi bir mavzuga bog'langan bo'lsa —
-    // ro'yxatdan turib ham, mavzuni ochmasdan, testlarni yechish tugmasi
-    // (faqat ochilgan/qulflanmagan mavzularda — qulflangan bo'lsa
-    // mavzuning o'zini ham ko'rib bo'lmaydi).
+    // Shu dars haqiqiy test tizimidagi bir Topic'ga (Dars) bog'langan bo'lsa —
+    // ro'yxatdan turib ham, darsni ochmasdan, testlarni yechish tugmasi
+    // (faqat ochilgan/qulflanmagan darslarda — qulflangan bo'lsa
+    // darsning o'zini ham ko'rib bo'lmaydi).
     const testLink = (!s.locked && s.linkedTopicId)
         ? `<button class="topic-test-btn-inline" onclick="event.stopPropagation(); location.href='/testConfigPage?scienceId=${s.linkedScienceId}&topicId=${s.linkedTopicId}&courseId=${COURSE_ID}&fromSectionId=${s.id}'">🎯 Darsga oid testlarni yechish</button>`
         : "";
 
-    // Faqat boshqaruvchilar uchun — shu mavzuga (TEST BOSHQARUVIga
+    // Faqat boshqaruvchilar uchun — shu darsga (TEST BOSHQARUVIga
     // bog'langan bo'lsa) to'g'ridan-to'g'ri kartochkadan yangi test savoli
     // qo'shish (test-form.html'ga o'tadi, ?courseId= orqali — u yerdagi
-    // "🔙 Kursga qaytish" tugmasi kursning UMUMIY (mavzular ro'yxati)
-    // sahifasiga qaytaradi, ANIQ shu mavzu ICHIGA emas). "&fromSectionId="
+    // "🔙 Kursga qaytish" tugmasi kursning UMUMIY (darslar ro'yxati)
+    // sahifasiga qaytaradi, ANIQ shu dars ICHIGA emas). "&fromSectionId="
     // — aynan shu kartochkadan ketilganini eslab qolish uchun: test-form.js
     // "🔙 Kursga qaytish"da buni "?focus=" sifatida qaytarib beradi, shunda
     // bu sahifaga qaytilganda ANIQ shu karta avtomatik ko'rsatiladi/tanlanadi.
@@ -1381,14 +1382,14 @@ function buildGlobalIndexMap() {
     return map;
 }
 
-/* ===== Bo'limsiz (standart) — bitta tekis grid + bitta umumiy sahifalash ===== */
+/* ===== Mavzusiz (standart) — bitta tekis grid + bitta umumiy sahifalash ===== */
 
 function renderFlatSections() {
     const list = document.getElementById("sectionsList");
     const pagination = document.getElementById("sectionsPagination");
 
     if (!allSections.length) {
-        list.innerHTML = `<div class="courses-empty">Hali mavzu yo'q</div>`;
+        list.innerHTML = `<div class="courses-empty">Hali dars yo'q</div>`;
         pagination.style.display = "none";
         return;
     }
@@ -1401,8 +1402,8 @@ function renderFlatSections() {
     const pageSections = allSections.slice(from, from + SECTIONS_PER_PAGE);
     const globalIndexById = buildGlobalIndexMap();
 
-    // Bo'limlarga guruhlangan ko'rinishdagi (renderChapterBox) "jami mavzu
-    // / jami testlar" bilan BIR XIL — bo'limsiz (tekis) kursda ham shu
+    // Mavzularga guruhlangan ko'rinishdagi (renderChapterBox) "jami dars
+    // / jami testlar" bilan BIR XIL — mavzusiz (tekis) kursda ham shu
     // umumiy son ko'rinishi kerak (foydalanuvchi so'rovi: "gridda ham
     // to'g'rila"). Butun KURS bo'yicha (allSections — sahifalanmagan,
     // to'liq ro'yxat), joriy sahifagagina emas.
@@ -1410,7 +1411,7 @@ function renderFlatSections() {
         (sum, s) => sum + (s.linkedTopicId != null ? (s.linkedTopicQuestionCount || 0) : 0), 0);
 
     list.innerHTML = `
-        <div class="sections-summary">(mavzu — ${allSections.length} ta, jami testlar — ${totalQuestions} ta)</div>
+        <div class="sections-summary">(dars — ${allSections.length} ta, jami testlar — ${totalQuestions} ta)</div>
         <div class="sections-grid">
         ${pageSections.map(s => renderSectionCard(s, globalIndexById)).join("")}
     </div>`;
@@ -1430,13 +1431,13 @@ function changeSectionsPage(page) {
     if (firstOnPage) selectCard(firstOnPage.id);
 }
 
-/* ===== Bo'limlar bo'yicha guruhlangan — har biri alohida "box", o'z sahifalashi bilan ===== */
+/* ===== Mavzular bo'yicha guruhlangan — har biri alohida "box", o'z sahifalashi bilan ===== */
 
-// allSections'ni Bo'lim (chapter) bo'yicha guruhlab, tartib bo'yicha
+// allSections'ni Mavzu (chapter) bo'yicha guruhlab, tartib bo'yicha
 // saralab qaytaradi. chapterKey -> {chapterId, name, orderIndex, items[]}.
-// "none" — hali hech qanday Bo'limga biriktirilmagan mavzular (bo'lsa,
-// ro'yxat OXIRIDA, "— Bo'limsiz mavzular —" nomi bilan). renderGroupedSections
-// VA Ctrl+↑/↓ (moveToAdjacentChapter — bo'limlar orasida o'tish) ikkalasi
+// "none" — hali hech qanday Mavzuga biriktirilmagan darslar (bo'lsa,
+// ro'yxat OXIRIDA, "— Mavzusiz darslar —" nomi bilan). renderGroupedSections
+// VA Ctrl+↑/↓ (moveToAdjacentChapter — mavzular orasida o'tish) ikkalasi
 // ham shundan foydalanadi.
 function getSortedChapterGroups() {
     const groups = new Map();
@@ -1462,8 +1463,8 @@ function renderGroupedSections() {
 
     const sortedGroups = getSortedChapterGroups();
     const globalIndexById = buildGlobalIndexMap();
-    // "⬆⬇" tugmalari faqat HAQIQIY Bo'limlar orasida ishlaydi — "—
-    // Bo'limsiz mavzular —" psevdo-guruhi (chapterId == null) CourseChapter
+    // "⬆⬇" tugmalari faqat HAQIQIY Mavzular orasida ishlaydi — "—
+    // Mavzusiz darslar —" psevdo-guruhi (chapterId == null) CourseChapter
     // yozuvi emas, "surib" bo'lmaydi, shu sabab hisobga olinmaydi. TO'LIQ
     // (filtrlanmagan) ro'yxatdan hisoblanadi — qidiruv faqat KO'RINISHNI
     // toraytiradi, haqiqiy tartibga ta'sir qilmaydi.
@@ -1482,16 +1483,16 @@ function renderGroupedSections() {
     list.innerHTML = visibleGroups.map(group => renderChapterBox(group, globalIndexById, realChapterGroups)).join("");
 }
 
-// "🔍 Bo'lim qidirish" — teriladigan har harfda chaqiriladi (input
+// "🔍 Mavzu qidirish" — teriladigan har harfda chaqiriladi (input
 // statik, qayta chizilmaydi — shu sabab fokus/kursor yo'qolmaydi).
-// Qidiruv FAOL bo'lganda — mos kelgan bo'limlar avtomatik OCHIQ holda
+// Qidiruv FAOL bo'lganda — mos kelgan mavzular avtomatik OCHIQ holda
 // ko'rsatiladi (renderChapterBox), qo'shimcha bosish shart emas.
 function onChapterSearchInput(value) {
     chapterSearchQuery = value;
     renderGroupedSections();
 }
 
-// Bo'lim sarlavhasiga bosilganda — shu bo'limning mavzular ro'yxati
+// Mavzu sarlavhasiga bosilganda — shu mavzuning darslar ro'yxati
 // ochiladi/yopiladi (accordion). Bir nechtasi bir vaqtda ochiq turishi
 // mumkin (faqat bittasi bilan cheklanmagan).
 function toggleChapterBox(key) {
@@ -1505,20 +1506,20 @@ function toggleChapterBox(key) {
 
 function renderChapterBox(group, globalIndexById, realChapterGroups) {
     // Endi accordion — sarlavha bosilganda ochiladi/yopiladi (toggleChapterBox).
-    // Qidiruv FAOL bo'lsa (chapterSearchQuery) — mos kelgan bo'limlar
+    // Qidiruv FAOL bo'lsa (chapterSearchQuery) — mos kelgan mavzular
     // avtomatik OCHIQ ko'rsatiladi (natijani ko'rish uchun qo'shimcha
     // bosish shart emas).
     const isExpanded = expandedChapterKeys.has(group.key) || chapterSearchQuery.trim() !== "";
 
-    // Shu Bo'limdagi BARCHA mavzularning (TEST BOSHQARUVIga bog'langanlari)
-    // testlari yig'indisi — bo'lim sarlavhasida "jami testlar" sifatida
+    // Shu Mavzudagi BARCHA darslarning (TEST BOSHQARUVIga bog'langanlari)
+    // testlari yig'indisi — mavzu sarlavhasida "jami testlar" sifatida
     // ko'rsatish uchun (foydalanuvchi so'rovi bo'yicha) — YOPIQ holatda ham
     // ko'rinadi, ochmasdan turib ham asosiy ma'lumot bilinishi uchun.
     const totalQuestions = group.items.reduce(
         (sum, s) => sum + (s.linkedTopicId != null ? (s.linkedTopicQuestionCount || 0) : 0), 0);
 
     // Kartochkalar/sahifalash — FAQAT ochiq bo'lsa hisoblanadi (yopiq
-    // bo'limlarda keraksiz DOM/CPU sarflanmasin, ayniqsa ko'p bo'limli
+    // mavzularda keraksiz DOM/CPU sarflanmasin, ayniqsa ko'p mavzuli
     // kurslarda).
     let bodyHtml = "";
     if (isExpanded) {
@@ -1539,9 +1540,9 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
             ? buildPaginationHtml(totalPages, page, (p) => `changeChapterPage('${group.key}', ${p})`)
             : "";
 
-        // Har bir Bo'lim — o'zining ALOHIDA "Saralash: A→Z / Z→A" tugmalariga
-        // ega (sortChapterSections) — faqat SHU bo'lim ichidagi mavzularni
-        // qayta tartiblaydi, boshqa bo'limlarga (yoki bo'limsiz mavzularga)
+        // Har bir Mavzu — o'zining ALOHIDA "Saralash: A→Z / Z→A" tugmalariga
+        // ega (sortChapterSections) — faqat SHU mavzu ichidagi darslarni
+        // qayta tartiblaydi, boshqa mavzularga (yoki mavzusiz darslarga)
         // hech qanday ta'sir qilmaydi.
         const sortBar = (cachedCourse && cachedCourse.canManage && group.items.length > 1)
             ? `<div class="chapter-box-sort" onclick="event.stopPropagation()">
@@ -1560,30 +1561,30 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
             </div>`;
     }
 
-    // "➕" — ANIQ shu Bo'limga mavzu qo'shish (openAddSectionForm forceChapterId
-    // bilan) — bosilganda "Bo'lim" tanlovi avtomatik shu bo'limga o'rnatiladi,
+    // "➕" — ANIQ shu Mavzuga dars qo'shish (openAddSectionForm forceChapterId
+    // bilan) — bosilganda "Mavzu" tanlovi avtomatik shu mavzuga o'rnatiladi,
     // qayta tanlash shart emas (foydalanuvchi ANIQ shuni so'ragan).
     const addTopicBtn = (cachedCourse && cachedCourse.canManage && group.chapterId != null)
         ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openAddSectionForm(${group.chapterId})" title="Shu mavzuga dars qo'shish">➕</button>`
         : "";
 
-    // "✏️" — faqat haqiqiy bo'limlarda (group.chapterId != null), "—
-    // Bo'limsiz mavzular —" psevdo-guruhida ko'rsatilmaydi (uni "qayta
+    // "✏️" — faqat haqiqiy mavzularda (group.chapterId != null), "—
+    // Mavzusiz darslar —" psevdo-guruhida ko'rsatilmaydi (uni "qayta
     // nomlash" mantiqsiz — u umuman CourseChapter yozuvi emas).
     const renameBtn = (cachedCourse && cachedCourse.canManage && group.chapterId != null)
         ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); renameChapterPrompt(${group.chapterId})" title="Mavzu nomini tahrirlash">✏️</button>`
         : "";
 
-    // "🗑️ Bo'lim + mavzular" — deleteSelectedChapter (Bo'lim tanlash
-    // select'i yonida) dan farqli, bo'sh bo'lishi shart emas: shu Bo'lim
-    // ICHIDAGI barcha kurs mavzularini (va bog'langan bo'lsa, TEST
-    // BOSHQARUVIdagi mos mavzu+savollarni ham) birga o'chiradi. Foydalanuvchi
+    // "🗑️ Mavzu + darslar" — deleteSelectedChapter (Mavzu tanlash
+    // select'i yonida) dan farqli, bo'sh bo'lishi shart emas: shu Mavzu
+    // ICHIDAGI barcha kurs darslarini (va bog'langan bo'lsa, TEST
+    // BOSHQARUVIdagi mos Topic+savollarni ham) birga o'chiradi. Foydalanuvchi
     // so'rovi bo'yicha ATAYLAB shu yerda (TEST BOSHQARUVIda EMAS).
     const deleteWithTopicsBtn = (cachedCourse && cachedCourse.canManage && group.chapterId != null)
         ? `<button class="chapter-rename-btn danger-btn" onclick="event.stopPropagation(); deleteChapterWithLinkedTopics(${group.chapterId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Mavzu va ichidagi barcha darslarni (bog'langan bo'lsa, TEST BOSHQARUVIdagi savollari bilan) butunlay o'chirish">🗑️</button>`
         : "";
 
-    // Rasmiy Word ikonkasi — faqat SHU Bo'limni Word'ga eksport qilish
+    // Rasmiy Word ikonkasi — faqat SHU Mavzuni Word'ga eksport qilish
     // (courseWordExportModal — butun kurs eksporti bilan bir xil oyna,
     // faqat ko'lami boshqacha; ikonka question.html'dagi Word eksport
     // tugmasi bilan bir xil SVG).
@@ -1591,9 +1592,9 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
         ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openCourseWordExportModal(${group.chapterId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Shu mavzuni Word (.docx) faylga eksport qilish"><svg width="14" height="14" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-2px;"><rect x="4" y="4" width="40" height="40" rx="7" fill="#185ABD"/><rect x="4" y="4" width="18" height="40" rx="7" fill="#103F91"/><text x="31" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">W</text></svg></button>`
         : "";
 
-    // "⬆⬇" — shu Bo'lim "box"ini boshqa Bo'lim bilan o'rin almashtiradi
-    // (moveChapter) — faqat haqiqiy Bo'limlarda (group.chapterId != null)
-    // va kamida 2 ta Bo'lim bo'lganda ko'rinadi. Ro'yxat cheti — tegishli
+    // "⬆⬇" — shu Mavzu "box"ini boshqa Mavzu bilan o'rin almashtiradi
+    // (moveChapter) — faqat haqiqiy Mavzularda (group.chapterId != null)
+    // va kamida 2 ta Mavzu bo'lganda ko'rinadi. Ro'yxat cheti — tegishli
     // tugma disabled.
     let moveBtns = "";
     if (cachedCourse && cachedCourse.canManage && group.chapterId != null && realChapterGroups.length > 1) {
@@ -1611,7 +1612,7 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
             <h3 class="chapter-box-title" onclick="toggleChapterBox('${group.key}')" title="${isExpanded ? "Yig'ish" : "Ochish"}">
                 <span class="chapter-box-chevron">▸</span>
                 📂 ${escapeHtml(group.name)}
-                <span class="chapter-box-count">(mavzu — ${group.items.length} ta, jami testlar — ${totalQuestions} ta)</span>
+                <span class="chapter-box-count">(dars — ${group.items.length} ta, jami testlar — ${totalQuestions} ta)</span>
                 <span class="chapter-box-actions">${moveBtns}${addTopicBtn}${exportChapterBtn}${renameBtn}${deleteWithTopicsBtn}</span>
             </h3>
             ${bodyHtml}
@@ -1619,13 +1620,13 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
     `;
 }
 
-// Faqat "chapterKey" bo'limiga (yoki "none" — bo'limsiz mavzular
-// psevdo-guruhiga) tegishli mavzularni A-Z/Z-A tartibga soladi — boshqa
-// bo'limlardagi (yoki bo'limsiz) mavzularning nisbiy tartibi BUTUNLAY
+// Faqat "chapterKey" mavzusiga (yoki "none" — mavzusiz darslar
+// psevdo-guruhiga) tegishli darslarni A-Z/Z-A tartibga soladi — boshqa
+// mavzulardagi (yoki mavzusiz) darslarning nisbiy tartibi BUTUNLAY
 // o'zgarishsiz qoladi. Backend /sections/reorder har doim TO'LIQ (butun
 // kurs bo'yicha) yangi tartibdagi id ro'yxatini kutadi (orderIndex —
-// bitta umumiy, ketma-ket raqam, Bo'lim bo'yicha alohida emas) — shu
-// sabab shu bo'limga tegishli o'rinlarga, ular TURGAN JOYLARIDA, faqat
+// bitta umumiy, ketma-ket raqam, Mavzu bo'yicha alohida emas) — shu
+// sabab shu mavzuga tegishli o'rinlarga, ular TURGAN JOYLARIDA, faqat
 // yangi (saralangan) tartibda qo'yiladi.
 function sortChapterSections(chapterKey, dir) {
     if (!cachedCourse) return;
@@ -1658,13 +1659,13 @@ function changeChapterPage(chapterKey, page) {
     if (firstOnPage) selectCard(firstOnPage.id);
 }
 
-/* ===== Mavzu kartochkalari orasida klaviatura navigatsiyasi ===== */
+/* ===== Dars kartochkalari orasida klaviatura navigatsiyasi ===== */
 
-// Tanlangan kartaning "navigatsiya guruhi" — bo'limsiz (flat) ko'rinishda
-// BUTUN kurs; guruhlangan ko'rinishda esa FAQAT shu kartaning Bo'limi
-// (yoki "— Bo'limsiz mavzular —" psevdo-guruhi). ←/→/↑/↓/Home
+// Tanlangan kartaning "navigatsiya guruhi" — mavzusiz (flat) ko'rinishda
+// BUTUN kurs; guruhlangan ko'rinishda esa FAQAT shu kartaning Mavzusi
+// (yoki "— Mavzusiz darslar —" psevdo-guruhi). ←/→/↑/↓/Home
 // navigatsiyasi ANIQ shu guruh (o'z sahifalashi) DOIRASIDA ishlaydi —
-// boshqa Bo'limdagi kartalarga "sakrab" ketmaydi.
+// boshqa Mavzudagi kartalarga "sakrab" ketmaydi.
 function getCardGroup(sectionId) {
     const section = allSections.find(s => s.id === sectionId);
     if (!section) return null;
@@ -1689,7 +1690,7 @@ function getCardGroup(sectionId) {
     };
 }
 
-// ← / → — joriy sahifadagi (yoki joriy Bo'lim qutisidagi) oldingi/keyingi
+// ← / → — joriy sahifadagi (yoki joriy Mavzu qutisidagi) oldingi/keyingi
 // kartaga o'tadi. Sahifa chegarasiga yetganda (→ bilan OXIRGI kartadan,
 // yoki ← bilan BIRINCHI kartadan) — agar keyingi/oldingi sahifa mavjud
 // bo'lsa, avtomatik o'sha sahifaga o'tadi (→ — keyingi sahifaning
@@ -1761,10 +1762,10 @@ function moveCardToLast(sectionId) {
     if (lastCard) selectCard(lastCard.id, { scroll: true });
 }
 
-// Ctrl+↑ / Ctrl+↓ — BO'LIMLAR (chapter box'lar) orasida o'tadi — oddiy
-// ↑/↓ (bitta sahifa) dan farqli, butun Bo'limni almashtiradi. Bo'limsiz
-// (flat) ko'rinishda hech narsa qilmaydi — Bo'lim tushunchasi umuman yo'q.
-// Yangi Bo'limning 1-sahifasidagi BIRINCHI kartasi tanlanadi.
+// Ctrl+↑ / Ctrl+↓ — MAVZULAR (chapter box'lar) orasida o'tadi — oddiy
+// ↑/↓ (bitta sahifa) dan farqli, butun Mavzuni almashtiradi. Mavzusiz
+// (flat) ko'rinishda hech narsa qilmaydi — Mavzu tushunchasi umuman yo'q.
+// Yangi Mavzuning 1-sahifasidagi BIRINCHI kartasi tanlanadi.
 function moveToAdjacentChapter(sectionId, dir) {
     const hasAnyChapter = allSections.some(s => s.chapterId != null);
     if (!hasAnyChapter) return;
@@ -1837,16 +1838,16 @@ function onCardKeyDown(event, sectionId) {
 
 // Kartani "tanlangan" deb belgilaydi — vizual ajratib ko'rsatish
 // (".selected" klassi) + klaviatura fokusi (keyingi Strelka/Home
-// tugmalari shu kartadan davom etishi uchun). "scroll" — sahifa/Bo'lim
+// tugmalari shu kartadan davom etishi uchun). "scroll" — sahifa/Mavzu
 // almashganda yangi kartani ekranga ko'rinadigan joyga olib kelish uchun.
 function selectCard(sectionId, { scroll = false } = {}) {
     selectedSectionId = sectionId;
 
-    // Karta hozir YOPIQ (collapsed) Bo'lim ichida bo'lishi mumkin — endi
-    // bo'limlar accordion, shu sabab DOM'da bo'lmasligi mumkin. Shu
-    // bo'limni ochib, qayta chizib, keyin yana qidiramiz — bu bitta joyda
+    // Karta hozir YOPIQ (collapsed) Mavzu ichida bo'lishi mumkin — endi
+    // mavzular accordion, shu sabab DOM'da bo'lmasligi mumkin. Shu
+    // mavzuni ochib, qayta chizib, keyin yana qidiramiz — bu bitta joyda
     // qilingani uchun (fokus qaytariladigan BARCHA joylar: "?focus=",
-    // tahrirlab saqlagandan keyin, Ctrl+↑/↓ bo'lim navigatsiyasi va h.k.)
+    // tahrirlab saqlagandan keyin, Ctrl+↑/↓ mavzu navigatsiyasi va h.k.)
     // ularning har birini alohida o'zgartirish shart emas.
     let el = document.querySelector(`.section-item[data-section-id="${sectionId}"]`);
     if (!el) {
@@ -1989,27 +1990,27 @@ function renderPaginationInto(container, totalPages, currentPage, onClickFor) {
     container.style.display = "flex";
 }
 
-/* ===== Mavzuni Bo'limga biriktirish — TANLOV (select), erkin matn emas =====
+/* ===== Darsni Mavzuga biriktirish — TANLOV (select), erkin matn emas =====
    Erkin matn (avvalgi versiya) yozuvdagi eng kichik farqda ham (bo'sh joy,
-   katta-kichik harf, imlo xatosi) yangi DUBLIKAT bo'lim yaratib yuborardi,
-   va bitta bo'limni "qayta nomlash" uchun unga tegishli HAR BIR mavzuni
+   katta-kichik harf, imlo xatosi) yangi DUBLIKAT mavzu yaratib yuborardi,
+   va bitta mavzuni "qayta nomlash" uchun unga tegishli HAR BIR darsni
    birma-bir tahrirlab, qo'lda bir xil yangi nomni terish kerak bo'lardi.
-   Endi: mavjud bo'limlar ANIQ id bo'yicha tanlanadi (CourseSectionSaveDto.
-   chapterId); faqat "➕ Yangi bo'lim yaratish..." tanlanganda nom kiritiladi
+   Endi: mavjud mavzular ANIQ id bo'yicha tanlanadi (CourseSectionSaveDto.
+   chapterId); faqat "➕ Yangi mavzu yaratish..." tanlanganda nom kiritiladi
    (newChapterName) — va nomni o'zgartirish alohida renameChapterPrompt()
    orqali, BITTA umumiy CourseChapter yozuvini o'zgartiradi (barcha unga
-   biriktirilgan mavzularda darhol, avtomatik aks etadi). */
+   biriktirilgan darslarda darhol, avtomatik aks etadi). */
 
 const NEW_CHAPTER_OPTION = "__new__";
 
 // selectId — "newSectionChapterSelect" | "editSectionChapterSelect".
-// selectedChapterId — oldindan tanlangan bo'lim id'si (tahrirlashda), yoki null.
-// mode — "new" | "edit" — tanlangan Fan (Science)ni topish uchun (shu
-// Fanda TEST BOSHQARUVIda ALLAQACHON mavjud Bo'limlarni ham ro'yxatga
-// qo'shish uchun, pastga qarang). Berilmasa (yoki Fan hali tanlanmagan/
-// yangi bo'lsa) — faqat shu KURSNING o'z Bo'limlari ko'rsatiladi
+// selectedChapterId — oldindan tanlangan mavzu id'si (tahrirlashda), yoki null.
+// mode — "new" | "edit" — tanlangan Bo'lim (Science)ni topish uchun (shu
+// Bo'limda TEST BOSHQARUVIda ALLAQACHON mavjud Mavzularni ham ro'yxatga
+// qo'shish uchun, pastga qarang). Berilmasa (yoki Bo'lim hali tanlanmagan/
+// yangi bo'lsa) — faqat shu KURSNING o'z Mavzulari ko'rsatiladi
 // (avvalgi xulq-atvor).
-// chapterId -> shu bo'limda nechta mavzu borligi — deleteSelectedChapter()
+// chapterId -> shu mavzuda nechta dars borligi — deleteSelectedChapter()
 // va onChapterSelectChange() "🗑️" tugmasini ko'rsatish/yashirish uchun
 // shu yerdan o'qiydi (har safar populateChapterSelect chaqirilganda
 // yangilanadi).
@@ -2019,11 +2020,11 @@ async function populateChapterSelect(selectId, selectedChapterId, mode) {
     const select = document.getElementById(selectId);
     if (!select) return;
 
-    // 1) Shu KURSNING BARCHA Bo'limlari (CourseChapter) — hozircha BO'SH
-    //    (hech qanday mavzuga biriktirilmaganlari) ham shu jumladan
-    //    (backend'dan, sectionCount bilan birga — bo'sh bo'limni
+    // 1) Shu KURSNING BARCHA Mavzulari (CourseChapter) — hozircha BO'SH
+    //    (hech qanday darsga biriktirilmaganlari) ham shu jumladan
+    //    (backend'dan, sectionCount bilan birga — bo'sh mavzuni
     //    o'chirish imkoniyati uchun). "id:<id>" bilan tanlanadi,
-    //    saqlashda ANIQ shu bo'lim ishlatiladi (chapterId).
+    //    saqlashda ANIQ shu mavzu ishlatiladi (chapterId).
     let courseChapters = [];
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/chapters`);
@@ -2034,8 +2035,8 @@ async function populateChapterSelect(selectId, selectedChapterId, mode) {
     chapterCountsById = {};
     courseChapters.forEach(c => { chapterCountsById[c.id] = c.sectionCount; });
 
-    // 2) TEST BOSHQARUVIDA (tanlangan Fan bo'yicha) ALLAQACHON mavjud
-    //    Bo'limlar — kursning o'z Bo'limlari ro'yxatida hali bo'lmagan
+    // 2) TEST BOSHQARUVIDA (tanlangan Bo'lim bo'yicha) ALLAQACHON mavjud
+    //    Mavzular — kursning o'z Mavzulari ro'yxatida hali bo'lmagan
     //    (nom bo'yicha, katta-kichik harfga sezgir emas) nomlar UNIKAL
     //    holda qo'shib qo'yiladi. "name:<nom>" bilan tanlanadi, saqlashda
     //    newChapterName sifatida yuboriladi (backend resolveChapter — shu
@@ -2059,7 +2060,7 @@ async function populateChapterSelect(selectId, selectedChapterId, mode) {
         }
     }
 
-    const options = ['<option value="">— Bo\'limsiz —</option>'];
+    const options = ['<option value="">— Mavzusiz —</option>'];
     for (const c of courseChapters) {
         const emptyMark = c.sectionCount === 0 ? " (bo'sh)" : "";
         options.push(`<option value="id:${c.id}">${escapeHtml(c.name)}${emptyMark}</option>`);
@@ -2075,10 +2076,10 @@ async function populateChapterSelect(selectId, selectedChapterId, mode) {
     if (mode) onChapterSelectChange(mode);
 }
 
-// Tanlangan (yoki "Boshqa"da qo'lda yozilgan) Fan nomini cachedSciences
+// Tanlangan (yoki "Boshqa"da qo'lda yozilgan) Bo'lim nomini cachedSciences
 // ro'yxatidan id'siga o'giradi — hali mavjud bo'lmagan (yangi kiritilgan)
-// Fan uchun albatta null qaytadi (test boshqaruvida hali hech qanday
-// Bo'lim bo'lishi ham mumkin emas, shuning uchun bu to'g'ri xulq-atvor).
+// Bo'lim uchun albatta null qaytadi (test boshqaruvida hali hech qanday
+// Mavzu bo'lishi ham mumkin emas, shuning uchun bu to'g'ri xulq-atvor).
 function getSelectedScienceId(mode) {
     const name = getSelectedScienceName(mode);
     if (!name) return null;
@@ -2086,9 +2087,9 @@ function getSelectedScienceId(mode) {
     return match ? match.id : null;
 }
 
-// "➕ Yangi bo'lim yaratish..." tanlansa — yangi nom kiritish maydoni
-// ochiladi; "🗑️" esa faqat hozir tanlangan Bo'lim kursning O'Z Bo'limi
-// ("id:" bilan) VA hech qanday mavzuga biriktirilmagan (bo'sh) bo'lsa
+// "➕ Yangi mavzu yaratish..." tanlansa — yangi nom kiritish maydoni
+// ochiladi; "🗑️" esa faqat hozir tanlangan Mavzu kursning O'Z Mavzusi
+// ("id:" bilan) VA hech qanday darsga biriktirilmagan (bo'sh) bo'lsa
 // ko'rinadi (chapterCountsById — populateChapterSelect'da to'ldiriladi).
 function onChapterSelectChange(mode) {
     const select = document.getElementById(mode + "SectionChapterSelect");
@@ -2111,9 +2112,9 @@ function onChapterSelectChange(mode) {
     }
 }
 
-// "🗑️" tugmasi — faqat BO'SH (hech qanday mavzuga biriktirilmagan)
-// Bo'limni o'chiradi (backend ham xuddi shu tekshiruvni qaytaradi,
-// himoya sifatida). Bo'lim tanlash ro'yxatini qayta yuklaydi.
+// "🗑️" tugmasi — faqat BO'SH (hech qanday darsga biriktirilmagan)
+// Mavzuni o'chiradi (backend ham xuddi shu tekshiruvni qaytaradi,
+// himoya sifatida). Mavzu tanlash ro'yxatini qayta yuklaydi.
 async function deleteSelectedChapter(mode) {
     const deleteBtn = document.getElementById(mode + "SectionChapterDeleteBtn");
     const chapterId = deleteBtn.dataset.chapterId;
@@ -2135,9 +2136,9 @@ async function deleteSelectedChapter(mode) {
     }
 }
 
-// "🗑️ Bo'shlarni tozalash" — shu KURSDA hech qanday mavzuga
-// biriktirilmagan BARCHA Bo'limlarni bir yo'la o'chiradi (topic-sections
-// sahifasidagi "Bo'sh bo'limlarni o'chirish" bilan bir xil g'oya, faqat
+// "🗑️ Bo'shlarni tozalash" — shu KURSDA hech qanday darsga
+// biriktirilmagan BARCHA Mavzularni bir yo'la o'chiradi (topic-sections
+// sahifasidagi "Bo'sh mavzularni o'chirish" bilan bir xil g'oya, faqat
 // bu yerda CourseChapter uchun). Ochiq turgan har ikkala forma
 // (yangi/tahrirlash) select'i ham qayta yuklanadi.
 async function deleteEmptyChapters() {
@@ -2171,8 +2172,8 @@ async function deleteEmptyChapters() {
 
 // submitAddSection/submitEditSection payload'iga to'g'ridan-to'g'ri
 // qo'shiladigan {chapterId, newChapterName} juftligi — select qiymati
-// "id:<id>" (kursning o'z Bo'limi) yoki "name:<nom>" (TEST BOSHQARUVIdan
-// olingan, hali kursga biriktirilmagan Bo'lim nomi) bo'lishi mumkin.
+// "id:<id>" (kursning o'z Mavzusi) yoki "name:<nom>" (TEST BOSHQARUVIdan
+// olingan, hali kursga biriktirilmagan Mavzu nomi) bo'lishi mumkin.
 function getChapterPayload(mode) {
     const select = document.getElementById(mode + "SectionChapterSelect");
     const value = select.value;
@@ -2193,9 +2194,9 @@ function getChapterPayload(mode) {
     return { chapterId: null, newChapterName: null };
 }
 
-// "✏️" — bo'lim (chapter-box) sarlavhasidagi tahrirlash tugmasi. Nom BITTA
+// "✏️" — mavzu (chapter-box) sarlavhasidagi tahrirlash tugmasi. Nom BITTA
 // umumiy CourseChapter yozuvida saqlanadi — shu yerda o'zgartirilishi bilan
-// unga biriktirilgan BARCHA mavzularda avtomatik yangilanadi.
+// unga biriktirilgan BARCHA darslarda avtomatik yangilanadi.
 function renameChapterPrompt(chapterId) {
     const current = allSections.find(s => s.chapterId === chapterId);
     const newName = prompt("Mavzu nomini kiriting:", current ? current.chapterName : "");
@@ -2229,11 +2230,11 @@ async function renameChapter(chapterId, newName) {
     }
 }
 
-// "➕ Bo'lim qo'shish" ("Kursni boshqarish" paneli) — bo'sh (mavzusiz)
-// Bo'limni to'g'ridan-to'g'ri yaratadi (createChapter). Yaratilgandan
-// keyin — shu Bo'lim darhol OCHIQ holatda ko'rsatiladi (hozircha bo'sh
-// bo'lsa ham — foydalanuvchi darhol "➕ Mavzu qo'shish" ikonkasi orqali
-// ichiga mavzu qo'sha boshlashi mumkin).
+// "➕ Mavzu qo'shish" ("Kursni boshqarish" paneli) — bo'sh (darssiz)
+// Mavzuni to'g'ridan-to'g'ri yaratadi (createChapter). Yaratilgandan
+// keyin — shu Mavzu darhol OCHIQ holatda ko'rsatiladi (hozircha bo'sh
+// bo'lsa ham — foydalanuvchi darhol "➕" ikonkasi orqali
+// ichiga dars qo'sha boshlashi mumkin).
 function createChapterPrompt() {
     const name = prompt("Yangi mavzu nomini kiriting:");
     if (name === null) return; // bekor qilindi
@@ -2260,11 +2261,11 @@ async function createChapter(name) {
             return;
         }
 
-        // Bo'lim hozircha BO'SH — hech qanday mavzuga ega emas, shu sabab
+        // Mavzu hozircha BO'SH — hech qanday darsga ega emas, shu sabab
         // asosiy ro'yxatda ("box" sifatida) ko'rinmaydi (guruhlar FAQAT
-        // mavjud mavzulardan hisoblanadi). Shu sabab foydalanuvchini
-        // darhol ANIQ shu bo'limga mavzu qo'shish formasiga yo'naltiramiz
-        // — "bo'lim yaratildimi?" degan noaniqlik qolmaydi.
+        // mavjud darslardan hisoblanadi). Shu sabab foydalanuvchini
+        // darhol ANIQ shu mavzuga dars qo'shish formasiga yo'naltiramiz
+        // — "mavzu yaratildimi?" degan noaniqlik qolmaydi.
         await loadCourse();
         openAddSectionForm(data.id);
     } catch (err) {
@@ -2273,12 +2274,12 @@ async function createChapter(name) {
     }
 }
 
-// "🗑️ Bo'lim + mavzular" (chapter-box sarlavhasidagi ✏️ yonida) —
+// "🗑️ Mavzu + darslar" (chapter-box sarlavhasidagi ✏️ yonida) —
 // deleteSelectedChapter'dan farqli, bo'sh bo'lishi shart emas: shu
-// Bo'lim ICHIDAGI barcha kurs mavzularini (CourseSection) soft-delete
-// qiladi ("🗑️ O'chirilgan mavzular" panelidan "♻️ Tiklash" bilan
+// Mavzu ICHIDAGI barcha kurs darslarini (CourseSection) soft-delete
+// qiladi ("🗑️ O'chirilgan darslar" panelidan "♻️ Tiklash" bilan
 // qaytariladi). TEST BOSHQARUVIdagi Topic/Question'ga HECH QACHON
-// tegilmaydi — bog'langan mavzu bo'lsa ham, faqat bog'lanishning o'zi
+// tegilmaydi — bog'langan Topic bo'lsa ham, faqat bog'lanishning o'zi
 // (avtomatik) uziladi, savollar o'z joyida, butun holda qolaveradi.
 async function deleteChapterWithLinkedTopics(chapterId, chapterName) {
     if (!confirm(`"${chapterName}" mavzusini ICHIDAGI barcha darslari bilan o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — "🗑️ O'chirilgan darslar" panelidan qaytarish mumkin. TEST BOSHQARUVIdagi savollarga tegilmaydi.)`)) {
@@ -2299,7 +2300,7 @@ async function deleteChapterWithLinkedTopics(chapterId, chapterName) {
     }
 }
 
-// "⬆⬇" — Bo'lim "box"ini qo'shni HAQIQIY Bo'lim bilan (bo'limsiz mavzular
+// "⬆⬇" — Mavzu "box"ini qo'shni HAQIQIY Mavzu bilan (mavzusiz darslar
 // psevdo-guruhi bilan EMAS) o'rin almashtiradi, so'ng yangi tartibni
 // serverga saqlaydi (/api/courses/{id}/chapters/reorder — topic.js#
 // persistOrder/TopicService#reorderTopics bilan bir xil andoza: backend
@@ -2332,7 +2333,7 @@ async function moveChapter(chapterId, direction) {
 }
 
 // "🔄 Mavzu nomlarini TEST BOSHQARUVI bilan sinxronlash" — kurs Mavzusi
-// (CourseChapter) nomi bilan TEST BOSHQARUVIdagi Bo'lim (TopicSection)
+// (CourseChapter) nomi bilan TEST BOSHQARUVIdagi Mavzu (TopicSection)
 // nomi odatda avtomatik sinxron turadi (dars saqlanganda), lekin vaqt
 // o'tishi bilan farq (drift) paydo bo'lib qolishi mumkin — shu tugma
 // BARCHA darslarni joriy Mavzu holatiga qarab qayta to'g'rilaydi (kurs —
@@ -2346,7 +2347,7 @@ async function syncChapterTopics() {
             return;
         }
         alert(data.updated > 0
-            ? `✅ ${data.updated} ta darsning Bo'limi TEST BOSHQARUVIDA to'g'rilandi.`
+            ? `✅ ${data.updated} ta darsning Mavzusi TEST BOSHQARUVIDA to'g'rilandi.`
             : "✅ Hammasi allaqachon sinxron edi — o'zgarish kerak bo'lmadi.");
         loadCourse();
     } catch (err) {
@@ -2357,19 +2358,19 @@ async function syncChapterTopics() {
 
 // ========================================================================
 //     "📝 Kursni Word'ga eksport qilish" — butun kursni BITTA .docx
-//     faylga: kurs mavzulari, testlar va (eng oxirida, alohida bo'lim)
+//     faylga: kurs darslari, testlar va (eng oxirida, alohida bo'lim)
 //     javoblar — har biri mustaqil checkbox orqali (default — barchasi
 //     yoqilgan).
 // ========================================================================
 
 // Bitta modal — BUTUN kurs ("📝 Kursni Word'ga eksport qilish" tugmasi) va
-// ALOHIDA bo'lim ("📝" — renderChapterBox) ikkalasi ham shu modaldan
+// ALOHIDA mavzu ("📝" — renderChapterBox) ikkalasi ham shu modaldan
 // foydalanadi. Qaysi ko'lamda ekanini shu 2 ta o'zgaruvchi eslab qoladi
 // (confirmCourseWordExport shu bo'yicha to'g'ri URL yasaydi).
 let wordExportChapterId = null;
 let wordExportChapterName = "";
-// "📝" — bitta ANIQ mavzuni (CourseSection) eksport qilish uchun — chapter
-// bilan bir xilda, lekin mustaqil (ikkalasi bir vaqtda tanlangan bo'lmaydi).
+// "📝" — bitta ANIQ darsni (CourseSection) eksport qilish uchun — mavzu
+// (chapter) bilan bir xilda, lekin mustaqil (ikkalasi bir vaqtda tanlangan bo'lmaydi).
 let wordExportSectionId = null;
 let wordExportSectionName = "";
 
@@ -2380,18 +2381,18 @@ function openCourseWordExportModal(chapterId, chapterName) {
     wordExportSectionName = "";
 
     showWordExportModal(wordExportChapterId != null
-        ? `📝 "${wordExportChapterName}" bo'limini Word'ga eksport qilish`
+        ? `📝 "${wordExportChapterName}" mavzusini Word'ga eksport qilish`
         : "📝 Kursni Word'ga eksport qilish");
 }
 
-// Bitta mavzu kartochkasidagi "📝" ikonkasidan — renderSectionCard.
+// Bitta dars kartochkasidagi "📝" ikonkasidan — renderSectionCard.
 function openSectionWordExportModal(sectionId, sectionName) {
     wordExportSectionId = sectionId;
     wordExportSectionName = sectionName || "";
     wordExportChapterId = null;
     wordExportChapterName = "";
 
-    showWordExportModal(`📝 "${wordExportSectionName}" mavzusini Word'ga eksport qilish`);
+    showWordExportModal(`📝 "${wordExportSectionName}" darsini Word'ga eksport qilish`);
 }
 
 function showWordExportModal(title) {
@@ -2441,13 +2442,13 @@ function confirmCourseWordExport() {
 }
 
 // ========================================================================
-//     "🔗 Havolalarni tekshirish" — savol izohlaridagi mavzu havolalari
+//     "🔗 Havolalarni tekshirish" — savol izohlaridagi dars havolalari
 // ========================================================================
 // Har bir savolning to'g'ri javob izohida "🔗 Darsga havola qo'shish"
 // orqali qo'shilgan havola bo'lishi mumkin — bu FAQAT KO'RISH uchun
 // tekshiruv: o'sha havola O'ZINING darsiga to'g'ri bog'langanmi
 // (CourseService.auditTopicLinks). Hech narsa avtomatik o'zgartirilmaydi
-// — faqat ➖ (havola yo'q) uchun bulk-qo'shish, ⚠️ (boshqa mavzuga
+// — faqat ➖ (havola yo'q) uchun bulk-qo'shish, ⚠️ (boshqa darsga
 // bog'langan) uchun har biriga alohida "✅ To'g'irlash" tugmasi beriladi.
 let topicLinkAuditOpen = false;
 
@@ -2475,8 +2476,8 @@ async function loadTopicLinkAudit() {
             return;
         }
 
-        // Muammosi bor mavzular ALOHIDA-ALOHIDA (batafsil) ko'rsatiladi,
-        // hammasi to'g'ri bo'lgan mavzular esa (ko'pchilik holatda —
+        // Muammosi bor darslar ALOHIDA-ALOHIDA (batafsil) ko'rsatiladi,
+        // hammasi to'g'ri bo'lgan darslar esa (ko'pchilik holatda —
         // asosiy qism) BITTA qisqa izoh qatoriga yig'iladi — foydalanuvchi
         // so'rovi bo'yicha: o'nlab-yuzlab "hammasi joyida" qatorni birma-bir
         // ko'rsatish shart emas, faqat muammoli joylar ko'zga tashlansin.
@@ -2485,7 +2486,7 @@ async function loadTopicLinkAudit() {
 
         const okSummary = okTopics.length > 0
             ? `<div class="topic-link-audit-ok-summary">
-                   ✅ ${okTopics.length} ta mavzuda hammasi joyida (jami ${okTopics.reduce((s, t) => s + t.okCount, 0)} ta savol to'g'ri bog'langan)
+                   ✅ ${okTopics.length} ta darsda hammasi joyida (jami ${okTopics.reduce((s, t) => s + t.okCount, 0)} ta savol to'g'ri bog'langan)
                </div>`
             : "";
 
@@ -2494,9 +2495,9 @@ async function loadTopicLinkAudit() {
             return;
         }
 
-        // Katta kurslarda o'nlab mavzuda yuzlab havola (xato yoki umuman
-        // yo'q) bir yo'la topilishi mumkin (haqiqiy holat: 290 ta mavzuli
-        // kursda o'nlab yangi mavzuda havola umuman yo'q edi, birma-bir
+        // Katta kurslarda o'nlab darsda yuzlab havola (xato yoki umuman
+        // yo'q) bir yo'la topilishi mumkin (haqiqiy holat: 290 ta darsli
+        // kursda o'nlab yangi darsda havola umuman yo'q edi, birma-bir
         // "➕ Havola qo'shish"ni bosib chiqish amaliy emas) — har birini
         // alohida bosish o'rniga, BUTUN kurs bo'yicha bittada tugmalar.
         const totalWrong = topics.reduce((sum, t) => sum + t.wrongItems.length, 0);
@@ -2551,7 +2552,7 @@ async function loadTopicLinkAudit() {
     }
 }
 
-// topicId berilsa — FAQAT shu mavzudagi (mavzu qatoridagi tugma),
+// topicId berilsa — FAQAT shu darsdagi (dars qatoridagi tugma),
 // berilmasa — BUTUN kursdagi barcha havolasiz savollarga (yuqoridagi
 // "➕ Butun kursda BARCHASIGA havola qo'shish" tugmasi).
 async function addMissingTopicLinks(topicId) {
@@ -2589,7 +2590,7 @@ async function fixWrongTopicLink(questionId) {
     }
 }
 
-// "✅ Barchasini to'g'irlash" (bitta mavzu) — shu mavzudagi barcha XATO
+// "✅ Barchasini to'g'irlash" (bitta dars) — shu darsdagi barcha XATO
 // havolali savollarni bitta so'rovda to'g'irlaydi.
 async function fixAllWrongTopicLinks(topicId) {
     try {
@@ -2628,7 +2629,7 @@ async function fixAllWrongTopicLinksInCourse() {
     }
 }
 
-// "🧹 Takroriy havolalarni tozalash" — bitta savolda bir nechta mavzu
+// "🧹 Takroriy havolalarni tozalash" — bitta savolda bir nechta dars
 // havola belgisi qolib ketgan bo'lsa (auditTopicLinks buni ko'rsatmaydi —
 // faqat BIRINCHI havolani tekshiradi), hammasini bittaga tushiradi.
 async function dedupeTopicLinks() {
@@ -2656,15 +2657,15 @@ function escapeHtml(text) {
 }
 
 // ========================================================================
-//     Kurs ichidan mavzu yoritmasi bo'yicha qidiruv
+//     Kurs ichidan dars yoritmasi bo'yicha qidiruv
 // ========================================================================
-// Shu kursdagi (allSections'da linkedTopicId'i bor) mavzular qaysi
-// kurs(lar)ga bog'langan bo'lsa (odatda faqat shu kurs, lekin bitta mavzu
+// Shu kursdagi (allSections'da linkedTopicId'i bor) darslar qaysi
+// kurs(lar)ga bog'langan bo'lsa (odatda faqat shu kurs, lekin bitta dars
 // boshqa kursga ham bog'langan bo'lsa — o'sha ham), o'sha kurs(lar)ning
-// BARCHA mavzuga bog'langan bo'limlaridagi matn darsi ("mavzu yoritmasi" —
+// BARCHA darsga bog'langan darslaridagi matn ("dars yoritmasi" —
 // CourseSection.textContent) ichidan qidiradi (backend: CourseService.
 // searchTopicExplanations). Topilgan natijaga bosilsa — o'sha kurs
-// bo'limining o'ziga o'tadi.
+// darsining o'ziga o'tadi.
 let explanationSearchTimeout = null;
 
 document.getElementById("explanationSearchInput")?.addEventListener("input", (e) => {
@@ -2710,7 +2711,7 @@ async function runExplanationSearch(query) {
 // o'qib, bosilgan natijaning BUTUN ro'yxati + qidirilgan so'zni
 // sessionStorage'ga saqlaydi (courseSectionView.js#setupSearchNav
 // "Oldingi/Keyingi natija" tugmalarini, courseSectionView.js#
-// highlightSearchQuery esa mavzu matni ichida shu so'zni topib fonini
+// highlightSearchQuery esa dars matni ichida shu so'zni topib fonini
 // o'zgartirishni shundan oladi).
 let lastExplanationSearchResults = [];
 let lastExplanationSearchQuery = "";
@@ -2736,7 +2737,7 @@ function renderExplanationSearchResults(results) {
 // Natijaga bosilganda — BUTUN natijalar ro'yxati + joriy index + qidirilgan
 // so'z + qaysi sahifadan qidirilgani sessionStorage'ga saqlanadi
 // (courseSectionView.js shundan o'qib, "Oldingi/Keyingi natija"/
-// "Natijalarga qaytish" tugmalarini ko'rsatadi VA mavzu matni ichida shu
+// "Natijalarga qaytish" tugmalarini ko'rsatadi VA dars matni ichida shu
 // so'zni topib fonini o'zgartiradi — qidiruvni qayta berishga hojat qolmaydi).
 function goToExplanationResult(index) {
     const target = lastExplanationSearchResults[index];
@@ -2946,7 +2947,7 @@ function toggleManagePanel() {
     localStorage.setItem(MANAGE_PANEL_COLLAPSED_KEY, collapsed ? "1" : "0");
 }
 
-// "✏️ Tahrirlash" tugmasi HAR BIR mavzu kartasida (panel TASHQARISIDA)
+// "✏️ Tahrirlash" tugmasi HAR BIR dars kartasida (panel TASHQARISIDA)
 // turadi, lekin tahrirlash formasi (editSectionForm) panel ICHIDA. Panel
 // yig'ilgan bo'lsa (standart holat), forma "display:flex" qilinsa ham
 // yig'ilgan ota-element (.manage-panel-body{display:none}) uni baribir
@@ -2960,22 +2961,22 @@ function expandManagePanel() {
     }
 }
 
-// Ketma-ket bir nechta mavzu qo'shilganda — odatda HAMMASI bir xil
-// Fan+Bo'limga bog'lanadi (masalan bitta imtihon bo'limining barcha
-// savollarini kiritish) — shu sabab har safar Fan/Bo'lim/bog'lash
+// Ketma-ket bir nechta dars qo'shilganda — odatda HAMMASI bir xil
+// Bo'lim+Mavzuga bog'lanadi (masalan bitta imtihon mavzusining barcha
+// savollarini kiritish) — shu sabab har safar Bo'lim/Mavzu/bog'lash
 // checkbox'ini qaytadan qo'lda tanlash noqulay (foydalanuvchi shikoyati).
-// Oxirgi MUVAFFAQIYATLI qo'shilgan mavzuning tanlovi shu yerda eslab
-// qolinadi (submitAddSection) va KEYINGI "➕ Mavzu qo'shish" formasi
+// Oxirgi MUVAFFAQIYATLI qo'shilgan darsning tanlovi shu yerda eslab
+// qolinadi (submitAddSection) va KEYINGI "➕ Dars qo'shish" formasi
 // ochilganda standart sifatida qo'llaniladi (openAddSectionForm).
 // Sahifa yangilanguncha amal qiladi (sessiya davomida, backendga
 // saqlanmaydi — shunchaki qo'l qisqartirish).
 let lastLinkTopicChoice = null; // {scienceName, chapterName} | null
 
-// "forceChapterId" — bitta ANIQ Bo'limning "➕" (kartochka sarlavhasidagi)
-// ikonkasidan ochilganda beriladi: Bo'lim tanlash avtomatik ANIQ shu
-// bo'limga o'rnatiladi (Fan/bog'lash checkbox esa hamon lastLinkTopicChoice
+// "forceChapterId" — bitta ANIQ Mavzuning "➕" (kartochka sarlavhasidagi)
+// ikonkasidan ochilganda beriladi: Mavzu tanlash avtomatik ANIQ shu
+// mavzuga o'rnatiladi (Bo'lim/bog'lash checkbox esa hamon lastLinkTopicChoice
 // bo'yicha — bular mustaqil narsalar). Argumentsiz chaqirilsa (tepadagi
-// umumiy "➕ Mavzu qo'shish" tugmasi) — avvalgidek.
+// umumiy "➕ Dars qo'shish" tugmasi) — avvalgidek.
 async function openAddSectionForm(forceChapterId) {
     document.getElementById("newSectionTextEditor").innerHTML = "";
     document.getElementById("newSectionTopicName").value = "";
@@ -2983,8 +2984,8 @@ async function openAddSectionForm(forceChapterId) {
     attachImageResizeHandlers("newSectionTextEditor");
 
     if (lastLinkTopicChoice) {
-        // Oxirgi marta tanlangan Fan+Bo'lim+bog'lash holati standart
-        // qilib qo'yiladi — foydalanuvchi ketma-ket mavzu qo'shsa, har
+        // Oxirgi marta tanlangan Bo'lim+Mavzu+bog'lash holati standart
+        // qilib qo'yiladi — foydalanuvchi ketma-ket dars qo'shsa, har
         // safar qaytadan tanlashi shart emas.
         applyScienceSelection("new", lastLinkTopicChoice.scienceName || (cachedCourse ? cachedCourse.title : ""));
         document.getElementById("newSectionLinkTopic").checked = true;
@@ -2992,8 +2993,8 @@ async function openAddSectionForm(forceChapterId) {
         await populateChapterSelect("newSectionChapterSelect", null, "new");
         selectChapterOptionByName("newSectionChapterSelect", lastLinkTopicChoice.chapterName);
     } else {
-        // Default — shu kursning o'zi nomi (odatda kurs mavzusi = fan
-        // nomi) — checkbox belgilansa shu tayyor turadi, lekin checkbox
+        // Default — shu kursning o'zi nomi (odatda kurs nomi bo'lim
+        // nomi bilan bir xil bo'ladi) — checkbox belgilansa shu tayyor turadi, lekin checkbox
         // o'zi boshlanishda O'CHIRILGAN (bog'lash ixtiyoriy, avtomatik emas).
         applyScienceSelection("new", cachedCourse ? cachedCourse.title : "");
         document.getElementById("newSectionLinkTopic").checked = false;
@@ -3002,10 +3003,10 @@ async function openAddSectionForm(forceChapterId) {
     }
 
     if (forceChapterId != null) {
-        // "id:<id>" — populateChapterSelect'da HAR BIR kurs Bo'limi
-        // (bo'sh bo'lganlari ham) shu formatda ro'yxatda bor, Fan
+        // "id:<id>" — populateChapterSelect'da HAR BIR kurs Mavzusi
+        // (bo'sh bo'lganlari ham) shu formatda ro'yxatda bor, Bo'lim
         // tanlovidan qat'i nazar (courseChapters — kurs bo'yicha,
-        // Fan'ga bog'liq emas).
+        // Bo'limga bog'liq emas).
         document.getElementById("newSectionChapterSelect").value = `id:${forceChapterId}`;
     }
 
@@ -3013,11 +3014,11 @@ async function openAddSectionForm(forceChapterId) {
     document.getElementById("addSectionForm").classList.add("show");
 }
 
-// Bo'lim select'i nomi bo'yicha tanlanadi ("id:"/"name:" qiymatlaridan
+// Mavzu select'i nomi bo'yicha tanlanadi ("id:"/"name:" qiymatlaridan
 // qat'i nazar — populateChapterSelect har safar qaytadan to'ldirilgani
 // uchun eski xom qiymat endi noto'g'ri bo'lishi mumkin, shu sabab NOM
-// orqali qidiriladi). Ro'yxatda topilmasa (masalan bo'lim orada
-// o'chirilgan bo'lsa) — "➕ Yangi bo'lim yaratish..." orqali xuddi shu
+// orqali qidiriladi). Ro'yxatda topilmasa (masalan mavzu orada
+// o'chirilgan bo'lsa) — "➕ Yangi mavzu yaratish..." orqali xuddi shu
 // nom bilan xavfsiz qayta tiklanadi.
 function selectChapterOptionByName(selectId, name) {
     if (!name) return;
@@ -3037,7 +3038,7 @@ function selectChapterOptionByName(selectId, name) {
     if (newInput) newInput.value = name;
 }
 
-// Hozir formada tanlangan Bo'limning NOMINI qaytaradi (id/name qiymatidan
+// Hozir formada tanlangan Mavzuning NOMINI qaytaradi (id/name qiymatidan
 // qat'i nazar) — lastLinkTopicChoice'ga saqlash uchun (submitAddSection).
 function currentChapterSelectionName(mode) {
     const select = document.getElementById(mode + "SectionChapterSelect");
@@ -3178,7 +3179,7 @@ async function submitAddSection() {
             return;
         }
 
-        // Keyingi "➕ Mavzu qo'shish" uchun standart sifatida eslab qolinadi
+        // Keyingi "➕ Dars qo'shish" uchun standart sifatida eslab qolinadi
         // (openAddSectionForm) — pastdagi tozalashdan OLDIN, hali forma
         // qiymatlari qo'lda o'chirilmagan holatda.
         lastLinkTopicChoice = linkTopic
@@ -3208,7 +3209,7 @@ async function submitAddSection() {
 }
 
 // "O'chirilganlar savati"ga o'tkazadi (soft-delete) — darhol butunlay
-// o'chmaydi, "🗑️ O'chirilgan mavzular" panelidan ("♻️ Tiklash") bir
+// o'chmaydi, "🗑️ O'chirilgan darslar" panelidan ("♻️ Tiklash") bir
 // zumda qaytariladi (CourseService.deleteSection).
 async function deleteSection(sectionId) {
     if (!confirm("Darsni o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — \"🗑️ O'chirilgan darslar\" panelidan qaytarish mumkin.)")) return;
@@ -3227,7 +3228,7 @@ async function deleteSection(sectionId) {
     }
 }
 
-// "🗑️ O'chirilgan mavzular" paneli — soft-delete qilingan CourseSection'lar
+// "🗑️ O'chirilgan darslar" paneli — soft-delete qilingan CourseSection'lar
 // ro'yxati (bir zumda "♻️ Tiklash" qilinadigan). Panel yopiq holatda
 // boshlanadi, bosilganda ochilib ro'yxatni yuklaydi.
 let sectionTrashOpen = false;
@@ -3296,7 +3297,7 @@ async function restoreSection(sectionId) {
 }
 
 async function permanentlyDeleteSection(sectionId, title) {
-    if (!confirm(`⚠️ "${title}" mavzusini BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`)) return;
+    if (!confirm(`⚠️ "${title}" darsini BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`)) return;
     if (!confirm("Haqiqatan ham ishonchingiz komilmi?")) return;
 
     try {
@@ -3313,7 +3314,7 @@ async function permanentlyDeleteSection(sectionId, title) {
     }
 }
 
-/* ===== OWNER/ADMIN: bo'limni tahrirlash ===== */
+/* ===== OWNER/ADMIN: darsni tahrirlash ===== */
 
 let editingSectionId = null;
 
@@ -3334,7 +3335,7 @@ async function openEditSectionForm(sectionId) {
         document.getElementById("editIncludeText").checked = hasText;
         document.getElementById("editIncludeVideo").checked = hasVideo;
 
-        // Eski PLAIN (qo'lda yozilgan, hali WYSIWYG'gacha) bo'limlar xom
+        // Eski PLAIN (qo'lda yozilgan, hali WYSIWYG'gacha) darslar xom
         // matn sifatida saqlangan — tahrirlash oynasida to'g'ri ko'rinishi
         // uchun xavfsiz escape qilib, qatorlarni <br>'ga aylantiramiz.
         // Saqlashda esa hammasi HTML formatga o'tadi (orqaga qaytish shart
@@ -3356,15 +3357,15 @@ async function openEditSectionForm(sectionId) {
             onEditVideoSourceChange(true); // keepValue — yuqorida qo'yilgan mavjud URL/ID'ni tozalamaslik uchun
         }
 
-        // Fan — allaqachon bog'langan bo'lsa o'sha, aks holda kurs nomi
-        // default sifatida tanlanadi. Mavzu nomi — bog'langan bo'lsa o'sha
-        // (endi "qo'lda kiritilgan" deb hisoblanadi, bo'lim nomi keyinroq
-        // o'zgarsa ham qayta yozilmaydi); aks holda bo'lim nomining o'zi
-        // (bo'lim nomi o'zgarsa, bu ham birga yangilanaveradi).
+        // Bo'lim — allaqachon bog'langan bo'lsa o'sha, aks holda kurs nomi
+        // default sifatida tanlanadi. Dars nomi — bog'langan bo'lsa o'sha
+        // (endi "qo'lda kiritilgan" deb hisoblanadi, dars nomi keyinroq
+        // o'zgarsa ham qayta yozilmaydi); aks holda dars nomining o'zi
+        // (dars nomi o'zgarsa, bu ham birga yangilanaveradi).
         applyScienceSelection("edit", section.linkedScienceName || (cachedCourse ? cachedCourse.title : ""));
         editTopicNameManuallyEdited = !!section.linkedTopicName;
         document.getElementById("editSectionTopicName").value = section.linkedTopicName || section.title || "";
-        // Checkbox — bo'lim ALLAQACHON biror mavzuga bog'langan bo'lsagina
+        // Checkbox — dars ALLAQACHON biror Topic'ga (Dars) bog'langan bo'lsagina
         // boshlanishda belgilangan holda ochiladi; aks holda o'chirilgan
         // (bog'lash hamon ixtiyoriy bo'lib qoladi).
         document.getElementById("editSectionLinkTopic").checked = !!section.linkedTopicName;
@@ -3399,7 +3400,7 @@ function onEditContentToggle(changedCheckbox) {
     document.getElementById("editVideoFields").style.display = includeVideo.checked ? "block" : "none";
 }
 
-// keepValue=true faqat bo'lim yuklanganda (openEditSectionForm) ishlatiladi
+// keepValue=true faqat dars yuklanganda (openEditSectionForm) ishlatiladi
 // — o'sha payt editSectionVideoUrl'ga ALLAQACHON mavjud video URL/ID
 // qo'yilgan bo'ladi, uni yo'qotmaslik kerak. Foydalanuvchi dropdown'ni
 // O'ZI o'zgartirganda (onchange) esa keepValue berilmaydi — o'sha holatda
@@ -3520,7 +3521,7 @@ async function submitEditSection() {
         // qo'yiladi — shu sabab qayta chizishdan (loadCourse) keyin, AYNAN
         // shu kartaga fokus qaytarish uchun oldindan saqlab olinadi
         // (haqiqiy foydalanuvchi shikoyati: tahrirlab saqlagandan keyin
-        // fokus o'sha mavzuga kelmayotgan edi).
+        // fokus o'sha darsga kelmayotgan edi).
         const savedSectionId = editingSectionId;
         closeEditSectionForm();
         await loadCourse();
@@ -3532,7 +3533,7 @@ async function submitEditSection() {
     }
 }
 
-/* ===== OWNER/ADMIN: bo'limlarni saralash ===== */
+/* ===== OWNER/ADMIN: darslarni saralash ===== */
 
 async function reorderTo(sectionIds) {
     try {
@@ -3571,7 +3572,7 @@ function moveSectionDown(sectionId) {
     reorderTo(ids);
 }
 
-// dir: "AZ" | "ZA" — bo'lim nomlari bo'yicha to'liq qayta saralash.
+// dir: "AZ" | "ZA" — dars nomlari bo'yicha to'liq qayta saralash.
 function sortSections(dir) {
     if (!cachedCourse) return;
     const sorted = [...cachedCourse.sections].sort((a, b) =>

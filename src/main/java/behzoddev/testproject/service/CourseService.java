@@ -49,13 +49,13 @@ import java.util.stream.Collectors;
 /**
  * JavaRush uslubidagi online kurslar — OWNER yaratadi/tahrirlaydi, ADMIN/USER
  * obuna orqali kirish huquqini sotib oladi (CourseSubscription, faqat OWNER
- * qo'lda tasdiqlaydi). Mavzular (CourseSection) o'z BO'LIMI (CourceChapter)
- * ICHIDA ketma-ket ochiladi: har bir Bo'limning 1-mavzusi obunadan keyin
- * darhol ochiq, keyingilari — o'sha BO'LIM ICHIDAGI oldingisi "tugatilgach"
- * (CourseSectionProgress). Bo'limlar bir-biridan MUSTAQIL — bitta Bo'limni
- * oxirigacha tugatmaslik boshqa Bo'limlarning 1-mavzusini bloklamaydi
- * (foydalanuvchi so'rovi bo'yicha, 2026-09-03; "Bo'limsiz" — chapter=null —
- * mavzular ham o'zaro bitta mustaqil guruh hisoblanadi).
+ * qo'lda tasdiqlaydi). Darslar (CourseSection) o'z MAVZUSI (CourceChapter)
+ * ICHIDA ketma-ket ochiladi: har bir Mavzuning 1-darsi obunadan keyin
+ * darhol ochiq, keyingilari — o'sha MAVZU ICHIDAGI oldingisi "tugatilgach"
+ * (CourseSectionProgress). Mavzular bir-biridan MUSTAQIL — bitta Mavzuni
+ * oxirigacha tugatmaslik boshqa Mavzularning 1-darsini bloklamaydi
+ * (foydalanuvchi so'rovi bo'yicha, 2026-09-03; "Mavzusiz" — chapter=null —
+ * darslar ham o'zaro bitta mustaqil guruh hisoblanadi).
  */
 @Service
 @RequiredArgsConstructor
@@ -72,7 +72,7 @@ public class CourseService {
     private final TopicSectionRepository topicSectionRepository;
     private final QuestionRepository questionRepository;
 
-    // "🔗 Mavzuga havola qo'shish" (topicLinkButton.js#buildTopicLinkHtml)
+    // "🔗 Darsga havola qo'shish" (topicLinkButton.js#buildTopicLinkHtml)
     // tomonidan izohga qo'shilgan havolani topish uchun — "/courses/
     // {courseId}/sections/{sectionId}" ko'rinishidagi href'ni qidiradi
     // (boshqa (masalan tashqi) havolalarga tegmaydi). "(?:https?://[^/\"]+)?"
@@ -84,7 +84,7 @@ public class CourseService {
     private static final Pattern TOPIC_LINK_HREF_PATTERN =
             Pattern.compile("href=\"(?:https?://[^/\"]+)?/courses/(\\d+)/sections/(\\d+)\"");
 
-    // Izohdagi eski/noto'g'ri mavzu havolasi belgisini (badge) olib
+    // Izohdagi eski/noto'g'ri dars havolasi belgisini (badge) olib
     // tashlash uchun. MUHIM (haqiqiy topilgan bug, 2026-08-31): avval
     // "<span[^>]*>\s*<a" edi — \s* FAQAT bo'sh joyni tutadi, lekin
     // haqiqiy belgida <span> bilan <a> orasida "📖 " (emoji + bo'sh joy)
@@ -123,7 +123,7 @@ public class CourseService {
     public CourseDetailDto getDetail(Long courseId, User currentUser) {
         Course course = getCourseOrThrow(courseId);
         // ADMIN o'zi yaratgan kursni OWNER kabi to'liq boshqara olishi kerak —
-        // qoralama (unpublished) holatida ham ko'rishi, bo'lim qulflarisiz
+        // qoralama (unpublished) holatida ham ko'rishi, dars qulflarisiz
         // ko'rishi va tahrirlashi mumkin bo'lishi uchun.
         boolean canManage = canManageCourse(course, currentUser);
 
@@ -137,7 +137,7 @@ public class CourseService {
 
         List<CourseSection> sections = courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(courseId);
 
-        // Har bir bog'langan mavzuning nechta faol savoli borligi — BULK
+        // Har bir bog'langan darsning nechta faol savoli borligi — BULK
         // (bitta so'rov, N+1 EMAS) hisoblanadi, kartochkada "N ta test"
         // belgisi uchun (foydalanuvchi so'rovi bo'yicha).
         List<Long> linkedTopicIds = sections.stream()
@@ -151,9 +151,9 @@ public class CourseService {
                 : questionRepository.countByTopicIdsGrouped(linkedTopicIds).stream()
                         .collect(Collectors.toMap(TopicQuestionCountDto::topicId, TopicQuestionCountDto::count));
 
-        // Har bir mavzu uchun, O'ZINING BO'LIMI (chapter) ICHIDAGI undan
-        // oldingi eng yaqin mavzuni bitta marta (N+1 so'rovsiz) hisoblab
-        // qo'yamiz — Bo'limlar bir-biridan mustaqil ochilishi shu orqali
+        // Har bir dars uchun, O'ZINING MAVZUSI (chapter) ICHIDAGI undan
+        // oldingi eng yaqin darsni bitta marta (N+1 so'rovsiz) hisoblab
+        // qo'yamiz — Mavzular bir-biridan mustaqil ochilishi shu orqali
         // ta'minlanadi (computePreviousInChapterMap izohiga qarang).
         Map<Long, CourseSection> previousInChapterBySectionId = computePreviousInChapterMap(sections);
 
@@ -203,8 +203,8 @@ public class CourseService {
         boolean canManage = canManageCourse(course, currentUser);
 
         // Bitta so'rov bilan olingan ro'yxatdan hisoblangan xarita — SHU
-        // mavzuning o'ziga kirish huquqini TEKSHIRISH uchun HAM, pastdagi
-        // "Keyingi mavzu" tugmasi holatini (nextUnlocked) TO'G'RI (Bo'lim
+        // darsning o'ziga kirish huquqini TEKSHIRISH uchun HAM, pastdagi
+        // "Keyingi dars" tugmasi holatini (nextUnlocked) TO'G'RI (Mavzu
         // chegarasidan mustaqil) hisoblash uchun HAM qayta ishlatiladi.
         List<CourseSection> ordered = courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(courseId);
         Map<Long, CourseSection> previousInChapterBySectionId = computePreviousInChapterMap(ordered);
@@ -224,8 +224,8 @@ public class CourseService {
                 .findByCourse_IdAndOrderIndex(courseId, section.getOrderIndex() + 1)
                 .orElse(null);
 
-        // "Keyingi mavzu" tugmasi — agar keyingisi BOSHQA (mustaqil)
-        // Bo'limning 1-mavzusi bo'lsa, u SHU mavzu tugatilishini kutmasdan
+        // "Keyingi dars" tugmasi — agar keyingisi BOSHQA (mustaqil)
+        // Mavzuning 1-darsi bo'lsa, u SHU dars tugatilishini kutmasdan
         // ham allaqachon ochiq bo'lishi mumkin (masalan sahifa birinchi
         // marta ochilganda, video hali ko'rilmagan holatda ham).
         boolean nextUnlocked = next != null && (canManage || isSectionUnlockedGivenPrev(
@@ -259,7 +259,7 @@ public class CourseService {
                 .build();
     }
 
-    // TEXT bo'lim ochilganda, yoki VIDEO bo'lim oxirigacha ko'rilganda chaqiriladi.
+    // TEXT dars ochilganda, yoki VIDEO dars oxirigacha ko'rilganda chaqiriladi.
     @Transactional
     public void markSectionCompleted(Long courseId, Long sectionId, User currentUser) {
         Course course = getCourseOrThrow(courseId);
@@ -285,16 +285,16 @@ public class CourseService {
     // hammaga to'liq ochiq, shuning uchun bunday kursda foydalanuvchi har
     // doim "obunasi bor"dek hisoblanadi (haqiqiy CourseSubscription
     // yozuvisiz ham). Shu bitta joydagi o'zgarish butun ilova bo'ylab
-    // (bo'lim qulflari, obuna banneri, katalog belgisi, bot) to'g'ri ishlaydi.
+    // (dars qulflari, obuna banneri, katalog belgisi, bot) to'g'ri ishlaydi.
     private boolean isSubscribed(User user, Course course) {
         return course.isFree() || courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
                 user.getId(), course.getId(), CourseSubscriptionStatus.CONFIRMED, LocalDateTime.now());
     }
 
-    // Bitta mavzu uchun (getSectionContent/markSectionCompleted — loop
+    // Bitta dars uchun (getSectionContent/markSectionCompleted — loop
     // ICHIDA emas, bitta so'rov uchun bemalol) — kursning BUTUN tartiblangan
-    // ro'yxatini olib, shu mavzuning o'z BO'LIMI ICHIDAGI oldingisini topadi.
-    // Ko'p mavzuni BIRGALIKDA hisoblash kerak bo'lganda (getDetail) buning
+    // ro'yxatini olib, shu darsning o'z MAVZUSI ICHIDAGI oldingisini topadi.
+    // Ko'p darsni BIRGALIKDA hisoblash kerak bo'lganda (getDetail) buning
     // o'rniga computePreviousInChapterMap() + isSectionUnlockedGivenPrev()
     // ishlatiladi (N+1 so'rovning oldini olish uchun).
     private boolean isSectionUnlocked(User user, CourseSection section, boolean subscribed) {
@@ -306,19 +306,19 @@ public class CourseService {
 
     private boolean isSectionUnlockedGivenPrev(User user, CourseSection prevInChapter, boolean subscribed) {
         if (!subscribed) return false;
-        if (prevInChapter == null) return true; // shu Bo'lim (yoki "bo'limsizlar" guruhi) ICHIDAGI birinchi mavzu
+        if (prevInChapter == null) return true; // shu Mavzu (yoki "mavzusizlar" guruhi) ICHIDAGI birinchi dars
 
         return courseSectionProgressRepository.existsByUser_IdAndSection_Id(user.getId(), prevInChapter.getId());
     }
 
-    // Kurs ichidagi (orderIndex bo'yicha saralangan) mavzular ro'yxatida,
-    // har bir mavzuni O'ZINING BO'LIMI (chapter) bilan guruhlab, shu
-    // BO'LIM ICHIDAGI eng yaqin OLDINGI mavzusini topib beradi (birinchisi
+    // Kurs ichidagi (orderIndex bo'yicha saralangan) darslar ro'yxatida,
+    // har bir darsni O'ZINING MAVZUSI (chapter) bilan guruhlab, shu
+    // MAVZU ICHIDAGI eng yaqin OLDINGI darsni topib beradi (birinchisi
     // uchun xarita'da yozuv umuman bo'lmaydi — "oldingisi yo'q" degani).
-    // Bo'limlar bir-biridan MUSTAQIL: masalan II Bo'limning 3-mavzusi
-    // uchun oldingi — II Bo'limning 2-mavzusi, I Bo'limning oxirgi mavzusi
-    // EMAS (garchi orderIndex bo'yicha undan oldin kelsa ham). "Bo'limsiz"
-    // (chapter=null) mavzular ham o'zaro bitta mustaqil guruh hisoblanadi.
+    // Mavzular bir-biridan MUSTAQIL: masalan II Mavzuning 3-darsi
+    // uchun oldingi — II Mavzuning 2-darsi, I Mavzuning oxirgi darsi
+    // EMAS (garchi orderIndex bo'yicha undan oldin kelsa ham). "Mavzusiz"
+    // (chapter=null) darslar ham o'zaro bitta mustaqil guruh hisoblanadi.
     private Map<Long, CourseSection> computePreviousInChapterMap(List<CourseSection> orderedSections) {
         Map<Long, CourseSection> lastSeenByChapterId = new LinkedHashMap<>();
         Map<Long, CourseSection> previousBySectionId = new LinkedHashMap<>();
@@ -394,7 +394,7 @@ public class CourseService {
     }
 
     // Kursni "O'chirilganlar savati"ga o'tkazish (soft-delete) — DARHOL
-    // butunlay o'chirilmaydi. Bo'limlar, mavzular, obunalar, progress
+    // butunlay o'chirilmaydi. Mavzular, darslar, obunalar, progress
     // yozuvlari HAM tegilmay saqlanadi — "O'chirilganlar" sahifasidan
     // (restoreCourse) bir tugma bilan hammasi bilan birga qaytadan
     // tiklanishi mumkin. Haqiqatan butunlay (qaytarib bo'lmaydigan)
@@ -420,7 +420,7 @@ public class CourseService {
     }
 
     // "♻️ Tiklash" — kursni "O'chirilganlar savati"dan qaytaradi, u bilan
-    // birga saqlanib qolgan bo'lim/mavzu/obuna/progress ma'lumotlari ham
+    // birga saqlanib qolgan mavzu/dars/obuna/progress ma'lumotlari ham
     // avtomatik yana ko'rinadigan bo'ladi (ular hech qachon o'chirilmagan
     // edi).
     @Transactional
@@ -440,8 +440,8 @@ public class CourseService {
     // turgan kursga nisbatan (ikki bosqichli himoya — tasodifan bosib
     // yubormaslik uchun).
     //
-    // ROLE_OWNER uchun — bu amal QAYTARIB BO'LMAYDI: bo'limlar, obunalar
-    // va bo'lim-progress yozuvlari FK RESTRICT bilan bog'langani uchun
+    // ROLE_OWNER uchun — bu amal QAYTARIB BO'LMAYDI: mavzular, darslar, obunalar
+    // va dars-progress yozuvlari FK RESTRICT bilan bog'langani uchun
     // (courses.sql'da ON DELETE CASCADE yo'q), avval ULARNI, keyin
     // kursning o'zini o'chiramiz.
     //
@@ -548,8 +548,8 @@ public class CourseService {
                 .orElse(1);
 
         CourseSection section = buildSectionFromDto(dto, course, nextOrder);
-        // Avval Bo'lim (chapter) hal qilinadi — keyin mavzu bog'lanishida
-        // (resolveLinkedTopic) shu Bo'lim nomidan TEST BOSHQARUVI tomonida
+        // Avval Mavzu (chapter) hal qilinadi — keyin dars bog'lanishida
+        // (resolveLinkedTopic) shu Mavzu nomidan TEST BOSHQARUVI tomonida
         // ham mos TopicSection avtomatik yaratish/topish uchun foydalaniladi.
         CourseChapter chapter = resolveChapter(course, dto.chapterId(), dto.newChapterName());
         section.setChapter(chapter);
@@ -585,10 +585,10 @@ public class CourseService {
         section.setVideoSourceType(dto.videoSourceType() != null ? VideoSourceType.valueOf(dto.videoSourceType()) : null);
         section.setVideoUrl(dto.videoUrl());
         section.setVideoDurationSeconds(dto.videoDurationSeconds());
-        // Bo'lim tanlansa/o'zgartirilsa — mavzu darhol o'sha bo'limga
+        // Mavzu tanlansa/o'zgartirilsa — dars darhol o'sha mavzuga
         // "o'tib qoladi" (foydalanuvchi so'rovi bo'yicha); bo'sh
-        // qoldirilsa — "Bo'limsiz"ga qaytadi (unlink). Avval hal qilinadi —
-        // keyin mavzu bog'lanishida (resolveLinkedTopic) shu Bo'lim
+        // qoldirilsa — "Mavzusiz"ga qaytadi (unlink). Avval hal qilinadi —
+        // keyin dars bog'lanishida (resolveLinkedTopic) shu Mavzu
         // nomidan TEST BOSHQARUVI tomonida ham mos TopicSection
         // yaratish/topish uchun foydalaniladi.
         CourseChapter chapter = resolveChapter(section.getCourse(), dto.chapterId(), dto.newChapterName());
@@ -598,7 +598,7 @@ public class CourseService {
         courseSectionRepository.save(section);
     }
 
-    // Mavzuni (kurs darsi) "O'chirilganlar savati"ga o'tkazish (soft-delete)
+    // Darsni "O'chirilganlar savati"ga o'tkazish (soft-delete)
     // — DARHOL butunlay o'chirilmaydi, progress yozuvlari HAM tegilmay
     // saqlanadi (Course.deletedAt bilan bir xil g'oya) — "♻️ Tiklash" bilan
     // bir zumda qaytadi.
@@ -618,12 +618,12 @@ public class CourseService {
         return courseSectionRepository.findDeletedByCourse_Id(courseId);
     }
 
-    // "Kurs ichidan mavzu yoritmasi bo'yicha qidiruv" (topics.html va
-    // courseDetail.js'da umumiy) — 1) berilgan mavzular (topicIds — joriy
-    // sahifadagi/kursdagi mavzular) qaysi kurs(lar)ga bog'langanini
-    // topadi; 2) shu kurs(lar)ning BARCHA (bo'lim/chapter farqisiz) mavzuga
-    // bog'langan bo'limlari orasidan matn darsi (textContent — "mavzu
-    // yoritmasi") ichida qidiruv so'zi bor bo'limlarni qaytaradi. Bir
+    // "Kurs ichidan dars yoritmasi bo'yicha qidiruv" (topics.html va
+    // courseDetail.js'da umumiy) — 1) berilgan darslar (topicIds — joriy
+    // sahifadagi/kursdagi darslar) qaysi kurs(lar)ga bog'langanini
+    // topadi; 2) shu kurs(lar)ning BARCHA (mavzu/chapter farqisiz) darsga
+    // bog'langan darslari orasidan matn darsi (textContent — "dars
+    // yoritmasi") ichida qidiruv so'zi bor darslarni qaytaradi. Bir
     // nechta kursga bog'langan bo'lsa — BARCHA o'sha kurslar qidiriladi.
     @Transactional(readOnly = true)
     public List<TopicExplanationSearchResultDto> searchTopicExplanations(List<Long> topicIds, String query) {
@@ -637,7 +637,7 @@ public class CourseService {
         return courseSectionRepository.searchLinkedExplanations(courseIds, query.trim());
     }
 
-    // "♻️ Tiklash" — mavzuni savatdan qaytaradi, progress yozuvlari
+    // "♻️ Tiklash" — darsni savatdan qaytaradi, progress yozuvlari
     // avtomatik yana ko'rinadigan bo'ladi (ular hech qachon o'chirilmagan edi).
     @Transactional
     public void restoreSection(Long courseId, Long sectionId, User currentUser) {
@@ -651,9 +651,9 @@ public class CourseService {
         courseSectionRepository.save(section);
     }
 
-    // "🗑️ Butunlay o'chirish" — FAQAT allaqachon savatda turgan mavzuga
+    // "🗑️ Butunlay o'chirish" — FAQAT allaqachon savatda turgan darsga
     // nisbatan. QAYTARIB BO'LMAYDI: progress yozuvlari FK RESTRICT
-    // bo'lgani uchun avval ular, keyin mavzuning o'zi o'chiriladi.
+    // bo'lgani uchun avval ular, keyin darsning o'zi o'chiriladi.
     @Transactional
     public void permanentlyDeleteSection(Long courseId, Long sectionId, User currentUser) {
         Course course = getCourseOrThrow(courseId);
@@ -693,21 +693,21 @@ public class CourseService {
         courseSectionRepository.saveAll(sections);
     }
 
-    // ADMIN/OWNER bo'lim qo'shayotganda/tahrirlayotganda fan+mavzu nomini
+    // ADMIN/OWNER dars qo'shayotganda/tahrirlayotganda bo'lim+dars nomini
     // kiritsa — TEST BOSHQARUVI'da ular hali mavjud bo'lmasa avtomatik
     // yaratiladi (alohida TEST BOSHQARUVI sahifasiga o'tib, mos ID qidirib
     // yurishga hojat qolmaydi). Ikkalasi ham bo'sh bo'lsa — bog'lanish
     // olib tashlanadi (unlink).
     //
-    // "chapter" — shu kurs mavzusi qaysi Bo'limga (CourseChapter) tegishli
-    // bo'lsa, TEST BOSHQARUVI tomonida ham xuddi shu nomli Bo'lim (TopicSection)
-    // avtomatik topiladi/yaratiladi VA mavzuga biriktiriladi — bu YANGI
-    // yaratilayotgan mavzu uchun ham, ALLAQACHON mavjud (kurs bilan
-    // avvaldan bog'langan) mavzu uchun ham qo'llanadi. Kurs — HAR DOIM
-    // "haqiqiy manba": kursda Bo'lim o'zgartirilsa ("1-BOB"->"2-BOB"),
-    // TEST BOSHQARUVIdagi mavzuning bo'limi ham shu bilan birga o'zgaradi;
-    // kursda mavzu "Bo'limsiz mavzular"ga o'tkazilsa (chapter == null),
-    // TEST BOSHQARUVIdagi mavzu ham "Bo'limsiz"ga qaytariladi — ikki
+    // "chapter" — shu kurs darsi qaysi Mavzuga (CourseChapter) tegishli
+    // bo'lsa, TEST BOSHQARUVI tomonida ham xuddi shu nomli Mavzu (TopicSection)
+    // avtomatik topiladi/yaratiladi VA darsga biriktiriladi — bu YANGI
+    // yaratilayotgan dars uchun ham, ALLAQACHON mavjud (kurs bilan
+    // avvaldan bog'langan) dars uchun ham qo'llanadi. Kurs — HAR DOIM
+    // "haqiqiy manba": kursda Mavzu o'zgartirilsa ("1-BOB"->"2-BOB"),
+    // TEST BOSHQARUVIdagi darsning mavzusi ham shu bilan birga o'zgaradi;
+    // kursda dars "Mavzusiz darslar"ga o'tkazilsa (chapter == null),
+    // TEST BOSHQARUVIdagi dars ham "Mavzusiz"ga qaytariladi — ikki
     // tomon HAR DOIM to'liq mos kelishi kerak (foydalanuvchi so'rovi
     // bo'yicha: "kursdagi holatga qarab TEST BOSHQARUVI to'g'rilansin").
     private Topic resolveLinkedTopic(String scienceName, String topicName, CourseChapter chapter) {
@@ -735,7 +735,7 @@ public class CourseService {
         return topicRepository.save(topic);
     }
 
-    // "chapter.getName()" bilan bir xil nomli TopicSection shu FANDA mavjud
+    // "chapter.getName()" bilan bir xil nomli TopicSection shu BO'LIMDA mavjud
     // bo'lsa o'shanga, bo'lmasa yangisi (oxiriga qo'shilib) yaratiladi —
     // TopicSectionService'dagi bilan bir xil find-or-create qoidasi
     // (nom katta-kichik harfga sezgir emas).
@@ -746,7 +746,7 @@ public class CourseService {
     // CourseChapter nomi o'zgartirilsa (renameChapter()) — o'sha metod
     // shu nom orqali yaratilgan TopicSection'larni ham TOPIB, ularning
     // nomini AVTOMATIK yangilaydi (syncTopicSectionNamesForChapter()) —
-    // ikkala tomon (kurs Bo'limi VA test boshqaruvidagi Bo'lim) sinxron
+    // ikkala tomon (kurs Mavzusi VA test boshqaruvidagi Mavzu) sinxron
     // qolishi uchun. Shu ikkita metod bir-biriga bog'liq — birini
     // o'zgartirsangiz, ikkinchisini ham ko'rib chiqing.
     private TopicSection resolveTopicSection(Science science, String sectionName) {
@@ -761,16 +761,16 @@ public class CourseService {
                 });
     }
 
-    // "chapterId" berilgan bo'lsa — ANIQ shu (mavjud) bo'lim ishlatiladi
+    // "chapterId" berilgan bo'lsa — ANIQ shu (mavjud) mavzu ishlatiladi
     // (frontend'da endi erkin matn emas, tanlov/select — shuning uchun
-    // yozuvdagi kichik farq tufayli tasodifan yangi dublikat bo'lim
+    // yozuvdagi kichik farq tufayli tasodifan yangi dublikat mavzu
     // yaratilib ketish muammosi endi yo'q). Aks holda "newChapterName"
-    // berilsa (foydalanuvchi "➕ Yangi bo'lim" variantini tanlagan) — shu
-    // KURSDA shu nomli bo'lim mavjud bo'lmasa avtomatik yaratiladi (oxiriga
+    // berilsa (foydalanuvchi "➕ Yangi mavzu" variantini tanlagan) — shu
+    // KURSDA shu nomli mavzu mavjud bo'lmasa avtomatik yaratiladi (oxiriga
     // qo'shiladi), mavjud bo'lsa (nom katta-kichik harfga sezgir emas)
     // o'shanga biriktiriladi — bu ikkinchi tekshiruv shunchaki xavfsizlik
     // to'ri, asosiy yo'l endi "chapterId" orqali. Ikkalasi ham bo'lmasa —
-    // "Bo'limsiz" (unlink).
+    // "Mavzusiz" (unlink).
     private CourseChapter resolveChapter(Course course, Long chapterId, String newChapterName) {
         if (chapterId != null) {
             return courseChapterRepository.findById(chapterId)
@@ -797,10 +797,10 @@ public class CourseService {
                 });
     }
 
-    // Bo'lim nomini o'zgartirish — CourseChapter BITTA umumiy yozuv bo'lgani
-    // (har bir mavzuda alohida saqlangan matn emas) uchun, shu yerda bir
-    // marta o'zgartirilishi bilan unga biriktirilgan BARCHA mavzularda ham
-    // (chapter_id FK orqali) darhol avtomatik yangilanadi — mavzularni
+    // Mavzu nomini o'zgartirish — CourseChapter BITTA umumiy yozuv bo'lgani
+    // (har bir darsda alohida saqlangan matn emas) uchun, shu yerda bir
+    // marta o'zgartirilishi bilan unga biriktirilgan BARCHA darslarda ham
+    // (chapter_id FK orqali) darhol avtomatik yangilanadi — darslarni
     // birma-bir tahrirlab chiqish shart emas.
     @Transactional
     public void renameChapter(Long courseId, Long chapterId, String newName, User currentUser) {
@@ -820,26 +820,26 @@ public class CourseService {
         chapter.setName(trimmedNewName);
         courseChapterRepository.save(chapter);
 
-        // MUHIM BOG'LANISH: resolveTopicSection() shu Bo'lim nomi bilan
-        // TEST BOSHQARUVI tomonida (Fan ichida) xuddi shu nomli TopicSection
-        // avtomatik yaratgan bo'lishi mumkin (kurs mavzusi Fan/Mavzuga
+        // MUHIM BOG'LANISH: resolveTopicSection() shu Mavzu nomi bilan
+        // TEST BOSHQARUVI tomonida (Bo'lim ichida) xuddi shu nomli TopicSection
+        // avtomatik yaratgan bo'lishi mumkin (kurs darsi Bo'lim/Mavzuga
         // bog'langanda). Bu ikkovi orasida to'g'ridan-to'g'ri FK yo'q —
         // bog'lanish faqat NOM orqali (bir tomonlama, yaratilish paytida).
-        // Shu sabab, Bo'lim shu yerda qayta nomlansa, TopicSection tomonda
+        // Shu sabab, Mavzu shu yerda qayta nomlansa, TopicSection tomonda
         // ESKI nom bilan "yetim" qolib ketmasligi uchun — pastdagi
         // sinxronlash BIR YO'NALISHDA (kurs -> test boshqaruvi) shu yerda
-        // avtomatik amalga oshiriladi. Aksincha (test boshqaruvida Bo'lim
+        // avtomatik amalga oshiriladi. Aksincha (test boshqaruvida Mavzu
         // nomini o'zgartirish kursga qaytib ta'sir qilishi) — ATAYLAB
         // qilinmagan, chunki bitta TopicSection bir nechta har xil kursning
-        // Bo'limlariga mos kelib qolishi mumkin (umumiy, kursga bog'liq
+        // Mavzulariga mos kelib qolishi mumkin (umumiy, kursga bog'liq
         // bo'lmagan tushuncha).
         syncTopicSectionNamesForChapter(chapterId, oldName, trimmedNewName);
     }
 
-    // "⬆⬇" — Bo'lim "box"larini kurs sahifasida yuqoriga/pastga surish
+    // "⬆⬇" — Mavzu "box"larini kurs sahifasida yuqoriga/pastga surish
     // (courseDetail.js). TopicService.reorderTopics bilan bir xil andoza —
     // frontend BUTUN (yangi tartibdagi) chapter id ro'yxatini yuboradi,
-    // shu yerda ID to'plami kursning haqiqiy Bo'limlariga mos kelishi
+    // shu yerda ID to'plami kursning haqiqiy Mavzulariga mos kelishi
     // tekshiriladi, so'ng orderIndex 1'dan boshlab qayta yoziladi.
     @Transactional
     public void reorderChapters(Long courseId, List<Long> orderedChapterIds, User currentUser) {
@@ -871,8 +871,8 @@ public class CourseService {
 
         List<CourseSection> linkedSections = courseSectionRepository.findByChapter_IdAndLinkedTopicIsNotNull(chapterId);
 
-        // Bir nechta kurs mavzusi xuddi shu TopicSection'ga ishora qilishi
-        // mumkin (masalan bir nechta mavzu bitta Fan ichida) — har birini
+        // Bir nechta kurs darsi xuddi shu TopicSection'ga ishora qilishi
+        // mumkin (masalan bir nechta dars bitta Bo'lim ichida) — har birini
         // FAQAT BIR MARTA qayta nomlash uchun.
         Set<Long> processedSectionIds = new HashSet<>();
 
@@ -882,17 +882,17 @@ public class CourseService {
             if (section == null || !processedSectionIds.add(section.getId())) {
                 continue;
             }
-            // Admin TEST BOSHQARUVI tomonida shu bo'limni qo'lda BOSHQA
+            // Admin TEST BOSHQARUVI tomonida shu mavzuni qo'lda BOSHQA
             // nomga o'zgartirgan bo'lishi mumkin — bunday holda avtomatik
-            // qayta nomlash SHART EMAS (endi u kurs Bo'limi bilan bog'liq
+            // qayta nomlash SHART EMAS (endi u kurs Mavzusi bilan bog'liq
             // emas, o'z holicha boshqariladi).
             if (!section.getName().equalsIgnoreCase(oldName)) {
                 continue;
             }
 
             // TopicSection jadvalida UNIQUE(science_id, name) cheklovi bor —
-            // agar shu Fanda YANGI nom bilan bo'lim allaqachon mavjud bo'lsa,
-            // nomni o'zgartirish o'rniga mavzu O'SHA mavjud bo'limga qayta
+            // agar shu Bo'limda YANGI nom bilan mavzu allaqachon mavjud bo'lsa,
+            // nomni o'zgartirish o'rniga dars O'SHA mavjud mavzuga qayta
             // biriktiriladi (resolveTopicSection bilan bir xil qoida).
             Optional<TopicSection> existingWithNewName = topicSectionRepository
                     .findByScience_IdAndNameIgnoreCase(section.getScience().getId(), newName);
@@ -907,23 +907,23 @@ public class CourseService {
         }
     }
 
-    // Kurs Bo'limlari bilan TEST BOSHQARUVIdagi Bo'lim (TopicSection)
-    // bog'lanishini QO'LDA majburiy sinxronlashtirish — "🔄 Bo'lim-Mavzu
-    // bog'lanishini sinxronlash" tugmasi shu orqali ishlaydi. Odatda bu
-    // avtomatik sodir bo'ladi (har safar kurs mavzusi saqlanganda —
+    // Kurs Mavzulari bilan TEST BOSHQARUVIdagi Mavzu (TopicSection)
+    // bog'lanishini QO'LDA majburiy sinxronlashtirish — "🔄 Mavzu nomlarini
+    // TEST BOSHQARUVI bilan sinxronlash" tugmasi shu orqali ishlaydi. Odatda bu
+    // avtomatik sodir bo'ladi (har safar kurs darsi saqlanganda —
     // resolveLinkedTopic), lekin vaqt o'tishi bilan ikki tomon orasida
-    // farq paydo bo'lishi mumkin (masalan mavzu shu avtomatik
+    // farq paydo bo'lishi mumkin (masalan dars shu avtomatik
     // sinxronlash qo'shilishidan OLDIN bog'langan bo'lsa, yoki bir nechta
-    // Bo'lim bir xil nomli TopicSection'ni "bo'lishib" ishlatgan bo'lsa —
+    // Mavzu bir xil nomli TopicSection'ni "bo'lishib" ishlatgan bo'lsa —
     // birining nomini o'zgartirish ikkinchisiga ham "sirg'alib" ta'sir
-    // qilishi mumkin). Shu metod HAR BIR kurs mavzusini joriy Bo'lim
+    // qilishi mumkin). Shu metod HAR BIR kurs darsini joriy Mavzu
     // nomiga qarab qayta tekshirib, kerak bo'lsa to'g'rilaydi — SHU
-    // JUMLADAN "Bo'limsiz mavzular"ga o'tkazilgan mavzular ham (ular
-    // TEST BOSHQARUVIDA ham Bo'limsiz qilinadi, resolveLinkedTopic bilan
+    // JUMLADAN "Mavzusiz darslar"ga o'tkazilgan darslar ham (ular
+    // TEST BOSHQARUVIDA ham Mavzusiz qilinadi, resolveLinkedTopic bilan
     // bir xil qoida).
-    // Kursning BARCHA Bo'limlari (hozircha bo'sh — hech qanday mavzuga
-    // biriktirilmaganlari ham) — courseDetail.js'dagi Bo'lim tanlash
-    // select'ini to'liq to'ldirish uchun (shu jumladan bo'sh bo'limlarni
+    // Kursning BARCHA Mavzulari (hozircha bo'sh — hech qanday darsga
+    // biriktirilmaganlari ham) — courseDetail.js'dagi Mavzu tanlash
+    // select'ini to'liq to'ldirish uchun (shu jumladan bo'sh mavzularni
     // o'chirish imkoniyati bilan birga ko'rsatish).
     @Transactional(readOnly = true)
     public List<CourseChapterDto> getChapters(Long courseId, User currentUser) {
@@ -932,11 +932,11 @@ public class CourseService {
         return courseChapterRepository.findByCourseIdWithSectionCount(courseId);
     }
 
-    // "➕ Bo'lim qo'shish" (courseDetail.js) — avval Bo'lim FAQAT bitta
-    // mavzu qo'shish/tahrirlash payti ("➕ Yangi bo'lim yaratish..."
-    // varianti orqali) yaratilar edi. Endi to'g'ridan-to'g'ri, mavzusiz
-    // (bo'sh) yaratish ham mumkin — foydalanuvchi avval bo'lim tuzilmasini
-    // qurib, keyin har biriga alohida mavzu qo'shishni xohlaydi.
+    // "➕ Mavzu qo'shish" (courseDetail.js) — avval Mavzu FAQAT bitta
+    // dars qo'shish/tahrirlash payti ("➕ Yangi mavzu yaratish..."
+    // varianti orqali) yaratilar edi. Endi to'g'ridan-to'g'ri, darssiz
+    // (bo'sh) yaratish ham mumkin — foydalanuvchi avval mavzu tuzilmasini
+    // qurib, keyin har biriga alohida dars qo'shishni xohlaydi.
     @Transactional
     public CourseChapterDto createChapter(Long courseId, String name, User currentUser) {
         Course course = getCourseOrThrow(courseId);
@@ -964,10 +964,10 @@ public class CourseService {
         return new CourseChapterDto(chapter.getId(), chapter.getName(), chapter.getOrderIndex(), 0L);
     }
 
-    // Faqat BO'SH (hech qanday mavzuga biriktirilmagan) Bo'limni
-    // o'chirishga ruxsat beradi — "🗑️" tugmasi (courseDetail.js, Bo'lim
-    // tanlash select'i yonida). Foydali mavzular bilan band bo'lgan
-    // Bo'limni tasodifan o'chirib, ularni "yetim" qoldirmaslik uchun.
+    // Faqat BO'SH (hech qanday darsga biriktirilmagan) Mavzuni
+    // o'chirishga ruxsat beradi — "🗑️" tugmasi (courseDetail.js, Mavzu
+    // tanlash select'i yonida). Foydali darslar bilan band bo'lgan
+    // Mavzuni tasodifan o'chirib, ularni "yetim" qoldirmaslik uchun.
     @Transactional
     public void deleteChapter(Long courseId, Long chapterId, User currentUser) {
         Course course = getCourseOrThrow(courseId);
@@ -985,21 +985,21 @@ public class CourseService {
         courseChapterRepository.delete(chapter);
     }
 
-    // "🗑️ Bo'lim + mavzularni birga o'chirish" — FAQAT shu yerdan (kurs
+    // "🗑️ Mavzu + darslarni birga o'chirish" — FAQAT shu yerdan (kurs
     // ichidan) ishlaydi, TEST BOSHQARUVIdan (topicSections.html) EMAS —
     // foydalanuvchi so'rovi bo'yicha ataylab shu yerga joylashtirilgan
-    // (chunki bu amal aynan KURS Bo'limi kontekstida ma'noga ega).
+    // (chunki bu amal aynan KURS Mavzusi kontekstida ma'noga ega).
     //
-    // deleteChapter'dan farqli, bo'sh bo'lishi SHART EMAS: shu Bo'limdagi
-    // BARCHA kurs mavzularini (CourseSection) soft-delete qiladi. MUHIM
+    // deleteChapter'dan farqli, bo'sh bo'lishi SHART EMAS: shu Mavzudagi
+    // BARCHA kurs darslarini (CourseSection) soft-delete qiladi. MUHIM
     // QOIDA (foydalanuvchi ANIQ talabi): TEST BOSHQARUVIdagi Topic/Question
     // HECH QACHON, HECH QANDAY holatda bu yerdan tegilmaydi/o'chirilmaydi —
-    // agar shu Bo'limdagi biror mavzu TEST BOSHQARUVIga bog'langan bo'lsa,
+    // agar shu Mavzudagi biror dars TEST BOSHQARUVIga bog'langan bo'lsa,
     // FAQAT bog'lanishning o'zi uziladi (bu allaqachon avtomatik sodir
     // bo'ladi: CourseSection soft-delete qilingach, uning linkedTopic FK'i
     // bazada jismoniy qolsa ham, findByLinkedTopic_Id/findLinkedCourseTitles*
     // kabi BARCHA "bog'langanmi?" so'rovlari deletedAt IS NULL filtri bilan
-    // yozilgan — shu sabab mavzu darhol "bog'lanmagan" ko'rinadi, Topic/
+    // yozilgan — shu sabab dars darhol "bog'lanmagan" ko'rinadi, Topic/
     // Question esa TEST BOSHQARUVIda bus-butun, tegilmagan holda qolaveradi).
     @Transactional
     public void deleteChapterWithLinkedTopics(Long courseId, Long chapterId, User currentUser) {
@@ -1014,15 +1014,15 @@ public class CourseService {
                 .filter(s -> s.getChapter() != null && s.getChapter().getId().equals(chapterId))
                 .toList();
 
-        // MUHIM: Bo'lim (chapter) HARD-DELETE qilinadi — shu sabab har bir
-        // mavzudagi "chapter" bog'lanishi OLDINDAN null qilinishi SHART
-        // (soft-delete qilingandan keyin ham). Aks holda mavzular hali
-        // o'chirilayotgan Bo'limga ishora qilib turgan holda flush
+        // MUHIM: Mavzu (chapter) HARD-DELETE qilinadi — shu sabab har bir
+        // darsdagi "chapter" bog'lanishi OLDINDAN null qilinishi SHART
+        // (soft-delete qilingandan keyin ham). Aks holda darslar hali
+        // o'chirilayotgan Mavzuga ishora qilib turgan holda flush
         // bo'lib, Hibernate "TransientPropertyValueException ...
         // references an unsaved transient instance" xatosini berardi —
-        // haqiqiy production bug (bo'lim o'chirishga urinishda foydalanuvchi
+        // haqiqiy production bug (mavzu o'chirishga urinishda foydalanuvchi
         // shu xom Hibernate xatosini ko'rgan). Null qilingandan keyin
-        // mavzular (agar keyinchalik tiklansa) "Bo'limsiz mavzular"
+        // darslar (agar keyinchalik tiklansa) "Mavzusiz darslar"
         // sifatida ko'rinadi — bu allaqachon tanish, qo'llab-quvvatlanadigan holat.
         LocalDateTime now = LocalDateTime.now();
         chapterSections.forEach(s -> {
@@ -1033,10 +1033,10 @@ public class CourseService {
         courseChapterRepository.delete(chapter);
     }
 
-    // "🗑️ Bo'sh bo'limlarni o'chirish" — shu kursda hech qanday mavzuga
-    // biriktirilmagan (sectionCount==0) BARCHA Bo'limlarni bir yo'la
+    // "🗑️ Bo'sh mavzularni o'chirish" — shu kursda hech qanday darsga
+    // biriktirilmagan (sectionCount==0) BARCHA Mavzularni bir yo'la
     // o'chiradi (deleteChapter'dagi bilan bir xil xavfsizlik qoidasi —
-    // faqat bo'sh bo'limlar, band bo'lganlariga tegilmaydi).
+    // faqat bo'sh mavzular, band bo'lganlariga tegilmaydi).
     @Transactional
     public int deleteEmptyChapters(Long courseId, User currentUser) {
         Course course = getCourseOrThrow(courseId);
@@ -1064,12 +1064,12 @@ public class CourseService {
         for (CourseSection cs : sections) {
             Topic topic = cs.getLinkedTopic();
             if (topic == null) {
-                continue; // Fan/Mavzuga umuman bog'lanmagan — sinxronlanadigan narsa yo'q.
+                continue; // Bo'lim/Darsga umuman bog'lanmagan — sinxronlanadigan narsa yo'q.
             }
 
-            // chapter == null (kurs mavzusi "Bo'limsiz mavzular"da) bo'lsa —
-            // "to'g'ri" holat ham aynan shu: mavzu TEST BOSHQARUVIDA ham
-            // Bo'limsiz bo'lishi kerak (null). resolveLinkedTopic bilan
+            // chapter == null (kurs darsi "Mavzusiz darslar"da) bo'lsa —
+            // "to'g'ri" holat ham aynan shu: dars TEST BOSHQARUVIDA ham
+            // Mavzusiz bo'lishi kerak (null). resolveLinkedTopic bilan
             // bir xil qoida — kurs har doim "haqiqiy manba".
             CourseChapter chapter = cs.getChapter();
             TopicSection correctSection = chapter != null
@@ -1149,7 +1149,7 @@ public class CourseService {
             throw new IllegalArgumentException("❌Dars turi noto'g'ri (TEXT, VIDEO yoki MIXED bo'lishi kerak).");
         }
 
-        // MIXED — bo'limda ham matn, ham video bo'lgani uchun ikkala tekshiruv
+        // MIXED — darsda ham matn, ham video bo'lgani uchun ikkala tekshiruv
         // ham (TEXT va VIDEO uchun alohida yozilganlar) qo'llaniladi.
         if ((type == CourseSectionType.TEXT || type == CourseSectionType.MIXED)
                 && (dto.textContent() == null || dto.textContent().isBlank())) {
@@ -1170,7 +1170,7 @@ public class CourseService {
 
     // Oddiy (kundalik) foydalanish uchun — soft-delete qilingan (savatdagi)
     // kurs bu yerda ATAYLAB "topilmadi" deb hisoblanadi (404), aks holda
-    // uni oddiy ko'rish/tahrirlash/mavzu qo'shish kabi amallar orqali
+    // uni oddiy ko'rish/tahrirlash/dars qo'shish kabi amallar orqali
     // ham "ko'rish" mumkin bo'lib qolardi.
     private Course getCourseOrThrow(Long courseId) {
         Course course = getAnyCourseOrThrow(courseId);
@@ -1233,11 +1233,11 @@ public class CourseService {
                 .build();
     }
 
-    /* ================= "🔗 Mavzuga havola" tekshiruvi ================= */
+    /* ================= "🔗 Darsga havola" tekshiruvi ================= */
 
     // "🔗 Havolalarni tekshirish" (courseDetail.js) — shu kursga bog'langan
-    // har bir mavzuning barcha (faol) savollari to'g'ri javob izohida
-    // O'ZINING mavzusiga havola bor-yo'qligini, bor bo'lsa TO'G'RI
+    // har bir darsning barcha (faol) savollari to'g'ri javob izohida
+    // O'ZINING darsiga havola bor-yo'qligini, bor bo'lsa TO'G'RI
     // ekanini tekshiradi. Faqat KO'RSATISH uchun — hech narsa o'zgartirmaydi.
     @Transactional(readOnly = true)
     public List<TopicLinkAuditDto> auditTopicLinks(Long courseId) {
@@ -1282,25 +1282,25 @@ public class CourseService {
         return result;
     }
 
-    // "➕ Havola qo'shish" — shu mavzudagi savollar orasidan izohida HECH
-    // QANDAY mavzu havolasi yo'qlariga to'g'ri havolani qo'shadi (mavjud
+    // "➕ Havola qo'shish" — shu darsdagi savollar orasidan izohida HECH
+    // QANDAY dars havolasi yo'qlariga to'g'ri havolani qo'shadi (mavjud
     // havolasi bor savollarga — to'g'ri bo'lsin, noto'g'ri bo'lsin —
     // TEGILMAYDI, ular uchun alohida "✅ To'g'irlash" — fixWrongTopicLink).
     // Qaytariladigan son — nechta savolga qo'shilgani.
     @Transactional
     public int addMissingTopicLinks(Long courseId, Long topicId) {
         CourseSection section = courseSectionRepository.findByCourse_IdAndLinkedTopic_Id(courseId, topicId)
-                .orElseThrow(() -> new IllegalArgumentException("❌ Bu mavzu shu kursga bog'lanmagan."));
+                .orElseThrow(() -> new IllegalArgumentException("❌ Bu dars shu kursga bog'lanmagan."));
         return addMissingLinksForSection(courseId, section);
     }
 
     // "➕ Barchasiga havola qo'shish" — auditTopicLinks bilan bir xil
-    // ko'lamda (shu kursga bog'langan HAMMA mavzular), har birida
-    // topilgan (izohida HECH QANDAY mavzu havolasi yo'q) savollarga
+    // ko'lamda (shu kursga bog'langan HAMMA darslar), har birida
+    // topilgan (izohida HECH QANDAY dars havolasi yo'q) savollarga
     // to'g'ri havolani bir yo'la qo'shadi — fixAllWrongTopicLinksInCourse
     // bilan bir xil andoza (haqiqiy holat: yangi qo'shilgan yuzlab
-    // mavzu/savolda havola umuman yo'q edi, birma-bir "➕ Havola
-    // qo'shish"ni bosib chiqish o'ninchi mavzudan keyin amaliy emas).
+    // dars/savolda havola umuman yo'q edi, birma-bir "➕ Havola
+    // qo'shish"ni bosib chiqish o'ninchi darsdan keyin amaliy emas).
     @Transactional
     public int addAllMissingTopicLinksInCourse(Long courseId) {
         List<CourseSection> linkedSections = courseSectionRepository.findByCourse_IdAndLinkedTopicIsNotNull(courseId);
@@ -1333,9 +1333,9 @@ public class CourseService {
         return fixed;
     }
 
-    // "✅ To'g'irlash" — BITTA savolning izohidagi (boshqa mavzuga
+    // "✅ To'g'irlash" — BITTA savolning izohidagi (boshqa darsga
     // bog'langan, NOTO'G'RI) havola belgisini olib tashlab, o'rniga
-    // O'ZINING mavzusiga TO'G'RI havolani qo'yadi.
+    // O'ZINING darsiga TO'G'RI havolani qo'yadi.
     @Transactional
     public void fixWrongTopicLink(Long courseId, Long questionId) {
         Question question = questionRepository.findById(questionId)
@@ -1343,7 +1343,7 @@ public class CourseService {
 
         CourseSection section = courseSectionRepository
                 .findByCourse_IdAndLinkedTopic_Id(courseId, question.getTopic().getId())
-                .orElseThrow(() -> new IllegalArgumentException("❌ Bu savolning mavzusi shu kursga bog'lanmagan."));
+                .orElseThrow(() -> new IllegalArgumentException("❌ Bu savolning darsi shu kursga bog'lanmagan."));
 
         Answer trueAnswer = findTrueAnswer(question);
         if (trueAnswer == null) {
@@ -1353,22 +1353,22 @@ public class CourseService {
         applyCorrectLink(trueAnswer, courseId, section);
     }
 
-    // "✅ Barchasini to'g'irlash" — BITTA mavzudagi barcha XATO havolali
+    // "✅ Barchasini to'g'irlash" — BITTA darsdagi barcha XATO havolali
     // savollarni bitta so'rovda to'g'irlaydi (havolasi umuman yo'qlariga
     // tegmaydi — ular addMissingTopicLinks orqali). Qaytariladigan son —
     // nechta savol to'g'irlangani.
     @Transactional
     public int fixAllWrongTopicLinks(Long courseId, Long topicId) {
         CourseSection section = courseSectionRepository.findByCourse_IdAndLinkedTopic_Id(courseId, topicId)
-                .orElseThrow(() -> new IllegalArgumentException("❌ Bu mavzu shu kursga bog'lanmagan."));
+                .orElseThrow(() -> new IllegalArgumentException("❌ Bu dars shu kursga bog'lanmagan."));
         return fixAllWrongLinksForSection(courseId, section);
     }
 
     // "🛠️ Butun kursdagi BARCHA xato havolalarni tuzatish" — auditTopicLinks
-    // bilan bir xil ko'lamda (shu kursga bog'langan HAMMA mavzular), har
+    // bilan bir xil ko'lamda (shu kursga bog'langan HAMMA darslar), har
     // birida topilgan xato havolalarni birma-bir to'g'irlaydi. Katta
     // kurslarda yuzlab xato havola bir yo'la topilishi mumkin (real holat:
-    // Bakteriologiya kursida 51 ta mavzuda 780 ta xato havola topilgan edi) —
+    // Bakteriologiya kursida 51 ta darsda 780 ta xato havola topilgan edi) —
     // shu sabab alohida (per-topic emas, butun kurs) tugma qo'shilgan.
     @Transactional
     public int fixAllWrongTopicLinksInCourse(Long courseId) {
@@ -1387,7 +1387,7 @@ public class CourseService {
     // qolib ketgan bo'lishi mumkin — ikkalasi ham TO'G'RI joyga
     // bog'langan bo'lsa ham, auditTopicLinks buni alohida ko'rsatmaydi
     // (faqat BIRINCHI topilgan havolani tekshiradi, "OK" deb hisoblaydi).
-    // Bu metod BARCHA mavzularni ko'rib, havolasi (hech bo'lmasa bitta)
+    // Bu metod BARCHA darslarni ko'rib, havolasi (hech bo'lmasa bitta)
     // bor BARCHA savollarni qayta normallashtiradi (strip + qayta
     // qo'shish) — shu bilan bir yo'la ham takroriy, ham (avvalgi
     // TOPIC_LINK_BADGE_PATTERN xatosi tufayli yuzaga kelishi mumkin
@@ -1418,7 +1418,7 @@ public class CourseService {
     }
 
     // fixAllWrongTopicLinks va fixAllWrongTopicLinksInCourse'ning umumiy
-    // ichki qismi — bitta mavzu (allaqachon topilgan CourseSection bilan)
+    // ichki qismi — bitta dars (allaqachon topilgan CourseSection bilan)
     // doirasidagi barcha xato havolalarni to'g'irlaydi.
     private int fixAllWrongLinksForSection(Long courseId, CourseSection section) {
         Topic topic = section.getLinkedTopic();
@@ -1445,7 +1445,7 @@ public class CourseService {
         return fixed;
     }
 
-    // Bitta javobning izohidagi (bor bo'lsa) eski mavzu havola belgisini
+    // Bitta javobning izohidagi (bor bo'lsa) eski dars havola belgisini
     // olib tashlab, o'rniga TO'G'RI havolani qo'yadi — fixWrongTopicLink
     // va fixAllWrongLinksForSection ikkalasi ham shundan foydalanadi.
     private void applyCorrectLink(Answer trueAnswer, Long courseId, CourseSection section) {

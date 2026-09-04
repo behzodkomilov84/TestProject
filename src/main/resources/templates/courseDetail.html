@@ -14,7 +14,7 @@
         const COURSE_ID = /*[[${courseId}]]*/ 0;
     </script>
     <!-- .docx faylni HTML'ga aylantirish uchun (formatlash — abzatslar,
-         qalin/kursiv, sarlavhalar, ro'yxatlar — saqlangan holda), bo'lim
+         qalin/kursiv, sarlavhalar, ro'yxatlar — saqlangan holda), dars
          matnini fayldan import qilishda ishlatiladi. -->
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
     <script src="/js/courseDetail.js" defer></script>
@@ -58,33 +58,33 @@
                      nechta kurs Mavzusi bitta TEST BOSHQARUVI Bo'limini
                      bo'lishib ishlatgan bo'lsa) — shu tugma barcha
                      darslarni joriy Mavzu nomiga qarab qayta to'g'rilaydi. -->
-                <button id="syncChapterTopicsBtn" onclick="syncChapterTopics()" title="Kurs Mavzulari bilan TEST BOSHQARUVIdagi bog'langan mavzularning Bo'limi orasidagi farqni to'g'rilaydi">
+                <button id="syncChapterTopicsBtn" onclick="syncChapterTopics()" title="Kurs Mavzulari bilan TEST BOSHQARUVIdagi bog'langan darslarning Mavzusi orasidagi farqni to'g'rilaydi">
                     🔄 Mavzu nomlarini TEST BOSHQARUVI bilan sinxronlash
                 </button>
-                <!-- Butun kursni BITTA .docx faylga: kurs mavzulari (matn/
+                <!-- Butun kursni BITTA .docx faylga: kurs darslari (matn/
                      video), ularga bog'langan testlar va (eng oxirida,
                      alohida bo'lim) javoblar — har biri mustaqil checkbox
                      orqali (openCourseWordExportModal, courseDetail.js). -->
                 <button id="courseWordExportBtn" onclick="openCourseWordExportModal()" title="Butun kursni Word (.docx) faylga eksport qilish"><svg width="16" height="16" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-3px;margin-right:4px;"><rect x="4" y="4" width="40" height="40" rx="7" fill="#185ABD"/><rect x="4" y="4" width="18" height="40" rx="7" fill="#103F91"/><text x="31" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">W</text></svg>Kursni Word'ga eksport qilish</button>
-                <!-- Har bir mavzuning savollari to'g'ri javob izohida
-                     "🔗 Mavzuga havola qo'shish" orqali qo'shilgan havola
-                     O'ZINING mavzusiga (emas, boshqa mavzuga) bog'lanib
+                <!-- Har bir darsning savollari to'g'ri javob izohida
+                     "🔗 Darsga havola qo'shish" orqali qo'shilgan havola
+                     O'ZINING darsiga (emas, boshqa darsga) bog'lanib
                      qolgan bo'lishi mumkin — bu tugma shuni tekshirib,
                      natijani ko'rsatadi (CourseService.auditTopicLinks). -->
                 <button id="topicLinkAuditBtn" onclick="toggleTopicLinkAudit()" title="Har bir darsdagi savollarning izohidagi havola O'ZINING darsiga to'g'ri bog'langanini tekshiradi — xato/yo'q havolalarni ko'rsatadi va tuzatish tugmalarini beradi">
                     🔗 Havolalarni tekshirish
                 </button>
-                <!-- Ba'zi savollarning izohida bir nechta mavzu havola
+                <!-- Ba'zi savollarning izohida bir nechta dars havola
                      belgisi (badge) qolib ketishi mumkin (masalan eski
                      to'liq-URL formatidagi havola tuzatish paytida
                      tanilmay, ustiga yana biri qo'shilib qolgan bo'lsa) —
                      auditTopicLinks buni "OK" deb hisoblaydi (faqat
                      birinchi havolani tekshiradi), shu sabab alohida
                      tugma bilan tozalanadi. -->
-                <button id="dedupeTopicLinksBtn" onclick="dedupeTopicLinks()" title="Bir savolda bir nechta mavzu havola belgisi qolib ketgan bo'lsa (masalan eski formatdagi bug tufayli), hammasini bittaga tushiradi">
+                <button id="dedupeTopicLinksBtn" onclick="dedupeTopicLinks()" title="Bir savolda bir nechta dars havola belgisi qolib ketgan bo'lsa (masalan eski formatdagi bug tufayli), hammasini bittaga tushiradi">
                     🧹 Takroriy havolalarni tozalash
                 </button>
-                <!-- Soft-delete qilingan (🗑️ o'chirilgan) kurs mavzulari —
+                <!-- Soft-delete qilingan (🗑️ o'chirilgan) kurs darslari —
                      "♻️ Tiklash" bilan bir zumda qaytariladi (CourseService.
                      getDeletedSections/restoreSection). -->
                 <button id="sectionTrashBtn" onclick="toggleSectionTrash()">🗑️ O'chirilgan darslar <span id="courseSectionTrashBadge" class="notif-badge" style="display:none;">0</span></button>
@@ -287,8 +287,8 @@
         </div>
         </div>
 
-        <!-- Mavzuni tahrirlash — "✏️" tugmasi bosilganda shu bitta forma
-             tanlangan bo'lim ma'lumotlari bilan to'ldirilib ochiladi. -->
+        <!-- Darsni tahrirlash — "✏️" tugmasi bosilganda shu bitta forma
+             tanlangan dars ma'lumotlari bilan to'ldirilib ochiladi. -->
         <div id="editSectionForm" class="section-form" style="display:none;">
             <label class="field-label" for="editSectionTitle">Dars nomi</label>
             <input type="text" id="editSectionTitle" placeholder="Dars nomi" maxlength="500" oninput="onSectionTitleInput('edit')">
@@ -439,23 +439,23 @@
          Mavzu ICHIDA, o'sha mavzuning dars kartalari ustida ko'rinadi. -->
     <h2 id="curriculumTitle" class="curriculum-title">📋 Darslar</h2>
 
-    <!-- Ikkala qidiruv qutisi (kurs ichidan qidirish + bo'lim qidirish)
+    <!-- Ikkala qidiruv qutisi (kurs ichidan qidirish + mavzu qidirish)
          yonma-yon (tor ekranda pastma-past tushadi — .search-boxes-row,
          courses.css). -->
     <div class="search-boxes-row">
         <!-- Istalgan foydalanuvchi (OWNER/ADMIN/USER) uchun — tahrirlashga
              aloqasi yo'q, oddiy qidiruv. Shu kurs (va u bog'langan bo'lsa,
-             bir nechta bo'lsa HAMMASI) ichidagi mavzularning matn darsi
-             ("mavzu yoritmasi" — CourseSection.textContent) bo'yicha qidiradi
+             bir nechta bo'lsa HAMMASI) ichidagi darslarning matni
+             ("dars yoritmasi" — CourseSection.textContent) bo'yicha qidiradi
              (runExplanationSearch, courseDetail.js). Topilgan natijaga
-             bosilsa — o'sha bo'lim/darsning o'ziga o'tadi. -->
+             bosilsa — o'sha darsning o'ziga o'tadi. -->
         <div class="explanation-search-box" id="explanationSearchBox">
             <input type="text" id="explanationSearchInput" class="explanation-search-input"
                    placeholder="🔍 Kurs ichidan qidirish (dars yoritmasidan)...">
             <div id="explanationSearchResults" class="explanation-search-results hidden"></div>
         </div>
 
-        <!-- Guruhlangan (Bo'limli) ko'rinishda GINA ko'rinadi — Bo'lim nomi
+        <!-- Guruhlangan (Mavzuli) ko'rinishda GINA ko'rinadi — Mavzu nomi
              bo'yicha tez qidirish (onChapterSearchInput, courseDetail.js).
              Statik element sifatida (har safar qayta chizilmaydi) — aks
              holda har harf terilganda fokus/kursor pozitsiyasi yo'qolib
@@ -466,17 +466,17 @@
         </div>
     </div>
 
-    <!-- OWNER/ADMIN uchun — bo'limlarni saralash. -->
+    <!-- OWNER/ADMIN uchun — darslarni saralash. -->
     <div id="sectionsSortBar" class="sections-sort-bar" style="display:none;">
         <span>Saralash:</span>
         <button onclick="sortSections('AZ')">A→Z</button>
         <button onclick="sortSections('ZA')">Z→A</button>
     </div>
 
-    <!-- Kursda kamida bitta mavzu biror Bo'limga biriktirilgan bo'lsa —
-         mavzular shu bo'limlar bo'yicha alohida "box"larga guruhlanadi
-         (har birida o'z sahifalash tugmalari bilan). Hech qaysi mavzu
-         hech qanday bo'limga biriktirilmagan bo'lsa (standart holat) —
+    <!-- Kursda kamida bitta dars biror Mavzuga biriktirilgan bo'lsa —
+         darslar shu mavzular bo'yicha alohida "box"larga guruhlanadi
+         (har birida o'z sahifalash tugmalari bilan). Hech qaysi dars
+         hech qanday mavzuga biriktirilmagan bo'lsa (standart holat) —
          hammasi eskidek, bitta tekis grid + bitta umumiy sahifalash bilan
          ko'rsatiladi (renderSections, courseDetail.js). -->
     <div id="sectionsList" class="sections-list">
@@ -487,7 +487,7 @@
 </div>
 
 <!-- "🎬 Video qo'shish" oynasi — bitta umumiy modal, ikkala forma (yangi
-     bo'lim qo'shish/tahrirlash) ham shundan foydalanadi; qaysi tahrirlagichga
+     dars qo'shish/tahrirlash) ham shundan foydalanadi; qaysi tahrirlagichga
      qo'yilishi videoInsertTargetEditorId orqali eslab qolinadi
      (openVideoInsertModal/confirmVideoInsert, courseDetail.js). -->
 <div id="videoInsertModal" class="video-insert-modal hidden">
@@ -513,7 +513,7 @@
 </div>
 
 <!-- "📝 Kursni Word'ga eksport qilish" oynasi — 3 mustaqil checkbox
-     (barchasi default belgilangan): kurs mavzulari, testlar, test
+     (barchasi default belgilangan): kurs darslari, testlar, test
      javoblari. "Test javoblari" faqat "Testlar" belgilanganda ma'noga
      ega (courseDetail.js#onCourseExportTestsToggle avtomatik
      o'chiradi/yoqadi). -->

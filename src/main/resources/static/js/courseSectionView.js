@@ -30,7 +30,7 @@ function extractYouTubeId(input) {
     return trimmed;
 }
 
-// "?focus=" — kurs sahifasiga qaytganda ANIQ shu mavzu kartochkasini
+// "?focus=" — kurs sahifasiga qaytganda ANIQ shu dars kartochkasini
 // avtomatik ekranga chiqarib, "tanlangan" holatda belgilash uchun
 // (courseDetail.js#applyFocusFromUrl) — test-form.js'dagi "🔙 Kursga
 // qaytish" bilan bir xil andoza.
@@ -39,7 +39,7 @@ document.getElementById("backToCourseBtn").onclick = () => {
 };
 
 // searchNavContext — bir marta, sahifa yuklanganda o'qiladi (loadSearchNavContext),
-// keyin HAM "Oldingi/Keyingi natija" paneli (setupSearchNav), HAM mavzu
+// keyin HAM "Oldingi/Keyingi natija" paneli (setupSearchNav), HAM dars
 // matni ichidagi qidiruv so'zini fonini o'zgartirish (highlightSearchQuery,
 // renderSection() oxirida) shundan foydalanadi — ikkalasi ham AYNAN bir
 // xil "joriy sahifa qidiruv natijasiga mosmi" tekshiruviga tayanadi.
@@ -54,14 +54,14 @@ document.addEventListener("DOMContentLoaded", () => {
 // ========================================================================
 //     Qidiruv natijalari orasida navigatsiya
 // ========================================================================
-// topic.js / courseDetail.js'dagi "kurs ichidan mavzu yoritmasi bo'yicha
+// topic.js / courseDetail.js'dagi "kurs ichidan dars yoritmasi bo'yicha
 // qidiruv" natijasiga bosilganda, BUTUN natijalar ro'yxati + bosilgan
 // natijaning indeksi + qidirilgan so'z + qidirilgan asl sahifa manzili
 // sessionStorage'ga saqlanadi. Shu yerda o'sha ma'lumot o'qib, agar u
 // AYNAN joriy (COURSE_ID, SECTION_ID) bilan mos kelsa — "Oldingi/Keyingi
-// natija" paneli ko'rsatiladi VA mavzu matni ichida qidirilgan so'z
+// natija" paneli ko'rsatiladi VA dars matni ichida qidirilgan so'z
 // topilib, foni o'zgartiriladi. Mos kelmasa (masalan foydalanuvchi oddiy
-// "Keyingi mavzu →" tugmasi orqali boshqa bo'limga o'tgan bo'lsa) —
+// "Keyingi dars →" tugmasi orqali boshqa darsga o'tgan bo'lsa) —
 // ikkalasi ham o'chiq qoladi, alohida "tozalash" kodi shart emas.
 const EXPLANATION_SEARCH_NAV_KEY = "explanationSearchNav";
 
@@ -169,7 +169,7 @@ function renderSection(data) {
 
     if (data.type === "TEXT") {
         content.innerHTML = renderTextContent(data);
-        // Matn bo'lim — ochilgan zahoti "tugatilgan" deb belgilanadi.
+        // Matn dars — ochilgan zahoti "tugatilgan" deb belgilanadi.
         markCompleted();
     } else if (data.type === "VIDEO") {
         content.innerHTML = buildVideoEmbed(data);
@@ -189,9 +189,9 @@ function renderSection(data) {
     updatePrevButton(data);
     updateNextButton(data);
 
-    // Shu sahifaga "kurs ichidan mavzu yoritmasi bo'yicha qidiruv"
+    // Shu sahifaga "kurs ichidan dars yoritmasi bo'yicha qidiruv"
     // natijasidan kelingan bo'lsa (searchNavContext) — qidirilgan so'zni
-    // mavzu matni ICHIDA topib, fonini o'zgartiramiz (topish oson bo'lishi
+    // dars matni ICHIDA topib, fonini o'zgartiramiz (topish oson bo'lishi
     // uchun). content.innerHTML ALLAQACHON to'ldirilgandan KEYIN
     // chaqirilishi shart — aks holda hali bo'sh div ichida qidirardi.
     if (searchNavContext && searchNavContext.query) {
@@ -259,8 +259,8 @@ function highlightSearchQuery(container, query) {
     }
 }
 
-// Oldingi mavzuga qaytish — ketma-ket ochilish tartibida oldingi bo'lim
-// har doim ko'rish uchun ochiq bo'ladi (foydalanuvchi shu bo'limga
+// Oldingi darsga qaytish — ketma-ket ochilish tartibida oldingi dars
+// har doim ko'rish uchun ochiq bo'ladi (foydalanuvchi shu darsga
 // yetib kelgan bo'lsa, undan oldingisini allaqachon ko'rgan/tugatgan),
 // shuning uchun qulflash tekshiruvi shart emas — nextSectionBtn'dan farqli.
 function updatePrevButton(data) {
@@ -277,8 +277,8 @@ function updatePrevButton(data) {
     };
 }
 
-// Faqat shu mavzuga bog'langan bo'limlarda — saytning haqiqiy test
-// tizimiga (/testConfigPage) shu fan/mavzu avtomatik tanlangan holda
+// Faqat shu darsga bog'langan darslarda — saytning haqiqiy test
+// tizimiga (/testConfigPage) shu bo'lim/dars avtomatik tanlangan holda
 // o'tkazuvchi tugma. DOM API orqali yaratiladi (innerHTML emas) —
 // xavfsizroq va bu yerda dinamik qism faqat butun son (topicId).
 function renderTopicTestLink(data) {
@@ -298,9 +298,9 @@ function renderTopicTestLink(data) {
             scienceId: data.linkedScienceId,
             topicId: data.linkedTopicId,
             courseId: COURSE_ID,
-            // Test sessiyasi TUGAGUNCHA ham "🔙 Mavzuga qaytish" tugmasi
+            // Test sessiyasi TUGAGUNCHA ham "🔙 Darsga qaytish" tugmasi
             // ko'rinib turishi uchun (testConfigPage.js -> testSession.js,
-            // sessionStorage orqali) — aynan SHU darsga (bo'lim emas)
+            // sessionStorage orqali) — aynan SHU darsga (mavzu emas)
             // qaytarish uchun.
             sectionId: SECTION_ID
         });
@@ -316,7 +316,7 @@ function renderTopicTestLink(data) {
 // linkifyHtmlContent orqali bosiladigan qilinadi (masalan "PDF: https://...
 // .pdf" kabi qo'lda yozilgan yuklab olish havolalari — foydalanuvchi
 // so'rovi bo'yicha, bunday havolalar HAR DOIM giperssilka bo'lishi kerak).
-// PLAIN (qo'lda yozilgan yoki eski bo'limlar) esa xavfsiz escape+linkify
+// PLAIN (qo'lda yozilgan yoki eski darslar) esa xavfsiz escape+linkify
 // qilingan holda qaytariladi.
 function renderTextContent(data) {
     if (data.textContentFormat === "HTML") {

@@ -192,11 +192,11 @@ class CourseServiceTest {
         assertThat(result.title()).isEqualTo("2-bo'lim");
     }
 
-    // ===== Bo'limlar (CourseChapter) bir-biridan MUSTAQIL ochiladi =====
-    // (foydalanuvchi so'rovi bo'yicha, 2026-09-03: "kurs bo'limlari bir
-    // biriga bog'liq emas, barcha bo'limlarni birinchi mavzusi ochiq
+    // ===== Mavzular (CourseChapter) bir-biridan MUSTAQIL ochiladi =====
+    // (foydalanuvchi so'rovi bo'yicha, 2026-09-03: "kurs mavzulari bir
+    // biriga bog'liq emas, barcha mavzularni birinchi darsi ochiq
     // bo'lsin" — avval BUTUN kurs bo'ylab bitta ketma-ket zanjir edi,
-    // 2-Bo'limning 1-mavzusi ham 1-Bo'limni to'liq tugatishni talab
+    // 2-Mavzuning 1-darsi ham 1-Mavzuni to'liq tugatishni talab
     // qilardi).
 
     @Test
@@ -458,10 +458,10 @@ class CourseServiceTest {
     }
 
     // ===== deleteCourse (soft-delete — "O'chirilganlar savati") =====
-    // Haqiqiy production hodisa: bir bo'limni o'chirish deb butun kurs
+    // Haqiqiy production hodisa: bir darsni o'chirish deb butun kurs
     // qattiq (hard) o'chirilib ketgan edi — shu sabab deleteCourse endi
     // faqat deletedAt'ni belgilaydi, bog'liq yozuvlarga (progress/
-    // obuna/bo'lim/mavzu) UMUMAN TEGMAYDI — instant, to'liq tiklash
+    // obuna/mavzu/dars) UMUMAN TEGMAYDI — instant, to'liq tiklash
     // (restoreCourse) uchun.
 
     @Test
@@ -782,9 +782,9 @@ class CourseServiceTest {
         assertThat(a3Linked.getCommentary()).isEqualTo(" <span>...<a href=\"/courses/1/sections/200\">...</a></span>");
     }
 
-    // ===== listCatalog (kartochkadagi "N ta bo'lim, M ta mavzu") =====
+    // ===== listCatalog (kartochkadagi "N ta mavzu, M ta dars") =====
     // Haqiqiy foydalanuvchi shikoyati: kartochkada FAQAT sectionCount
-    // (mavzular soni) "N ta bo'lim" deb NOTO'G'RI belgilab ko'rsatilardi.
+    // (darslar soni) "N ta mavzu" deb NOTO'G'RI belgilab ko'rsatilardi.
     // Endi ikkalasi ALOHIDA — chapterCount (haqiqiy CourseChapter soni)
     // va sectionCount (CourseSection soni) — chalkashmasligini tekshiradi.
 
@@ -842,9 +842,9 @@ class CourseServiceTest {
                 .hasMessageContaining("mos kelmayapti");
     }
 
-    // ===== deleteChapter (FAQAT bo'sh bo'lim) =====
+    // ===== deleteChapter (FAQAT bo'sh mavzu) =====
     // Foydalanuvchi so'rovi bo'yicha tekshirilgan/tasdiqlangan himoya:
-    // ichida mavzular bor Bo'limni o'chirib bo'lmaydi (avval mavzularni
+    // ichida darslar bor Mavzuni o'chirib bo'lmaydi (avval darslarni
     // ko'chirish/o'chirish kerak — buni ATAYLAB qiladigan yo'l esa
     // alohida, deleteChapterWithLinkedTopics).
 
@@ -930,10 +930,10 @@ class CourseServiceTest {
     }
 
     // ===== deleteChapterWithLinkedTopics =====
-    // Kurs Bo'limi + mavzularini birga o'chirish — CourseSection'lar
-    // soft-delete qilinadi, Bo'limning o'zi hard-delete. Foydalanuvchi
+    // Kurs Mavzusi + darslarini birga o'chirish — CourseSection'lar
+    // soft-delete qilinadi, Mavzuning o'zi hard-delete. Foydalanuvchi
     // ANIQ talabi: TEST BOSHQARUVIdagi Topic/Question'ga HECH QACHON
-    // tegilmaydi (bog'langan mavzu bo'lsa ham) — bog'lanish CourseSection
+    // tegilmaydi (bog'langan dars bo'lsa ham) — bog'lanish CourseSection
     // soft-delete qilingandan so'ng, "bog'langanmi?" so'rovlari
     // (deletedAt IS NULL filtri bilan) uni avtomatik "topmay qo'yadi".
 
@@ -964,7 +964,7 @@ class CourseServiceTest {
         org.mockito.Mockito.verifyNoInteractions(topicRepository, topicSectionRepository, questionRepository);
     }
 
-    // ===== TEST BOSHQARUVI bilan bog'lash: Fan/Mavzu autocreate =====
+    // ===== TEST BOSHQARUVI bilan bog'lash: Bo'lim/Dars autocreate =====
 
     @Test
     void addSection_withNewScienceAndTopicNames_autocreatesAndLinksThem() {
@@ -1015,8 +1015,8 @@ class CourseServiceTest {
 
         org.mockito.Mockito.verify(scienceRepository, org.mockito.Mockito.never()).save(any());
 
-        // Mavjud mavzu qayta ishlatiladi (YANGI yaratilmaydi) — lekin
-        // Bo'lim holati (bu yerda — kurs mavzusi Bo'limsiz, chapter=null)
+        // Mavjud dars qayta ishlatiladi (YANGI yaratilmaydi) — lekin
+        // Mavzu holati (bu yerda — kurs darsi Mavzusiz, chapter=null)
         // HAR DOIM sinxronlanadi (kurs — "haqiqiy manba"), shuning uchun
         // save() chaqiriladi (section=null qilib qo'yish uchun).
         var topicCaptor = org.mockito.ArgumentCaptor.forClass(behzoddev.testproject.entity.Topic.class);
