@@ -48,6 +48,10 @@ public class TelegramQuestionImportService {
     // Bo'lim/Mavzu/Dars ro'yxatlari RAQAMLI, gorizontal katakcha ko'rinishida
     // (TelegramPracticeTestService/TelegramCourseReaderService bilan bir xil g'oya).
     private static final int BUTTONS_PER_ROW = 4;
+    // Ro'yxat bandlari orasidagi ajratuvchi chiziq — nomlar uzun bo'lganda
+    // (ayniqsa ko'p qatorli) bandlar bir-biriga "yopishib" ketmasligi uchun
+    // (foydalanuvchi so'rovi bo'yicha).
+    private static final String LIST_SEPARATOR = "－－－－－－－－－－－－－－－－－－－－\n";
 
     private final ScienceService scienceService;
     private final TopicService topicService;
@@ -73,6 +77,7 @@ public class TelegramQuestionImportService {
         List<InlineKeyboardButton> buttons = new ArrayList<>();
         int i = 1;
         for (ScienceIdAndNameDto science : sciences) {
+            if (i > 1) sb.append(LIST_SEPARATOR);
             sb.append(i).append(". ").append(science.name()).append("\n");
             buttons.add(button(String.valueOf(i), "tg_import_science_" + science.id()));
             i++;
@@ -131,15 +136,18 @@ public class TelegramQuestionImportService {
         List<InlineKeyboardButton> buttons = new ArrayList<>();
         int i = 1;
         for (SectionInfo sec : sorted) {
+            if (i > 1) sb.append(LIST_SEPARATOR);
             sb.append(i).append(". ").append(sec.name()).append("\n");
             buttons.add(button(String.valueOf(i), "tg_import_section_" + scienceId + "_" + sec.id()));
             i++;
         }
         if (hasUnassigned) {
+            if (i > 1) sb.append(LIST_SEPARATOR);
             sb.append(i).append(". — Mavzusiz darslar —\n");
             buttons.add(button(String.valueOf(i), "tg_import_section_" + scienceId + "_none"));
             i++;
         }
+        if (i > 1) sb.append(LIST_SEPARATOR);
         sb.append(i).append(". 🔷 Barchasi (shu bo'lim bo'yicha)\n");
         buttons.add(button(String.valueOf(i), "tg_import_section_" + scienceId + "_all"));
 
@@ -195,6 +203,7 @@ public class TelegramQuestionImportService {
         List<InlineKeyboardButton> buttons = new ArrayList<>();
         int i = from + 1;
         for (TopicWithQuestionCountDto topic : topics.subList(from, to)) {
+            if (i > from + 1) sb.append(LIST_SEPARATOR);
             sb.append(i).append(". ").append(topic.name()).append(" (").append(topic.questionCount()).append(" ta savol)\n");
             buttons.add(button(String.valueOf(i), "tg_import_topic_" + topic.id()));
             i++;

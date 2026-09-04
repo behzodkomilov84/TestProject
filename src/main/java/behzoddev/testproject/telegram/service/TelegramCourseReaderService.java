@@ -53,6 +53,10 @@ public class TelegramCourseReaderService {
     // Telegram xabar chegarasi 4096 belgi — ehtiyot uchun pastroq chegara
     // bilan bo'laklaymiz (HTML teglar ham hisobga kirgani uchun).
     private static final int MAX_MESSAGE_LENGTH = 3500;
+    // Ro'yxat bandlari orasidagi ajratuvchi chiziq — nomlar uzun bo'lganda
+    // (ayniqsa ko'p qatorli) bandlar bir-biriga "yopishib" ketmasligi uchun
+    // (foydalanuvchi so'rovi bo'yicha).
+    private static final String LIST_SEPARATOR = "－－－－－－－－－－－－－－－－－－－－\n";
 
     private final CourseService courseService;
     private final PaymentOrderService paymentOrderService;
@@ -84,6 +88,7 @@ public class TelegramCourseReaderService {
 
         int i = 1;
         for (CourseDto c : courses) {
+            if (i > 1) sb.append(LIST_SEPARATOR);
             String icon = !c.published() ? "📝" : c.free() ? "🆓" : c.subscribed() ? "✅" : "🔒";
             // Narxi belgilangan bo'lsa — foydalanuvchi obunaga so'rov
             // yuborishdan oldin qancha to'lashini ko'rib turishi uchun
@@ -253,7 +258,10 @@ public class TelegramCourseReaderService {
                 (safePage + 1) + "/" + totalPages + "-sahifa):\n\n");
 
         List<InlineKeyboardButton> buttons = new ArrayList<>();
+        boolean first = true;
         for (CourseSectionSummaryDto s : sections.subList(from, to)) {
+            if (!first) sb.append(LIST_SEPARATOR);
+            first = false;
             String icon = s.completed() ? "✅" : s.locked() ? "🔒" : "▫️";
             sb.append(icon).append(" ").append(s.orderIndex()).append(". ").append(escape(s.title())).append("\n");
             buttons.add(button(icon + " " + s.orderIndex(), "course_sec_" + course.id() + "_" + s.id()));
