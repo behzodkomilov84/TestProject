@@ -97,6 +97,12 @@ public class SecurityConfig {
                                 "/courses",
                                 "/courses/**",
                                 "/api/courses/**",
+                                // "Yo'nalish" (soha) — kurslar katalogini guruhlaydi,
+                                // GET ro'yxati kurslarning o'zi kabi hammaga ochiq
+                                // bo'lishi kerak (CRUD @PreAuthorize orqali OWNER/ADMIN'ga
+                                // cheklangan — CourseFieldController).
+                                "/api/course-fields",
+                                "/api/course-fields/**",
                                 "/api/course-subscriptions/**",
                                 // "Kurs ichidan mavzu yoritmasi bo'yicha qidiruv" —
                                 // faqat O'QISH (tahrirlash emas), shuning uchun

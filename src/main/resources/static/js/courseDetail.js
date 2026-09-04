@@ -1185,7 +1185,7 @@ function renderSections(sections) {
     // Sahifa sarlavhasi — Bo'limli kursda endi pastda TO'G'RIDAN-TO'G'RI
     // mavzu kartalari emas, Bo'lim "box"lari ko'rinadi (📋 Mavzular
     // sarlavhasi endi har bir OCHILGAN bo'lim ICHIDA, renderChapterBox).
-    document.getElementById("curriculumTitle").textContent = hasAnyChapter ? "📂 Bo'limlar" : "📋 Mavzular";
+    document.getElementById("curriculumTitle").textContent = hasAnyChapter ? "📂 Mavzular" : "📋 Darslar";
 
     // "🔍 Bo'lim qidirish" — faqat guruhlangan (Bo'limli) ko'rinishda ma'noli.
     document.getElementById("chapterSearchBox").style.display = hasAnyChapter ? "block" : "none";
@@ -1333,7 +1333,7 @@ function renderSectionCard(s, globalIndexById, displayNumber, groupBounds) {
                <button onclick="moveSectionUp(${s.id})" title="Yuqoriga" ${isFirstInGroup ? "disabled" : ""}>⬆️</button>
                <button onclick="moveSectionDown(${s.id})" title="Pastga" ${isLastInGroup ? "disabled" : ""}>⬇️</button>
                <button onclick="openEditSectionForm(${s.id})" title="Tahrirlash">✏️</button>
-               <button onclick="openSectionWordExportModal(${s.id}, ${JSON.stringify(s.title).replace(/"/g, "&quot;")})" title="Shu mavzuni Word (.docx) faylga eksport qilish"><svg width="14" height="14" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-2px;"><rect x="4" y="4" width="40" height="40" rx="7" fill="#185ABD"/><rect x="4" y="4" width="18" height="40" rx="7" fill="#103F91"/><text x="31" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">W</text></svg></button>
+               <button onclick="openSectionWordExportModal(${s.id}, ${JSON.stringify(s.title).replace(/"/g, "&quot;")})" title="Shu darsni Word (.docx) faylga eksport qilish"><svg width="14" height="14" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-2px;"><rect x="4" y="4" width="40" height="40" rx="7" fill="#185ABD"/><rect x="4" y="4" width="18" height="40" rx="7" fill="#103F91"/><text x="31" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">W</text></svg></button>
                <button onclick="deleteSection(${s.id})" title="O'chirish">🗑️</button>
            </div>`
         : "";
@@ -1446,7 +1446,7 @@ function getSortedChapterGroups() {
             groups.set(key, {
                 key,
                 chapterId: s.chapterId,
-                name: s.chapterId != null ? s.chapterName : "— Bo'limsiz mavzular —",
+                name: s.chapterId != null ? s.chapterName : "— Mavzusiz darslar —",
                 orderIndex: s.chapterId != null ? s.chapterOrderIndex : Number.MAX_SAFE_INTEGER,
                 items: []
             });
@@ -1475,7 +1475,7 @@ function renderGroupedSections() {
         : sortedGroups;
 
     if (query && visibleGroups.length === 0) {
-        list.innerHTML = `<div class="courses-empty">"${escapeHtml(chapterSearchQuery)}" bo'yicha bo'lim topilmadi</div>`;
+        list.innerHTML = `<div class="courses-empty">"${escapeHtml(chapterSearchQuery)}" bo'yicha mavzu topilmadi</div>`;
         return;
     }
 
@@ -1554,7 +1554,7 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
         bodyHtml = `
             <div class="chapter-box-body">
                 ${sortBar}
-                <h4 class="chapter-box-mavzular-title">📋 Mavzular</h4>
+                <h4 class="chapter-box-mavzular-title">📋 Darslar</h4>
                 <div class="sections-grid">${cardsHtml}</div>
                 ${paginationHtml ? `<div class="sections-pagination chapter-box-pagination">${paginationHtml}</div>` : ""}
             </div>`;
@@ -1564,14 +1564,14 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
     // bilan) — bosilganda "Bo'lim" tanlovi avtomatik shu bo'limga o'rnatiladi,
     // qayta tanlash shart emas (foydalanuvchi ANIQ shuni so'ragan).
     const addTopicBtn = (cachedCourse && cachedCourse.canManage && group.chapterId != null)
-        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openAddSectionForm(${group.chapterId})" title="Shu bo'limga mavzu qo'shish">➕</button>`
+        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openAddSectionForm(${group.chapterId})" title="Shu mavzuga dars qo'shish">➕</button>`
         : "";
 
     // "✏️" — faqat haqiqiy bo'limlarda (group.chapterId != null), "—
     // Bo'limsiz mavzular —" psevdo-guruhida ko'rsatilmaydi (uni "qayta
     // nomlash" mantiqsiz — u umuman CourseChapter yozuvi emas).
     const renameBtn = (cachedCourse && cachedCourse.canManage && group.chapterId != null)
-        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); renameChapterPrompt(${group.chapterId})" title="Bo'lim nomini tahrirlash">✏️</button>`
+        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); renameChapterPrompt(${group.chapterId})" title="Mavzu nomini tahrirlash">✏️</button>`
         : "";
 
     // "🗑️ Bo'lim + mavzular" — deleteSelectedChapter (Bo'lim tanlash
@@ -1580,7 +1580,7 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
     // BOSHQARUVIdagi mos mavzu+savollarni ham) birga o'chiradi. Foydalanuvchi
     // so'rovi bo'yicha ATAYLAB shu yerda (TEST BOSHQARUVIda EMAS).
     const deleteWithTopicsBtn = (cachedCourse && cachedCourse.canManage && group.chapterId != null)
-        ? `<button class="chapter-rename-btn danger-btn" onclick="event.stopPropagation(); deleteChapterWithLinkedTopics(${group.chapterId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Bo'lim va ichidagi barcha mavzularni (bog'langan bo'lsa, TEST BOSHQARUVIdagi savollari bilan) butunlay o'chirish">🗑️</button>`
+        ? `<button class="chapter-rename-btn danger-btn" onclick="event.stopPropagation(); deleteChapterWithLinkedTopics(${group.chapterId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Mavzu va ichidagi barcha darslarni (bog'langan bo'lsa, TEST BOSHQARUVIdagi savollari bilan) butunlay o'chirish">🗑️</button>`
         : "";
 
     // Rasmiy Word ikonkasi — faqat SHU Bo'limni Word'ga eksport qilish
@@ -1588,7 +1588,7 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
     // faqat ko'lami boshqacha; ikonka question.html'dagi Word eksport
     // tugmasi bilan bir xil SVG).
     const exportChapterBtn = (group.chapterId != null)
-        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openCourseWordExportModal(${group.chapterId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Shu bo'limni Word (.docx) faylga eksport qilish"><svg width="14" height="14" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-2px;"><rect x="4" y="4" width="40" height="40" rx="7" fill="#185ABD"/><rect x="4" y="4" width="18" height="40" rx="7" fill="#103F91"/><text x="31" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">W</text></svg></button>`
+        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openCourseWordExportModal(${group.chapterId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Shu mavzuni Word (.docx) faylga eksport qilish"><svg width="14" height="14" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-2px;"><rect x="4" y="4" width="40" height="40" rx="7" fill="#185ABD"/><rect x="4" y="4" width="18" height="40" rx="7" fill="#103F91"/><text x="31" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">W</text></svg></button>`
         : "";
 
     // "⬆⬇" — shu Bo'lim "box"ini boshqa Bo'lim bilan o'rin almashtiradi
@@ -1601,8 +1601,8 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
         const upDisabled = pos <= 0 ? "disabled" : "";
         const downDisabled = pos === realChapterGroups.length - 1 ? "disabled" : "";
         moveBtns = `
-            <button class="chapter-move-btn" onclick="event.stopPropagation(); moveChapter(${group.chapterId}, -1)" ${upDisabled} title="Bo'limni yuqoriga surish">⬆</button>
-            <button class="chapter-move-btn" onclick="event.stopPropagation(); moveChapter(${group.chapterId}, 1)" ${downDisabled} title="Bo'limni pastga surish">⬇</button>
+            <button class="chapter-move-btn" onclick="event.stopPropagation(); moveChapter(${group.chapterId}, -1)" ${upDisabled} title="Mavzuni yuqoriga surish">⬆</button>
+            <button class="chapter-move-btn" onclick="event.stopPropagation(); moveChapter(${group.chapterId}, 1)" ${downDisabled} title="Mavzuni pastga surish">⬇</button>
         `;
     }
 
@@ -2067,7 +2067,7 @@ async function populateChapterSelect(selectId, selectedChapterId, mode) {
     for (const name of externalNames) {
         options.push(`<option value="name:${encodeURIComponent(name)}">${escapeHtml(name)}</option>`);
     }
-    options.push(`<option value="${NEW_CHAPTER_OPTION}">➕ Yangi bo'lim yaratish...</option>`);
+    options.push(`<option value="${NEW_CHAPTER_OPTION}">➕ Yangi mavzu yaratish...</option>`);
 
     select.innerHTML = options.join("");
     select.value = selectedChapterId != null ? `id:${selectedChapterId}` : "";
@@ -2119,13 +2119,13 @@ async function deleteSelectedChapter(mode) {
     const chapterId = deleteBtn.dataset.chapterId;
     if (!chapterId) return;
 
-    if (!confirm("Bu bo'sh bo'limni o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.")) return;
+    if (!confirm("Bu bo'sh mavzuni o'chirmoqchimisiz? Bu amalni bekor qilib bo'lmaydi.")) return;
 
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/chapters/${chapterId}`, { method: "DELETE" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Bo'limni o'chirishda xatolik");
+            alert(data.error || "Mavzuni o'chirishda xatolik");
             return;
         }
         await populateChapterSelect(mode + "SectionChapterSelect", null, mode);
@@ -2141,7 +2141,7 @@ async function deleteSelectedChapter(mode) {
 // bu yerda CourseChapter uchun). Ochiq turgan har ikkala forma
 // (yangi/tahrirlash) select'i ham qayta yuklanadi.
 async function deleteEmptyChapters() {
-    if (!confirm("Kursdagi barcha bo'sh (hech qanday mavzuga biriktirilmagan) bo'limlarni o'chirmoqchimisiz?\n\nBu amalni bekor qilib bo'lmaydi.")) {
+    if (!confirm("Kursdagi barcha bo'sh (hech qanday darsga biriktirilmagan) mavzularni o'chirmoqchimisiz?\n\nBu amalni bekor qilib bo'lmaydi.")) {
         return;
     }
 
@@ -2154,8 +2154,8 @@ async function deleteEmptyChapters() {
         }
 
         alert(data.deleted > 0
-            ? `✅ ${data.deleted} ta bo'sh bo'lim o'chirildi.`
-            : "ℹ️ Bo'sh bo'lim topilmadi.");
+            ? `✅ ${data.deleted} ta bo'sh mavzu o'chirildi.`
+            : "ℹ️ Bo'sh mavzu topilmadi.");
 
         if (document.getElementById("newSectionChapterSelect")) {
             await populateChapterSelect("newSectionChapterSelect", null, "new");
@@ -2198,12 +2198,12 @@ function getChapterPayload(mode) {
 // unga biriktirilgan BARCHA mavzularda avtomatik yangilanadi.
 function renameChapterPrompt(chapterId) {
     const current = allSections.find(s => s.chapterId === chapterId);
-    const newName = prompt("Bo'lim nomini kiriting:", current ? current.chapterName : "");
+    const newName = prompt("Mavzu nomini kiriting:", current ? current.chapterName : "");
     if (newName === null) return; // bekor qilindi
 
     const trimmed = newName.trim();
     if (!trimmed) {
-        alert("❌ Bo'lim nomi bo'sh bo'lishi mumkin emas.");
+        alert("❌ Mavzu nomi bo'sh bo'lishi mumkin emas.");
         return;
     }
 
@@ -2219,7 +2219,7 @@ async function renameChapter(chapterId, newName) {
         });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            alert(data.error || "Bo'lim nomini o'zgartirishda xatolik");
+            alert(data.error || "Mavzu nomini o'zgartirishda xatolik");
             return;
         }
         loadCourse();
@@ -2235,12 +2235,12 @@ async function renameChapter(chapterId, newName) {
 // bo'lsa ham — foydalanuvchi darhol "➕ Mavzu qo'shish" ikonkasi orqali
 // ichiga mavzu qo'sha boshlashi mumkin).
 function createChapterPrompt() {
-    const name = prompt("Yangi bo'lim nomini kiriting:");
+    const name = prompt("Yangi mavzu nomini kiriting:");
     if (name === null) return; // bekor qilindi
 
     const trimmed = name.trim();
     if (!trimmed) {
-        alert("❌ Bo'lim nomi bo'sh bo'lishi mumkin emas.");
+        alert("❌ Mavzu nomi bo'sh bo'lishi mumkin emas.");
         return;
     }
 
@@ -2256,7 +2256,7 @@ async function createChapter(name) {
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
-            alert(data.error || "Bo'lim yaratishda xatolik");
+            alert(data.error || "Mavzu yaratishda xatolik");
             return;
         }
 
@@ -2281,7 +2281,7 @@ async function createChapter(name) {
 // tegilmaydi — bog'langan mavzu bo'lsa ham, faqat bog'lanishning o'zi
 // (avtomatik) uziladi, savollar o'z joyida, butun holda qolaveradi.
 async function deleteChapterWithLinkedTopics(chapterId, chapterName) {
-    if (!confirm(`"${chapterName}" bo'limini ICHIDAGI barcha mavzulari bilan o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — "🗑️ O'chirilgan mavzular" panelidan qaytarish mumkin. TEST BOSHQARUVIdagi savollarga tegilmaydi.)`)) {
+    if (!confirm(`"${chapterName}" mavzusini ICHIDAGI barcha darslari bilan o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — "🗑️ O'chirilgan darslar" panelidan qaytarish mumkin. TEST BOSHQARUVIdagi savollarga tegilmaydi.)`)) {
         return;
     }
 
@@ -2470,7 +2470,7 @@ async function loadTopicLinkAudit() {
         }
         const topics = await res.json();
         if (!topics.length) {
-            list.innerHTML = "<p>Bu kursda TEST BOSHQARUVIga bog'langan mavzu yo'q</p>";
+            list.innerHTML = "<p>Bu kursda TEST BOSHQARUVIga bog'langan dars yo'q</p>";
             return;
         }
 
@@ -2489,7 +2489,7 @@ async function loadTopicLinkAudit() {
             : "";
 
         if (issueTopics.length === 0) {
-            list.innerHTML = okSummary || "<p>✅ Barcha mavzularda havolalar to'g'ri!</p>";
+            list.innerHTML = okSummary || "<p>✅ Barcha darslarda havolalar to'g'ri!</p>";
             return;
         }
 
@@ -2609,7 +2609,7 @@ async function fixAllWrongTopicLinks(topicId) {
 // "🛠️ Butun kursdagi BARCHA xato havolalarni tuzatish" — kattaroq amal
 // (yuzlab savolga tegishi mumkin), shuning uchun tasdiqlash so'raladi.
 async function fixAllWrongTopicLinksInCourse() {
-    if (!confirm("⚠️ Butun kursdagi BARCHA xato havolali savollarni to'g'irlamoqchimisiz?\n\nBu amalni bekor qilib bo'lmaydi (lekin har bir havola o'zining mavzusiga to'g'irlanadi, xavfsiz).")) {
+    if (!confirm("⚠️ Butun kursdagi BARCHA xato havolali savollarni to'g'irlamoqchimisiz?\n\nBu amalni bekor qilib bo'lmaydi (lekin har bir havola o'zining darsiga to'g'irlanadi, xavfsiz).")) {
         return;
     }
     try {
@@ -2770,7 +2770,8 @@ async function togglePublish() {
                 coverImageUrl: cachedCourse.coverImageUrl,
                 free: cachedCourse.free,
                 price: cachedCourse.price,
-                published: !cachedCourse.published
+                published: !cachedCourse.published,
+                fieldId: cachedCourse.fieldId
             })
         });
 
@@ -2794,6 +2795,7 @@ function openEditCourseForm() {
     document.getElementById("editCourseFree").checked = !!(cachedCourse && cachedCourse.free);
     document.getElementById("editCoursePrice").value = (cachedCourse && cachedCourse.price) || "";
     onEditCourseFreeToggle();
+    loadFieldSelectOptions("editCourseField", cachedCourse && cachedCourse.fieldId);
 
     if (cachedCourse && cachedCourse.coverImageUrl) {
         preview.src = cachedCourse.coverImageUrl;
@@ -2826,12 +2828,38 @@ function previewEditCourseCover(fileInput) {
     preview.style.display = "block";
 }
 
+// Yo'nalish tanlash select'ini (kurs yaratish/tahrirlash formalari, ikkalasi
+// ham shu funksiyani ishlatadi) /api/course-fields'dan to'ldiradi.
+// selectedFieldId berilsa (tahrirlash formasi) — o'sha variant oldindan
+// tanlangan holda ko'rsatiladi.
+async function loadFieldSelectOptions(selectElementId, selectedFieldId) {
+    const select = document.getElementById(selectElementId);
+    if (!select) return;
+
+    try {
+        const res = await fetch("/api/course-fields");
+        const fields = await res.json();
+        select.innerHTML = `<option value="">--Yo'nalishni tanlang--</option>` +
+            fields.map(f => `<option value="${f.id}">${escapeHtml(f.name)}</option>`).join("");
+        if (selectedFieldId != null) {
+            select.value = String(selectedFieldId);
+        }
+    } catch (err) {
+        console.error("Yo'nalishlarni yuklashda xatolik:", err);
+    }
+}
+
 async function submitEditCourse() {
     const title = document.getElementById("editCourseTitle").value.trim();
     const description = document.getElementById("editCourseDescription").value.trim();
+    const fieldId = document.getElementById("editCourseField").value;
 
     if (!title) {
         alert("❌ Kurs nomini kiriting");
+        return;
+    }
+    if (!fieldId) {
+        alert("❌ Yo'nalishni tanlang");
         return;
     }
 
@@ -2863,7 +2891,8 @@ async function submitEditCourse() {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 title, description, coverImageUrl, free, price,
-                published: cachedCourse.published
+                published: cachedCourse.published,
+                fieldId: Number(fieldId)
             })
         });
 
@@ -3063,7 +3092,7 @@ async function submitAddSection() {
     const includeVideo = document.getElementById("includeVideo").checked;
 
     if (!title) {
-        alert("❌ Mavzu nomini kiriting");
+        alert("❌ Dars nomini kiriting");
         return;
     }
 
@@ -3144,7 +3173,7 @@ async function submitAddSection() {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-            alert(data.error || "Mavzu qo'shishda xatolik");
+            alert(data.error || "Dars qo'shishda xatolik");
             return;
         }
 
@@ -3181,7 +3210,7 @@ async function submitAddSection() {
 // o'chmaydi, "🗑️ O'chirilgan mavzular" panelidan ("♻️ Tiklash") bir
 // zumda qaytariladi (CourseService.deleteSection).
 async function deleteSection(sectionId) {
-    if (!confirm("Mavzuni o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — \"🗑️ O'chirilgan mavzular\" panelidan qaytarish mumkin.)")) return;
+    if (!confirm("Darsni o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — \"🗑️ O'chirilgan darslar\" panelidan qaytarish mumkin.)")) return;
 
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/sections/${sectionId}`, { method: "DELETE" });
@@ -3223,7 +3252,7 @@ async function loadSectionTrash() {
         const items = await res.json();
         setTrashBadgeCount("courseSectionTrashBadge", items.length);
         if (!items.length) {
-            list.innerHTML = "<p>O'chirilgan mavzu yo'q</p>";
+            list.innerHTML = "<p>O'chirilgan dars yo'q</p>";
             return;
         }
         list.innerHTML = items.map(s => `
@@ -3248,7 +3277,7 @@ function formatSectionTrashDate(isoString) {
 }
 
 async function restoreSection(sectionId) {
-    if (!confirm("Bu mavzuni tiklamoqchimisiz?")) return;
+    if (!confirm("Bu darsni tiklamoqchimisiz?")) return;
 
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/sections/${sectionId}/restore`, { method: "POST" });
@@ -3291,7 +3320,7 @@ async function openEditSectionForm(sectionId) {
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/sections/${sectionId}`);
         if (!res.ok) {
-            alert("Mavzu ma'lumotlarini yuklab bo'lmadi");
+            alert("Dars ma'lumotlarini yuklab bo'lmadi");
             return;
         }
         const section = await res.json();
@@ -3400,7 +3429,7 @@ async function submitEditSection() {
     const includeVideo = document.getElementById("editIncludeVideo").checked;
 
     if (!title) {
-        alert("❌ Mavzu nomini kiriting");
+        alert("❌ Dars nomini kiriting");
         return;
     }
 
@@ -3482,7 +3511,7 @@ async function submitEditSection() {
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-            alert(data.error || "Mavzuni saqlashda xatolik");
+            alert(data.error || "Darsni saqlashda xatolik");
             return;
         }
 

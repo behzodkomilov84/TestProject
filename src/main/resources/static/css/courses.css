@@ -1149,11 +1149,11 @@ body {
     margin-top: 4px;
 }
 
-/* "📋 Mavzular" — ochilgan Bo'lim ICHIDA, o'sha bo'limning mavzu
-   kartalari (.sections-grid) tepasida (foydalanuvchi so'rovi bo'yicha —
-   avval sahifa boshida BITTA umumiy sarlavha edi, endi har bir bo'lim
-   o'zining "Mavzular" yorlig'iga ega). .curriculum-title bilan bir xil
-   ruhda, lekin bo'lim ichiga mos kichikroq/xiralashgan uslubda. */
+/* "📋 Darslar" — ochilgan Mavzu (CourseChapter) ICHIDA, o'sha mavzuning
+   dars kartalari (.sections-grid, CourseSection) tepasida (foydalanuvchi
+   so'rovi bo'yicha — avval sahifa boshida BITTA umumiy sarlavha edi,
+   endi har bir Mavzu o'zining "Darslar" yorlig'iga ega). .curriculum-title
+   bilan bir xil ruhda, lekin ichiga mos kichikroq/xiralashgan uslubda. */
 .chapter-box-mavzular-title {
     margin: 0 0 10px;
     font-size: 14px;

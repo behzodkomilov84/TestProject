@@ -1,6 +1,7 @@
 package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.CourseChapterRepository;
+import behzoddev.testproject.dao.CourseFieldRepository;
 import behzoddev.testproject.dao.CourseRepository;
 import behzoddev.testproject.dao.CourseSectionProgressRepository;
 import behzoddev.testproject.dao.CourseSectionRepository;
@@ -19,6 +20,7 @@ import behzoddev.testproject.dto.course.CourseSectionSummaryDto;
 import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Course;
 import behzoddev.testproject.entity.CourseChapter;
+import behzoddev.testproject.entity.CourseField;
 import behzoddev.testproject.entity.CourseSection;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Role;
@@ -57,6 +59,8 @@ class CourseServiceTest {
 
     @Mock
     private CourseRepository courseRepository;
+    @Mock
+    private CourseFieldRepository courseFieldRepository;
     @Mock
     private CourseSectionRepository courseSectionRepository;
     @Mock
@@ -350,7 +354,7 @@ class CourseServiceTest {
 
         assertThatThrownBy(() -> courseService.addSection(1L, dto, owner()))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Mavzu nomi bo'sh");
+                .hasMessageContaining("Dars nomi bo'sh");
     }
 
     // Haqiqiy production bug: bo'lim nomi 200 belgidan (eski ustun
@@ -638,13 +642,21 @@ class CourseServiceTest {
                 Role.builder().id(2L).roleName("ROLE_ADMIN").build()))).build();
     }
 
+    // createCourse/updateCourse endi Yo'nalish (CourseField) MAJBURIY
+    // talab qiladi (foydalanuvchi so'rovi, 2026-09-04) — shu testlarda
+    // ishlatiladigan umumiy Yo'nalish (id=10).
+    private CourseField testField() {
+        return CourseField.builder().id(10L).name("Test yo'nalishi").orderIndex(1).build();
+    }
+
     @Test
     void updateCourse_adminIsCreator_allowed() {
         User admin = admin();
         Course course = Course.builder().id(1L).title("Eski nom").createdBy(admin).build();
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseFieldRepository.findById(10L)).thenReturn(Optional.of(testField()));
 
-        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null, null);
+        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null, null, 10L);
         courseService.updateCourse(1L, dto, admin);
 
         assertThat(course.getTitle()).isEqualTo("Yangi nom");
@@ -655,7 +667,7 @@ class CourseServiceTest {
         Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
 
-        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null, null);
+        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null, null, null);
 
         assertThatThrownBy(() -> courseService.updateCourse(1L, dto, admin()))
                 .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
@@ -847,7 +859,7 @@ class CourseServiceTest {
 
         assertThatThrownBy(() -> courseService.deleteChapter(1L, 10L, owner()))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("mavzular bor");
+                .hasMessageContaining("darslar bor");
 
         org.mockito.Mockito.verify(courseChapterRepository, org.mockito.Mockito.never()).delete(any());
     }
@@ -1121,8 +1133,9 @@ class CourseServiceTest {
     @Test
     void createCourse_freeTrue_setsFreeFlag() {
         when(courseRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(courseFieldRepository.findById(10L)).thenReturn(Optional.of(testField()));
 
-        CourseSaveDto dto = new CourseSaveDto("Kurs", null, null, null, true, null);
+        CourseSaveDto dto = new CourseSaveDto("Kurs", null, null, null, true, null, 10L);
         CourseDto result = courseService.createCourse(dto, owner());
 
         assertThat(result.free()).isTrue();
@@ -1132,8 +1145,9 @@ class CourseServiceTest {
     void updateCourse_freeNull_leavesExistingFreeUnchanged() {
         Course course = Course.builder().id(1L).title("Kurs").free(true).createdBy(owner()).build();
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseFieldRepository.findById(10L)).thenReturn(Optional.of(testField()));
 
-        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null, null);
+        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null, null, 10L);
         courseService.updateCourse(1L, dto, owner());
 
         assertThat(course.isFree()).isTrue();
@@ -1144,9 +1158,10 @@ class CourseServiceTest {
     @Test
     void createCourse_withPrice_savesPrice() {
         when(courseRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(courseFieldRepository.findById(10L)).thenReturn(Optional.of(testField()));
 
         CourseSaveDto dto = new CourseSaveDto("Kurs", null, null, null, false,
-                new java.math.BigDecimal("150000"));
+                new java.math.BigDecimal("150000"), 10L);
         CourseDto result = courseService.createCourse(dto, owner());
 
         assertThat(result.price()).isEqualByComparingTo("150000");
@@ -1157,9 +1172,10 @@ class CourseServiceTest {
         Course course = Course.builder().id(1L).title("Kurs")
                 .price(new java.math.BigDecimal("100000")).createdBy(owner()).build();
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseFieldRepository.findById(10L)).thenReturn(Optional.of(testField()));
 
         CourseSaveDto dto = new CourseSaveDto("Kurs", null, null, null, null,
-                new java.math.BigDecimal("200000"));
+                new java.math.BigDecimal("200000"), 10L);
         courseService.updateCourse(1L, dto, owner());
 
         assertThat(course.getPrice()).isEqualByComparingTo("200000");

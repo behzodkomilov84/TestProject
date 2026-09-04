@@ -18,6 +18,10 @@ public record CourseDetailDto(
         boolean subscribed,
         boolean requestPending, // foydalanuvchi obunaga so'rov yuborgan, OWNER hali ko'rib chiqmagan
         boolean canManage, // OWNER uchun tahrirlash tugmalarini ko'rsatish
+        // "✏️ Tahrirlash" formasida Yo'nalish select'ini oldindan
+        // to'ldirish uchun (courseDetail.js).
+        Long fieldId,
+        String fieldName,
         List<CourseSectionSummaryDto> sections
 ) {
 }

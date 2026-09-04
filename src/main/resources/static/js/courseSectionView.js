@@ -119,7 +119,7 @@ function loadSection() {
     fetch(`/api/courses/${COURSE_ID}/sections/${SECTION_ID}`)
         .then(r => {
             if (!r.ok) {
-                return r.json().then(data => { throw new Error(data.error || "Mavzu topilmadi yoki hali ochilmagan"); });
+                return r.json().then(data => { throw new Error(data.error || "Dars topilmadi yoki hali ochilmagan"); });
             }
             return r.json();
         })
@@ -470,7 +470,7 @@ function setupVideoCompletionTracking(data) {
     // shu vaqt o'tgach avtomatik belgilaymiz; aks holda qo'lda tasdiqlash tugmasi.
     if (data.videoDurationSeconds && data.videoDurationSeconds > 0) {
         document.getElementById("nextHint").textContent =
-            `Video tugagach (${data.videoDurationSeconds} soniya) keyingi mavzu ochiladi...`;
+            `Video tugagach (${data.videoDurationSeconds} soniya) keyingi dars ochiladi...`;
         externalTimerId = setTimeout(() => markCompleted(), data.videoDurationSeconds * 1000);
     } else {
         const hint = document.getElementById("nextHint");
@@ -526,7 +526,7 @@ function updateNextButton(data) {
         return;
     }
 
-    btn.textContent = "Keyingi mavzu →";
+    btn.textContent = "Keyingi dars →";
     btn.disabled = !data.nextUnlocked;
     btn.onclick = () => {
         location.href = `/courses/${COURSE_ID}/sections/${data.nextSectionId}`;

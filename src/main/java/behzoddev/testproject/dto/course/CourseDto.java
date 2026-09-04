@@ -23,6 +23,11 @@ public record CourseDto(
         // (haqiqiy foydalanuvchi shikoyati — aslida mavzular soni edi).
         int chapterCount,
         boolean subscribed, // joriy foydalanuvchi obuna bo'lganmi (yoki kurs bepul/canManage)
+        // Bo'lim (Course) qaysi Yo'nalishga tegishli — coursesCatalog.js
+        // shu bo'yicha kartalarni guruhlaydi. fieldId=null — "Yo'nalishsiz
+        // kurslar" psevdo-guruhida (eski kurslar, migratsiyadan oldingi).
+        Long fieldId,
+        String fieldName,
         LocalDateTime createdAt,
         // Ixtiyoriy — faqat "O'chirilganlar savati" ro'yxatida to'ldiriladi
         // (qachon o'chirilganini ko'rsatish uchun). Oddiy katalogda har

@@ -52,6 +52,16 @@ public class Course {
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
 
+    // "Bo'lim" (Course) qaysi "Yo'nalish" (CourseField) ostida ekani —
+    // DB darajasida ixtiyoriy (Yo'nalish o'chirilsa ON DELETE SET NULL —
+    // kurs "yetim" bo'lib qoladi, keyin qo'lda boshqasiga o'tkaziladi),
+    // lekin YANGI kurs yaratishda ilova darajasida MAJBURIY talab
+    // qilinadi (CourseService.createCourse — foydalanuvchi so'rovi,
+    // 2026-09-04, "aralashib ketmasin" deb).
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "field_id")
+    private CourseField field;
+
     @Column(name = "created_at", nullable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

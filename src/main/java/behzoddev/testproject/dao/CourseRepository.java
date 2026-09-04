@@ -46,4 +46,8 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     // (reclaimArchivedCourse).
     @Query("SELECT c FROM Course c WHERE c.archivedByAdmin IS NOT NULL ORDER BY c.archivedAt DESC")
     List<Course> findArchivedByAdminOrderByArchivedAtDesc();
+
+    // Yo'nalish kartochkasida "N ta bo'lim" (coursesCatalog.js) —
+    // CourseFieldService.toDto. Faqat FAOL (o'chirilmagan) kurslar sanaladi.
+    long countByField_IdAndDeletedAtIsNull(Long fieldId);
 }

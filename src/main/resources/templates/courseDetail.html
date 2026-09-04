@@ -42,12 +42,12 @@
             <div class="manage-actions-row">
                 <button onclick="togglePublish()" id="togglePublishBtn">—</button>
                 <button onclick="openEditCourseForm()">✏️ Tahrirlash</button>
-                <button id="openAddSectionBtn" onclick="openAddSectionForm()">➕ Mavzu qo'shish</button>
-                <!-- Bo'sh (mavzusiz) Bo'limni to'g'ridan-to'g'ri yaratadi
-                     (createChapterPrompt, courseDetail.js) — avval Bo'lim
-                     FAQAT mavzu qo'shish payti ("➕ Yangi bo'lim yaratish...")
+                <button id="openAddSectionBtn" onclick="openAddSectionForm()">➕ Dars qo'shish</button>
+                <!-- Bo'sh (darssiz) Mavzuni to'g'ridan-to'g'ri yaratadi
+                     (createChapterPrompt, courseDetail.js) — avval Mavzu
+                     FAQAT dars qo'shish payti ("➕ Yangi mavzu yaratish...")
                      bilvosita yaratilardi. -->
-                <button id="openAddChapterBtn" onclick="createChapterPrompt()">➕ Bo'lim qo'shish</button>
+                <button id="openAddChapterBtn" onclick="createChapterPrompt()">➕ Mavzu qo'shish</button>
                 <button id="manageSubscriptionsBtn" onclick="location.href='/courses/subscriptions?courseId=' + COURSE_ID">
                     💳 Obunalarni boshqarish
                 </button>
@@ -70,7 +70,7 @@
                      O'ZINING mavzusiga (emas, boshqa mavzuga) bog'lanib
                      qolgan bo'lishi mumkin — bu tugma shuni tekshirib,
                      natijani ko'rsatadi (CourseService.auditTopicLinks). -->
-                <button id="topicLinkAuditBtn" onclick="toggleTopicLinkAudit()" title="Har bir mavzudagi savollarning izohidagi havola O'ZINING mavzusiga to'g'ri bog'langanini tekshiradi — xato/yo'q havolalarni ko'rsatadi va tuzatish tugmalarini beradi">
+                <button id="topicLinkAuditBtn" onclick="toggleTopicLinkAudit()" title="Har bir darsdagi savollarning izohidagi havola O'ZINING darsiga to'g'ri bog'langanini tekshiradi — xato/yo'q havolalarni ko'rsatadi va tuzatish tugmalarini beradi">
                     🔗 Havolalarni tekshirish
                 </button>
                 <!-- Ba'zi savollarning izohida bir nechta mavzu havola
@@ -86,7 +86,7 @@
                 <!-- Soft-delete qilingan (🗑️ o'chirilgan) kurs mavzulari —
                      "♻️ Tiklash" bilan bir zumda qaytariladi (CourseService.
                      getDeletedSections/restoreSection). -->
-                <button id="sectionTrashBtn" onclick="toggleSectionTrash()">🗑️ O'chirilgan mavzular <span id="courseSectionTrashBadge" class="notif-badge" style="display:none;">0</span></button>
+                <button id="sectionTrashBtn" onclick="toggleSectionTrash()">🗑️ O'chirilgan darslar <span id="courseSectionTrashBadge" class="notif-badge" style="display:none;">0</span></button>
                 <!-- Foydalanuvchi so'rovi bo'yicha — eng xavfli amal (kursni
                      o'chirish) qatorning ENG OXIRIGA ko'chirildi, tasodifan
                      bosilib ketmasligi uchun. -->
@@ -110,6 +110,11 @@
 
             <label class="field-label" for="editCourseDescription">Tavsif</label>
             <textarea id="editCourseDescription" placeholder="Kurs tavsifi" rows="3"></textarea>
+
+            <!-- Bo'lim (bu Kurs) qaysi Yo'nalishga tegishli — majburiy
+                 (loadFieldSelectOptions, courseDetail.js). -->
+            <label class="field-label" for="editCourseField">Yo'nalish</label>
+            <select id="editCourseField"></select>
 
             <label class="content-toggle-label">
                 <input type="checkbox" id="editCourseFree" onchange="onEditCourseFreeToggle()"> 🆓 Bepul kurs (obunasiz ham hammaga ochiq — botda ham)
@@ -136,8 +141,8 @@
              boshqa modallar bilan bir xil ".modal-overlay"/".show" andozasi). -->
         <div id="addSectionForm" class="modal-overlay">
         <div class="section-form section-form-modal">
-            <label class="field-label" for="newSectionTitle">Mavzu nomi</label>
-            <input type="text" id="newSectionTitle" placeholder="Mavzu nomi" maxlength="500" oninput="onSectionTitleInput('new')">
+            <label class="field-label" for="newSectionTitle">Dars nomi</label>
+            <input type="text" id="newSectionTitle" placeholder="Dars nomi" maxlength="500" oninput="onSectionTitleInput('new')">
 
             <!-- Matn va video bir vaqtning o'zida ham qo'shilishi mumkin —
                  kamida bittasi belgilangan bo'lishi shart. -->
@@ -216,7 +221,7 @@
             <label class="content-toggle-label">
                 <input type="checkbox" id="includeVideo" onchange="onContentToggle(this)"> 🎬 Video qo'shish
             </label>
-            <div class="field-hint">Bu — bo'limning ASOSIY videosi: talaba uni oxirigacha ko'rmaguncha keyingi mavzu ochilmaydi. (Matn ichiga, xohlagan joyga video qo'yish uchun esa yuqoridagi rich-toolbardagi 🎬 tugmasidan foydalaning — undagi videoni tomosha qilish keyingi mavzuga o'tishga bog'liq emas.)</div>
+            <div class="field-hint">Bu — darsning ASOSIY videosi: talaba uni oxirigacha ko'rmaguncha keyingi dars ochilmaydi. (Matn ichiga, xohlagan joyga video qo'yish uchun esa yuqoridagi rich-toolbardagi 🎬 tugmasidan foydalaning — undagi videoni tomosha qilish keyingi darsga o'tishga bog'liq emas.)</div>
             <div id="videoFields" style="display:none;">
                 <label class="field-label" for="newSectionVideoSource">Video manbasi</label>
                 <select id="newSectionVideoSource" onchange="onVideoSourceChange()">
@@ -252,21 +257,21 @@
                 <input type="text" id="newSectionScienceOther" placeholder="Fan nomi" style="display:none;">
                 <div class="field-hint">Masalan: Kimyo</div>
 
-                <label class="field-label" for="newSectionChapterSelect">Bo'lim (ixtiyoriy)</label>
+                <label class="field-label" for="newSectionChapterSelect">Mavzu (ixtiyoriy)</label>
                 <div class="chapter-select-row">
                     <select id="newSectionChapterSelect" onchange="onChapterSelectChange('new')"></select>
                     <!-- Faqat tanlangan Bo'lim BO'SH (hech qanday mavzuga
                          biriktirilmagan) bo'lsa ko'rinadi (onChapterSelectChange). -->
                     <button type="button" id="newSectionChapterDeleteBtn" class="chapter-select-delete-btn"
                             style="display:none;" onclick="deleteSelectedChapter('new')"
-                            title="Bu bo'sh bo'limni o'chirish">🗑️</button>
+                            title="Bu bo'sh mavzuni o'chirish">🗑️</button>
                     <!-- Kursdagi BARCHA bo'sh (hech qanday mavzuga
                          biriktirilmagan) Bo'limlarni bir yo'la o'chiradi. -->
                     <button type="button" class="chapter-select-delete-btn" onclick="deleteEmptyChapters()"
-                            title="Kursdagi barcha bo'sh bo'limlarni o'chirish">🗑️ Bo'shlarni tozalash</button>
+                            title="Kursdagi barcha bo'sh mavzularni o'chirish">🗑️ Bo'shlarni tozalash</button>
                 </div>
                 <input type="text" id="newSectionChapterNewInput" style="display:none;"
-                       placeholder="📂 Yangi bo'lim nomi (masalan: 1-BOB)" maxlength="255">
+                       placeholder="📂 Yangi mavzu nomi (masalan: 1-BOB)" maxlength="255">
 
                 <label class="field-label" for="newSectionTopicName">Mavzu nomi</label>
                 <input type="text" id="newSectionTopicName" placeholder="Mavzu nomi" oninput="onTopicNameInput('new')">
@@ -274,7 +279,7 @@
             </div>
 
             <div class="course-form-actions">
-                <button onclick="submitAddSection()">✅ Mavzuni qo'shish</button>
+                <button onclick="submitAddSection()">✅ Darsni qo'shish</button>
                 <button onclick="closeAddSectionForm()">Bekor qilish</button>
             </div>
         </div>
@@ -283,8 +288,8 @@
         <!-- Mavzuni tahrirlash — "✏️" tugmasi bosilganda shu bitta forma
              tanlangan bo'lim ma'lumotlari bilan to'ldirilib ochiladi. -->
         <div id="editSectionForm" class="section-form" style="display:none;">
-            <label class="field-label" for="editSectionTitle">Mavzu nomi</label>
-            <input type="text" id="editSectionTitle" placeholder="Mavzu nomi" maxlength="500" oninput="onSectionTitleInput('edit')">
+            <label class="field-label" for="editSectionTitle">Dars nomi</label>
+            <input type="text" id="editSectionTitle" placeholder="Dars nomi" maxlength="500" oninput="onSectionTitleInput('edit')">
 
             <label class="content-toggle-label">
                 <input type="checkbox" id="editIncludeText" onchange="onEditContentToggle(this)"> 📄 Matn qo'shish
@@ -361,7 +366,7 @@
             <label class="content-toggle-label">
                 <input type="checkbox" id="editIncludeVideo" onchange="onEditContentToggle(this)"> 🎬 Video qo'shish
             </label>
-            <div class="field-hint">Bu — bo'limning ASOSIY videosi: talaba uni oxirigacha ko'rmaguncha keyingi mavzu ochilmaydi. (Matn ichiga, xohlagan joyga video qo'yish uchun esa yuqoridagi rich-toolbardagi 🎬 tugmasidan foydalaning — undagi videoni tomosha qilish keyingi mavzuga o'tishga bog'liq emas.)</div>
+            <div class="field-hint">Bu — darsning ASOSIY videosi: talaba uni oxirigacha ko'rmaguncha keyingi dars ochilmaydi. (Matn ichiga, xohlagan joyga video qo'yish uchun esa yuqoridagi rich-toolbardagi 🎬 tugmasidan foydalaning — undagi videoni tomosha qilish keyingi darsga o'tishga bog'liq emas.)</div>
             <div id="editVideoFields" style="display:none;">
                 <label class="field-label" for="editSectionVideoSource">Video manbasi</label>
                 <select id="editSectionVideoSource" onchange="onEditVideoSourceChange()">
@@ -384,17 +389,17 @@
                 <input type="text" id="editSectionScienceOther" placeholder="Fan nomi" style="display:none;">
                 <div class="field-hint">Masalan: Kimyo</div>
 
-                <label class="field-label" for="editSectionChapterSelect">Bo'lim (ixtiyoriy)</label>
+                <label class="field-label" for="editSectionChapterSelect">Mavzu (ixtiyoriy)</label>
                 <div class="chapter-select-row">
                     <select id="editSectionChapterSelect" onchange="onChapterSelectChange('edit')"></select>
                     <button type="button" id="editSectionChapterDeleteBtn" class="chapter-select-delete-btn"
                             style="display:none;" onclick="deleteSelectedChapter('edit')"
-                            title="Bu bo'sh bo'limni o'chirish">🗑️</button>
+                            title="Bu bo'sh mavzuni o'chirish">🗑️</button>
                     <button type="button" class="chapter-select-delete-btn" onclick="deleteEmptyChapters()"
-                            title="Kursdagi barcha bo'sh bo'limlarni o'chirish">🗑️ Bo'shlarni tozalash</button>
+                            title="Kursdagi barcha bo'sh mavzularni o'chirish">🗑️ Bo'shlarni tozalash</button>
                 </div>
                 <input type="text" id="editSectionChapterNewInput" style="display:none;"
-                       placeholder="📂 Yangi bo'lim nomi (masalan: 1-BOB)" maxlength="255">
+                       placeholder="📂 Yangi mavzu nomi (masalan: 1-BOB)" maxlength="255">
 
                 <label class="field-label" for="editSectionTopicName">Mavzu nomi</label>
                 <input type="text" id="editSectionTopicName" placeholder="Mavzu nomi" oninput="onTopicNameInput('edit')">
@@ -425,12 +430,12 @@
     </div>
 
     <!-- Matni dinamik (courseDetail.js#renderSections): kursda kamida
-         bitta Bo'lim bo'lsa "📂 Bo'limlar" (chunki pastda endi bo'lim
-         "box"lari ko'rinadi, to'g'ridan-to'g'ri mavzu kartalari emas),
-         aks holda (bo'limsiz, tekis ro'yxat) "📋 Mavzular" — foydalanuvchi
-         so'rovi bo'yicha, "📋 Mavzular" endi HAR BIR ochilgan Bo'lim
-         ICHIDA, o'sha bo'limning mavzu kartalari ustida ko'rinadi. -->
-    <h2 id="curriculumTitle" class="curriculum-title">📋 Mavzular</h2>
+         bitta Mavzu (CourseChapter) bo'lsa "📂 Mavzular" (chunki pastda
+         endi mavzu "box"lari ko'rinadi, to'g'ridan-to'g'ri dars kartalari
+         emas), aks holda (mavzusiz, tekis ro'yxat) "📋 Darslar" —
+         foydalanuvchi so'rovi bo'yicha, "📋 Darslar" endi HAR BIR ochilgan
+         Mavzu ICHIDA, o'sha mavzuning dars kartalari ustida ko'rinadi. -->
+    <h2 id="curriculumTitle" class="curriculum-title">📋 Darslar</h2>
 
     <!-- Ikkala qidiruv qutisi (kurs ichidan qidirish + bo'lim qidirish)
          yonma-yon (tor ekranda pastma-past tushadi — .search-boxes-row,
@@ -444,7 +449,7 @@
              bosilsa — o'sha bo'lim/darsning o'ziga o'tadi. -->
         <div class="explanation-search-box" id="explanationSearchBox">
             <input type="text" id="explanationSearchInput" class="explanation-search-input"
-                   placeholder="🔍 Kurs ichidan qidirish (mavzu yoritmasidan)...">
+                   placeholder="🔍 Kurs ichidan qidirish (dars yoritmasidan)...">
             <div id="explanationSearchResults" class="explanation-search-results hidden"></div>
         </div>
 
@@ -455,7 +460,7 @@
              qolardi. -->
         <div id="chapterSearchBox" class="explanation-search-box" style="display:none;">
             <input type="text" id="chapterSearchInput" class="explanation-search-input"
-                   placeholder="🔍 Bo'lim nomi bo'yicha qidirish..." oninput="onChapterSearchInput(this.value)">
+                   placeholder="🔍 Mavzu nomi bo'yicha qidirish..." oninput="onChapterSearchInput(this.value)">
         </div>
     </div>
 
@@ -516,11 +521,11 @@
 
         <label class="word-export-checkbox-row">
             <input type="checkbox" id="courseExportContent" checked>
-            📄 Kurs mavzulari (dars matni/video)
+            📄 Kurs darslari (matn/video)
         </label>
         <label class="word-export-checkbox-row">
             <input type="checkbox" id="courseExportTests" checked onchange="onCourseExportTestsToggle()">
-            📝 Testlar (mavzularga bog'langan savollar)
+            📝 Testlar (darslarga bog'langan savollar)
         </label>
         <label class="word-export-checkbox-row">
             <input type="checkbox" id="courseExportAnswers" checked>
@@ -528,7 +533,7 @@
         </label>
 
         <p class="word-export-hint">
-            Tartib har doim shunday: avval kurs mavzulari, keyin testlar
+            Tartib har doim shunday: avval kurs darslari, keyin testlar
             (to'g'ri javob BELGILANMAGAN holda), eng oxirida — alohida
             bo'lim sifatida — javoblar.
         </p>

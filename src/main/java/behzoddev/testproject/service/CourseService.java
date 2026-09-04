@@ -1,6 +1,7 @@
 package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.CourseChapterRepository;
+import behzoddev.testproject.dao.CourseFieldRepository;
 import behzoddev.testproject.dao.CourseRepository;
 import behzoddev.testproject.dao.CourseSectionProgressRepository;
 import behzoddev.testproject.dao.CourseSectionRepository;
@@ -14,6 +15,7 @@ import behzoddev.testproject.dto.question.TopicQuestionCountDto;
 import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Course;
 import behzoddev.testproject.entity.CourseChapter;
+import behzoddev.testproject.entity.CourseField;
 import behzoddev.testproject.entity.CourseSection;
 import behzoddev.testproject.entity.CourseSectionProgress;
 import behzoddev.testproject.entity.Question;
@@ -60,6 +62,7 @@ import java.util.stream.Collectors;
 public class CourseService {
 
     private final CourseRepository courseRepository;
+    private final CourseFieldRepository courseFieldRepository;
     private final CourseSectionRepository courseSectionRepository;
     private final CourseChapterRepository courseChapterRepository;
     private final CourseSubscriptionRepository courseSubscriptionRepository;
@@ -186,6 +189,8 @@ public class CourseService {
                 .subscribed(subscribed || canManage)
                 .requestPending(requestPending)
                 .canManage(canManage)
+                .fieldId(course.getField() != null ? course.getField().getId() : null)
+                .fieldName(course.getField() != null ? course.getField().getName() : null)
                 .sections(sectionDtos)
                 .build();
     }
@@ -206,7 +211,7 @@ public class CourseService {
 
         if (!canManage && !isSectionUnlockedGivenPrev(
                 currentUser, previousInChapterBySectionId.get(section.getId()), subscribed)) {
-            throw new AccessDeniedException("⛔ Bu mavzu hali ochilmagan. Avval oldingi mavzuni tugatish kerak.");
+            throw new AccessDeniedException("⛔ Bu dars hali ochilmagan. Avval oldingi darsni tugatish kerak.");
         }
 
         boolean completed = courseSectionProgressRepository
@@ -263,7 +268,7 @@ public class CourseService {
         boolean subscribed = isSubscribed(currentUser, course);
 
         if (!canManage && !isSectionUnlocked(currentUser, section, subscribed)) {
-            throw new AccessDeniedException("⛔ Bu mavzuni tugatish uchun avval ochilgan bo'lishi kerak.");
+            throw new AccessDeniedException("⛔ Bu darsni tugatish uchun avval ochilgan bo'lishi kerak.");
         }
 
         if (courseSectionProgressRepository.existsByUser_IdAndSection_Id(currentUser.getId(), section.getId())) {
@@ -335,6 +340,7 @@ public class CourseService {
     @Transactional
     public CourseDto createCourse(CourseSaveDto dto, User owner) {
         validateTitle(dto.title());
+        CourseField field = getFieldOrThrowForAssignment(dto.fieldId());
 
         Course course = Course.builder()
                 .title(dto.title().trim())
@@ -344,6 +350,7 @@ public class CourseService {
                 .free(dto.free() != null && dto.free())
                 .price(dto.price())
                 .createdBy(owner)
+                .field(field)
                 .build();
 
         courseRepository.save(course);
@@ -355,11 +362,13 @@ public class CourseService {
         Course course = getCourseOrThrow(courseId);
         checkCanManage(course, currentUser);
         validateTitle(dto.title());
+        CourseField field = getFieldOrThrowForAssignment(dto.fieldId());
 
         course.setTitle(dto.title().trim());
         course.setDescription(dto.description());
         course.setCoverImageUrl(dto.coverImageUrl());
         course.setPrice(dto.price());
+        course.setField(field);
         if (dto.published() != null) {
             course.setPublished(dto.published());
         }
@@ -369,6 +378,19 @@ public class CourseService {
 
         courseRepository.save(course);
         return toDto(course, course.getCreatedBy());
+    }
+
+    // Yangi kurs yaratishda ("Bo'lim") Yo'nalish MAJBURIY — foydalanuvchi
+    // so'rovi bo'yicha (2026-09-04), turli sohalarga tegishli kurslar bitta
+    // tekis ro'yxatda aralashib ketmasligi uchun. Tahrirlashda ham har doim
+    // yuboriladi (aks holda mavjud bog'lanish tasodifan yo'qolib qolmasin).
+    private CourseField getFieldOrThrowForAssignment(Long fieldId) {
+        if (fieldId == null) {
+            throw new IllegalArgumentException("❌ Yo'nalish tanlanishi shart.");
+        }
+        return courseFieldRepository.findById(fieldId)
+                .filter(f -> f.getDeletedAt() == null)
+                .orElseThrow(() -> new NoSuchElementException("Yo'nalish topilmadi"));
     }
 
     // Kursni "O'chirilganlar savati"ga o'tkazish (soft-delete) — DARHOL
@@ -623,7 +645,7 @@ public class CourseService {
         checkCanManage(course, currentUser);
         CourseSection section = getAnySectionOrThrow(sectionId, courseId);
         if (section.getDeletedAt() == null) {
-            throw new IllegalArgumentException("❌ Bu mavzu o'chirilmagan — tiklashning hojati yo'q.");
+            throw new IllegalArgumentException("❌ Bu dars o'chirilmagan — tiklashning hojati yo'q.");
         }
         section.setDeletedAt(null);
         courseSectionRepository.save(section);
@@ -639,7 +661,7 @@ public class CourseService {
         CourseSection section = getAnySectionOrThrow(sectionId, courseId);
         if (section.getDeletedAt() == null) {
             throw new IllegalArgumentException(
-                    "❌ Bu mavzuni butunlay o'chirishdan oldin, avval oddiy \"O'chirish\" orqali savatga o'tkazish kerak.");
+                    "❌ Bu darsni butunlay o'chirishdan oldin, avval oddiy \"O'chirish\" orqali savatga o'tkazish kerak.");
         }
         courseSectionProgressRepository.deleteBySection_Id(sectionId);
         courseSectionRepository.delete(section);
@@ -661,7 +683,7 @@ public class CourseService {
         }
 
         if (orderedSectionIds.size() != sections.size() || !byId.keySet().containsAll(orderedSectionIds)) {
-            throw new IllegalArgumentException("❌Mavzular ro'yxati kursning mavzulariga mos kelmayapti.");
+            throw new IllegalArgumentException("❌Darslar ro'yxati kursning darslariga mos kelmayapti.");
         }
 
         int index = 1;
@@ -753,7 +775,7 @@ public class CourseService {
         if (chapterId != null) {
             return courseChapterRepository.findById(chapterId)
                     .filter(c -> c.getCourse().getId().equals(course.getId()))
-                    .orElseThrow(() -> new IllegalArgumentException("❌ Tanlangan bo'lim topilmadi."));
+                    .orElseThrow(() -> new IllegalArgumentException("❌ Tanlangan mavzu topilmadi."));
         }
 
         if (newChapterName == null || newChapterName.isBlank()) {
@@ -786,13 +808,13 @@ public class CourseService {
         checkCanManage(course, currentUser);
 
         if (newName == null || newName.isBlank()) {
-            throw new IllegalArgumentException("❌ Bo'lim nomi bo'sh bo'lishi mumkin emas.");
+            throw new IllegalArgumentException("❌ Mavzu nomi bo'sh bo'lishi mumkin emas.");
         }
         String trimmedNewName = newName.trim();
 
         CourseChapter chapter = courseChapterRepository.findById(chapterId)
                 .filter(c -> c.getCourse().getId().equals(courseId))
-                .orElseThrow(() -> new NoSuchElementException("Bo'lim topilmadi"));
+                .orElseThrow(() -> new NoSuchElementException("Mavzu topilmadi"));
 
         String oldName = chapter.getName();
         chapter.setName(trimmedNewName);
@@ -831,7 +853,7 @@ public class CourseService {
         }
 
         if (orderedChapterIds.size() != chapters.size() || !byId.keySet().containsAll(orderedChapterIds)) {
-            throw new IllegalArgumentException("❌ Bo'limlar ro'yxati kursning bo'limlariga mos kelmayapti.");
+            throw new IllegalArgumentException("❌ Mavzular ro'yxati kursning mavzulariga mos kelmayapti.");
         }
 
         int index = 1;
@@ -921,12 +943,12 @@ public class CourseService {
         checkCanManage(course, currentUser);
 
         if (name == null || name.isBlank()) {
-            throw new IllegalArgumentException("❌ Bo'lim nomini kiriting.");
+            throw new IllegalArgumentException("❌ Mavzu nomini kiriting.");
         }
         String trimmed = name.trim();
 
         if (courseChapterRepository.findByCourse_IdAndNameIgnoreCase(courseId, trimmed).isPresent()) {
-            throw new IllegalArgumentException("❌ Bu nomli bo'lim allaqachon mavjud.");
+            throw new IllegalArgumentException("❌ Bu nomli mavzu allaqachon mavjud.");
         }
 
         int nextOrder = courseChapterRepository.findTopByCourse_IdOrderByOrderIndexDesc(courseId)
@@ -953,11 +975,11 @@ public class CourseService {
 
         CourseChapter chapter = courseChapterRepository.findById(chapterId)
                 .filter(c -> c.getCourse().getId().equals(courseId))
-                .orElseThrow(() -> new NoSuchElementException("Bo'lim topilmadi"));
+                .orElseThrow(() -> new NoSuchElementException("Mavzu topilmadi"));
 
         if (courseSectionRepository.existsByChapter_Id(chapterId)) {
             throw new IllegalArgumentException(
-                    "❌ Bu bo'limda mavzular bor — avval ularni boshqa bo'limga o'tkazing yoki Bo'limsiz qiling.");
+                    "❌ Bu mavzuda darslar bor — avval ularni boshqa mavzuga o'tkazing yoki Mavzusiz qiling.");
         }
 
         courseChapterRepository.delete(chapter);
@@ -986,7 +1008,7 @@ public class CourseService {
 
         CourseChapter chapter = courseChapterRepository.findById(chapterId)
                 .filter(c -> c.getCourse().getId().equals(courseId))
-                .orElseThrow(() -> new NoSuchElementException("Bo'lim topilmadi"));
+                .orElseThrow(() -> new NoSuchElementException("Mavzu topilmadi"));
 
         List<CourseSection> chapterSections = courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(courseId).stream()
                 .filter(s -> s.getChapter() != null && s.getChapter().getId().equals(chapterId))
@@ -1112,11 +1134,11 @@ public class CourseService {
 
     private void validateSectionDto(CourseSectionSaveDto dto) {
         if (dto.title() == null || dto.title().isBlank()) {
-            throw new IllegalArgumentException("❌Mavzu nomi bo'sh bo'lishi mumkin emas.");
+            throw new IllegalArgumentException("❌Dars nomi bo'sh bo'lishi mumkin emas.");
         }
 
         if (dto.title().trim().length() > SECTION_TITLE_MAX_LENGTH) {
-            throw new IllegalArgumentException("❌Mavzu nomi juda uzun (ko'pi bilan "
+            throw new IllegalArgumentException("❌Dars nomi juda uzun (ko'pi bilan "
                     + SECTION_TITLE_MAX_LENGTH + " ta belgi bo'lishi kerak).");
         }
 
@@ -1124,7 +1146,7 @@ public class CourseService {
         try {
             type = CourseSectionType.valueOf(dto.type());
         } catch (Exception e) {
-            throw new IllegalArgumentException("❌Mavzu turi noto'g'ri (TEXT, VIDEO yoki MIXED bo'lishi kerak).");
+            throw new IllegalArgumentException("❌Dars turi noto'g'ri (TEXT, VIDEO yoki MIXED bo'lishi kerak).");
         }
 
         // MIXED — bo'limda ham matn, ham video bo'lgani uchun ikkala tekshiruv
@@ -1169,20 +1191,20 @@ public class CourseService {
     private CourseSection getSectionOrThrow(Long sectionId, Long courseId) {
         CourseSection section = getAnySectionOrThrow(sectionId, courseId);
         if (section.getDeletedAt() != null) {
-            throw new NoSuchElementException("Mavzu topilmadi");
+            throw new NoSuchElementException("Dars topilmadi");
         }
         return section;
     }
 
     // FAQAT "O'chirilganlar savati" amallari (restoreSection,
     // permanentlyDeleteSection, getDeletedSections) uchun — soft-delete
-    // qilingan mavzuni ham topa oladi.
+    // qilingan darsni ham topa oladi.
     private CourseSection getAnySectionOrThrow(Long sectionId, Long courseId) {
         CourseSection section = courseSectionRepository.findById(sectionId)
-                .orElseThrow(() -> new NoSuchElementException("Mavzu topilmadi"));
+                .orElseThrow(() -> new NoSuchElementException("Dars topilmadi"));
 
         if (!section.getCourse().getId().equals(courseId)) {
-            throw new IllegalArgumentException("❌Mavzu bu kursga tegishli emas.");
+            throw new IllegalArgumentException("❌Dars bu kursga tegishli emas.");
         }
 
         return section;
@@ -1204,6 +1226,8 @@ public class CourseService {
                 .sectionCount(sectionCount)
                 .chapterCount(chapterCount)
                 .subscribed(subscribed)
+                .fieldId(course.getField() != null ? course.getField().getId() : null)
+                .fieldName(course.getField() != null ? course.getField().getName() : null)
                 .createdAt(course.getCreatedAt())
                 .deletedAt(course.getDeletedAt())
                 .build();
