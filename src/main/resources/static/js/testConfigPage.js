@@ -180,15 +180,15 @@ function loadTopics(id) {
             const sectionSelect = document.getElementById("sectionSelect");
 
             if (sectionsById.size === 0) {
-                // Bu fanda Bo'lim umuman yo'q — eskicha, to'g'ridan-to'g'ri
-                // tekis ro'yxat (Bo'lim qadami butunlay o'tkazib yuboriladi).
+                // Bu bo'limda Mavzu umuman yo'q — eskicha, to'g'ridan-to'g'ri
+                // tekis ro'yxat (Mavzu qadami butunlay o'tkazib yuboriladi).
                 bolimSection.classList.add("hidden");
                 renderTopicCheckboxes(data);
                 return;
             }
 
             bolimSection.classList.remove("hidden");
-            sectionSelect.innerHTML = '<option value="">-- Bo\'limni tanlang --</option>';
+            sectionSelect.innerHTML = '<option value="">-- Mavzuni tanlang --</option>';
 
             Array.from(sectionsById.values())
                 .sort((a, b) => a.orderIndex - b.orderIndex)
