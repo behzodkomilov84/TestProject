@@ -177,6 +177,20 @@ body {
     transform: translateY(-3px);
 }
 
+/* Kurs sahifasidan "← Kurslar" bosib qaytilganda (courses.js#focusCourseId)
+   — o'sha karta bir necha soniya ko'k ramka bilan ajratib ko'rsatiladi,
+   foydalanuvchi qaysi kursdan qaytganini darhol topsin deb. */
+.course-card-focused {
+    outline: 3px solid #1976d2;
+    outline-offset: 2px;
+    animation: courseCardFocusPulse 1s ease-in-out;
+}
+
+@keyframes courseCardFocusPulse {
+    0%, 100% { box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+    50% { box-shadow: 0 4px 22px rgba(25, 118, 210, 0.45); }
+}
+
 .course-card-cover {
     width: 100%;
     height: 140px;

@@ -419,7 +419,11 @@
 
     <header class="courses-top-bar">
         <h1 id="courseTitle">Yuklanmoqda...</h1>
-        <button class="back-btn" onclick="location.href='/courses'">← Kurslar</button>
+        <!-- ?focus=<courseId> — Kurslar ro'yxatida shu kursning Yo'nalish
+             qutisi avtomatik ochilib, kartasi ko'k ramka bilan
+             ko'rsatiladi (courses.js#focusCourseId, foydalanuvchi so'rovi
+             2026-09-05: science.js'dagi "?focus=" bilan bir xil g'oya). -->
+        <button class="back-btn" onclick="location.href='/courses?focus=' + COURSE_ID">← Kurslar</button>
     </header>
 
     <p id="courseDescription" class="course-description"></p>

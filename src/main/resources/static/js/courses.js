@@ -11,6 +11,13 @@ let allFields = [];
 // bilan bir xil g'oya (bir nechtasi bir vaqtda ochiq turishi mumkin).
 const expandedFieldKeys = new Set();
 
+// Kurs sahifasidan (courseDetail.html) "← Kurslar" bosilganda "?focus=<id>"
+// beriladi — shu Kursning Yo'nalish qutisi avtomatik ochiladi va o'sha
+// kartaga skroll qilinadi (science.js#focusId bilan bir xil g'oya — aks
+// holda "orqaga" bosilganda foydalanuvchi qaysi Yo'nalish ichida
+// ekanini qayta qidirishga majbur bo'lardi).
+let focusCourseId = Number(new URLSearchParams(window.location.search).get("focus")) || null;
+
 document.addEventListener("DOMContentLoaded", () => {
     if (CAN_CREATE_COURSE) {
         document.querySelectorAll(".owner-only-el").forEach(el => el.style.display = "");
@@ -96,8 +103,29 @@ function renderGroupedCourses() {
         return;
     }
 
+    // focusCourseId'ni o'z ichiga olgan guruhni HTML qurishdan OLDIN
+    // ochamiz (science.js#render bilan bir xil g'oya) — aks holda karta
+    // DOM'da bo'lmay, scrollIntoView ishlamay qolardi.
+    if (focusCourseId != null) {
+        const focusGroup = groups.find(g => g.items.some(c => c.id === focusCourseId));
+        if (focusGroup) expandedFieldKeys.add(focusGroup.key);
+    }
+
     const realFieldGroups = groups.filter(g => g.fieldId != null);
     grid.innerHTML = groups.map(g => renderFieldBox(g, realFieldGroups)).join("");
+
+    if (focusCourseId != null) {
+        const card = document.getElementById(`course-card-${focusCourseId}`);
+        if (card) {
+            card.scrollIntoView({ behavior: "smooth", block: "center" });
+            card.classList.add("course-card-focused");
+            setTimeout(() => card.classList.remove("course-card-focused"), 2000);
+        }
+        // Faqat BIRINCHI render'da qo'llaniladi — keyingi qayta chizishlarda
+        // (masalan boshqa Yo'nalishni ochish/yopish) foydalanuvchini
+        // qaytadan shu kartaga tashlab yubormaslik uchun.
+        focusCourseId = null;
+    }
 }
 
 function toggleFieldBox(key) {
@@ -173,7 +201,7 @@ function renderCourseCard(c) {
         : `<div class="course-card-cover"></div>`;
 
     return `
-        <div class="course-card" onclick="location.href='/courses/${c.id}'">
+        <div class="course-card" id="course-card-${c.id}" onclick="location.href='/courses/${c.id}'">
             ${cover}
             <div class="course-card-body">
                 <h3 class="course-card-title">${escapeHtml(c.title)}</h3>
