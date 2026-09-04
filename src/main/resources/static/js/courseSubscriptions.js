@@ -246,7 +246,7 @@ async function confirmRequest(subscriptionId) {
     const sub = allSubs.find(s => s.id === subscriptionId);
     if (!sub) return;
 
-    const amountStr = prompt(`"${sub.username}" uchun to'lov summasini kiriting (so'm):`, "0");
+    const amountStr = await showPromptModal(`"${sub.username}" uchun to'lov summasini kiriting (so'm):`, "0");
     if (amountStr === null) return;
 
     const amount = Number(amountStr);
@@ -255,7 +255,7 @@ async function confirmRequest(subscriptionId) {
         return;
     }
 
-    const durationStr = prompt("Obuna necha oyga beriladi?", "1");
+    const durationStr = await showPromptModal("Obuna necha oyga beriladi?", "1");
     if (durationStr === null) return;
 
     const durationMonths = Number(durationStr) || 1;

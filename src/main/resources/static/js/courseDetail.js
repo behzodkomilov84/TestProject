@@ -2197,9 +2197,9 @@ function getChapterPayload(mode) {
 // "✏️" — mavzu (chapter-box) sarlavhasidagi tahrirlash tugmasi. Nom BITTA
 // umumiy CourseChapter yozuvida saqlanadi — shu yerda o'zgartirilishi bilan
 // unga biriktirilgan BARCHA darslarda avtomatik yangilanadi.
-function renameChapterPrompt(chapterId) {
+async function renameChapterPrompt(chapterId) {
     const current = allSections.find(s => s.chapterId === chapterId);
-    const newName = prompt("Mavzu nomini kiriting:", current ? current.chapterName : "");
+    const newName = await showPromptModal("Mavzu nomini kiriting:", current ? current.chapterName : "");
     if (newName === null) return; // bekor qilindi
 
     const trimmed = newName.trim();
@@ -2235,8 +2235,8 @@ async function renameChapter(chapterId, newName) {
 // keyin — shu Mavzu darhol OCHIQ holatda ko'rsatiladi (hozircha bo'sh
 // bo'lsa ham — foydalanuvchi darhol "➕" ikonkasi orqali
 // ichiga dars qo'sha boshlashi mumkin).
-function createChapterPrompt() {
-    const name = prompt("Yangi mavzu nomini kiriting:");
+async function createChapterPrompt() {
+    const name = await showPromptModal("Yangi mavzu nomini kiriting:");
     if (name === null) return; // bekor qilindi
 
     const trimmed = name.trim();

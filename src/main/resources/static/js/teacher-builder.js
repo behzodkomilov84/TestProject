@@ -465,8 +465,8 @@ function renderSets(list) {
     `).join("");
 }
 
-function renameSetPrompt(id, oldName) {
-    const newName = prompt("Yangi nom:", oldName);
+async function renameSetPrompt(id, oldName) {
+    const newName = await showPromptModal("Yangi nom:", oldName);
     if (newName === null) return;
     const trimmed = newName.trim();
     if (!trimmed || trimmed === oldName) return;

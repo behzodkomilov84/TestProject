@@ -159,7 +159,7 @@ async function bulkExtend() {
         return;
     }
 
-    const newDate = prompt("New due date (YYYY-MM-DD HH:mm)");
+    const newDate = await showPromptModal("New due date (YYYY-MM-DD HH:mm)");
     if (!newDate) return;
 
     await fetch("/api/admin/assignments/bulk-extend", {

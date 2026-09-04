@@ -194,7 +194,7 @@ function renderRoleAudit(logs) {
 }
 
 async function confirmSubscription(id) {
-    const months = prompt("ADMIN huquqi necha oyga beriladi?", "1");
+    const months = await showPromptModal("ADMIN huquqi necha oyga beriladi?", "1");
     if (months === null) return;
 
     try {

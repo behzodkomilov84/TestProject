@@ -239,7 +239,7 @@ async function submitCreateField() {
 
 async function renameFieldPrompt(fieldId) {
     const field = allFields.find(f => f.id === fieldId);
-    const newName = prompt("Yangi Yo'nalish nomi:", field ? field.name : "");
+    const newName = await showPromptModal("Yangi Yo'nalish nomi:", field ? field.name : "");
     if (newName == null) return; // bekor qilindi
     if (!newName.trim()) {
         alert("❌ Yo'nalish nomi bo'sh bo'lishi mumkin emas");
