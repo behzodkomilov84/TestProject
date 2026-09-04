@@ -39,11 +39,16 @@ public interface ScienceRepository extends JpaRepository<Science, Long> {
     // Korrelyatsiyalangan subso'rov (har bir fan uchun bitta son
     // qaytaradi — count() doim aniq bitta qatorli, fan-out xavfi yo'q).
     // fieldId/fieldName — science.js#renderFieldBox Yo'nalish bo'yicha
-    // guruhlashi uchun.
+    // guruhlashi uchun. MUHIM: "left join s.field f" ATAYLAB — agar
+    // "s.field.id" to'g'ridan-to'g'ri SELECT'da yozilsa, JPQL buni
+    // IMPLICIT INNER JOIN deb talqin qiladi, natijada Yo'nalishga hali
+    // tayinlanmagan (field=NULL) fanlar BUTUNLAY natijadan tushib qolar
+    // edi (haqiqiy topilgan bug — "Ona tili" ro'yxatdan g'oyib bo'lgan edi).
     @Query("select new behzoddev.testproject.dto.science.ScienceIdAndNameDto(s.id, s.name, " +
             "(select count(ts) from TopicSection ts where ts.science = s and ts.deletedAt is null), " +
-            "s.field.id, s.field.name) " +
-            "from Science s where s.deletedAt is null order by s.orderIndex")
+            "f.id, f.name) " +
+            "from Science s left join s.field f " +
+            "where s.deletedAt is null order by s.orderIndex")
     Set<ScienceIdAndNameDto> findAllScienceNames();
 
     // Reorder (⬆⬇, A-Z/Z-A) uchun — ScienceService.reorderSciences.
