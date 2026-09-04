@@ -53,7 +53,7 @@ public class TelegramPracticeTestService {
     // Ro'yxat bandlari orasidagi ajratuvchi chiziq — nomlar uzun bo'lganda
     // (ayniqsa ko'p qatorli) bandlar bir-biriga "yopishib" ketmasligi uchun
     // (foydalanuvchi so'rovi bo'yicha).
-    private static final String LIST_SEPARATOR = "－－－－－－－－－－－－－－－－－－－－\n";
+    private static final String LIST_SEPARATOR = "➖➖➖➖➖➖➖➖➖➖\n";
 
     private final ScienceService scienceService;
     private final TopicService topicService;
