@@ -54,7 +54,11 @@ public class ScienceController {
     @ResponseBody
     public ResponseEntity<?> saveScience(@RequestBody Map<String, Object> payload) {
 
-        var newSubjects = (List<String>) payload.get("new");
+        // "new" — {name, fieldId} obyektlar ro'yxati (fieldId — IXTIYORIY,
+        // Yo'nalish tanlanmagan bo'lsa null/berilmagan). Ilgari oddiy
+        // String[] edi — Yo'nalish qo'shilishi bilan obyektga o'tkazildi
+        // (science.js — yagona chaqiruvchi, orqaga moslikka hojat yo'q).
+        var newSubjects = (List<Map<String, Object>>) payload.get("new");
         var needToUpdateSubjects = (List<Map<String, Object>>) payload.get("updated");
 
         List<Long> deletedScienceIds = new ArrayList<>();
@@ -63,8 +67,10 @@ public class ScienceController {
         }
 
         // Добавляем новые
-        for (String name : newSubjects) {
-            scienceService.saveScience(new ScienceNameDto(name));
+        for (Map<String, Object> item : newSubjects) {
+            String name = (String) item.get("name");
+            Long fieldId = item.get("fieldId") == null ? null : ((Number) item.get("fieldId")).longValue();
+            scienceService.saveScience(new ScienceNameDto(name, fieldId));
         }
 
         // Обновляем существующие
@@ -72,6 +78,11 @@ public class ScienceController {
             Long id = ((Number) item.get("id")).longValue();
             String name = (String) item.get("name");
             scienceService.updateScienceName(id, name);
+            // fieldId — science.js HAR DOIM joriy qiymatni yuboradi (nom
+            // o'zgarmagan, faqat Yo'nalish o'zgargan holatlar ham shu
+            // "updated" ro'yxatiga tushadi) — shu sabab shartsiz chaqiriladi.
+            Long fieldId = item.get("fieldId") == null ? null : ((Number) item.get("fieldId")).longValue();
+            scienceService.assignField(id, fieldId);
         }
 
         // Удаление
@@ -200,6 +211,17 @@ public class ScienceController {
     @PatchMapping("/science")
     public ResponseEntity<Void> updateScienceName(@RequestParam Long id, @Valid @RequestParam String name) {
         scienceService.updateScienceName(id, name);
+        return ResponseEntity.ok().build();
+    }
+
+    // "🔀 Yo'nalishga biriktirish" — science.js'da qator EDIT rejimida
+    // Yo'nalish select'i o'zgartirilganda darhol chaqiriladi (Save to
+    // DB'dan mustaqil). {"fieldId": null} — Yo'nalishdan chiqarish (unlink).
+    @PatchMapping("/api/science/{scienceId}/field")
+    @ResponseBody
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public ResponseEntity<Void> assignScienceField(@PathVariable Long scienceId, @RequestBody Map<String, Long> body) {
+        scienceService.assignField(scienceId, body.get("fieldId"));
         return ResponseEntity.ok().build();
     }
 

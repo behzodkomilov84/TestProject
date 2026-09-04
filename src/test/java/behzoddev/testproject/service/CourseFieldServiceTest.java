@@ -2,6 +2,7 @@ package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.CourseFieldRepository;
 import behzoddev.testproject.dao.CourseRepository;
+import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dto.course.CourseFieldDto;
 import behzoddev.testproject.dto.course.CourseFieldSaveDto;
 import behzoddev.testproject.entity.CourseField;
@@ -34,6 +35,8 @@ class CourseFieldServiceTest {
     private CourseFieldRepository courseFieldRepository;
     @Mock
     private CourseRepository courseRepository;
+    @Mock
+    private ScienceRepository scienceRepository;
 
     @InjectMocks
     private CourseFieldService courseFieldService;
@@ -99,6 +102,23 @@ class CourseFieldServiceTest {
         assertThatThrownBy(() -> courseFieldService.deleteField(1L))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("kurslar");
+
+        org.mockito.Mockito.verify(courseFieldRepository, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void deleteField_hasActiveSciences_throwsAndDoesNotDelete() {
+        // Haqiqiy topilgan bug: ilgari faqat Course tekshirilardi — shu
+        // sabab Sciencelar bilan band Yo'nalish "bo'sh" deb noto'g'ri
+        // o'chirilib ketishi mumkin edi.
+        CourseField field = CourseField.builder().id(1L).name("Soha").orderIndex(1).build();
+        when(courseFieldRepository.findById(1L)).thenReturn(Optional.of(field));
+        when(courseFieldRepository.existsActiveCourseByField_Id(1L)).thenReturn(false);
+        when(courseFieldRepository.existsActiveScienceByField_Id(1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> courseFieldService.deleteField(1L))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("TEST BOSHQARUVI");
 
         org.mockito.Mockito.verify(courseFieldRepository, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any());
     }

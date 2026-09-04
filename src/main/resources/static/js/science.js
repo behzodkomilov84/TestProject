@@ -6,6 +6,13 @@ let itemBlock = []; // сюда будут загружены данные из 
 let deletedSubjectIds = []; // FRONTEND da o'chirilganlarni id'si (Agar u DB da ham bo'lsa)
 let focusIndex = null;//для курсора
 
+// "Yo'nalish" — Bo'limlar (Science) ro'yxatini kattaroq guruhga bo'ladi,
+// courses.js#allFields/expandedFieldKeys bilan AYNAN bir xil g'oya —
+// Yo'nalish kurslar VA TEST BOSHQARUVI uchun UMUMIY (foydalanuvchi
+// so'rovi, 2026-09-05).
+let allFields = [];
+const expandedFieldKeys = new Set();
+
 let oldName = ""; //for EDIT uses
 let newName = ""; //for EDIT uses
 
@@ -122,7 +129,7 @@ async function restoreScienceFromTrash(scienceId) {
             return;
         }
         loadScienceTrash();
-        await reloadFromDb("/api/science");
+        await reloadAll("/api/science");
         render();
     } catch (err) {
         console.error(err);
@@ -160,11 +167,28 @@ function afterStartPage(mapping) {
                 : mapping === "/api/question" ? "Savollar" : '';
 
     document.addEventListener("DOMContentLoaded", () => {
-        reloadFromDb(mapping).then(r => {
+        reloadAll(mapping).then(() => {
             focusIndex = 0;// выбрать первый элемент
             render();// отрисовать список с выделением
         });
     });
+}
+
+// Bo'limlar (Science) VA Yo'nalishlar BIRGALIKDA yuklanadi — bo'sh (hali
+// hech qanday Bo'limi yo'q) Yo'nalish ham ro'yxatda ko'rinishi kerak
+// (courses.js#loadCourses bilan bir xil g'oya).
+async function reloadAll(mapping) {
+    await Promise.all([reloadFromDb(mapping), loadFields()]);
+}
+
+async function loadFields() {
+    try {
+        const res = await fetch("/api/course-fields");
+        allFields = res.ok ? await res.json() : [];
+    } catch (err) {
+        console.error(err);
+        allFields = [];
+    }
 }
 
 async function reloadFromDb(mapping) {
@@ -188,6 +212,13 @@ async function reloadFromDb(mapping) {
         // Shu fanda nechta Bo'lim (TopicSection) borligi — render()'da
         // "(N ta bo'lim)" ko'rsatish uchun.
         sectionCount: s.sectionCount || 0,
+        // Qaysi Yo'nalishga tegishli — render() shu bo'yicha guruhlaydi
+        // (courses.js#getSortedFieldGroups bilan bir xil andoza).
+        // originalFieldId — saveToDb() dirty-check uchun (s.original bilan
+        // bir xil g'oya, faqat Yo'nalish uchun).
+        fieldId: s.fieldId ?? null,
+        fieldName: s.fieldName ?? null,
+        originalFieldId: s.fieldId ?? null,
         mode: "VIEW"
     }));
 
@@ -195,67 +226,24 @@ async function reloadFromDb(mapping) {
 
 function render() {
     const list = document.getElementById("list");
-    list.innerHTML = "";
 
-    itemBlock.forEach((s, i) => {
-        const row = document.createElement("div");
-        const isView = s.mode === "VIEW";
-        // "science-row" — 768px+ ekranlarda fan nomi va "✏️ Edit" tugmasi
-        // BITTA qatorda (yonma-yon) joylashishi uchun (science.css) —
-        // FAQAT ko'rish (VIEW) rejimida (tahrirlashda — textarea + bir
-        // nechta tugma — hamon ustunli, tor bo'lib qolmasin deb).
-        row.className = isView ? "row science-row" : "row";
-
-        const isLink = isView && s.id !== null;
-        const isNew = s.mode === "NEW";
-        const placeholder = isNew ? 'placeholder="Yangi bo\'lim nomini kiriting"' : '';
-
-        // Проверяем дубликаты для текущего элемента
-        const hasDup = !isView && hasDuplicate(i, s.name);
-        const inputClass = `
-                                    ${isView ? 'view' : ''} 
-                                    ${isLink ? 'link' : ''} 
-                                    ${hasDup ? 'duplicate' : ''}
-                                    `;
-        row.innerHTML = `
-    ${
-            isView
-                ? `
-            <div
-            class="row-view"
-            tabindex="0"
-            ondblclick="openTopics(${s.id})"
-            onkeydown="onViewKeyDown(event, ${i})"
-            title="Enter — Мавзуларни очиш | ↑ ↓ — навигация | Home/End — биринчи/охирги"
-        >
-            <div
-                id="input-${i}"
-                class="topic-name ${inputClass}"
-                tabindex="-1"
-            ><div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta mavzu</span>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestions(${s.id})" title="Shu bo'limdagi barcha darslarning testlarini Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); openWordExportModal(${s.id})" title="Shu bo'limdagi barcha darslarning testlarini Word'ga eksport qilish">${WORD_ICON_SVG}</button>` : ""}</div></div>
-        </div>
-            `
-                : `
-            <textarea
-                class="name-edit-area ${inputClass}"
-                rows="2"
-                ${placeholder}
-                oninput="itemBlock[${i}].name=this.value"
-                onkeydown="onClickKey(event, ${i})"
-                id="input-${i}"
-            >${escapeHtml(s.name)}</textarea>
-            `
-        }
-    ${buttons(s, i)}
-`;
-
-        list.appendChild(row);
-    });
-
-    // если фокус не задан — выбрать первый элемент
+    // если фокус не задан — выбрать первый элемент (HTML qurishdan OLDIN,
+    // shu bilan uning guruhini ham darhol ochish mumkin bo'ladi).
     if (focusIndex === null && itemBlock.length > 0) {
         focusIndex = 0;
     }
+
+    // Fokusdagi elementning Yo'nalish guruhi hali yopiq bo'lsa — avtomatik
+    // ochamiz (aks holda "input-<i>" DOM'da bo'lmay, fokus qo'yib
+    // bo'lmaydi) — courseDetail.js#selectCard'dagi avtomatik ochish bilan
+    // bir xil g'oya (add()/edit() dan keyin ham shu orqali ishlaydi).
+    if (focusIndex !== null && itemBlock[focusIndex]) {
+        expandedFieldKeys.add(fieldKeyOf(itemBlock[focusIndex]));
+    }
+
+    const groups = getSortedFieldGroups();
+    const realFieldGroups = groups.filter(g => g.fieldId != null);
+    list.innerHTML = groups.map(g => renderFieldGroupBox(g, realFieldGroups)).join("");
 
     if (focusIndex !== null) {
         const input = document.getElementById(`input-${focusIndex}`);
@@ -266,6 +254,157 @@ function render() {
         }
         focusIndex = null;
     }
+}
+
+function fieldKeyOf(s) {
+    return s.fieldId != null ? String(s.fieldId) : "none";
+}
+
+// itemBlock'ni Yo'nalish (field) bo'yicha guruhlab, tartib bo'yicha
+// saralab qaytaradi — courses.js#getSortedFieldGroups bilan AYNAN bir xil
+// andoza. Har bir guruh ICHIDA obyekt emas, GLOBAL INDEKS saqlanadi
+// (itemBlock[i]) — mavjud onclick handlerlar shu indeksga tayanadi.
+// "none" — hali hech qanday Yo'nalishga biriktirilmagan Bo'limlar uchun
+// psevdo-guruh (Yo'nalish IXTIYORIY bo'lgani uchun har doim bo'lishi mumkin).
+function getSortedFieldGroups() {
+    const groups = new Map();
+    for (const f of allFields) {
+        groups.set(String(f.id), { key: String(f.id), fieldId: f.id, name: f.name, orderIndex: f.orderIndex, items: [] });
+    }
+
+    itemBlock.forEach((s, i) => {
+        const key = fieldKeyOf(s);
+        if (!groups.has(key)) {
+            groups.set(key, {
+                key,
+                fieldId: s.fieldId,
+                name: s.fieldId != null ? s.fieldName : "— Yo'nalishsiz bo'limlar —",
+                orderIndex: s.fieldId != null ? Number.MAX_SAFE_INTEGER - 1 : Number.MAX_SAFE_INTEGER,
+                items: []
+            });
+        }
+        groups.get(key).items.push(i);
+    });
+
+    return [...groups.values()].sort((a, b) => a.orderIndex - b.orderIndex);
+}
+
+function toggleFieldBox(key) {
+    if (expandedFieldKeys.has(key)) {
+        expandedFieldKeys.delete(key);
+    } else {
+        expandedFieldKeys.add(key);
+    }
+    render();
+}
+
+function renderFieldGroupBox(group, realFieldGroups) {
+    const isExpanded = expandedFieldKeys.has(group.key);
+
+    let bodyHtml = "";
+    if (isExpanded) {
+        bodyHtml = group.items.length
+            ? `<div class="chapter-box-body">${group.items.map(i => renderRowHtml(itemBlock[i], i)).join("")}</div>`
+            : `<div class="chapter-box-body"><div class="courses-empty">Bu Yo'nalishda hali bo'lim yo'q</div></div>`;
+    }
+
+    // "✏️"/"🗑️" — faqat HAQIQIY Yo'nalishlarda (group.fieldId != null),
+    // "— Yo'nalishsiz bo'limlar —" psevdo-guruhida ko'rsatilmaydi
+    // (courses.js#renderFieldBox bilan bir xil qoida).
+    const renameBtn = group.fieldId != null
+        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); renameFieldPrompt(${group.fieldId})" title="Yo'nalish nomini tahrirlash">✏️</button>`
+        : "";
+    const deleteBtn = group.fieldId != null
+        ? `<button class="chapter-rename-btn danger-btn" onclick="event.stopPropagation(); deleteFieldPrompt(${group.fieldId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Yo'nalishni o'chirish (faqat bo'sh bo'lsa)">🗑️</button>`
+        : "";
+
+    let moveBtns = "";
+    if (group.fieldId != null && realFieldGroups.length > 1) {
+        const pos = realFieldGroups.findIndex(g => g.fieldId === group.fieldId);
+        const upDisabled = pos <= 0 ? "disabled" : "";
+        const downDisabled = pos === realFieldGroups.length - 1 ? "disabled" : "";
+        moveBtns = `
+            <button class="chapter-move-btn" onclick="event.stopPropagation(); moveField(${group.fieldId}, -1)" ${upDisabled} title="Yo'nalishni yuqoriga surish">⬆</button>
+            <button class="chapter-move-btn" onclick="event.stopPropagation(); moveField(${group.fieldId}, 1)" ${downDisabled} title="Yo'nalishni pastga surish">⬇</button>
+        `;
+    }
+
+    return `
+        <div class="chapter-box ${isExpanded ? "expanded" : "collapsed"}">
+            <h3 class="chapter-box-title" onclick="toggleFieldBox('${group.key}')" title="${isExpanded ? "Yig'ish" : "Ochish"}">
+                <span class="chapter-box-chevron">▸</span>
+                🧭 ${escapeHtml(group.name)}
+                <span class="chapter-box-count">(${group.items.length} ta bo'lim)</span>
+                <span class="chapter-box-actions">${moveBtns}${renameBtn}${deleteBtn}</span>
+            </h3>
+            ${bodyHtml}
+        </div>
+    `;
+}
+
+// Bitta qatorning HTML'i — ilgari render() ICHIDA to'g'ridan-to'g'ri DOM
+// elementga yozilardi, endi renderFieldGroupBox() har bir guruh ICHIDA
+// chaqiradigan alohida funksiya (mazmuni o'zgarmagan, faqat Yo'nalish
+// select'i EDIT/NEW rejimida qo'shildi).
+function renderRowHtml(s, i) {
+    const isView = s.mode === "VIEW";
+    // "science-row" — 768px+ ekranlarda fan nomi va "✏️ Edit" tugmasi
+    // BITTA qatorda (yonma-yon) joylashishi uchun (science.css) — FAQAT
+    // ko'rish (VIEW) rejimida (tahrirlashda — textarea + bir nechta
+    // tugma — hamon ustunli, tor bo'lib qolmasin deb).
+    const rowClass = isView ? "row science-row" : "row";
+
+    const isLink = isView && s.id !== null;
+    const isNew = s.mode === "NEW";
+    const placeholder = isNew ? 'placeholder="Yangi bo\'lim nomini kiriting"' : '';
+
+    // Проверяем дубликаты для текущего элемента
+    const hasDup = !isView && hasDuplicate(i, s.name);
+    const inputClass = `
+                                ${isView ? 'view' : ''}
+                                ${isLink ? 'link' : ''}
+                                ${hasDup ? 'duplicate' : ''}
+                                `;
+    const bodyHtml = isView
+        ? `
+        <div
+        class="row-view"
+        tabindex="0"
+        ondblclick="openTopics(${s.id})"
+        onkeydown="onViewKeyDown(event, ${i})"
+        title="Enter — Мавзуларни очиш | ↑ ↓ — навигация | Home/End — биринчи/охирги"
+    >
+        <div
+            id="input-${i}"
+            class="topic-name ${inputClass}"
+            tabindex="-1"
+        ><div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta mavzu</span>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestions(${s.id})" title="Shu bo'limdagi barcha darslarning testlarini Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); openWordExportModal(${s.id})" title="Shu bo'limdagi barcha darslarning testlarini Word'ga eksport qilish">${WORD_ICON_SVG}</button>` : ""}</div></div>
+    </div>
+        `
+        : `
+        <textarea
+            class="name-edit-area ${inputClass}"
+            rows="2"
+            ${placeholder}
+            oninput="itemBlock[${i}].name=this.value"
+            onkeydown="onClickKey(event, ${i})"
+            id="input-${i}"
+        >${escapeHtml(s.name)}</textarea>
+        ${fieldSelectHtml(s, i)}
+        `;
+
+    return `<div class="${rowClass}">${bodyHtml}${buttons(s, i)}</div>`;
+}
+
+// EDIT/NEW rejimidagi Yo'nalish tanlash select'i — IXTIYORIY (foydalanuvchi
+// so'rovi, 2026-09-05: kurslardan farqli, Bo'lim uchun Yo'nalish majburiy
+// emas). O'zgarganda darhol itemBlock[i].fieldId'ga yoziladi (name'dagi
+// "oninput" bilan bir xil g'oya) — haqiqiy saqlash Save/Save to DB'da.
+function fieldSelectHtml(s, i) {
+    const options = [`<option value="">— Yo'nalishsiz —</option>`]
+        .concat([...allFields].sort((a, b) => a.orderIndex - b.orderIndex)
+            .map(f => `<option value="${f.id}" ${s.fieldId === f.id ? "selected" : ""}>${escapeHtml(f.name)}</option>`));
+    return `<select class="field-select" onchange="itemBlock[${i}].fieldId = this.value ? Number(this.value) : null" title="Yo'nalish">${options.join("")}</select>`;
 }
 
 function openTopics(scienceId) {
@@ -477,6 +616,7 @@ function cancel(i) {
             itemBlock.splice(i, 1);
         }
         s.name = s.original;
+        s.fieldId = s.originalFieldId;
         s.mode = "VIEW";
         showToast('info', 'Amaliyot bekor qilindi', 2000);
     }
@@ -484,7 +624,7 @@ function cancel(i) {
 } //DONE
 
 function undoAll() {
-    reloadFromDb("/api/science").then(r => {
+    reloadAll("/api/science").then(() => {
         render()
     });
     showToast('info', 'Ma\'lumotlar bazasidan qayta yuklandi ', 4000);
@@ -514,11 +654,17 @@ function removeFromUi(i) {
 } //DONE
 
 // Tugmalar guruhi ".row-actions" ichiga o'raladi (science.css) — karta
-// ichida har doim ENG PASTGA "yopishadi" (margin-top:auto).
+// ichida har doim ENG PASTGA "yopishadi" (margin-top:auto). "⬆⬇" endi
+// GLOBAL emas, shu Bo'limning O'Z Yo'nalish guruhi ICHIDA birinchi/oxirgi
+// ekanligiga qarab o'chiriladi (aks holda tugma bosilganda Bo'lim boshqa
+// Yo'nalish "box"iga sirg'alib o'tib ketgandek ko'rinardi — Yo'nalishi
+// o'zgarmagani holda, faqat GLOBAL tartibi o'zgargani uchun).
 function buttons(s, i) {
     if (s.mode === "VIEW") {
-        const upDisabled = i === 0 ? "disabled" : "";
-        const downDisabled = i === itemBlock.length - 1 ? "disabled" : "";
+        const siblings = groupIndicesFor(s.fieldId);
+        const posInGroup = siblings.indexOf(i);
+        const upDisabled = posInGroup <= 0 ? "disabled" : "";
+        const downDisabled = posInGroup === siblings.length - 1 ? "disabled" : "";
         return `
             <div class="row-actions">
                 <button class="order-move-btn" onclick="moveUp(${i})" ${upDisabled} title="Yuqoriga">⬆</button>
@@ -536,19 +682,40 @@ function buttons(s, i) {
     `;
 } //DONE
 
+// itemBlock ICHIDAGI, berilgan fieldId bilan bir xil Yo'nalishga tegishli
+// barcha elementlarning GLOBAL indekslari (o'z tartibida) — buttons()/
+// moveUp()/moveDown() shu bo'yicha "guruh ichidagi" chegarani hisoblaydi.
+function groupIndicesFor(fieldId) {
+    const key = fieldId != null ? String(fieldId) : "none";
+    const indices = [];
+    itemBlock.forEach((s, idx) => {
+        if (fieldKeyOf(s) === key) indices.push(idx);
+    });
+    return indices;
+}
+
 // Faqat DB'da mavjud (id > 0) fanlar orasida joy almashtiradi va darhol
 // serverga (reorder endpoint) yuboradi — yangi (hali saqlanmagan)
 // fanlar bilan aralashtirmaslik uchun oddiy holatda saqlanadi
-// (topicSection.js#moveUp bilan bir xil andoza).
+// (topicSection.js#moveUp bilan bir xil andoza). Endi shu Bo'limning O'Z
+// Yo'nalish guruhi ICHIDAGI qo'shnisi bilan almashadi (GLOBAL qo'shni
+// emas) — ikkalasining ARRAY o'rni almashtiriladi, boshqalarning nisbiy
+// tartibi tegilmaydi.
 function moveUp(i) {
-    if (i <= 0) return;
-    [itemBlock[i - 1], itemBlock[i]] = [itemBlock[i], itemBlock[i - 1]];
+    const siblings = groupIndicesFor(itemBlock[i].fieldId);
+    const pos = siblings.indexOf(i);
+    if (pos <= 0) return;
+    const otherIdx = siblings[pos - 1];
+    [itemBlock[otherIdx], itemBlock[i]] = [itemBlock[i], itemBlock[otherIdx]];
     persistOrder();
 }
 
 function moveDown(i) {
-    if (i >= itemBlock.length - 1) return;
-    [itemBlock[i], itemBlock[i + 1]] = [itemBlock[i + 1], itemBlock[i]];
+    const siblings = groupIndicesFor(itemBlock[i].fieldId);
+    const pos = siblings.indexOf(i);
+    if (pos === -1 || pos >= siblings.length - 1) return;
+    const otherIdx = siblings[pos + 1];
+    [itemBlock[i], itemBlock[otherIdx]] = [itemBlock[otherIdx], itemBlock[i]];
     persistOrder();
 }
 
@@ -648,6 +815,8 @@ function add() {
         id: tempId, // Временный ID
         name: "",
         original: "",
+        fieldId: null,
+        originalFieldId: null,
         mode: "NEW"
     });
 
@@ -721,14 +890,21 @@ async function saveToDb() {
 
     // Формируем payload
     const payload = {
+        // fieldId — IXTIYORIY (foydalanuvchi so'rovi bo'yicha Yo'nalish
+        // majburiy emas). "new" endi {name, fieldId} obyekti (ilgari
+        // oddiy string edi) — ScienceController#saveScience shu formatni
+        // kutadi.
         new: itemBlock
             .filter(s => s.id < 0)
-            .map(s => s.name),
+            .map(s => ({name: s.name, fieldId: s.fieldId})),
 
+        // Nom O'ZGARGAN bo'lsa HAM, YOKI faqat Yo'nalish o'zgargan bo'lsa
+        // HAM — "updated"ga tushadi (s.original bilan bir xil dirty-check
+        // g'oyasi, faqat fieldId uchun originalFieldId).
         updated: itemBlock
-            .filter(s => s.id > 0 && s.name !== s.original)
+            .filter(s => s.id > 0 && (s.name !== s.original || s.fieldId !== s.originalFieldId))
             .map(s => (
-                {id: s.id, name: s.name}
+                {id: s.id, name: s.name, fieldId: s.fieldId}
             )),
 
         deletedIds: deletedSubjectIds
@@ -780,7 +956,7 @@ async function saveToDb() {
 
         // 🔑 КЛЮЧЕВОЕ МЕСТО — ПОЛНАЯ СИНХРОНИЗАЦИЯ С БД
         deletedSubjectIds = [];
-        await reloadFromDb("/api/science");
+        await reloadAll("/api/science");
         focusIndex = 0;
         render(); // ❗ shu qator yo'q edi — shuning uchun DB yangilangan, lekin ekran eskicha qolardi
         refreshScienceTrashBadge();
@@ -789,6 +965,124 @@ async function saveToDb() {
         console.error(err);
         showToast('error', err.message || 'Saqlashda xatolik', 7000);
         alert(err.message);
+    }
+}
+
+/* ===== Yo'nalish CRUD (courses.js bilan bir xil andoza — /api/course-fields
+   endpoint'lari UMUMIY, Kurslar VA TEST BOSHQARUVI uchun bitta Yo'nalish
+   ro'yxati, foydalanuvchi so'rovi 2026-09-05) ===== */
+
+function openCreateFieldForm() {
+    document.getElementById("createFieldForm").style.display = "flex";
+}
+
+function closeCreateFieldForm() {
+    document.getElementById("createFieldForm").style.display = "none";
+    document.getElementById("newFieldName").value = "";
+}
+
+async function submitCreateField() {
+    const name = document.getElementById("newFieldName").value.trim();
+    if (!name) {
+        alert("❌ Yo'nalish nomini kiriting");
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/course-fields", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || "Yo'nalish yaratishda xatolik");
+            return;
+        }
+
+        closeCreateFieldForm();
+        await reloadAll("/api/science");
+        render();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+async function renameFieldPrompt(fieldId) {
+    const field = allFields.find(f => f.id === fieldId);
+    const newName = await showPromptModal("Yangi Yo'nalish nomi:", field ? field.name : "");
+    if (newName == null) return; // bekor qilindi
+    if (!newName.trim()) {
+        alert("❌ Yo'nalish nomi bo'sh bo'lishi mumkin emas");
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/course-fields/${fieldId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: newName.trim() })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || "Nomini o'zgartirishda xatolik");
+            return;
+        }
+        await reloadAll("/api/science");
+        render();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+async function deleteFieldPrompt(fieldId, fieldName) {
+    if (!confirm(`"${fieldName}" Yo'nalishini o'chirmoqchimisiz?\n\n(Faqat bo'sh — hech qanday kursi/bo'limi yo'q Yo'nalishni o'chirish mumkin.)`)) return;
+
+    try {
+        const res = await fetch(`/api/course-fields/${fieldId}`, { method: "DELETE" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            alert(data.error || "O'chirishda xatolik");
+            return;
+        }
+        expandedFieldKeys.delete(String(fieldId));
+        await reloadAll("/api/science");
+        render();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
+    }
+}
+
+// "⬆⬇" — Yo'nalish "box"ini boshqa Yo'nalish bilan o'rin almashtiradi
+// (CourseFieldService.reorderFields — TO'LIQ ID ro'yxati kutiladi).
+async function moveField(fieldId, direction) {
+    const realFields = [...allFields].sort((a, b) => a.orderIndex - b.orderIndex);
+    const pos = realFields.findIndex(f => f.id === fieldId);
+    const newPos = pos + direction;
+    if (newPos < 0 || newPos >= realFields.length) return;
+
+    [realFields[pos], realFields[newPos]] = [realFields[newPos], realFields[pos]];
+    const orderedIds = realFields.map(f => f.id);
+
+    try {
+        const res = await fetch("/api/course-fields/reorder", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(orderedIds)
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            alert(data.error || "Tartibni o'zgartirishda xatolik");
+            return;
+        }
+        await reloadAll("/api/science");
+        render();
+    } catch (err) {
+        console.error(err);
+        alert("Tarmoq xatoligi");
     }
 }
 

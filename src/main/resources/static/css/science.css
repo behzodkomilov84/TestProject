@@ -894,3 +894,182 @@ h1 {
     background: linear-gradient(135deg, #94a3b8, #64748b);
     box-shadow: none;
 }
+
+/* ========================================================================
+   "Yo'nalish" — Bo'limlar (Science) ro'yxatini kattaroq guruhga bo'ladi
+   (kurslar katalogidagi bilan bir xil, UMUMIY Yo'nalish — foydalanuvchi
+   so'rovi, 2026-09-05). courses.css'dagi ".chapter-box"/".course-form"
+   bilan bir xil andoza — bu sahifa o'sha faylni ulamagani uchun shu
+   yerda ham (takrorlangan holda) e'lon qilingan.
+   ======================================================================== */
+
+.course-form {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .08);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.course-form input {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid #d5dde8;
+    font-size: 14px;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.course-form-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.course-form-actions button {
+    padding: 9px 16px;
+    border-radius: 8px;
+    border: none;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.courses-empty {
+    text-align: center;
+    color: #888;
+    font-style: italic;
+    padding: 40px 0;
+}
+
+.chapter-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+}
+
+.chapter-box-title {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    row-gap: 4px;
+    gap: 8px;
+    margin: 0 0 14px;
+    font-size: 17px;
+    color: #1e293b;
+    cursor: pointer;
+    user-select: none;
+    border-radius: 8px;
+    padding: 4px 6px;
+    margin-left: -6px;
+    margin-right: -6px;
+    transition: background 0.12s ease;
+}
+
+.chapter-box-title:hover {
+    background: #eef2f7;
+}
+
+.chapter-box.collapsed .chapter-box-title {
+    margin-bottom: 0;
+}
+
+.chapter-box-chevron {
+    display: inline-block;
+    color: #94a3b8;
+    font-size: 13px;
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+}
+
+.chapter-box.expanded .chapter-box-chevron {
+    transform: rotate(90deg);
+}
+
+.chapter-box-body {
+    margin-top: 4px;
+}
+
+.chapter-box-count {
+    font-weight: 400;
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+.chapter-box-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.chapter-rename-btn {
+    background: none;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px 8px;
+}
+
+.chapter-rename-btn:hover {
+    background: #eef2f7;
+}
+
+.chapter-move-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: none;
+    background: #4e8cff;
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.chapter-move-btn:hover {
+    background: #3b76e0;
+    transform: translateY(-1px);
+}
+
+.chapter-move-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    background: #94a3b8;
+    transform: none;
+}
+
+.chapter-rename-btn.danger-btn {
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
+.chapter-rename-btn.danger-btn:hover {
+    background: #fef2f2;
+}
+
+/* Qator EDIT/NEW rejimida — Yo'nalish tanlash select'i, nom textarea'si
+   bilan bir xil kenglikda (foydalanuvchi so'rovi bo'yicha ixtiyoriy —
+   "— Yo'nalishsiz —" ham tanlanishi mumkin). */
+.field-select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid #d5dde8;
+    font-size: 14px;
+    font-family: inherit;
+    margin-top: 6px;
+}

@@ -2,6 +2,7 @@ package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.CourseFieldRepository;
 import behzoddev.testproject.dao.CourseRepository;
+import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dto.course.CourseFieldDto;
 import behzoddev.testproject.dto.course.CourseFieldSaveDto;
 import behzoddev.testproject.entity.CourseField;
@@ -26,6 +27,7 @@ public class CourseFieldService {
 
     private final CourseFieldRepository courseFieldRepository;
     private final CourseRepository courseRepository;
+    private final ScienceRepository scienceRepository;
 
     @Transactional(readOnly = true)
     public List<CourseFieldDto> listFields() {
@@ -68,11 +70,13 @@ public class CourseFieldService {
         return toDto(field);
     }
 
-    // Faqat BO'SH (hech qanday faol Bo'limga/Kursga biriktirilmagan)
-    // Yo'nalishni o'chirish mumkin — aks holda o'sha kurslar "yetim"
-    // (Yo'nalishsiz) bo'lib qolib, foydalanuvchi buni bilmay qolishi
-    // mumkin edi (CourseChapterRepository.existsByChapter_Id bilan bir xil
-    // himoya g'oyasi).
+    // Faqat BO'SH (hech qanday faol Kursga/Bo'limga biriktirilmagan)
+    // Yo'nalishni o'chirish mumkin — aks holda o'sha kurslar/bo'limlar
+    // "yetim" (Yo'nalishsiz) bo'lib qolib, foydalanuvchi buni bilmay
+    // qolishi mumkin edi (CourseChapterRepository.existsByChapter_Id bilan
+    // bir xil himoya g'oyasi). Ikkala tomon HAM tekshiriladi — Course
+    // (kurslar katalogi) VA Science (TEST BOSHQARUVI) — chunki Yo'nalish
+    // ikkalasi uchun ham UMUMIY (foydalanuvchi so'rovi, 2026-09-05).
     @Transactional
     public void deleteField(Long fieldId) {
         CourseField field = getFieldOrThrow(fieldId);
@@ -80,6 +84,10 @@ public class CourseFieldService {
         if (courseFieldRepository.existsActiveCourseByField_Id(fieldId)) {
             throw new IllegalArgumentException(
                     "❌ Bu Yo'nalishda hali kurslar (Bo'limlar) bor — avval ularni boshqa Yo'nalishga o'tkazing yoki o'chiring.");
+        }
+        if (courseFieldRepository.existsActiveScienceByField_Id(fieldId)) {
+            throw new IllegalArgumentException(
+                    "❌ Bu Yo'nalishda hali TEST BOSHQARUVI bo'limlari bor — avval ularni boshqa Yo'nalishga o'tkazing yoki o'chiring.");
         }
 
         field.setDeletedAt(LocalDateTime.now());
@@ -135,11 +143,13 @@ public class CourseFieldService {
 
     private CourseFieldDto toDto(CourseField field) {
         int courseCount = (int) courseRepository.countByField_IdAndDeletedAtIsNull(field.getId());
+        int scienceCount = (int) scienceRepository.countByField_IdAndDeletedAtIsNull(field.getId());
         return CourseFieldDto.builder()
                 .id(field.getId())
                 .name(field.getName())
                 .orderIndex(field.getOrderIndex())
                 .courseCount(courseCount)
+                .scienceCount(scienceCount)
                 .createdAt(field.getCreatedAt())
                 .deletedAt(field.getDeletedAt())
                 .build();

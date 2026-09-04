@@ -1,9 +1,11 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.CourseFieldRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dto.science.ScienceIdAndNameDto;
 import behzoddev.testproject.dto.science.ScienceNameDto;
+import behzoddev.testproject.entity.CourseField;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.mapper.ScienceMapper;
@@ -32,6 +34,8 @@ class ScienceServiceTest {
     @Mock
     private TopicRepository topicRepository;
     @Mock
+    private CourseFieldRepository courseFieldRepository;
+    @Mock
     private ScienceMapper scienceMapper;
     @Mock
     private AnswerService answerService;
@@ -41,7 +45,7 @@ class ScienceServiceTest {
     @BeforeEach
     void setUp() {
         Validation validation = new Validation(answerService);
-        scienceService = new ScienceService(scienceRepository, topicRepository, scienceMapper, validation);
+        scienceService = new ScienceService(scienceRepository, topicRepository, courseFieldRepository, scienceMapper, validation);
     }
 
     @Test
@@ -91,6 +95,61 @@ class ScienceServiceTest {
         when(scienceRepository.findByName("Kimyo")).thenReturn(Optional.empty());
 
         assertThat(scienceService.isScienceNameExist("Kimyo")).isFalse();
+    }
+
+    @Test
+    void saveScience_withFieldId_linksToField() {
+        Science mapped = Science.builder().id(1L).name("Kimyo").build();
+        CourseField field = CourseField.builder().id(9L).name("O'rta ta'lim").build();
+
+        when(scienceRepository.existsByName("Kimyo")).thenReturn(false);
+        when(scienceMapper.mapScienceNameDtoToScience(any())).thenReturn(mapped);
+        when(courseFieldRepository.findById(9L)).thenReturn(Optional.of(field));
+        when(scienceRepository.save(mapped)).thenReturn(mapped);
+
+        Science result = scienceService.saveScience(new ScienceNameDto("Kimyo", 9L));
+
+        assertThat(result.getField()).isEqualTo(field);
+    }
+
+    @Test
+    void saveScience_fieldIdNotFound_throws() {
+        Science mapped = Science.builder().id(1L).name("Kimyo").build();
+        when(scienceRepository.existsByName("Kimyo")).thenReturn(false);
+        when(scienceMapper.mapScienceNameDtoToScience(any())).thenReturn(mapped);
+        when(courseFieldRepository.findById(9L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> scienceService.saveScience(new ScienceNameDto("Kimyo", 9L)))
+                .isInstanceOf(java.util.NoSuchElementException.class);
+
+        verify(scienceRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    // ===== assignField ("🔀 Yo'nalishga biriktirish") =====
+
+    @Test
+    void assignField_validField_setsField() {
+        Science science = Science.builder().id(1L).name("Kimyo").build();
+        CourseField field = CourseField.builder().id(9L).name("O'rta ta'lim").build();
+        when(scienceRepository.findById(1L)).thenReturn(Optional.of(science));
+        when(courseFieldRepository.findById(9L)).thenReturn(Optional.of(field));
+
+        scienceService.assignField(1L, 9L);
+
+        assertThat(science.getField()).isEqualTo(field);
+        verify(scienceRepository).save(science);
+    }
+
+    @Test
+    void assignField_nullFieldId_unlinks() {
+        CourseField field = CourseField.builder().id(9L).name("O'rta ta'lim").build();
+        Science science = Science.builder().id(1L).name("Kimyo").field(field).build();
+        when(scienceRepository.findById(1L)).thenReturn(Optional.of(science));
+
+        scienceService.assignField(1L, null);
+
+        assertThat(science.getField()).isNull();
+        verify(scienceRepository).save(science);
     }
 
     @Test

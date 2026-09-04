@@ -1,11 +1,13 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.CourseFieldRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dto.science.ScienceDto;
 import behzoddev.testproject.dto.science.ScienceIdAndNameDto;
 import behzoddev.testproject.dto.science.ScienceNameDto;
 import behzoddev.testproject.dto.science.ScienceTrashDto;
+import behzoddev.testproject.entity.CourseField;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.mapper.ScienceMapper;
@@ -28,6 +30,7 @@ public class ScienceService {
 
     private final ScienceRepository scienceRepository;
     private final TopicRepository topicRepository;
+    private final CourseFieldRepository courseFieldRepository;
     private final ScienceMapper scienceMapper;
     private final Validation validation;
 
@@ -70,10 +73,32 @@ public class ScienceService {
             }
         }
 
+        if (scienceNameDto.fieldId() != null) {
+            science.setField(getFieldOrThrow(scienceNameDto.fieldId()));
+        }
+
         Integer maxOrder = scienceRepository.findMaxOrderIndex();
         science.setOrderIndex(maxOrder != null ? maxOrder + 1 : 1);
 
         return scienceRepository.save(science);
+    }
+
+    // "🔀 Yo'nalishga biriktirish" — science.js'da Bo'lim (Science)
+    // tahrirlanayotganda Yo'nalish select'i o'zgartirilsa, darhol (batch
+    // "Save to DB"dan mustaqil) saqlanadi (courseDetail.js'dagi Mavzu
+    // (chapter) tanlashdan farqli — bu yerda alohida, sodda API). fieldId
+    // null bo'lsa — Yo'nalishdan chiqariladi (unlink).
+    @Transactional
+    public void assignField(Long scienceId, Long fieldId) {
+        Science science = getScienceOrThrow(scienceId);
+        science.setField(fieldId != null ? getFieldOrThrow(fieldId) : null);
+        scienceRepository.save(science);
+    }
+
+    private CourseField getFieldOrThrow(Long fieldId) {
+        return courseFieldRepository.findById(fieldId)
+                .filter(f -> f.getDeletedAt() == null)
+                .orElseThrow(() -> new NoSuchElementException("Yo'nalish topilmadi"));
     }
 
     @Transactional

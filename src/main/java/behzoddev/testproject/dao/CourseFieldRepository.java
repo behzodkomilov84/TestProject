@@ -25,4 +25,15 @@ public interface CourseFieldRepository extends JpaRepository<CourseField, Long> 
     @Query("select case when count(c) > 0 then true else false end from Course c " +
             "where c.field.id = :fieldId and c.deletedAt is null")
     boolean existsActiveCourseByField_Id(Long fieldId);
+
+    // Xuddi shu tekshiruv — TEST BOSHQARUVI tomonidagi Bo'lim (Science)
+    // uchun ham (CourseFieldService.deleteField, science.js). MUHIM
+    // TOPILGAN BUG: ilgari bu tekshiruv yo'q edi — faqat Course
+    // tekshirilib, Sciencelar biriktirilgan Yo'nalish "bo'sh" deb
+    // noto'g'ri o'chirilib ketishi mumkin edi (ular field=null bo'lib
+    // "yetim" qolardi, ON DELETE SET NULL tufayli xatosiz, lekin
+    // sezilmagan holda).
+    @Query("select case when count(s) > 0 then true else false end from Science s " +
+            "where s.field.id = :fieldId and s.deletedAt is null")
+    boolean existsActiveScienceByField_Id(Long fieldId);
 }

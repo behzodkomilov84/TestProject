@@ -58,6 +58,11 @@ public interface ScienceRepository extends JpaRepository<Science, Long> {
     @Query("select max(s.orderIndex) from Science s")
     Integer findMaxOrderIndex();
 
+    // CourseFieldService.toDto — Yo'nalish kartochkasida "(N ta bo'lim)"
+    // ko'rsatish uchun (CourseRepository.countByField_IdAndDeletedAtIsNull
+    // bilan bir xil andoza).
+    long countByField_IdAndDeletedAtIsNull(Long fieldId);
+
     @Query("select new behzoddev.testproject.dto.science.ScienceIdAndNameDto(s.id, s.name) " +
             "from Science s where s.id = :id and s.deletedAt is null")
     Optional<ScienceIdAndNameDto> findScienceNameById(@Param("id") Long id);

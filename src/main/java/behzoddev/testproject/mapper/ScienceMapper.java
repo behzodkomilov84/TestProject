@@ -22,8 +22,12 @@ public interface ScienceMapper {
 
     Set<QuestionDto> toQuestionDtoSet(Set<Question> questions);
 
+    // "field" — ScienceNameDto.fieldId (Long) dan CourseField ENTITY'ga
+    // to'g'ridan-to'g'ri MapStruct orqali o'girib bo'lmaydi (id -> entity
+    // qidiruv kerak) — ScienceService.saveScience() alohida o'rnatadi.
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "topics", ignore = true)
+    @Mapping(target = "field", ignore = true)
     Science mapScienceNameDtoToScience(ScienceNameDto scienceNameDto);
 
     @Mapping(target = "id", ignore = true)
