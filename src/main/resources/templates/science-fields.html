@@ -37,15 +37,7 @@
 <h1>Yo'nalishlar</h1>
 
 <div class="wrapper">
-    <button onclick="openCreateFieldForm()">+ Yangi Yo'nalish</button>
-
-    <div id="createFieldForm" class="course-form" style="display:none;">
-        <input type="text" id="newFieldName" placeholder="Yo'nalish nomi (masalan: Sanitariya epidemiologiya xizmati)">
-        <div class="course-form-actions">
-            <button onclick="submitCreateField()">✅ Yaratish</button>
-            <button onclick="closeCreateFieldForm()">Bekor qilish</button>
-        </div>
-    </div>
+    <button onclick="submitCreateField()">+ Yangi Yo'nalish</button>
 
     <div id="fieldsList" class="field-card-list"></div>
 </div>

@@ -201,14 +201,14 @@ class ExcelServiceTest {
 
     @Test
     void importQuestions_tooLarge_returnsFailureWithoutScanning() {
-        byte[] tooLarge = new byte[11 * 1024 * 1024]; // 11MB > 10MB limit
+        byte[] tooLarge = new byte[51 * 1024 * 1024]; // 51MB > 50MB limit
         MockMultipartFile file = new MockMultipartFile("file", "questions.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", tooLarge);
 
         ImportResultDto result = excelService.importQuestions(file, 1L);
 
         assertThat(result.success()).isFalse();
-        assertThat(result.errors().get(0)).contains("10MB");
+        assertThat(result.errors().get(0)).contains("50MB");
         verify(clamAvScanService, never()).scan(any(), any());
     }
 

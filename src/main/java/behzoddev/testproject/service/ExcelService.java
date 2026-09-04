@@ -39,7 +39,15 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class ExcelService {
 
-    private static final long MAX_EXCEL_SIZE_BYTES = 10L * 1024 * 1024; // 10MB
+    // Foydalanuvchi so'rovi, 2026-09-05: "import qilishdagi test soni uchun
+    // cheklovlarni olib tashla". Tekshirib chiqilgach — savollar SONIGA
+    // hech qanday to'g'ridan-to'g'ri cheklov YO'Q edi (haqiqiy sabab —
+    // ExcelService#importQuestions'dagi @Transactional/VARCHAR(255) bug
+    // edi, allaqachon tuzatilgan). Yagona haqiqiy cheklov — shu fayl
+    // HAJMI edi (10MB), Spring'ning o'zi qabul qiladigan (application.yaml
+    // multipart.max-file-size=50MB) darajaga ko'tarildi — juda ko'p
+    // savolli (masalan minglab qatorli) fayllar uchun ham yetarli bo'lsin.
+    private static final long MAX_EXCEL_SIZE_BYTES = 50L * 1024 * 1024; // 50MB
     private static final List<String> ALLOWED_EXCEL_EXTENSIONS = List.of(".xlsx", ".xls");
     private static final Set<String> ALLOWED_EXCEL_TYPES = Set.of(
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
@@ -348,7 +356,7 @@ public class ExcelService {
         }
 
         if (file.getSize() > MAX_EXCEL_SIZE_BYTES) {
-            throw new IllegalArgumentException("❌Fayl hajmi 10MB dan katta bo'lishi mumkin emas.");
+            throw new IllegalArgumentException("❌Fayl hajmi 50MB dan katta bo'lishi mumkin emas.");
         }
 
         String originalFilename = file.getOriginalFilename();

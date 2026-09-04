@@ -126,20 +126,14 @@ function showToast(type, message, duration = 4000) {
     return toast;
 }
 
-/* ===== Yo'nalish CRUD (science.js/courses.js bilan bir xil andoza) ===== */
-
-function openCreateFieldForm() {
-    document.getElementById("createFieldForm").style.display = "flex";
-}
-
-function closeCreateFieldForm() {
-    document.getElementById("createFieldForm").style.display = "none";
-    document.getElementById("newFieldName").value = "";
-}
+/* ===== Yo'nalish CRUD (science.js/courses.js bilan bir xil andoza — faqat
+   yaratish endi inline forma emas, showPromptModal orqali markazlashtirilgan
+   modal, foydalanuvchi so'rovi 2026-09-05: "Модал марказда кўринсин") ===== */
 
 async function submitCreateField() {
-    const name = document.getElementById("newFieldName").value.trim();
-    if (!name) {
+    const name = await showPromptModal("Yangi Yo'nalish nomi:", "");
+    if (name == null) return; // bekor qilindi
+    if (!name.trim()) {
         alert("❌ Yo'nalish nomini kiriting");
         return;
     }
@@ -148,7 +142,7 @@ async function submitCreateField() {
         const res = await fetch("/api/course-fields", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name })
+            body: JSON.stringify({ name: name.trim() })
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -156,7 +150,6 @@ async function submitCreateField() {
             return;
         }
 
-        closeCreateFieldForm();
         await loadAndRender();
     } catch (err) {
         console.error(err);
