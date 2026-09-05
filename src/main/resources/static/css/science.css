@@ -34,10 +34,13 @@ h1 {
    (space-between) — foydalanuvchi so'rovi, 2026-09-05: bular ilgari
    pastdagi accordion sarlavhasida edi. #pageTitleActions bo'sh/hidden
    bo'lsa (masalan fieldId'siz eski sahifada) — <h1> avvalgidek MARKAZDA
-   qoladi (h1 { text-align:center } o'zgarishsiz ishlaydi). */
+   qoladi (h1 { text-align:center } o'zgarishsiz ishlaydi). Tepa-pastiga
+   o'z BO'SHLIG'I beriladi (h1'ning o'z default margin'i "margin:0" bilan
+   olib tashlangani uchun, aks holda qator navbar/pastdagi tugmalarga
+   "yopishib" qolar edi — foydalanuvchi so'rovi bo'yicha tuzatildi). */
 .page-title-row {
     width: min(1600px, 90vw);
-    margin: 0 auto;
+    margin: 28px auto 22px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -52,12 +55,49 @@ h1 {
 .page-title-actions {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 14px;
     flex-shrink: 0;
 }
 
+/* Shu joyda (katta sarlavha yonida) — asl kichik/xira accordion
+   uslubidan farqli, biroz kattaroq va aniqroq ko'rinsin deb. */
 .page-title-actions .chapter-box-count {
     white-space: nowrap;
+    font-size: 15px;
+    color: #64748b;
+}
+
+/* "➕ Yangi bo'lim" — <h1> yonidagi asosiy (primary) amal, shu sabab
+   kichik/xira ".chapter-rename-btn" o'rniga o'zining aniq, ko'zga
+   tashlanadigan uslubi bor (promptModal.js#showConfirmModal OK tugmasi
+   bilan bir xil ko'k rang — sayt bo'ylab bir xillik uchun). */
+.add-primary-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 10px;
+    background: #2563eb;
+    color: #fff;
+    font-weight: 600;
+    font-size: 15px;
+    font-family: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, .3);
+    transition: background-color .15s ease, transform .1s ease, box-shadow .15s ease;
+}
+
+.add-primary-btn:hover {
+    background: #1d4ed8;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, .35);
+    transform: translateY(-1px);
+}
+
+.add-primary-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(37, 99, 235, .3);
 }
 
 /* "Mavzular" sarlavhasi yonidagi qisqacha statistika — "(N ta — M tasi

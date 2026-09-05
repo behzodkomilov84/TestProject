@@ -342,7 +342,7 @@ function renderPageTitleActions(groups) {
 
     el.innerHTML = `
         <span class="chapter-box-count">(${count} ta bo'lim)</span>
-        <button class="chapter-rename-btn" onclick="addToGroup(${fieldIdArg})" title="Yangi bo'lim qo'shish">➕ Yangi bo'lim</button>
+        <button class="add-primary-btn" onclick="addToGroup(${fieldIdArg})" title="Yangi bo'lim qo'shish">➕ Yangi bo'lim</button>
     `;
     el.classList.remove("hidden");
 }
