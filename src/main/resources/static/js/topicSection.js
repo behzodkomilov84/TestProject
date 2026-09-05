@@ -316,8 +316,9 @@ function render() {
             class="row-view"
             tabindex="0"
             onclick="openTopics(${s.id})"
+            oncontextmenu="event.preventDefault(); moveFocus(${i});"
             onkeydown="onViewKeyDown(event, ${i})"
-            title="Enter — Darslarni ochish | ↑ ↓ — navigatsiya | Home/End — birinchi/oxirgi"
+            title="Enter — Darslarni ochish | ↑ ↓ — navigatsiya | Home/End — birinchi/oxirgi | O'ng tugma — ichiga kirmasdan belgilash"
         >
             <div
                 id="input-${i}"

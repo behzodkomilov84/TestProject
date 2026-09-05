@@ -804,8 +804,9 @@ function render() {
             class="row-view"
             tabindex="0"
             onclick="openQuestions(${s.id})"
+            oncontextmenu="event.preventDefault(); moveFocus(${i});"
             onkeydown="onViewKeyDown(event, ${i})"
-            title="Enter — Саволларни очиш | ↑ ↓ — навигация | Home/End — биринчи/охирги"
+            title="Enter — Саволларни очиш | ↑ ↓ — навигация | Home/End — биринчи/охирги | Ўнг тугма — ичига кирмасдан белгилаш"
         >
             <div
                 id="input-${i}"

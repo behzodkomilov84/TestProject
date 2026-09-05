@@ -493,8 +493,9 @@ function renderRowHtml(s, i) {
         class="row-view"
         tabindex="0"
         onclick="openTopics(${s.id})"
+        oncontextmenu="event.preventDefault(); moveFocus(${i});"
         onkeydown="onViewKeyDown(event, ${i})"
-        title="Enter — Мавзуларни очиш | ↑ ↓ — навигация | Home/End — биринчи/охирги"
+        title="Enter — Мавзуларни очиш | ↑ ↓ — навигация | Home/End — биринчи/охирги | Ўнг тугма — ичига кирмасдан белгилаш"
     >
         <div
             id="input-${i}"
