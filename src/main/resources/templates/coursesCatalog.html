@@ -25,7 +25,9 @@
                  kattaroq guruhga bo'ladi, turli sohalarga tegishli kurslar
                  aralashib ketmasin deb (foydalanuvchi so'rovi, 2026-09-04). -->
             <button id="createFieldBtn" class="owner-only-el" style="display:none;" onclick="submitCreateField()">+ Yangi Yo'nalish</button>
-            <button id="createCourseBtn" class="owner-only-el" style="display:none;" onclick="openCreateCourseForm()">+ Yangi kurs</button>
+            <!-- "+ Yangi kurs" olib tashlandi (foydalanuvchi so'rovi,
+                 2026-09-05) — endi har bir Yo'nalish qutisining o'z ➕
+                 tugmasi orqali (renderFieldBox, courses.js). -->
             <!-- Faqat OWNER/ADMIN uchun — soft-delete qilingan kurslarni
                  ko'rish/tiklash (courseTrash.html). -->
             <button id="trashBtn" class="owner-only-el" style="display:none;" onclick="location.href='/courses/trash'">🗑️ O'chirilganlar <span id="courseTrashBadge" class="notif-badge" style="display:none;">0</span></button>

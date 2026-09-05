@@ -157,6 +157,14 @@ function renderFieldBox(group, realFieldGroups) {
         ? `<button class="chapter-rename-btn danger-btn" onclick="event.stopPropagation(); deleteFieldPrompt(${group.fieldId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Yo'nalishni o'chirish (faqat bo'sh bo'lsa)">🗑️</button>`
         : "";
 
+    // Global "+ Yangi kurs" tugmasi o'rniga — har bir Yo'nalish qutisining
+    // o'z ➕ tugmasi (science.js#addToGroup bilan bir xil g'oya,
+    // foydalanuvchi so'rovi, 2026-09-05). Kurs Yo'nalishi MAJBURIY bo'lgani
+    // uchun "— Yo'nalishsiz kurslar —" psevdo-guruhida ko'rsatilmaydi.
+    const addBtn = (CAN_CREATE_COURSE && group.fieldId != null)
+        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openCreateCourseForm(${group.fieldId})" title="Bu Yo'nalishga kurs qo'shish">➕</button>`
+        : "";
+
     let moveBtns = "";
     if (CAN_CREATE_COURSE && group.fieldId != null && realFieldGroups.length > 1) {
         const pos = realFieldGroups.findIndex(g => g.fieldId === group.fieldId);
@@ -174,7 +182,7 @@ function renderFieldBox(group, realFieldGroups) {
                 <span class="chapter-box-chevron">▸</span>
                 🧭 ${escapeHtml(group.name)}
                 <span class="chapter-box-count">(bo'lim — ${group.items.length} ta)</span>
-                <span class="chapter-box-actions">${moveBtns}${renameBtn}${deleteBtn}</span>
+                <span class="chapter-box-actions">${addBtn}${moveBtns}${renameBtn}${deleteBtn}</span>
             </h3>
             ${bodyHtml}
         </div>
@@ -335,10 +343,17 @@ async function moveField(fieldId, direction) {
 
 /* ===== OWNER/ADMIN: kurs (Bo'lim) yaratish ===== */
 
-function openCreateCourseForm() {
+// fieldId — qaysi Yo'nalish qutisining ➕ tugmasi bosilgan bo'lsa, o'sha
+// select'da OLDINDAN tanlangan holda ochiladi (foydalanuvchi so'rovi,
+// 2026-09-05: global "+ Yangi kurs" o'rniga har bir Yo'nalishning o'z
+// tugmasi — science.js#addToGroup bilan bir xil g'oya).
+function openCreateCourseForm(fieldId) {
     document.getElementById("createCourseForm").style.display = "flex";
     onNewCourseFreeToggle();
     populateNewCourseFieldSelect();
+    if (fieldId != null) {
+        document.getElementById("newCourseField").value = String(fieldId);
+    }
 }
 
 function closeCreateCourseForm() {
