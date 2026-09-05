@@ -667,11 +667,18 @@ function afterStartPage(mapping) {
         reloadFromDb(mapping).then(r => {
             // "?focus=" URL'da bo'lsa — ANIQ shu dars id'siga mos qatorga
             // fokus tushadi (question.js'dan "← DARSGA QAYTISH" orqali
-            // kelinganda). Topilmasa — eskicha birinchi qatorga.
+            // kelinganda). Topilmasa — joriy filtrlashda (Mavzu bo'yicha
+            // bo'lsa) BIRINCHI KO'RINADIGAN qatorga fokus tushadi
+            // (getVisibleIndices()[0], raw itemBlock[0]'ga emas) — aks
+            // holda Mavzu ustidan kelinganda fokus DOM'da yo'q (boshqa
+            // Mavzuga tegishli, render()'da o'tkazib yuborilgan) qatorga
+            // tushishga urinib, "birinchi dars belgilanmagandek" ko'rinardi
+            // (foydalanuvchi so'rovi, 2026-09-05).
             const focusFound = filterFocusId
                 ? itemBlock.findIndex(s => Number(s.id) === Number(filterFocusId))
                 : -1;
-            focusIndex = focusFound !== -1 ? focusFound : 0;
+            const visible = getVisibleIndices();
+            focusIndex = focusFound !== -1 ? focusFound : (visible.length > 0 ? visible[0] : 0);
             render();// отрисовать список с выделением
         });
 } //DONE
@@ -1016,6 +1023,18 @@ function onViewKeyDown(event, index) {
     // работаем ТОЛЬКО в VIEW
     if (s.mode !== "VIEW") return;
 
+    // Navigatsiya (↑↓/Home/End) faqat joriy filtrlashda (Mavzu bo'yicha
+    // bo'lsa) KO'RINADIGAN qatorlar orasida ishlashi kerak — moveUp/
+    // moveDown (⬆⬇ tartib tugmalari) uchun ishlatiladigan
+    // getVisibleIndices() bilan BIR XIL manba (foydalanuvchi so'rovi,
+    // 2026-09-05). Ilgari raw itemBlock indeksi (index-1/+1, 0,
+    // itemBlock.length-1) ishlatilardi — bu BOSHQA Mavzuning (yoki
+    // umuman DOM'da yo'q, render()'da o'tkazib yuborilgan) qatoriga
+    // "sakrab" ketib, klaviatura filtrlangan ko'rinishda ishlamayotgandek
+    // tuyulishiga sabab bo'lardi.
+    const visible = getVisibleIndices();
+    const pos = visible.indexOf(index);
+
     switch (event.key) {
 
         case "Enter":
@@ -1025,22 +1044,22 @@ function onViewKeyDown(event, index) {
 
         case "ArrowUp":
             event.preventDefault();
-            moveFocus(index - 1);
+            if (pos > 0) moveFocus(visible[pos - 1]);
             break;
 
         case "ArrowDown":
             event.preventDefault();
-            moveFocus(index + 1);
+            if (pos !== -1 && pos < visible.length - 1) moveFocus(visible[pos + 1]);
             break;
 
         case "Home":
             event.preventDefault();
-            moveFocus(0);
+            if (visible.length > 0) moveFocus(visible[0]);
             break;
 
         case "End":
             event.preventDefault();
-            moveFocus(itemBlock.length - 1);
+            if (visible.length > 0) moveFocus(visible[visible.length - 1]);
             break;
     }
 } //DONE
