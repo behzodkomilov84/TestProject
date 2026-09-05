@@ -1230,10 +1230,8 @@ h1 {
 .field-card::after {
     content: "⌨️ Klaviatura yorliqlari:\A ←→ / ↑↓ — Yo'nalishlar orasida\A Home — birinchi   |   End — oxirgi\A Enter — ichiga kirish\A 🖱️ O'ng tugma — ichiga kirmasdan belgilash";
     position: absolute;
-    left: 50%;
-    bottom: 100%;
-    margin-bottom: 8px;
-    transform: translate(-50%, 6px);
+    top: 34px;
+    right: 10px;
     background: rgba(15, 23, 42, 0.94);
     color: #fff;
     font-size: 12px;
@@ -1248,13 +1246,14 @@ h1 {
     box-shadow: 0 4px 14px rgba(0,0,0,0.25);
     opacity: 0;
     pointer-events: none;
+    transform: translateY(-6px);
     transition: opacity 0.15s ease, transform 0.15s ease;
     z-index: 30;
 }
 
 .field-card.kbd-hint-open::after {
     opacity: 1;
-    transform: translate(-50%, 0);
+    transform: translateY(0);
 }
 
 /* Kartaning o'ng-yuqori burchagidagi doimiy ko'rinadigan "⌨️" belgisi —
