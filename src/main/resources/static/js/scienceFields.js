@@ -24,6 +24,18 @@ let unassignedCount = 0;
 // 2026-09-05).
 let focusFieldKey = new URLSearchParams(window.location.search).get("focus");
 
+// Klaviatura navigatsiyasi (←→/↑↓/Home/End) va o'ng tugma bilan
+// belgilash uchun — courses.js#selectedCourseId bilan bir xil g'oya
+// (foydalanuvchi so'rovi, 2026-09-05: "Yo'nalishlar sahifasida ham
+// xuddi shunday tekshirib chiq"). ".field-card.selected" CSS klassi
+// orqali ko'rsatiladi.
+let selectedFieldKey = null;
+
+// Sahifa birinchi ochilganda — bir marta: "?focus=" bo'lsa o'sha
+// kartaga, bo'lmasa BIRINCHI kartaga default tanlov qo'yiladi
+// (courses.js#pendingDefaultCourseSelectionApplied bilan bir xil g'oya).
+let pendingDefaultFieldSelectionApplied = false;
+
 document.addEventListener("DOMContentLoaded", () => {
     loadAndRender();
 });
@@ -71,7 +83,11 @@ function render() {
 
     if (unassignedCount > 0) {
         html += `
-            <div class="field-card" id="field-card-none" onclick="openField('none')">
+            <div class="field-card" id="field-card-none" tabindex="0"
+                 onclick="selectFieldCard('none'); openField('none')"
+                 oncontextmenu="event.preventDefault(); selectFieldCard('none');"
+                 onkeydown="onFieldCardKeyDown(event, 'none')">
+                <span class="kbd-hint-badge" onclick="event.stopPropagation(); toggleFieldKbdHint(this)" title="Klaviatura yorliqlari">⌨️</span>
                 <div class="field-card-main">
                     <span class="field-card-icon">🧭</span>
                     <span class="field-card-name">— Yo'nalishsiz bo'limlar —</span>
@@ -87,23 +103,123 @@ function render() {
     if (countEl) countEl.textContent = `(${sorted.length} ta Yo'nalish)`;
 
     if (focusFieldKey != null) {
-        const card = document.getElementById(`field-card-${focusFieldKey}`);
-        if (card) {
-            card.scrollIntoView({ behavior: "smooth", block: "center" });
-            card.classList.add("field-card-focused");
-            setTimeout(() => card.classList.remove("field-card-focused"), 2000);
-        }
+        const targetKey = focusFieldKey;
         // Faqat BIRINCHI render'da qo'llaniladi (courses.js#focusCourseId
         // bilan bir xil sabab).
         focusFieldKey = null;
+        pendingDefaultFieldSelectionApplied = true;
+
+        selectFieldCard(targetKey, { scroll: true });
+        const card = document.getElementById(`field-card-${targetKey}`);
+        if (card) {
+            card.classList.add("field-card-focused");
+            setTimeout(() => card.classList.remove("field-card-focused"), 2000);
+        }
+    } else if (!pendingDefaultFieldSelectionApplied) {
+        // "?focus=" bo'lmasa — BIRINCHI kartaga default tanlov qo'yiladi
+        // (courseDetail.js#selectFirstCardByDefault bilan bir xil g'oya).
+        pendingDefaultFieldSelectionApplied = true;
+        const ids = getFieldCardIds();
+        if (ids.length > 0) selectFieldCard(ids[0]);
     }
 }
+
+// Ro'yxatdagi BARCHA navigatsiya qilinadigan kartalarning DOM tartibidagi
+// kalitlari — haqiqiy Yo'nalishlar (orderIndex bo'yicha) + oxirida
+// "— Yo'nalishsiz bo'limlar —" psevdo-kartasi (bo'lsa).
+function getFieldCardIds() {
+    const sorted = [...allFields].sort((a, b) => a.orderIndex - b.orderIndex);
+    const ids = sorted.map(f => String(f.id));
+    if (unassignedCount > 0) ids.push("none");
+    return ids;
+}
+
+// Kartani "tanlangan" deb belgilaydi — courses.js#selectCourseCard bilan
+// bir xil g'oya, faqat bu yerda accordion/yashirin karta yo'q (barcha
+// kartalar har doim DOM'da) — shu sabab qayta chizish shart emas.
+function selectFieldCard(key, { scroll = false } = {}) {
+    selectedFieldKey = key;
+    document.querySelectorAll(".field-card.selected").forEach(x => x.classList.remove("selected"));
+    const el = document.getElementById(`field-card-${key}`);
+    if (el) {
+        el.classList.add("selected");
+        el.focus({ preventScroll: !scroll });
+        if (scroll) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+}
+
+function moveFieldSelection(key, dir) {
+    const ids = getFieldCardIds();
+    const idx = ids.indexOf(key);
+    if (idx === -1) return;
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= ids.length) return;
+    selectFieldCard(ids[newIdx], { scroll: true });
+}
+
+function moveFieldToFirst() {
+    const ids = getFieldCardIds();
+    if (ids.length > 0) selectFieldCard(ids[0], { scroll: true });
+}
+
+function moveFieldToLast() {
+    const ids = getFieldCardIds();
+    if (ids.length > 0) selectFieldCard(ids[ids.length - 1], { scroll: true });
+}
+
+function onFieldCardKeyDown(event, key) {
+    switch (event.key) {
+        case "ArrowRight":
+        case "ArrowDown":
+            event.preventDefault();
+            moveFieldSelection(key, 1);
+            break;
+        case "ArrowLeft":
+        case "ArrowUp":
+            event.preventDefault();
+            moveFieldSelection(key, -1);
+            break;
+        case "Home":
+            event.preventDefault();
+            moveFieldToFirst();
+            break;
+        case "End":
+            event.preventDefault();
+            moveFieldToLast();
+            break;
+        case "Enter":
+            event.preventDefault();
+            openField(key);
+            break;
+    }
+}
+
+// "⌨️" belgisi bosilganda — klaviatura-yo'riqnoma pufakchasini
+// ochadi/yopadi (courseDetail.js#toggleKbdHint bilan bir xil andoza).
+function toggleFieldKbdHint(badgeEl) {
+    const card = badgeEl.closest(".field-card");
+    if (!card) return;
+    const wasOpen = card.classList.contains("kbd-hint-open");
+    document.querySelectorAll(".field-card.kbd-hint-open").forEach(el => el.classList.remove("kbd-hint-open"));
+    if (!wasOpen) card.classList.add("kbd-hint-open");
+}
+
+document.addEventListener("click", (e) => {
+    if (!e.target.closest(".kbd-hint-badge")) {
+        document.querySelectorAll(".field-card.kbd-hint-open").forEach(el => el.classList.remove("kbd-hint-open"));
+    }
+});
 
 function renderFieldCard(f, idx, total) {
     const upDisabled = idx === 0 ? "disabled" : "";
     const downDisabled = idx === total - 1 ? "disabled" : "";
+    const isSelected = String(f.id) === selectedFieldKey;
     return `
-        <div class="field-card" id="field-card-${f.id}" onclick="openField(${f.id})">
+        <div class="field-card ${isSelected ? "selected" : ""}" id="field-card-${f.id}" tabindex="0"
+             onclick="selectFieldCard('${f.id}'); openField(${f.id})"
+             oncontextmenu="event.preventDefault(); selectFieldCard('${f.id}');"
+             onkeydown="onFieldCardKeyDown(event, '${f.id}')">
+            <span class="kbd-hint-badge" onclick="event.stopPropagation(); toggleFieldKbdHint(this)" title="Klaviatura yorliqlari">⌨️</span>
             <div class="field-card-main">
                 <span class="field-card-icon">🧭</span>
                 <span class="field-card-name">${escapeHtml(f.name)}</span>

@@ -1180,6 +1180,7 @@ h1 {
 }
 
 .field-card {
+    position: relative; /* kbd-hint-badge/::after pufakchasi va .selected ramkasi shu kartaga nisbatan */
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -1197,19 +1198,83 @@ h1 {
     box-shadow: 0 2px 10px rgba(25, 118, 210, 0.12);
 }
 
-/* Bo'limlardan "← Yo'nalishlar" bosib qaytilganda (scienceFields.js#
-   focusFieldKey) — o'sha karta bir necha soniya ajratib ko'rsatiladi
-   (courses.css#.course-card-focused bilan bir xil g'oya). */
-.field-card-focused {
+.field-card:focus {
+    outline: none;
+}
+
+/* Klaviatura bilan tanlangan karta (scienceFields.js#selectFieldCard —
+   ←→/↑↓/Home/End navigatsiyasi va o'ng tugma bilan belgilash, foydalanuvchi
+   so'rovi, 2026-09-05: "Yo'nalishlar sahifasida ham xuddi shunday
+   tekshirib chiq") — .course-card.selected bilan bir xil uslub. */
+.field-card.selected {
     border-color: #1976d2;
     outline: 3px solid #1976d2;
     outline-offset: 2px;
+}
+
+/* Bo'limlardan "← Yo'nalishlar" bosib qaytilganda (scienceFields.js#
+   focusFieldKey) — o'sha karta bir necha soniya qo'shimcha "pulslab"
+   ko'rsatiladi (".selected" ramkasi ustiga, courses.css#.course-card-focused
+   bilan bir xil g'oya). */
+.field-card-focused {
     animation: fieldCardFocusPulse 1s ease-in-out;
 }
 
 @keyframes fieldCardFocusPulse {
     0%, 100% { box-shadow: none; }
     50% { box-shadow: 0 4px 22px rgba(25, 118, 210, 0.45); }
+}
+
+/* "⌨️" klaviatura-yorliqlar pufakchasi — .section-item::after (courses.css)
+   bilan bir xil andoza, shu sahifaga xos matn bilan. */
+.field-card::after {
+    content: "⌨️ Klaviatura yorliqlari:\A ←→ / ↑↓ — Yo'nalishlar orasida\A Home — birinchi   |   End — oxirgi\A Enter — ichiga kirish\A 🖱️ O'ng tugma — ichiga kirmasdan belgilash";
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    margin-bottom: 8px;
+    transform: translate(-50%, 6px);
+    background: rgba(15, 23, 42, 0.94);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.7;
+    white-space: pre-line;
+    text-align: left;
+    width: max-content;
+    max-width: 260px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+    z-index: 30;
+}
+
+.field-card.kbd-hint-open::after {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+/* Kartaning o'ng-yuqori burchagidagi doimiy ko'rinadigan "⌨️" belgisi —
+   courses.css#.kbd-hint-badge bilan bir xil andoza (ataylab nusxalangan
+   — loyihadagi "har bir sahifa mustaqil CSS" konvensiyasiga ko'ra). */
+.kbd-hint-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 13px;
+    opacity: 0.4;
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+    z-index: 31;
+}
+
+.field-card:hover .kbd-hint-badge,
+.field-card.selected .kbd-hint-badge,
+.kbd-hint-badge:hover {
+    opacity: 0.9;
 }
 
 .field-card-main {
