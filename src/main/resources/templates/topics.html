@@ -34,6 +34,16 @@
 
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
+<!-- Bo'limlar sahifasidagi (science.html) "← Yo'nalishlar / <nomi>"
+     breadcrumb'i bilan BIR XIL ko'rinish — Mavzu ustidan kelingan bo'lsa
+     "← Mavzular / <Mavzu>", aks holda to'g'ridan-to'g'ri "← Bo'limlar /
+     <Bo'lim>" (foydalanuvchi so'rovi, 2026-09-05: "iyerarxiyaning boshqa
+     qismlariga ham qo'sh"), topic.js#applyScopeBar to'ldiradi. -->
+<div id="topicScopeBar" class="field-scope-bar hidden">
+    <a href="#" id="topicScopeBackLink" class="field-scope-back">← Bo'limlar</a>
+    <span id="topicScopeName" class="field-scope-name"></span>
+</div>
+
 <!-- Bo'limlar sahifasi (science.html) bilan BIR XIL sarlavha qatori —
      nomi, soni va "+ Yangi dars" bitta gorizontal qatorda (foydalanuvchi
      so'rovi, 2026-09-05: "topicSection va topic sahifalarida ham shu

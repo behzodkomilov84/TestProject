@@ -59,6 +59,7 @@ if (!scienceId) {
 } else {
     loadSections().then(() => {
         showSectionFilterBanner();
+        applyScopeBar();
         afterStartPage(`/api/topic?scienceId=${scienceId}`);
     });
     refreshTopicTrashBadge();
@@ -172,6 +173,41 @@ function sectionNameById(sectionId) {
     if (!sectionId) return null;
     const found = sectionList.find(sec => Number(sec.id) === Number(sectionId));
     return found ? found.name : null;
+}
+
+// science.html'dagi "← Yo'nalishlar / <nomi>" bilan bir xil ko'rinish
+// (foydalanuvchi so'rovi, 2026-09-05: "iyerarxiyaning boshqa qismlariga
+// ham qo'sh") — Mavzu ustidan kelingan bo'lsa "← Mavzular / <Mavzu>"
+// (sectionList allaqachon loadSections() bilan yuklangan), aks holda
+// "← Bo'limlar / <Bo'lim>" ("/science/{id}" — ScienceIdAndNameDto).
+async function applyScopeBar() {
+    const bar = document.getElementById("topicScopeBar");
+    const backLink = document.getElementById("topicScopeBackLink");
+    const nameEl = document.getElementById("topicScopeName");
+    if (!bar) return;
+
+    if (filterSectionId) {
+        const name = sectionNameById(filterSectionId);
+        if (!name) return;
+        backLink.textContent = "← Mavzular";
+        backLink.href = `/topic-sections?scienceId=${scienceId}${fieldQuery}`;
+        nameEl.textContent = name;
+        bar.classList.remove("hidden");
+        return;
+    }
+
+    try {
+        const res = await fetch(`/science/${scienceId}`);
+        if (!res.ok) return;
+        const science = await res.json();
+
+        backLink.textContent = "← Bo'limlar";
+        backLink.href = `/science?focus=${scienceId}${fieldQuery}`;
+        nameEl.textContent = science.name;
+        bar.classList.remove("hidden");
+    } catch (err) {
+        console.error(err);
+    }
 }
 
 

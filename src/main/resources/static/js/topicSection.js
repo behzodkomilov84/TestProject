@@ -44,6 +44,30 @@ if (!scienceId) {
 } else {
     afterStartPage(`/api/topic-section?scienceId=${scienceId}`);
     refreshSectionTrashBadge();
+    applyScopeBar();
+}
+
+// science.html'dagi "← Yo'nalishlar / <nomi>" bilan bir xil ko'rinish —
+// "← Bo'limlar / <shu Bo'lim nomi>" (foydalanuvchi so'rovi, 2026-09-05:
+// "iyerarxiyaning boshqa qismlariga ham qo'sh"). "/science/{id}" —
+// ScienceIdAndNameDto (name + fieldId/fieldName) qaytaradi.
+async function applyScopeBar() {
+    const bar = document.getElementById("sectionScopeBar");
+    const backLink = document.getElementById("sectionScopeBackLink");
+    const nameEl = document.getElementById("sectionScopeName");
+    if (!bar) return;
+
+    try {
+        const res = await fetch(`/science/${scienceId}`);
+        if (!res.ok) return;
+        const science = await res.json();
+
+        backLink.href = `/science?focus=${scienceId}${fieldQuery}`;
+        nameEl.textContent = science.name;
+        bar.classList.remove("hidden");
+    } catch (err) {
+        console.error(err);
+    }
 }
 
 // Badge'ni (".notif-badge" — navbar.js#refreshUnreadCount bilan bir xil
