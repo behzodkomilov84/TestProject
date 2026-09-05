@@ -1254,6 +1254,17 @@ td label{
     animation: modalPopIn .2s cubic-bezier(.2, .9, .3, 1.2);
 }
 
+/* "📥 Import from Excel" / "📄 Shablon" — "Savol formasi" ICHIDA, faqat
+   "create" rejimida (foydalanuvchi so'rovi, 2026-09-05). */
+.qform-import-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding-bottom: 10px;
+    margin-bottom: 4px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
 .qform-group {
     display: flex;
     flex-direction: column;

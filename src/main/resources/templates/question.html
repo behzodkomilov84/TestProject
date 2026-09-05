@@ -74,19 +74,10 @@
             <button onclick="sortAllAZ('ZA')">Z→A</button>
         </div>
 
-        <!-- "📥 Import from Excel" / "📄 Shablon" — ilgari FAQAT test-form.html
-             sahifasida bor edi. "➕ TEST YARATISH" endi shu sahifaning
-             o'zida modalda ochilgani uchun (test-form.html'ga o'tish
-             o'rniga), bu ikkala tugma foydalanuvchining ODATIY oqimidan
-             "yo'qolib qolgan" edi (haqiqiy xabar, 2026-09-05: "Тест
-             импорт ва шаблон кўринмаяпти"). Endi shu yerda, eksport
-             tugmalari bilan bir qatorda (importExcel/downloadTemplate,
-             question.js — /api/import/excel, /api/export/template bilan
-             test-form.js'dagi BILAN BIR XIL). -->
-        <button class="export-excel-btn" onclick="importExcel()" title="Avval shablonni yuklab oling, to'ldirib qayta import qiling.">📥 Import from Excel</button>
-        <input type="file" id="excelFile" accept=".xlsx" hidden>
-
-        <button class="export-excel-btn" onclick="downloadTemplate()" title="Excel import shablonini yuklab olish">📄 Shablon</button>
+        <!-- "📥 Import from Excel" / "📄 Shablon" — endi "Savol formasi"
+             ("➕ Yangi savol qo'shish") modali ICHIDA (foydalanuvchi
+             so'rovi, 2026-09-05: "импорт ва шаблон кнопкаларини тест
+             яратиш модалини ичига жойлаштир") — question.js#buildQuestionFormModalHtml. -->
 
         <!-- Shu darsdagi BARCHA faol savollarni Excel (.xlsx) fayl
              sifatida yuklab olish — import shabloni bilan bir xil

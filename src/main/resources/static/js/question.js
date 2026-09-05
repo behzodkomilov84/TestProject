@@ -777,6 +777,18 @@ function buildQuestionFormModalHtml() {
             <div class="question-form-modal">
                 <h2 class="modal-h2" id="qformTitle">➕ Yangi savol qo'shish</h2>
 
+                <!-- "📥 Import from Excel" / "📄 Shablon" — FAQAT "create"
+                     rejimida (bitta savol qo'shish o'rniga BUTUN Excel
+                     fayldan bir yo'la ko'p savol qo'shishning muqobil
+                     yo'li) ko'rinadi — tahrirlashda ma'nosiz (foydalanuvchi
+                     so'rovi, 2026-09-05: "импорт ва шаблон кнопкаларини
+                     тест яратиш модалини ичига жойлаштир"). -->
+                <div class="qform-import-row" id="qformImportRow">
+                    <button type="button" class="export-excel-btn" onclick="importExcel()" title="Avval shablonni yuklab oling, to'ldirib qayta import qiling.">📥 Import from Excel</button>
+                    <input type="file" id="excelFile" accept=".xlsx" hidden>
+                    <button type="button" class="export-excel-btn" onclick="downloadTemplate()" title="Excel import shablonini yuklab olish">📄 Shablon</button>
+                </div>
+
                 <div class="qform-group">
                     <label for="qformQuestionText">Savol</label>
                     <!-- Rasm CHAPDA, matn O'NGDA (yonma-yon) — foydalanuvchi
@@ -1530,6 +1542,9 @@ async function openQuestionFormModal(mode, questionId) {
     document.getElementById("qformTitle").textContent =
         mode === "edit" ? "✏️ Savolni tahrirlash" : "➕ Yangi savol qo'shish";
     document.getElementById("qformDeleteBtn").classList.toggle("hidden", mode !== "edit");
+    // "📥 Import from Excel" / "📄 Shablon" — faqat "create" rejimida
+    // (bitta mavjud savolni tahrirlashda ma'nosiz).
+    document.getElementById("qformImportRow").classList.toggle("hidden", mode !== "create");
 
     if (mode === "edit") {
         try {
@@ -2059,8 +2074,16 @@ function importExcel() {
     document.getElementById("excelFile").click();
 }
 
-document.getElementById("excelFile").addEventListener("change", async function () {
-    const file = this.files[0];
+// "#excelFile" endi "Savol formasi" modali ICHIDA (statik HTML'da EMAS —
+// buildQuestionFormModalHtml orqali DINAMIK yaratiladi, DOMContentLoaded'da
+// BIR MARTA), shu sabab bu listener ham O'SHA elementlar DOM'ga
+// qo'shilgandan KEYIN (pastda, "Savol formasi"ni yaratuvchi
+// DOMContentLoaded handler ICHIDA) biriktiriladi — aks holda hali mavjud
+// bo'lmagan elementga addEventListener chaqirilib, butun skript xato
+// bilan to'xtab qolardi.
+async function onExcelFileChange() {
+    const fileInput = document.getElementById("excelFile");
+    const file = fileInput.files[0];
     if (!file) return;
 
     const formData = new FormData();
@@ -2078,9 +2101,9 @@ document.getElementById("excelFile").addEventListener("change", async function (
         console.error(err);
         showImportResult({ error: "Tarmoq xatoligi" });
     } finally {
-        this.value = "";
+        fileInput.value = "";
     }
-});
+}
 
 function showImportResult(data) {
     const modal = document.getElementById("importModal");
@@ -2423,6 +2446,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // biriktiriladi (foydalanuvchi so'rovi, 2026-09-05).
     document.body.insertAdjacentHTML("beforeend", buildQuestionFormModalHtml());
     document.getElementById("qformCommentaryModalsContainer").innerHTML = buildCommentaryModalHtml();
+    document.getElementById("excelFile").addEventListener("change", onExcelFileChange);
 });
 
 //===========================================================================
