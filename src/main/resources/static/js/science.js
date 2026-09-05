@@ -926,29 +926,135 @@ function showToast(type, message, duration = 4000) {
 // "+ Add" global tugmasi o'rniga — har bir Yo'nalish qutisining o'z ➕
 // tugmasi (foydalanuvchi so'rovi, 2026-09-05). fieldId — shu tugma
 // qaysi guruhga tegishli bo'lsa, o'sha (yoki "Yo'nalishsiz" psevdo-guruh
-// uchun null).
-function addToGroup(fieldId) {
-    if (itemBlock.some(s => s.mode === "NEW" || s.mode === "EDIT")) {
-        showToast('warning', 'Avval saqlash tugmasini bosing!');
+// uchun null). Foydalanuvchi so'rovi, 2026-09-05: "янги бўлим қўшиш
+// модалда бўлсин" — sahifa ichida inline qator ochish o'rniga endi
+// markazlashtirilgan MODAL (showAddBolimModal) orqali, tasdiqlansa
+// DARHOL bazaga yoziladi (itemBlock'ga vaqtinchalik NEW-rejim qator
+// qo'shilmaydi — to'g'ridan-to'g'ri /api/science/save).
+async function addToGroup(fieldId) {
+    if (itemBlock.some(s => s.mode === "EDIT")) {
+        showToast('warning', 'Avval tahrirlashni yakuniga yetkazing!');
         focusIndex = itemBlock.findIndex(s => s.mode !== "VIEW");
         render();
         return;
     }
 
-    const tempId = Date.now() * -1; // Отрицательный ID для временных записей
+    const result = await showAddBolimModal(fieldId);
+    if (result == null) return; // bekor qilindi
 
-    itemBlock.push({
-        id: tempId,
-        name: "",
-        original: "",
-        fieldId: fieldId,
-        originalFieldId: null,
-        mode: "NEW"
+    const name = result.name.trim();
+    if (!name) {
+        showAlertModal('❌ Bo\'lim nomi bo\'sh bo\'lishi mumkin emas!');
+        return;
+    }
+    if (hasDuplicate(-1, name)) {
+        showAlertModal('❌ Bu bo\'lim nomi allaqachon mavjud!');
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/science/save", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({new: [{name, fieldId: result.fieldId}], updated: [], deletedIds: []})
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlertModal(data.message || data.error || "Saqlashda xatolik");
+            return;
+        }
+        showToast('success', `"${name}" saqlandi`, 2000);
+
+        expandedFieldKeys.add(result.fieldId != null ? String(result.fieldId) : "none");
+        await reloadAll("/api/science");
+        focusIndex = itemBlock.findIndex(x => x.name === name);
+        render();
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
+    }
+}
+
+// "+ Yangi bo'lim" modali — nom (matn) + Yo'nalish (select) birgalikda,
+// showPromptModal (promptModal.js) faqat BITTA matn maydonini qo'llab-
+// quvvatlagani uchun shu sahifaga xos alohida qurilgan, lekin AYNAN bir
+// xil CSS klasslaridan foydalanadi (bir xillik uchun). defaultFieldId —
+// qaysi Yo'nalish qutisining ➕'si bosilgan bo'lsa, select'da OLDINDAN
+// shu tanlangan holda ochiladi (baribir o'zgartirish mumkin).
+function showAddBolimModal(defaultFieldId) {
+    injectPromptModalStyles();
+
+    return new Promise((resolve) => {
+        const overlay = document.createElement("div");
+        overlay.className = "prompt-modal-overlay";
+
+        const box = document.createElement("div");
+        box.className = "prompt-modal-box";
+
+        const messageEl = document.createElement("p");
+        messageEl.className = "prompt-modal-message";
+        messageEl.textContent = "Yangi bo'lim nomini kiriting:";
+
+        const input = document.createElement("textarea");
+        input.className = "prompt-modal-input";
+        input.rows = 2;
+        input.style.resize = "vertical";
+        input.placeholder = "Yangi bo'lim nomini kiriting";
+
+        const select = document.createElement("select");
+        select.className = "field-select";
+        select.title = "Yo'nalish";
+        const options = [`<option value="">— Yo'nalishsiz —</option>`]
+            .concat([...allFields].sort((a, b) => a.orderIndex - b.orderIndex)
+                .map(f => `<option value="${f.id}" ${defaultFieldId === f.id ? "selected" : ""}>${escapeHtml(f.name)}</option>`));
+        select.innerHTML = options.join("");
+
+        const actions = document.createElement("div");
+        actions.className = "prompt-modal-actions";
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.className = "prompt-modal-cancel";
+        cancelBtn.textContent = "Bekor qilish";
+
+        const okBtn = document.createElement("button");
+        okBtn.type = "button";
+        okBtn.className = "prompt-modal-ok";
+        okBtn.textContent = "✅ Yaratish";
+
+        actions.append(cancelBtn, okBtn);
+        box.append(messageEl, input, select, actions);
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        let settled = false;
+        function close(result) {
+            if (settled) return;
+            settled = true;
+            document.removeEventListener("keydown", onKeyDown);
+            overlay.remove();
+            resolve(result);
+        }
+
+        function submit() {
+            close({name: input.value, fieldId: select.value ? Number(select.value) : null});
+        }
+
+        function onKeyDown(e) {
+            if (e.key === "Escape") close(null);
+            if (e.key === "Enter" && !e.shiftKey && document.activeElement === input) {
+                e.preventDefault();
+                submit();
+            }
+        }
+
+        cancelBtn.onclick = () => close(null);
+        okBtn.onclick = submit;
+        overlay.onclick = (e) => { if (e.target === overlay) close(null); };
+        document.addEventListener("keydown", onKeyDown);
+
+        input.focus();
     });
-
-    expandedFieldKeys.add(fieldId != null ? String(fieldId) : "none");
-    focusIndex = itemBlock.length - 1;
-    render();
 }
 
 // Foydalanuvchi so'rovi, 2026-09-05: "Save to DB" tugmasi olib
