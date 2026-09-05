@@ -167,6 +167,8 @@ public class QuestionService {
         Question newQuestion = Question.builder()
                 .questionText(questionSaveDto.questionText())
                 .imageUrl(questionSaveDto.imageUrl())
+                .imageWidth(questionSaveDto.imageWidth())
+                .imageHeight(questionSaveDto.imageHeight())
                 .topic(topic)
                 .orderIndex(maxOrderIndex == null ? 1 : maxOrderIndex + 1)
                 .build();
@@ -359,6 +361,8 @@ public class QuestionService {
         validation.textFieldMustNotBeEmpty(dto.questionText().trim());
         question.setQuestionText(dto.questionText().trim());
         question.setImageUrl(dto.imageUrl());
+        question.setImageWidth(dto.imageWidth());
+        question.setImageHeight(dto.imageHeight());
 
         // 4️⃣ СБРОС ВСЕХ ОТВЕТОВ
         for (Answer answer : question.getAnswers()) {
@@ -376,6 +380,8 @@ public class QuestionService {
             answer.setAnswerText(aDto.answerText().trim());
             answer.setIsTrue(aDto.isTrue());
             answer.setImageUrl(aDto.imageUrl());
+            answer.setImageWidth(aDto.imageWidth());
+            answer.setImageHeight(aDto.imageHeight());
             answer.setCommentaryImageUrl(aDto.commentaryImageUrl());
             answer.setCommentaryVideoUrl(aDto.commentaryVideoUrl());
 

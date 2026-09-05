@@ -9,6 +9,8 @@ public record AnswerShortDto(
         @NotBlank(message = "❌isTrue bo'sh bo'lishi mumkin emas.") Boolean isTrue,
         @NotBlank(message = "❌commentary bo'sh bo'lishi mumkin emas.") String commentary,
         String imageUrl,
+        Integer imageWidth,
+        Integer imageHeight,
         String commentaryImageUrl,
         String commentaryVideoUrl) {
 

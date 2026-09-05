@@ -28,6 +28,15 @@ public class Answer {
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
+    // Rasmning tanlangan eni/bo'yi (piksel) — foydalanuvchi "Savol formasi"da
+    // qo'lda kiritadi/o'zgartiradi (question.js#buildInlineImageWidget).
+    // NULL — rasm o'zining tabiiy o'lchamida (CSS bo'yicha) ko'rsatiladi.
+    @Column(name = "image_width")
+    private Integer imageWidth;
+
+    @Column(name = "image_height")
+    private Integer imageHeight;
+
     // Izoh (commentary) ichida ham rasm, ham video bo'lishi mumkin — matn
     // bilan bir qatorda, matnni almashtirmaydi.
     @Column(name = "commentary_image_url", length = 500)

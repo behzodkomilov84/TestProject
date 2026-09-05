@@ -74,6 +74,20 @@
             <button onclick="sortAllAZ('ZA')">Z→A</button>
         </div>
 
+        <!-- "📥 Import from Excel" / "📄 Shablon" — ilgari FAQAT test-form.html
+             sahifasida bor edi. "➕ TEST YARATISH" endi shu sahifaning
+             o'zida modalda ochilgani uchun (test-form.html'ga o'tish
+             o'rniga), bu ikkala tugma foydalanuvchining ODATIY oqimidan
+             "yo'qolib qolgan" edi (haqiqiy xabar, 2026-09-05: "Тест
+             импорт ва шаблон кўринмаяпти"). Endi shu yerda, eksport
+             tugmalari bilan bir qatorda (importExcel/downloadTemplate,
+             question.js — /api/import/excel, /api/export/template bilan
+             test-form.js'dagi BILAN BIR XIL). -->
+        <button class="export-excel-btn" onclick="importExcel()" title="Avval shablonni yuklab oling, to'ldirib qayta import qiling.">📥 Import from Excel</button>
+        <input type="file" id="excelFile" accept=".xlsx" hidden>
+
+        <button class="export-excel-btn" onclick="downloadTemplate()" title="Excel import shablonini yuklab olish">📄 Shablon</button>
+
         <!-- Shu darsdagi BARCHA faol savollarni Excel (.xlsx) fayl
              sifatida yuklab olish — import shabloni bilan bir xil
              formatda, shu sabab keyin qayta import ham qilish mumkin. -->
@@ -259,6 +273,21 @@
 
 
 
+</div>
+
+<!-- "📥 Import from Excel" natijasi — test-form.html'dagi bilan bir xil
+     g'oya, lekin shu faylning o'z ".modal-overlay" andozasida (ilgari
+     alohida ".modal"/".modal-content" klassi ishlatilardi, endi bu fayl
+     o'sha eski CSS'ni saqlamaydi — importExcel/downloadTemplate/showResult/
+     closeModal, question.js). -->
+<div id="importModal" class="modal-overlay">
+    <div class="import-result-modal">
+        <h3 id="importTitle"></h3>
+        <pre id="importBody"></pre>
+        <div class="modal-footer">
+            <button type="button" class="qform-save-btn" onclick="closeModal()">OK</button>
+        </div>
+    </div>
 </div>
 
 <!-- "🎬 Video qo'shish" oynasi — courseDetail.js/html'dagi bilan BIR XIL

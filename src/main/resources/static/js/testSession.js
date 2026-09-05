@@ -2,6 +2,17 @@
 // jadvali bilan bir xil ko'rinish (savol yaratishda ham shu tartibda).
 const ANSWER_LETTERS = ["A", "B", "C", "D", "E"];
 
+// Savol/javob rasmiga "Savol formasi"da tanlangan eni/bo'yi (agar
+// bo'lsa) — talaba ham ANIQ shu o'lchamda ko'radi (foydalanuvchi so'rovi,
+// 2026-09-05). Ikkalasi ham bo'lmasa — bo'sh string (rasm o'zining
+// tabiiy o'lchamida, CSS bo'yicha ko'rsatiladi).
+function imageSizeStyleAttr(width, height) {
+    if (!width && !height) return "";
+    const w = width ? `width:${width}px;` : "";
+    const h = height ? `height:${height}px;` : "";
+    return ` style="${w}${h}max-width:100%;"`;
+}
+
 //==============================================================
 //            Состояние теста
 //==============================================================
@@ -175,14 +186,14 @@ function renderQuestions(questions) {
 
         block.innerHTML = `
             <h3>${index + 1}. ${q.questionText}</h3>
-            ${q.imageUrl ? `<img class="question-image" src="${q.imageUrl}" alt="Savol rasmi">` : ""}
+            ${q.imageUrl ? `<img class="question-image" src="${q.imageUrl}"${imageSizeStyleAttr(q.imageWidth, q.imageHeight)} alt="Savol rasmi">` : ""}
             <ul>
                 ${q.answers.map((a, i) => `
                     <li>
                         <label>
                             <input type="radio" name="q-${q.id}" data-answer-id="${a.id}">
                             <b>${ANSWER_LETTERS[i] || ""}) </b>${a.answerText}
-                            ${a.imageUrl ? `<br><img class="answer-image" src="${a.imageUrl}" alt="Javob rasmi">` : ""}
+                            ${a.imageUrl ? `<br><img class="answer-image" src="${a.imageUrl}"${imageSizeStyleAttr(a.imageWidth, a.imageHeight)} alt="Javob rasmi">` : ""}
                         </label>
                     </li>
                 `).join("")}
@@ -460,7 +471,7 @@ function showWrongAnswers() {
 
         block.innerHTML = `
             <h3>❓ ${index + 1}. ${q.questionText}</h3>
-            ${q.imageUrl ? `<img class="question-image" src="${q.imageUrl}" alt="Savol rasmi">` : ""}
+            ${q.imageUrl ? `<img class="question-image" src="${q.imageUrl}"${imageSizeStyleAttr(q.imageWidth, q.imageHeight)} alt="Savol rasmi">` : ""}
 
             <ul class="answers-review">
                 <li class="wrong-answer">

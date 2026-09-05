@@ -322,11 +322,11 @@ public class ExcelService {
             // Excel orqali import qilinganda rasm/video bo'lmaydi (barchasi null) —
             // ular faqat saytdagi "savol yaratish" formasi orqali qo'shiladi.
             List<AnswerShortDto> answerShortDtoList = new ArrayList<>();
-            answerShortDtoList.add(new AnswerShortDto(a, correctIndexes.contains(0), correctIndexes.contains(0) ? comment : commentOfWrongAnswer, null, null, null));
-            answerShortDtoList.add(new AnswerShortDto(b, correctIndexes.contains(1), correctIndexes.contains(1) ? comment : commentOfWrongAnswer, null, null, null));
-            answerShortDtoList.add(new AnswerShortDto(c, correctIndexes.contains(2), correctIndexes.contains(2) ? comment : commentOfWrongAnswer, null, null, null));
-            answerShortDtoList.add(new AnswerShortDto(d, correctIndexes.contains(3), correctIndexes.contains(3) ? comment : commentOfWrongAnswer, null, null, null));
-            answerShortDtoList.add(new AnswerShortDto(e, correctIndexes.contains(4), correctIndexes.contains(4) ? comment : commentOfWrongAnswer, null, null, null));
+            answerShortDtoList.add(new AnswerShortDto(a, correctIndexes.contains(0), correctIndexes.contains(0) ? comment : commentOfWrongAnswer, null, null, null, null, null));
+            answerShortDtoList.add(new AnswerShortDto(b, correctIndexes.contains(1), correctIndexes.contains(1) ? comment : commentOfWrongAnswer, null, null, null, null, null));
+            answerShortDtoList.add(new AnswerShortDto(c, correctIndexes.contains(2), correctIndexes.contains(2) ? comment : commentOfWrongAnswer, null, null, null, null, null));
+            answerShortDtoList.add(new AnswerShortDto(d, correctIndexes.contains(3), correctIndexes.contains(3) ? comment : commentOfWrongAnswer, null, null, null, null, null));
+            answerShortDtoList.add(new AnswerShortDto(e, correctIndexes.contains(4), correctIndexes.contains(4) ? comment : commentOfWrongAnswer, null, null, null, null, null));
 
             List<String> answersText = List.of(a, b, c, d, e);
 

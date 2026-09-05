@@ -45,6 +45,7 @@
     <include file="/db/changelog/question-text-length.sql"/>
     <include file="/db/changelog/course-order-index.sql"/>
     <include file="/db/changelog/multi-answer-questions.sql"/>
+    <include file="/db/changelog/question-answer-image-size.sql"/>
 
 
 </databaseChangeLog>

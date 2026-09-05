@@ -60,9 +60,15 @@
 <!-- ОСНОВНОЙ КОНТЕЙНЕР -->
 <div class="wrapper">
     <button id="btnSections" onclick="location.href='/topic-sections?scienceId=' + getScienceId() + fieldQuery">📂 Mavzular</button>
-    <!-- Shu Bo'limdagi hech qanday savoli (testi) yo'q BARCHA darslarni
-         bir yo'la o'chiradi (deleteQuestionlessTopics, topic.js). -->
-    <button onclick="deleteQuestionlessTopics()">🗑️ Testi yo'q darslarni o'chirish</button>
+    <!-- Shu Fandagi hech qanday savoli (testi) yo'q darslarni RO'YXAT
+         sifatida ko'rsatadi (modalda) — ilgari to'g'ridan-to'g'ri (ro'yxatni
+         ko'rsatmasdan) o'chirib yuborardi, shu sabab qaysi dars(lar)
+         ekanini topish qiyin edi (foydalanuvchi xabari, 2026-09-05: "1 та
+         тести йўқ дарс бор деяпти, лекин рўйхатда кўринмаяпти"). Endi
+         avval RO'YXAT ko'rsatiladi, o'chirish esa O'SHA modal ICHIDAGI
+         alohida tugma orqali amalga oshiriladi (toggleQuestionlessTopicsModal/
+         deleteQuestionlessTopics, topic.js). -->
+    <button onclick="toggleQuestionlessTopicsModal()">📋 Testi yo'q darslar <span id="questionlessTopicsBadge" class="notif-badge" style="display:none;">0</span></button>
     <!-- Soft-delete qilingan (🗑️ o'chirilgan) darslar — "♻️ Tiklash" bilan
          bir zumda qaytariladi (TopicService.getDeletedTopics/restoreTopic). -->
     <button onclick="toggleTopicTrash()">🗑️ O'chirilgan darslar <span id="topicTrashBadge" class="notif-badge" style="display:none;">0</span></button>
@@ -79,24 +85,6 @@
          chiqishda qaysi mavzular hali "yetim" ekanini topish uchun
          (toggleUnlinkedFilter, topic.js). -->
     <button id="unlinkedFilterBtn" class="unlinked-filter-btn" onclick="toggleUnlinkedFilter()">🔗 Kursga bog'lanmagan darslar <span id="unlinkedTopicBadge" class="notif-badge" style="display:none;">0</span></button>
-
-    <!-- Ikkala savat paneli ATAYLAB TUGMALAR QATORIDAN KEYIN joylashtirilgan
-         (ilgari "O'chirilgan darslar" va "Barcha o'chirilgan testlar"
-         tugmalari ORASIDA edi) — bular BLOK darajali <div>, ochilganda
-         (display:block) o'zidan KEYINGI barcha inline tugmalarni YANGI
-         qatorga "tushirib" yuborardi (haqiqiy topilgan bug, foydalanuvchi
-         xabari: "Барча ўчирилган тестларни босганда, ундан кейинги кнопка
-         пастга тушиб кетяпти" — "Kursga bog'lanmagan darslar" tugmasi
-         kutilmaganda pastga sirg'alib tushardi). Endi qaysi savat
-         ochilishidan qat'i nazar — BUTUN tugmalar qatori bir joyda,
-         buzilmasdan turadi. -->
-    <div id="topicTrashPanel" style="display:none;">
-        <div id="topicTrashList"></div>
-    </div>
-
-    <div id="questionScienceTrashPanel" style="display:none;">
-        <div id="questionScienceTrashList"></div>
-    </div>
 
     <!-- Mavzu ustidan (Bo'lim -> Mavzu -> Dars) kelinganda ko'rinadi —
          qaysi mavzu darslari filtrlanib ko'rsatilayotganini bildiradi
@@ -136,6 +124,51 @@
          tugmasi ham olib tashlandi (foydalanuvchi so'rovi, 2026-09-05) —
          bu vazifani endi yuqoridagi "← Bo'limlar"/"← Mavzular" breadcrumb
          havolasi bajaradi. -->
+</div>
+
+<!-- "🗑️ O'chirilgan darslar" / "🗑️ Barcha o'chirilgan testlar" — ilgari
+     tugmalar QATORI ICHIDA (block-level <div>) ochilib, o'zidan keyingi
+     tugmalarni pastga surib yuborardi (haqiqiy topilgan bug). Endi
+     ikkalasi ham modalda ochiladi — sahifa joylashuviga UMUMAN ta'sir
+     qilmaydi (foydalanuvchi so'rovi, 2026-09-05: "Ўчирилган дарслар ва
+     барча ўчирилган тестларни модалда очсин"). toggleTopicTrash/
+     toggleQuestionScienceTrash — topic.js. -->
+<div id="topicTrashModal" class="modal-overlay">
+    <div class="trash-list-modal">
+        <h2 class="modal-h2">🗑️ O'chirilgan darslar</h2>
+        <div id="topicTrashList"></div>
+        <div class="modal-footer">
+            <button type="button" onclick="toggleTopicTrash()">Yopish</button>
+        </div>
+    </div>
+</div>
+
+<div id="questionScienceTrashModal" class="modal-overlay">
+    <div class="trash-list-modal">
+        <h2 class="modal-h2">🗑️ Barcha o'chirilgan testlar</h2>
+        <div id="questionScienceTrashList"></div>
+        <div class="modal-footer">
+            <button type="button" onclick="toggleQuestionScienceTrash()">Yopish</button>
+        </div>
+    </div>
+</div>
+
+<!-- "📋 Testi yo'q darslar" — avval RO'YXAT ko'rsatiladi (qaysi dars(lar)
+     ekani, va agar joriy Mavzu filtridan tashqarida bo'lsa — qaysi
+     Mavzuga tegishli ekani), o'chirish esa shu YERDAGI alohida tugma
+     orqali (foydalanuvchi so'rovi, 2026-09-05: "Тести йўқ дарсларни
+     ўчириш кнопкаси ўрнига Тести йўқ дарслар кнопкасини жойла. Бу
+     босилгандан кейин ... ўзида action орқали қилинаверади"). Soft-delete
+     — "🗑️ O'chirilgan darslar"dan ("♻️ Tiklash" bilan) qaytariladi. -->
+<div id="questionlessTopicsModal" class="modal-overlay">
+    <div class="trash-list-modal">
+        <h2 class="modal-h2">📋 Testi yo'q darslar</h2>
+        <div id="questionlessTopicsList"></div>
+        <div class="modal-footer">
+            <button type="button" id="deleteQuestionlessTopicsBtn" class="danger-btn hidden" onclick="deleteQuestionlessTopics()">🗑️ Barchasini o'chirish</button>
+            <button type="button" onclick="toggleQuestionlessTopicsModal()">Yopish</button>
+        </div>
+    </div>
 </div>
 
 <!-- "📝 Word'ga eksport" oynasi — ichida "🎲 Variantlar yaratish" checkbox'i

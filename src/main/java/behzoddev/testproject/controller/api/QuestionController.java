@@ -121,6 +121,11 @@ public class QuestionController {
                     ? payload.get("imageUrl").toString()
                     : null;
 
+            // Rasmning tanlangan eni/bo'yi (ixtiyoriy — foydalanuvchi "Savol
+            // formasi"da qo'lda kiritadi/o'zgartiradi, question.js#buildInlineImageWidget).
+            Integer questionImageWidth = parseIntOrNull(payload.get("imageWidth"));
+            Integer questionImageHeight = parseIntOrNull(payload.get("imageHeight"));
+
             var answers = (List<Map<Object, Object>>) payload.get("answers");
             List<AnswerShortDto> answerShortDto = new ArrayList<>();
             List<String> answerTextList = new ArrayList<>();
@@ -145,6 +150,9 @@ public class QuestionController {
                         ? answer.get("imageUrl").toString()
                         : null;
 
+                Integer answerImageWidth = parseIntOrNull(answer.get("imageWidth"));
+                Integer answerImageHeight = parseIntOrNull(answer.get("imageHeight"));
+
                 // Izohga (commentary) biriktirilgan rasm/video — ixtiyoriy,
                 // matnni almashtirmaydi, unga qo'shimcha sifatida saqlanadi.
                 String commentaryImageUrl = answer.get("commentaryImageUrl") != null
@@ -157,6 +165,7 @@ public class QuestionController {
 
                 answerShortDto.add(new AnswerShortDto(
                         answerText, isTrue, commentary, answerImageUrl,
+                        answerImageWidth, answerImageHeight,
                         commentaryImageUrl, commentaryVideoUrl));
             }
 
@@ -170,6 +179,8 @@ public class QuestionController {
                     .topicId(topicId)
                     .questionText(questionText)
                     .imageUrl(questionImageUrl)
+                    .imageWidth(questionImageWidth)
+                    .imageHeight(questionImageHeight)
                     .answers(answerShortDto)
                     .build();
 
@@ -190,6 +201,19 @@ public class QuestionController {
             return ResponseEntity
                     .badRequest()
                     .body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Frontend'dan JSON orqali kelgan raqam (Map<Object,Object>'ga
+    // deserializatsiya qilinganda Integer/Double/String bo'lishi mumkin —
+    // qat'iy tur emas) — xavfsiz tarzda Integer'ga o'giradi, bo'sh/noto'g'ri
+    // bo'lsa null qaytaradi (rasm eni/bo'yi ixtiyoriy maydon).
+    private Integer parseIntOrNull(Object value) {
+        if (value == null) return null;
+        try {
+            return (int) Double.parseDouble(value.toString());
+        } catch (NumberFormatException e) {
+            return null;
         }
     }
 

@@ -1066,6 +1066,18 @@ td label{
     flex-wrap: wrap;
 }
 
+/* "Savol formasi"da (.qform-question-row/.qform-answer) rasm/matn
+   yonma-yon joylashganda — rasm widget'i O'ZINING tabiiy o'lchamida
+   qolishi kerak, textarea (flex:1) esa qolgan joyni egallaydi. */
+.qform-question-row .inline-image-upload,
+.qform-answer-image-slot .inline-image-upload {
+    flex-shrink: 0;
+    flex-wrap: nowrap;
+    flex-direction: column;
+    align-items: flex-start;
+    margin-top: 0;
+}
+
 .inline-commentary-media {
     display: flex;
     flex-direction: column;
@@ -1089,6 +1101,33 @@ td label{
     background: #fdecea;
     color: #c62828;
     border-color: #f5c2c0;
+}
+
+/* Rasmning eni/bo'yi (px) — "Savol formasi"da rasm qo'yilgach ko'rinadi
+   (foydalanuvchi so'rovi, 2026-09-05: "Расм қўяётганда ҳам эни ва
+   бўйини киритиш керак. Қўйилган расмни эни ва бўйини ўзгартириш
+   мумкин бўлиши керак"). */
+.inline-image-size {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: #64748b;
+}
+
+.inline-image-size label {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-weight: normal;
+}
+
+.inline-image-size input[type="number"] {
+    width: 52px;
+    padding: 2px 4px;
+    font-size: 11px;
+    border: 1px solid #d5dde8;
+    border-radius: 4px;
 }
 
 .inline-image-preview {
@@ -1225,8 +1264,18 @@ td label{
     font-weight: bold;
 }
 
+/* Rasm CHAPDA, savol matni O'NGDA — .qform-answer bilan bir xil andoza
+   (foydalanuvchi so'rovi, 2026-09-05: "Расм ва текстни ёнма-ён жойлаш
+   мумкин бўлиши керак ... курсор расмни ўнг томонида энг тепадан
+   бошланиши керак"). */
+.qform-question-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
 .qform-group textarea {
-    width: 100%;
+    flex: 1;
     min-height: 42px;
     max-height: 220px;
     padding: 10px;
@@ -1361,6 +1410,40 @@ td label{
 
 .qform-link-btn.hidden {
     display: none !important;
+}
+
+/* "📥 Import from Excel" natijasi (importModal) — test-form.css'dagi
+   eski ".modal"/".modal-content" o'rniga, bu faylning o'z A4-uslubidagi
+   andozasi (".modal-overlay" allaqachon mavjud). */
+.import-result-modal {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: min(560px, 92vw);
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: modalPopIn .2s cubic-bezier(.2, .9, .3, 1.2);
+}
+
+.import-result-modal h3 {
+    margin: 0;
+}
+
+.import-result-modal pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 0;
+    font-size: 13px;
+    max-height: 50vh;
+    overflow-y: auto;
 }
 
 /* ========================================================================

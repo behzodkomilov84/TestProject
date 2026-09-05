@@ -7,6 +7,8 @@ public record AnswerDto(Long id,
                         @NotBlank(message = "❌isTrue bo'sh bo'lishi mumkin emas.") Boolean isTrue,
                         @NotBlank(message = "❌Izoh maydoni bo'sh bo'lishi mumkin emas.") String commentary,
                         String imageUrl,
+                        Integer imageWidth,
+                        Integer imageHeight,
                         String commentaryImageUrl,
                         String commentaryVideoUrl) {
 }

@@ -37,6 +37,15 @@ public class Question {
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
+    // Rasmning tanlangan eni/bo'yi (piksel) — Answer.imageWidth/imageHeight
+    // bilan bir xil g'oya (question.js#buildInlineImageWidget). NULL —
+    // rasm o'zining tabiiy o'lchamida (CSS bo'yicha) ko'rsatiladi.
+    @Column(name = "image_width")
+    private Integer imageWidth;
+
+    @Column(name = "image_height")
+    private Integer imageHeight;
+
     @OneToMany(mappedBy = "question",
             cascade = CascadeType.ALL,
             orphanRemoval = true

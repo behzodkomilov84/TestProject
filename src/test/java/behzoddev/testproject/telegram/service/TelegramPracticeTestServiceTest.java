@@ -186,8 +186,8 @@ class TelegramPracticeTestServiceTest {
         when(questionRepository.countByTopicIds(List.of(10L))).thenReturn(5);
         practiceTestService.startForTopic(CHAT_ID, 10L);
 
-        QuestionDto question = new QuestionDto(1L, "Savol?", null,
-                List.of(new AnswerDto(1L, "Javob", true, null, null, null, null)));
+        QuestionDto question = new QuestionDto(1L, "Savol?", null, null, null,
+                List.of(new AnswerDto(1L, "Javob", true, null, null, null, null, null, null)));
         when(testSessionService.startTest(any(), eq(List.of(10L)), eq(5), eq("practice")))
                 .thenReturn(new StartTestResponseDto(99L, List.of(question)));
 
@@ -240,13 +240,13 @@ class TelegramPracticeTestServiceTest {
         // 2) savol soni tanlanadi -> testSessionService.startTest chaqiriladi
         QuestionDto q1 = QuestionDto.builder().id(100L).questionText("2+2=?").imageUrl(null)
                 .answers(List.of(
-                        new AnswerDto(1000L, "3", false, "yo'q", null, null, null),
-                        new AnswerDto(1001L, "4", true, "to'g'ri", null, null, null)
+                        new AnswerDto(1000L, "3", false, "yo'q", null, null, null, null, null),
+                        new AnswerDto(1001L, "4", true, "to'g'ri", null, null, null, null, null)
                 )).build();
         QuestionDto q2 = QuestionDto.builder().id(101L).questionText("3+3=?").imageUrl(null)
                 .answers(List.of(
-                        new AnswerDto(1002L, "6", true, "to'g'ri", null, null, null),
-                        new AnswerDto(1003L, "7", false, "yo'q", null, null, null)
+                        new AnswerDto(1002L, "6", true, "to'g'ri", null, null, null, null, null),
+                        new AnswerDto(1003L, "7", false, "yo'q", null, null, null, null, null)
                 )).build();
 
         when(testSessionService.startTest(any(), eq(List.of(10L)), eq(2), eq("practice")))
@@ -291,7 +291,7 @@ class TelegramPracticeTestServiceTest {
         practiceTestService.selectScience(CHAT_ID, 1L);
 
         QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
-                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null))).build();
+                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null, null, null))).build();
         when(testSessionService.startTest(any(), eq(List.of(10L)), eq(3), eq("exam")))
                 .thenReturn(new StartTestResponseDto(999L, List.of(q1)));
 
@@ -311,7 +311,7 @@ class TelegramPracticeTestServiceTest {
         practiceTestService.selectScience(CHAT_ID, 1L);
 
         QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
-                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null))).build();
+                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null, null, null))).build();
         when(testSessionService.startTest(any(), eq(List.of(10L)), eq(2), eq("hard")))
                 .thenReturn(new StartTestResponseDto(999L, List.of(q1)));
 
@@ -365,7 +365,7 @@ class TelegramPracticeTestServiceTest {
         practiceTestService.promptCustomCount(CHAT_ID);
 
         QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
-                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null))).build();
+                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null, null, null))).build();
         when(testSessionService.startTest(any(), eq(List.of(10L)), eq(17), eq("practice")))
                 .thenReturn(new StartTestResponseDto(999L, List.of(q1)));
 
@@ -424,7 +424,7 @@ class TelegramPracticeTestServiceTest {
         practiceTestService.selectScience(CHAT_ID, 1L);
 
         QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
-                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null))).build();
+                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null, null, null))).build();
         when(testSessionService.startTest(any(), eq(List.of(10L)), eq(3), eq("practice")))
                 .thenReturn(new StartTestResponseDto(999L, List.of(q1)));
 
@@ -459,7 +459,7 @@ class TelegramPracticeTestServiceTest {
         practiceTestService.chooseCount(CHAT_ID, 3);
 
         QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
-                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null))).build();
+                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null, null, null))).build();
         when(testSessionService.startTest(any(), eq(List.of(10L)), eq(3), eq("exam")))
                 .thenReturn(new StartTestResponseDto(999L, List.of(q1)));
 
@@ -503,7 +503,7 @@ class TelegramPracticeTestServiceTest {
         practiceTestService.chooseCount(CHAT_ID, 2);
 
         QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
-                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null))).build();
+                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null, null, null))).build();
         when(testSessionService.startTest(any(), eq(List.of(10L)), eq(2), eq("hard")))
                 .thenReturn(new StartTestResponseDto(999L, List.of(q1)));
 
@@ -538,7 +538,7 @@ class TelegramPracticeTestServiceTest {
                 .thenReturn(List.of(new TopicWithQuestionCountDto(10L, "Algebra", 5L, null, null, null)));
         practiceTestService.selectScience(CHAT_ID, 1L);
         QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
-                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null))).build();
+                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null, null, null))).build();
         when(testSessionService.startTest(any(), eq(List.of(10L)), eq(1), eq("practice")))
                 .thenReturn(new StartTestResponseDto(999L, List.of(q1)));
         practiceTestService.startTest(CHAT_ID, 1);
@@ -582,7 +582,7 @@ class TelegramPracticeTestServiceTest {
         practiceTestService.chooseCount(CHAT_ID, 1);
 
         QuestionDto q1 = QuestionDto.builder().id(100L).questionText("Savol?").imageUrl(null)
-                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null))).build();
+                .answers(List.of(new AnswerDto(1000L, "A", true, null, null, null, null, null, null))).build();
         when(testSessionService.startTest(any(), eq(List.of(10L)), eq(1), eq("exam")))
                 .thenReturn(new StartTestResponseDto(999L, List.of(q1)));
 

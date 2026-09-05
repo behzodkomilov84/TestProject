@@ -221,23 +221,76 @@ function getScienceId() {
     return element ? element.value : null;
 }
 
-// "🗑️ Testi yo'q mavzularni o'chirish" — shu Fanda hech qanday savoli
-// bo'lmagan (questionCount==0) BARCHA mavzularni bir yo'la o'chiradi.
-// Kursga bog'langan mavzular backend tomonidan avtomatik chetlab
-// o'tiladi (TopicService.deleteQuestionlessTopics).
-async function deleteQuestionlessTopics() {
-    if (itemBlock.some(s => s.mode !== "VIEW")) {
+// "📋 Testi yo'q darslar" — shu Fanda hech qanday savoli bo'lmagan
+// (questionCount==0) darslar RO'YXATI, BUTUN FAN bo'yicha, joriy
+// "?sectionId=" filtridan qat'i nazar (backend TopicService.
+// deleteQuestionlessTopics ham shunday — faqat scienceId qabul qiladi).
+// Ilgari tugma bosilganda RO'YXATSIZ, to'g'ridan-to'g'ri o'chirib
+// yuborardi — foydalanuvchi qaysi dars(lar) ekanini bilolmasdi, ba'zan
+// (boshqa Mavzuga tegishli bo'lsa) joriy EKRANDAGI ro'yxatda ko'rinmasdi
+// ham (haqiqiy xabarlar, 2026-09-05: "1 та тести йўқ дарс бор деяпти,
+// лекин рўйхатда кўринмаяпти" va "Тести йўқ дарсларни ўчириш кнопкаси
+// ўрнига Тести йўқ дарслар кнопкасини жойла"). Endi avval RO'YXAT
+// ko'rsatiladi (modalda — toggleQuestionlessTopicsModal), o'chirish esa
+// O'SHA modal ICHIDAGI alohida "🗑️ Barchasini o'chirish" tugmasi orqali.
+function getQuestionlessCandidates() {
+    return itemBlock.filter(s => s.id > 0 && (s.questionCount || 0) === 0);
+}
+
+let questionlessTopicsOpen = false;
+
+function toggleQuestionlessTopicsModal() {
+    if (!questionlessTopicsOpen && itemBlock.some(s => s.mode !== "VIEW")) {
         showAlertModal("❌ Avval tahrirlashni yakuniga yetkazing (yoki saqlang)!");
         return;
     }
+    questionlessTopicsOpen = !questionlessTopicsOpen;
+    document.getElementById("questionlessTopicsModal").classList.toggle("show", questionlessTopicsOpen);
+    if (questionlessTopicsOpen) {
+        renderQuestionlessTopicsList();
+    }
+}
 
-    const candidateCount = itemBlock.filter(s => s.id > 0 && (s.questionCount || 0) === 0).length;
-    if (candidateCount === 0) {
-        showAlertModal("ℹ️ Testi yo'q dars topilmadi.");
+// Ro'yxatni chizadi — har bir qatorda dars nomi, agar joriy Mavzu
+// filtridan TASHQARIDA bo'lsa qaysi Mavzuga tegishli ekani ham (aks
+// holda "asosiy ro'yxatda ko'rinmaydi" degan chalkashlik qolaveradi).
+function renderQuestionlessTopicsList() {
+    const list = document.getElementById("questionlessTopicsList");
+    const deleteBtn = document.getElementById("deleteQuestionlessTopicsBtn");
+    const candidates = getQuestionlessCandidates();
+
+    refreshQuestionlessTopicsBadge(candidates.length);
+    deleteBtn.classList.toggle("hidden", candidates.length === 0);
+    deleteBtn.textContent = `🗑️ Barchasini o'chirish (${candidates.length})`;
+
+    if (candidates.length === 0) {
+        list.innerHTML = "<p>Testi yo'q dars yo'q</p>";
         return;
     }
 
-    if (!await showConfirmModal(`⚠️ Testi yo'q ${candidateCount} ta darsni o'chirmoqchimisiz?\n\n(Kursga bog'langan darslar, agar bo'lsa, avtomatik chetlab o'tiladi.)\n\nBu amalni bekor qilib bo'lmaydi.`, { danger: true })) {
+    list.innerHTML = candidates.map(s => {
+        const inOtherSection = filterSectionId && Number(s.sectionId) !== Number(filterSectionId);
+        const sectionName = sectionNameById(s.sectionId);
+        const hint = inOtherSection
+            ? `<div class="topic-section-hint">Mavzu: ${escapeHtml(sectionName || "Mavzusiz")} — joriy filtrlangan ro'yxatda ko'rinmaydi</div>`
+            : (sectionName ? `<div class="topic-section-hint">Mavzu: ${escapeHtml(sectionName)}</div>` : "");
+        return `
+            <div class="questionless-topic-row">
+                <div>${escapeHtml(s.name)}${hint}</div>
+            </div>
+        `;
+    }).join("");
+}
+
+function refreshQuestionlessTopicsBadge(count) {
+    setTrashBadgeCount("questionlessTopicsBadge", count ?? getQuestionlessCandidates().length);
+}
+
+async function deleteQuestionlessTopics() {
+    const candidates = getQuestionlessCandidates();
+    if (candidates.length === 0) return;
+
+    if (!await showConfirmModal(`⚠️ Testi yo'q ${candidates.length} ta darsni o'chirmoqchimisiz?\n\n(Kursga bog'langan darslar, agar bo'lsa, avtomatik chetlab o'tiladi.)`, { danger: true })) {
         return;
     }
 
@@ -252,6 +305,7 @@ async function deleteQuestionlessTopics() {
         await reloadFromDb(`/api/topic?scienceId=${getScienceId()}`);
         focusIndex = 0;
         render();
+        toggleQuestionlessTopicsModal();
         refreshTopicTrashBadge();
     } catch (err) {
         console.error(err);
@@ -266,7 +320,7 @@ let topicTrashOpen = false;
 
 function toggleTopicTrash() {
     topicTrashOpen = !topicTrashOpen;
-    document.getElementById("topicTrashPanel").style.display = topicTrashOpen ? "block" : "none";
+    document.getElementById("topicTrashModal").classList.toggle("show", topicTrashOpen);
     if (topicTrashOpen) {
         loadTopicTrash();
     }
@@ -364,7 +418,7 @@ let selectedScienceTrashQuestionIds = new Set();
 
 function toggleQuestionScienceTrash() {
     questionScienceTrashOpen = !questionScienceTrashOpen;
-    document.getElementById("questionScienceTrashPanel").style.display = questionScienceTrashOpen ? "block" : "none";
+    document.getElementById("questionScienceTrashModal").classList.toggle("show", questionScienceTrashOpen);
     if (questionScienceTrashOpen) {
         loadQuestionScienceTrash();
     }
@@ -719,6 +773,10 @@ async function reloadFromDb(mapping) {
         mode: "VIEW"
     }));
 
+    // itemBlock har safar qayta yuklanganda — "📋 Testi yo'q darslar"
+    // belgisi (badge) ham yangilanadi (bu son SERVERGA murojaat qilmasdan,
+    // to'g'ridan-to'g'ri itemBlock'dan hisoblanadi).
+    refreshQuestionlessTopicsBadge();
 } //DONE
 
 function render() {

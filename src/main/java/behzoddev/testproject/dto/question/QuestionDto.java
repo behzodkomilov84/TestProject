@@ -10,6 +10,8 @@ import java.util.List;
 public record QuestionDto(Long id,
                           @NotBlank(message = "❌questionText bo'sh bo'lishi mumkin emas.") String questionText,
                           String imageUrl,
+                          Integer imageWidth,
+                          Integer imageHeight,
                           List<AnswerDto> answers) {
 
 

@@ -10,5 +10,7 @@ import java.util.List;
 public record QuestionSaveDto(Long topicId,
                               @NotBlank(message = "❌questionText bo'sh bo'lishi mumkin emas.") String questionText,
                               String imageUrl,
+                              Integer imageWidth,
+                              Integer imageHeight,
                               List<AnswerShortDto> answers) {
 }

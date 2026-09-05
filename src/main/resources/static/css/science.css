@@ -223,16 +223,18 @@ h1 {
     }
 
     /* Tugma orqali ochiladigan savat panellari (#scienceTrashPanel —
-       science.html, #sectionTrashPanel — topicSections.html,
-       #topicTrashPanel / #questionScienceTrashPanel — topics.html) —
-       avval hech qanday tepa bo'shlig'i yo'q edi, shu sabab ochilganda
+       science.html, #sectionTrashPanel — topicSections.html) — avval
+       hech qanday tepa bo'shlig'i yo'q edi, shu sabab ochilganda
        tugmalar qatoriga to'g'ridan-to'g'ri "yopishib" ko'rinardi
        (question.css'dagi #questionTrashPanel bilan bir xil turdagi,
-       haqiqiy topilgan xatolik — endi hamma joyda birdek tuzatilgan). */
+       haqiqiy topilgan xatolik — endi hamma joyda birdek tuzatilgan).
+       "topics.html"dagi ikkalasi (O'chirilgan darslar/Barcha o'chirilgan
+       testlar) ENDI MODALDA (#topicTrashModal/#questionScienceTrashModal,
+       ".modal-overlay" — position:fixed, markazlashtirilgan) — shu sabab
+       BU RO'YXATDAN OLIB TASHLANDI: "margin-top" fixed overlay'ni
+       markazdan pastga surib qo'yardi (haqiqiy topilgan bug). */
     #scienceTrashPanel,
-    #sectionTrashPanel,
-    #topicTrashPanel,
-    #questionScienceTrashPanel {
+    #sectionTrashPanel {
         margin-top: 14px;
     }
 
@@ -391,14 +393,14 @@ h1 {
         color: #475569;
     }
 
-    /* MUHIM: "#questionScienceTrashPanel" bilan ANIQ scope qilingan —
+    /* MUHIM: "#questionScienceTrashModal" bilan ANIQ scope qilingan —
        aks holda ".wrapper button" (specificity 0,1,1) oddiy
        ".bulk-delete-btn" klassidan (0,1,0) KUCHLIROQ bo'lib, fonni
        "aquamarine"ga qaytarib yuborardi (haqiqiy topilgan bug —
        question.css'dagi ".container button" bilan bir xil turdagi
        muammo). Qora ramka + qora shrift — yonidagi (♻️ Tiklash) oddiy
        tugmalarga o'xshab ko'rinishi uchun. */
-    #questionScienceTrashPanel .bulk-delete-btn {
+    #questionScienceTrashModal .bulk-delete-btn {
         background: #dc2626;
         color: #000;
         border: 2px solid #000;
@@ -409,11 +411,11 @@ h1 {
         font-size: 13px;
     }
 
-    #questionScienceTrashPanel .bulk-delete-btn:hover {
+    #questionScienceTrashModal .bulk-delete-btn:hover {
         background: #b91c1c;
     }
 
-    #questionScienceTrashPanel .restore-bulk-btn {
+    #questionScienceTrashModal .restore-bulk-btn {
         background: #16a34a;
         color: #000;
         border: 2px solid #000;
@@ -424,7 +426,7 @@ h1 {
         font-size: 13px;
     }
 
-    #questionScienceTrashPanel .restore-bulk-btn:hover {
+    #questionScienceTrashModal .restore-bulk-btn:hover {
         background: #15803d;
     }
 
@@ -758,6 +760,88 @@ h1 {
     font-size: 20px;
     color: #103F91;
     letter-spacing: .2px;
+}
+
+/* "🗑️ O'chirilgan darslar" / "🗑️ Barcha o'chirilgan testlar" — modal
+   ko'rinishida (foydalanuvchi so'rovi, 2026-09-05: "Ўчирилган дарслар ва
+   барча ўчирилган тестларни модалда очсин"). ".word-export-modal"dan
+   FARQLI — ro'yxat uzun bo'lishi mumkin, shu sabab kengroq va ichki
+   scroll bilan. */
+.trash-list-modal {
+    width: min(650px, 92vw);
+    max-height: 80vh;
+    overflow-y: auto;
+    background: #fff;
+    padding: 24px 28px;
+    border-radius: 16px;
+    box-shadow: 0 25px 60px rgba(15, 23, 42, .35);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    animation: modalPopIn .2s cubic-bezier(.2, .9, .3, 1.2);
+}
+
+.trash-list-modal .modal-h2 {
+    font-size: 20px;
+    color: #103F91;
+    letter-spacing: .2px;
+}
+
+.trash-list-modal .modal-footer {
+    border-top: 1px solid #f1f5f9;
+    padding-top: 14px;
+}
+
+.trash-list-modal .modal-footer button {
+    background: #fff;
+    color: #475569;
+    border: 1px solid #d5dde8;
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+}
+
+.trash-list-modal .modal-footer button:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+
+/* "🗑️ Barchasini o'chirish" (questionlessTopicsModal) — xavfli (qizil)
+   amal, shu sabab yuqoridagi neytral kulrang qoidadan KUCHLIROQ
+   ustuvorlik bilan qayta belgilanadi (bir xil selektor darajasi,
+   keyinroq e'lon qilingani uchun ustun keladi). */
+.trash-list-modal .modal-footer .danger-btn {
+    background: #dc2626;
+    color: #fff;
+    border-color: #dc2626;
+}
+
+.trash-list-modal .modal-footer .danger-btn:hover {
+    background: #b91c1c;
+    border-color: #b91c1c;
+}
+
+/* "📋 Testi yo'q darslar" ro'yxatidagi har bir qator — question.css'dagi
+   "#questionTrashList .row" bilan bir xil g'oya. */
+.questionless-topic-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-bottom: 8px;
+}
+
+.questionless-topic-row .topic-section-hint {
+    font-size: 12px;
+    color: #b45309;
 }
 
 .word-export-checkbox-row {
