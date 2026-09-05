@@ -160,7 +160,14 @@ label {
 }
 
 .hidden {
-    display: none;
+    /* !important shart — ".commentary-box { display: flex; }" (pastda,
+       shu bilan bir xil selektor darajasida) aks holda CSS oqimi
+       bo'yicha keyinroq kelib, buni bekor qilib qo'yardi (haqiqiy,
+       oldindan mavjud bo'lgan bug — checkbox belgilanmagan javobning
+       izoh qutisi ham har doim ko'rinib turardi, 2026-09-05'da 3-bosqich
+       tekshiruvida topildi). science.css'dagi ".hidden" bilan bir xil
+       yechim. */
+    display: none !important;
 }
 
 .comment-btn {
