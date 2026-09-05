@@ -1230,8 +1230,10 @@ h1 {
 .field-card::after {
     content: "⌨️ Klaviatura yorliqlari:\A ←→ / ↑↓ — Yo'nalishlar orasida\A Home — birinchi   |   End — oxirgi\A Enter — ichiga kirish\A 🖱️ O'ng tugma — ichiga kirmasdan belgilash";
     position: absolute;
-    top: 34px;
-    right: 10px;
+    left: 50%;
+    bottom: 100%;
+    margin-bottom: 8px;
+    transform: translate(-50%, 6px);
     background: rgba(15, 23, 42, 0.94);
     color: #fff;
     font-size: 12px;
@@ -1246,14 +1248,13 @@ h1 {
     box-shadow: 0 4px 14px rgba(0,0,0,0.25);
     opacity: 0;
     pointer-events: none;
-    transform: translateY(-6px);
     transition: opacity 0.15s ease, transform 0.15s ease;
     z-index: 30;
 }
 
 .field-card.kbd-hint-open::after {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate(-50%, 0);
 }
 
 /* Kartaning o'ng-yuqori burchagidagi doimiy ko'rinadigan "⌨️" belgisi —
@@ -1268,6 +1269,16 @@ h1 {
     cursor: pointer;
     transition: opacity 0.15s ease;
     z-index: 31;
+}
+
+/* Haqiqiy Yo'nalish kartochkasida belgi endi "field-card-actions" qatorining
+   O'ZIDA (oddiy oqim ichida, 🗑️'dan keyin) — yuqoridagi absolyut
+   pozitsiya (top:10px;right:10px) bu qisqa kartada tugmalar qatori
+   bilan to'qnashardi. "— Yo'nalishsiz bo'limlar —" psevdo-kartasida
+   (tugmalari yo'q) hamon absolyut — u yerda to'qnashish xavfi yo'q. */
+.field-card-actions .kbd-hint-badge {
+    position: static;
+    opacity: 0.5;
 }
 
 .field-card:hover .kbd-hint-badge,

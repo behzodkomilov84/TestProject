@@ -1378,16 +1378,14 @@ body {
    ham ishlaydi, faqat Enter bilan ochilmaydi). Oxirgi qator — sichqonning
    O'NG tugmasi (renderSectionCard#cardContextMenu) — chap tugmadan farqli,
    darsning ICHIGA kirmasdan faqat "tanlangan" deb belgilaydi (foydalanuvchi
-   so'rovi, 2026-09-05). Belgi (⌨️, top:10px;right:10px) ostidan PASTGA
-   ochiladi — ilgari kartaning TEPASIDA, markazlashtirilgan holda edi,
-   lekin kartalar orasidagi tor bo'shliqda YUQORIDAGI qatorning
-   tugmalarini (masalan 🗑️) to'sib qo'yardi (haqiqiy foydalanuvchi
-   shikoyati, 2026-09-05). */
+   so'rovi, 2026-09-05). */
 .section-item::after {
     content: "⌨️ Klaviatura yorliqlari:\A ←  /  → — mavzular orasida\A ↑  /  ↓ — sahifalar orasida\A Home — 1-mavzu   |   End — oxirgi mavzu\A Ctrl+↑ / Ctrl+↓ — bo'limlar orasida\A Enter — mavzuga kirish\A 🖱️ O'ng tugma — ichiga kirmasdan belgilash";
     position: absolute;
-    top: 34px;
-    right: 10px;
+    left: 50%;
+    bottom: 100%;
+    margin-bottom: 8px;
+    transform: translate(-50%, 6px);
     background: rgba(15, 23, 42, 0.94);
     color: #fff;
     font-size: 12px;
@@ -1402,14 +1400,13 @@ body {
     box-shadow: 0 4px 14px rgba(0,0,0,0.25);
     opacity: 0;
     pointer-events: none;
-    transform: translateY(-6px);
     transition: opacity 0.15s ease, transform 0.15s ease;
     z-index: 30;
 }
 
 .section-item.kbd-hint-open::after {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate(-50%, 0);
 }
 
 /* Kurs kartochkalari (coursesCatalog.html) uchun — ".section-item::after"
@@ -1420,8 +1417,10 @@ body {
 .course-card::after {
     content: "⌨️ Klaviatura yorliqlari:\A ←→ / ↑↓ — kurslar orasida\A Home — birinchi   |   End — oxirgi\A Ctrl+↑ / Ctrl+↓ — Yo'nalishlar orasida\A Enter — kursga kirish\A 🖱️ O'ng tugma — ichiga kirmasdan belgilash";
     position: absolute;
-    top: 34px;
-    right: 10px;
+    left: 50%;
+    bottom: 100%;
+    margin-bottom: 8px;
+    transform: translate(-50%, 6px);
     background: rgba(15, 23, 42, 0.94);
     color: #fff;
     font-size: 12px;
@@ -1436,14 +1435,13 @@ body {
     box-shadow: 0 4px 14px rgba(0,0,0,0.25);
     opacity: 0;
     pointer-events: none;
-    transform: translateY(-6px);
     transition: opacity 0.15s ease, transform 0.15s ease;
     z-index: 30;
 }
 
 .course-card.kbd-hint-open::after {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate(-50%, 0);
 }
 
 .section-item:not(.locked) {

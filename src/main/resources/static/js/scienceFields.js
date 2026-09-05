@@ -219,7 +219,6 @@ function renderFieldCard(f, idx, total) {
              onclick="selectFieldCard('${f.id}'); openField(${f.id})"
              oncontextmenu="event.preventDefault(); selectFieldCard('${f.id}');"
              onkeydown="onFieldCardKeyDown(event, '${f.id}')">
-            <span class="kbd-hint-badge" onclick="event.stopPropagation(); toggleFieldKbdHint(this)" title="Klaviatura yorliqlari">⌨️</span>
             <div class="field-card-main">
                 <span class="field-card-icon">🧭</span>
                 <span class="field-card-name">${escapeHtml(f.name)}</span>
@@ -230,6 +229,14 @@ function renderFieldCard(f, idx, total) {
                 <button onclick="event.stopPropagation(); moveField(${f.id}, 1)" ${downDisabled} title="Pastga">⬇</button>
                 <button onclick="event.stopPropagation(); renameFieldPrompt(${f.id})" title="Nomini tahrirlash">✏️</button>
                 <button class="danger-btn" onclick="event.stopPropagation(); deleteFieldPrompt(${f.id}, ${JSON.stringify(f.name).replace(/"/g, "&quot;")})" title="O'chirish (faqat bo'sh bo'lsa)">🗑️</button>
+                <!-- "⌨️" belgisi shu qatorning ENG OXIRIGA (🗑️'dan keyin)
+                     ko'chirildi — ilgari kartaning TEPASIGA (position:absolute,
+                     top:10px;right:10px) qo'yilgan edi, bu qisqa (bitta
+                     qatorli) kartada aynan shu tugmalar qatori bilan
+                     TO'QNASHIB qolardi (haqiqiy foydalanuvchi shikoyati,
+                     2026-09-05: "🗑️ ni ustida turib qolgan bu belgi"). Endi
+                     oddiy oqim (flex) ichida, tugmalar bilan bir qatorda. -->
+                <span class="kbd-hint-badge" onclick="event.stopPropagation(); toggleFieldKbdHint(this)" title="Klaviatura yorliqlari">⌨️</span>
             </div>
         </div>
     `;
