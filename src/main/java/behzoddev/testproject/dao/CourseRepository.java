@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface CourseRepository extends JpaRepository<Course, Long> {
 
@@ -50,4 +51,14 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     // Yo'nalish kartochkasida "N ta bo'lim" (coursesCatalog.js) —
     // CourseFieldService.toDto. Faqat FAOL (o'chirilmagan) kurslar sanaladi.
     long countByField_IdAndDeletedAtIsNull(Long fieldId);
+
+    // Kurs kartochkalarini Yo'nalish ICHIDA qo'lda tartiblash (⬆⬇,
+    // CourseService.reorderCourses) uchun — SHU guruhdagi barcha faol
+    // kurslar (moveField/reorderFields bilan bir xil andoza: to'liq
+    // ro'yxat kutiladi, keyin 1'dan qayta raqamlanadi).
+    List<Course> findByField_IdAndDeletedAtIsNull(Long fieldId);
+
+    // Yangi kurs qo'shilganda navbatdagi order_index (CourseService.createCourse)
+    // — CourseFieldService.createField'dagi bilan bir xil andoza.
+    Optional<Course> findTopByField_IdAndDeletedAtIsNullOrderByOrderIndexDesc(Long fieldId);
 }

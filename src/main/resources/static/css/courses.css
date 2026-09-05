@@ -229,6 +229,17 @@ body {
     font-size: 12px;
 }
 
+/* "⬆⬇" — kurs kartochkasini Yo'nalish ichida surish (courses.js#moveCourse,
+   foydalanuvchi so'rovi, 2026-09-05) — .chapter-move-btn (yuqorida) bilan
+   bir xil tugma uslubi, faqat kartaga o'tishni bloklamasin deb alohida
+   qatorda (footer'dan keyin). */
+.course-card-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+    cursor: default;
+}
+
 .course-badge {
     padding: 3px 10px;
     border-radius: 999px;

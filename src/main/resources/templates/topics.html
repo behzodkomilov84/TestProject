@@ -34,7 +34,18 @@
 
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-<h1>Darslar<span id="topicsSummary" class="topics-summary"></span></h1>
+<!-- Bo'limlar sahifasi (science.html) bilan BIR XIL sarlavha qatori —
+     nomi, soni va "+ Yangi dars" bitta gorizontal qatorda (foydalanuvchi
+     so'rovi, 2026-09-05: "topicSection va topic sahifalarida ham shu
+     ko'rinishni qo'lla"). Pastdagi "➕ Add" tugmasi shu sabab OLIB
+     TASHLANDI. -->
+<div class="page-title-row">
+    <h1>Darslar</h1>
+    <div class="page-title-actions">
+        <span class="chapter-box-count" id="topicsSummary"></span>
+        <button class="add-primary-btn" onclick="add()">➕ Yangi dars</button>
+    </div>
+</div>
 <input type="hidden" id="scienceId" th:value="${scienceId}">
 <!-- ОСНОВНОЙ КОНТЕЙНЕР -->
 <div class="wrapper">
@@ -98,13 +109,12 @@
     <!-- КОНТЕЙНЕР СПИСКА ПРЕДМЕТОВ -->
     <div class="list" id="list"></div>
 
-    <!-- НИЖНЯЯ ПАНЕЛЬ С КНОПКАМИ УПРАВЛЕНИЯ. "💾 Save to DB" olib
-         tashlandi — o'zgarishlar endi DARHOL bazaga yoziladi
-         (foydalanuvchi so'rovi, 2026-09-05). -->
+    <!-- НИЖНЯЯ ПАНЕЛЬ С КНОПКАМИ УПРАВЛЕНИЯ. "➕ Add" va "💾 Save to DB"
+         olib tashlandi (foydalanuvchi so'rovi, 2026-09-05): yangi dars
+         qo'shish endi yuqoridagi sarlavha qatoridagi "+ Yangi dars"
+         tugmasi orqali, o'zgarishlar esa DARHOL bazaga yoziladi. -->
     <div class="fixed-bar">
         <div>
-            <!-- КНОПКА ДОБАВЛЕНИЯ НОВОГО ПРЕДМЕТА -->
-            <button onclick="add()">➕ Add</button>
             <button id="btnBack">🔙 Back</button>
         </div>
     </div>

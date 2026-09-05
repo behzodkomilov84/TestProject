@@ -62,6 +62,13 @@ public class Course {
     @JoinColumn(name = "field_id")
     private CourseField field;
 
+    // Shu Yo'nalish ICHIDA kurs kartochkasini qo'lda tartiblash (⬆⬇,
+    // CourseController#reorder) uchun — TopicSection/CourseChapter'dagi
+    // bilan bir xil konvensiya. Guruh (field_id) o'zgarganda qayta
+    // hisoblanmaydi — faqat SHU guruh ichidagi kartalar orasida solishtiriladi.
+    @Column(name = "order_index")
+    private Integer orderIndex;
+
     @Column(name = "created_at", nullable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

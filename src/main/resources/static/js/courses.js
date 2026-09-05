@@ -91,6 +91,15 @@ function getSortedFieldGroups() {
         groups.get(key).items.push(c);
     }
 
+    // Har bir guruh ICHIDA ham kurslar o'z order_index'i bo'yicha
+    // saralanadi (moveCourse shu tartibni ⬆⬇ orqali o'zgartiradi) —
+    // orderIndex bo'lmagan (eski, hali migratsiya qilinmagan) kurslar
+    // oxiriga suriladi.
+    const withOrder = c => c.orderIndex != null ? c.orderIndex : Number.MAX_SAFE_INTEGER;
+    for (const g of groups.values()) {
+        g.items.sort((a, b) => withOrder(a) - withOrder(b));
+    }
+
     return [...groups.values()].sort((a, b) => a.orderIndex - b.orderIndex);
 }
 
@@ -143,7 +152,7 @@ function renderFieldBox(group, realFieldGroups) {
     let bodyHtml = "";
     if (isExpanded) {
         const cardsHtml = group.items.length
-            ? `<div class="courses-grid">${group.items.map(renderCourseCard).join("")}</div>`
+            ? `<div class="courses-grid">${group.items.map((c, idx) => renderCourseCard(c, idx, group.items.length, group.fieldId)).join("")}</div>`
             : `<div class="courses-empty">Bu Yo'nalishda hali kurs (Bo'lim) yo'q</div>`;
         bodyHtml = `<div class="chapter-box-body">${cardsHtml}</div>`;
     }
@@ -189,7 +198,24 @@ function renderFieldBox(group, realFieldGroups) {
     `;
 }
 
-function renderCourseCard(c) {
+// "⬆⬇" — shu Yo'nalish ICHIDA kurs kartochkasini surish (foydalanuvchi
+// so'rovi, 2026-09-05: "bo'limlarni o'rnini almashtirish funksiyasini
+// qo'shish kerak") — faqat HAQIQIY Yo'nalishda (fieldId != null, kamida
+// 2 ta kurs bo'lganda) ko'rsatiladi, CourseFieldService/moveField bilan
+// bir xil g'oya (chapter-move-btn uslubi).
+function renderCourseCard(c, idx, total, fieldId) {
+    let moveBtnsHtml = "";
+    if (CAN_CREATE_COURSE && fieldId != null && total > 1) {
+        const upDisabled = idx === 0 ? "disabled" : "";
+        const downDisabled = idx === total - 1 ? "disabled" : "";
+        moveBtnsHtml = `
+            <div class="course-card-actions" onclick="event.stopPropagation()">
+                <button class="chapter-move-btn" onclick="moveCourse(${c.id}, -1, ${fieldId})" ${upDisabled} title="Yuqoriga">⬆</button>
+                <button class="chapter-move-btn" onclick="moveCourse(${c.id}, 1, ${fieldId})" ${downDisabled} title="Pastga">⬇</button>
+            </div>
+        `;
+    }
+
     let badge;
     if (!c.published) {
         badge = `<span class="course-badge draft">Qoralama</span>`;
@@ -218,9 +244,54 @@ function renderCourseCard(c) {
                     <span>${c.chapterCount} ta mavzu, ${c.sectionCount} ta dars</span>
                     ${badge}
                 </div>
+                ${moveBtnsHtml}
             </div>
         </div>
     `;
+}
+
+// "⬆⬇" bosilganda — client tomonda joy almashtirib DARHOL qayta chizadi,
+// so'ng serverga (fieldId ICHIDA TO'LIQ ID ro'yxati) yuboradi — moveField
+// bilan bir xil andoza (foydalanuvchi so'rovi, 2026-09-05).
+async function moveCourse(courseId, direction, fieldId) {
+    const groups = getSortedFieldGroups();
+    const group = groups.find(g => g.fieldId === fieldId);
+    if (!group) return;
+
+    const pos = group.items.findIndex(c => c.id === courseId);
+    const newPos = pos + direction;
+    if (pos < 0 || newPos < 0 || newPos >= group.items.length) return;
+
+    [group.items[pos], group.items[newPos]] = [group.items[newPos], group.items[pos]];
+    const orderedIds = group.items.map(c => c.id);
+
+    // allCourses'ni ham shu tartibga moslab qo'yamiz — aks holda keyingi
+    // getSortedFieldGroups() eski (server) tartibdan qayta boshlagan
+    // bo'lardi (render() chaqirilguncha).
+    orderedIds.forEach((id, idx) => {
+        const course = allCourses.find(c => c.id === id);
+        if (course) course.orderIndex = idx + 1;
+    });
+    renderGroupedCourses();
+
+    try {
+        const res = await fetch(`/api/courses/reorder?fieldId=${fieldId}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(orderedIds)
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlertModal(data.error || "Tartibni o'zgartirishda xatolik");
+            await loadCourses();
+            return;
+        }
+        showToast('success', 'Tartib saqlandi', 1500);
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
+        await loadCourses();
+    }
 }
 
 function escapeHtml(text) {

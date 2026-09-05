@@ -28,6 +28,9 @@ public record CourseDto(
         // kurslar" psevdo-guruhida (eski kurslar, migratsiyadan oldingi).
         Long fieldId,
         String fieldName,
+        // Shu Yo'nalish ICHIDA kartochkalarni tartiblash uchun (courses.js
+        // shu bo'yicha saralaydi va ⬆⬇ tugmalarini yoqadi/o'chiradi).
+        Integer orderIndex,
         LocalDateTime createdAt,
         // Ixtiyoriy — faqat "O'chirilganlar savati" ro'yxatida to'ldiriladi
         // (qachon o'chirilganini ko'rsatish uchun). Oddiy katalogda har

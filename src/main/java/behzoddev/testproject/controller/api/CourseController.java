@@ -63,6 +63,16 @@ public class CourseController {
         return courseService.updateCourse(id, dto, user);
     }
 
+    // "⬆⬇" — kurs kartochkalarini bitta Yo'nalish ICHIDA surish
+    // (coursesCatalog.js#moveCourse) — literal "/reorder" segmenti,
+    // CourseFieldController#reorder bilan bir xil andoza (Spring bunday
+    // holatda "{id}" path-variable'dan ustun qo'yadi).
+    @PutMapping("/reorder")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public void reorder(@RequestParam Long fieldId, @RequestBody List<Long> orderedCourseIds) {
+        courseService.reorderCourses(fieldId, orderedCourseIds);
+    }
+
     // Endi haqiqiy "o'chirish" emas — "O'chirilganlar savati"ga o'tkazish
     // (soft-delete). Bo'limlar/mavzular/obunalar TEGILMAY qoladi, keyinroq
     // qaytadan tiklash mumkin (restore).

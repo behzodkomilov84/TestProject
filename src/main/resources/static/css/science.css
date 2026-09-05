@@ -100,15 +100,6 @@ h1 {
     box-shadow: 0 2px 6px rgba(37, 99, 235, .3);
 }
 
-/* "Mavzular" sarlavhasi yonidagi qisqacha statistika — "(N ta — M tasi
-   kursga bog'langan, K tasi bog'lanmagan)" (topics.html, topic.js#
-   updateTopicsSummary). Sarlavhadan ajralib turadigan yumshoqroq rang
-   va kichikroq shrift — bezak emas, qo'shimcha ma'lumot ekanini bildirib. */
-.topics-summary {
-    font-size: 16px;
-    font-weight: 500;
-    color: #64748b;
-}
 
 /* Основной контейнер — kengligi doim kamida ekranning 80%'ini egallaydi
    (foydalanuvchi so'rovi bo'yicha), 1600px'dan keyin esa haddan tashqari
@@ -1177,16 +1168,6 @@ h1 {
     content: "/";
     margin-right: 10px;
     color: #cbd5e1;
-}
-
-/* Yo'nalishni tahrirlash/o'chirish (✏️/🗑️) — endi shu breadcrumb
-   qatorida, Yo'nalish nomi yonida (foydalanuvchi so'rovi, 2026-09-05:
-   pastdagi bo'sh qolib ketgan accordion sarlavhasi olib tashlandi). */
-.field-scope-actions {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    margin-left: 4px;
 }
 
 /* ============================================================

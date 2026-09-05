@@ -342,6 +342,12 @@ public class CourseService {
         validateTitle(dto.title());
         CourseField field = getFieldOrThrowForAssignment(dto.fieldId());
 
+        // Shu Yo'nalish ICHIDA navbatdagi order_index — CourseFieldService
+        // #createField bilan bir xil andoza (⬆⬇ tartiblash uchun).
+        int nextOrderIndex = courseRepository.findTopByField_IdAndDeletedAtIsNullOrderByOrderIndexDesc(field.getId())
+                .map(c -> (c.getOrderIndex() != null ? c.getOrderIndex() : 0) + 1)
+                .orElse(1);
+
         Course course = Course.builder()
                 .title(dto.title().trim())
                 .description(dto.description())
@@ -351,10 +357,36 @@ public class CourseService {
                 .price(dto.price())
                 .createdBy(owner)
                 .field(field)
+                .orderIndex(nextOrderIndex)
                 .build();
 
         courseRepository.save(course);
         return toDto(course, owner);
+    }
+
+    // "⬆⬇" — kurs kartochkalarini bitta Yo'nalish ICHIDA yuqoriga/pastga
+    // surish (coursesCatalog.js#moveCourse) — CourseFieldService
+    // #reorderFields bilan bir xil andoza: TO'LIQ (shu Yo'nalishdagi
+    // barcha) ID ro'yxati kutiladi. "Yo'nalishsiz kurslar" psevdo-guruhi
+    // uchun ishlatilmaydi (bunday kursga yangisi qo'shilmaydi — Yo'nalish
+    // yaratishda MAJBURIY).
+    @Transactional
+    public void reorderCourses(Long fieldId, List<Long> orderedCourseIds) {
+        List<Course> courses = courseRepository.findByField_IdAndDeletedAtIsNull(fieldId);
+        Map<Long, Course> byId = new LinkedHashMap<>();
+        for (Course c : courses) {
+            byId.put(c.getId(), c);
+        }
+
+        if (orderedCourseIds.size() != courses.size() || !byId.keySet().containsAll(orderedCourseIds)) {
+            throw new IllegalArgumentException("❌ Kurslar ro'yxati mos kelmayapti.");
+        }
+
+        int index = 1;
+        for (Long id : orderedCourseIds) {
+            byId.get(id).setOrderIndex(index++);
+        }
+        courseRepository.saveAll(courses);
     }
 
     @Transactional
@@ -1228,6 +1260,7 @@ public class CourseService {
                 .subscribed(subscribed)
                 .fieldId(course.getField() != null ? course.getField().getId() : null)
                 .fieldName(course.getField() != null ? course.getField().getName() : null)
+                .orderIndex(course.getOrderIndex())
                 .createdAt(course.getCreatedAt())
                 .deletedAt(course.getDeletedAt())
                 .build();

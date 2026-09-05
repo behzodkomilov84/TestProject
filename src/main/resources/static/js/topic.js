@@ -133,7 +133,7 @@ function updateTopicsSummary() {
 
     const linked = relevant.filter(s => s.linkedCourseTitle).length;
     const unlinked = relevant.length - linked;
-    el.textContent = ` (${relevant.length} ta — ${linked} tasi kursga bog'langan, ${unlinked} tasi bog'lanmagan)`;
+    el.textContent = `(${relevant.length} ta — ${linked} tasi kursga bog'langan, ${unlinked} tasi bog'lanmagan)`;
 }
 
 function showSectionFilterBanner() {

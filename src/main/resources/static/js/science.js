@@ -237,27 +237,11 @@ function applyFieldScope() {
         backLink.href = "/science/fields?focus=" + (pageFieldId === null ? "none" : pageFieldId);
     }
 
-    const actionsEl = document.getElementById("fieldScopeActions");
-
     if (pageFieldId === null) {
         nameEl.textContent = "— Yo'nalishsiz bo'limlar —";
-        if (actionsEl) actionsEl.classList.add("hidden");
     } else {
         const field = allFields[0];
         nameEl.textContent = field ? field.name : "";
-
-        // ✏️/🗑️ — ilgari pastdagi (endi bo'sh qolib ketgan) accordion
-        // sarlavhasida edi, shu yerga ko'chirildi (foydalanuvchi so'rovi,
-        // 2026-09-05).
-        if (actionsEl && field) {
-            actionsEl.innerHTML = `
-                <button class="chapter-rename-btn" onclick="renameFieldPrompt(${field.id})" title="Yo'nalish nomini tahrirlash">✏️</button>
-                <button class="chapter-rename-btn danger-btn" onclick="deleteFieldPrompt(${field.id}, ${JSON.stringify(field.name).replace(/"/g, "&quot;")})" title="Yo'nalishni o'chirish (faqat bo'sh bo'lsa)">🗑️</button>
-            `;
-            actionsEl.classList.remove("hidden");
-        } else if (actionsEl) {
-            actionsEl.classList.add("hidden");
-        }
     }
 }
 
