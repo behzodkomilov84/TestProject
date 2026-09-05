@@ -34,8 +34,14 @@
         </div>
     </header>
 
-    <!-- OWNER/ADMIN uchun — yangi kurs (Bo'lim) yaratish formasi -->
-    <div id="createCourseForm" class="course-form" style="display:none;">
+    <!-- OWNER/ADMIN uchun — yangi kurs (Bo'lim) yaratish formasi — endi
+         MODAL (overlay) sifatida, "✏️ Tahrirlash" (editCourseForm,
+         courseDetail.html) bilan bir xil andoza (foydalanuvchi so'rovi,
+         2026-09-05: "Kurslar sahifasida ham shu modal css'ini tekshirib
+         chiq" — ilgari oddiy display:none/flex bilan sahifa ICHIDA
+         ochilardi, haqiqiy markazlashtirilgan modal emas edi). -->
+    <div id="createCourseForm" class="modal-overlay">
+    <div class="course-form course-form-modal">
         <input type="text" id="newCourseTitle" placeholder="Kurs nomi">
         <textarea id="newCourseDescription" placeholder="Kurs tavsifi" rows="3"></textarea>
         <!-- Majburiy — CourseService.createCourse Yo'nalishsiz kurs
@@ -55,6 +61,7 @@
             <button onclick="submitCreateCourse()">✅ Yaratish</button>
             <button onclick="closeCreateCourseForm()">Bekor qilish</button>
         </div>
+    </div>
     </div>
 
     <!-- Endi Yo'nalish "box"lari (chapter-box uslubi bilan bir xil —

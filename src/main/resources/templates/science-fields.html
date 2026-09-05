@@ -33,11 +33,20 @@
      Bo'limlariga (/science?fieldId=<id>) olib boradi — Yo'nalish CRUD'i
      (/api/course-fields) courses.js/science.js bilan BIR XIL, UMUMIY
      endpoint orqali. -->
-<h1>Yo'nalishlar</h1>
+<!-- Bo'limlar sahifasi (science.html) bilan BIR XIL sarlavha qatori —
+     nomi, soni va "+ Yangi Yo'nalish" bitta gorizontal qatorda
+     (foydalanuvchi so'rovi, 2026-09-05: "Yo'nalishlar sahifasini ham
+     xuddi shu sahifaga o'xshash qil"). #fieldsCount'ni scienceFields.js#
+     render to'ldiradi. -->
+<div class="page-title-row">
+    <h1>Yo'nalishlar</h1>
+    <div class="page-title-actions">
+        <span class="chapter-box-count" id="fieldsCount"></span>
+        <button class="add-primary-btn" onclick="submitCreateField()">➕ Yangi Yo'nalish</button>
+    </div>
+</div>
 
 <div class="wrapper">
-    <button onclick="submitCreateField()">+ Yangi Yo'nalish</button>
-
     <div id="fieldsList" class="field-card-list"></div>
 </div>
 

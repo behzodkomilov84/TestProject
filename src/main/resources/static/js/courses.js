@@ -348,7 +348,7 @@ async function moveField(fieldId, direction) {
 // 2026-09-05: global "+ Yangi kurs" o'rniga har bir Yo'nalishning o'z
 // tugmasi — science.js#addToGroup bilan bir xil g'oya).
 function openCreateCourseForm(fieldId) {
-    document.getElementById("createCourseForm").style.display = "flex";
+    document.getElementById("createCourseForm").classList.add("show");
     onNewCourseFreeToggle();
     populateNewCourseFieldSelect();
     if (fieldId != null) {
@@ -357,7 +357,7 @@ function openCreateCourseForm(fieldId) {
 }
 
 function closeCreateCourseForm() {
-    document.getElementById("createCourseForm").style.display = "none";
+    document.getElementById("createCourseForm").classList.remove("show");
 }
 
 // Yangi kurs qaysi Yo'nalishga tegishli — MAJBURIY (foydalanuvchi

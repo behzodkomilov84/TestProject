@@ -237,11 +237,27 @@ function applyFieldScope() {
         backLink.href = "/science/fields?focus=" + (pageFieldId === null ? "none" : pageFieldId);
     }
 
+    const actionsEl = document.getElementById("fieldScopeActions");
+
     if (pageFieldId === null) {
         nameEl.textContent = "— Yo'nalishsiz bo'limlar —";
+        if (actionsEl) actionsEl.classList.add("hidden");
     } else {
         const field = allFields[0];
         nameEl.textContent = field ? field.name : "";
+
+        // ✏️/🗑️ — ilgari pastdagi (endi bo'sh qolib ketgan) accordion
+        // sarlavhasida edi, shu yerga ko'chirildi (foydalanuvchi so'rovi,
+        // 2026-09-05).
+        if (actionsEl && field) {
+            actionsEl.innerHTML = `
+                <button class="chapter-rename-btn" onclick="renameFieldPrompt(${field.id})" title="Yo'nalish nomini tahrirlash">✏️</button>
+                <button class="chapter-rename-btn danger-btn" onclick="deleteFieldPrompt(${field.id}, ${JSON.stringify(field.name).replace(/"/g, "&quot;")})" title="Yo'nalishni o'chirish (faqat bo'sh bo'lsa)">🗑️</button>
+            `;
+            actionsEl.classList.remove("hidden");
+        } else if (actionsEl) {
+            actionsEl.classList.add("hidden");
+        }
     }
 }
 
@@ -304,8 +320,23 @@ function render() {
     }
 
     const groups = getSortedFieldGroups();
-    const realFieldGroups = groups.filter(g => g.fieldId != null);
-    list.innerHTML = groups.map(g => renderFieldGroupBox(g, realFieldGroups)).join("");
+
+    // fieldId bilan (bitta Yo'nalish ichida) ko'rsatilganda — accordion
+    // "box" (chevron/sarlavha) UMUMAN kerak emas, chunki doim faqat
+    // BITTA guruh bor va u allaqachon "← Yo'nalishlar/<nom>" panelida
+    // to'liq tasvirlangan (nomi, ✏️/🗑️'si) — shu sabab qatorlar
+    // TO'G'RIDAN-TO'G'RI, hech qanday o'rovchisiz chiziladi (foydalanuvchi
+    // so'rovi, 2026-09-05: "belgilangan joyni olib tashla" — bo'sh
+    // qolib ketgan sarlavha qatori olib tashlandi).
+    if (pageFieldId !== undefined) {
+        const group = groups[0];
+        list.innerHTML = group && group.items.length
+            ? group.items.map(i => renderRowHtml(itemBlock[i], i)).join("")
+            : `<div class="courses-empty">Hali bo'lim yo'q</div>`;
+    } else {
+        const realFieldGroups = groups.filter(g => g.fieldId != null);
+        list.innerHTML = groups.map(g => renderFieldGroupBox(g, realFieldGroups)).join("");
+    }
     renderPageTitleActions(groups);
 
     if (focusIndex !== null) {

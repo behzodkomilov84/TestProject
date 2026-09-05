@@ -83,6 +83,9 @@ function render() {
 
     list.innerHTML = html || `<div class="courses-empty">Hali Yo'nalish yo'q — "+ Yangi Yo'nalish" tugmasi bilan qo'shing.</div>`;
 
+    const countEl = document.getElementById("fieldsCount");
+    if (countEl) countEl.textContent = `(${sorted.length} ta Yo'nalish)`;
+
     if (focusFieldKey != null) {
         const card = document.getElementById(`field-card-${focusFieldKey}`);
         if (card) {

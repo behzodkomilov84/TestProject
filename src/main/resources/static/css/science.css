@@ -1179,6 +1179,16 @@ h1 {
     color: #cbd5e1;
 }
 
+/* Yo'nalishni tahrirlash/o'chirish (✏️/🗑️) — endi shu breadcrumb
+   qatorida, Yo'nalish nomi yonida (foydalanuvchi so'rovi, 2026-09-05:
+   pastdagi bo'sh qolib ketgan accordion sarlavhasi olib tashlandi). */
+.field-scope-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-left: 4px;
+}
+
 /* ============================================================
    Yo'nalishlar sahifasi (science-fields.html) — har bir Yo'nalish
    alohida bosiladigan karta sifatida, .chapter-box oilasi bilan bir xil
