@@ -1245,14 +1245,35 @@ function renderSections(sections) {
     }
 }
 
-// DOM'dagi (haqiqiy ko'rinadigan) ENG BIRINCHI kartani tanlangan/fokusda
-// deb belgilaydi — allSections[0]'ga emas, DOM tartibiga tayanadi, chunki
-// guruhlangan ko'rinishda Mavzu qutilari tartibi allSections'ning xom
-// tartibidan farq qilishi mumkin (renderGroupedSections — orderIndex
-// bo'yicha saralaydi).
+// ENG BIRINCHI (orderIndex bo'yicha) kartani tanlangan/fokusda deb
+// belgilaydi.
 function selectFirstCardByDefault() {
-    const firstCardEl = document.querySelector(".section-item");
-    if (firstCardEl) selectCard(Number(firstCardEl.dataset.sectionId));
+    const hasAnyChapter = allSections.some(s => s.chapterId != null) || allChapters.length > 0;
+
+    if (!hasAnyChapter) {
+        // Flat (mavzusiz) ko'rinish — barcha kartalar har doim DOM'da,
+        // shu sabab oddiy DOM tartibiga tayanish kifoya.
+        const firstCardEl = document.querySelector(".section-item");
+        if (firstCardEl) selectCard(Number(firstCardEl.dataset.sectionId));
+        return;
+    }
+
+    // Guruhlangan (Mavzuli) ko'rinishda BARCHA Mavzu qutilari sahifa
+    // birinchi ochilganda YOPIQ (accordion, expandedChapterKeys bo'sh) —
+    // shu sabab ".section-item" DOM'da UMUMAN bo'lmasligi mumkin, va
+    // oldingi (DOM'ga tayangan) usul hech narsa topa olmay, default
+    // fokus butunlay qo'yilmay qolardi (foydalanuvchi so'rovi, 2026-09-05:
+    // "kurslardagi focuslarni ham ko'rib chiq" — topic.js'dagi Mavzu-
+    // filtrlangan Darslar bilan bir xil sinf muammo). Endi
+    // getSortedChapterGroups()'dan (allChapters bilan BIRGA — bo'sh
+    // Mavzular ham kiradi, lekin items.length===0 bo'lgani uchun
+    // avtomatik o'tkazib yuboriladi) birinchi DARSI BOR guruh topilib,
+    // o'sha guruhning birinchi darsi selectCard() orqali tanlanadi — u
+    // kerak bo'lsa mavzuni o'zi avtomatik ochadi ("?focus=" va Ctrl+↑/↓
+    // navigatsiyasi bilan BIR XIL, allaqachon sinovdan o'tgan yo'l).
+    const firstGroupWithItems = getSortedChapterGroups().find(g => g.items.length > 0);
+    const firstItem = firstGroupWithItems ? firstGroupWithItems.items[0] : null;
+    if (firstItem) selectCard(firstItem.id);
 }
 
 // "?focus=<sectionId>" — sahifa birinchi ochilganda, o'sha kartani o'zi
