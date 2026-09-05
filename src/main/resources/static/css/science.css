@@ -839,6 +839,28 @@ h1 {
     margin-bottom: 8px;
 }
 
+/* Qator nomi ustiga bosilganda TEST BOSHQARUVIga (shu darsga fokus
+   qilingan holda) o'tkazadi — haqiqiy dars qatoridagi kabi (foydalanuvchi
+   so'rovi, 2026-09-05). */
+.questionless-topic-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 160px;
+    cursor: pointer;
+    border-radius: 6px;
+    padding: 4px 6px;
+    margin: -4px -6px;
+    transition: background .15s ease;
+}
+
+.questionless-topic-info:hover,
+.questionless-topic-info:focus-visible {
+    background: #f1f5f9;
+    outline: none;
+}
+
 .word-export-checkbox-row {
     display: flex;
     align-items: center;

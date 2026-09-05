@@ -264,6 +264,16 @@ function toggleQuestionlessTopicsModal() {
     }
 }
 
+// Har bir qator — TEST BOSHQARUVIdagi HAQIQIY dars qatoridagi bilan BIR
+// XIL amallarga ega: Mavzu belgisi (bo'lsa), 📊 Excel/📝 Word'ga eksport
+// (ikkalasi ham topicId orqali ishlaydi, joriy sahifa itemBlock'idan
+// mustaqil). Qator USTIGA bosilsa — TEST BOSHQARUVIga ANIQ shu darsga
+// fokus qilingan holda o'tkaziladi (foydalanuvchi so'rovi, 2026-09-05:
+// "дарсни устига босилганда ТЕСТ БОШҚАРУВИ ичидаги шу дарсга focus
+// борсин. Модални ичидаги дарсга ТЕСТ БОШҚАРУВИ даги дарсдаги
+// action ларни қўш") — ODATDAGI qator kabi to'g'ridan-to'g'ri
+// savollarga (question.html) EMAS, chunki bu yerdagi maqsad — ANIQ shu
+// darsni TEST BOSHQARUVI ichida topib, tahrirlash/joylashtirish.
 function renderQuestionlessTopicsList() {
     const list = document.getElementById("questionlessTopicsList");
     const deleteBtn = document.getElementById("deleteQuestionlessTopicsBtn");
@@ -278,11 +288,38 @@ function renderQuestionlessTopicsList() {
         return;
     }
 
-    list.innerHTML = candidates.map(s => `
+    list.innerHTML = candidates.map(s => {
+        const sectionName = sectionNameById(s.sectionId);
+        const sectionBadge = sectionName
+            ? `<span class="topic-section-badge">${escapeHtml(sectionName)}</span>`
+            : '';
+        return `
         <div class="questionless-topic-row">
-            <div>${escapeHtml(s.name)}</div>
+            <div class="questionless-topic-info"
+                 tabindex="0"
+                 onclick="goToTopicInManagement(${s.id}, ${s.sectionId ?? 'null'})"
+                 onkeydown="if(event.key==='Enter') goToTopicInManagement(${s.id}, ${s.sectionId ?? 'null'})"
+                 title="TEST BOSHQARUVIda shu darsga o'tish">
+                ${sectionBadge}
+                <div>${escapeHtml(s.name)}</div>
+            </div>
+            <div class="topic-export-btn-group">
+                <button class="topic-export-btn" onclick="event.stopPropagation(); exportTopicQuestions(${s.id})" title="Shu darsdagi testlarni Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>
+                <button class="topic-export-btn" onclick="event.stopPropagation(); openWordExportModal(${s.id})" title="Shu darsdagi testlarni Word'ga eksport qilish">${WORD_ICON_SVG}</button>
+            </div>
         </div>
-    `).join("");
+        `;
+    }).join("");
+}
+
+// "📋 Testi yo'q darslar" ro'yxatidagi bir qatorga bosilganda — TEST
+// BOSHQARUVIning O'ZIGA, ANIQ shu darsning haqiqiy Mavzusi bilan
+// filtrlangan holda va unga fokus qilingan holda o'tkazadi (topic.js
+// #afterStartPage allaqachon "?focus=" ni qo'llab-quvvatlaydi).
+function goToTopicInManagement(topicId, sectionId) {
+    const params = new URLSearchParams({ scienceId: getScienceId(), focus: topicId });
+    if (sectionId) params.set("sectionId", sectionId);
+    window.location.href = `/topics?${params}`;
 }
 
 // Badge — HAR DOIM joriy filtrga (agar bo'lsa) mos holda hisoblanadi,
