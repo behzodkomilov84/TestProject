@@ -1,17 +1,13 @@
 // "Mavzu" (TopicSection — Bo'lim ICHIDAGI guruh, "Bo'lim -> Mavzu -> Dars"
 // ierarxiyasida) CRUD — topic.js bilan bir xil andoza (itemBlock[] + mode
-// VIEW/NEW/EDIT + saveToDb()), + tartib o'zgartirish (yuqoriga/pastga)
-// tugmalari.
+// VIEW/NEW/EDIT, saveOnClientSide() DARHOL bazaga yozadi), + tartib
+// o'zgartirish (yuqoriga/pastga) tugmalari.
 // ========================================================================
 //                     Global fields
 // ========================================================================
 
 let itemBlock = [];
-let deletedSectionIds = [];
 let focusIndex = null;
-
-let oldName = "";
-let newName = "";
 
 // Haqiqiy Excel ilovasi belgisiga o'xshash SVG (yashil hujjat + oq "X") —
 // "Excel'ga eksport" tugmalarida emoji o'rniga ishlatiladi (foydalanuvchi
@@ -295,7 +291,7 @@ function render() {
             <div
             class="row-view"
             tabindex="0"
-            ondblclick="openTopics(${s.id})"
+            onclick="openTopics(${s.id})"
             onkeydown="onViewKeyDown(event, ${i})"
             title="Enter — Darslarni ochish | ↑ ↓ — navigatsiya | Home/End — birinchi/oxirgi"
         >
@@ -563,26 +559,42 @@ function undoAll() {
     showToast('info', 'Ma\'lumotlar bazasidan qayta yuklandi ', 4000);
 }
 
+// Foydalanuvchi so'rovi, 2026-09-05: "Save to DB" tugmasi olib
+// tashlandi — o'chirish DARHOL bazaga yoziladi (alohida DELETE endpoint
+// yo'q, shu sabab /api/topic-section/save'ga BITTA elementli
+// deletedIds bilan murojaat qilinadi).
 async function removeFromUi(i) {
     if (itemBlock[i].mode === "NEW") {
         itemBlock.splice(i, 1);
         render();
         return;
     }
-    const sectionName = itemBlock[i].name || "Bu mavzu";
+    const s = itemBlock[i];
+    const sectionName = s.name || "Bu mavzu";
     const confirmDelete = await showConfirmModal(`⚠️ "${sectionName}"ni o'chirishni tasdiqlaysizmi?\n\nMavzudagi darslar O'CHMAYDI — faqat mavzusiz bo'lib qoladi.\n\nKeyin bu amalni bekor qilib bo'lmaydi.`, { danger: true });
-    if (confirmDelete) {
-        const removed = itemBlock[i];
-
-        if (removed.id > 0) {
-            deletedSectionIds.push(removed.id);
-        }
-
-        itemBlock.splice(i, 1);
-        showToast('success', `"${removed.name || 'Bo\'lim'}" o'chirildi`, 2000);
-        render();
-    } else {
+    if (!confirmDelete) {
         cancel(i);
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/topic-section/save", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({new: [], updated: [], deletedIds: [s.id]})
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlertModal(data.error || "O'chirishda xatolik");
+            return;
+        }
+        showToast('success', `"${sectionName}" o'chirildi`, 2000);
+        await reloadFromDb(`/api/topic-section?scienceId=${scienceId}`);
+        render();
+        refreshSectionTrashBadge();
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -635,8 +647,6 @@ function edit(i) {
     }
     itemBlock[i].mode = "EDIT";
     focusIndex = i;
-
-    oldName = itemBlock[i].name;
 
     render();
 }
@@ -736,108 +746,56 @@ function add() {
     render();
 }
 
-function saveOnClientSide(i) {
+// Foydalanuvchi so'rovi, 2026-09-05: "Save to DB" tugmasi olib
+// tashlandi — "💾 Save" bosilganda (yoki Enter) o'zgarish DARHOL bazaga
+// yoziladi (/api/topic-section/save'ga BITTA elementli new/updated bilan).
+async function saveOnClientSide(i) {
     const s = itemBlock[i];
-    newName = s.name.trim();
+    const newNameVal = s.name.trim();
 
-    if (newName === "") {
+    if (newNameVal === "") {
         showAlertModal('❌ Bo\'lim nomi bo\'sh bo\'lishi mumkin emas!');
         focusIndex = i;
         return;
     }
 
-    if (hasDuplicate(i, newName)) {
+    if (hasDuplicate(i, newNameVal)) {
         showAlertModal('❌ Bu bo\'lim nomi allaqachon mavjud!');
         focusIndex = i;
         return;
     }
 
-    s.name = newName;
-    itemBlock[i].mode = "VIEW";
-
-    render();
-
-    if (s.id < 0) {
-        showToast('success', 'Yangi bo\'lim saqlandi \n\n(bazaga saqlash uchun "Bazaga saqlash" tugmasini bosing)', 3000);
-    } else if (newName !== oldName) {
-        showToast('success', 'Bo\'lim muvaffaqiyatli saqlandi', 3000);
-    } else {
-        showToast('info', 'O\'zgarish bo\'lmadi', 3000);
-    }
-    oldName = "";
-    newName = "";
-}
-
-async function saveToDb() {
-
-    if (itemBlock.some(s => s.mode !== "VIEW")) {
-        showAlertModal('❌ Avval tahrirlashni yakuniga yetkazing!');
-        focusIndex = itemBlock.findIndex(s => s.mode !== "VIEW");
+    const isNew = s.id < 0;
+    if (!isNew && newNameVal === s.original) {
+        s.mode = "VIEW";
         render();
+        showToast('info', "O'zgarish bo'lmadi", 2000);
         return;
     }
 
-    const payload = {
-        new: itemBlock
-            .filter(s => s.id < 0)
-            .map(s => ({science_id: scienceId, name: s.name})),
-
-        updated: itemBlock
-            .filter(s => s.id > 0 && s.name !== s.original)
-            .map(s => ({id: s.id, name: s.name})),
-
-        deletedIds: deletedSectionIds
-    };
-
-    if (payload.new.length === 0 && payload.updated.length === 0 && deletedSectionIds.length === 0) {
-        showAlertModal('ℹ️ Saqlash uchun o‘zgarishlar yo‘q');
-        return;
-    }
-
-    const confirmed = await showConfirmModal(
-        `Yangi: ${payload.new.length} ta\n` +
-        `O\'zgartirilgan: ${payload.updated.length} ta\n\n` +
-        `O\'chirilgan: ${deletedSectionIds.length} ta\n\n` +
-        `Saqlashni xohlaysizmi?`
-    );
-    if (!confirmed) return;
+    const payload = isNew
+        ? {new: [{science_id: scienceId, name: newNameVal}], updated: [], deletedIds: []}
+        : {new: [], updated: [{id: s.id, name: newNameVal}], deletedIds: []};
 
     try {
-        showToast('info', 'Maʼlumotlar bazaga saqlanmoqda...', 5000);
-
-        const response = await fetch("/api/topic-section/save", {
+        const res = await fetch("/api/topic-section/save", {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify(payload)
         });
-
-        if (!response.ok) {
-            // Backend {"error": "..."} shaklida qaytaradi (masalan
-            // "Bu bo'lim ... kursiga bog'langan" xabari) — avval bu yerda
-            // matn o'qib tashlanardi-yu, aniq sabab o'rniga umumiy "Server
-            // error (not JSON)" ko'rsatilardi.
-            const data = await response.json().catch(() => ({}));
-            throw new Error(data.error || "Saqlashda xatolik");
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlertModal(data.error || "Saqlashda xatolik");
+            return;
         }
+        showToast('success', isNew ? `"${newNameVal}" saqlandi` : "Bo'lim saqlandi", 2000);
 
-        await response.json();
-
-        showToast(
-            'success',
-            `Saqlandi: yangi — ${payload.new.length}, o‘zgartirilgan — ${payload.updated.length}, o'chirilgan - ${deletedSectionIds.length} ta`,
-            5000
-        );
-
-        deletedSectionIds = [];
         await reloadFromDb(`/api/topic-section?scienceId=${scienceId}`);
-        focusIndex = 0;
+        focusIndex = itemBlock.findIndex(x => x.name === newNameVal);
         render();
-        refreshSectionTrashBadge();
-
     } catch (err) {
         console.error(err);
-        showToast('error', err.message || 'Saqlashda xatolik', 7000);
-        showAlertModal(err.message);
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 

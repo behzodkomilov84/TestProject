@@ -85,17 +85,11 @@
     <!-- КОНТЕЙНЕР СПИСКА ПРЕДМЕТОВ -->
     <div class="list" id="list"></div>
 
-    <!-- НИЖНЯЯ ПАНЕЛЬ С КНОПКАМИ УПРАВЛЕНИЯ -->
-    <div class="fixed-bar">
-        <div>
-            <!-- КНОПКА ДОБАВЛЕНИЯ НОВОГО ПРЕДМЕТА -->
-            <button onclick="add()">➕ Add</button>
-
-        </div>
-
-            <!-- КНОПКА СОХРАНЕНИЯ В БАЗУ ДАННЫХ -->
-            <button onclick="saveToDb()">💾 Save to DB</button>
-    </div>
+    <!-- "➕ Add" va "💾 Save to DB" olib tashlandi (foydalanuvchi so'rovi,
+         2026-09-05): yangi Bo'lim qo'shish endi har bir Yo'nalish
+         qutisining o'z ➕ tugmasi orqali (renderFieldGroupBox, science.js),
+         o'zgarishlar esa DARHOL bazaga yoziladi — alohida "saqlash"
+         qadami shart emas. -->
 </div>
 
 <!-- "📝 Word'ga eksport" oynasi — ichida "🎲 Variantlar yaratish" checkbox'i

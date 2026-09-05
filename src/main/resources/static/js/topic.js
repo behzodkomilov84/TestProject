@@ -3,11 +3,7 @@
 // ========================================================================
 
 let itemBlock = []; // сюда будут загружены данные из БД
-let deletedTopicIds = []; // FRONTEND da o'chirilganlarni id'si (Agar u DB da ham bo'lsa)
 let focusIndex = null;//для курсора
-
-let oldName = ""; //for EDIT uses
-let newName = ""; //for EDIT uses
 
 // Haqiqiy Excel ilovasi belgisiga o'xshash SVG (yashil hujjat + oq "X") —
 // "📊 Excel'ga eksport" tugmalarida emoji o'rniga ishlatiladi (foydalanuvchi
@@ -764,7 +760,7 @@ function render() {
             <div
             class="row-view"
             tabindex="0"
-            ondblclick="openQuestions(${s.id})"
+            onclick="openQuestions(${s.id})"
             onkeydown="onViewKeyDown(event, ${i})"
             title="Enter — Саволларни очиш | ↑ ↓ — навигация | Home/End — биринчи/охирги"
         >
@@ -1040,26 +1036,42 @@ function undoAll() {
     showToast('info', 'Ma\'lumotlar bazasidan qayta yuklandi ', 4000);
 }//DONE
 
+// Foydalanuvchi so'rovi, 2026-09-05: "Save to DB" tugmasi olib
+// tashlandi — o'chirish DARHOL bazaga yoziladi (alohida DELETE endpoint
+// yo'q, shu sabab /api/topic/save'ga BITTA elementli deletedIds bilan
+// murojaat qilinadi — science.js/topicSection.js bilan bir xil andoza).
 async function removeFromUi(i) {
     if (itemBlock[i].mode === "NEW") {
         itemBlock.splice(i, 1);
         render();
         return;
     }
-    const topicName = itemBlock[i].name || "Bu dars";
+    const s = itemBlock[i];
+    const topicName = s.name || "Bu dars";
     const confirmDelete = await showConfirmModal(`⚠️ "${topicName}"ni o'chirishni tasdiqlaysizmi?\n\nKeyin bu amalni bekor qilib bo'lmaydi.`, { danger: true });
-    if (confirmDelete) {
-        const removedTopic = itemBlock[i];
-
-        if (removedTopic.id > 0) {
-            deletedTopicIds.push(removedTopic.id);
-        }
-
-        itemBlock.splice(i, 1);
-        showToast('success', `"${removedTopic.name || 'Dars'}" o'chirildi`, 2000);
-        render();
-    } else {
+    if (!confirmDelete) {
         cancel(i);
+        return;
+    }
+
+    try {
+        const res = await fetch("/api/topic/save", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({new: [], updated: [], deletedIds: [s.id]})
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlertModal(data.error || "O'chirishda xatolik");
+            return;
+        }
+        showToast('success', `"${topicName}" o'chirildi`, 2000);
+        await reloadFromDb(`/api/topic?scienceId=${scienceId}`);
+        render();
+        refreshTopicTrashBadge();
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
     }
 } //DONE
 
@@ -1187,8 +1199,6 @@ function edit(i) {
     itemBlock[i].mode = "EDIT";
     focusIndex = i;
 
-    oldName = itemBlock[i].name;
-
     render();
 } //DONE
 
@@ -1250,145 +1260,60 @@ function add() {
     render();
 } //DONE
 
-function saveOnClientSide(i) {
+// Foydalanuvchi so'rovi, 2026-09-05: "Save to DB" tugmasi olib
+// tashlandi — "💾 Save" bosilganda (yoki Enter) o'zgarish DARHOL bazaga
+// yoziladi (/api/topic/save'ga BITTA elementli new/updated bilan —
+// science.js/topicSection.js bilan bir xil andoza).
+async function saveOnClientSide(i) {
     const s = itemBlock[i];
-    newName = s.name.trim();
+    const newNameVal = s.name.trim();
 
-
-    if (newName === "") {
+    if (newNameVal === "") {
         showAlertModal('❌ Dars nomi bo\'sh bo\'lishi mumkin emas!');
         focusIndex = i;
-        console.error("Dars nomi bo\'sh bo\'lishi mumkin emas!");
-
         return;
     }
 
-    // проверка дубликатов на фронте
-    if (hasDuplicate(i, newName)) {
+    if (hasDuplicate(i, newNameVal)) {
         showAlertModal('❌ Bu dars nomi allaqachon mavjud!');
         focusIndex = i;
-        console.log("hasDuplicate = true");
         return;
     }
 
-    s.name = newName;
-    itemBlock[i].mode = "VIEW";
+    const isNew = s.id < 0;
+    const nameChanged = newNameVal !== s.original;
+    const sectionChanged = s.sectionId !== s.originalSectionId;
 
-    render();
-
-    // Определяем тип операции
-    if (newName === oldName) {
-        showToast('info', 'O\'zgarish bo\'lmadi', 3000);
-    }
-
-    if (s.id < 0) {
-        if (newName === oldName) {
-            showToast('info', 'O\'zgarish bo\'lmadi', 3000);
-        } else {
-            showToast('info', 'Yangi dars o\'zgardi', 3000);
-        }
-        showToast('success', 'Yangi dars saqlandi \n\n(bazaga saqlash uchun "Bazaga saqlash" tugmasini bosing)', 3000);
-    } else {
-        // Существующая запись из БД
-        if (newName === oldName) {
-            showToast('warm', 'O\'zgarish bo\'lmadi', 3000);
-        } else {
-            showToast('success', 'Dars muvaffaqiyatli saqlandi', 3000);
-        }
-
-    }
-    oldName = "";
-    newName = "";
-}//DONE
-
-async function saveToDb() {
-
-    // Запрет: есть незавершённые записи
-    if (itemBlock.some(s => s.mode !== "VIEW")) {
-        showAlertModal('❌ Avval tahrirlashni yakuniga yetkazing!');
-        focusIndex = itemBlock.findIndex(s => s.mode !== "VIEW");
+    if (!isNew && !nameChanged && !sectionChanged) {
+        s.mode = "VIEW";
         render();
+        showToast('info', "O'zgarish bo'lmadi", 2000);
         return;
     }
 
-    // Формируем payload
-    const payload = {
-        new: itemBlock
-            .filter(s => s.id < 0)
-            .map(s => (
-                {science_id: scienceId, name: s.name, sectionId: s.sectionId || null})),
-
-        // E'tibor bering: nom o'zgarmagan, faqat Bo'lim o'zgargan bo'lsa
-        // ham "updated"ga tushishi kerak — shu sabab shart ikkalasini
-        // ham tekshiradi (avval faqat nom tekshirilardi).
-        updated: itemBlock
-            .filter(s => s.id > 0 && (s.name !== s.original || s.sectionId !== s.originalSectionId))
-            .map(s => (
-                {id: s.id, name: s.name, sectionId: s.sectionId || null}
-            )),
-
-        deletedIds: deletedTopicIds
-    };
-
-    // Если нечего сохранять — выходим
-    if (
-        payload.new.length === 0 &&
-        payload.updated.length === 0 &&
-        deletedTopicIds.length === 0) {
-        showAlertModal('ℹ️ Saqlash uchun o‘zgarishlar yo‘q');
-        return;
-    }
-
-    // 5. Подтверждение
-    const confirmed = await showConfirmModal(
-        `Yangi: ${payload.new.length} ta\n` +
-        `O\'zgartirilgan: ${payload.updated.length} ta\n\n` +
-        `O\'chirilgan: ${deletedTopicIds.length} ta\n\n` +
-        `Saqlashni xohlaysizmi?`
-    );
-    if (!confirmed) return;
+    const payload = isNew
+        ? {new: [{science_id: scienceId, name: newNameVal, sectionId: s.sectionId || null}], updated: [], deletedIds: []}
+        : {new: [], updated: [{id: s.id, name: newNameVal, sectionId: s.sectionId || null}], deletedIds: []};
 
     try {
-        showToast('info', 'Maʼlumotlar bazaga saqlanmoqda...', 5000);
-
-        // 6. Отправка в backend
-        const response = await fetch("/api/topic/save",
-            {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify(payload)
-            });
-
-        if (!response.ok) {
-            // Backend {"error": "..."} shaklida qaytaradi — avval bu yerda
-            // matn o'qib tashlanardi-yu, aniq sabab o'rniga umumiy "Server
-            // error (not JSON)" ko'rsatilardi.
-            const data = await response.json().catch(() => ({}));
-            throw new Error(data.error || "Saqlashda xatolik");
+        const res = await fetch("/api/topic/save", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlertModal(data.error || "Saqlashda xatolik");
+            return;
         }
+        showToast('success', isNew ? `"${newNameVal}" saqlandi` : "Dars saqlandi", 2000);
 
-        const data = await response.json();   // теперь это безопасно
-
-        // Успешное сообщение
-        showToast(
-            'success',
-            `Saqlandi: yangi — ${payload.new.length}, \n
-            o‘zgartirilgan — ${payload.updated.length}, \n\n
-            o'chirilgan - ${deletedTopicIds.length} ta`,
-            5000
-        );
-
-        // 🔑 КЛЮЧЕВОЕ МЕСТО — ПОЛНАЯ СИНХРОНИЗАЦИЯ С БД
-        deletedTopicIds = [];
         await reloadFromDb(`/api/topic?scienceId=${scienceId}`);
-        focusIndex = 0;
-        render(); // ❗ shu qator yo'q edi — shuning uchun DB yangilangan, lekin ekran eskicha qolardi
-        refreshTopicTrashBadge();
-
+        focusIndex = itemBlock.findIndex(x => x.name === newNameVal);
+        render();
     } catch (err) {
         console.error(err);
-        showToast('error', err.message || 'Saqlashda xatolik', 7000);
-        showAlertModal(err.message);
+        showAlertModal("Tarmoq xatoligi");
     }
 }//DONE
 

@@ -3,7 +3,6 @@
 // ========================================================================
 
 let itemBlock = []; // сюда будут загружены данные из БД
-let deletedSubjectIds = []; // FRONTEND da o'chirilganlarni id'si (Agar u DB da ham bo'lsa)
 let focusIndex = null;//для курсора
 
 // "Yo'nalish" — Bo'limlar (Science) ro'yxatini kattaroq guruhga bo'ladi,
@@ -26,9 +25,6 @@ const pageFieldId = (() => {
     const n = Number(raw);
     return Number.isFinite(n) ? n : undefined;
 })();
-
-let oldName = ""; //for EDIT uses
-let newName = ""; //for EDIT uses
 
 // Haqiqiy Excel ilovasi belgisiga o'xshash SVG (yashil hujjat + oq "X") —
 // "Excel'ga eksport" tugmalarida emoji o'rniga ishlatiladi (foydalanuvchi
@@ -215,17 +211,20 @@ async function loadFields() {
     }
 }
 
-// Sahifa yuqorisidagi "← Yo'nalishlar" panelini va sarlavhani
-// pageFieldId'ga qarab to'ldiradi/yashiradi ("+ Yangi Yo'nalish" tugmasi
-// ham shu bitta Yo'nalish ichida ma'nosiz — yashiriladi, Yo'nalish
-// boshqaruvi endi /science/fields sahifasida).
+// Sahifa yuqorisidagi "← Yo'nalishlar" panelini pageFieldId'ga qarab
+// to'ldiradi/yashiradi ("+ Yangi Yo'nalish" tugmasi ham shu bitta
+// Yo'nalish ichida ma'nosiz — yashiriladi, Yo'nalish boshqaruvi endi
+// /science/fields sahifasida). DIQQAT: <h1> ATAYLAB har doim oddiy
+// "Bo'limlar" bo'lib qoladi (Yo'nalish nomi bilan TO'LDIRILMAYDI) —
+// foydalanuvchi so'rovi, 2026-09-05: nom "← Yo'nalishlar/<nom>"
+// panelida allaqachon ko'rinadi, <h1>'da va pastdagi accordion
+// sarlavhasida takrorlanmasin (ilgari BIR XIL nom 3 marta chiqardi).
 function applyFieldScope() {
     if (pageFieldId === undefined) return; // eski, filtrsiz rejim
 
     const bar = document.getElementById("fieldScopeBar");
     const nameEl = document.getElementById("fieldScopeName");
     const createBtn = document.getElementById("createFieldBtn");
-    const title = document.getElementById("pageTitle");
     const backLink = document.getElementById("fieldScopeBackLink");
 
     bar.classList.remove("hidden");
@@ -243,7 +242,6 @@ function applyFieldScope() {
     } else {
         const field = allFields[0];
         nameEl.textContent = field ? field.name : "";
-        if (field) title.textContent = `${field.name} — Bo'limlar`;
     }
 }
 
@@ -270,8 +268,8 @@ async function reloadFromDb(mapping) {
         sectionCount: s.sectionCount || 0,
         // Qaysi Yo'nalishga tegishli — render() shu bo'yicha guruhlaydi
         // (courses.js#getSortedFieldGroups bilan bir xil andoza).
-        // originalFieldId — saveToDb() dirty-check uchun (s.original bilan
-        // bir xil g'oya, faqat Yo'nalish uchun).
+        // originalFieldId — saveOnClientSide() dirty-check uchun (s.original
+        // bilan bir xil g'oya, faqat Yo'nalish uchun).
         fieldId: s.fieldId ?? null,
         fieldName: s.fieldName ?? null,
         originalFieldId: s.fieldId ?? null,
@@ -300,7 +298,7 @@ function render() {
     // Fokusdagi elementning Yo'nalish guruhi hali yopiq bo'lsa — avtomatik
     // ochamiz (aks holda "input-<i>" DOM'da bo'lmay, fokus qo'yib
     // bo'lmaydi) — courseDetail.js#selectCard'dagi avtomatik ochish bilan
-    // bir xil g'oya (add()/edit() dan keyin ham shu orqali ishlaydi).
+    // bir xil g'oya (addToGroup()/edit() dan keyin ham shu orqali ishlaydi).
     if (focusIndex !== null && itemBlock[focusIndex]) {
         expandedFieldKeys.add(fieldKeyOf(itemBlock[focusIndex]));
     }
@@ -382,6 +380,12 @@ function renderFieldGroupBox(group, realFieldGroups) {
         ? `<button class="chapter-rename-btn danger-btn" onclick="event.stopPropagation(); deleteFieldPrompt(${group.fieldId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Yo'nalishni o'chirish (faqat bo'sh bo'lsa)">🗑️</button>`
         : "";
 
+    // "+Add" global tugmasi o'rniga — har bir Yo'nalish qutisining O'Z
+    // action'lariga ➕ qo'shildi (foydalanuvchi so'rovi, 2026-09-05):
+    // bosilganda yangi Bo'lim DARHOL shu Yo'nalishga (yoki "Yo'nalishsiz"
+    // psevdo-guruhga) tegishli holda ochiladi.
+    const addBtn = `<button class="chapter-rename-btn" onclick="event.stopPropagation(); addToGroup(${group.fieldId != null ? group.fieldId : "null"})" title="Bu Yo'nalishga bo'lim qo'shish">➕</button>`;
+
     let moveBtns = "";
     if (group.fieldId != null && realFieldGroups.length > 1) {
         const pos = realFieldGroups.findIndex(g => g.fieldId === group.fieldId);
@@ -393,13 +397,18 @@ function renderFieldGroupBox(group, realFieldGroups) {
         `;
     }
 
+    // pageFieldId bilan (bitta Yo'nalish ichida) ko'rsatilganda — guruh
+    // NOMI bu yerda TAKRORLANMAYDI (allaqachon "← Yo'nalishlar" panelida
+    // ko'rinadi) — foydalanuvchi so'rovi, 2026-09-05.
+    const nameHtml = pageFieldId !== undefined ? "" : escapeHtml(group.name);
+
     return `
         <div class="chapter-box ${isExpanded ? "expanded" : "collapsed"}">
             <h3 class="chapter-box-title" onclick="toggleFieldBox('${group.key}')" title="${isExpanded ? "Yig'ish" : "Ochish"}">
                 <span class="chapter-box-chevron">▸</span>
-                🧭 ${escapeHtml(group.name)}
+                🧭 ${nameHtml}
                 <span class="chapter-box-count">(${group.items.length} ta bo'lim)</span>
-                <span class="chapter-box-actions">${moveBtns}${renameBtn}${deleteBtn}</span>
+                <span class="chapter-box-actions">${addBtn}${moveBtns}${renameBtn}${deleteBtn}</span>
             </h3>
             ${bodyHtml}
         </div>
@@ -434,7 +443,7 @@ function renderRowHtml(s, i) {
         <div
         class="row-view"
         tabindex="0"
-        ondblclick="openTopics(${s.id})"
+        onclick="openTopics(${s.id})"
         onkeydown="onViewKeyDown(event, ${i})"
         title="Enter — Мавзуларни очиш | ↑ ↓ — навигация | Home/End — биринчи/охирги"
     >
@@ -463,7 +472,8 @@ function renderRowHtml(s, i) {
 // EDIT/NEW rejimidagi Yo'nalish tanlash select'i — IXTIYORIY (foydalanuvchi
 // so'rovi, 2026-09-05: kurslardan farqli, Bo'lim uchun Yo'nalish majburiy
 // emas). O'zgarganda darhol itemBlock[i].fieldId'ga yoziladi (name'dagi
-// "oninput" bilan bir xil g'oya) — haqiqiy saqlash Save/Save to DB'da.
+// "oninput" bilan bir xil g'oya) — haqiqiy saqlash "💾 Save" bosilganda
+// (saveOnClientSide — bazaga DARHOL yoziladi).
 function fieldSelectHtml(s, i) {
     const options = [`<option value="">— Yo'nalishsiz —</option>`]
         .concat([...allFields].sort((a, b) => a.orderIndex - b.orderIndex)
@@ -700,26 +710,37 @@ function undoAll() {
     showToast('info', 'Ma\'lumotlar bazasidan qayta yuklandi ', 4000);
 }
 
+// Foydalanuvchi so'rovi, 2026-09-05: "Save to DB" tugmasi olib
+// tashlandi — o'chirish DARHOL bazaga yoziladi (DELETE /science/{id} —
+// mavjud yagona-elementli endpoint).
 async function removeFromUi(i) {
     if (itemBlock[i].mode === "NEW") {
         itemBlock.splice(i, 1);
         render();
         return;
     }
-    const subjectName = itemBlock[i].name || "Bu bo'lim";
+    const s = itemBlock[i];
+    const subjectName = s.name || "Bu bo'lim";
     const confirmDelete = await showConfirmModal(`⚠️ "${subjectName}"ni o'chirishni tasdiqlaysizmi?\n\nBu amalni bekor qilib bo'lmaydi.`, { danger: true });
-    if (confirmDelete) {
-        const removedSubject = itemBlock[i];
-
-        if (removedSubject.id > 0) {
-            deletedSubjectIds.push(removedSubject.id);
-        }
-
-        itemBlock.splice(i, 1);
-        showToast('success', `"${removedSubject.name || 'Bo\'lim'}" o'chirildi`, 2000);
-        render();
-    } else {
+    if (!confirmDelete) {
         cancel(i);
+        return;
+    }
+
+    try {
+        const res = await fetch(`/science/${s.id}`, {method: "DELETE"});
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlertModal(data.error || "O'chirishda xatolik");
+            return;
+        }
+        showToast('success', `"${subjectName}" o'chirildi`, 2000);
+        await reloadAll("/api/science");
+        render();
+        refreshScienceTrashBadge();
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
     }
 } //DONE
 
@@ -834,8 +855,6 @@ function edit(i) {
     itemBlock[i].mode = "EDIT";
     focusIndex = i;
 
-    oldName = itemBlock[i].name;
-
     render();
 } //DONE
 
@@ -870,7 +889,11 @@ function showToast(type, message, duration = 4000) {
     return toast;
 } //TODO
 
-function add() {
+// "+ Add" global tugmasi o'rniga — har bir Yo'nalish qutisining o'z ➕
+// tugmasi (foydalanuvchi so'rovi, 2026-09-05). fieldId — shu tugma
+// qaysi guruhga tegishli bo'lsa, o'sha (yoki "Yo'nalishsiz" psevdo-guruh
+// uchun null).
+function addToGroup(fieldId) {
     if (itemBlock.some(s => s.mode === "NEW" || s.mode === "EDIT")) {
         showToast('warning', 'Avval saqlash tugmasini bosing!');
         focusIndex = itemBlock.findIndex(s => s.mode !== "VIEW");
@@ -878,166 +901,76 @@ function add() {
         return;
     }
 
-    // ИЗМЕНЕНИЕ: Увеличиваем временный ID
     const tempId = Date.now() * -1; // Отрицательный ID для временных записей
 
     itemBlock.push({
-        id: tempId, // Временный ID
+        id: tempId,
         name: "",
         original: "",
-        // Bitta Yo'nalish ichida (pageFieldId) turilganda — yangi Bo'lim
-        // AVTOMATIK shu Yo'nalishga tegishli bo'ladi (select orqali
-        // baribir o'zgartirish mumkin).
-        fieldId: typeof pageFieldId === "number" ? pageFieldId : null,
+        fieldId: fieldId,
         originalFieldId: null,
         mode: "NEW"
     });
 
+    expandedFieldKeys.add(fieldId != null ? String(fieldId) : "none");
     focusIndex = itemBlock.length - 1;
     render();
 }
 
-function saveOnClientSide(i) {
+// Foydalanuvchi so'rovi, 2026-09-05: "Save to DB" tugmasi olib
+// tashlandi — "💾 Save" bosilganda (yoki Enter) o'zgarish DARHOL
+// bazaga yoziladi (/api/science/save'ga BITTA elementli new/updated
+// bilan — bo'sh massivlar bilan chaqirilsa ham backend xavfsiz ishlaydi).
+async function saveOnClientSide(i) {
     const s = itemBlock[i];
-    newName = s.name.trim();
+    const newNameVal = s.name.trim();
 
-
-    if (newName === "") {
+    if (newNameVal === "") {
         showAlertModal('❌ Bo\'lim nomi bo\'sh bo\'lishi mumkin emas!');
         focusIndex = i;
-        console.error("Bo'lim nomi bo\'sh bo\'lishi mumkin emas!");
-
         return;
     }
 
-    // проверка дубликатов на фронте
-    if (hasDuplicate(i, newName)) {
+    if (hasDuplicate(i, newNameVal)) {
         showAlertModal('❌ Bu bo\'lim nomi allaqachon mavjud!');
         focusIndex = i;
-        console.log("hasDuplicate = true");
         return;
     }
 
-    s.name = newName;
-    itemBlock[i].mode = "VIEW";
+    const isNew = s.id < 0;
+    const nameChanged = newNameVal !== s.original;
+    const fieldChanged = s.fieldId !== s.originalFieldId;
 
-    render();
-
-    // Сохраняем текущее значение как оригинальное для будущих сравнений
-    // s.original = name;
-
-    // Определяем тип операции
-    if (newName === oldName) {
-        showToast('info', 'O\'zgarish bo\'lmadi', 3000);
-    }
-
-    if (s.id < 0) {
-        if (newName === oldName) {
-            showToast('info', 'O\'zgarish bo\'lmadi', 3000);
-        } else {
-            showToast('info', 'Yangi bo\'lim o\'zgardi', 3000);
-        }
-        showToast('success', 'Yangi bo\'lim saqlandi \n\n(bazaga saqlash uchun "Bazaga saqlash" tugmasini bosing)', 3000);
-    } else {
-        // Существующая запись из БД
-        if (newName === oldName) {
-            showToast('warm', 'O\'zgarish bo\'lmadi', 3000);
-        } else {
-            showToast('success', 'Bo\'lim muvaffaqiyatli saqlandi', 3000);
-        }
-
-    }
-    oldName = "";
-    newName = "";
-}
-
-async function saveToDb() {
-
-    // Запрет: есть незавершённые записи
-    if (itemBlock.some(s => s.mode !== "VIEW")) {
-        showAlertModal('❌ Avval tahrirlashni yakuniga yetkazing!');
-        focusIndex = itemBlock.findIndex(s => s.mode !== "VIEW");
+    if (!isNew && !nameChanged && !fieldChanged) {
+        s.mode = "VIEW";
         render();
+        showToast('info', "O'zgarish bo'lmadi", 2000);
         return;
     }
 
-    // Формируем payload
-    const payload = {
-        // fieldId — IXTIYORIY (foydalanuvchi so'rovi bo'yicha Yo'nalish
-        // majburiy emas). "new" endi {name, fieldId} obyekti (ilgari
-        // oddiy string edi) — ScienceController#saveScience shu formatni
-        // kutadi.
-        new: itemBlock
-            .filter(s => s.id < 0)
-            .map(s => ({name: s.name, fieldId: s.fieldId})),
-
-        // Nom O'ZGARGAN bo'lsa HAM, YOKI faqat Yo'nalish o'zgargan bo'lsa
-        // HAM — "updated"ga tushadi (s.original bilan bir xil dirty-check
-        // g'oyasi, faqat fieldId uchun originalFieldId).
-        updated: itemBlock
-            .filter(s => s.id > 0 && (s.name !== s.original || s.fieldId !== s.originalFieldId))
-            .map(s => (
-                {id: s.id, name: s.name, fieldId: s.fieldId}
-            )),
-
-        deletedIds: deletedSubjectIds
-    };
-
-    // Если нечего сохранять — выходим
-    if (
-        payload.new.length === 0 &&
-        payload.updated.length === 0 &&
-        deletedSubjectIds.length === 0) {
-        showAlertModal('ℹ️ Saqlash uchun o‘zgarishlar yo‘q');
-        return;
-    }
-
-    // 5. Подтверждение
-    const confirmed = await showConfirmModal(
-        `Yangi: ${payload.new.length} ta\n` +
-        `O\'zgartirilgan: ${payload.updated.length} ta\n\n` +
-        `O\'chirilgan: ${deletedSubjectIds.length} ta\n\n` +
-        `Saqlashni xohlaysizmi?`
-    );
-    if (!confirmed) return;
+    const payload = isNew
+        ? {new: [{name: newNameVal, fieldId: s.fieldId}], updated: [], deletedIds: []}
+        : {new: [], updated: [{id: s.id, name: newNameVal, fieldId: s.fieldId}], deletedIds: []};
 
     try {
-        showToast('info', 'Maʼlumotlar bazaga saqlanmoqda...', 5000);
-
-        // 6. Отправка в backend
-        const response = await fetch("/api/science/save",
-            {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify(payload)
-            });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.message || "Server xatosi");
+        const res = await fetch("/api/science/save", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(payload)
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlertModal(data.message || data.error || "Saqlashda xatolik");
+            return;
         }
+        showToast('success', isNew ? `"${newNameVal}" saqlandi` : "Bo'lim saqlandi", 2000);
 
-        // Успешное сообщение
-        showToast(
-            'success',
-            `Saqlandi: yangi — ${payload.new.length}, \n
-            o‘zgartirilgan — ${payload.updated.length}, \n\n
-            o'chirilgan - ${deletedSubjectIds.length} ta`,
-            5000
-        );
-
-        // 🔑 КЛЮЧЕВОЕ МЕСТО — ПОЛНАЯ СИНХРОНИЗАЦИЯ С БД
-        deletedSubjectIds = [];
         await reloadAll("/api/science");
-        focusIndex = 0;
-        render(); // ❗ shu qator yo'q edi — shuning uchun DB yangilangan, lekin ekran eskicha qolardi
-        refreshScienceTrashBadge();
-
+        focusIndex = itemBlock.findIndex(x => x.name === newNameVal);
+        render();
     } catch (err) {
         console.error(err);
-        showToast('error', err.message || 'Saqlashda xatolik', 7000);
-        showAlertModal(err.message);
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
