@@ -162,7 +162,7 @@ function renderFieldBox(group, realFieldGroups) {
     // foydalanuvchi so'rovi, 2026-09-05). Kurs Yo'nalishi MAJBURIY bo'lgani
     // uchun "— Yo'nalishsiz kurslar —" psevdo-guruhida ko'rsatilmaydi.
     const addBtn = (CAN_CREATE_COURSE && group.fieldId != null)
-        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openCreateCourseForm(${group.fieldId})" title="Bu Yo'nalishga kurs qo'shish">➕</button>`
+        ? `<button class="add-primary-btn" onclick="event.stopPropagation(); openCreateCourseForm(${group.fieldId})" title="Bu Yo'nalishga kurs qo'shish">➕</button>`
         : "";
 
     let moveBtns = "";

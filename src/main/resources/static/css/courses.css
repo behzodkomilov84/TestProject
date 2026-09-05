@@ -1256,6 +1256,40 @@ body {
     background: #fef2f2;
 }
 
+/* "➕ Bu Yo'nalishga kurs qo'shish" — Yo'nalish qutisining ASOSIY
+   (primary) amali, shu sabab kichik/xira ".chapter-rename-btn" o'rniga
+   o'zining aniq, ko'zga tashlanadigan uslubi bor (science.css'dagi bilan
+   AYNAN bir xil — sayt bo'ylab bir xillik uchun, foydalanuvchi so'rovi
+   2026-09-05). */
+.add-primary-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 10px;
+    background: #2563eb;
+    color: #fff;
+    font-weight: 600;
+    font-size: 15px;
+    font-family: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, .3);
+    transition: background-color .15s ease, transform .1s ease, box-shadow .15s ease;
+}
+
+.add-primary-btn:hover {
+    background: #1d4ed8;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, .35);
+    transform: translateY(-1px);
+}
+
+.add-primary-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 6px rgba(37, 99, 235, .3);
+}
+
 /* Bo'lim ichidagi sahifalash — umumiy .sections-pagination uslubidan
    foydalanadi, faqat tashqi margin (u tepadagi umumiy sahifalash uchun
    mo'ljallangan edi) shu yerda kerak emas — box ichida allaqachon padding
