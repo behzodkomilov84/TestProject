@@ -839,11 +839,6 @@ h1 {
     margin-bottom: 8px;
 }
 
-.questionless-topic-row .topic-section-hint {
-    font-size: 12px;
-    color: #b45309;
-}
-
 .word-export-checkbox-row {
     display: flex;
     align-items: center;

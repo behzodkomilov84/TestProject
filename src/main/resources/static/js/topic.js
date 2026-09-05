@@ -221,20 +221,33 @@ function getScienceId() {
     return element ? element.value : null;
 }
 
-// "📋 Testi yo'q darslar" — shu Fanda hech qanday savoli bo'lmagan
-// (questionCount==0) darslar RO'YXATI, BUTUN FAN bo'yicha, joriy
-// "?sectionId=" filtridan qat'i nazar (backend TopicService.
-// deleteQuestionlessTopics ham shunday — faqat scienceId qabul qiladi).
-// Ilgari tugma bosilganda RO'YXATSIZ, to'g'ridan-to'g'ri o'chirib
-// yuborardi — foydalanuvchi qaysi dars(lar) ekanini bilolmasdi, ba'zan
-// (boshqa Mavzuga tegishli bo'lsa) joriy EKRANDAGI ro'yxatda ko'rinmasdi
-// ham (haqiqiy xabarlar, 2026-09-05: "1 та тести йўқ дарс бор деяпти,
-// лекин рўйхатда кўринмаяпти" va "Тести йўқ дарсларни ўчириш кнопкаси
-// ўрнига Тести йўқ дарслар кнопкасини жойла"). Endi avval RO'YXAT
-// ko'rsatiladi (modalda — toggleQuestionlessTopicsModal), o'chirish esa
-// O'SHA modal ICHIDAGI alohida "🗑️ Barchasini o'chirish" tugmasi orqali.
+// "📋 Testi yo'q darslar" — hech qanday savoli bo'lmagan (questionCount==0)
+// darslar RO'YXATI. Joriy "?sectionId=" filtri FAOL bo'lsa — FAQAT o'sha
+// Mavzuga tegishli darslar (boshqa Mavzudagilar bu ro'yxatda UMUMAN
+// ko'rinmaydi — har biri O'ZINING Mavzusi ko'rsatilganda paydo bo'ladi),
+// aks holda (filtr yo'q, "Barcha darslar" ko'rinishida) — butun Fan
+// bo'yicha. Kursga bog'langan darslar HAM chetlab o'tiladi (ularni shu
+// yerdan o'chirish mumkin emas — faqat kurs ichidan boshqariladi).
+// Ilgari tugma bosilganda RO'YXATSIZ, to'g'ridan-to'g'ri (BUTUN Fan
+// bo'yicha, joriy filtrdan qat'i nazar) o'chirib yuborardi — foydalanuvchi
+// qaysi dars(lar) ekanini bilolmasdi, ba'zan boshqa Mavzuga tegishli
+// dars ko'rsatilib, "joriy ro'yxatda yo'q-ku" degan chalkashlikka olib
+// kelardi (haqiqiy xabarlar, 2026-09-05: "1 та тести йўқ дарс бор
+// деяпти, лекин рўйхатда кўринмаяпти", "Тести йўқ дарсларни ўчириш
+// кнопкаси ўрнига Тести йўқ дарслар кнопкасини жойла", "тести йўқ
+// дарслар бошқа мавзуни ичида экан. Ўзини мавзусида кўринсин"). Endi
+// avval RO'YXAT ko'rsatiladi (modalda — toggleQuestionlessTopicsModal),
+// FAQAT joriy Mavzuga tegishli, o'chirish esa O'SHA modal ICHIDAGI
+// alohida "🗑️ Barchasini o'chirish" tugmasi orqali — ANIQ shu
+// ko'rsatilgan dars(lar) (/api/topic/save#deletedIds — boshqa Mavzudagi
+// darslarga UMUMAN tegilmaydi).
 function getQuestionlessCandidates() {
-    return itemBlock.filter(s => s.id > 0 && (s.questionCount || 0) === 0);
+    return itemBlock.filter(s =>
+        s.id > 0 &&
+        (s.questionCount || 0) === 0 &&
+        !s.linkedCourseTitle &&
+        (!filterSectionId || Number(s.sectionId) === Number(filterSectionId))
+    );
 }
 
 let questionlessTopicsOpen = false;
@@ -251,15 +264,12 @@ function toggleQuestionlessTopicsModal() {
     }
 }
 
-// Ro'yxatni chizadi — har bir qatorda dars nomi, agar joriy Mavzu
-// filtridan TASHQARIDA bo'lsa qaysi Mavzuga tegishli ekani ham (aks
-// holda "asosiy ro'yxatda ko'rinmaydi" degan chalkashlik qolaveradi).
 function renderQuestionlessTopicsList() {
     const list = document.getElementById("questionlessTopicsList");
     const deleteBtn = document.getElementById("deleteQuestionlessTopicsBtn");
     const candidates = getQuestionlessCandidates();
 
-    refreshQuestionlessTopicsBadge(candidates.length);
+    refreshQuestionlessTopicsBadge();
     deleteBtn.classList.toggle("hidden", candidates.length === 0);
     deleteBtn.textContent = `🗑️ Barchasini o'chirish (${candidates.length})`;
 
@@ -268,40 +278,45 @@ function renderQuestionlessTopicsList() {
         return;
     }
 
-    list.innerHTML = candidates.map(s => {
-        const inOtherSection = filterSectionId && Number(s.sectionId) !== Number(filterSectionId);
-        const sectionName = sectionNameById(s.sectionId);
-        const hint = inOtherSection
-            ? `<div class="topic-section-hint">Mavzu: ${escapeHtml(sectionName || "Mavzusiz")} — joriy filtrlangan ro'yxatda ko'rinmaydi</div>`
-            : (sectionName ? `<div class="topic-section-hint">Mavzu: ${escapeHtml(sectionName)}</div>` : "");
-        return `
-            <div class="questionless-topic-row">
-                <div>${escapeHtml(s.name)}${hint}</div>
-            </div>
-        `;
-    }).join("");
+    list.innerHTML = candidates.map(s => `
+        <div class="questionless-topic-row">
+            <div>${escapeHtml(s.name)}</div>
+        </div>
+    `).join("");
 }
 
-function refreshQuestionlessTopicsBadge(count) {
-    setTrashBadgeCount("questionlessTopicsBadge", count ?? getQuestionlessCandidates().length);
+// Badge — HAR DOIM joriy filtrga (agar bo'lsa) mos holda hisoblanadi,
+// shu sabab argument qabul qilmaydi — boshqa joyda (masalan filtr
+// o'zgarganda) chaqirilganda ham har doim to'g'ri sonni ko'rsatadi.
+function refreshQuestionlessTopicsBadge() {
+    setTrashBadgeCount("questionlessTopicsBadge", getQuestionlessCandidates().length);
 }
 
 async function deleteQuestionlessTopics() {
     const candidates = getQuestionlessCandidates();
     if (candidates.length === 0) return;
 
-    if (!await showConfirmModal(`⚠️ Testi yo'q ${candidates.length} ta darsni o'chirmoqchimisiz?\n\n(Kursga bog'langan darslar, agar bo'lsa, avtomatik chetlab o'tiladi.)`, { danger: true })) {
+    if (!await showConfirmModal(`⚠️ Testi yo'q ${candidates.length} ta darsni o'chirmoqchimisiz?`, { danger: true })) {
         return;
     }
 
     try {
-        const res = await fetch(`/api/topic/questionless?scienceId=${getScienceId()}`, { method: "DELETE" });
-        const data = await res.json().catch(() => ({}));
+        // Aynan RO'YXATDA ko'rsatilgan dars(lar) — /api/topic/questionless
+        // (butun Fan bo'yicha, filtrsiz) O'RNIGA endi shu, chunki ro'yxat
+        // joriy Mavzu filtriga qarab TORAYTIRILGAN bo'lishi mumkin
+        // (getQuestionlessCandidates) — boshqa Mavzudagi darslarga
+        // UMUMAN tegilmasligi kerak (foydalanuvchi so'rovi, 2026-09-05).
+        const res = await fetch("/api/topic/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ new: [], updated: [], deletedIds: candidates.map(c => c.id) })
+        });
         if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
             showAlertModal(data.error || "O'chirishda xatolik");
             return;
         }
-        showToast('success', `✅ ${data.deleted} ta dars o'chirildi`, 4000);
+        showToast('success', `✅ ${candidates.length} ta dars o'chirildi`, 4000);
         await reloadFromDb(`/api/topic?scienceId=${getScienceId()}`);
         focusIndex = 0;
         render();
