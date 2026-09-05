@@ -37,11 +37,20 @@ public class AttemptAnswer {
     private Question question;
 
     /**
-     * Выбранный ответ (может быть null — если ученик пропустил)
+     * Выбранный ответ (может быть null — если ученик пропустил). Eski
+     * (bitta javobli) yozuvlar uchun saqlanadi — YANGI yozuvlarda ham
+     * to'ldiriladi (TANLANGAN javoblarning BIRINCHISI, orqaga moslik
+     * uchun, Telegram bot ham hozircha shu maydondan foydalanadi).
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "selected_answer_id")
     private Answer selectedAnswer;
+
+    // Ko'p to'g'ri javobli savollar uchun (foydalanuvchi so'rovi, 2026-09-05)
+    // — talaba TANLAGAN barcha Answer.id'lar, vergul bilan ajratilgan
+    // (masalan "12,14"). AssignmentAttemptService shu yerdan o'qiydi.
+    @Column(name = "selected_answer_ids")
+    private String selectedAnswerIds;
 
     /**
      * Был ли ответ правильным

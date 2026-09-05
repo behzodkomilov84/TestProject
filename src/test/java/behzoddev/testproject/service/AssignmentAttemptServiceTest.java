@@ -5,7 +5,6 @@ import behzoddev.testproject.dao.AssignmentRepository;
 import behzoddev.testproject.dao.AttemptAnswerRepository;
 import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.QuestionSetItemRepository;
-import behzoddev.testproject.dao.AnswerRepository;
 import behzoddev.testproject.dto.student.AnswerSyncDto;
 import behzoddev.testproject.dto.student.AttemptDto;
 import behzoddev.testproject.dto.student.ResponseAssignmentsAndTaskStatusDto;
@@ -54,8 +53,6 @@ class AssignmentAttemptServiceTest {
     private AttemptAnswerRepository attemptAnswerRepository;
     @Mock
     private QuestionRepository questionRepository;
-    @Mock
-    private AnswerRepository answerRepository;
     @Mock
     private AttemptHeartbeatService attemptHeartbeatService;
     @Mock
@@ -282,13 +279,12 @@ class AssignmentAttemptServiceTest {
         User pupil = User.builder().id(1L).username("pupil").build();
         AssignmentAttempt attempt = AssignmentAttempt.builder().id(100L).pupil(pupil)
                 .startedAt(LocalDateTime.now().minusMinutes(1)).build();
-        Question question = Question.builder().id(1L).questionText("Q1").build();
         Answer correctAnswer = Answer.builder().id(10L).answerText("A").isTrue(true).build();
+        Question question = Question.builder().id(1L).questionText("Q1").answers(List.of(correctAnswer)).build();
 
         when(assignmentAttemptRepository.findByIdAndPupil(100L, pupil)).thenReturn(Optional.of(attempt));
         when(attemptAnswerRepository.findByAssignmentAttempt(attempt)).thenReturn(List.of());
         when(questionRepository.findById(1L)).thenReturn(Optional.of(question));
-        when(answerRepository.findById(10L)).thenReturn(Optional.of(correctAnswer));
 
         SyncAttemptRequestDto request = new SyncAttemptRequestDto(100L, List.of(new AnswerSyncDto(1L, 10L)));
         assignmentAttemptService.syncAttempt(pupil, request);

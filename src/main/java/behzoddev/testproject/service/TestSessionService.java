@@ -21,6 +21,7 @@ import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 
 @Service
@@ -29,7 +30,6 @@ public class TestSessionService {
 
     private final TestSessionQuestionRepository testSessionQuestionRepository;
     private final QuestionRepository questionRepository;
-    private final AnswerRepository answerRepository;
     private final QuestionMapper questionMapper;
     private final TestSessionRepository testSessionRepository;
     private final UserQuestionStatsRepository userQuestionStatsRepository;
@@ -114,10 +114,18 @@ public class TestSessionService {
             Question q = questionRepository.findById(dto.questionId())
                     .orElseThrow();
 
-            Answer selected = answerRepository.findById(dto.answerId())
-                    .orElseThrow();
+            // Ko'p to'g'ri javobli savollar (foydalanuvchi so'rovi,
+            // 2026-09-05) — eski "answerId" (bitta) YOKI yangi "answerIds"
+            // (ro'yxat) dan qat'i nazar, MultiAnswerUtil bir xil formula
+            // bilan hisoblaydi (AssignmentAttemptService'dagi bilan BIR
+            // XIL — MultiAnswerUtil).
+            List<Long> submittedIds = MultiAnswerUtil.resolveSubmittedIds(dto.answerId(), dto.answerIds());
+            List<Answer> selectedAnswers = MultiAnswerUtil.resolveAnswers(submittedIds, q.getAnswers());
+            if (selectedAnswers.isEmpty()) {
+                throw new IllegalArgumentException("❌ Javob topilmadi");
+            }
 
-            boolean isCorrect = Boolean.TRUE.equals(selected.getIsTrue());
+            boolean isCorrect = MultiAnswerUtil.isCorrect(submittedIds, MultiAnswerUtil.correctAnswerIds(q.getAnswers()));
             if (isCorrect) correct++;
 
             // ===== ПЕРСОНАЛЬНАЯ СЛОЖНОСТЬ =====
@@ -138,7 +146,8 @@ public class TestSessionService {
                     TestSessionQuestion.builder()
                             .testSession(session)
                             .question(q)
-                            .selectedAnswer(selected)
+                            .selectedAnswer(selectedAnswers.get(0))
+                            .selectedAnswerIds(MultiAnswerUtil.join(submittedIds))
                             .isCorrect(isCorrect)
                             .build();
 
@@ -184,21 +193,37 @@ public class TestSessionService {
 
         return testSessionQuestionRepository.findByTestSessionId(session.getId())
                 .stream()
-                .map(q -> new TestSessionDetailDto(
-                        q.getQuestion().getQuestionText(),
-                        q.getSelectedAnswer().getAnswerText(),
-                        q.getQuestion().getAnswers().stream()
-                                .filter(Answer::getIsTrue)
-                                .findFirst()
-                                .map(Answer::getAnswerText)
-                                .orElse(""),
-                        q.getQuestion().getAnswers().stream()
-                                .filter(answer -> answer.getIsTrue() == true)
-                                .findFirst()
-                                .map(Answer::getCommentary)
-                                .orElse(""),
-                        q.getIsCorrect()
-                ))
+                .map(q -> {
+                    List<Answer> questionAnswers = q.getQuestion().getAnswers();
+
+                    // Ko'p to'g'ri javobli savollar (foydalanuvchi so'rovi,
+                    // 2026-09-05) — selectedAnswerIds bo'lsa SHU ustundan
+                    // (bir nechta bo'lishi mumkin), eski (import qilingan
+                    // yoki hali yangilanmagan) yozuvlarda esa selectedAnswer
+                    // (bitta) ustunidan o'qiladi.
+                    List<Long> selectedIds = !MultiAnswerUtil.parse(q.getSelectedAnswerIds()).isEmpty()
+                            ? MultiAnswerUtil.parse(q.getSelectedAnswerIds())
+                            : (q.getSelectedAnswer() != null ? List.of(q.getSelectedAnswer().getId()) : List.of());
+                    List<Answer> selectedAnswers = MultiAnswerUtil.resolveAnswers(selectedIds, questionAnswers);
+
+                    // To'g'ri javob(lar) — ilgari faqat BIRINCHISI (findFirst())
+                    // olinardi, bu ko'p to'g'ri javobli savolda qolganlarini
+                    // "yashirib" qo'yardi. Endi HAMMASI vergul bilan qo'shiladi.
+                    List<Answer> correctAnswers = questionAnswers.stream()
+                            .filter(a -> Boolean.TRUE.equals(a.getIsTrue()))
+                            .toList();
+
+                    return new TestSessionDetailDto(
+                            q.getQuestion().getQuestionText(),
+                            selectedAnswers.stream().map(Answer::getAnswerText).collect(Collectors.joining(", ")),
+                            correctAnswers.stream().map(Answer::getAnswerText).collect(Collectors.joining(", ")),
+                            correctAnswers.stream()
+                                    .map(Answer::getCommentary)
+                                    .filter(c -> c != null && !c.isBlank())
+                                    .collect(Collectors.joining(" ")),
+                            q.getIsCorrect()
+                    );
+                })
                 .toList();
     }
 

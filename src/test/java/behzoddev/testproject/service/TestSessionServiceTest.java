@@ -1,6 +1,5 @@
 package behzoddev.testproject.service;
 
-import behzoddev.testproject.dao.AnswerRepository;
 import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.TestSessionQuestionRepository;
 import behzoddev.testproject.dao.TestSessionRepository;
@@ -60,8 +59,6 @@ class TestSessionServiceTest {
     private TestSessionQuestionRepository testSessionQuestionRepository;
     @Mock
     private QuestionRepository questionRepository;
-    @Mock
-    private AnswerRepository answerRepository;
     @Mock
     private QuestionMapper questionMapper;
     @Mock
@@ -128,12 +125,11 @@ class TestSessionServiceTest {
     void finishTest_computesScoreAndCreatesNewStatsForFirstAttempt() {
         user = freshUser();
         TestSession session = TestSession.builder().id(10L).user(user).questions(new ArrayList<>()).build();
-        Question q1 = Question.builder().id(1L).questionText("Q1").build();
         Answer correctAnswer = Answer.builder().id(100L).answerText("A").isTrue(true).build();
+        Question q1 = Question.builder().id(1L).questionText("Q1").answers(List.of(correctAnswer)).build();
 
         when(testSessionRepository.findById(10L)).thenReturn(Optional.of(session));
         when(questionRepository.findById(1L)).thenReturn(Optional.of(q1));
-        when(answerRepository.findById(100L)).thenReturn(Optional.of(correctAnswer));
         when(userQuestionStatsRepository.findById(any())).thenReturn(Optional.empty());
 
         FinishTestRequestDto request = new FinishTestRequestDto(10L,
@@ -157,15 +153,14 @@ class TestSessionServiceTest {
     void finishTest_wrongAnswer_updatesExistingStatsWithoutIncrementingCorrect() {
         user = freshUser();
         TestSession session = TestSession.builder().id(10L).user(user).questions(new ArrayList<>()).build();
-        Question q1 = Question.builder().id(1L).questionText("Q1").build();
         Answer wrongAnswer = Answer.builder().id(100L).answerText("B").isTrue(false).build();
+        Question q1 = Question.builder().id(1L).questionText("Q1").answers(List.of(wrongAnswer)).build();
 
         UserQuestionStats existingStats = UserQuestionStats.builder()
                 .id(new UserQuestionKey(1L, 1L)).totalAttempts(3).correctAttempts(2).build();
 
         when(testSessionRepository.findById(10L)).thenReturn(Optional.of(session));
         when(questionRepository.findById(1L)).thenReturn(Optional.of(q1));
-        when(answerRepository.findById(100L)).thenReturn(Optional.of(wrongAnswer));
         when(userQuestionStatsRepository.findById(any())).thenReturn(Optional.of(existingStats));
 
         FinishTestRequestDto request = new FinishTestRequestDto(10L,
@@ -187,12 +182,11 @@ class TestSessionServiceTest {
         // answers.size()'dan (ya'ni JAVOB BERILGANLAR sonidan) hisoblardi.
         user = freshUser();
         TestSession session = TestSession.builder().id(10L).user(user).questions(new ArrayList<>()).build();
-        Question q1 = Question.builder().id(1L).questionText("Q1").build();
         Answer correctAnswer = Answer.builder().id(100L).answerText("A").isTrue(true).build();
+        Question q1 = Question.builder().id(1L).questionText("Q1").answers(List.of(correctAnswer)).build();
 
         when(testSessionRepository.findById(10L)).thenReturn(Optional.of(session));
         when(questionRepository.findById(1L)).thenReturn(Optional.of(q1));
-        when(answerRepository.findById(100L)).thenReturn(Optional.of(correctAnswer));
         when(userQuestionStatsRepository.findById(any())).thenReturn(Optional.empty());
 
         // 2 ta savol AJRATILGAN edi (totalQuestions=2), lekin faqat 1 tasiga javob berildi.
@@ -214,12 +208,11 @@ class TestSessionServiceTest {
         // deploy vaqtida eski JS keshi), avvalgi xatti-harakat saqlanadi.
         user = freshUser();
         TestSession session = TestSession.builder().id(10L).user(user).questions(new ArrayList<>()).build();
-        Question q1 = Question.builder().id(1L).questionText("Q1").build();
         Answer correctAnswer = Answer.builder().id(100L).answerText("A").isTrue(true).build();
+        Question q1 = Question.builder().id(1L).questionText("Q1").answers(List.of(correctAnswer)).build();
 
         when(testSessionRepository.findById(10L)).thenReturn(Optional.of(session));
         when(questionRepository.findById(1L)).thenReturn(Optional.of(q1));
-        when(answerRepository.findById(100L)).thenReturn(Optional.of(correctAnswer));
         when(userQuestionStatsRepository.findById(any())).thenReturn(Optional.empty());
 
         FinishTestRequestDto request = new FinishTestRequestDto(10L,

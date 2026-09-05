@@ -27,7 +27,6 @@ public class AssignmentAttemptService {
     private final QuestionSetItemRepository questionSetItemRepository;
     private final AttemptAnswerRepository attemptAnswerRepository;
     private final QuestionRepository questionRepository;
-    private final AnswerRepository answerRepository;
     private final AttemptHeartbeatService attemptHeartbeatService;
     private final AttemptQuestionOrderRepository attemptQuestionOrderRepository;
 
@@ -252,18 +251,28 @@ public class AssignmentAttemptService {
             }
 
             // ===== обработка выбранного ответа =====
+            // Ko'p to'g'ri javobli savollar (foydalanuvchi so'rovi,
+            // 2026-09-05) — eski "selectedAnswerId" (bitta) YOKI yangi
+            // "selectedAnswerIds" (ro'yxat) dan qat'i nazar, MultiAnswerUtil
+            // bir xil formula bilan hisoblaydi (TestSessionService'dagi
+            // bilan BIR XIL — MultiAnswerUtil, Telegram bot ham shu orqali
+            // o'tadi, chunki TelegramBot ham syncAttempt()ni chaqiradi).
 
+            List<Long> submittedIds = MultiAnswerUtil.resolveSubmittedIds(dto.selectedAnswerId(), dto.selectedAnswerIds());
             Answer selected = null;
             boolean correct = false;
 
-            if (dto.selectedAnswerId() != null) {
+            if (!submittedIds.isEmpty()) {
+                List<Answer> selectedAnswers = MultiAnswerUtil.resolveAnswers(submittedIds, question.getAnswers());
+                if (selectedAnswers.isEmpty()) {
+                    throw new RuntimeException("Answer not found");
+                }
 
-                selected = answerRepository
-                        .findById(dto.selectedAnswerId())
-                        .orElseThrow(() ->
-                                new RuntimeException("Answer not found"));
-
-                correct = Boolean.TRUE.equals(selected.getIsTrue());
+                selected = selectedAnswers.get(0);
+                correct = MultiAnswerUtil.isCorrect(submittedIds, MultiAnswerUtil.correctAnswerIds(question.getAnswers()));
+                attemptAnswer.setSelectedAnswerIds(MultiAnswerUtil.join(submittedIds));
+            } else {
+                attemptAnswer.setSelectedAnswerIds(null);
             }
 
             // обновляем ВСЕ поля
@@ -470,7 +479,14 @@ public class AssignmentAttemptService {
                                 a.getQuestion().getId(),
                                 a.getSelectedAnswer() != null
                                         ? a.getSelectedAnswer().getId()
-                                        : null
+                                        : null,
+                                // Ko'p to'g'ri javobli savollar (foydalanuvchi
+                                // so'rovi, 2026-09-05) — selectedAnswerIds
+                                // bo'lsa SHU ustundan, aks holda selectedAnswer
+                                // (bitta) ustunidan (eski/oddiy javoblar).
+                                !MultiAnswerUtil.parse(a.getSelectedAnswerIds()).isEmpty()
+                                        ? MultiAnswerUtil.parse(a.getSelectedAnswerIds())
+                                        : (a.getSelectedAnswer() != null ? List.of(a.getSelectedAnswer().getId()) : List.of())
                         ))
                         .toList();
 

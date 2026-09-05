@@ -44,6 +44,7 @@
     <include file="/db/changelog/science-field.sql"/>
     <include file="/db/changelog/question-text-length.sql"/>
     <include file="/db/changelog/course-order-index.sql"/>
+    <include file="/db/changelog/multi-answer-questions.sql"/>
 
 
 </databaseChangeLog>
