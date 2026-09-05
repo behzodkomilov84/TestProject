@@ -90,28 +90,7 @@
                     <img class="image-preview hidden" alt="A javob rasmi">
                     <button type="button" class="btn remove-image-btn hidden">✖</button>
                 </div>
-                <button type="button" class="comment-btn btn hidden">✏️Izoh</button>
-                <div class="commentary-box hidden">
-                    <textarea class="commentary"
-                              name="commentaries[0]"
-                              placeholder="To'g'ri javob uchun izoh kiriting..."></textarea>
-                    <button type="button" class="btn link-btn hidden">🔗 Darsga havola qo'shish</button>
-
-                    <div class="commentary-media">
-                        <div class="image-upload" data-role="commentary-image">
-                            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" hidden>
-                            <button type="button" class="btn image-btn">🖼️ Rasm</button>
-                            <img class="image-preview hidden" alt="Izoh rasmi">
-                            <button type="button" class="btn remove-image-btn hidden">✖</button>
-                        </div>
-                        <div class="video-upload" data-role="commentary-video">
-                            <input type="file" accept="video/mp4,video/webm,video/ogg" class="video-input" hidden>
-                            <button type="button" class="btn video-btn">🎬 Video</button>
-                            <video class="video-preview hidden" controls></video>
-                            <button type="button" class="btn remove-video-btn hidden">✖</button>
-                        </div>
-                    </div>
-                </div>
+                <button type="button" class="comment-btn btn hidden" data-answer-index="0" onclick="openCommentaryModal(0)">✏️Izoh</button>
             </div>
 
             <div class="answer">
@@ -123,28 +102,7 @@
                     <img class="image-preview hidden" alt="B javob rasmi">
                     <button type="button" class="btn remove-image-btn hidden">✖</button>
                 </div>
-                <button type="button" class="comment-btn btn hidden">✏️Izoh</button>
-                <div class="commentary-box hidden">
-                    <textarea class="commentary"
-                              name="commentaries[1]"
-                              placeholder="To'g'ri javob uchun izoh kiriting..."></textarea>
-                    <button type="button" class="btn link-btn hidden">🔗 Darsga havola qo'shish</button>
-
-                    <div class="commentary-media">
-                        <div class="image-upload" data-role="commentary-image">
-                            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" hidden>
-                            <button type="button" class="btn image-btn">🖼️ Rasm</button>
-                            <img class="image-preview hidden" alt="Izoh rasmi">
-                            <button type="button" class="btn remove-image-btn hidden">✖</button>
-                        </div>
-                        <div class="video-upload" data-role="commentary-video">
-                            <input type="file" accept="video/mp4,video/webm,video/ogg" class="video-input" hidden>
-                            <button type="button" class="btn video-btn">🎬 Video</button>
-                            <video class="video-preview hidden" controls></video>
-                            <button type="button" class="btn remove-video-btn hidden">✖</button>
-                        </div>
-                    </div>
-                </div>
+                <button type="button" class="comment-btn btn hidden" data-answer-index="1" onclick="openCommentaryModal(1)">✏️Izoh</button>
             </div>
 
             <div class="answer">
@@ -156,28 +114,7 @@
                     <img class="image-preview hidden" alt="C javob rasmi">
                     <button type="button" class="btn remove-image-btn hidden">✖</button>
                 </div>
-                <button type="button" class="comment-btn btn hidden">✏️Izoh</button>
-                <div class="commentary-box hidden">
-                    <textarea class="commentary"
-                              name="commentaries[2]"
-                              placeholder="To'g'ri javob uchun izoh kiriting..."></textarea>
-                    <button type="button" class="btn link-btn hidden">🔗 Darsga havola qo'shish</button>
-
-                    <div class="commentary-media">
-                        <div class="image-upload" data-role="commentary-image">
-                            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" hidden>
-                            <button type="button" class="btn image-btn">🖼️ Rasm</button>
-                            <img class="image-preview hidden" alt="Izoh rasmi">
-                            <button type="button" class="btn remove-image-btn hidden">✖</button>
-                        </div>
-                        <div class="video-upload" data-role="commentary-video">
-                            <input type="file" accept="video/mp4,video/webm,video/ogg" class="video-input" hidden>
-                            <button type="button" class="btn video-btn">🎬 Video</button>
-                            <video class="video-preview hidden" controls></video>
-                            <button type="button" class="btn remove-video-btn hidden">✖</button>
-                        </div>
-                    </div>
-                </div>
+                <button type="button" class="comment-btn btn hidden" data-answer-index="2" onclick="openCommentaryModal(2)">✏️Izoh</button>
             </div>
 
             <div class="answer">
@@ -189,28 +126,7 @@
                     <img class="image-preview hidden" alt="D javob rasmi">
                     <button type="button" class="btn remove-image-btn hidden">✖</button>
                 </div>
-                <button type="button" class="comment-btn btn hidden">✏️Izoh</button>
-                <div class="commentary-box hidden">
-                    <textarea class="commentary"
-                              name="commentaries[3]"
-                              placeholder="To'g'ri javob uchun izoh kiriting..."></textarea>
-                    <button type="button" class="btn link-btn hidden">🔗 Darsga havola qo'shish</button>
-
-                    <div class="commentary-media">
-                        <div class="image-upload" data-role="commentary-image">
-                            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" hidden>
-                            <button type="button" class="btn image-btn">🖼️ Rasm</button>
-                            <img class="image-preview hidden" alt="Izoh rasmi">
-                            <button type="button" class="btn remove-image-btn hidden">✖</button>
-                        </div>
-                        <div class="video-upload" data-role="commentary-video">
-                            <input type="file" accept="video/mp4,video/webm,video/ogg" class="video-input" hidden>
-                            <button type="button" class="btn video-btn">🎬 Video</button>
-                            <video class="video-preview hidden" controls></video>
-                            <button type="button" class="btn remove-video-btn hidden">✖</button>
-                        </div>
-                    </div>
-                </div>
+                <button type="button" class="comment-btn btn hidden" data-answer-index="3" onclick="openCommentaryModal(3)">✏️Izoh</button>
             </div>
 
             <div class="answer">
@@ -222,30 +138,24 @@
                     <img class="image-preview hidden" alt="E javob rasmi">
                     <button type="button" class="btn remove-image-btn hidden">✖</button>
                 </div>
-                <button type="button" class="comment-btn btn hidden">✏️Izoh</button>
-                <div class="commentary-box hidden">
-                    <textarea class="commentary"
-                              name="commentaries[4]"
-                              placeholder="To'g'ri javob uchun izoh kiriting..."></textarea>
-                    <button type="button" class="btn link-btn hidden">🔗 Darsga havola qo'shish</button>
-
-                    <div class="commentary-media">
-                        <div class="image-upload" data-role="commentary-image">
-                            <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" hidden>
-                            <button type="button" class="btn image-btn">🖼️ Rasm</button>
-                            <img class="image-preview hidden" alt="Izoh rasmi">
-                            <button type="button" class="btn remove-image-btn hidden">✖</button>
-                        </div>
-                        <div class="video-upload" data-role="commentary-video">
-                            <input type="file" accept="video/mp4,video/webm,video/ogg" class="video-input" hidden>
-                            <button type="button" class="btn video-btn">🎬 Video</button>
-                            <video class="video-preview hidden" controls></video>
-                            <button type="button" class="btn remove-video-btn hidden">✖</button>
-                        </div>
-                    </div>
-                </div>
+                <button type="button" class="comment-btn btn hidden" data-answer-index="4" onclick="openCommentaryModal(4)">✏️Izoh</button>
             </div>
         </div>
+
+        <!-- "Izoh" endi modalda, A4 kenglikda (foydalanuvchi so'rovi, 2026-09-05)
+             — ilgari har bir javob variantining o'zida (position:fixed
+             panel) edi. 5 ta modal test-form.js#buildCommentaryModalHtml
+             tomonidan DINAMIK ravishda shu bo'sh konteynerga to'ldiriladi
+             (5 marta deyarli bir xil ~50 qatorli HTML'ni qo'lda
+             takrorlash o'rniga — bitta joyda, xatoga kamroq moyil). Har
+             bir modal — Kursga dars qo'shish/tahrirlashdagi (courseDetail.js)
+             boy matn muharriri bilan BIR XIL: qalin/kursiv/tagi chizilgan/
+             chizib o'tilgan/indeks/daraja, shrift turi/o'lchami, harf/fon
+             rangi, tekislash, chekinish, ro'yxatlar, qator oralig'i, rasm
+             qo'shish (formatni tozalash bilan birga) — video/PPT/.docx
+             import KIRITILMAGAN (foydalanuvchi so'rovi bo'yicha tanlangan
+             daraja: "Matn formatlash + rasm"). -->
+        <div id="commentaryModalsContainer"></div>
 
         <!-- Кнопки -->
         <div class="actions">

@@ -201,35 +201,64 @@ label {
     background: #125aa3;
 }
 
-/* Izoh (to'g'ri javobga oid) — yagona ixcham box */
-.commentary-box {
+/* Izoh (to'g'ri javobga oid) — endi TRUE modal (A4 kenglikda), ilgari
+   position:fixed suzib turuvchi panel edi (foydalanuvchi so'rovi,
+   2026-09-05: "Izohni kiritish modalda bo'lsin. Eni A4 razmerda bo'lsin.").
+   ".modal-overlay"/".modal-overlay.show" — courses.css'dagi bilan bir xil
+   andoza (bu sahifa o'sha faylni ulamagani uchun takrorlangan). */
+.modal-overlay {
     position: fixed;
-    right: 15px;
-    top: 5%;
-    max-width: 260px;
-    width: 100%;
-    max-height: 70vh;
-    overflow-y: auto;
-    z-index: 1000;
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 10px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
-    padding: 12px;
+    inset: 0;
+    background: rgba(15, 23, 42, .55);
+    backdrop-filter: blur(2px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.modal-overlay.show {
+    display: flex;
+    animation: modalOverlayFadeIn .18s ease;
+}
+
+@keyframes modalOverlayFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes modalPopIn {
+    from { opacity: 0; transform: translateY(10px) scale(.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-h2 {
+    text-align: center;
+    margin: 0;
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Kenglik — A4 varag'i eni (210mm ≈ 794px, 96dpi) —
+   foydalanuvchi ANIQ shuni so'ragan ("Eni A4 razmerda bo'lsin"),
+   courses.css#.course-form-modal bilan bir xil andoza. */
+.commentary-form-modal {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    padding: 18px;
     display: flex;
     flex-direction: column;
     gap: 8px;
-}
-
-.commentary-box textarea.commentary {
-    width: 100%;
-    min-height: 90px;
-    max-height: 200px;
-    padding: 8px;
-    font-size: 13px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    resize: vertical;
+    width: min(794px, 95vw);
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: 0;
+    animation: modalPopIn .2s cubic-bezier(.2, .9, .3, 1.2);
 }
 
 .modal {
@@ -330,15 +359,295 @@ label {
     max-height: 90px;
 }
 
-/* Tor ekranda .commentary-box (position:fixed, o'ngda suzib turuvchi
-   panel) forma ustiga chiqib, uni to'sib qo'yardi — mobil/tabletda
-   oddiy oqim (static) ichiga, formadan keyin joylashadi. */
-@media (max-width: 900px) {
-    .commentary-box {
-        position: static;
-        width: 100%;
-        max-width: 100%;
-        max-height: none;
-        margin-top: 16px;
-    }
+/* ========================================================================
+   Izoh muharriri — "Kursga dars qo'shish/tahrirlash" (courseDetail.js/
+   courses.css) bilan BIR XIL boy matn tahrirlagichi (qalin/kursiv/tagi
+   chizilgan/chizib o'tilgan/indeks/daraja, shrift, rang, tekislash,
+   chekinish, ro'yxatlar, qator oralig'i, rasm qo'shish) — bu sahifa
+   courses.css'ni ulamagani uchun kerakli qism (video/PPT/.docx import
+   BUNDAN MUSTASNO — foydalanuvchi so'rovi, 2026-09-05: "Matn formatlash
+   + rasm" darajasi tanlangan) shu yerda takrorlangan.
+   ======================================================================== */
+.rich-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.rich-toolbar button {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #d5dde8;
+    border-radius: 6px;
+    background: white;
+    color: #1e293b;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rich-toolbar button svg {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    flex-shrink: 0;
+}
+
+.rich-toolbar button:hover {
+    background: #f1f5f9;
+}
+
+.rich-toolbar-sep {
+    width: 1px;
+    height: 20px;
+    background: #e2e8f0;
+    margin: 0 4px;
+}
+
+.rich-toolbar-select {
+    width: auto !important;
+    height: 32px;
+    padding: 0 6px !important;
+    border: 1px solid #d5dde8;
+    border-radius: 6px;
+    background: white;
+    color: #1e293b;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.rich-color-trigger {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 4px !important;
+    border: 1px solid #d5dde8;
+    border-radius: 6px;
+    cursor: pointer;
+    background: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rich-color-preview {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 3px;
+    border: 1px solid rgba(0,0,0,0.15);
+}
+
+.rich-color-palette {
+    position: fixed;
+    z-index: 10000;
+    background: white;
+    border: 1px solid #d5dde8;
+    border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    padding: 8px;
+}
+
+.rich-color-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 24px);
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.rich-color-swatch-btn {
+    width: 24px;
+    height: 24px;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 0;
+}
+
+.rich-color-swatch-btn:hover {
+    outline: 2px solid #2563eb;
+    outline-offset: 1px;
+}
+
+.rich-color-custom-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #475569;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.rich-color-custom-label input[type="color"] {
+    width: 24px !important;
+    height: 24px !important;
+    padding: 0 !important;
+    border: 1px solid #d5dde8;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.rich-text-editor {
+    width: 100%;
+    min-height: 120px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid #d5dde8;
+    font-size: 14px;
+    font-family: inherit;
+    line-height: 1.6;
+}
+
+.rich-text-editor:focus {
+    outline: 2px solid #bfdbfe;
+    outline-offset: -1px;
+}
+
+.rich-text-editor:empty::before {
+    content: attr(data-placeholder);
+    color: #94a3b8;
+}
+
+.rich-text-editor p {
+    margin: 0 0 10px;
+}
+
+.rich-text-editor img {
+    max-width: 100%;
+    height: auto;
+}
+
+.rich-img-wrap {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    vertical-align: bottom;
+}
+
+.rich-img-wrap img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.rich-img-handle {
+    display: none;
+}
+
+.rich-text-editor .rich-img-handle {
+    display: block;
+    position: absolute;
+    right: -5px;
+    bottom: -5px;
+    width: 12px;
+    height: 12px;
+    background: #2563eb;
+    border: 2px solid white;
+    border-radius: 3px;
+    cursor: nwse-resize;
+}
+
+.rich-img-align-bar {
+    display: none;
+}
+
+.rich-text-editor .rich-img-align-bar {
+    display: flex;
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    padding: 1px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.rich-img-align-bar button {
+    border: none;
+    background: #eee;
+    border-radius: 3px;
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+}
+
+.rich-img-align-bar button:hover {
+    background: #ddd;
+}
+
+.rich-img-wrap.align-left,
+.rich-img-wrap.align-center,
+.rich-img-wrap.align-right {
+    display: block;
+    width: fit-content;
+}
+
+.rich-img-wrap.align-left {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+.rich-img-wrap.align-center {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.rich-img-wrap.align-right {
+    margin-left: auto;
+    margin-right: 0;
+}
+
+.rich-img-caption {
+    display: block;
+    font-size: 13px;
+    color: #64748b;
+    text-align: center;
+    margin-top: 4px;
+    padding: 2px 4px;
+    outline: none;
+}
+
+.rich-img-caption:empty {
+    display: none;
+}
+
+.rich-text-editor .rich-img-caption:empty {
+    display: block;
+}
+
+.rich-text-editor .rich-img-caption:empty::before {
+    content: attr(data-placeholder);
+    color: #b7c0cc;
+    font-style: italic;
+}
+
+.rich-text-editor ul,
+.rich-text-editor ol {
+    margin: 0 0 10px;
+    padding-left: 24px;
+}
+
+.rich-text-editor table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+}
+
+.rich-text-editor table td,
+.rich-text-editor table th {
+    border: 1px solid #e2e8f0;
+    padding: 6px 8px;
 }
