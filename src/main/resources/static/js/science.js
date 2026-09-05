@@ -46,6 +46,13 @@ const WORD_ICON_SVG = `<svg width="28" height="28" viewBox="0 0 48 48" xmlns="ht
     <rect x="4" y="4" width="18" height="40" rx="7" fill="#103F91"/>
     <text x="31" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">W</text>
 </svg>`;
+
+// "🔍 Bo'lim ichida qidiruv" tugmasi belgisi — EXCEL_ICON_SVG/WORD_ICON_SVG
+// bilan bir xil andoza (28x28, topic-export-btn ichida ishlatiladi).
+const SEARCH_ICON_SVG = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="10.5" cy="10.5" r="6.5" stroke="currentColor" stroke-width="2.2"/>
+    <line x1="15.3" y1="15.3" x2="20.5" y2="20.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+</svg>`;
 // ========================================================================
 
 afterStartPage("/api/science");
@@ -501,7 +508,7 @@ function renderRowHtml(s, i) {
             id="input-${i}"
             class="topic-name ${inputClass}"
             tabindex="-1"
-        ><div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta mavzu</span>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestions(${s.id})" title="Shu bo'limdagi barcha darslarning testlarini Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); openWordExportModal(${s.id})" title="Shu bo'limdagi barcha darslarning testlarini Word'ga eksport qilish">${WORD_ICON_SVG}</button>` : ""}</div></div>
+        ><div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta mavzu</span>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); openScienceSearchModal(${s.id})" title="Shu bo'limdagi savollar orasidan qidirish">${SEARCH_ICON_SVG}</button>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestions(${s.id})" title="Shu bo'limdagi barcha darslarning testlarini Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); openWordExportModal(${s.id})" title="Shu bo'limdagi barcha darslarning testlarini Word'ga eksport qilish">${WORD_ICON_SVG}</button>` : ""}</div></div>
     </div>
         `
         : `
@@ -671,6 +678,100 @@ async function downloadWordVariants(url, filename) {
         btn.disabled = false;
         btn.textContent = originalText;
     }
+}
+
+// ========================================================================
+//        "🔍 Bo'lim ichida qidiruv" — modal, science.html'da joylashgan
+// ========================================================================
+// Qator tugmasi bosilganda openScienceSearchModal aynan qaysi FAN (Bo'lim)
+// uchun ekanini saqlab qo'yadi (wordExportScienceId bilan bir xil g'oya).
+// Har bir kiritishda YANGI so'rov yubormaslik uchun oddiy debounce
+// (300ms) — server har harfda emas, foydalanuvchi yozishni tugatgach
+// so'raladi.
+let scienceSearchScienceId = null;
+let scienceSearchDebounceTimer = null;
+let scienceSearchRequestSeq = 0;
+
+function openScienceSearchModal(scienceId) {
+    scienceSearchScienceId = scienceId;
+    const input = document.getElementById("scienceSearchInput");
+    input.value = "";
+    document.getElementById("scienceSearchResults").innerHTML =
+        `<p class="science-search-hint">Qidirish uchun yuqoriga yozing.</p>`;
+    document.getElementById("scienceSearchModal").classList.add("show");
+    setTimeout(() => input.focus(), 50);
+}
+
+function closeScienceSearchModal() {
+    document.getElementById("scienceSearchModal").classList.remove("show");
+    clearTimeout(scienceSearchDebounceTimer);
+}
+
+function onScienceSearchInput() {
+    clearTimeout(scienceSearchDebounceTimer);
+    scienceSearchDebounceTimer = setTimeout(runScienceSearch, 300);
+}
+
+async function runScienceSearch() {
+    const query = document.getElementById("scienceSearchInput").value.trim();
+    const resultsBox = document.getElementById("scienceSearchResults");
+
+    if (!query) {
+        resultsBox.innerHTML = `<p class="science-search-hint">Qidirish uchun yuqoriga yozing.</p>`;
+        return;
+    }
+
+    // Так как so'rovlar tarmoq kechikishi sabab har xil tartibda qaytishi
+    // mumkin — faqat ENG OXIRGI so'rov natijasi ko'rsatiladi.
+    const mySeq = ++scienceSearchRequestSeq;
+    resultsBox.innerHTML = `<p class="science-search-hint">Qidirilmoqda...</p>`;
+
+    try {
+        const res = await fetch(`/api/question/search-by-science?scienceId=${scienceSearchScienceId}&query=${encodeURIComponent(query)}`);
+        if (mySeq !== scienceSearchRequestSeq) return;
+
+        if (!res.ok) {
+            resultsBox.innerHTML = `<p class="science-search-hint">Qidirishda xatolik yuz berdi.</p>`;
+            return;
+        }
+
+        const list = await res.json();
+        if (mySeq !== scienceSearchRequestSeq) return;
+
+        renderScienceSearchResults(list);
+    } catch (e) {
+        if (mySeq !== scienceSearchRequestSeq) return;
+        console.error(e);
+        resultsBox.innerHTML = `<p class="science-search-hint">Tarmoq xatoligi.</p>`;
+    }
+}
+
+function renderScienceSearchResults(list) {
+    const resultsBox = document.getElementById("scienceSearchResults");
+
+    if (!list || list.length === 0) {
+        resultsBox.innerHTML = `<p class="science-search-hint">Hech narsa topilmadi.</p>`;
+        return;
+    }
+
+    resultsBox.innerHTML = list.map(q => `
+        <div class="science-search-result-row" tabindex="0"
+             onclick="goToScienceSearchResult(${q.topicId}, ${q.sectionId ?? 'null'})"
+             onkeydown="if(event.key==='Enter') goToScienceSearchResult(${q.topicId}, ${q.sectionId ?? 'null'})">
+            <div class="science-search-result-text">${escapeHtml(q.questionText)}</div>
+            <div class="science-search-result-meta">${escapeHtml(q.topicName)}${q.sectionName ? ` · ${escapeHtml(q.sectionName)}` : ""}</div>
+        </div>
+    `).join("");
+}
+
+// Natijaga bosilganda — TEST BOSHQARUVIga (topics.html) aynan shu
+// Darsning haqiqiy Mavzusi bilan filtrlangan holda va unga fokus
+// qilingan holda o'tkazadi (topic.js#afterStartPage "?focus=" ni allaqachon
+// qo'llab-quvvatlaydi — topic.js#goToTopicInManagement bilan bir xil g'oya).
+function goToScienceSearchResult(topicId, sectionId) {
+    const params = new URLSearchParams({ scienceId: scienceSearchScienceId, focus: topicId });
+    if (sectionId) params.set("sectionId", sectionId);
+    window.location.href = `/topics?${params}`;
 }
 
 function hasDuplicate(currentIndex, name) {

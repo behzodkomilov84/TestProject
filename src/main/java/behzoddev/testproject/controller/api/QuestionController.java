@@ -4,6 +4,7 @@ import behzoddev.testproject.dto.answer.AnswerShortDto;
 import behzoddev.testproject.dto.ModalCommentSaveDto;
 import behzoddev.testproject.dto.question.QuestionDto;
 import behzoddev.testproject.dto.question.QuestionSaveDto;
+import behzoddev.testproject.dto.question.QuestionScienceSearchDto;
 import behzoddev.testproject.dto.question.QuestionScienceTrashDto;
 import behzoddev.testproject.dto.question.QuestionTrashDto;
 import behzoddev.testproject.exception.ErrorResponse;
@@ -308,6 +309,17 @@ public class QuestionController {
     @ResponseBody
     public ResponseEntity<List<QuestionScienceTrashDto>> getDeletedByScience(@RequestParam Long scienceId) {
         return ResponseEntity.ok(questionService.getDeletedQuestionsByScience(scienceId));
+    }
+
+    // science.html'dagi 🔍 "Bo'lim ichida qidiruv" modali — butun Fan
+    // bo'yicha (barcha Mavzu -> Dars -> Savol) savol matnidan qidiradi.
+    @GetMapping("/api/question/search-by-science")
+    @ResponseBody
+    public ResponseEntity<List<QuestionScienceSearchDto>> searchByScience(
+            @RequestParam Long scienceId,
+            @RequestParam(required = false) String query
+    ) {
+        return ResponseEntity.ok(questionService.searchQuestionsByScience(scienceId, query));
     }
 
     @PostMapping("/api/question/{id}/restore")

@@ -7,6 +7,7 @@ import behzoddev.testproject.dto.answer.AnswerDto;
 import behzoddev.testproject.dto.answer.AnswerShortDto;
 import behzoddev.testproject.dto.question.QuestionDto;
 import behzoddev.testproject.dto.question.QuestionSaveDto;
+import behzoddev.testproject.dto.question.QuestionScienceSearchDto;
 import behzoddev.testproject.dto.question.QuestionScienceTrashDto;
 import behzoddev.testproject.dto.question.QuestionShortDto;
 import behzoddev.testproject.dto.question.QuestionTrashDto;
@@ -20,6 +21,7 @@ import behzoddev.testproject.validation.Validation;
 import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -232,6 +234,19 @@ public class QuestionService {
     @Transactional(readOnly = true)
     public List<QuestionScienceTrashDto> getDeletedQuestionsByScience(Long scienceId) {
         return questionRepository.findDeletedByScienceId(scienceId);
+    }
+
+    // science.html'dagi 🔍 "Bo'lim ichida qidiruv" modali — butun Fan
+    // bo'yicha (barcha Mavzu -> Dars -> Savol ierarxiyasi kesib o'tib)
+    // savol matnidan qidiradi. Bo'sh/juda qisqa so'rovda BUTUN ro'yxatni
+    // tashlab yubormaslik uchun ataylab bo'sh natija qaytariladi (foydalanuvchi
+    // biror narsa yozguncha kutiladi) — natija soni 200 taga cheklangan.
+    @Transactional(readOnly = true)
+    public List<QuestionScienceSearchDto> searchQuestionsByScience(Long scienceId, String search) {
+        if (search == null || search.isBlank()) {
+            return List.of();
+        }
+        return questionRepository.searchByScienceId(scienceId, search.trim(), PageRequest.of(0, 200));
     }
 
     // Guruh holatida "♻️ Tiklash" (question.js — savatdagi checkbox'lar

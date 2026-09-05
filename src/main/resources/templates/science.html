@@ -169,6 +169,30 @@
     </div>
 </div>
 
+<!-- "🔍 Bo'lim ichida qidiruv" — shu Bo'limga tegishli BARCHA Mavzu ->
+     Dars zanjiri bo'ylab, savollar matnidan qidiradi (foydalanuvchi
+     so'rovi, 2026-09-05). Natijaga bosilsa TEST BOSHQARUVIga (topics.html)
+     aynan shu Darsga fokus qilingan holda o'tkaziladi — science.js. -->
+<div id="scienceSearchModal" class="modal-overlay">
+    <div class="science-search-modal">
+        <h2 class="modal-h2">🔍 Bo'lim ichidan savol qidirish</h2>
+        <input
+            type="text"
+            id="scienceSearchInput"
+            class="science-search-input"
+            placeholder="Savol matnidan qidirish uchun yozing..."
+            oninput="onScienceSearchInput()"
+            autocomplete="off"
+        >
+        <div id="scienceSearchResults" class="science-search-results">
+            <p class="science-search-hint">Qidirish uchun yuqoriga yozing.</p>
+        </div>
+        <div class="modal-footer">
+            <button type="button" onclick="closeScienceSearchModal()">Yopish</button>
+        </div>
+    </div>
+</div>
+
 <!-- Контейнер для Toast-уведомлений (добавлено) -->
 <div id="toast-container"></div>
 

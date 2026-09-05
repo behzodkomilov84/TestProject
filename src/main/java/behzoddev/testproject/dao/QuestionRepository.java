@@ -1,5 +1,6 @@
 package behzoddev.testproject.dao;
 
+import behzoddev.testproject.dto.question.QuestionScienceSearchDto;
 import behzoddev.testproject.dto.question.QuestionScienceTrashDto;
 import behzoddev.testproject.dto.question.QuestionTrashDto;
 import behzoddev.testproject.dto.question.TopicQuestionCountDto;
@@ -174,4 +175,27 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             order by q.deletedAt desc
             """)
     List<QuestionScienceTrashDto> findDeletedByScienceId(@Param("scienceId") Long scienceId);
+
+    // science.html'dagi 🔍 "Bo'lim ichida qidiruv" modali — butun Fan
+    // bo'yicha (barcha Mavzu -> Dars -> Savol) savol matnidan qidiradi
+    // (QuestionService.searchQuestionsByScience). Pageable — natija sonini
+    // cheklash uchun (juda katta Fanlarda butun ro'yxatni tashlab
+    // yubormaslik), Page emas oddiy List qaytariladi — Spring Data JPA
+    // buni Pageable orqali "limit/offset" sifatida qo'llaydi.
+    @Query("""
+            select new behzoddev.testproject.dto.question.QuestionScienceSearchDto(
+                q.id, q.questionText, t.id, t.name, s.id, s.name)
+            from Question q
+            join q.topic t
+            left join t.section s
+            where t.science.id = :scienceId
+              and q.deletedAt is null
+              and lower(q.questionText) like lower(concat('%', :search, '%'))
+            order by t.orderIndex, q.orderIndex
+            """)
+    List<QuestionScienceSearchDto> searchByScienceId(
+            @Param("scienceId") Long scienceId,
+            @Param("search") String search,
+            Pageable pageable
+    );
   }
