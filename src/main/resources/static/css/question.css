@@ -1349,13 +1349,16 @@ td label{
     font-weight: bold;
 }
 
-/* Rasm CHAPDA, savol matni O'NGDA — .qform-answer bilan bir xil andoza
-   (foydalanuvchi so'rovi, 2026-09-05: "Расм ва текстни ёнма-ён жойлаш
-   мумкин бўлиши керак ... курсор расмни ўнг томонида энг тепадан
-   бошланиши керак"). */
+/* Matn CHAPDA, rasm O'NGDA — .qform-answer bilan bir xil andoza
+   (foydalanuvchi so'rovi, 2026-09-05: "textarea oldin kelsin").
+   "align-items:stretch" (flex-start EMAS) — textarea bo'yi rasm qutisi +
+   "Eni/Bo'yi" maydonlari band qilgan balandlik bilan BIR XIL bo'lib
+   ko'rinishi uchun ("textareani balandligi rasm va eni-bo'yi bandligi
+   bilan bir xil bo'lib tursin") — qatordagi ENG BALAND element (odatda
+   rasm ustuni) ikkalasining ham balandligini belgilaydi. */
 .qform-question-row {
     display: flex;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 10px;
 }
 
@@ -1380,9 +1383,14 @@ td label{
     color: #64748b;
 }
 
+/* ".qform-question-row" bilan bir xil g'oya — "align-items:stretch"
+   textarea bo'yini rasm ustuni bilan tenglashtiradi (foydalanuvchi
+   so'rovi, 2026-09-05). Checkbox o'zining ANIQ 20x20px o'lchamini
+   saqlaydi (pastga qarang — stretch faqat bo'yi "auto" bo'lgan
+   elementlarga ta'sir qiladi). */
 .qform-answer {
     display: flex;
-    align-items: flex-start;
+    align-items: stretch;
     gap: 10px;
     margin-bottom: 12px;
 }

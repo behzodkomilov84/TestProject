@@ -844,14 +844,17 @@ function buildQuestionFormModalHtml() {
 
                 <div class="qform-group">
                     <label for="qformQuestionText">Savol</label>
-                    <!-- Rasm CHAPDA, matn O'NGDA (yonma-yon) — foydalanuvchi
-                         so'rovi, 2026-09-05: "Расм ва текстни ёнма-ён
-                         жойлаш мумкин бўлиши керак ... курсор расмни ўнг
-                         томонида энг тепадан бошланиши керак" (javob
-                         qatorlari — .qform-answer — bilan bir xil andoza). -->
+                    <!-- Matn CHAPDA, rasm O'NGDA (yonma-yon) — foydalanuvchi
+                         so'rovi, 2026-09-05: "textarea oldin kelsin" (ilgari
+                         teskarisi edi — rasm chapda, matn o'ngda; javob
+                         qatorlari — .qform-answer — bilan bir xil andoza).
+                         Ikkalasi ham BIR XIL balandlikda ko'rinishi uchun
+                         ".qform-question-row{align-items:stretch}" (pastga
+                         qarang) — "textareani balandligi rasm va eni-bo'yi
+                         bandligi bilan bir xil bo'lib tursin". -->
                     <div class="qform-question-row">
-                        <div id="qformQuestionImageWidget"></div>
                         <textarea id="qformQuestionText" class="auto-textarea" placeholder="Savol matnini kiriting"></textarea>
+                        <div id="qformQuestionImageWidget"></div>
                     </div>
                 </div>
 
@@ -884,8 +887,8 @@ function buildQformAnswerRowHtml(index) {
     return `
         <div class="qform-answer" data-answer-index="${index}">
             <input type="checkbox" class="qform-correct-checkbox" data-answer-index="${index}">
-            <div class="qform-answer-image-slot" id="qformAnswerImageSlot-${index}"></div>
             <textarea class="auto-textarea qform-answer-text" placeholder="${ANSWER_LETTERS[index]} variantni kiriting..."></textarea>
+            <div class="qform-answer-image-slot" id="qformAnswerImageSlot-${index}"></div>
         </div>
     `;
 }
@@ -1580,10 +1583,6 @@ function resetQuestionFormModal() {
         btn.classList.toggle("hidden", !modalTopicCourseLink);
     });
 
-    document.querySelectorAll(".qform-answer textarea").forEach(t => {
-        t.style.height = "auto";
-        t.style.height = t.scrollHeight + "px";
-    });
 }
 
 async function openQuestionFormModal(mode, questionId) {
@@ -1613,6 +1612,15 @@ async function openQuestionFormModal(mode, questionId) {
     }
 
     document.getElementById("questionFormModal").classList.add("show");
+
+    // Textarea balandligini rasm ustuni bilan tenglashtirish (CSS
+    // "align-items:stretch") — FAQAT modal KO'RINADIGAN bo'lgandan KEYIN
+    // ishlaydi ("clientHeight"/"scrollHeight" modal hali "display:none"
+    // bo'lganda 0 qaytaradi — shu sabab resetQuestionFormModal/
+    // fillQuestionFormModal ICHIDA emas, aynan shu yerda, ".show" qo'shilgandan
+    // KEYIN chaqiriladi).
+    resizeAutoTextarea(document.getElementById("qformQuestionText"));
+    document.querySelectorAll(".qform-answer textarea").forEach(resizeAutoTextarea);
 }
 
 function fillQuestionFormModal(q) {
@@ -1676,10 +1684,6 @@ function fillQuestionFormModal(q) {
         injectCaptions("commentaryRichEditor-shared");
     }
 
-    document.querySelectorAll(".qform-answer textarea").forEach(t => {
-        t.style.height = "auto";
-        t.style.height = t.scrollHeight + "px";
-    });
 }
 
 function closeQuestionFormModal() {
@@ -1708,11 +1712,25 @@ document.addEventListener("click", (e) => {
     document.execCommand("insertHTML", false, buildTopicLinkHtml(modalTopicCourseLink));
 });
 
-// Savol/javob matni auto-height (test-form.js'dagi bilan bir xil).
+// Savol/javob matni auto-height (test-form.js'dagi bilan bir xil), FAQAT
+// "Savol formasi"da (.qform-question-row/.qform-answer) — CSS
+// "align-items:stretch" (question.css) orqali rasm ustuni bilan bir xil
+// balandlikda BOSHLANADI (foydalanuvchi so'rovi, 2026-09-05: "textareani
+// balandligi rasm va eni-bo'yi bandligi bilan bir xil bo'lib tursin").
+// Shu sabab avval inline "height" TOZALANADI (stretch ishlashi uchun),
+// faqat MATN shu balandlikka SIG'MASA (uzun savol/javob) — scrollHeight'ga
+// o'sadi. Oddiy "height=auto keyin scrollHeight" (eski usul) doim QISQA
+// (content-based) balandlik berardi, stretch'ni "yengib" qo'yardi.
+function resizeAutoTextarea(t) {
+    t.style.height = "";
+    if (t.scrollHeight > t.clientHeight) {
+        t.style.height = t.scrollHeight + "px";
+    }
+}
+
 document.addEventListener("input", (e) => {
     if (!e.target.classList.contains("auto-textarea")) return;
-    e.target.style.height = "auto";
-    e.target.style.height = e.target.scrollHeight + "px";
+    resizeAutoTextarea(e.target);
 });
 
 async function saveQuestionForm() {
