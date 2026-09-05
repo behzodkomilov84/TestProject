@@ -109,8 +109,21 @@ label {
     margin-bottom: 14px;
 }
 
-.answer input[type="radio"] {
+.answer input[type="checkbox"] {
     margin-top: 12px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+/* "☑️ Bitta yoki bir nechta to'g'ri javobni belgilang" — radio'dan
+   checkbox'ga o'tilgach (ko'p to'g'ri javobli savollar, foydalanuvchi
+   so'rovi, 2026-09-05) qo'shildi, foydalanuvchi eski "faqat bitta
+   tanlash" odatiga ko'nikkani uchun aniqlik kiritib turadi. */
+.multi-correct-hint {
+    margin: 0 0 12px;
+    font-size: 13px;
+    color: #64748b;
 }
 
 

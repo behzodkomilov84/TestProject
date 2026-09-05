@@ -163,9 +163,16 @@ function renderQuestionsTable(rows) {
 
     rows.forEach((q, index) => {
         const answers = q.answers.slice(0, 5);
-        const correctIndex = answers.findIndex(a => a.isTrue);
-        const correctLetter = correctIndex !== -1 ? letters[correctIndex] : "-";
-        const correctAnswer = answers.find(a => a.isTrue);
+        // Ko'p to'g'ri javobli savollar (foydalanuvchi so'rovi, 2026-09-05,
+        // 3-bosqich) — BARCHA to'g'ri javoblar (ilgari faqat BIRINCHISI,
+        // findIndex/find). "💬" tugmasi va izoh-standart-qiymati hamon
+        // faqat BIRINCHI to'g'ri javobga tayanadi (bitta umumiy izoh
+        // maydoni — Excel importdagi bilan bir xil qoida).
+        const correctAnswers = answers.filter(a => a.isTrue);
+        const correctLetter = correctAnswers.length > 0
+            ? correctAnswers.map(a => letters[answers.indexOf(a)]).join(",")
+            : "-";
+        const correctAnswer = correctAnswers[0];
 
         const row = document.createElement("tr");
         row.dataset.questionId = q.id;  // <-- это ключевое
@@ -203,7 +210,7 @@ function renderQuestionsTable(rows) {
             </td>
             `;
             }).join("")}
-            <td class="correct-letter"><b>${correctLetter}</b></td>
+            <td class="correct-letter">${correctAnswers.length > 1 ? '<span title="Ko\'p to\'g\'ri javobli savol">🔀</span> ' : ''}<b>${correctLetter}</b></td>
             
             <td class="comment-col hidden">
                     <input class="comment-input" type="text">
@@ -745,10 +752,12 @@ function enableInlineEdit(btn) {
         const isCorrect = cell.classList.contains("correct");
         const answerImageUrl = cell.dataset.imageUrl || "";
 
+        // Ilgari radio (faqat BITTA to'g'ri javob) edi — endi checkbox,
+        // ko'p to'g'ri javobli savollarni ham qo'llab-quvvatlash uchun
+        // (foydalanuvchi so'rovi, 2026-09-05, 3-bosqich).
         cell.innerHTML = `
             <label style="display:flex; gap:6px; align-items:center;">
-                <input type="radio"
-                       name="correct-${row.rowIndex}"
+                <input type="checkbox"
                        class="correct-radio"
                        ${isCorrect ? "checked" : ""}>
                 <input type="text"
@@ -759,15 +768,22 @@ function enableInlineEdit(btn) {
             ${buildInlineImageWidget("answer-image", answerImageUrl, "Javob rasmi")}
         `;
     });
-//обработчик radio (КЛЮЧЕВОЕ)
-    const radios = row.querySelectorAll(".correct-radio");
+//обработчик checkbox (КЛЮЧЕВОЕ) — belgi qatori endi BIR NECHTA harfni
+// ("B,D") ko'rsatishi mumkin, shu sabab har bir o'zgarishda BARCHA
+// belgilangan checkbox'lar qayta o'qiladi (faqat o'zgargan bittasi emas).
+    const checkboxes = row.querySelectorAll(".correct-radio");
     const correctLetterCell = row.querySelector(".correct-letter b");
     const letters = ["A", "B", "C", "D", "E"];
 
-    radios.forEach((radio, index) => {
-        radio.addEventListener("change", () => {
-            correctLetterCell.innerText = letters[index];
-        });
+    function updateCorrectLetterDisplay() {
+        const checkedLetters = [...checkboxes]
+            .map((cb, i) => cb.checked ? letters[i] : null)
+            .filter(l => l !== null);
+        correctLetterCell.innerText = checkedLetters.join(",") || "-";
+    }
+
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener("change", updateCorrectLetterDisplay);
     });
 
 
@@ -819,7 +835,10 @@ function saveInlineEdit(btn, questionId) {
     const answerRows = row.querySelectorAll(".answer-cell");
 
     const answers = [];
-    let correctIndex = -1;
+    // Ilgari BITTA "correctIndex" edi — endi bir nechta checkbox
+    // belgilanishi mumkin (ko'p to'g'ri javobli savollar, foydalanuvchi
+    // so'rovi, 2026-09-05, 3-bosqich).
+    const correctIndexes = [];
 
     answerRows.forEach((cell, i) => {
         const input = cell.querySelector(".inline-input");
@@ -830,15 +849,15 @@ function saveInlineEdit(btn, questionId) {
         // bo'lmasligi kerak" tekshiruvi butun saqlashni bloklab qo'yardi.
         if (!input) return;
 
-        const radio = cell.querySelector(".correct-radio");
+        const checkbox = cell.querySelector(".correct-radio");
         const imageWidget = cell.querySelector('.inline-image-upload[data-role="answer-image"]');
 
-        if (radio.checked) correctIndex = i;
+        if (checkbox.checked) correctIndexes.push(i);
 
         answers.push({
             id: Number(input.dataset.answerId),
             answerText: input.value,
-            isTrue: radio.checked,
+            isTrue: checkbox.checked,
             commentary: "",
             imageUrl: imageWidget?.dataset.currentUrl || null,
             commentaryImageUrl: null,
@@ -846,16 +865,23 @@ function saveInlineEdit(btn, questionId) {
         });
     });
 
-    // комментарий (matn + rasm/video) — ТОЛЬКО правильному
+    if (correctIndexes.length === 0) {
+        showAlertModal("❌ Kamida bitta to'g'ri javobni belgilang");
+        return;
+    }
+
+    // Izoh (matn + rasm/video) — bitta umumiy maydon, BARCHA to'g'ri
+    // belgilangan javoblarga qo'llanadi (Excel importdagi bilan bir xil
+    // qoida — 2-bosqich, foydalanuvchi so'rovi, 2026-09-05).
     const comment = row.querySelector(".comment-input")?.value ?? "";
     const commentaryImageWidget = row.querySelector('.inline-commentary-media .inline-image-upload');
     const commentaryVideoWidget = row.querySelector('.inline-commentary-media .inline-video-upload');
 
-    if (correctIndex !== -1) {
-        answers[correctIndex].commentary = comment;
-        answers[correctIndex].commentaryImageUrl = commentaryImageWidget?.dataset.currentUrl || null;
-        answers[correctIndex].commentaryVideoUrl = commentaryVideoWidget?.dataset.currentUrl || null;
-    }
+    correctIndexes.forEach(i => {
+        answers[i].commentary = comment;
+        answers[i].commentaryImageUrl = commentaryImageWidget?.dataset.currentUrl || null;
+        answers[i].commentaryVideoUrl = commentaryVideoWidget?.dataset.currentUrl || null;
+    });
 
     const payload = {
         id: questionId,

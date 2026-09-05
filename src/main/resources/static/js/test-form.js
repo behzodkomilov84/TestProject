@@ -260,14 +260,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const questionText = document.getElementById("question").value.trim();
 
         const answersBlocks = document.querySelectorAll(".answer");
-        const correctRadio = document.querySelector("input[name='correct']:checked");
+        // Ilgari BITTA radio edi — endi bir nechta checkbox belgilanishi
+        // mumkin (ko'p to'g'ri javobli savollar, foydalanuvchi so'rovi,
+        // 2026-09-05, 3-bosqich).
+        const correctIndexes = [...document.querySelectorAll("input[name='correct']:checked")]
+            .map(cb => Number(cb.value));
 
-        if (!correctRadio) {
-            showAlertModal("❌ To‘g‘ri javobni tanlang");
+        if (correctIndexes.length === 0) {
+            showAlertModal("❌ Kamida bitta to'g'ri javobni tanlang");
             return;
         }
-
-        const correctIndex = Number(correctRadio.value);
 
         // ================= Валидация ответов =================
         const texts = [];
@@ -300,18 +302,20 @@ document.addEventListener("DOMContentLoaded", () => {
             const commentaryImageBlock = block.querySelector('.image-upload[data-role="commentary-image"]');
             const commentaryVideoBlock = block.querySelector('.video-upload[data-role="commentary-video"]');
 
+            const isCorrect = correctIndexes.includes(index);
+
             return {
                 answerText,
-                isTrue: index === correctIndex,
-                commentary: index === correctIndex
+                isTrue: isCorrect,
+                commentary: isCorrect
                     ? commentaryTextarea?.value.trim() || null
                     : null,
                 imageUrl: imageUploadBlock ? getImageUrl(imageUploadBlock) : null,
-                // Izohga (faqat to'g'ri javobga) qo'shilgan rasm/video — matn bilan birga.
-                commentaryImageUrl: index === correctIndex && commentaryImageBlock
+                // Izohga (faqat to'g'ri javob(lar)ga) qo'shilgan rasm/video — matn bilan birga.
+                commentaryImageUrl: isCorrect && commentaryImageBlock
                     ? getImageUrl(commentaryImageBlock)
                     : null,
-                commentaryVideoUrl: index === correctIndex && commentaryVideoBlock
+                commentaryVideoUrl: isCorrect && commentaryVideoBlock
                     ? getVideoUrl(commentaryVideoBlock)
                     : null
             };
@@ -362,20 +366,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 
+// Ilgari radio edi — bitta belgilanganda QOLGAN barcha "✏️Izoh"
+// tugmalari/qutilari yashirilardi (bir vaqtda faqat BITTASI to'g'ri
+// bo'lishi mumkin edi). Endi checkbox — har biri MUSTAQIL: belgilansa
+// o'zining "✏️Izoh" tugmasi chiqadi, belgi olib tashlansa faqat O'ZINING
+// tugmasi/qutisi yashiriladi, boshqalariga tegilmaydi (ko'p to'g'ri
+// javobli savollar, foydalanuvchi so'rovi, 2026-09-05, 3-bosqich).
 document.addEventListener("change", (e) => {
-    if (e.target.type !== "radio" || e.target.name !== "correct") return;
+    if (e.target.type !== "checkbox" || e.target.name !== "correct") return;
 
-    const allAnswers = document.querySelectorAll(".answer");
+    const answer = e.target.closest(".answer");
+    const commentBtn = answer.querySelector(".comment-btn");
+    const commentaryBox = answer.querySelector(".commentary-box");
 
-    // скрываем всё — izoh faqat to'g'ri javobga tegishli bo'lishi kerak
-    allAnswers.forEach(answer => {
-        answer.querySelector(".comment-btn")?.classList.add("hidden");
-        answer.querySelector(".commentary-box")?.classList.add("hidden");
-    });
-
-    // показываем кнопку только у выбранного
-    const selectedAnswer = e.target.closest(".answer");
-    selectedAnswer.querySelector(".comment-btn")?.classList.remove("hidden");
+    if (e.target.checked) {
+        commentBtn?.classList.remove("hidden");
+    } else {
+        commentBtn?.classList.add("hidden");
+        commentaryBox?.classList.add("hidden");
+    }
 });
 
 document.addEventListener("click", (e) => {

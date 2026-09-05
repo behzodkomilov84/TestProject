@@ -74,9 +74,15 @@
         <!-- Ответы -->
         <div class="answers">
             <h3>Javob variantlari</h3>
+            <!-- Ilgari radio (faqat BITTA to'g'ri javob) edi — endi checkbox,
+                 ko'p to'g'ri javobli savollarni ham qo'llab-quvvatlash
+                 uchun (foydalanuvchi so'rovi, 2026-09-05: "javoblarining
+                 bir nechtasi to'g'ri" testlar, 3-bosqich). Bir nechtasi
+                 belgilansa — HAMMASI to'g'ri hisoblanadi. -->
+            <p class="multi-correct-hint">☑️ Bitta yoki bir nechta to'g'ri javobni belgilang</p>
 
             <div class="answer">
-                <input type="radio" name="correct" value="0" required>
+                <input type="checkbox" name="correct" value="0">
                 <textarea class="auto-textarea" name="answers[0]" placeholder="A variantni kiriting..." required></textarea>
                 <div class="image-upload" data-role="answer-image">
                     <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" hidden>
@@ -109,7 +115,7 @@
             </div>
 
             <div class="answer">
-                <input type="radio" name="correct" value="1">
+                <input type="checkbox" name="correct" value="1">
                 <textarea class="auto-textarea" name="answers[1]" placeholder="B variantni kiriting..." required></textarea>
                 <div class="image-upload" data-role="answer-image">
                     <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" hidden>
@@ -142,7 +148,7 @@
             </div>
 
             <div class="answer">
-                <input type="radio" name="correct" value="2">
+                <input type="checkbox" name="correct" value="2">
                 <textarea class="auto-textarea" name="answers[2]" placeholder="C variantni kiriting..." required></textarea>
                 <div class="image-upload" data-role="answer-image">
                     <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" hidden>
@@ -175,7 +181,7 @@
             </div>
 
             <div class="answer">
-                <input type="radio" name="correct" value="3">
+                <input type="checkbox" name="correct" value="3">
                 <textarea class="auto-textarea" name="answers[3]" placeholder="D variantni kiriting..." required></textarea>
                 <div class="image-upload" data-role="answer-image">
                     <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" hidden>
@@ -208,7 +214,7 @@
             </div>
 
             <div class="answer">
-                <input type="radio" name="correct" value="4">
+                <input type="checkbox" name="correct" value="4">
                 <textarea class="auto-textarea" name="answers[4]" placeholder="E variantni kiriting..." required></textarea>
                 <div class="image-upload" data-role="answer-image">
                     <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="image-input" hidden>
