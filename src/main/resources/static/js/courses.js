@@ -18,6 +18,20 @@ const expandedFieldKeys = new Set();
 // ekanini qayta qidirishga majbur bo'lardi).
 let focusCourseId = Number(new URLSearchParams(window.location.search).get("focus")) || null;
 
+// Klaviatura navigatsiyasi (←/→/↑/↓/Home/End/Ctrl+↑/↓) va o'ng tugma
+// bilan belgilash uchun — courseDetail.js#selectedSectionId bilan bir
+// xil g'oya (foydalanuvchi so'rovi, 2026-09-05: "navigatsiyani kurslarning
+// barcha iyerarxiyasiga qo'sh"). ".course-card.selected" CSS klassi
+// orqali ko'rsatiladi — brauzerning standart :focus halqasiga emas.
+let selectedCourseId = null;
+
+// Sahifa birinchi ochilganda — bir marta: "?focus=" bo'lsa o'sha
+// kartaga, bo'lmasa BIRINCHI (orderIndex bo'yicha) Yo'nalishning
+// birinchi kursiga default tanlov qo'yiladi (courseDetail.js#
+// pendingFocusApplied bilan bir xil g'oya) — keyingi qayta chizishlarda
+// (masalan Yo'nalish ochish/yopish) takrorlanmaydi.
+let pendingDefaultCourseSelectionApplied = false;
+
 document.addEventListener("DOMContentLoaded", () => {
     if (CAN_CREATE_COURSE) {
         document.querySelectorAll(".owner-only-el").forEach(el => el.style.display = "");
@@ -124,16 +138,29 @@ function renderGroupedCourses() {
     grid.innerHTML = groups.map(g => renderFieldBox(g, realFieldGroups)).join("");
 
     if (focusCourseId != null) {
-        const card = document.getElementById(`course-card-${focusCourseId}`);
-        if (card) {
-            card.scrollIntoView({ behavior: "smooth", block: "center" });
-            card.classList.add("course-card-focused");
-            setTimeout(() => card.classList.remove("course-card-focused"), 2000);
-        }
+        const targetId = focusCourseId;
         // Faqat BIRINCHI render'da qo'llaniladi — keyingi qayta chizishlarda
         // (masalan boshqa Yo'nalishni ochish/yopish) foydalanuvchini
         // qaytadan shu kartaga tashlab yubormaslik uchun.
         focusCourseId = null;
+        pendingDefaultCourseSelectionApplied = true;
+
+        selectCourseCard(targetId, { scroll: true });
+        const card = document.getElementById(`course-card-${targetId}`);
+        if (card) {
+            card.classList.add("course-card-focused");
+            setTimeout(() => card.classList.remove("course-card-focused"), 2000);
+        }
+    } else if (!pendingDefaultCourseSelectionApplied) {
+        // "?focus=" bo'lmasa — BIRINCHI (orderIndex bo'yicha) DARSI... ya'ni
+        // KURSI BOR Yo'nalishning birinchi kursi default tanlanadi
+        // (courseDetail.js#selectFirstCardByDefault bilan bir xil g'oya —
+        // foydalanuvchi so'rovi, 2026-09-05).
+        pendingDefaultCourseSelectionApplied = true;
+        const firstGroupWithItems = groups.find(g => g.items.length > 0);
+        if (firstGroupWithItems) {
+            selectCourseCard(firstGroupWithItems.items[0].id);
+        }
     }
 }
 
@@ -145,6 +172,146 @@ function toggleFieldBox(key) {
     }
     renderGroupedCourses();
 }
+
+// Kartani "tanlangan" deb belgilaydi — courseDetail.js#selectCard bilan
+// AYNAN bir xil g'oya (foydalanuvchi so'rovi, 2026-09-05: "navigatsiyani
+// kurslarning barcha iyerarxiyasiga qo'sh"). Karta hozir YOPIQ Yo'nalish
+// qutisi ichida bo'lishi mumkin — shu holatda avval o'sha guruhni ochib
+// qayta chizamiz, keyin yana qidiramiz.
+function selectCourseCard(courseId, { scroll = false } = {}) {
+    selectedCourseId = courseId;
+
+    let el = document.getElementById(`course-card-${courseId}`);
+    if (!el) {
+        const c = allCourses.find(x => x.id === courseId);
+        if (c) {
+            const key = c.fieldId != null ? String(c.fieldId) : "none";
+            if (!expandedFieldKeys.has(key)) {
+                expandedFieldKeys.add(key);
+                renderGroupedCourses();
+                el = document.getElementById(`course-card-${courseId}`);
+            }
+        }
+    }
+
+    document.querySelectorAll(".course-card.selected").forEach(x => x.classList.remove("selected"));
+    if (el) {
+        el.classList.add("selected");
+        el.focus({ preventScroll: !scroll });
+        if (scroll) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+}
+
+// ←/→ va oddiy ↑/↓ — bitta Yo'nalish ICHIDA kursdan-kursga (sahifalash
+// yo'q, shu sabab ↑/↓ ham ←/→ bilan bir xil — courseDetail.js'dagi
+// "sahifalar orasida" tushunchasi bu yerda yo'q).
+function moveCourseSelection(courseId, dir) {
+    const groups = getSortedFieldGroups();
+    const group = groups.find(g => g.items.some(c => c.id === courseId));
+    if (!group) return;
+
+    const idx = group.items.findIndex(c => c.id === courseId);
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= group.items.length) return;
+
+    selectCourseCard(group.items[newIdx].id, { scroll: true });
+}
+
+// Ctrl+↑ / Ctrl+↓ — Yo'nalishlar ORASIDA o'tadi (courseDetail.js#
+// moveToAdjacentChapter bilan bir xil g'oya) — bo'sh (hali kursi yo'q)
+// Yo'nalishlar avtomatik o'tkazib yuboriladi (tanlanadigan kursi yo'q).
+function moveToAdjacentField(courseId, dir) {
+    const groups = getSortedFieldGroups();
+    const idx = groups.findIndex(g => g.items.some(c => c.id === courseId));
+    if (idx === -1) return;
+
+    let newIdx = idx + dir;
+    while (newIdx >= 0 && newIdx < groups.length && groups[newIdx].items.length === 0) {
+        newIdx += dir;
+    }
+    if (newIdx < 0 || newIdx >= groups.length) return;
+
+    expandedFieldKeys.add(groups[newIdx].key);
+    selectCourseCard(groups[newIdx].items[0].id, { scroll: true });
+}
+
+// Home/End — joriy Yo'nalishning birinchi/oxirgi kursiga.
+function moveCourseToFirst(courseId) {
+    const groups = getSortedFieldGroups();
+    const group = groups.find(g => g.items.some(c => c.id === courseId));
+    if (!group || group.items.length === 0) return;
+    selectCourseCard(group.items[0].id, { scroll: true });
+}
+
+function moveCourseToLast(courseId) {
+    const groups = getSortedFieldGroups();
+    const group = groups.find(g => g.items.some(c => c.id === courseId));
+    if (!group || group.items.length === 0) return;
+    selectCourseCard(group.items[group.items.length - 1].id, { scroll: true });
+}
+
+// Enter — tanlangan kartaga "kirish" (sichqon bilan bosgandagi bilan
+// bir xil xulq-atvor).
+function openSelectedCourseCard(courseId) {
+    location.href = `/courses/${courseId}`;
+}
+
+function onCourseCardKeyDown(event, courseId) {
+    switch (event.key) {
+        case "ArrowRight":
+            event.preventDefault();
+            moveCourseSelection(courseId, 1);
+            break;
+        case "ArrowLeft":
+            event.preventDefault();
+            moveCourseSelection(courseId, -1);
+            break;
+        case "ArrowDown":
+            event.preventDefault();
+            if (event.ctrlKey || event.metaKey) {
+                moveToAdjacentField(courseId, 1);
+            } else {
+                moveCourseSelection(courseId, 1);
+            }
+            break;
+        case "ArrowUp":
+            event.preventDefault();
+            if (event.ctrlKey || event.metaKey) {
+                moveToAdjacentField(courseId, -1);
+            } else {
+                moveCourseSelection(courseId, -1);
+            }
+            break;
+        case "Home":
+            event.preventDefault();
+            moveCourseToFirst(courseId);
+            break;
+        case "End":
+            event.preventDefault();
+            moveCourseToLast(courseId);
+            break;
+        case "Enter":
+            event.preventDefault();
+            openSelectedCourseCard(courseId);
+            break;
+    }
+}
+
+// "⌨️" belgisi bosilganda — klaviatura-yo'riqnoma pufakchasini
+// ochadi/yopadi (courseDetail.js#toggleKbdHint bilan bir xil andoza).
+function toggleCourseKbdHint(badgeEl) {
+    const card = badgeEl.closest(".course-card");
+    if (!card) return;
+    const wasOpen = card.classList.contains("kbd-hint-open");
+    document.querySelectorAll(".course-card.kbd-hint-open").forEach(el => el.classList.remove("kbd-hint-open"));
+    if (!wasOpen) card.classList.add("kbd-hint-open");
+}
+
+document.addEventListener("click", (e) => {
+    if (!e.target.closest(".kbd-hint-badge")) {
+        document.querySelectorAll(".course-card.kbd-hint-open").forEach(el => el.classList.remove("kbd-hint-open"));
+    }
+});
 
 function renderFieldBox(group, realFieldGroups) {
     const isExpanded = expandedFieldKeys.has(group.key);
@@ -237,11 +404,14 @@ function renderCourseCard(c, idx, total, fieldId) {
         ? `<img class="course-card-cover" src="${c.coverImageUrl}" alt="">`
         : `<div class="course-card-cover"></div>`;
 
+    const isSelected = c.id === selectedCourseId;
+
     return `
-        <div class="course-card" id="course-card-${c.id}" tabindex="0"
-             onclick="location.href='/courses/${c.id}'"
-             oncontextmenu="event.preventDefault(); this.focus();"
-             title="O'ng tugma — ichiga kirmasdan belgilash">
+        <div class="course-card ${isSelected ? "selected" : ""}" id="course-card-${c.id}" tabindex="0"
+             onclick="selectCourseCard(${c.id}); location.href='/courses/${c.id}'"
+             oncontextmenu="event.preventDefault(); selectCourseCard(${c.id});"
+             onkeydown="onCourseCardKeyDown(event, ${c.id})">
+            <span class="kbd-hint-badge" onclick="event.stopPropagation(); toggleCourseKbdHint(this)" title="Klaviatura yorliqlari">⌨️</span>
             ${cover}
             <div class="course-card-body">
                 <h3 class="course-card-title">${escapeHtml(c.title)}</h3>
