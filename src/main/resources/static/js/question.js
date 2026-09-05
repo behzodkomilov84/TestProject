@@ -934,12 +934,15 @@ async function deleteQuestion(questionId) {
     }
 }
 
-// "← MAVZUGA QAYTISH" — TEST BOSHQARUVI'dagi ("/topics") ANIQ shu mavzu
+// "← DARSGA QAYTISH" — TEST BOSHQARUVI'dagi ("/topics") ANIQ shu dars
 // qatoriga qaytaradi (oldin history.back() edi — ba'zan foydalanuvchi
 // kutgan joyga emas, tasodifiy oldingi sahifaga olib borardi; test-form.js
 // #backBtn bilan bir xil yechim). "?focus=" orqali topic.js'ga qaysi
-// mavzuga fokus tushishi kerakligi ham beriladi (topic.js#afterStartPage).
+// darsga fokus tushishi kerakligi ham beriladi (topic.js#afterStartPage).
 // Fetch muvaffaqiyatsiz bo'lsa — history.back() eskicha fallback.
+// (Tugma matni ilgari "Mavzuga qaytish" edi — bu noto'g'ri edi, chunki
+// bu yerdan haqiqatda Darsga (Topic) qaytiladi, Mavzuga (TopicSection)
+// emas — foydalanuvchi so'rovi, 2026-09-05.)
 function goBack() {
     fetch(`/api/topic/${topicId}/location`)
         .then(r => r.ok ? r.json() : null)

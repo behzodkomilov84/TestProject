@@ -107,7 +107,6 @@ h1 {
 .wrapper {
     width: min(1600px, 90vw);
     margin: 0 auto 24px;
-    max-height: 75vh;
 }
 
 /* Ro'yxat konteyneri — GRID, lekin BITTA USTUN (column) — har bir
@@ -122,6 +121,7 @@ h1 {
     border: 1px solid #444;
     border-radius: 8px;
     padding: 14px;
+    margin-bottom: 24px;
     background-color: #f4f6f9;
     color: #000;
     align-content: start;
