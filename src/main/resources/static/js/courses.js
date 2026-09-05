@@ -231,7 +231,12 @@ function moveToAdjacentField(courseId, dir) {
     }
     if (newIdx < 0 || newIdx >= groups.length) return;
 
-    expandedFieldKeys.add(groups[newIdx].key);
+    // Guruhni ochish selectCourseCard()'ning O'ZIGA qoldiriladi — u
+    // faqat kerak bo'lsagina (hali ochilmagan bo'lsa) qo'shib, qayta
+    // chizadi. Bu yerda oldindan qo'shib qo'yish xato edi: keyin
+    // selectCourseCard "allaqachon ochiq" deb hisoblab, render()'ni
+    // UMUMAN chaqirmay qoldirardi — karta hech qachon DOM'ga chiqmasdi
+    // (haqiqiy topilgan bug, foydalanuvchi so'rovi, 2026-09-05).
     selectCourseCard(groups[newIdx].items[0].id, { scroll: true });
 }
 
