@@ -1,6 +1,14 @@
 const params = new URLSearchParams(window.location.search);
 const topicId = params.get("topicId");
 
+// science.js'dagi "🔍 Bo'lim ichida qidiruv" natijalaridagi "👁️ Ko'rish"/
+// "✏️ Tahrirlash" tugmalaridan kelinganda — aynan qaysi savolga
+// e'tibor qaratish kerakligini bildiradi (foydalanuvchi so'rovi,
+// 2026-09-05). "focus" — qatorga scroll+yorqinlashtirish (view),
+// "edit" — to'g'ridan-to'g'ri "Savol formasi" tahrirlash rejimida ochiladi.
+const focusQuestionId = params.get("focus");
+const editQuestionId = params.get("edit");
+
 let questions = null;
 
 let currentPage = 0;
@@ -17,9 +25,33 @@ if (!topicId) {
     document.querySelector("#questionsTable tbody").innerHTML =
         "<tr><td colspan='11'>❌ topicId yuborilmagan</td></tr>";
 } else {
-    loadAllQuestions();
+    // ".then" — DASTLABKI yuklashdan KEYIN, jadval allaqachon chizilgan
+    // bo'lganda ISHGA TUSHIRILISHI kerak (aks holda tr[data-question-id]
+    // hali DOM'da yo'q bo'ladi). Faqat BIR MARTA (sahifa birinchi
+    // ochilganda) — keyingi qayta yuklashlarda (o'chirish, qidiruv va h.k.)
+    // takrorlanmaydi.
+    loadAllQuestions().then(() => handleIncomingFocusOrEdit());
     loadTopicName();
     refreshQuestionTrashBadge();
+}
+
+// science.js qidiruv natijasidan "?focus=<id>" yoki "?edit=<id>" bilan
+// kelinganda — DOMContentLoaded ichida "Savol formasi" modali
+// (buildQuestionFormModalHtml) ALLAQACHON DOM'ga qo'shilgan bo'lishi kerak
+// (bu funksiya loadAllQuestions() ning fetch'i tugagandan KEYIN chaqiriladi,
+// bu esa DOMContentLoaded'dan doim KEYINROQ sodir bo'ladi).
+function handleIncomingFocusOrEdit() {
+    if (editQuestionId) {
+        openQuestionFormModal("edit", Number(editQuestionId));
+        return;
+    }
+    if (focusQuestionId) {
+        const row = document.querySelector(`tr[data-question-id="${focusQuestionId}"]`);
+        if (!row) return;
+        row.scrollIntoView({ behavior: "smooth", block: "center" });
+        row.classList.add("question-row-flash");
+        setTimeout(() => row.classList.remove("question-row-flash"), 2600);
+    }
 }
 
 // "🗑️ O'chirilganlar" tugmasidagi hisoblagich (bildirishnoma belgisi bilan

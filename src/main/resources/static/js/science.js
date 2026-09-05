@@ -754,24 +754,57 @@ function renderScienceSearchResults(list) {
         return;
     }
 
+    // Har bir natijaga "👁️ Ko'rish"/"✏️ Tahrirlash" tugmalari qo'shildi
+    // (foydalanuvchi so'rovi, 2026-09-05) — ikkalasi ham TO'G'RIDAN-TO'G'RI
+    // TEST BOSHQARUVIning Savollar sahifasiga (question.html) o'tkazadi,
+    // aynan shu savolga qaratilgan holda (question.js#handleIncomingFocusOrEdit
+    // "?focus="/"?edit=" ni o'qiydi). Qatorning O'ZIGA bosilsa — ilgaridek
+    // Darsga (topics.html) o'tiladi (goToScienceSearchResult).
     resultsBox.innerHTML = list.map(q => `
         <div class="science-search-result-row" tabindex="0"
              onclick="goToScienceSearchResult(${q.topicId}, ${q.sectionId ?? 'null'})"
              onkeydown="if(event.key==='Enter') goToScienceSearchResult(${q.topicId}, ${q.sectionId ?? 'null'})">
-            <div class="science-search-result-text">${escapeHtml(q.questionText)}</div>
-            <div class="science-search-result-meta">${escapeHtml(q.topicName)}${q.sectionName ? ` · ${escapeHtml(q.sectionName)}` : ""}</div>
+            <div class="science-search-result-main">
+                <div class="science-search-result-text">${escapeHtml(q.questionText)}</div>
+                <div class="science-search-result-meta">${escapeHtml(q.topicName)}${q.sectionName ? ` · ${escapeHtml(q.sectionName)}` : ""}</div>
+            </div>
+            <div class="science-search-result-actions">
+                <button type="button" class="science-search-action-btn view"
+                    onclick="event.stopPropagation(); viewScienceSearchResult(${q.topicId}, ${q.id})"
+                    title="Savolni ko'rish">👁️</button>
+                <button type="button" class="science-search-action-btn edit"
+                    onclick="event.stopPropagation(); editScienceSearchResult(${q.topicId}, ${q.id})"
+                    title="Savolni tahrirlash">✏️</button>
+            </div>
         </div>
     `).join("");
 }
 
-// Natijaga bosilganda — TEST BOSHQARUVIga (topics.html) aynan shu
-// Darsning haqiqiy Mavzusi bilan filtrlangan holda va unga fokus
-// qilingan holda o'tkazadi (topic.js#afterStartPage "?focus=" ni allaqachon
-// qo'llab-quvvatlaydi — topic.js#goToTopicInManagement bilan bir xil g'oya).
+// Natijaning O'ZIGA (matn qismiga) bosilganda — TEST BOSHQARUVIga
+// (topics.html) aynan shu Darsning haqiqiy Mavzusi bilan filtrlangan
+// holda va unga fokus qilingan holda o'tkazadi (topic.js#afterStartPage
+// "?focus=" ni allaqachon qo'llab-quvvatlaydi — topic.js#goToTopicInManagement
+// bilan bir xil g'oya).
 function goToScienceSearchResult(topicId, sectionId) {
     const params = new URLSearchParams({ scienceId: scienceSearchScienceId, focus: topicId });
     if (sectionId) params.set("sectionId", sectionId);
     window.location.href = `/topics?${params}`;
+}
+
+// "👁️ Ko'rish" — to'g'ridan-to'g'ri shu Darsning Savollar sahifasiga
+// (question.html) o'tkazadi va aynan shu savol qatoriga scroll+
+// yorqinlashtirish bilan e'tibor qaratadi (question.js
+// #handleIncomingFocusOrEdit, "?focus=" orqali).
+function viewScienceSearchResult(topicId, questionId) {
+    window.location.href = `/question?topicId=${topicId}&focus=${questionId}`;
+}
+
+// "✏️ Tahrirlash" — xuddi shu sahifaga o'tkazadi, lekin "?edit=" orqali —
+// sahifa ochilishi bilan aynan shu savolning "Savol formasi" tahrirlash
+// modali avtomatik ochiladi (question.js#openQuestionFormModal("edit", id)
+// bilan bir xil, faqat sahifa yuklanishidan keyin).
+function editScienceSearchResult(topicId, questionId) {
+    window.location.href = `/question?topicId=${topicId}&edit=${questionId}`;
 }
 
 function hasDuplicate(currentIndex, name) {

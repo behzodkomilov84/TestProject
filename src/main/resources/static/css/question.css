@@ -786,6 +786,20 @@ td label{
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+/* science.js'dagi "🔍 Bo'lim ichida qidiruv" natijasidagi "👁️ Ko'rish"
+   tugmasidan "?focus=<id>" bilan kelinganda — aynan shu savol qatoriga
+   e'tiborni tortish uchun vaqtinchalik "yorqinlashtirish" (question.js
+   #handleIncomingFocusOrEdit, topic.js'dagi qatorga fokus qilish g'oyasi
+   bilan bir xil, faqat bu yerda jadval qatori bo'lgani uchun rang bilan). */
+@keyframes questionRowFlash {
+    0%   { background-color: #fef9c3; }
+    100% { background-color: transparent; }
+}
+
+.question-row-flash {
+    animation: questionRowFlash 2.5s ease-out;
+}
+
 .word-export-modal {
     width: min(480px, 90vw);
     height: auto;
