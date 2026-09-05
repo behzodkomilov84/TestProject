@@ -1416,13 +1416,21 @@ function renderSectionCard(s, globalIndexById, displayNumber, groupBounds) {
              data-section-id="${s.id}"
              tabindex="0"
              onkeydown="onCardKeyDown(event, ${s.id})"${cardClick}${cardContextMenu}>
-            <span class="kbd-hint-badge" onclick="event.stopPropagation(); toggleKbdHint(this)" title="Klaviatura yorliqlari">⌨️</span>
             <div class="section-item-top">
                 <div class="section-item-badges">
                     <div class="${indexClass}">${indexIcon}</div>
                     <span class="section-type-icon">${typeIcon}</span>
                     ${s.locked ? '<span class="section-type-icon">🔒</span>' : ""}
                     ${questionCountBadge}
+                    <!-- "⌨️" belgisi shu qatorning ENG OXIRIGA ko'chirildi —
+                         ilgari kartaning TEPASIGA (position:absolute,
+                         top:10px;right:10px) qo'yilgan edi, bu "📝 N ta
+                         test" belgisi bilan TO'QNASHARDI (haqiqiy
+                         foydalanuvchi shikoyati, 2026-09-05: "Kurslardagi
+                         Darslar sahifasida ham xuddi shunday tekshirib
+                         chiq" — Yo'nalishlar sahifasidagi bilan bir xil
+                         sinf muammo). Endi oddiy oqim (flex) ichida. -->
+                    <span class="kbd-hint-badge" onclick="event.stopPropagation(); toggleKbdHint(this)" title="Klaviatura yorliqlari">⌨️</span>
                 </div>
                 ${titleEl}
             </div>

@@ -1362,6 +1362,16 @@ body {
     z-index: 31;
 }
 
+/* Dars kartochkasida belgi endi ".section-item-badges" qatorining O'ZIDA
+   (oddiy oqim ichida, "📝 N ta test" belgisidan keyin) — yuqoridagi
+   absolyut pozitsiya (top:10px;right:10px) shu belgi bilan TO'QNASHARDI
+   (haqiqiy foydalanuvchi shikoyati, 2026-09-05: field-card'dagi bilan
+   bir xil sinf muammo). */
+.section-item-badges .kbd-hint-badge {
+    position: static;
+    opacity: 0.5;
+}
+
 .section-item:hover .kbd-hint-badge,
 .section-item:focus .kbd-hint-badge,
 .course-card:hover .kbd-hint-badge,
