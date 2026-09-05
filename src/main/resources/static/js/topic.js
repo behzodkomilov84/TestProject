@@ -395,10 +395,10 @@ async function loadTopicTrash() {
             return;
         }
         list.innerHTML = items.map(t => `
-            <div class="row">
-                <div>${escapeHtml(t.name)} (${t.questionCount} ta test) — ${formatTopicTrashDate(t.deletedAt)}da o'chirilgan</div>
-                <div class="row-actions">
-                    <button onclick="restoreTopic(${t.id})">♻️ Tiklash</button>
+            <div class="trash-row">
+                <div class="trash-row-info">${escapeHtml(t.name)} (${t.questionCount} ta test) — ${formatTopicTrashDate(t.deletedAt)}da o'chirilgan</div>
+                <div class="trash-row-actions">
+                    <button class="restore-btn" onclick="restoreTopic(${t.id})">♻️ Tiklash</button>
                     <button class="danger-btn" onclick="permanentlyDeleteTopic(${t.id}, ${JSON.stringify(t.name).replace(/"/g, "&quot;")})">🗑️ Butunlay o'chirish</button>
                 </div>
             </div>
@@ -507,15 +507,15 @@ async function loadQuestionScienceTrash() {
                     ? `${escapeHtml(q.sectionName)} → ${escapeHtml(q.topicName)}`
                     : escapeHtml(q.topicName);
                 return `
-            <div class="row">
+            <div class="trash-row">
                 <input type="checkbox" class="science-trash-select-checkbox" data-question-id="${q.id}" onchange="onScienceTrashCheckboxChange(${q.id}, this)">
-                <div>
+                <div class="trash-row-info">
                     ${escapeHtml(q.questionText)}<br>
                     <span class="topic-section-badge">${location}</span>
                     <span style="color:#94a3b8; font-size:12px;"> — ${formatQuestionTrashDate(q.deletedAt)}da o'chirilgan</span>
                 </div>
-                <div class="row-actions">
-                    <button onclick="restoreScienceTrashQuestion(${q.id})">♻️ Tiklash</button>
+                <div class="trash-row-actions">
+                    <button class="restore-btn" onclick="restoreScienceTrashQuestion(${q.id})">♻️ Tiklash</button>
                     <button class="danger-btn" onclick="permanentlyDeleteScienceTrashQuestion(${q.id})">🗑️ Butunlay o'chirish</button>
                 </div>
             </div>
