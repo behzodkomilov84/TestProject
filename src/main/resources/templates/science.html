@@ -41,7 +41,14 @@
     <span id="fieldScopeName" class="field-scope-name"></span>
 </div>
 
-<h1 id="pageTitle">Bo'limlar</h1>
+<!-- fieldId bilan (bitta Yo'nalish ichida) ko'rsatilganda — "+ ➕ Yangi
+     bo'lim" va "(N ta bo'lim)" endi SHU qatorga chiqadi (pastdagi
+     accordion sarlavhasidan OLIB TASHLANADI — foydalanuvchi so'rovi,
+     2026-09-05), #pageTitleActions'ni science.js#render to'ldiradi. -->
+<div class="page-title-row">
+    <h1 id="pageTitle">Bo'limlar</h1>
+    <div id="pageTitleActions" class="page-title-actions hidden"></div>
+</div>
 
 <!-- ОСНОВНОЙ КОНТЕЙНЕР -->
 <div class="wrapper">

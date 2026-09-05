@@ -29,6 +29,37 @@ h1 {
     text-align: center;
 }
 
+/* "Bo'limlar" sarlavhasi + (fieldId bilan ko'rsatilganda) "(N ta bo'lim)"
+   va "➕ Yangi bo'lim" — BITTA gorizontal qatorda, o'rtasi bo'sh
+   (space-between) — foydalanuvchi so'rovi, 2026-09-05: bular ilgari
+   pastdagi accordion sarlavhasida edi. #pageTitleActions bo'sh/hidden
+   bo'lsa (masalan fieldId'siz eski sahifada) — <h1> avvalgidek MARKAZDA
+   qoladi (h1 { text-align:center } o'zgarishsiz ishlaydi). */
+.page-title-row {
+    width: min(1600px, 90vw);
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.page-title-row #pageTitle {
+    text-align: left;
+    margin: 0;
+}
+
+.page-title-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.page-title-actions .chapter-box-count {
+    white-space: nowrap;
+}
+
 /* "Mavzular" sarlavhasi yonidagi qisqacha statistika — "(N ta — M tasi
    kursga bog'langan, K tasi bog'lanmagan)" (topics.html, topic.js#
    updateTopicsSummary). Sarlavhadan ajralib turadigan yumshoqroq rang

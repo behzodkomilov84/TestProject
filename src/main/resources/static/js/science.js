@@ -306,6 +306,7 @@ function render() {
     const groups = getSortedFieldGroups();
     const realFieldGroups = groups.filter(g => g.fieldId != null);
     list.innerHTML = groups.map(g => renderFieldGroupBox(g, realFieldGroups)).join("");
+    renderPageTitleActions(groups);
 
     if (focusIndex !== null) {
         const input = document.getElementById(`input-${focusIndex}`);
@@ -316,6 +317,34 @@ function render() {
         }
         focusIndex = null;
     }
+}
+
+// fieldId bilan (bitta Yo'nalish ichida) ko'rsatilganda — "(N ta bo'lim)"
+// va "➕" endi <h1>"Bo'limlar" bilan BIR QATORDA, o'ng tomonda chiqadi
+// (pastdagi accordion sarlavhasidan olib tashlangan — foydalanuvchi
+// so'rovi, 2026-09-05). fieldId'siz (eski, filtrsiz) sahifada bu qator
+// bo'sh/yashirin qoladi — u yerda BIR NECHTA guruh bo'lishi mumkin, shu
+// sabab "yagona" yuqori tugma ma'nosiz (har bir guruh o'zining ➕'sini
+// saqlab qoladi, renderFieldGroupBox).
+function renderPageTitleActions(groups) {
+    const el = document.getElementById("pageTitleActions");
+    if (!el) return;
+
+    if (pageFieldId === undefined) {
+        el.classList.add("hidden");
+        el.innerHTML = "";
+        return;
+    }
+
+    const group = groups[0]; // scoped rejimda har doim ANIQ bitta guruh
+    const count = group ? group.items.length : 0;
+    const fieldIdArg = pageFieldId === null ? "null" : pageFieldId;
+
+    el.innerHTML = `
+        <span class="chapter-box-count">(${count} ta bo'lim)</span>
+        <button class="chapter-rename-btn" onclick="addToGroup(${fieldIdArg})" title="Yangi bo'lim qo'shish">➕ Yangi bo'lim</button>
+    `;
+    el.classList.remove("hidden");
 }
 
 function fieldKeyOf(s) {
@@ -383,8 +412,11 @@ function renderFieldGroupBox(group, realFieldGroups) {
     // "+Add" global tugmasi o'rniga — har bir Yo'nalish qutisining O'Z
     // action'lariga ➕ qo'shildi (foydalanuvchi so'rovi, 2026-09-05):
     // bosilganda yangi Bo'lim DARHOL shu Yo'nalishga (yoki "Yo'nalishsiz"
-    // psevdo-guruhga) tegishli holda ochiladi.
-    const addBtn = `<button class="chapter-rename-btn" onclick="event.stopPropagation(); addToGroup(${group.fieldId != null ? group.fieldId : "null"})" title="Bu Yo'nalishga bo'lim qo'shish">➕</button>`;
+    // psevdo-guruhga) tegishli holda ochiladi. pageFieldId bilan (bitta
+    // Yo'nalish ichida) ko'rsatilganda — bu tugma BU YERDA emas, <h1>
+    // "Bo'limlar" bilan bir qatorda chiqadi (renderPageTitleActions).
+    const addBtn = pageFieldId !== undefined ? "" :
+        `<button class="chapter-rename-btn" onclick="event.stopPropagation(); addToGroup(${group.fieldId != null ? group.fieldId : "null"})" title="Bu Yo'nalishga bo'lim qo'shish">➕</button>`;
 
     let moveBtns = "";
     if (group.fieldId != null && realFieldGroups.length > 1) {
@@ -399,15 +431,17 @@ function renderFieldGroupBox(group, realFieldGroups) {
 
     // pageFieldId bilan (bitta Yo'nalish ichida) ko'rsatilganda — guruh
     // NOMI bu yerda TAKRORLANMAYDI (allaqachon "← Yo'nalishlar" panelida
-    // ko'rinadi) — foydalanuvchi so'rovi, 2026-09-05.
+    // ko'rinadi), "(N ta bo'lim)" soni ham bu yerda emas, <h1> qatorida
+    // (renderPageTitleActions) — foydalanuvchi so'rovi, 2026-09-05.
     const nameHtml = pageFieldId !== undefined ? "" : escapeHtml(group.name);
+    const countHtml = pageFieldId !== undefined ? "" : `<span class="chapter-box-count">(${group.items.length} ta bo'lim)</span>`;
 
     return `
         <div class="chapter-box ${isExpanded ? "expanded" : "collapsed"}">
             <h3 class="chapter-box-title" onclick="toggleFieldBox('${group.key}')" title="${isExpanded ? "Yig'ish" : "Ochish"}">
                 <span class="chapter-box-chevron">▸</span>
                 🧭 ${nameHtml}
-                <span class="chapter-box-count">(${group.items.length} ta bo'lim)</span>
+                ${countHtml}
                 <span class="chapter-box-actions">${addBtn}${moveBtns}${renameBtn}${deleteBtn}</span>
             </h3>
             ${bodyHtml}
