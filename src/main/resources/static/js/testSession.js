@@ -185,15 +185,19 @@ function renderQuestions(questions) {
         block.dataset.questionId = q.id;
 
         block.innerHTML = `
-            <h3>${index + 1}. ${q.questionText}</h3>
-            ${q.imageUrl ? `<img class="question-image" src="${q.imageUrl}"${imageSizeStyleAttr(q.imageWidth, q.imageHeight)} alt="Savol rasmi">` : ""}
+            <div class="question-content-row">
+                ${q.imageUrl ? `<img class="question-image" src="${q.imageUrl}"${imageSizeStyleAttr(q.imageWidth, q.imageHeight)} alt="Savol rasmi">` : ""}
+                <h3>${index + 1}. ${q.questionText}</h3>
+            </div>
             <ul>
                 ${q.answers.map((a, i) => `
                     <li>
                         <label>
                             <input type="radio" name="q-${q.id}" data-answer-id="${a.id}">
-                            <b>${ANSWER_LETTERS[i] || ""}) </b>${a.answerText}
-                            ${a.imageUrl ? `<br><img class="answer-image" src="${a.imageUrl}"${imageSizeStyleAttr(a.imageWidth, a.imageHeight)} alt="Javob rasmi">` : ""}
+                            <div class="answer-content-row">
+                                ${a.imageUrl ? `<img class="answer-image" src="${a.imageUrl}"${imageSizeStyleAttr(a.imageWidth, a.imageHeight)} alt="Javob rasmi">` : ""}
+                                <span><b>${ANSWER_LETTERS[i] || ""}) </b>${a.answerText}</span>
+                            </div>
                         </label>
                     </li>
                 `).join("")}
@@ -470,8 +474,10 @@ function showWrongAnswers() {
         block.className = "wrong-question-card";
 
         block.innerHTML = `
-            <h3>❓ ${index + 1}. ${q.questionText}</h3>
-            ${q.imageUrl ? `<img class="question-image" src="${q.imageUrl}"${imageSizeStyleAttr(q.imageWidth, q.imageHeight)} alt="Savol rasmi">` : ""}
+            <div class="question-content-row">
+                ${q.imageUrl ? `<img class="question-image" src="${q.imageUrl}"${imageSizeStyleAttr(q.imageWidth, q.imageHeight)} alt="Savol rasmi">` : ""}
+                <h3>❓ ${index + 1}. ${q.questionText}</h3>
+            </div>
 
             <ul class="answers-review">
                 <li class="wrong-answer">

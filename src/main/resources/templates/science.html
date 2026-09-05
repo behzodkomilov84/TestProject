@@ -81,9 +81,6 @@
         </div>
     </div>
 
-    <div id="scienceTrashPanel" style="display:none;">
-        <div id="scienceTrashList"></div>
-    </div>
 
     <div class="sort-buttons">
         <span>Saralash:</span>
@@ -101,6 +98,22 @@
          qutisining o'z ➕ tugmasi orqali (renderFieldGroupBox, science.js),
          o'zgarishlar esa DARHOL bazaga yoziladi — alohida "saqlash"
          qadami shart emas. -->
+</div>
+
+<!-- "🗑️ O'chirilgan bo'limlar" — ilgari tugmalar QATORI ICHIDA
+     (block-level <div>) ochilib, o'zidan keyingi tugmalarni pastga surib
+     yuborardi (topics.html'dagi bilan bir xil bug). Endi modalda
+     (foydalanuvchi so'rovi, 2026-09-05: "o'chirilgan mavzular modalda
+     ochsin" — bu sahifada "Bo'lim" "mavzu" deb ham yuritiladi).
+     toggleScienceTrash — science.js. -->
+<div id="scienceTrashModal" class="modal-overlay">
+    <div class="trash-list-modal">
+        <h2 class="modal-h2">🗑️ O'chirilgan bo'limlar</h2>
+        <div id="scienceTrashList"></div>
+        <div class="modal-footer">
+            <button type="button" onclick="toggleScienceTrash()">Yopish</button>
+        </div>
+    </div>
 </div>
 
 <!-- "📝 Word'ga eksport" oynasi — ichida "🎲 Variantlar yaratish" checkbox'i

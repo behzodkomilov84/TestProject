@@ -78,21 +78,54 @@ body {
 }
 
 
+/* Savol rasmi va matni YONMA-YON (rasm chapda, matn o'ngda) — ilgari
+   ketma-ket (rasm ustida/ostida, matn bilan "устма-уст" bo'lib
+   ko'rinardi) edi (foydalanuvchi so'rovi, 2026-09-05: "Тест сессиясида
+   расм ва текстни кўриниши устма-уст тушиб қолмасин, расм ва текст
+   ёнма-ён турсин"). */
+.question-content-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.question-content-row h3 {
+    flex: 1;
+    min-width: 200px;
+    margin: 0;
+}
+
 .question-image {
-    display: block;
+    flex-shrink: 0;
     max-width: 100%;
     max-height: 320px;
     object-fit: contain;
-    margin: 10px 0;
+    margin: 0;
     border-radius: 8px;
     border: 1px solid #e0e0e0;
 }
 
+/* Javob rasmi va matni ham YONMA-YON — bir xil andoza. */
+.answer-content-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.answer-content-row span {
+    flex: 1;
+    min-width: 120px;
+}
+
 .answer-image {
+    flex-shrink: 0;
     max-width: 220px;
     max-height: 160px;
     object-fit: contain;
-    margin-top: 6px;
+    margin: 0;
     border-radius: 6px;
     border: 1px solid #e0e0e0;
 }

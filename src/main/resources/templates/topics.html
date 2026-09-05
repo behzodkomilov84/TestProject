@@ -59,7 +59,10 @@
 <input type="hidden" id="scienceId" th:value="${scienceId}">
 <!-- ОСНОВНОЙ КОНТЕЙНЕР -->
 <div class="wrapper">
-    <button id="btnSections" onclick="location.href='/topic-sections?scienceId=' + getScienceId() + fieldQuery">📂 Mavzular</button>
+    <!-- "📂 Mavzular" tugmasi OLIB TASHLANDI — yuqoridagi "← Mavzular"
+         breadcrumb havolasi (sectionFilterBanner) ALLAQACHON shu vazifani
+         bajaradi, ikkalasi ORTIQCHA edi (foydalanuvchi so'rovi, 2026-09-05:
+         "Mavzular knopkasini olib tashla. Tepadagi tursa bo'ldi"). -->
     <!-- Shu Fandagi hech qanday savoli (testi) yo'q darslarni RO'YXAT
          sifatida ko'rsatadi (modalda) — ilgari to'g'ridan-to'g'ri (ro'yxatni
          ko'rsatmasdan) o'chirib yuborardi, shu sabab qaysi dars(lar)

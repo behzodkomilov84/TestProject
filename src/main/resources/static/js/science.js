@@ -85,7 +85,7 @@ let scienceTrashOpen = false;
 
 function toggleScienceTrash() {
     scienceTrashOpen = !scienceTrashOpen;
-    document.getElementById("scienceTrashPanel").style.display = scienceTrashOpen ? "block" : "none";
+    document.getElementById("scienceTrashModal").classList.toggle("show", scienceTrashOpen);
     if (scienceTrashOpen) {
         loadScienceTrash();
     }
@@ -108,10 +108,10 @@ async function loadScienceTrash() {
             return;
         }
         list.innerHTML = items.map(s => `
-            <div class="row">
-                <div>${escapeHtml(s.name)} — ${formatScienceTrashDate(s.deletedAt)}da o'chirilgan</div>
-                <div class="row-actions">
-                    <button onclick="restoreScienceFromTrash(${s.id})">♻️ Tiklash</button>
+            <div class="trash-row">
+                <div class="trash-row-info">${escapeHtml(s.name)} — ${formatScienceTrashDate(s.deletedAt)}da o'chirilgan</div>
+                <div class="trash-row-actions">
+                    <button class="restore-btn" onclick="restoreScienceFromTrash(${s.id})">♻️ Tiklash</button>
                     <button class="danger-btn" onclick="permanentlyDeleteScienceFromTrash(${s.id}, ${JSON.stringify(s.name).replace(/"/g, "&quot;")})">🗑️ Butunlay o'chirish</button>
                 </div>
             </div>

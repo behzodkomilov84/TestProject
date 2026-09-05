@@ -222,18 +222,16 @@ h1 {
         display: none !important;
     }
 
-    /* Tugma orqali ochiladigan savat panellari (#scienceTrashPanel —
-       science.html, #sectionTrashPanel — topicSections.html) — avval
-       hech qanday tepa bo'shlig'i yo'q edi, shu sabab ochilganda
-       tugmalar qatoriga to'g'ridan-to'g'ri "yopishib" ko'rinardi
-       (question.css'dagi #questionTrashPanel bilan bir xil turdagi,
-       haqiqiy topilgan xatolik — endi hamma joyda birdek tuzatilgan).
-       "topics.html"dagi ikkalasi (O'chirilgan darslar/Barcha o'chirilgan
-       testlar) ENDI MODALDA (#topicTrashModal/#questionScienceTrashModal,
-       ".modal-overlay" — position:fixed, markazlashtirilgan) — shu sabab
-       BU RO'YXATDAN OLIB TASHLANDI: "margin-top" fixed overlay'ni
-       markazdan pastga surib qo'yardi (haqiqiy topilgan bug). */
-    #scienceTrashPanel,
+    /* Tugma orqali ochiladigan savat paneli (#sectionTrashPanel —
+       topicSections.html) — avval hech qanday tepa bo'shlig'i yo'q edi,
+       shu sabab ochilganda tugmalar qatoriga to'g'ridan-to'g'ri
+       "yopishib" ko'rinardi (question.css'dagi #questionTrashPanel bilan
+       bir xil turdagi, haqiqiy topilgan xatolik). "topics.html"dagi
+       (O'chirilgan darslar/Barcha o'chirilgan testlar) va
+       "science.html"dagi (#scienceTrashModal, O'chirilgan bo'limlar)
+       ENDI MODALDA (".modal-overlay" — position:fixed, markazlashtirilgan)
+       — shu sabab BU RO'YXATDAN OLIB TASHLANDI: "margin-top" fixed
+       overlay'ni markazdan pastga surib qo'yardi (haqiqiy topilgan bug). */
     #sectionTrashPanel {
         margin-top: 14px;
     }
