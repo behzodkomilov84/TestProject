@@ -67,10 +67,6 @@
          bir zumda qaytariladi (TopicService.getDeletedTopics/restoreTopic). -->
     <button onclick="toggleTopicTrash()">🗑️ O'chirilgan darslar <span id="topicTrashBadge" class="notif-badge" style="display:none;">0</span></button>
 
-    <div id="topicTrashPanel" style="display:none;">
-        <div id="topicTrashList"></div>
-    </div>
-
     <!-- Shu FANNING BARCHA mavzularidagi o'chirilgan testlar — bitta joyda
          (har bir savol qaysi mavzu/bo'limga tegishli ekani bilan birga).
          Alohida-alohida mavzu sahifasidagi (question.html) savatdan farqli,
@@ -78,15 +74,29 @@
          toggleQuestionScienceTrash/loadQuestionScienceTrash). -->
     <button onclick="toggleQuestionScienceTrash()">🗑️ Barcha o'chirilgan testlar <span id="questionScienceTrashBadge" class="notif-badge" style="display:none;">0</span></button>
 
-    <div id="questionScienceTrashPanel" style="display:none;">
-        <div id="questionScienceTrashList"></div>
-    </div>
-
     <!-- Kursga hali bog'lanmagan mavzularni ajratib ko'rsatish (yoqilsa —
          faqat ular ko'rinadi) — o'quv rejasini kursga to'liq bog'lab
          chiqishda qaysi mavzular hali "yetim" ekanini topish uchun
          (toggleUnlinkedFilter, topic.js). -->
     <button id="unlinkedFilterBtn" class="unlinked-filter-btn" onclick="toggleUnlinkedFilter()">🔗 Kursga bog'lanmagan darslar <span id="unlinkedTopicBadge" class="notif-badge" style="display:none;">0</span></button>
+
+    <!-- Ikkala savat paneli ATAYLAB TUGMALAR QATORIDAN KEYIN joylashtirilgan
+         (ilgari "O'chirilgan darslar" va "Barcha o'chirilgan testlar"
+         tugmalari ORASIDA edi) — bular BLOK darajali <div>, ochilganda
+         (display:block) o'zidan KEYINGI barcha inline tugmalarni YANGI
+         qatorga "tushirib" yuborardi (haqiqiy topilgan bug, foydalanuvchi
+         xabari: "Барча ўчирилган тестларни босганда, ундан кейинги кнопка
+         пастга тушиб кетяпти" — "Kursga bog'lanmagan darslar" tugmasi
+         kutilmaganda pastga sirg'alib tushardi). Endi qaysi savat
+         ochilishidan qat'i nazar — BUTUN tugmalar qatori bir joyda,
+         buzilmasdan turadi. -->
+    <div id="topicTrashPanel" style="display:none;">
+        <div id="topicTrashList"></div>
+    </div>
+
+    <div id="questionScienceTrashPanel" style="display:none;">
+        <div id="questionScienceTrashList"></div>
+    </div>
 
     <!-- Mavzu ustidan (Bo'lim -> Mavzu -> Dars) kelinganda ko'rinadi —
          qaysi mavzu darslari filtrlanib ko'rsatilayotganini bildiradi
