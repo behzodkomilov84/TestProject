@@ -1015,7 +1015,23 @@ function loadCourse() {
             if (!r.ok) throw new Error("Kurs topilmadi yoki ruxsat yo'q");
             return r.json();
         })
-        .then(renderCourse)
+        .then(course => {
+            // "/chapters" — faqat OWNER/ADMIN uchun ruxsat etilgan (backend
+            // @PreAuthorize) — oddiy talaba (canManage=false) uchun umuman
+            // chaqirilmaydi (403 bo'lardi, va bo'sh Mavzu ko'rsatish ham
+            // faqat boshqaruvchilar uchun ma'noli).
+            if (!course.canManage) {
+                allChapters = [];
+                return renderCourse(course);
+            }
+            return fetch(`/api/courses/${COURSE_ID}/chapters`)
+                .then(r => r.ok ? r.json() : [])
+                .catch(() => [])
+                .then(chapters => {
+                    allChapters = chapters;
+                    renderCourse(course);
+                });
+        })
         .catch(err => {
             console.error(err);
             document.getElementById("courseTitle").textContent = "Kurs topilmadi";
@@ -1167,13 +1183,24 @@ async function requestSubscription() {
 // o'zgarmasligi kerak — masalan mavzu tahrirlangandan keyin).
 let allSections = [];
 
+// Kursning BARCHA Mavzulari (CourseChapter) — hozircha BO'SH (hech qanday
+// darsga biriktirilmagan) bo'limlar ham shu jumladan. Faqat canManage
+// bo'lganda yuklanadi (loadCourse — endpoint OWNER/ADMIN uchun) va
+// getSortedChapterGroups()'da "bo'sh mavzu" quti sifatida ko'rsatiladi
+// (foydalanuvchi so'rovi, 2026-09-05: "bo'sh bo'limlar bu yerda ham
+// ko'rinsin" — aks holda katalog kartasidagi "N ta mavzu" soni bilan bu
+// sahifada ko'rinayotgan mavzular soni mos kelmasdi).
+let allChapters = [];
+
 function renderSections(sections) {
     allSections = sections;
 
-    // Kursda kamida bitta dars biror Mavzuga biriktirilgan bo'lsagina
-    // guruhlangan ("box"li) ko'rinishga o'tiladi — aks holda (standart,
-    // hozirgi barcha kurslar) 100% eskidek, bitta tekis grid.
-    const hasAnyChapter = sections.some(s => s.chapterId != null);
+    // Kursda kamida bitta dars biror Mavzuga biriktirilgan BO'LSA, YOKI
+    // (hozircha bo'sh bo'lsa ham) kamida bitta Mavzu (CourseChapter) yaratib
+    // qo'yilgan bo'lsa — guruhlangan ("box"li) ko'rinishga o'tiladi, aks
+    // holda (standart, mavzular umuman yo'q kurslar) 100% eskidek, bitta
+    // tekis grid.
+    const hasAnyChapter = sections.some(s => s.chapterId != null) || allChapters.length > 0;
     const canManage = cachedCourse && cachedCourse.canManage;
 
     // Umumiy (butun kurs bo'yicha) "Saralash" — faqat GURUHLANMAGAN
@@ -1441,6 +1468,22 @@ function changeSectionsPage(page) {
 // ham shundan foydalanadi.
 function getSortedChapterGroups() {
     const groups = new Map();
+
+    // AVVAL — kursning BARCHA Mavzulari (allChapters, faqat canManage
+    // bo'lganda yuklanadi) qo'shiladi, hozircha bo'sh (0 ta darsi bor)
+    // bo'lsa ham — shu bilan katalog kartasidagi "N ta mavzu" soni bilan
+    // bu yerda ko'rinayotgan mavzular soni mos keladi (foydalanuvchi
+    // so'rovi, 2026-09-05).
+    for (const c of allChapters) {
+        groups.set(String(c.id), {
+            key: String(c.id),
+            chapterId: c.id,
+            name: c.name,
+            orderIndex: c.orderIndex,
+            items: []
+        });
+    }
+
     for (const s of allSections) {
         const key = s.chapterId != null ? String(s.chapterId) : "none";
         if (!groups.has(key)) {
