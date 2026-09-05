@@ -553,29 +553,33 @@ function hidePagination() {
 
 
 // ================= Tahrirlash rejimida rasm/video widget'lari =================
-// Har bir chaqiruvda yangi HTML qaytaradi; joriy URL data-current-url'da saqlanadi,
-// fayl tanlansa yuklanadi va shu atributga yangi URL yoziladi (saveQuestionForm
-// shundan o'qiydi). "Eni"/"Bo'yi" (px) — foydalanuvchi so'rovi, 2026-09-05:
-// "Қўйилган расмни эни ва бўйини ўзгартириш мумкин бўлиши керак. Расм
-// қўяётганда ҳам эни ва бўйини киритиш керак" — rasm yuklangach avtomatik
-// (tabiiy nisbatni saqlagan holda, eng ko'p 320px eniga) to'ldiriladi,
-// keyin qo'lda o'zgartirish mumkin (bazada saqlanadi — Answer/Question
-// entity#imageWidth/imageHeight).
+// Har bir chaqiruvda yangi HTML qaytaradi; joriy URL data-current-url'da
+// saqlanadi, fayl tanlansa yuklanadi va shu atributga yangi URL yoziladi
+// (saveQuestionForm shundan o'qiydi). "Eni"/"Bo'yi" (px) — foydalanuvchi
+// so'rovi, 2026-09-05: "Эни ва бўйи полялари мунтазам кўриниб турсин,
+// расм импорт қилинмаса ҳам эни ва бўйига эга тўртбурчак турсин
+// (расмсиз). Расм импорт қилганда ичи расмга тўлиб қолсин" — shu sabab
+// ".inline-image-box" (chegarali to'rtburchak) rasm bor-yo'qligidan
+// qat'i nazar HAR DOIM ko'rinadi, o'lchami "Eni"/"Bo'yi" maydonlariga
+// mos (standart 140x100) — rasm yuklansa shu quti ICHINI to'liq
+// qoplaydi (object-fit:cover). O'chirish (✖) tugmasi rasmning O'NG-YUQORI
+// burchagida (bazada saqlanadi — Answer/Question entity#imageWidth/imageHeight).
 function buildInlineImageWidget(role, currentUrl, altText, width, height) {
     const url = currentUrl || "";
-    const w = width || "";
-    const h = height || "";
-    const sizeStyle = `${w ? `width:${w}px;` : ""}${h ? `height:${h}px;` : ""}`;
+    const w = width || 140;
+    const h = height || 100;
     return `
-        <div class="inline-image-upload" data-role="${role}" data-current-url="${url}" data-width="${w}" data-height="${h}">
+        <div class="inline-image-upload" data-role="${role}" data-current-url="${url}" data-width="${width || ""}" data-height="${height || ""}">
             <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="inline-image-input" hidden>
-            <button type="button" class="inline-media-btn inline-image-btn" title="${altText} qo'shish">🖼️</button>
-            <img class="inline-image-preview ${url ? "" : "hidden"}" src="${url}" alt="${altText}" style="${sizeStyle}">
-            <button type="button" class="inline-media-btn inline-remove-image-btn ${url ? "" : "hidden"}" title="${altText}ni olib tashlash">✖</button>
-            <span class="inline-image-size ${url ? "" : "hidden"}">
-                <label>Eni <input type="number" class="inline-image-width" min="10" max="2000" value="${w}" placeholder="px"></label>
-                <label>Bo'yi <input type="number" class="inline-image-height" min="10" max="2000" value="${h}" placeholder="px"></label>
-            </span>
+            <div class="inline-image-box" style="width:${w}px;height:${h}px;" title="${altText} qo'shish/almashtirish">
+                <img class="inline-image-preview ${url ? "" : "hidden"}" src="${url}" alt="${altText}">
+                <span class="inline-image-placeholder ${url ? "hidden" : ""}">🖼️</span>
+                <button type="button" class="inline-remove-image-btn ${url ? "" : "hidden"}" title="${altText}ni olib tashlash">✖</button>
+            </div>
+            <div class="inline-image-size">
+                <label>Eni <input type="number" class="inline-image-width" min="10" max="2000" value="${width || ""}" placeholder="px"></label>
+                <label>Bo'yi <input type="number" class="inline-image-height" min="10" max="2000" value="${height || ""}" placeholder="px"></label>
+            </div>
         </div>
     `;
 }
@@ -593,28 +597,36 @@ function buildInlineVideoWidget(currentUrl) {
 }
 
 document.addEventListener("click", (e) => {
-    if (e.target.classList.contains("inline-image-btn")) {
+    // Tekshiruv TARTIBI muhim: ✖ tugmasi ".inline-image-box" ICHIDA
+    // joylashgan (o'ng-yuqori burchakda) — shu sabab AVVAL ✖ ni
+    // tekshiramiz, aks holda uni bosish ham qutini "bosilgandek" fayl
+    // tanlash oynasini ochib yuborardi.
+    if (e.target.closest(".inline-remove-image-btn")) {
+        const container = e.target.closest(".inline-image-upload");
+        container.dataset.currentUrl = "";
+        container.dataset.width = "";
+        container.dataset.height = "";
+        const box = container.querySelector(".inline-image-box");
+        const preview = container.querySelector(".inline-image-preview");
+        preview.src = "";
+        preview.classList.add("hidden");
+        container.querySelector(".inline-image-placeholder").classList.remove("hidden");
+        container.querySelector(".inline-remove-image-btn").classList.add("hidden");
+        // Rasm o'chirilgandan keyin ham quti standart o'lchamda (140x100)
+        // ko'rinishda qoladi ("расм импорт қилинмаса ҳам ... тўртбурчак
+        // турсин") — foydalanuvchi Eni/Bo'yi maydonlarini ham tozalaydi.
+        box.style.width = "140px";
+        box.style.height = "100px";
+        container.querySelector(".inline-image-width").value = "";
+        container.querySelector(".inline-image-height").value = "";
+        return;
+    }
+    if (e.target.closest(".inline-image-box")) {
         e.target.closest(".inline-image-upload").querySelector(".inline-image-input").click();
         return;
     }
     if (e.target.classList.contains("inline-video-btn")) {
         e.target.closest(".inline-video-upload").querySelector(".inline-video-input").click();
-        return;
-    }
-    if (e.target.classList.contains("inline-remove-image-btn")) {
-        const container = e.target.closest(".inline-image-upload");
-        container.dataset.currentUrl = "";
-        container.dataset.width = "";
-        container.dataset.height = "";
-        const preview = container.querySelector(".inline-image-preview");
-        preview.src = "";
-        preview.style.width = "";
-        preview.style.height = "";
-        preview.classList.add("hidden");
-        container.querySelector(".inline-image-width").value = "";
-        container.querySelector(".inline-image-height").value = "";
-        container.querySelector(".inline-image-size").classList.add("hidden");
-        e.target.classList.add("hidden");
         return;
     }
     if (e.target.classList.contains("inline-remove-video-btn")) {
@@ -640,10 +652,10 @@ document.addEventListener("change", async (e) => {
         const formData = new FormData();
         formData.append("image", file);
 
-        const uploadBtn = container.querySelector(".inline-image-btn");
-        const originalLabel = uploadBtn.textContent;
-        uploadBtn.disabled = true;
-        uploadBtn.textContent = "⏳";
+        const box = container.querySelector(".inline-image-box");
+        const placeholder = container.querySelector(".inline-image-placeholder");
+        const originalPlaceholder = placeholder.textContent;
+        placeholder.textContent = "⏳";
 
         try {
             const res = await fetch(endpoint, { method: "POST", body: formData });
@@ -658,51 +670,60 @@ document.addEventListener("change", async (e) => {
             const preview = container.querySelector(".inline-image-preview");
             preview.src = data.url;
             preview.classList.remove("hidden");
+            placeholder.classList.add("hidden");
             container.querySelector(".inline-remove-image-btn").classList.remove("hidden");
-            container.querySelector(".inline-image-size").classList.remove("hidden");
 
-            // Rasm qo'yilgach — tabiiy o'lchamidan (320px enigacha, nisbatni
-            // saqlab) avtomatik boshlang'ich eni/bo'yi hisoblanadi, keyin
-            // qo'lda o'zgartirish mumkin (foydalanuvchi so'rovi, 2026-09-05:
-            // "Расм қўяётганда ҳам эни ва бўйини киритиш керак").
-            await new Promise((resolve) => {
-                if (preview.complete && preview.naturalWidth) { resolve(); return; }
-                preview.onload = resolve;
-                preview.onerror = resolve;
-            });
-            if (preview.naturalWidth && preview.naturalHeight) {
-                const maxW = 320;
-                const scale = Math.min(1, maxW / preview.naturalWidth);
-                const w = Math.round(preview.naturalWidth * scale);
-                const h = Math.round(preview.naturalHeight * scale);
-                container.dataset.width = w;
-                container.dataset.height = h;
-                preview.style.width = w + "px";
-                preview.style.height = h + "px";
-                container.querySelector(".inline-image-width").value = w;
-                container.querySelector(".inline-image-height").value = h;
+            // Agar Eni/Bo'yi maydonlari ALLAQACHON to'ldirilgan bo'lsa
+            // (foydalanuvchi rasm yuklashdan OLDIN o'zi belgilagan bo'lsa)
+            // — quti o'sha o'lchamda QOLADI, rasm shunchaki ICHINI to'ldiradi
+            // (object-fit:cover, CSS). Aks holda — tabiiy o'lchamidan
+            // (320px enigacha, nisbatni saqlab) avtomatik hisoblanadi
+            // (foydalanuvchi so'rovi, 2026-09-05).
+            const widthInput = container.querySelector(".inline-image-width");
+            const heightInput = container.querySelector(".inline-image-height");
+            if (!widthInput.value && !heightInput.value) {
+                await new Promise((resolve) => {
+                    if (preview.complete && preview.naturalWidth) { resolve(); return; }
+                    preview.onload = resolve;
+                    preview.onerror = resolve;
+                });
+                if (preview.naturalWidth && preview.naturalHeight) {
+                    const maxW = 320;
+                    const scale = Math.min(1, maxW / preview.naturalWidth);
+                    const w = Math.round(preview.naturalWidth * scale);
+                    const h = Math.round(preview.naturalHeight * scale);
+                    container.dataset.width = w;
+                    container.dataset.height = h;
+                    box.style.width = w + "px";
+                    box.style.height = h + "px";
+                    widthInput.value = w;
+                    heightInput.value = h;
+                }
             }
         } catch (err) {
             console.error(err);
             showAlertModal("❌ Rasmni yuklashda tarmoq xatoligi");
         } finally {
-            uploadBtn.disabled = false;
-            uploadBtn.textContent = originalLabel;
+            placeholder.textContent = originalPlaceholder;
         }
     }
 
     if (e.target.classList.contains("inline-image-width") || e.target.classList.contains("inline-image-height")) {
         const container = e.target.closest(".inline-image-upload");
-        const preview = container.querySelector(".inline-image-preview");
+        const box = container.querySelector(".inline-image-box");
         const widthInput = container.querySelector(".inline-image-width");
         const heightInput = container.querySelector(".inline-image-height");
 
-        const w = widthInput.value ? Number(widthInput.value) : "";
-        const h = heightInput.value ? Number(heightInput.value) : "";
-        container.dataset.width = w;
-        container.dataset.height = h;
-        preview.style.width = w ? w + "px" : "";
-        preview.style.height = h ? h + "px" : "";
+        // Quti ("тўртбурчак") HAR DOIM Eni/Bo'yi qiymatlariga mos —
+        // rasm bor-yo'qligidan qat'i nazar (bo'sh qoldirilsa — standart
+        // 140x100'ga qaytadi). Rasm bo'lsa, ICHINI to'liq qoplaydi
+        // (".inline-image-preview{width:100%;height:100%}", CSS).
+        const w = widthInput.value ? Number(widthInput.value) : 140;
+        const h = heightInput.value ? Number(heightInput.value) : 100;
+        container.dataset.width = widthInput.value ? w : "";
+        container.dataset.height = heightInput.value ? h : "";
+        box.style.width = w + "px";
+        box.style.height = h + "px";
         return;
     }
 

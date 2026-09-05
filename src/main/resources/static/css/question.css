@@ -1096,17 +1096,82 @@ td label{
     cursor: pointer;
 }
 
-.inline-remove-image-btn,
 .inline-remove-video-btn {
     background: #fdecea;
     color: #c62828;
     border-color: #f5c2c0;
 }
 
-/* Rasmning eni/bo'yi (px) — "Savol formasi"da rasm qo'yilgach ko'rinadi
-   (foydalanuvchi so'rovi, 2026-09-05: "Расм қўяётганда ҳам эни ва
-   бўйини киритиш керак. Қўйилган расмни эни ва бўйини ўзгартириш
-   мумкин бўлиши керак"). */
+/* Rasm qutisi — HAR DOIM ko'rinadi (rasm bor-yo'qligidan qat'i nazar),
+   o'lchami "Eni"/"Bo'yi" maydonlariga mos (standart 140x100) —
+   foydalanuvchi so'rovi, 2026-09-05: "расм импорт қилинмаса ҳам эни ва
+   бўйига эга тўртбурчак турсин (расмсиз). Расм импорт қилганда ичи
+   расмга тўлиб қолсин". Butun quti bosiladigan (fayl tanlash oynasini
+   ochadi) — alohida "🖼️ qo'shish" tugmasi ENDI shart emas. */
+.inline-image-box {
+    position: relative;
+    flex-shrink: 0;
+    min-width: 60px;
+    min-height: 40px;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    background: #f8fafc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+}
+
+.inline-image-box:hover {
+    border-color: #94a3b8;
+    background: #f1f5f9;
+}
+
+.inline-image-placeholder {
+    font-size: 26px;
+    opacity: .45;
+    pointer-events: none;
+}
+
+.inline-image-preview {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* O'chirish (✖) — rasmning O'NG-YUQORI burchagida, doiraviy, rasm
+   ustiga "suzib turadigan" tugma (foydalanuvchi so'rovi, 2026-09-05:
+   "расмни ўнг томонида Х қизил пайдо бўлсин"). */
+.inline-remove-image-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border-radius: 50%;
+    background: #fff;
+    color: #c62828;
+    border: 1px solid #f5c2c0;
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+
+.inline-remove-image-btn:hover {
+    background: #fdecea;
+}
+
+/* Rasmning eni/bo'yi (px) — HAR DOIM ko'rinadi, rasm bor-yo'qligidan
+   qat'i nazar (foydalanuvchi so'rovi, 2026-09-05: "Эни ва бўйи полялари
+   мунтазам кўриниб турсин"). */
 .inline-image-size {
     display: flex;
     align-items: center;
@@ -1128,14 +1193,6 @@ td label{
     font-size: 11px;
     border: 1px solid #d5dde8;
     border-radius: 4px;
-}
-
-.inline-image-preview {
-    max-width: 70px;
-    max-height: 50px;
-    object-fit: contain;
-    border-radius: 4px;
-    border: 1px solid #ccc;
 }
 
 .inline-video-preview {
@@ -1247,7 +1304,10 @@ td label{
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: min(794px, 95vw);
+    /* Foydalanuvchi so'rovi, 2026-09-05: "Модални энини катталаштир" —
+       A4 (794px) endi rasm quti + matn yonma-yon joylashuvi uchun tor
+       edi. */
+    width: min(960px, 96vw);
     max-height: 90vh;
     overflow-y: auto;
     margin: 0;
