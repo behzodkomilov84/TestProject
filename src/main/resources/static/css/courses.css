@@ -177,6 +177,15 @@ body {
     transform: translateY(-3px);
 }
 
+/* O'ng tugma bilan bosilganda (ichiga kirmasdan, courses.js#renderCourseCard
+   oncontextmenu) — science.css'dagi ".topic-name.view:focus" bilan bir
+   xil uslub (foydalanuvchi so'rovi, 2026-09-05: "Kurslar sahifasida ham
+   xuddi shunday tekshirib chiq"). */
+.course-card:focus {
+    outline: 3px solid #1976d2;
+    outline-offset: 2px;
+}
+
 /* Kurs sahifasidan "← Kurslar" bosib qaytilganda (courses.js#focusCourseId)
    — o'sha karta bir necha soniya ko'k ramka bilan ajratib ko'rsatiladi,
    foydalanuvchi qaysi kursdan qaytganini darhol topsin deb. */

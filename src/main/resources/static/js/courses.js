@@ -238,7 +238,10 @@ function renderCourseCard(c, idx, total, fieldId) {
         : `<div class="course-card-cover"></div>`;
 
     return `
-        <div class="course-card" id="course-card-${c.id}" onclick="location.href='/courses/${c.id}'">
+        <div class="course-card" id="course-card-${c.id}" tabindex="0"
+             onclick="location.href='/courses/${c.id}'"
+             oncontextmenu="event.preventDefault(); this.focus();"
+             title="O'ng tugma — ichiga kirmasdan belgilash">
             ${cover}
             <div class="course-card-body">
                 <h3 class="course-card-title">${escapeHtml(c.title)}</h3>
