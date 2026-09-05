@@ -284,9 +284,9 @@ async function moveCourse(courseId, direction, fieldId) {
             const data = await res.json().catch(() => ({}));
             showAlertModal(data.error || "Tartibni o'zgartirishda xatolik");
             await loadCourses();
-            return;
         }
-        showToast('success', 'Tartib saqlandi', 1500);
+        // Muvaffaqiyatli bo'lsa — hech narsa ko'rsatilmaydi (moveField bilan
+        // bir xil andoza, courses.js'da toast-container yo'q).
     } catch (err) {
         console.error(err);
         showAlertModal("Tarmoq xatoligi");
