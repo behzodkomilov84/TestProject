@@ -95,7 +95,11 @@
             <div class="dropdown" sec:authorize="isAuthenticated()">
                 <button class="dropbtn">🎓 Kurslar ▾</button>
                 <div class="dropdown-content">
-                    <a href="/courses">📚 Mavjud kurslar</a>
+                    <!-- "📚 Mavjud kurslar" -> "📚 Kurs yo'nalishlari"ga
+                         o'zgartirildi (foydalanuvchi so'rovi, 2026-09-05) —
+                         /courses sahifasining yangi nomi bilan mos kelishi
+                         uchun. -->
+                    <a href="/courses">📚 Kurs yo'nalishlari</a>
                     <a href="/courses/subscriptions" sec:authorize="hasAuthority('ROLE_OWNER')">💳 Kursga obuna berish</a>
                 </div>
             </div>

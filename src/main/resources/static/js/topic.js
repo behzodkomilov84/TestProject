@@ -45,9 +45,9 @@ const fieldQuery = pageFieldId != null ? `&fieldId=${pageFieldId}` : "";
 // faqat linkedCourseTitle'i YO'Q qatorlar ko'rsatiladi (render()).
 let showOnlyUnlinkedTopics = false;
 
-// question.html'dagi "← MAVZUGA QAYTISH" tugmasi (question.js#goBack)
-// aynan qaysi mavzudan kelingani "?focus=" orqali beradi — sahifa
-// ochilganda ANIQ shu mavzu qatoriga fokus tushishi uchun (courseDetail.js/
+// question.html'dagi "← DARSGA QAYTISH" tugmasi (question.js#goBack)
+// aynan qaysi darsdan kelingani "?focus=" orqali beradi — sahifa
+// ochilganda ANIQ shu dars qatoriga fokus tushishi uchun (courseDetail.js/
 // science.js'dagi bir xil "?focus=" g'oyasi bilan bir xil).
 const filterFocusId = new URLSearchParams(window.location.search).get("focus");
 // ========================================================================
@@ -665,8 +665,8 @@ function goToExplanationResult(index) {
 
 function afterStartPage(mapping) {
         reloadFromDb(mapping).then(r => {
-            // "?focus=" URL'da bo'lsa — ANIQ shu mavzu id'siga mos qatorga
-            // fokus tushadi (question.js'dan "← MAVZUGA QAYTISH" orqali
+            // "?focus=" URL'da bo'lsa — ANIQ shu dars id'siga mos qatorga
+            // fokus tushadi (question.js'dan "← DARSGA QAYTISH" orqali
             // kelinganda). Topilmasa — eskicha birinchi qatorga.
             const focusFound = filterFocusId
                 ? itemBlock.findIndex(s => Number(s.id) === Number(filterFocusId))

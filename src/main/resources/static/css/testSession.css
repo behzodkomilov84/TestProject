@@ -16,7 +16,7 @@ body {
     padding: 0 12px;
 }
 
-/* Rejim yorlig'i + "🔙 Mavzuga qaytish" tugmasi bir qatorda — endi
+/* Rejim yorlig'i + "🔙 Darsga qaytish" tugmasi bir qatorda — endi
    position:fixed EMAS (oddiy oqimda), shu sabab pastdagi savol bloki
    bilan bir-birining ustiga tushib qolishi STRUKTURAV RAVISHDA
    imkonsiz (avvalgi ".progress-wrapper{position:fixed}" +
@@ -458,7 +458,7 @@ body.test-started .question-block {
     border-radius: 8px;
 }
 
-/* "🔙 Mavzuga qaytish" — kurs darsidan kelingan bo'lsa, test
+/* "🔙 Darsga qaytish" — kurs darsidan kelingan bo'lsa, test
    sessiyasining OXIRIGACHA ko'rinib turadi (testSession.js). */
 .return-topic-btn {
     background: #eef2f7;

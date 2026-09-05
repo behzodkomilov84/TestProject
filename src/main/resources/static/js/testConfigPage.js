@@ -398,7 +398,7 @@ function startTest() {
     sessionStorage.setItem("time", timeValue);
     sessionStorage.setItem("testMode", mode);
 
-    // "🔙 Mavzuga qaytish" tugmasi test sessiyasining OXIRIGACHA (masalan
+    // "🔙 Darsga qaytish" tugmasi test sessiyasining OXIRIGACHA (masalan
     // 5-savolni yechayotganda ham) ko'rinib turishi uchun — testSession.js
     // shu ikkalasini o'qib, doimiy tugma chiqaradi. Bo'sh bo'lsa (odatiy
     // holat — testConfigPage'ga bosh menyudan to'g'ridan-to'g'ri

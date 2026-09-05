@@ -11,7 +11,7 @@ let allFields = [];
 // bilan bir xil g'oya (bir nechtasi bir vaqtda ochiq turishi mumkin).
 const expandedFieldKeys = new Set();
 
-// Kurs sahifasidan (courseDetail.html) "← Kurslar" bosilganda "?focus=<id>"
+// Kurs sahifasidan (courseDetail.html) "← Kurs yo'nalishlari" bosilganda "?focus=<id>"
 // beriladi — shu Kursning Yo'nalish qutisi avtomatik ochiladi va o'sha
 // kartaga skroll qilinadi (science.js#focusId bilan bir xil g'oya — aks
 // holda "orqaga" bosilganda foydalanuvchi qaysi Yo'nalish ichida
@@ -190,7 +190,10 @@ function renderFieldBox(group, realFieldGroups) {
             <h3 class="chapter-box-title" onclick="toggleFieldBox('${group.key}')" title="${isExpanded ? "Yig'ish" : "Ochish"}">
                 <span class="chapter-box-chevron">▸</span>
                 🧭 ${escapeHtml(group.name)}
-                <span class="chapter-box-count">(bo'lim — ${group.items.length} ta)</span>
+                <!-- Ilgari "(bo'lim — N ta)" edi — bu NOTO'G'RI edi, chunki
+                     bu yerda sanalayotgan narsa KURS (Course), Bo'lim
+                     (CourseChapter) emas — foydalanuvchi so'rovi, 2026-09-05. -->
+                <span class="chapter-box-count">(kurs — ${group.items.length} ta)</span>
                 <span class="chapter-box-actions">${addBtn}${moveBtns}${renameBtn}${deleteBtn}</span>
             </h3>
             ${bodyHtml}
