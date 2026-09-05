@@ -224,18 +224,26 @@ public class ExcelService {
                         .limit(5)
                         .toList();
 
-        String correctLetter = "";
-        String correctComment = "";
+        // Ko'p to'g'ri javobli savollar (foydalanuvchi so'rovi, 2026-09-05)
+        // — ilgari faqat OXIRGI topilgan to'g'ri javob saqlanardi (har
+        // safar ustidan yozilardi), qolganlari "yo'qolib" ketardi. Endi
+        // BARCHA to'g'ri javoblar to'planadi — bitta bo'lsa import
+        // shabloni bilan AYNAN bir xil natija ("A"), bir nechta bo'lsa
+        // "A,B" (importQuestions#parseCorrectIndexes shu formatni o'qiy oladi).
+        List<String> correctLetters = new ArrayList<>();
+        List<String> correctComments = new ArrayList<>();
         for (int i = 0; i < answers.size(); i++) {
             Answer a = answers.get(i);
             row.createCell(startCol + i).setCellValue(a.getAnswerText());
             if (Boolean.TRUE.equals(a.getIsTrue())) {
-                correctLetter = ANSWER_LETTERS[i];
-                correctComment = a.getCommentary() != null ? a.getCommentary() : "";
+                correctLetters.add(ANSWER_LETTERS[i]);
+                if (a.getCommentary() != null && !a.getCommentary().isBlank()) {
+                    correctComments.add(a.getCommentary());
+                }
             }
         }
-        row.createCell(startCol + 5).setCellValue(correctLetter);
-        row.createCell(startCol + 6).setCellValue(correctComment);
+        row.createCell(startCol + 5).setCellValue(String.join(",", correctLetters));
+        row.createCell(startCol + 6).setCellValue(String.join(" ", correctComments));
     }
 
     // DIQQAT: bu metod ATAYIN @Transactional EMAS — har bir qator
@@ -301,18 +309,24 @@ public class ExcelService {
             validation.textFieldMustNotBeEmpty(correct);
             validation.textFieldMustNotBeEmpty(comment);
 
-            int correctIndex = parseCorrect(correct);
+            // Ko'p to'g'ri javobli savollar — 2-bosqich (foydalanuvchi
+            // so'rovi, 2026-09-05: "umumiy shablon"). "Correct" ustunida
+            // endi bitta harf ("A") YOKI bir nechtasi vergul/probel bilan
+            // ("A,B" yoki "A B") bo'lishi mumkin — eski bitta harfli
+            // fayllar O'ZGARISHSIZ ishlaydi (parseCorrectIndexes bitta
+            // elementli ro'yxat qaytaradi).
+            List<Integer> correctIndexes = parseCorrectIndexes(correct);
 
             String commentOfWrongAnswer = "Noto'g'ri javob";
 
             // Excel orqali import qilinganda rasm/video bo'lmaydi (barchasi null) —
             // ular faqat saytdagi "savol yaratish" formasi orqali qo'shiladi.
             List<AnswerShortDto> answerShortDtoList = new ArrayList<>();
-            answerShortDtoList.add(new AnswerShortDto(a, correctIndex == 0, correctIndex == 0 ? comment : commentOfWrongAnswer, null, null, null));
-            answerShortDtoList.add(new AnswerShortDto(b, correctIndex == 1, correctIndex == 1 ? comment : commentOfWrongAnswer, null, null, null));
-            answerShortDtoList.add(new AnswerShortDto(c, correctIndex == 2, correctIndex == 2 ? comment : commentOfWrongAnswer, null, null, null));
-            answerShortDtoList.add(new AnswerShortDto(d, correctIndex == 3, correctIndex == 3 ? comment : commentOfWrongAnswer, null, null, null));
-            answerShortDtoList.add(new AnswerShortDto(e, correctIndex == 4, correctIndex == 4 ? comment : commentOfWrongAnswer, null, null, null));
+            answerShortDtoList.add(new AnswerShortDto(a, correctIndexes.contains(0), correctIndexes.contains(0) ? comment : commentOfWrongAnswer, null, null, null));
+            answerShortDtoList.add(new AnswerShortDto(b, correctIndexes.contains(1), correctIndexes.contains(1) ? comment : commentOfWrongAnswer, null, null, null));
+            answerShortDtoList.add(new AnswerShortDto(c, correctIndexes.contains(2), correctIndexes.contains(2) ? comment : commentOfWrongAnswer, null, null, null));
+            answerShortDtoList.add(new AnswerShortDto(d, correctIndexes.contains(3), correctIndexes.contains(3) ? comment : commentOfWrongAnswer, null, null, null));
+            answerShortDtoList.add(new AnswerShortDto(e, correctIndexes.contains(4), correctIndexes.contains(4) ? comment : commentOfWrongAnswer, null, null, null));
 
             List<String> answersText = List.of(a, b, c, d, e);
 
@@ -400,15 +414,31 @@ public class ExcelService {
         return formatter.formatCellValue(row.getCell(i)).trim();
     }
 
-    private int parseCorrect(String c) {
-        return switch (c.toUpperCase()) {
-            case "A" -> 0;
-            case "B" -> 1;
-            case "C" -> 2;
-            case "D" -> 3;
-            case "E" -> 4;
-            default -> throw new IllegalArgumentException("❌To'g'ri javob varianti faqat A/B/C/D/E dan biri bo'lishi mumkin.");
-        };
+    // Ko'p to'g'ri javobli savollar (foydalanuvchi so'rovi, 2026-09-05) —
+    // "Correct" ustunida bitta harf ("A") YOKI bir nechtasi vergul/probel/
+    // qiya chiziq bilan ajratilgan holda ("A,B" yoki "A B" yoki "A/B")
+    // bo'lishi mumkin. Bitta harfli qatorlar bitta elementli ro'yxat
+    // qaytaradi — import natijasi eski xatti-harakat bilan AYNAN bir xil.
+    private List<Integer> parseCorrectIndexes(String correctSpec) {
+        List<Integer> indexes = new ArrayList<>();
+        for (String part : correctSpec.split("[,/\\s]+")) {
+            if (part.isBlank()) continue;
+            int idx = switch (part.trim().toUpperCase()) {
+                case "A" -> 0;
+                case "B" -> 1;
+                case "C" -> 2;
+                case "D" -> 3;
+                case "E" -> 4;
+                default -> throw new IllegalArgumentException(
+                        "❌To'g'ri javob varianti faqat A/B/C/D/E dan biri (yoki bir nechtasi, vergul bilan ajratib — masalan \"A,B\") bo'lishi mumkin.");
+            };
+            if (!indexes.contains(idx)) indexes.add(idx);
+        }
+        if (indexes.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "❌To'g'ri javob varianti faqat A/B/C/D/E dan biri (yoki bir nechtasi, vergul bilan ajratib — masalan \"A,B\") bo'lishi mumkin.");
+        }
+        return indexes;
     }
 
 }

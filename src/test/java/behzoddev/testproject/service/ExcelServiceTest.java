@@ -123,6 +123,40 @@ class ExcelServiceTest {
         assertThat(captor.getValue().answers().get(0).isTrue()).isFalse();
     }
 
+    // Ko'p to'g'ri javobli savollar — 2-bosqich (foydalanuvchi so'rovi,
+    // 2026-09-05: "javoblarining bir nechtasi to'g'ri" testlar). "Correct"
+    // ustunida vergul bilan ajratilgan bir nechta harf ("B,D") — HAR
+    // IKKALASI ham isTrue=true bo'lib belgilanishi, qolganlari esa
+    // false bo'lishi kerak.
+    @Test
+    void importQuestions_multipleCorrectAnswers_marksAllListedTrueInDto() throws IOException {
+        byte[] content = buildWorkbook(new String[]{"Savol", "birinchi", "ikkinchi", "uchinchi", "to'rtinchi", "beshinchi", "B,D", "Izoh"});
+
+        org.mockito.ArgumentCaptor<QuestionSaveDto> captor = org.mockito.ArgumentCaptor.forClass(QuestionSaveDto.class);
+        excelService.importQuestions(excelFile(content), 1L);
+
+        verify(questionService).save(captor.capture());
+        assertThat(captor.getValue().answers().get(1).isTrue()).isTrue();  // B
+        assertThat(captor.getValue().answers().get(3).isTrue()).isTrue();  // D
+        assertThat(captor.getValue().answers().get(0).isTrue()).isFalse();
+        assertThat(captor.getValue().answers().get(2).isTrue()).isFalse();
+        assertThat(captor.getValue().answers().get(4).isTrue()).isFalse();
+    }
+
+    // Probel bilan ajratilgan variant ("A B") ham qabul qilinishi kerak —
+    // vergul yagona ruxsat etilgan ajratuvchi emas.
+    @Test
+    void importQuestions_multipleCorrectAnswersSpaceSeparated_marksAllListedTrue() throws IOException {
+        byte[] content = buildWorkbook(new String[]{"Savol", "a", "b", "c", "d", "e", "A E", "Izoh"});
+
+        org.mockito.ArgumentCaptor<QuestionSaveDto> captor = org.mockito.ArgumentCaptor.forClass(QuestionSaveDto.class);
+        excelService.importQuestions(excelFile(content), 1L);
+
+        verify(questionService).save(captor.capture());
+        assertThat(captor.getValue().answers().get(0).isTrue()).isTrue();  // A
+        assertThat(captor.getValue().answers().get(4).isTrue()).isTrue();  // E
+    }
+
     @Test
     void importQuestions_multipleRows_allImported() throws IOException {
         byte[] content = buildWorkbook(new String[]{"Savol 1", "a", "b", "c", "d", "e", "A", "izoh1"},
@@ -279,6 +313,31 @@ class ExcelServiceTest {
             assertThat(row.getCell(2).getStringCellValue()).isEqualTo("Samarqand");
             assertThat(row.getCell(6).getStringCellValue()).isEqualTo("B"); // 2-javob (indeks 1) to'g'ri
             assertThat(row.getCell(7).getStringCellValue()).isEqualTo("To'g'ri, chunki...");
+        }
+    }
+
+    // Ko'p to'g'ri javobli savol eksporti — ilgari faqat OXIRGI topilgan
+    // to'g'ri javob saqlanardi (qolganlari yo'qolib ketardi). Endi
+    // "Correct" ustunida BARCHASI vergul bilan ("A,C") chiqishi kerak —
+    // import bilan round-trip (ExcelService#parseCorrectIndexes shu
+    // formatni o'qiy oladi).
+    @Test
+    void exportQuestions_multipleCorrectAnswers_joinsLettersAndCommentsWithComma() throws IOException {
+        Answer a = Answer.builder().id(1L).answerText("Birinchi").isTrue(true).commentary("izoh1").build();
+        Answer b = Answer.builder().id(2L).answerText("Ikkinchi").isTrue(false).build();
+        Answer c = Answer.builder().id(3L).answerText("Uchinchi").isTrue(true).commentary("izoh2").build();
+        Question q = Question.builder().id(100L).questionText("Savol").answers(List.of(a, b, c)).build();
+        behzoddev.testproject.entity.Topic topic = behzoddev.testproject.entity.Topic.builder().id(5L).name("Mavzu").build();
+
+        when(topicRepository.findById(5L)).thenReturn(java.util.Optional.of(topic));
+        when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(5L)).thenReturn(List.of(q));
+
+        behzoddev.testproject.dto.export.ExportedFileDto result = excelService.exportQuestions(5L);
+
+        try (XSSFWorkbook wb = new XSSFWorkbook(new java.io.ByteArrayInputStream(result.data()))) {
+            Row row = wb.getSheetAt(0).getRow(1);
+            assertThat(row.getCell(6).getStringCellValue()).isEqualTo("A,C");
+            assertThat(row.getCell(7).getStringCellValue()).isEqualTo("izoh1 izoh2");
         }
     }
 
