@@ -1353,33 +1353,9 @@ async function saveOnClientSide(i) {
     }
 }//DONE
 
-//===========================================================================
-//            BACK tugmasini bosganda ishlaydi.
-//===========================================================================
-document.addEventListener("DOMContentLoaded", () => {
-    const btnBack = document.getElementById("btnBack");
-
-    if (!btnBack) return;
-
-    btnBack.onclick = () => {
-        const scienceId =
-            new URLSearchParams(window.location.search).get("scienceId");
-
-        if (!scienceId) {
-            // fallback
-            window.location.href = "/science";
-            return;
-        }
-
-        // Mavzu ichidan kelingan bo'lsa (Bo'lim -> Mavzu -> Dars) — Mavzu
-        // guruhlari ro'yxatiga qaytariladi, aks holda to'g'ridan-to'g'ri
-        // Bo'limlarga (ikkalasida ham joriy Yo'nalish qamrovi saqlanadi).
-        window.location.href = filterSectionId
-            ? `/topic-sections?scienceId=${scienceId}${fieldQuery}`
-            : `/science?focus=${scienceId}${fieldQuery}`;
-    };
-});
-//===========================================================================
+// "🔙 Back" tugmasi (va shu bilan bog'liq handler) olib tashlandi
+// (foydalanuvchi so'rovi, 2026-09-05) — bu vazifani endi yuqoridagi
+// "← Bo'limlar"/"← Mavzular" breadcrumb havolasi bajaradi (applyScopeBar).
 
 
 

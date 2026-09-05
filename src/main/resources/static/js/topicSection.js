@@ -823,22 +823,6 @@ async function saveOnClientSide(i) {
     }
 }
 
-//===========================================================================
-//            BACK tugmasini bosganda ishlaydi.
-//===========================================================================
-document.addEventListener("DOMContentLoaded", () => {
-    const btnBack = document.getElementById("btnBack");
-
-    if (!btnBack) return;
-
-    btnBack.onclick = () => {
-        // Mavzu guruhlari (TopicSection) sahifasi Bo'lim va Darslar
-        // o'rtasida turadi (Bo'lim -> Mavzu -> Dars) — shu sabab "Orqaga"
-        // Bo'limlar ro'yxatiga (kelingan Yo'nalish qamrovini saqlagan
-        // holda) qaytaradi.
-        const scienceId =
-            new URLSearchParams(window.location.search).get("scienceId");
-
-        window.location.href = scienceId ? `/science?focus=${scienceId}${fieldQuery}` : `/science${pageFieldId != null ? "?fieldId=" + pageFieldId : ""}`;
-    };
-});
+// "🔙 Back" tugmasi (va shu bilan bog'liq handler) olib tashlandi
+// (foydalanuvchi so'rovi, 2026-09-05) — bu vazifani endi yuqoridagi
+// "← Bo'limlar" breadcrumb havolasi bajaradi (applyScopeBar).
