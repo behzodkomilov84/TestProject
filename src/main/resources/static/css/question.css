@@ -790,14 +790,21 @@ td label{
    tugmasidan "?focus=<id>" bilan kelinganda — aynan shu savol qatoriga
    e'tiborni tortish uchun vaqtinchalik "yorqinlashtirish" (question.js
    #handleIncomingFocusOrEdit, topic.js'dagi qatorga fokus qilish g'oyasi
-   bilan bir xil, faqat bu yerda jadval qatori bo'lgani uchun rang bilan). */
+   bilan bir xil, faqat bu yerda jadval qatori bo'lgani uchun rang bilan).
+   Foydalanuvchi so'rovi, 2026-09-05: "background'и бўялмаяпти" — sahifa
+   TO'LIQ ochilib, savollar (/api/question/all) yuklanib bo'lguncha
+   biroz vaqt ketadi, shu sabab ranglash 60% gacha TO'LIQ (bir tekis)
+   TURISHI kerak (avvalgidek DARHOL so'na boshlamasin), keyin 4s ichida
+   asta so'nadi — umumiy vaqt oldingi 2.5s'dan ancha uzun va rang ham
+   to'qroq (#fef9c3 emas, #fde047 — sezilarli bo'lishi uchun). */
 @keyframes questionRowFlash {
-    0%   { background-color: #fef9c3; }
+    0%   { background-color: #fde047; }
+    60%  { background-color: #fde047; }
     100% { background-color: transparent; }
 }
 
 .question-row-flash {
-    animation: questionRowFlash 2.5s ease-out;
+    animation: questionRowFlash 4s ease-out;
 }
 
 .word-export-modal {

@@ -57,7 +57,7 @@ function handleIncomingFocusOrEdit() {
         // shundan keyingina flash boshlanadi — vaqt poygasi yo'q.
         row.scrollIntoView({ behavior: "auto", block: "center" });
         row.classList.add("question-row-flash");
-        setTimeout(() => row.classList.remove("question-row-flash"), 2600);
+        setTimeout(() => row.classList.remove("question-row-flash"), 4100);
     }
 }
 
