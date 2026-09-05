@@ -1656,29 +1656,116 @@ td label{
     padding: 6px 8px;
 }
 
-/* Savol/javob/izoh rasm-video widget'lari — "Savol formasi" ham
-   ALLAQACHON mavjud ".inline-image-upload"/".inline-video-upload"
-   (buildInlineImageWidget/buildInlineVideoWidget, yuqorida) ni qayta
-   ishlatadi (test-form.css'dagi ".image-upload" oilasi EMAS — bu
-   sahifada ikkita boshqa-boshqa widget tizimi bo'lmasin deb, faqat
-   BITTASI, allaqachon sinovdan o'tgani ishlatiladi). Izoh sub-modali
-   ichida biroz ixchamroq ko'rinishi uchun faqat shu qism qayta
-   belgilanadi.
-   ------------------------------------------------------------------- */
-.qform-commentary-modal .inline-image-preview {
-    max-width: 100px;
-    max-height: 70px;
-}
-
-.qform-commentary-modal .inline-video-preview {
-    max-width: 130px;
-    max-height: 90px;
-}
-
-.qform-commentary-media {
+/* Har bir javob variantining "✏️Izoh" sub-modali — A4 kenglikdagi quti
+   (test-form.css#.commentary-form-modal bilan bir xil andoza — bu
+   sahifa o'sha faylni ulamagani uchun takrorlangan). MUHIM: bu qoida
+   YO'Q bo'lganda ham sub-modal texnik jihatdan "ochilgan" bo'lardi
+   (.modal-overlay.show orqali) — lekin ICHKI quti hech qanday fon/
+   chegara/o'lchamga ega bo'lmay, qamrovsiz matn to'plami sifatida
+   qform modalining USTIGA "yopishib" chizilardi (haqiqiy topilgan bug,
+   birinchi jonli sinovda). */
+.commentary-form-modal {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    padding: 18px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    padding-top: 8px;
-    border-top: 1px solid #eee;
+    gap: 8px;
+    width: min(794px, 95vw);
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: 0;
+    animation: modalPopIn .2s cubic-bezier(.2, .9, .3, 1.2);
+}
+
+/* Savol/javob rasm yuklash widget'lari (".inline-image-upload", yuqorida,
+   buildInlineImageWidget) — izoh sub-modalida ENDI faqat rich-toolbar'ning
+   O'ZIDAGI 🖼/🎬 tugmalari orqali rasm/video qo'shiladi (foydalanuvchi
+   so'rovi, 2026-09-05: "изоҳда ўзи расм қўшадиган кнопка бор,
+   ташқаридагини олиб ташла") — shu sabab ALOHIDA ".qform-commentary-media"
+   widget bloki OLIB TASHLANDI (endi kerak emas).
+
+   "🎬 Video qo'shish" oynasi — courseDetail.js/css'dagi ".video-insert-
+   modal" bilan BIR XIL (bu sahifa o'sha faylni ulamagani uchun
+   takrorlangan). z-index — izoh sub-modalidan (9999) ustida turishi
+   uchun rang palitrasidan (10000) HAM balandroq. */
+.video-insert-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10010;
+}
+
+.video-insert-modal-box {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px 24px;
+    width: 90%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.video-insert-modal-box h4 {
+    margin: 0 0 10px;
+}
+
+.video-insert-label {
+    font-size: 13px;
+    color: #555;
+    margin-top: 10px;
+}
+
+.video-insert-modal-box input[type="text"],
+.video-insert-modal-box input[type="file"] {
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.video-insert-or {
+    text-align: center;
+    color: #999;
+    font-size: 12px;
+    margin: 6px 0;
+}
+
+.video-insert-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.video-insert-modal-actions button {
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.video-insert-modal-actions button:first-child {
+    background: #1976d2;
+    color: #fff;
+}
+
+.video-insert-modal-actions button:last-child {
+    background: #e0e0e0;
+    color: #1e293b;
+}
+
+/* Izoh muharririga qo'yilgan video (<video>/<iframe>) — rasm bilan BIR
+   XIL sudrab-o'lchamini-o'zgartirish tutqichini oladi (startImageResize
+   endi "img, video, iframe" hammasini qamrab oladi). */
+.rich-text-editor iframe,
+.rich-text-editor video {
+    max-width: 100%;
+    display: block;
 }

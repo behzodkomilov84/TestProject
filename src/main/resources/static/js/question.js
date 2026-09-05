@@ -335,6 +335,7 @@ function renderPagination(page) {
 
     const prev = document.createElement("button");
     prev.textContent = "←";
+    prev.title = "Oldingi sahifa";
     prev.disabled = page.first;
     prev.onclick = () => {
         currentPage--;
@@ -358,6 +359,7 @@ function renderPagination(page) {
 
     const next = document.createElement("button");
     next.textContent = "→";
+    next.title = "Keyingi sahifa";
     next.disabled = page.last;
     next.onclick = () => {
         currentPage++;
@@ -558,9 +560,9 @@ function buildInlineImageWidget(role, currentUrl, altText) {
     return `
         <div class="inline-image-upload" data-role="${role}" data-current-url="${url}">
             <input type="file" accept="image/png,image/jpeg,image/webp,image/gif" class="inline-image-input" hidden>
-            <button type="button" class="inline-media-btn inline-image-btn">🖼️</button>
+            <button type="button" class="inline-media-btn inline-image-btn" title="${altText} qo'shish">🖼️</button>
             <img class="inline-image-preview ${url ? "" : "hidden"}" src="${url}" alt="${altText}">
-            <button type="button" class="inline-media-btn inline-remove-image-btn ${url ? "" : "hidden"}">✖</button>
+            <button type="button" class="inline-media-btn inline-remove-image-btn ${url ? "" : "hidden"}" title="${altText}ni olib tashlash">✖</button>
         </div>
     `;
 }
@@ -570,9 +572,9 @@ function buildInlineVideoWidget(currentUrl) {
     return `
         <div class="inline-video-upload" data-current-url="${url}">
             <input type="file" accept="video/mp4,video/webm,video/ogg" class="inline-video-input" hidden>
-            <button type="button" class="inline-media-btn inline-video-btn">🎬</button>
+            <button type="button" class="inline-media-btn inline-video-btn" title="Video qo'shish">🎬</button>
             <video class="inline-video-preview ${url ? "" : "hidden"}" src="${url}" controls></video>
-            <button type="button" class="inline-media-btn inline-remove-video-btn ${url ? "" : "hidden"}">✖</button>
+            <button type="button" class="inline-media-btn inline-remove-video-btn ${url ? "" : "hidden"}" title="Videoni olib tashlash">✖</button>
         </div>
     `;
 }
@@ -806,6 +808,7 @@ function buildCommentaryModalHtml(index) {
                     <button type="button" onclick="richExec('${editorId}','insertOrderedList')" title="Raqamlangan ro'yxat">☰1</button>
                     <button type="button" onclick="triggerImageInsert('${editorId}')" title="Rasm qo'shish">🖼</button>
                     <input type="file" id="${editorId}-imageInput" accept="image/*" style="display:none;" onchange="richInsertImage('${editorId}', this)">
+                    <button type="button" onclick="openVideoInsertModal('${editorId}')" title="Video qo'shish">🎬</button>
                     <span class="rich-toolbar-sep"></span>
                     <button type="button" onclick="richExec('${editorId}','removeFormat')" title="Formatni tozalash">🧹</button>
                 </div>
@@ -813,11 +816,6 @@ function buildCommentaryModalHtml(index) {
                      data-placeholder="To'g'ri javob uchun izoh kiriting..."></div>
 
                 <button type="button" class="qform-link-btn hidden" data-answer-index="${index}">🔗 Darsga havola qo'shish</button>
-
-                <div class="qform-commentary-media">
-                    <div id="qformCommentaryImageSlot-${index}"></div>
-                    <div id="qformCommentaryVideoSlot-${index}"></div>
-                </div>
 
                 <div class="modal-footer">
                     <button type="button" class="qform-save-btn" onclick="closeCommentaryModal(${index})">✅ Yopish</button>
@@ -1107,6 +1105,188 @@ async function richInsertImage(editorId, fileInput) {
     }
 }
 
+// ========================================================================
+// "🎬 Video qo'shish" — courseDetail.js ("Kursga dars qo'shish/tahrirlash")
+// bilan BIR XIL (foydalanuvchi so'rovi, 2026-09-05: "Форматларни ичига
+// курст таҳрирлашдаги каби видео қўйишни қўш. Размерини бошқариш мумкин
+// бўлсин"). YouTube/Vimeo/Facebook/Instagram havolasi YOKI kompyuterdan
+// fayl — kursor turgan joyga qo'yiladi, rasm kabi tutqichni sudrab
+// o'lchamini o'zgartirish mumkin (startImageResize — "img, video, iframe"
+// hammasini birdek qamrab oladi). Endpoint — /api/question/upload-
+// commentary-video (bu sahifada COURSE_ID yo'q, umumiy endpoint).
+// ========================================================================
+let videoInsertTargetEditorId = null;
+
+function openVideoInsertModal(editorId) {
+    videoInsertTargetEditorId = editorId;
+    richInsertSavedRange = captureEditorSelection(editorId);
+    document.getElementById("videoInsertUrlInput").value = "";
+    document.getElementById("videoInsertFileInput").value = "";
+    document.getElementById("videoInsertWidthInput").value = "480";
+    document.getElementById("videoInsertModal").classList.remove("hidden");
+}
+
+function closeVideoInsertModal() {
+    document.getElementById("videoInsertModal").classList.add("hidden");
+    videoInsertTargetEditorId = null;
+}
+
+function confirmVideoInsert() {
+    const editorId = videoInsertTargetEditorId;
+    if (!editorId) return;
+
+    const url = document.getElementById("videoInsertUrlInput").value.trim();
+    const fileInput = document.getElementById("videoInsertFileInput");
+    const hasFile = fileInput.files && fileInput.files.length > 0;
+    const width = normalizeVideoWidth(document.getElementById("videoInsertWidthInput").value);
+
+    if (!url && !hasFile) {
+        showAlertModal("❌ Video havolasini kiriting yoki video fayl tanlang");
+        return;
+    }
+
+    closeVideoInsertModal();
+
+    if (url) {
+        insertVideoEmbedHtml(editorId, url, width);
+    } else {
+        fileInput.dataset.pendingWidth = width;
+        richInsertUploadedVideo(editorId, fileInput);
+    }
+}
+
+function normalizeVideoWidth(raw) {
+    const trimmed = (raw || "").trim();
+    if (!trimmed) return "480px";
+    if (trimmed.endsWith("%") || trimmed.endsWith("px")) return trimmed;
+    return trimmed + "px";
+}
+
+// YouTube pleyeri "videoId" sifatida FAQAT xom ID'ni qabul qiladi, to'liq
+// URL emas — courseDetail.js bilan bir xil.
+function extractYouTubeId(input) {
+    if (!input) return input;
+    const trimmed = input.trim();
+    if (!trimmed.includes("/") && !trimmed.includes("?")) return trimmed;
+
+    try {
+        const url = new URL(trimmed);
+        if (url.hostname.includes("youtu.be")) {
+            return url.pathname.slice(1);
+        }
+        if (url.searchParams.get("v")) {
+            return url.searchParams.get("v");
+        }
+        const embedMatch = url.pathname.match(/\/embed\/([^/?]+)/);
+        if (embedMatch) return embedMatch[1];
+    } catch (e) {
+        // URL sifatida parse bo'lmadi — ehtimol shunchaki ID, o'zgarishsiz qoldiramiz.
+    }
+    return trimmed;
+}
+
+function isYouTubeSource(source) {
+    const trimmed = (source || "").trim();
+    if (!trimmed) return false;
+    if (/youtube\.com|youtu\.be/i.test(trimmed)) return true;
+    return !trimmed.includes("/") && !trimmed.includes(".") && !trimmed.includes(" ");
+}
+
+// Instagram ODDIY <iframe> orqali ko'rsatilmaydi (ularning xavfsizlik
+// siyosati bloklaydi) — rasmiy blockquote+embed.js usuli kerak
+// (courseDetail.js bilan bir xil).
+let instagramEmbedScriptState = "idle"; // idle | loading | loaded
+
+function ensureInstagramEmbedProcessed() {
+    if (instagramEmbedScriptState === "loaded") {
+        if (window.instgrm && window.instgrm.Embeds) window.instgrm.Embeds.process();
+        return;
+    }
+    if (instagramEmbedScriptState === "loading") return;
+    instagramEmbedScriptState = "loading";
+    const script = document.createElement("script");
+    script.src = "https://www.instagram.com/embed.js";
+    script.async = true;
+    script.onload = () => {
+        instagramEmbedScriptState = "loaded";
+        if (window.instgrm && window.instgrm.Embeds) window.instgrm.Embeds.process();
+    };
+    document.body.appendChild(script);
+}
+
+function insertVideoEmbedHtml(editorId, source, width) {
+    restoreEditorSelection(editorId, richInsertSavedRange);
+    attachImageResizeHandlers(editorId);
+
+    const trimmed = source.trim();
+    let mediaHtml;
+    let isInstagram = false;
+
+    if (isYouTubeSource(trimmed)) {
+        const videoId = escapeHtml(extractYouTubeId(trimmed));
+        mediaHtml = `<iframe src="https://www.youtube.com/embed/${videoId}" style="width:${width};max-width:100%;aspect-ratio:16/9;border:0;display:block" allowfullscreen></iframe>`;
+    } else if (/facebook\.com|fb\.watch/i.test(trimmed)) {
+        const encodedUrl = encodeURIComponent(trimmed);
+        mediaHtml = `<iframe src="https://www.facebook.com/plugins/video.php?href=${encodedUrl}&show_text=false" style="width:${width};max-width:100%;aspect-ratio:16/9;border:0;display:block" allowfullscreen></iframe>`;
+    } else if (/instagram\.com/i.test(trimmed)) {
+        isInstagram = true;
+        const url = escapeHtml(trimmed);
+        mediaHtml = `<blockquote class="instagram-media" data-instgrm-permalink="${url}" data-instgrm-version="14" style="width:${width};max-width:100%;min-width:220px;margin:0 auto;"></blockquote>`;
+    } else if (/\.(mp4|webm|ogg|ogv|mov)(\?|$)/i.test(trimmed)) {
+        const url = escapeHtml(trimmed);
+        mediaHtml = `<video src="${url}" controls style="width:${width};max-width:100%;display:block"></video>`;
+    } else {
+        const url = escapeHtml(trimmed);
+        mediaHtml = `<iframe src="${url}" style="width:${width};max-width:100%;aspect-ratio:16/9;border:0;display:block" allowfullscreen></iframe>`;
+    }
+
+    const html = `<span class="rich-img-wrap" contenteditable="false">`
+        + mediaHtml
+        + `<span class="rich-img-handle" title="Sudrab o'lchamini o'zgartiring"></span>`
+        + `</span>&nbsp;`;
+    document.execCommand('insertHTML', false, html);
+    injectAlignBars(editorId);
+    injectCaptions(editorId);
+    if (isInstagram) ensureInstagramEmbedProcessed();
+}
+
+async function richInsertUploadedVideo(editorId, fileInput) {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    const width = fileInput.dataset.pendingWidth || "480px";
+    delete fileInput.dataset.pendingWidth;
+
+    attachImageResizeHandlers(editorId);
+
+    try {
+        const formData = new FormData();
+        formData.append("video", file);
+        const res = await fetch("/api/question/upload-commentary-video", {
+            method: "POST", body: formData
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            showAlertModal(data.error || "❌ Video yuklashda xatolik");
+            return;
+        }
+        const url = escapeHtml(data.url);
+        const html = `<span class="rich-img-wrap" contenteditable="false">`
+            + `<video src="${url}" controls style="width:${width};max-width:100%;display:block"></video>`
+            + `<span class="rich-img-handle" title="Sudrab o'lchamini o'zgartiring"></span>`
+            + `</span>&nbsp;`;
+        restoreEditorSelection(editorId, richInsertSavedRange);
+        document.execCommand('insertHTML', false, html);
+        injectAlignBars(editorId);
+        injectCaptions(editorId);
+    } catch (err) {
+        console.error(err);
+        showAlertModal("❌ Video yuklashda tarmoq xatoligi");
+    } finally {
+        fileInput.value = "";
+    }
+}
+
 // ================= Rasmni chapga/markazga/o'ngga surish =================
 function injectAlignBars(editorId) {
     const editor = document.getElementById(editorId);
@@ -1174,10 +1354,14 @@ function attachImageResizeHandlers(editorId) {
     }, { passive: true });
 }
 
+// "rich-img-wrap" nomiga qaramay — rasm bilan bir qatorda video
+// (<iframe>/<video>, openVideoInsertModal orqali qo'shilgan) ham shu
+// tutqich orqali sudrab o'lchamini o'zgartirishi mumkin (foydalanuvchi
+// so'rovi, 2026-09-05: "Размерини бошқариш мумкин бўлсин").
 function startImageResize(e, clientX) {
     if (!e.target.classList || !e.target.classList.contains('rich-img-handle')) return;
     const wrap = e.target.closest('.rich-img-wrap');
-    const media = wrap ? wrap.querySelector('img') : null;
+    const media = wrap ? wrap.querySelector('img, video, iframe') : null;
     const editor = e.currentTarget;
     if (!media) return;
 
@@ -1210,6 +1394,19 @@ document.addEventListener('touchmove', (e) => {
 }, { passive: true });
 document.addEventListener('touchend', () => { richResizeState = null; });
 
+// Ilgari izoh sub-modalida rasm/video UCHUN ALOHIDA ("izohdan tashqari")
+// yuklash tugmalari bor edi (buildInlineImageWidget/buildInlineVideoWidget,
+// endi olib tashlandi — rich-toolbar'ning O'ZIDA rasm/video qo'shish
+// tugmasi mavjud, foydalanuvchi so'rovi, 2026-09-05: "изоҳда ўзи расм
+// қўшадиган кнопка бор, ташқаридагини олиб ташла"). Ammo ESKI (bu
+// widget'lar orqali, masalan test-form.js'da HAMON mavjud bo'lgan
+// alohida widget orqali) saqlangan commentaryImageUrl/commentaryVideoUrl
+// bo'lishi mumkin — ular BUTUNLAY YO'QOTILMASIN deb, tahrirlashda
+// o'zgarishsiz shu yerda saqlab qo'yiladi (answer indeksi bo'yicha) va
+// saveQuestionForm shulardan o'qiydi (endi UI'da ularni ko'rish/o'zgartirish
+// imkoni yo'q — faqat mavjud qiymat saqlanib qoladi).
+let qformLegacyCommentaryMedia = {};
+
 // Modalni bo'sh holatga qaytaradi — ochilishidan OLDIN (create) yoki
 // to'ldirishdan OLDIN (edit) chaqiriladi.
 function resetQuestionFormModal() {
@@ -1220,13 +1417,12 @@ function resetQuestionFormModal() {
     const answersContainer = document.getElementById("qformAnswersContainer");
     answersContainer.innerHTML = ANSWER_LETTERS.map((_, i) => buildQformAnswerRowHtml(i)).join("");
 
+    qformLegacyCommentaryMedia = {};
+
     ANSWER_LETTERS.forEach((_, i) => {
         document.getElementById(`qformAnswerImageSlot-${i}`).innerHTML =
             buildInlineImageWidget("answer-image", "", `${ANSWER_LETTERS[i]} javob rasmi`);
-        document.getElementById(`qformCommentaryImageSlot-${i}`).innerHTML =
-            buildInlineImageWidget("commentary-image", "", "Izoh rasmi");
-        document.getElementById(`qformCommentaryVideoSlot-${i}`).innerHTML =
-            buildInlineVideoWidget("");
+        qformLegacyCommentaryMedia[i] = { image: null, video: null };
         document.getElementById(`commentaryRichEditor-${i}`).innerHTML = "";
         document.getElementById(`commentaryModal-${i}`).classList.remove("show");
         // Rasm sudrab-o'lchamini-o'zgartirish — odatda faqat richInsertImage
@@ -1314,17 +1510,18 @@ function fillQuestionFormModal(q) {
         // qaytarardi (QuestionService#updateQuestion).
         document.getElementById(`commentaryRichEditor-${i}`).innerHTML = a.commentary || "";
 
+        // Eski, ALOHIDA (rich-toolbar'dan tashqarida) yuklangan izoh
+        // rasmi/videosi — endi UI'da ko'rinmaydi/o'zgartirilmaydi, lekin
+        // saqlashda yo'qotib qo'yilmasin deb qiymati saqlab qo'yiladi
+        // (qformLegacyCommentaryMedia, resetQuestionFormModal'dagi izoh).
+        qformLegacyCommentaryMedia[i] = {
+            image: a.commentaryImageUrl || null,
+            video: a.commentaryVideoUrl || null
+        };
+
         if (a.isTrue) {
             checkbox.checked = true;
             commentBtn.classList.remove("hidden");
-            if (a.commentaryImageUrl) {
-                document.getElementById(`qformCommentaryImageSlot-${i}`).innerHTML =
-                    buildInlineImageWidget("commentary-image", a.commentaryImageUrl, "Izoh rasmi");
-            }
-            if (a.commentaryVideoUrl) {
-                document.getElementById(`qformCommentaryVideoSlot-${i}`).innerHTML =
-                    buildInlineVideoWidget(a.commentaryVideoUrl);
-            }
         }
 
         // Mavjud izohdagi rasmlarga (agar bo'lsa) tekislash tugmalari/
@@ -1410,10 +1607,13 @@ async function saveQuestionForm() {
         cleanupEmptyCaptions(`commentaryRichEditor-${index}`);
         const editor = document.getElementById(`commentaryRichEditor-${index}`);
         const commentaryHtml = editor.innerHTML.trim();
-        const commentaryImageWidget = document.getElementById(`qformCommentaryImageSlot-${index}`)
-            .querySelector(".inline-image-upload");
-        const commentaryVideoWidget = document.getElementById(`qformCommentaryVideoSlot-${index}`)
-            .querySelector(".inline-video-upload");
+        // Rasm/video endi rich-toolbar orqali TO'G'RIDAN-TO'G'RI izoh
+        // matni ICHIGA joylashadi — alohida commentaryImageUrl/
+        // commentaryVideoUrl maydonlariga ENDI hech narsa yozilmaydi,
+        // faqat ESKI (boshqa joydan, masalan test-form.js'dagi hamon
+        // mavjud alohida widget orqali) saqlangan qiymat bo'lsa —
+        // o'zgarishsiz saqlanib qoladi (qformLegacyCommentaryMedia).
+        const legacyMedia = qformLegacyCommentaryMedia[index] || { image: null, video: null };
 
         // To'g'ri javob uchun izoh BO'SH BO'LISHI MUMKIN EMAS
         // (QuestionService#updateQuestion — validation.textFieldMustNotBeEmpty).
@@ -1432,8 +1632,8 @@ async function saveQuestionForm() {
             isTrue: isCorrect,
             commentary,
             imageUrl: imageWidget?.dataset.currentUrl || null,
-            commentaryImageUrl: isCorrect ? (commentaryImageWidget?.dataset.currentUrl || null) : null,
-            commentaryVideoUrl: isCorrect ? (commentaryVideoWidget?.dataset.currentUrl || null) : null
+            commentaryImageUrl: isCorrect ? legacyMedia.image : null,
+            commentaryVideoUrl: isCorrect ? legacyMedia.video : null
         });
     }
 

@@ -233,6 +233,7 @@
                 <button type="button" onclick="richExec('modalCommentEditor','insertOrderedList')" title="Raqamlangan ro'yxat">☰1</button>
                 <button type="button" onclick="triggerImageInsert('modalCommentEditor')" title="Rasm qo'shish">🖼</button>
                 <input type="file" id="modalCommentEditor-imageInput" accept="image/*" style="display:none;" onchange="richInsertImage('modalCommentEditor', this)">
+                <button type="button" onclick="openVideoInsertModal('modalCommentEditor')" title="Video qo'shish">🎬</button>
                 <span class="rich-toolbar-sep"></span>
                 <button type="button" onclick="richExec('modalCommentEditor','removeFormat')" title="Formatni tozalash">🧹</button>
             </div>
@@ -258,6 +259,33 @@
 
 
 
+</div>
+
+<!-- "🎬 Video qo'shish" oynasi — courseDetail.js/html'dagi bilan BIR XIL
+     (foydalanuvchi so'rovi, 2026-09-05: "Форматларни ичига курст
+     таҳрирлашдаги каби видео қўйишни қўш"). Bitta umumiy modal — qaysi
+     tahrirlagichga qo'yilishi videoInsertTargetEditorId orqali eslab
+     qolinadi (openVideoInsertModal/confirmVideoInsert, question.js). -->
+<div id="videoInsertModal" class="video-insert-modal hidden">
+    <div class="video-insert-modal-box">
+        <h4>🎬 Video qo'shish</h4>
+
+        <label class="video-insert-label" for="videoInsertUrlInput">Video havolasi (YouTube, Vimeo, Instagram, Facebook va h.k.) yoki YouTube ID si</label>
+        <input type="text" id="videoInsertUrlInput" placeholder="https://youtu.be/... , https://player.vimeo.com/... yoki dQw4w9WgXcQ">
+
+        <div class="video-insert-or">— yoki —</div>
+
+        <label class="video-insert-label" for="videoInsertFileInput">Kompyuterdan video fayl</label>
+        <input type="file" id="videoInsertFileInput" accept="video/*">
+
+        <label class="video-insert-label" for="videoInsertWidthInput">Kengligi (piksel yoki foiz)</label>
+        <input type="text" id="videoInsertWidthInput" value="480" placeholder="masalan: 480 yoki 100%">
+
+        <div class="video-insert-modal-actions">
+            <button type="button" onclick="confirmVideoInsert()">✅ Qo'shish</button>
+            <button type="button" onclick="closeVideoInsertModal()">Bekor qilish</button>
+        </div>
+    </div>
 </div>
 
 <script src="/js/topicLinkButton.js"></script>
