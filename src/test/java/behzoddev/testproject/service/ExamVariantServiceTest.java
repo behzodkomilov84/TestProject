@@ -270,6 +270,50 @@ class ExamVariantServiceTest {
         wb.close();
     }
 
+    // Haqiqiy topilgan bug (foydalanuvchi so'rovi, 2026-09-06) —
+    // "correctLetter" bitta String edi, har bir to'g'ri javobda ustidan
+    // yozilardi, natijada ko'p to'g'ri javobli savolda javoblar kalitida
+    // faqat OXIRGI to'g'ri harf qolib, qolganlari yo'qolardi (xuddi
+    // ExcelService#writeAnswerColumns'da 2-bosqichda topilib tuzatilgan
+    // bug bilan bir xil, faqat shu yerga tegilmagan edi).
+    @Test
+    void generateVariantsForTopic_multiCorrectAnswerQuestion_answerKeyKeepsAllCorrectLetters() throws IOException {
+        Topic t1 = topic(1, "T1");
+        Question q = Question.builder().id(999L).questionText("T1-Q1").build();
+        List<Answer> answers = new ArrayList<>();
+        for (int a = 0; a < 4; a++) {
+            // A (indeks 0) va C (indeks 2) — ikkalasi ham to'g'ri.
+            boolean isTrue = (a == 0 || a == 2);
+            answers.add(Answer.builder().id((long) (100 + a)).answerText("T1-A" + a).isTrue(isTrue).question(q).build());
+        }
+        q.setAnswers(answers);
+
+        when(topicRepository.findById(1L)).thenReturn(java.util.Optional.of(t1));
+        when(questionRepository.findByTopicIdAndDeletedAtIsNullOrderByOrderIndexAsc(1L)).thenReturn(List.of(q));
+
+        service = service();
+        // shuffleAnswers=false -> javoblar tartibi o'zgarmaydi (A=indeks 0, C=indeks 2).
+        behzoddev.testproject.dto.export.ExportedFileDto result = service.generateVariantsForTopic(1L, 1, 1, false, false);
+        byte[] zip = result.data();
+
+        Workbook wb = null;
+        try (ZipInputStream zin = new ZipInputStream(new ByteArrayInputStream(zip))) {
+            ZipEntry entry;
+            while ((entry = zin.getNextEntry()) != null) {
+                if (entry.getName().equals("Javoblar_kaliti.xlsx")) {
+                    wb = WorkbookFactory.create(new ByteArrayInputStream(zin.readAllBytes()));
+                }
+            }
+        }
+
+        assertThat(wb).isNotNull();
+        Sheet sheet = wb.getSheetAt(0);
+        Row row = sheet.getRow(1);
+        // Ikkala to'g'ri javob HAM saqlanishi kerak, faqat oxirgisi emas.
+        assertThat(row.getCell(1).getStringCellValue()).isEqualTo("A,C");
+        wb.close();
+    }
+
     @Test
     void generateVariantsForTopic_questionWithImage_embedsPictureInDocx() throws IOException {
         Topic t1 = topic(1, "T1");

@@ -268,7 +268,12 @@ public class ExamVariantService {
             Collections.shuffle(answers, random);
         }
 
-        String correctLetter = "";
+        // Ko'p to'g'ri javobli savollar (foydalanuvchi so'rovi, 2026-09-06)
+        // — BARCHA to'g'ri harflar to'planadi ("B,D"), faqat OXIRGISI EMAS.
+        // Avval bitta "String correctLetter" har safar ustidan yozilardi —
+        // ExcelService#writeAnswerColumns'da (2-bosqich) allaqachon topilib
+        // tuzatilgan xuddi shu bug shu yerga ATAYLAB tegilmagan edi.
+        List<String> correctLetters = new ArrayList<>();
         for (int i = 0; i < answers.size(); i++) {
             Answer a = answers.get(i);
 
@@ -283,11 +288,11 @@ public class ExamVariantService {
             DocxImageUtil.insertImageIfPresent(doc, uploadDir, a.getImageUrl());
 
             if (Boolean.TRUE.equals(a.getIsTrue())) {
-                correctLetter = ANSWER_LETTERS[i];
+                correctLetters.add(ANSWER_LETTERS[i]);
             }
         }
 
-        return correctLetter;
+        return String.join(",", correctLetters);
     }
 
     // O'qituvchi uchun javoblar kaliti — har bir qator bitta variant,

@@ -13,6 +13,26 @@ function imageSizeStyleAttr(width, height) {
     return ` style="${w}${h}max-width:100%;"`;
 }
 
+// Ko'p to'g'ri javobli savollar (foydalanuvchi so'rovi, 2026-09-06 —
+// "talaba UI" bosqichi, avvalgi bosqichlarda backend/admin/Excel allaqachon
+// tayyor edi, faqat talaba tomoni radio bo'lib qolgan edi). Har bir savol
+// UCHUN alohida hisoblanadi (bazadagi haqiqiy isTrue soniga qarab) —
+// odatdagi (1 ta to'g'ri) savollar hamon radio (o'zgarishsiz), faqat 2+
+// to'g'ri javobli savollargina checkbox bo'lib chiqadi.
+function isMultiCorrectQuestion(q) {
+    return q.answers.filter(a => a.isTrue).length > 1;
+}
+
+// Ikkita to'plam (Set) bir xil elementlardan iboratmi — "hammasi yoki
+// hech narsa" baholash qoidasi (backend#MultiAnswerUtil.isCorrect bilan
+// AYNAN bir xil semantika: talaba ANIQ barcha to'g'ri variantlarni
+// belgilagan bo'lishi kerak, ortiqcha ham, kam ham emas).
+function setsEqual(a, b) {
+    if (a.size !== b.size) return false;
+    for (const x of a) if (!b.has(x)) return false;
+    return true;
+}
+
 //==============================================================
 //            Состояние теста
 //==============================================================
@@ -178,6 +198,7 @@ function renderQuestions(questions) {
     questions.forEach((q, index) => {
 
         const correctAnswer = q.answers.find(a => a.isTrue);
+        const isMulti = isMultiCorrectQuestion(q);
 
         const block = document.createElement("div");
         block.className = "question-block";
@@ -189,11 +210,12 @@ function renderQuestions(questions) {
                 ${q.imageUrl ? `<img class="question-image" src="${q.imageUrl}"${imageSizeStyleAttr(q.imageWidth, q.imageHeight)} alt="Savol rasmi">` : ""}
                 <h3>${index + 1}. ${q.questionText}</h3>
             </div>
+            ${isMulti ? `<p class="multi-correct-hint">☑️ Bir nechta to'g'ri javob bo'lishi mumkin</p>` : ""}
             <ul>
                 ${q.answers.map((a, i) => `
                     <li>
                         <label>
-                            <input type="radio" name="q-${q.id}" data-answer-id="${a.id}">
+                            <input type="${isMulti ? "checkbox" : "radio"}" name="q-${q.id}" data-answer-id="${a.id}">
                             <div class="answer-content-row">
                                 ${a.imageUrl ? `<img class="answer-image" src="${a.imageUrl}"${imageSizeStyleAttr(a.imageWidth, a.imageHeight)} alt="Javob rasmi">` : ""}
                                 <span><b>${ANSWER_LETTERS[i] || ""}) </b>${a.answerText}</span>
@@ -275,20 +297,32 @@ function goToPreviousQuestion() {
 }
 //Выбор ответа
 document.addEventListener("change", (e) => {
-    if (e.target.type !== "radio") return;
+    if (e.target.type !== "radio" && e.target.type !== "checkbox") return;
 
     const block = e.target.closest('.question-block');
+    if (!block) return;
     const questionId = Number(block.dataset.questionId);
     const answerId = Number(e.target.dataset.answerId);
 
-    const wasAnsweredBefore = testState.answers.has(questionId);
+    if (e.target.type === "radio") {
+        testState.answers.set(questionId, new Set([answerId]));
+    } else {
+        // Checkbox (ko'p to'g'ri javobli savol) — belgi/bekor qilish
+        // MAVJUD to'plamga qo'shiladi/olib tashlanadi, boshqa javoblarga
+        // tegmaydi (radio'dan farqli — bir nechtasi birga tanlanishi mumkin).
+        const current = testState.answers.get(questionId) || new Set();
+        if (e.target.checked) current.add(answerId);
+        else current.delete(answerId);
 
-    testState.answers.set(questionId, answerId);
-
-    // ✅ обновляем прогресс ТОЛЬКО если вопрос был без ответа
-    if (!wasAnsweredBefore) {
-        updateProgress();
+        if (current.size === 0) testState.answers.delete(questionId);
+        else testState.answers.set(questionId, current);
     }
+
+    // Checkbox'da savol "javob berilgan" <-> "berilmagan" ikkala tomonga
+    // ham o'tishi mumkin (oxirgi belgi bekor qilinsa) — shu sabab radio'dagi
+    // kabi faqat "wasAnsweredBefore=false" holatida emas, HAR DOIM
+    // yangilanadi (progress-bar arzon hisoblash, muammo yo'q).
+    updateProgress();
 });
 
 function startTest() {
@@ -361,10 +395,14 @@ function saveTestResult() {
         // bo'lishi mumkin, natija ("X/Y") shu haqiqiy sonlarga nisbatan
         // hisoblanishi uchun.
         totalQuestions: testState.allQuestions.length,
+        // "answerIds" — ko'p to'g'ri javobli savollar uchun (backend
+        // AnswerResultDto/MultiAnswerUtil.resolveSubmittedIds — ro'yxat
+        // bo'lsa SHU ustun keladi, bitta javobli savolda ham bitta
+        // elementli ro'yxat sifatida to'g'ri ishlaydi).
         answers: Array.from(testState.answers.entries()).map(
-            ([questionId, answerId]) => ({
+            ([questionId, answerIdSet]) => ({
                 questionId,
-                answerId
+                answerIds: Array.from(answerIdSet)
             })
         )
     };
@@ -385,9 +423,14 @@ function saveTestResult() {
 function calculateResult() {
     let correct = 0;
     testState.questions.forEach(q => {
-        const selectedId = testState.answers.get(q.id);
-        const correctAnswer = q.answers.find(a => a.isTrue);
-        if (correctAnswer && correctAnswer.id === selectedId) correct++;
+        // "hammasi yoki hech narsa" — backend#MultiAnswerUtil.isCorrect
+        // bilan AYNAN bir xil qoida (talaba ANIQ barcha to'g'ri
+        // variantlarni belgilagan bo'lishi kerak). Bitta to'g'ri javobli
+        // savolda bu eskicha "bitta to'g'ri tanlangan" tekshiruvi bilan
+        // bir xil natija beradi.
+        const selectedSet = testState.answers.get(q.id) || new Set();
+        const correctIds = new Set(q.answers.filter(a => a.isTrue).map(a => a.id));
+        if (correctIds.size > 0 && setsEqual(selectedSet, correctIds)) correct++;
     });
 
     const result = {
@@ -458,17 +501,30 @@ function showWrongAnswers() {
 
     testState.questions.forEach((q, index) => {
 
-        const selectedAnswerId = Number(testState.answers.get(q.id));
-        const correctAnswer = q.answers.find(a => a.isTrue);
+        const selectedSet = testState.answers.get(q.id) || new Set();
+        const correctAnswers = q.answers.filter(a => a.isTrue);
+        const correctIds = new Set(correctAnswers.map(a => a.id));
 
-        // если ответ верный — пропускаем
-        if (!correctAnswer || Number(correctAnswer.id) === Number(selectedAnswerId)) {
+        // если ответ верный (barcha to'g'ri variantlar, ORTIQCHASIZ va
+        // KAMSIZ, tanlangan bo'lsa) — пропускаем
+        if (correctAnswers.length === 0 || setsEqual(selectedSet, correctIds)) {
             return;
         }
 
         hasErrors = true;
 
-        const selectedAnswer = q.answers.find(a => a.id === selectedAnswerId);
+        // "Izoh" — bitta UMUMIY maydon (admin formasidagi kabi), shu
+        // sabab BIRINCHI to'g'ri javobdan olinadi, ko'p to'g'ri javobli
+        // savolda ham (correctAnswers[0]).
+        const primaryCorrect = correctAnswers[0];
+        const selectedAnswers = q.answers.filter(a => selectedSet.has(a.id));
+        // Ko'p to'g'ri javobli savolda BARCHA tanlangan/BARCHA to'g'ri
+        // javoblar vergul bilan ko'rsatiladi (foydalanuvchi so'rovi,
+        // 2026-09-06 — talaba UI bosqichi).
+        const selectedText = selectedAnswers.length > 0
+            ? selectedAnswers.map(a => a.answerText).join(", ")
+            : "Javob tanlanmagan";
+        const correctText = correctAnswers.map(a => a.answerText).join(", ");
 
         const block = document.createElement("div");
         block.className = "wrong-question-card";
@@ -481,19 +537,19 @@ function showWrongAnswers() {
 
             <ul class="answers-review">
                 <li class="wrong-answer">
-                    ❌ Siz tanlagan javob:
-                    <div>${selectedAnswer?.answerText ?? "Javob tanlanmagan"}</div>
+                    ❌ Siz tanlagan javob${selectedAnswers.length > 1 ? "lar" : ""}:
+                    <div>${selectedText}</div>
                 </li>
 
                 <li class="correct-answer">
-                    ✅ To‘g‘ri javob:
-                    <div>${correctAnswer.answerText}</div>
+                    ✅ To‘g‘ri javob${correctAnswers.length > 1 ? "lar" : ""}:
+                    <div>${correctText}</div>
                 </li>
             </ul>
 
-            ${correctAnswer.commentary ? `<div class="commentary-box">💬 Izoh: ${correctAnswer.commentary}</div>` : ""}
-            ${correctAnswer.commentaryImageUrl ? `<img class="comment-image" src="${correctAnswer.commentaryImageUrl}" alt="Izoh rasmi">` : ""}
-            ${correctAnswer.commentaryVideoUrl ? `<video class="comment-video" src="${correctAnswer.commentaryVideoUrl}" controls></video>` : ""}
+            ${primaryCorrect.commentary ? `<div class="commentary-box">💬 Izoh: ${primaryCorrect.commentary}</div>` : ""}
+            ${primaryCorrect.commentaryImageUrl ? `<img class="comment-image" src="${primaryCorrect.commentaryImageUrl}" alt="Izoh rasmi">` : ""}
+            ${primaryCorrect.commentaryVideoUrl ? `<video class="comment-video" src="${primaryCorrect.commentaryVideoUrl}" controls></video>` : ""}
         `;
 
         container.appendChild(block);
@@ -554,9 +610,9 @@ function focusFirstAnswer() {
 
     if (!activeQuestion) return;
 
-    // ищем первый radio
+    // ищем первый radio (yoki checkbox — ko'p to'g'ri javobli savolda)
     const firstRadio = activeQuestion.querySelector(
-        'input[type="radio"]'
+        'input[type="radio"], input[type="checkbox"]'
     );
 
     if (!firstRadio) return;
@@ -569,9 +625,9 @@ function focusFirstAnswer() {
 
 function getWrongQuestions() {
     return testState.questions.filter(q => {
-        const selectedAnswerId = testState.answers.get(q.id);
-        const correctAnswer = q.answers.find(a => a.isTrue);
-        return !correctAnswer || Number(correctAnswer.id) !== Number(selectedAnswerId);
+        const selectedSet = testState.answers.get(q.id) || new Set();
+        const correctIds = new Set(q.answers.filter(a => a.isTrue).map(a => a.id));
+        return correctIds.size === 0 || !setsEqual(selectedSet, correctIds);
     });
 }
 
@@ -620,7 +676,7 @@ document.addEventListener("keydown", (e) => {
 
 function moveAnswerCursor(direction) {
     const question = getActiveQuestion();
-    const radios = [...question.querySelectorAll('input[type="radio"]')];
+    const radios = [...question.querySelectorAll('input[type="radio"], input[type="checkbox"]')];
 
     if (!radios.length) return;
 
@@ -635,25 +691,41 @@ function moveAnswerCursor(direction) {
 
 function selectAnswerAndNext() {
     const focused = document.activeElement;
+    if (!focused) return;
 
-    // фокус должен быть на radio
-    if (!focused || focused.type !== "radio") return;
+    if (focused.type === "radio") {
+        focused.checked = true;
+        focused.dispatchEvent(new Event("change", {bubbles: true}));
 
-    focused.checked = true;
-    focused.dispatchEvent(new Event("change", {bubbles: true}));
-
-    // перейти к следующему вопросу
-    setTimeout(() => {
+        // перейти к следующему вопросу
+        setTimeout(() => {
+            goToNextQuestion();
+        }, 1000);
+    } else if (focused.type === "checkbox") {
+        // Ko'p to'g'ri javobli savolda Enter belgilashga TEGMAYDI (bitta
+        // javobni "belgilab-o'tish" tushunchasi ma'nosiz — bir nechtasi
+        // birga kerak bo'lishi mumkin), faqat KEYINGI savolga o'tkazadi.
+        // Belgilash SPACE orqali (selectAnswerOnly — native checkbox
+        // xatti-harakatiga mos, toggle).
         goToNextQuestion();
-    }, 1000);
+    }
 }
 
 function selectAnswerOnly() {
     const focused = document.activeElement;
 
-    if (!focused || focused.type !== "radio") return;
+    if (!focused) return;
 
-    focused.checked = true;
+    if (focused.type === "radio") {
+        focused.checked = true;
+    } else if (focused.type === "checkbox") {
+        // SPACE — native checkbox xatti-harakati kabi TOGGLE (radio'dagi
+        // "har doim true" emas, chunki checkbox'ni bekor qilish ham
+        // kerak bo'lishi mumkin).
+        focused.checked = !focused.checked;
+    } else {
+        return;
+    }
 
     // 🔑 ЯВНО вызываем change для прохождения теста
     focused.dispatchEvent(new Event("change", {bubbles: true}));

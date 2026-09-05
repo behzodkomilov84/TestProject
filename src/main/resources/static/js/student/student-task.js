@@ -582,6 +582,14 @@ function renderTaskQuestions() {
     const q =
         currentTask.questions[currentQuestionIndex];
 
+    // Ko'p to'g'ri javobli savollar (foydalanuvchi so'rovi, 2026-09-06) —
+    // odatdagi (1 ta to'g'ri) savollar hamon radio, faqat 2+ to'g'ri
+    // javobli savollar checkbox bo'lib chiqadi (testSession.js#
+    // isMultiCorrectQuestion bilan bir xil g'oya, faqat bu yerda
+    // "isCorrect" maydoni ishlatiladi — "isTrue" emas).
+    const isMulti = isMultiCorrectQuestion(q);
+    const selectedIds = new Set(q.selectedAnswerIds || []);
+
     let html = `
         <div class="exam-card">
             <div class="exam-header">
@@ -595,20 +603,23 @@ function renderTaskQuestions() {
                 ${q.questionText}
             </div>
 
+            ${isMulti ? `<p class="multi-correct-hint">☑️ Bir nechta to'g'ri javob bo'lishi mumkin</p>` : ""}
             <div class="exam-answers">
     `;
 
     q.answers.forEach(a => {
 
-        const selected =
-            q.selectedAnswerId === a.id;
+        const selected = selectedIds.has(a.id);
+        const onchange = isMulti
+            ? `toggleAnswer(${q.questionId}, ${a.id}, this.checked)`
+            : `selectAnswer(${q.questionId}, ${a.id})`;
 
         html += `
             <label class="exam-answer ${selected ? "selected" : ""}">
-                <input type="radio"
+                <input type="${isMulti ? "checkbox" : "radio"}"
                     name="q_${q.questionId}"
                     ${selected ? "checked" : ""}
-                    onchange="selectAnswer(${q.questionId}, ${a.id})">
+                    onchange="${onchange}">
 
                 ${a.text}
             </label>
@@ -681,18 +692,21 @@ async function syncAttempt() {
 
     // ✅ только изменённые ответы
     const dirtyAnswers = currentTask.questions
-        .filter(q => q.dirty && q.selectedAnswerId !== null);
+        .filter(q => q.dirty && q.selectedAnswerIds && q.selectedAnswerIds.length > 0);
 
     if (!dirtyAnswers.length) {
         console.log("SYNC — изменений нет");
         return;
     }
 
+    // "selectedAnswerIds" — ko'p to'g'ri javobli savollar uchun (backend
+    // AnswerSyncDto — ro'yxat bo'lsa SHU ustun keladi, bitta javobli
+    // savolda ham bitta elementli ro'yxat sifatida to'g'ri ishlaydi).
     const payload = {
         attemptId: currentTask.attemptId,
         answers: dirtyAnswers.map(q => ({
             questionId: q.questionId,
-            selectedAnswerId: q.selectedAnswerId
+            selectedAnswerIds: q.selectedAnswerIds
         }))
     };
 
@@ -739,6 +753,20 @@ function closeTaskModal() {
     modal?.hide();
 }
 
+// Ko'p to'g'ri javobli savollar (foydalanuvchi so'rovi, 2026-09-06) uchun
+// yordamchi funksiyalar — testSession.js'dagi bir xil nomli funksiyalar
+// bilan BIR XIL g'oya (mustaqil sahifalar, shu sabab ataylab nusxalangan),
+// faqat bu yerda javob obyektida "isCorrect" maydoni ishlatiladi ("isTrue" emas).
+function isMultiCorrectQuestion(q) {
+    return q.answers.filter(a => a.isCorrect).length > 1;
+}
+
+function setsEqual(a, b) {
+    if (a.size !== b.size) return false;
+    for (const x of a) if (!b.has(x)) return false;
+    return true;
+}
+
 function selectAnswer(questionId, answerId) {
 
     const q = currentTask.questions.find(
@@ -747,10 +775,35 @@ function selectAnswer(questionId, answerId) {
 
     if (!q) return;
 
-    q.selectedAnswerId = answerId;
+    q.selectedAnswerIds = [answerId];
     q.answered = true;
 
     // 🔥 ключевая строка
+    q.dirty = true;
+
+    saveTaskState();
+    updateProgress();
+    updateFinishButtonState();
+}
+
+// "toggleAnswer" — checkbox uchun (ko'p to'g'ri javobli savol), "selectAnswer"
+// (radio, 1 ta to'g'ri javobli savol uchun) bilan bir xil vazifani
+// bajaradi, faqat BOSHQA javoblarga tegmasdan, faqat SHU javobni
+// mavjud to'plamga qo'shadi/olib tashlaydi.
+function toggleAnswer(questionId, answerId, checked) {
+
+    const q = currentTask.questions.find(
+        x => x.questionId === questionId
+    );
+
+    if (!q) return;
+
+    const current = new Set(q.selectedAnswerIds || []);
+    if (checked) current.add(answerId);
+    else current.delete(answerId);
+
+    q.selectedAnswerIds = Array.from(current);
+    q.answered = q.selectedAnswerIds.length > 0;
     q.dirty = true;
 
     saveTaskState();
@@ -900,16 +953,21 @@ async function showTaskResult(taskId) {
         // --- сохраняем attemptedQuestions для быстрого доступа
         currentTask.attemptedQuestions = res.attemptedQuestions || [];
 
-        // --- объединяем вопросы с ответами
+        // --- объединяем вопросы с ответами ("selectedAnswerIds" —
+        // ko'p to'g'ri javobli savollar uchun, aks holda eski
+        // "selectedAnswerId"dan)
         const answersMap = new Map();
         currentTask.attemptedQuestions.forEach(a => {
-            answersMap.set(a.questionId, a.selectedAnswerId);
+            const ids = (a.selectedAnswerIds && a.selectedAnswerIds.length > 0)
+                ? a.selectedAnswerIds
+                : (a.selectedAnswerId != null ? [a.selectedAnswerId] : []);
+            answersMap.set(a.questionId, ids);
         });
 
         currentTask.questions = res.questions.map(q => ({
             questionId: q.id,
             questionText: q.text,
-            selectedAnswerId: answersMap.get(q.id) || null,
+            selectedAnswerIds: answersMap.get(q.id) || [],
             answers: q.answers.map(a => ({
                 id: a.id,
                 text: a.text,
@@ -960,10 +1018,13 @@ function renderTaskResult() {
     `;
     }
 
-    // --- собираем индексы неправильных вопросов
+    // --- собираем индексы неправильных вопросов ("hammasi yoki hech
+    // narsa" — backend#MultiAnswerUtil.isCorrect bilan bir xil qoida)
     wrongQuestionIndexes = [];
     currentTask.questions.forEach((q, idx) => {
-        if (q.selectedAnswerId !== q.answers.find(a => a.isCorrect)?.id) {
+        const selectedIds = new Set(q.selectedAnswerIds || []);
+        const correctIds = new Set(q.answers.filter(a => a.isCorrect).map(a => a.id));
+        if (correctIds.size === 0 || !setsEqual(selectedIds, correctIds)) {
             wrongQuestionIndexes.push(idx);
         }
     });
@@ -992,8 +1053,8 @@ function showResultQuestion(index) {
     if (!container) return;
 
     const q = currentTask.questions[index];
-    const selectedId = q.selectedAnswerId;
-    const correctId = q.answers.find(a => a.isCorrect)?.id;
+    const selectedIds = new Set(q.selectedAnswerIds || []);
+    const correctIds = new Set(q.answers.filter(a => a.isCorrect).map(a => a.id));
 
     let html = `
         <div class="exam-card mb-4 question-card">
@@ -1007,8 +1068,8 @@ function showResultQuestion(index) {
 
     q.answers.forEach(a => {
         let css = "exam-answer";
-        if (a.id === correctId) css += " correct-answer";             // правильный
-        if (a.id === selectedId && selectedId !== correctId) css += " wrong-answer"; // выбранный неверный
+        if (correctIds.has(a.id)) css += " correct-answer";             // правильный
+        if (selectedIds.has(a.id) && !correctIds.has(a.id)) css += " wrong-answer"; // выбранный неверный
         html += `<div class="${css}">${a.text}</div>`;
     });
 
@@ -1051,15 +1112,23 @@ async function continueTaskSession(taskId) {
         // 4️⃣ загружаем уже выбранные ответы
         if (res.attemptedQuestions) {
 
+            // "selectedAnswerIds" (ro'yxat) bo'lsa SHU ustundan, aks
+            // holda eski "selectedAnswerId" (bitta)dan (backend
+            // AttemptQuestionDto — ikkalasi ham to'ldiriladi, lekin
+            // ro'yxat TO'LIQROQ ma'lumot, ko'p to'g'ri javobli savolda).
             const answerMap = new Map();
 
             res.attemptedQuestions.forEach(a => {
-                answerMap.set(a.questionId, a.selectedAnswerId);
+                const ids = (a.selectedAnswerIds && a.selectedAnswerIds.length > 0)
+                    ? a.selectedAnswerIds
+                    : (a.selectedAnswerId != null ? [a.selectedAnswerId] : []);
+                answerMap.set(a.questionId, ids);
             });
 
             currentTask.questions.forEach(q => {
-                q.selectedAnswerId = answerMap.get(q.questionId) || null;
-                q.answered = !!q.selectedAnswerId;
+                const ids = answerMap.get(q.questionId) || [];
+                q.selectedAnswerIds = ids;
+                q.answered = ids.length > 0;
                 q.dirty = false;
             });
         }
@@ -1137,7 +1206,7 @@ function updateFinishButtonState() {
     }
 
     // есть ли хотя бы один неотвеченный вопрос
-    const hasUnanswered = currentTask.questions.some(q => !q.selectedAnswerId);
+    const hasUnanswered = currentTask.questions.some(q => !q.selectedAnswerIds || q.selectedAnswerIds.length === 0);
 
     btn.disabled = hasUnanswered;
 }
@@ -1153,7 +1222,7 @@ async function manualSaveAttempt() {
 
     // Проверяем есть ли изменения
     const dirtyAnswers = currentTask.questions
-        .filter(q => q.dirty && q.selectedAnswerId !== null);
+        .filter(q => q.dirty && q.selectedAnswerIds && q.selectedAnswerIds.length > 0);
 
     if (!dirtyAnswers.length) {
         showSaveState("O'zgarish yo'q", "secondary");
