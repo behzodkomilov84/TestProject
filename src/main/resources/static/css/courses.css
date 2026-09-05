@@ -1359,9 +1359,12 @@ body {
    "qo'llanma" pufakchasi bo'lib chiqadi: har bir tugma alohida qatorda,
    o'qish oson bo'lishi uchun (pre-line — "\A" qator ko'chirish sifatida
    ishlaydi). Qulflangan kartalarda ham ishlaydi (navigatsiya ular ustida
-   ham ishlaydi, faqat Enter bilan ochilmaydi). */
+   ham ishlaydi, faqat Enter bilan ochilmaydi). Oxirgi qator — sichqonning
+   O'NG tugmasi (renderSectionCard#cardContextMenu) — chap tugmadan farqli,
+   darsning ICHIGA kirmasdan faqat "tanlangan" deb belgilaydi (foydalanuvchi
+   so'rovi, 2026-09-05). */
 .section-item::after {
-    content: "⌨️ Klaviatura yorliqlari:\A ←  /  → — mavzular orasida\A ↑  /  ↓ — sahifalar orasida\A Home — 1-mavzu   |   End — oxirgi mavzu\A Ctrl+↑ / Ctrl+↓ — bo'limlar orasida\A Enter — mavzuga kirish";
+    content: "⌨️ Klaviatura yorliqlari:\A ←  /  → — mavzular orasida\A ↑  /  ↓ — sahifalar orasida\A Home — 1-mavzu   |   End — oxirgi mavzu\A Ctrl+↑ / Ctrl+↓ — bo'limlar orasida\A Enter — mavzuga kirish\A 🖱️ O'ng tugma — ichiga kirmasdan belgilash";
     position: absolute;
     left: 50%;
     bottom: 100%;

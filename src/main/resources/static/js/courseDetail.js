@@ -1346,6 +1346,13 @@ function renderSectionCard(s, globalIndexById, displayNumber, groupBounds) {
         ? ` onclick="selectCard(${s.id})"`
         : ` onclick="selectCard(${s.id}); location.href='/courses/${COURSE_ID}/sections/${s.id}'"`;
 
+    // O'ng tugma (right-click) — chap tugmadan farqli, darsning ICHIGA
+    // KIRMAYDI, faqat "tanlangan" deb belgilaydi (selectCard) — klaviatura
+    // navigatsiyasini (←/→/↑/↓/Home/End) sichqonni ishlatib "boshlash
+    // nuqtasi"ni tez o'rnatish uchun (foydalanuvchi so'rovi, 2026-09-05).
+    // Brauzerning standart kontekst menyusi (preventDefault) chiqmaydi.
+    const cardContextMenu = ` oncontextmenu="event.preventDefault(); selectCard(${s.id});"`;
+
     // Shu dars TEST BOSHQARUVIga bog'langan bo'lsa — nechta faol savoli
     // borligi (foydalanuvchi so'rovi bo'yicha: har bir dars kartochkasida
     // ko'rinishi kerak). linkedTopicQuestionCount backend'da BULK
@@ -1408,7 +1415,7 @@ function renderSectionCard(s, globalIndexById, displayNumber, groupBounds) {
         <div class="section-item ${s.locked ? "locked" : ""} ${isSelected ? "selected" : ""}"
              data-section-id="${s.id}"
              tabindex="0"
-             onkeydown="onCardKeyDown(event, ${s.id})"${cardClick}>
+             onkeydown="onCardKeyDown(event, ${s.id})"${cardClick}${cardContextMenu}>
             <span class="kbd-hint-badge" onclick="event.stopPropagation(); toggleKbdHint(this)" title="Klaviatura yorliqlari">⌨️</span>
             <div class="section-item-top">
                 <div class="section-item-badges">
