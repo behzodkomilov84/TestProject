@@ -1,8 +1,6 @@
 const params = new URLSearchParams(window.location.search);
 const topicId = params.get("topicId");
 
-let editingRow = null; // хранит текущую редактируемую строку
-
 let questions = null;
 
 let currentPage = 0;
@@ -17,7 +15,7 @@ let isServerPaging = false;
 
 if (!topicId) {
     document.querySelector("#questionsTable tbody").innerHTML =
-        "<tr><td colspan='12'>❌ topicId yuborilmagan</td></tr>";
+        "<tr><td colspan='11'>❌ topicId yuborilmagan</td></tr>";
 } else {
     loadAllQuestions();
     loadTopicName();
@@ -128,7 +126,7 @@ async function loadQuestions(topicId, page = 0) {
 
     } catch (e) {
         document.querySelector("#questionsTable tbody").innerHTML =
-            `<tr><td colspan="12">❌ ${e.message}</td></tr>`;
+            `<tr><td colspan="11">❌ ${e.message}</td></tr>`;
     }
 }
 
@@ -211,10 +209,6 @@ function renderQuestionsTable(rows) {
             `;
             }).join("")}
             <td class="correct-letter">${correctAnswers.length > 1 ? '<span title="Ko\'p to\'g\'ri javobli savol">🔀</span> ' : ''}<b>${correctLetter}</b></td>
-            
-            <td class="comment-col hidden">
-                    <input class="comment-input" type="text">
-            </td>
 
             <td class="order-cell">
                 ${canReorder ? `
@@ -225,7 +219,7 @@ function renderQuestionsTable(rows) {
 
             <td class="actions-cell">
                 <div class="view-actions">
-                    
+
                     <button class="action-btn comment"
                         data-question-id="${q.id}"
                         data-answer-id="${correctAnswer?.id ?? ''}"
@@ -237,26 +231,21 @@ function renderQuestionsTable(rows) {
                         title="Izoh ko‘rsatish">
                     💬
                     </button>
-                    
-                    <button class="action-btn edit" 
-                    onclick="enableInlineEdit(this, ${q.id})"
-                         title="Tahrirlash">✏️</button>
-                     
-                </div>
-                <div class="edit-actions" style="display:none;">
-                    <button class="action-btn save" 
-                    onclick="saveInlineEdit(this, ${q.id})" 
-                    title="Saqlash">💾</button>
-                    
-                    <button class="action-btn cancel" 
-                    style="color: orangered; font-weight: bold;" 
-                    onclick="cancelInlineEdit(this)" 
-                    title="Bekor qilish">&#8634;</button>
-                    
-                    <button class="action-btn delete" 
-                    onclick="deleteQuestion(${q.id})" 
-                    title="O‘chirish">❌</button>
-                    
+
+                    <!-- Ilgari qatorning O'ZINI tahrirlanadigan (inline)
+                         holatga o'tkazardi (enableInlineEdit/saveInlineEdit/
+                         cancelInlineEdit) — endi to'liq "Savol formasi"
+                         modalini ochadi (foydalanuvchi so'rovi, 2026-09-05:
+                         "testni tahrirlashni ham modalda ochiladigan qilib
+                         mosla"). -->
+                    <button class="action-btn edit"
+                        onclick="openQuestionFormModal('edit', ${q.id})"
+                        title="Tahrirlash">✏️</button>
+
+                    <button class="action-btn delete"
+                        onclick="deleteQuestion(${q.id})"
+                        title="O‘chirish">❌</button>
+
                 </div>
             </td>
         `;
@@ -327,11 +316,6 @@ async function deleteSelectedQuestions() {
             throw new Error(data.error || "O'chirishda xatolik");
         }
 
-        if (editingRow && ids.includes(Number(editingRow.dataset.questionId))) {
-            editingRow = null;
-        }
-        hideCommentColumn();
-
         const data = await res.json().catch(() => ({}));
         showAlert(`✅ ${data.deleted ?? ids.length} ta savol o'chirildi`, "success");
 
@@ -386,15 +370,7 @@ function renderPagination(page) {
 function pageBtn(text, page) {
     const btn = document.createElement("button");
     btn.textContent = text;
-
-    btn.onclick = () => {
-        if (editingRow) {
-            showAlertModal("Avval tahrirni yakunlang!");
-            return;
-        }
-        loadQuestions(topicId, page);
-    };
-
+    btn.onclick = () => loadQuestions(topicId, page);
     return btn;
 }
 
@@ -707,231 +683,817 @@ document.addEventListener("change", async (e) => {
     }
 });
 
-function enableInlineEdit(btn) {
-    const row = btn.closest("tr");
+// ========================================================================
+// "Savol formasi" — yangi savol qo'shish VA mavjudini tahrirlash, ENDI
+// BITTA A4 kenglikdagi modalda (foydalanuvchi so'rovi, 2026-09-05:
+// "testni tahrirlashni ham modalda ochiladigan qilib mosla, yangi test
+// yaratishni ham"). Ilgari: tahrirlash — qatorning O'ZINI (inline)
+// tahrirlanadigan holatga o'tkazardi (enableInlineEdit/saveInlineEdit/
+// cancelInlineEdit, endi butunlay OLIB TASHLANDI); yaratish — butunlay
+// boshqa sahifaga (test-form.html) o'tkazardi. Har bir javobning izohi —
+// test-form.js'dagi BILAN BIR XIL rich-text (boy matn) muharriri bilan,
+// 5 ta alohida sub-modal orqali (buildCommentaryModalHtml, pastda).
+// Modal BIR MARTA (DOMContentLoaded'da) yaratiladi, har safar ochilishda
+// resetQuestionFormModal() orqali tozalanadi/qayta to'ldiriladi.
+// ========================================================================
 
-    document.querySelectorAll(".comment-col")
-        .forEach(c => c.classList.remove("hidden"));
+const ANSWER_LETTERS = ["A", "B", "C", "D", "E"];
 
-    // запрет на редактирование, если уже редактируется другая строка
-    if (editingRow && editingRow !== row) {
-        showAlertModal("Avval tahrirlanayotgan satrni yakuniga yetkazing!");
+function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text ?? "";
+    return div.innerHTML;
+}
+
+// Joriy modal rejimi: 'create' | 'edit' (+ tahrirlanayotgan savol ID'si).
+let qformMode = "create";
+let qformQuestionId = null;
+
+function buildQuestionFormModalHtml() {
+    return `
+        <div id="questionFormModal" class="modal-overlay">
+            <div class="question-form-modal">
+                <h2 class="modal-h2" id="qformTitle">➕ Yangi savol qo'shish</h2>
+
+                <div class="qform-group">
+                    <label for="qformQuestionText">Savol</label>
+                    <textarea id="qformQuestionText" class="auto-textarea" placeholder="Savol matnini kiriting"></textarea>
+                    <div id="qformQuestionImageWidget"></div>
+                </div>
+
+                <div class="qform-answers">
+                    <h3>Javob variantlari</h3>
+                    <p class="qform-multi-correct-hint">☑️ Bitta yoki bir nechta to'g'ri javobni belgilang</p>
+                    <div id="qformAnswersContainer"></div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="qform-delete-btn hidden" id="qformDeleteBtn" onclick="deleteFromQuestionForm()">🗑️ O'chirish</button>
+                    <button type="button" class="qform-cancel-btn" onclick="closeQuestionFormModal()">Bekor qilish</button>
+                    <button type="button" class="qform-save-btn" id="qformSaveBtn" onclick="saveQuestionForm()">💾 Saqlash</button>
+                </div>
+            </div>
+        </div>
+        <div id="qformCommentaryModalsContainer"></div>
+    `;
+}
+
+function buildQformAnswerRowHtml(index) {
+    return `
+        <div class="qform-answer" data-answer-index="${index}">
+            <input type="checkbox" class="qform-correct-checkbox" data-answer-index="${index}">
+            <textarea class="auto-textarea qform-answer-text" placeholder="${ANSWER_LETTERS[index]} variantni kiriting..."></textarea>
+            <div class="qform-answer-image-slot" id="qformAnswerImageSlot-${index}"></div>
+            <button type="button" class="qform-comment-btn hidden" data-answer-index="${index}" onclick="openCommentaryModal(${index})">✏️Izoh</button>
+        </div>
+    `;
+}
+
+// Har bir javob variantining izohi — test-form.js'dagi BILAN BIR XIL
+// A4 kenglikdagi rich-text modal (5 ta, har biri o'z muharririga ega).
+function buildCommentaryModalHtml(index) {
+    const editorId = `commentaryRichEditor-${index}`;
+    return `
+        <div id="commentaryModal-${index}" class="modal-overlay">
+            <div class="commentary-form-modal qform-commentary-modal">
+                <h2 class="modal-h2">✏️ ${ANSWER_LETTERS[index]} variant uchun izoh</h2>
+
+                <div class="rich-toolbar">
+                    <button type="button" onclick="richExec('${editorId}','bold')" title="Qalin (Ctrl+B)"><b>B</b></button>
+                    <button type="button" onclick="richExec('${editorId}','italic')" title="Kursiv (Ctrl+I)"><i>I</i></button>
+                    <button type="button" onclick="richExec('${editorId}','underline')" title="Tagi chizilgan (Ctrl+U)"><u>U</u></button>
+                    <button type="button" onclick="richExec('${editorId}','strikeThrough')" title="Chizib o'tilgan"><s>S</s></button>
+                    <button type="button" onclick="richExec('${editorId}','subscript')" title="Indeks (pastki, masalan H₂O)">X<sub>2</sub></button>
+                    <button type="button" onclick="richExec('${editorId}','superscript')" title="Daraja (yuqori, masalan x²)">X<sup>2</sup></button>
+                    <span class="rich-toolbar-sep"></span>
+                    <select class="rich-toolbar-select" title="Shrift turi" onmousedown="saveRichSelection('${editorId}')" onchange="richFontName('${editorId}', this.value); this.selectedIndex=0;">
+                        <option value="" selected disabled>🔤 Shrift</option>
+                        <option value="Arial">Arial</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Courier New">Courier New</option>
+                        <option value="Verdana">Verdana</option>
+                    </select>
+                    <select class="rich-toolbar-select" title="Shrift o'lchami" onmousedown="saveRichSelection('${editorId}')" onchange="richFontSize('${editorId}', this.value); this.selectedIndex=0;">
+                        <option value="" selected disabled>🔠 O'lcham</option>
+                        <option value="12">12</option>
+                        <option value="14">14</option>
+                        <option value="16">16</option>
+                        <option value="18">18</option>
+                        <option value="20">20</option>
+                        <option value="24">24</option>
+                    </select>
+                    <span class="rich-toolbar-sep"></span>
+                    <button type="button" class="rich-color-trigger" title="🎨 Harf rangi" onclick="toggleColorPalette(this, '${editorId}', 'fore')"><span class="rich-color-preview" style="background:#000000"></span></button>
+                    <button type="button" class="rich-color-trigger" title="🖊️ Fon (bo'yash) rangi" onclick="toggleColorPalette(this, '${editorId}', 'hilite')"><span class="rich-color-preview" style="background:#fff59d"></span></button>
+                    <span class="rich-toolbar-sep"></span>
+                    <button type="button" onclick="richExec('${editorId}','justifyLeft')" title="Chapga tekislash"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="2"/><rect x="0" y="5" width="10" height="2"/><rect x="0" y="9" width="16" height="2"/><rect x="0" y="13" width="10" height="2"/></svg></button>
+                    <button type="button" onclick="richExec('${editorId}','justifyCenter')" title="Markazga tekislash"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="2"/><rect x="3" y="5" width="10" height="2"/><rect x="0" y="9" width="16" height="2"/><rect x="3" y="13" width="10" height="2"/></svg></button>
+                    <button type="button" onclick="richExec('${editorId}','justifyRight')" title="O'ngga tekislash"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="2"/><rect x="6" y="5" width="10" height="2"/><rect x="0" y="9" width="16" height="2"/><rect x="6" y="13" width="10" height="2"/></svg></button>
+                    <button type="button" onclick="richExec('${editorId}','justifyFull')" title="Ikki tomonga tekislash"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="2"/><rect x="0" y="5" width="16" height="2"/><rect x="0" y="9" width="16" height="2"/><rect x="0" y="13" width="16" height="2"/></svg></button>
+                    <span class="rich-toolbar-sep"></span>
+                    <button type="button" onclick="richExec('${editorId}','outdent')" title="Chekinishni kamaytirish"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="7" y="1" width="9" height="2"/><rect x="7" y="7" width="9" height="2"/><rect x="7" y="13" width="9" height="2"/><path d="M5 4 L1 8 L5 12 Z"/></svg></button>
+                    <button type="button" onclick="richExec('${editorId}','indent')" title="Chekinishni oshirish"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="7" y="1" width="9" height="2"/><rect x="7" y="7" width="9" height="2"/><rect x="7" y="13" width="9" height="2"/><path d="M1 4 L5 8 L1 12 Z"/></svg></button>
+                    <select class="rich-toolbar-select" title="Qator oralig'i" onmousedown="saveRichSelection('${editorId}')" onchange="richLineSpacing('${editorId}', this.value); this.selectedIndex=0;">
+                        <option value="" selected disabled>↕️ Oraliq</option>
+                        <option value="1">1.0</option>
+                        <option value="1.15">1.15</option>
+                        <option value="1.5">1.5</option>
+                        <option value="2">2.0</option>
+                    </select>
+                    <span class="rich-toolbar-sep"></span>
+                    <button type="button" onclick="richExec('${editorId}','insertUnorderedList')" title="Ro'yxat">☰•</button>
+                    <button type="button" onclick="richExec('${editorId}','insertOrderedList')" title="Raqamlangan ro'yxat">☰1</button>
+                    <button type="button" onclick="triggerImageInsert('${editorId}')" title="Rasm qo'shish">🖼</button>
+                    <input type="file" id="${editorId}-imageInput" accept="image/*" style="display:none;" onchange="richInsertImage('${editorId}', this)">
+                    <span class="rich-toolbar-sep"></span>
+                    <button type="button" onclick="richExec('${editorId}','removeFormat')" title="Formatni tozalash">🧹</button>
+                </div>
+                <div id="${editorId}" class="rich-text-editor commentary" contenteditable="true"
+                     data-placeholder="To'g'ri javob uchun izoh kiriting..."></div>
+
+                <button type="button" class="qform-link-btn hidden" data-answer-index="${index}">🔗 Darsga havola qo'shish</button>
+
+                <div class="qform-commentary-media">
+                    <div id="qformCommentaryImageSlot-${index}"></div>
+                    <div id="qformCommentaryVideoSlot-${index}"></div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="qform-save-btn" onclick="closeCommentaryModal(${index})">✅ Yopish</button>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function openCommentaryModal(index) {
+    const editor = document.getElementById(`commentaryRichEditor-${index}`);
+    cleanupEmptyCaptions(`commentaryRichEditor-${index}`);
+    document.getElementById(`commentaryModal-${index}`).classList.add("show");
+    editor.focus();
+}
+
+function closeCommentaryModal(index) {
+    cleanupEmptyCaptions(`commentaryRichEditor-${index}`);
+    document.getElementById(`commentaryModal-${index}`).classList.remove("show");
+}
+
+// ========================================================================
+// Rich-text muharrir — courseDetail.js ("Kursga dars qo'shish/tahrirlash")
+// va test-form.js bilan BIR XIL funksiyalar (video/PPT/.docx import
+// KIRITILMAGAN — "Matn formatlash + rasm" darajasi). Barcha funksiyalar
+// "editorId" ni parametr sifatida qabul qiladi, shu sabab HAM "Savol
+// formasi"dagi 5 ta izoh sub-modali, HAM alohida "💬 Izoh ko'rsatish"
+// (#commentModal, id="modalCommentEditor") — BITTA nusxada, umumiy
+// ishlatiladi.
+// ========================================================================
+
+function richExec(editorId, command) {
+    document.getElementById(editorId).focus();
+    document.execCommand(command, false, null);
+}
+
+// <input type="color"> yoki <select> bosilganda brauzer o'z (native)
+// rang tanlash oynasi/dropdown'ini ochadi — bu FOKUSNI contenteditable'dan
+// olib qo'yadi va shu bilan birga tanlangan matn (selection/Range) ham
+// yo'qoladi. Yechim: shu boshqaruv elementi hali fokusni OLMASDAN turib
+// ("mousedown" paytida), joriy selection'ni saqlab qo'yamiz, so'ng
+// "onchange"da (editor.focus()'dan KEYIN) uni qayta tiklaymiz.
+let savedRichSelection = { editorId: null, range: null };
+
+function saveRichSelection(editorId) {
+    const editor = document.getElementById(editorId);
+    const sel = window.getSelection();
+    if (sel.rangeCount > 0 && editor.contains(sel.anchorNode)) {
+        savedRichSelection = { editorId, range: sel.getRangeAt(0).cloneRange() };
+    }
+}
+
+function restoreRichSelection(editorId) {
+    if (savedRichSelection.editorId !== editorId || !savedRichSelection.range) return;
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(savedRichSelection.range);
+}
+
+function richFontName(editorId, fontName) {
+    if (!fontName) return;
+    document.getElementById(editorId).focus();
+    restoreRichSelection(editorId);
+    document.execCommand('fontName', false, fontName);
+}
+
+// execCommand('fontSize', ...) haqiqiy piksel emas, faqat shartli 1-7
+// oralig'idagi o'lchamlarni qabul qiladi — shuning uchun standart hiyla
+// qo'llanadi: eng katta shartli o'lcham (7) qo'yiladi, so'ng natijadagi
+// <font size="7"> teglari haqiqiy piksel o'lchamli <span>ga almashtiriladi.
+function richFontSize(editorId, sizePx) {
+    if (!sizePx) return;
+    const editor = document.getElementById(editorId);
+    editor.focus();
+    restoreRichSelection(editorId);
+    document.execCommand('fontSize', false, '7');
+    editor.querySelectorAll('font[size="7"]').forEach(el => {
+        const span = document.createElement('span');
+        span.style.fontSize = sizePx + 'px';
+        span.innerHTML = el.innerHTML;
+        el.replaceWith(span);
+    });
+}
+
+function richForeColor(editorId, color) {
+    document.getElementById(editorId).focus();
+    restoreRichSelection(editorId);
+    document.execCommand('foreColor', false, color);
+}
+
+// Fon (bo'yash) rangi — ba'zi brauzerlar 'hiliteColor'ni qo'llab-
+// quvvatlamaydi, shu sabab muvaffaqiyatsiz bo'lsa 'backColor'ga o'tiladi.
+function richHiliteColor(editorId, color) {
+    const editor = document.getElementById(editorId);
+    editor.focus();
+    restoreRichSelection(editorId);
+    if (!document.execCommand('hiliteColor', false, color)) {
+        document.execCommand('backColor', false, color);
+    }
+}
+
+// ================= Rang palette (Word'dagi kabi tayyor ranglar) =================
+const FORE_COLOR_PRESETS = ['#000000', '#FFFFFF', '#7F7F7F', '#C00000', '#FF0000', '#FFC000',
+    '#FFFF00', '#92D050', '#00B050', '#00B0F0', '#0070C0', '#7030A0'];
+const HILITE_COLOR_PRESETS = ['#FFFF00', '#00FF00', '#00FFFF', '#FF00FF', '#0000FF', '#FF0000',
+    '#C00000', '#FFC000', '#92D050', '#ADD8E6', '#7030A0', '#FFFFFF'];
+
+let colorPaletteEl = null;
+let colorPaletteState = null; // { editorId, mode, triggerBtn }
+
+function toggleColorPalette(triggerBtn, editorId, mode) {
+    if (!colorPaletteEl) {
+        colorPaletteEl = document.createElement('div');
+        colorPaletteEl.className = 'rich-color-palette';
+        colorPaletteEl.style.display = 'none';
+        document.body.appendChild(colorPaletteEl);
+    }
+
+    const alreadyOpenForThis = colorPaletteEl.style.display === 'block'
+        && colorPaletteState && colorPaletteState.triggerBtn === triggerBtn;
+    if (alreadyOpenForThis) {
+        closeColorPalette();
         return;
     }
 
-    editingRow = row; // помечаем эту строку как редактируемую
+    saveRichSelection(editorId);
+    colorPaletteState = { editorId, mode, triggerBtn };
 
-    row.classList.add("editing");
+    const presets = mode === 'fore' ? FORE_COLOR_PRESETS : HILITE_COLOR_PRESETS;
+    colorPaletteEl.innerHTML = '';
 
-    toggleButtons(row, true);
-
-    // 🔹 ВОПРОС
-    const questionCell = row.querySelector("td[data-editable]");
-    const qText = questionCell.innerText;
-    const questionImageUrl = row.dataset.imageUrl || "";
-
-    questionCell.innerHTML = `
-    <input type="text"
-           class="inline-input question-input"
-           value="${qText}">
-    ${buildInlineImageWidget("question-image", questionImageUrl, "Savol rasmi")}
-`;
-
-
-    const answerCells = row.querySelectorAll(".answer-cell");
-
-    answerCells.forEach((cell, index) => {
-        // Bo'sh ("padding") katakcha — bu savolda bunday variant umuman
-        // mavjud emas (masalan eski 4 variantli savolning "E" ustuni).
-        // Tahrirlash uchun input yaratilmaydi, aks holda saqlashda bo'sh
-        // matnli "javob" sifatida yuborilib, validatsiyada xatolikka olib kelardi.
-        if (!cell.dataset.answerId) return;
-
-        const text = cell.innerText;
-        const id = cell.dataset.answerId;
-        const isCorrect = cell.classList.contains("correct");
-        const answerImageUrl = cell.dataset.imageUrl || "";
-
-        // Ilgari radio (faqat BITTA to'g'ri javob) edi — endi checkbox,
-        // ko'p to'g'ri javobli savollarni ham qo'llab-quvvatlash uchun
-        // (foydalanuvchi so'rovi, 2026-09-05, 3-bosqich).
-        cell.innerHTML = `
-            <label style="display:flex; gap:6px; align-items:center;">
-                <input type="checkbox"
-                       class="correct-radio"
-                       ${isCorrect ? "checked" : ""}>
-                <input type="text"
-                       class="inline-input"
-                       data-answer-id="${id}"
-                       value="${text}">
-            </label>
-            ${buildInlineImageWidget("answer-image", answerImageUrl, "Javob rasmi")}
-        `;
+    const grid = document.createElement('div');
+    grid.className = 'rich-color-grid';
+    presets.forEach(color => {
+        const sw = document.createElement('button');
+        sw.type = 'button';
+        sw.className = 'rich-color-swatch-btn';
+        sw.style.background = color;
+        sw.title = color;
+        sw.onclick = () => applyColorFromPalette(color);
+        grid.appendChild(sw);
     });
-//обработчик checkbox (КЛЮЧЕВОЕ) — belgi qatori endi BIR NECHTA harfni
-// ("B,D") ko'rsatishi mumkin, shu sabab har bir o'zgarishda BARCHA
-// belgilangan checkbox'lar qayta o'qiladi (faqat o'zgargan bittasi emas).
-    const checkboxes = row.querySelectorAll(".correct-radio");
-    const correctLetterCell = row.querySelector(".correct-letter b");
-    const letters = ["A", "B", "C", "D", "E"];
+    colorPaletteEl.appendChild(grid);
 
-    function updateCorrectLetterDisplay() {
-        const checkedLetters = [...checkboxes]
-            .map((cb, i) => cb.checked ? letters[i] : null)
-            .filter(l => l !== null);
-        correctLetterCell.innerText = checkedLetters.join(",") || "-";
+    const customLabel = document.createElement('label');
+    customLabel.className = 'rich-color-custom-label';
+    customLabel.appendChild(document.createTextNode('🎨 Boshqa rang...'));
+    const customInput = document.createElement('input');
+    customInput.type = 'color';
+    customInput.onmousedown = () => saveRichSelection(editorId);
+    customInput.onchange = (e) => applyColorFromPalette(e.target.value);
+    customLabel.appendChild(customInput);
+    colorPaletteEl.appendChild(customLabel);
+
+    const rect = triggerBtn.getBoundingClientRect();
+    colorPaletteEl.style.top = (rect.bottom + 4) + 'px';
+    colorPaletteEl.style.left = rect.left + 'px';
+    colorPaletteEl.style.display = 'block';
+}
+
+function applyColorFromPalette(color) {
+    if (!colorPaletteState) return;
+    const { editorId, mode, triggerBtn } = colorPaletteState;
+
+    if (mode === 'fore') {
+        richForeColor(editorId, color);
+    } else {
+        richHiliteColor(editorId, color);
     }
 
-    checkboxes.forEach(checkbox => {
-        checkbox.addEventListener("change", updateCorrectLetterDisplay);
+    const preview = triggerBtn.querySelector('.rich-color-preview');
+    if (preview) preview.style.background = color;
+    closeColorPalette();
+}
+
+function closeColorPalette() {
+    if (colorPaletteEl) colorPaletteEl.style.display = 'none';
+    colorPaletteState = null;
+}
+
+document.addEventListener('click', (e) => {
+    if (!colorPaletteEl || colorPaletteEl.style.display === 'none') return;
+    if (colorPaletteEl.contains(e.target)) return;
+    if (colorPaletteState && colorPaletteState.triggerBtn.contains(e.target)) return;
+    closeColorPalette();
+});
+
+function isBlockElement(el) {
+    return ['P', 'DIV', 'LI', 'H1', 'H2', 'H3', 'H4', 'BLOCKQUOTE'].includes(el.tagName);
+}
+
+// Qator oralig'i — bunday funksiya uchun tayyor execCommand yo'q, shuning
+// uchun tanlangan matnga eng yaqin blok elementi qidirib topilib, unga
+// line-height qo'yiladi.
+function richLineSpacing(editorId, value) {
+    if (!value) return;
+    const editor = document.getElementById(editorId);
+    editor.focus();
+    restoreRichSelection(editorId);
+
+    const selection = window.getSelection();
+    let node = selection.rangeCount ? selection.getRangeAt(0).commonAncestorContainer : null;
+    if (node && node.nodeType === Node.TEXT_NODE) node = node.parentElement;
+
+    while (node && node !== editor && !isBlockElement(node)) {
+        node = node.parentElement;
+    }
+
+    if (!node || node === editor) {
+        editor.querySelectorAll('p, li, div, h1, h2, h3, h4, blockquote').forEach(el => el.style.lineHeight = value);
+        editor.style.lineHeight = value;
+    } else {
+        node.style.lineHeight = value;
+    }
+}
+
+// ================= Rasm qo'shish (izoh ichiga) =================
+// Fayl tanlash oynasi ochilganda kursor tahrirlagichdan "chiqib ketadi" —
+// shu sabab fayl tanlash OLDIN joriy kursor o'rnini (Range) saqlab
+// qo'yamiz, keyin insert vaqtida O'SHA joyga qaytaramiz.
+let richInsertSavedRange = null;
+
+function captureEditorSelection(editorId) {
+    const editor = document.getElementById(editorId);
+    const sel = window.getSelection();
+    if (!editor || !sel || sel.rangeCount === 0) return null;
+    const range = sel.getRangeAt(0);
+    if (!editor.contains(range.commonAncestorContainer)) return null;
+    return range.cloneRange();
+}
+
+function restoreEditorSelection(editorId, savedRange) {
+    const editor = document.getElementById(editorId);
+    editor.focus();
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    const range = savedRange ? savedRange.cloneRange() : document.createRange();
+    if (!savedRange) {
+        range.selectNodeContents(editor);
+        range.collapse(false);
+    }
+    sel.addRange(range);
+}
+
+function triggerImageInsert(editorId) {
+    richInsertSavedRange = captureEditorSelection(editorId);
+    document.getElementById(`${editorId}-imageInput`).click();
+}
+
+// "🖼 Rasm qo'shish" — fayl tanlangach serverga yuklanadi, qaytgan URL
+// kursor turgan joyga qo'yiladi ("rich-img-wrap" ichida, pastki-o'ng
+// burchakdagi sudraladigan tutqich bilan birga — kattaligini
+// kichraytirish mumkin bo'lishi uchun). /api/question/upload-image
+// UMUMIY endpoint ishlatiladi (test-form.js bilan bir xil — savol/izoh
+// rasmlari kurslarga bog'liq emas).
+async function richInsertImage(editorId, fileInput) {
+    const file = fileInput.files[0];
+    if (!file) return;
+
+    attachImageResizeHandlers(editorId);
+
+    try {
+        const formData = new FormData();
+        formData.append("image", file);
+        const res = await fetch("/api/question/upload-image", {
+            method: "POST", body: formData
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            showAlertModal(data.error || "❌ Rasm yuklashda xatolik");
+            return;
+        }
+        const url = escapeHtml(data.url);
+        const html = `<span class="rich-img-wrap" contenteditable="false">`
+            + `<img src="${url}">`
+            + `<span class="rich-img-handle" title="Sudrab o'lchamini o'zgartiring"></span>`
+            + `</span>&nbsp;`;
+        restoreEditorSelection(editorId, richInsertSavedRange);
+        document.execCommand('insertHTML', false, html);
+        injectAlignBars(editorId);
+        injectCaptions(editorId);
+    } catch (err) {
+        console.error(err);
+        showAlertModal("❌ Rasm yuklashda tarmoq xatoligi");
+    } finally {
+        fileInput.value = "";
+    }
+}
+
+// ================= Rasmni chapga/markazga/o'ngga surish =================
+function injectAlignBars(editorId) {
+    const editor = document.getElementById(editorId);
+    if (!editor) return;
+    editor.querySelectorAll('.rich-img-wrap').forEach((wrap) => {
+        if (wrap.querySelector('.rich-img-align-bar')) return;
+        const bar = document.createElement('span');
+        bar.className = 'rich-img-align-bar';
+        bar.setAttribute('contenteditable', 'false');
+        bar.innerHTML =
+            `<button type="button" title="Chapga surish" onclick="setMediaAlign(event,'left')">⬅</button>`
+            + `<button type="button" title="Markazga surish" onclick="setMediaAlign(event,'center')">⏺</button>`
+            + `<button type="button" title="O'ngga surish" onclick="setMediaAlign(event,'right')">➡</button>`;
+        wrap.appendChild(bar);
+    });
+}
+
+function setMediaAlign(evt, align) {
+    evt.preventDefault();
+    evt.stopPropagation();
+    const wrap = evt.currentTarget.closest('.rich-img-wrap');
+    if (!wrap) return;
+    wrap.classList.remove('align-left', 'align-center', 'align-right');
+    wrap.classList.add('align-' + align);
+}
+
+// ================= Rasm ostiga (ixtiyoriy) sarlavha =================
+function injectCaptions(editorId) {
+    const editor = document.getElementById(editorId);
+    if (!editor) return;
+    editor.querySelectorAll('.rich-img-wrap').forEach((wrap) => {
+        if (wrap.querySelector('.rich-img-caption')) return;
+        const caption = document.createElement('div');
+        caption.className = 'rich-img-caption';
+        caption.setAttribute('contenteditable', 'true');
+        caption.setAttribute('data-placeholder', 'Sarlavha (ixtiyoriy)');
+        wrap.appendChild(caption);
+    });
+}
+
+// Saqlashdan (yoki modalni yopishdan) oldin chaqiriladi — foydalanuvchi
+// yozmagan (bo'sh) sarlavha qatorlarini butunlay olib tashlaydi.
+function cleanupEmptyCaptions(editorId) {
+    const editor = document.getElementById(editorId);
+    if (!editor) return;
+    editor.querySelectorAll('.rich-img-caption').forEach((caption) => {
+        if (!caption.textContent.trim()) {
+            caption.remove();
+        }
+    });
+}
+
+// ================= Rasm o'lchamini sudrab o'zgartirish =================
+let richResizeState = null;
+
+function attachImageResizeHandlers(editorId) {
+    const editor = document.getElementById(editorId);
+    if (!editor || editor.dataset.resizeAttached) return;
+    editor.dataset.resizeAttached = "1";
+
+    editor.addEventListener('mousedown', (e) => startImageResize(e, e.clientX));
+    editor.addEventListener('touchstart', (e) => {
+        if (!e.touches[0]) return;
+        startImageResize(e, e.touches[0].clientX);
+    }, { passive: true });
+}
+
+function startImageResize(e, clientX) {
+    if (!e.target.classList || !e.target.classList.contains('rich-img-handle')) return;
+    const wrap = e.target.closest('.rich-img-wrap');
+    const media = wrap ? wrap.querySelector('img') : null;
+    const editor = e.currentTarget;
+    if (!media) return;
+
+    if (e.cancelable) e.preventDefault();
+    const rect = media.getBoundingClientRect();
+    richResizeState = {
+        media,
+        editor,
+        startX: clientX,
+        startWidth: rect.width,
+        ratio: rect.height / rect.width
+    };
+}
+
+function updateImageResize(clientX) {
+    if (!richResizeState) return;
+    const { media, editor, startX, startWidth, ratio } = richResizeState;
+    const delta = clientX - startX;
+    const maxWidth = editor.getBoundingClientRect().width;
+    const newWidth = Math.min(maxWidth, Math.max(40, startWidth + delta));
+    media.style.width = newWidth + 'px';
+    media.style.height = (newWidth * ratio) + 'px';
+}
+
+document.addEventListener('mousemove', (e) => updateImageResize(e.clientX));
+document.addEventListener('mouseup', () => { richResizeState = null; });
+document.addEventListener('touchmove', (e) => {
+    if (!richResizeState || !e.touches[0]) return;
+    updateImageResize(e.touches[0].clientX);
+}, { passive: true });
+document.addEventListener('touchend', () => { richResizeState = null; });
+
+// Modalni bo'sh holatga qaytaradi — ochilishidan OLDIN (create) yoki
+// to'ldirishdan OLDIN (edit) chaqiriladi.
+function resetQuestionFormModal() {
+    document.getElementById("qformQuestionText").value = "";
+    document.getElementById("qformQuestionImageWidget").innerHTML =
+        buildInlineImageWidget("question-image", "", "Savol rasmi");
+
+    const answersContainer = document.getElementById("qformAnswersContainer");
+    answersContainer.innerHTML = ANSWER_LETTERS.map((_, i) => buildQformAnswerRowHtml(i)).join("");
+
+    ANSWER_LETTERS.forEach((_, i) => {
+        document.getElementById(`qformAnswerImageSlot-${i}`).innerHTML =
+            buildInlineImageWidget("answer-image", "", `${ANSWER_LETTERS[i]} javob rasmi`);
+        document.getElementById(`qformCommentaryImageSlot-${i}`).innerHTML =
+            buildInlineImageWidget("commentary-image", "", "Izoh rasmi");
+        document.getElementById(`qformCommentaryVideoSlot-${i}`).innerHTML =
+            buildInlineVideoWidget("");
+        document.getElementById(`commentaryRichEditor-${i}`).innerHTML = "";
+        document.getElementById(`commentaryModal-${i}`).classList.remove("show");
+        // Rasm sudrab-o'lchamini-o'zgartirish — odatda faqat richInsertImage
+        // paytida biriktiriladi (yangi rasm qo'shilganda), lekin TAHRIRLASH
+        // rejimida muharrir ALLAQACHON (avval saqlangan) rasmlar bilan
+        // to'ldiriladi — shu sabab bu yerda OLDINDAN biriktirilib qo'yiladi.
+        attachImageResizeHandlers(`commentaryRichEditor-${i}`);
     });
 
+    document.querySelectorAll(".qform-link-btn").forEach(btn => {
+        btn.classList.toggle("hidden", !modalTopicCourseLink);
+    });
 
-    // комментарий
-    // ===== комментарий (ТОЛЬКО из data-comment кнопки) =====
-    const commentBtn = row.querySelector(".action-btn.comment");
-    const commentText = commentBtn
-        ? decodeURIComponent(commentBtn.dataset.comment || "")
-        : "";
-
-    const commentCol = row.querySelector(".comment-col");
-
-    // Hozircha to'g'ri deb belgilangan javobga biriktirilgan izoh media'si
-    // (foydalanuvchi tahrirlash paytida boshqa variantni to'g'ri qilib belgilasa ham,
-    // shu media/matn saqlanayotganda o'sha yangi to'g'ri javobga yoziladi).
-    const correctCell = row.querySelector(".answer-cell.correct");
-    const commentaryImageUrl = correctCell?.dataset.commentaryImageUrl || "";
-    const commentaryVideoUrl = correctCell?.dataset.commentaryVideoUrl || "";
-
-    commentCol.innerHTML = `
-    <input type="text"
-           class="comment-input"
-           placeholder="To'g'ri javob uchun izoh"
-           value="${commentText}">
-    <div class="inline-commentary-media">
-        ${buildInlineImageWidget("commentary-image", commentaryImageUrl, "Izoh rasmi")}
-        ${buildInlineVideoWidget(commentaryVideoUrl)}
-    </div>
-`;
-
+    document.querySelectorAll(".qform-answer textarea").forEach(t => {
+        t.style.height = "auto";
+        t.style.height = t.scrollHeight + "px";
+    });
 }
 
-function cancelInlineEdit(btn) {
-    editingRow = null; // снимаем флаг редактирования
+async function openQuestionFormModal(mode, questionId) {
+    qformMode = mode;
+    qformQuestionId = questionId ?? null;
 
-    document.querySelectorAll(".comment-col")
-        .forEach(c => c.classList.add("hidden"));//скрываем коммент столбцу
+    resetQuestionFormModal();
 
-    loadQuestions(topicId, currentPage);
+    document.getElementById("qformTitle").textContent =
+        mode === "edit" ? "✏️ Savolni tahrirlash" : "➕ Yangi savol qo'shish";
+    document.getElementById("qformDeleteBtn").classList.toggle("hidden", mode !== "edit");
+
+    if (mode === "edit") {
+        try {
+            const res = await fetch(`/question/${questionId}`);
+            if (!res.ok) throw new Error("Savolni yuklashda xatolik");
+            const q = await res.json();
+            fillQuestionFormModal(q);
+        } catch (err) {
+            console.error(err);
+            showAlertModal("❌ Savolni yuklashda xatolik yuz berdi");
+            return;
+        }
+    }
+
+    document.getElementById("questionFormModal").classList.add("show");
 }
 
-function saveInlineEdit(btn, questionId) {
-    const row = btn.closest("tr");
+function fillQuestionFormModal(q) {
+    document.getElementById("qformQuestionText").value = q.questionText || "";
+    if (q.imageUrl) {
+        document.getElementById("qformQuestionImageWidget").innerHTML =
+            buildInlineImageWidget("question-image", q.imageUrl, "Savol rasmi");
+    }
 
-    const questionText = row.querySelector('td[data-editable] input').value;
-    const questionImageWidget = row.querySelector('.inline-image-upload[data-role="question-image"]');
-    const questionImageUrl = questionImageWidget?.dataset.currentUrl || null;
+    const answers = (q.answers || []).slice(0, 5);
 
-    const answerRows = row.querySelectorAll(".answer-cell");
+    // Eski (5-variant qo'shilishidan OLDIN yaratilgan) savollarda faqat
+    // 4 ta javob bor — ortiqcha (bu savolda umuman mavjud bo'lmagan)
+    // qatorlar YASHIRILADI, aks holda saqlashda "bo'sh javob" sifatida
+    // talab qilinib qolardi (renderQuestionsTable'dagi bilan bir xil
+    // g'oya — "E" ustuni bo'sh bo'lishi mumkin).
+    ANSWER_LETTERS.forEach((_, i) => {
+        const row = document.querySelector(`.qform-answer[data-answer-index="${i}"]`);
+        row?.classList.toggle("qform-answer-unused", i >= answers.length);
+    });
 
+    answers.forEach((a, i) => {
+        const row = document.querySelector(`.qform-answer[data-answer-index="${i}"]`);
+        if (!row) return;
+
+        row.querySelector(".qform-answer-text").value = a.answerText || "";
+        row.dataset.answerId = a.id;
+
+        if (a.imageUrl) {
+            document.getElementById(`qformAnswerImageSlot-${i}`).innerHTML =
+                buildInlineImageWidget("answer-image", a.imageUrl, `${ANSWER_LETTERS[i]} javob rasmi`);
+        }
+
+        const checkbox = row.querySelector(".qform-correct-checkbox");
+        const commentBtn = row.querySelector(".qform-comment-btn");
+
+        // Izoh matni HAR DOIM to'ldiriladi (nafaqat hozircha to'g'ri
+        // belgilangan javoblarga) — aks holda foydalanuvchi tahrirlash
+        // paytida BOSHQA (avval noto'g'ri bo'lgan) variantni to'g'ri deb
+        // belgilasa, uning izoh muharriri BO'SH qolib ketardi va
+        // saqlashda backend ("izoh bo'sh bo'lishi mumkin emas") xatolik
+        // qaytarardi (QuestionService#updateQuestion).
+        document.getElementById(`commentaryRichEditor-${i}`).innerHTML = a.commentary || "";
+
+        if (a.isTrue) {
+            checkbox.checked = true;
+            commentBtn.classList.remove("hidden");
+            if (a.commentaryImageUrl) {
+                document.getElementById(`qformCommentaryImageSlot-${i}`).innerHTML =
+                    buildInlineImageWidget("commentary-image", a.commentaryImageUrl, "Izoh rasmi");
+            }
+            if (a.commentaryVideoUrl) {
+                document.getElementById(`qformCommentaryVideoSlot-${i}`).innerHTML =
+                    buildInlineVideoWidget(a.commentaryVideoUrl);
+            }
+        }
+
+        // Mavjud izohdagi rasmlarga (agar bo'lsa) tekislash tugmalari/
+        // sarlavha qatorini qayta biriktiradi — bular innerHTML orqali
+        // saqlangan HTML'da YO'Q (faqat runtime'da qo'shiladi).
+        injectAlignBars(`commentaryRichEditor-${i}`);
+        injectCaptions(`commentaryRichEditor-${i}`);
+    });
+
+    document.querySelectorAll(".qform-answer textarea").forEach(t => {
+        t.style.height = "auto";
+        t.style.height = t.scrollHeight + "px";
+    });
+}
+
+function closeQuestionFormModal() {
+    document.getElementById("questionFormModal").classList.remove("show");
+    ANSWER_LETTERS.forEach((_, i) => {
+        document.getElementById(`commentaryModal-${i}`)?.classList.remove("show");
+    });
+}
+
+// Checkbox belgilansa/bekor qilinsa — faqat O'ZINING "✏️Izoh" tugmasi
+// ko'rinadi/yashiriladi (test-form.js bilan bir xil andoza — 3-bosqich).
+document.addEventListener("change", (e) => {
+    if (!e.target.classList.contains("qform-correct-checkbox")) return;
+    const row = e.target.closest(".qform-answer");
+    const commentBtn = row.querySelector(".qform-comment-btn");
+    commentBtn.classList.toggle("hidden", !e.target.checked);
+});
+
+// "🔗 Darsga havola qo'shish" — har bir izoh sub-modali ichida, standalone
+// #commentModal bilan BIR XIL topicCourseLink'dan foydalanadi (pastda,
+// "MODAL commentary" bo'limida bir marta yuklanadi).
+document.addEventListener("click", (e) => {
+    if (!e.target.classList.contains("qform-link-btn") || !modalTopicCourseLink) return;
+    const index = Number(e.target.dataset.answerIndex);
+    const editor = document.getElementById(`commentaryRichEditor-${index}`);
+    if (!editor) return;
+    editor.focus();
+    document.execCommand("insertHTML", false, buildTopicLinkHtml(modalTopicCourseLink));
+});
+
+// Savol/javob matni auto-height (test-form.js'dagi bilan bir xil).
+document.addEventListener("input", (e) => {
+    if (!e.target.classList.contains("auto-textarea")) return;
+    e.target.style.height = "auto";
+    e.target.style.height = e.target.scrollHeight + "px";
+});
+
+async function saveQuestionForm() {
+    const questionText = document.getElementById("qformQuestionText").value.trim();
+    if (!questionText) {
+        showAlertModal("❌ Savol matnini kiriting");
+        return;
+    }
+
+    // Eski (4 javobli) savollarni tahrirlashda "qform-answer-unused" deb
+    // belgilangan qator (bu savolda umuman mavjud emas) o'tkazib
+    // yuboriladi — bo'sh javob sifatida talab qilinmaydi/yuborilmaydi
+    // (fillQuestionFormModal bilan bir xil g'oya).
+    const answerRows = [...document.querySelectorAll(".qform-answer")]
+        .filter(row => !row.classList.contains("qform-answer-unused"));
+    const texts = [];
     const answers = [];
-    // Ilgari BITTA "correctIndex" edi — endi bir nechta checkbox
-    // belgilanishi mumkin (ko'p to'g'ri javobli savollar, foydalanuvchi
-    // so'rovi, 2026-09-05, 3-bosqich).
-    const correctIndexes = [];
 
-    answerRows.forEach((cell, i) => {
-        const input = cell.querySelector(".inline-input");
-        // Bo'sh ("padding") katakcha — bu savolda bunday variant mavjud
-        // emas, hech narsa tahrirlanmagan (enableInlineEdit'da ham shu
-        // katakcha o'tkazib yuborilgan edi). Bo'sh javob sifatida
-        // yubormaymiz — aks holda backend'dagi "javob matni bo'sh
-        // bo'lmasligi kerak" tekshiruvi butun saqlashni bloklab qo'yardi.
-        if (!input) return;
+    for (const row of answerRows) {
+        const index = Number(row.dataset.answerIndex);
+        const textInput = row.querySelector(".qform-answer-text");
+        const value = textInput.value.trim();
 
-        const checkbox = cell.querySelector(".correct-radio");
-        const imageWidget = cell.querySelector('.inline-image-upload[data-role="answer-image"]');
+        if (!value) {
+            showAlertModal("❌ Barcha javoblarni to'ldiring");
+            textInput.focus();
+            return;
+        }
+        texts.push(value.toLowerCase());
 
-        if (checkbox.checked) correctIndexes.push(i);
+        const isCorrect = row.querySelector(".qform-correct-checkbox").checked;
+        const imageWidget = document.getElementById(`qformAnswerImageSlot-${index}`)
+            .querySelector(".inline-image-upload");
+
+        cleanupEmptyCaptions(`commentaryRichEditor-${index}`);
+        const editor = document.getElementById(`commentaryRichEditor-${index}`);
+        const commentaryHtml = editor.innerHTML.trim();
+        const commentaryImageWidget = document.getElementById(`qformCommentaryImageSlot-${index}`)
+            .querySelector(".inline-image-upload");
+        const commentaryVideoWidget = document.getElementById(`qformCommentaryVideoSlot-${index}`)
+            .querySelector(".inline-video-upload");
+
+        // To'g'ri javob uchun izoh BO'SH BO'LISHI MUMKIN EMAS
+        // (QuestionService#updateQuestion — validation.textFieldMustNotBeEmpty).
+        // Muharrir bo'sh qoldirilgan bo'lsa (masalan foydalanuvchi
+        // tahrirlashda boshqa javobni endigina to'g'ri deb belgiladi) —
+        // /api/question/save (yaratish) qanday standart qo'yishini
+        // takrorlaymiz.
+        let commentary = null;
+        if (isCorrect) {
+            commentary = editor.textContent.trim() ? commentaryHtml : "To'g'ri javob";
+        }
 
         answers.push({
-            id: Number(input.dataset.answerId),
-            answerText: input.value,
-            isTrue: checkbox.checked,
-            commentary: "",
+            id: row.dataset.answerId ? Number(row.dataset.answerId) : undefined,
+            answerText: value,
+            isTrue: isCorrect,
+            commentary,
             imageUrl: imageWidget?.dataset.currentUrl || null,
-            commentaryImageUrl: null,
-            commentaryVideoUrl: null
+            commentaryImageUrl: isCorrect ? (commentaryImageWidget?.dataset.currentUrl || null) : null,
+            commentaryVideoUrl: isCorrect ? (commentaryVideoWidget?.dataset.currentUrl || null) : null
         });
-    });
+    }
 
-    if (correctIndexes.length === 0) {
+    if (new Set(texts).size !== texts.length) {
+        showAlertModal("❌ Javob variantlari bir xil bo'lishi mumkin emas");
+        return;
+    }
+
+    if (!answers.some(a => a.isTrue)) {
         showAlertModal("❌ Kamida bitta to'g'ri javobni belgilang");
         return;
     }
 
-    // Izoh (matn + rasm/video) — bitta umumiy maydon, BARCHA to'g'ri
-    // belgilangan javoblarga qo'llanadi (Excel importdagi bilan bir xil
-    // qoida — 2-bosqich, foydalanuvchi so'rovi, 2026-09-05).
-    const comment = row.querySelector(".comment-input")?.value ?? "";
-    const commentaryImageWidget = row.querySelector('.inline-commentary-media .inline-image-upload');
-    const commentaryVideoWidget = row.querySelector('.inline-commentary-media .inline-video-upload');
+    const questionImageWidget = document.getElementById("qformQuestionImageWidget")
+        .querySelector(".inline-image-upload");
+    const questionImageUrl = questionImageWidget?.dataset.currentUrl || null;
 
-    correctIndexes.forEach(i => {
-        answers[i].commentary = comment;
-        answers[i].commentaryImageUrl = commentaryImageWidget?.dataset.currentUrl || null;
-        answers[i].commentaryVideoUrl = commentaryVideoWidget?.dataset.currentUrl || null;
-    });
+    const saveBtn = document.getElementById("qformSaveBtn");
+    saveBtn.disabled = true;
 
-    const payload = {
-        id: questionId,
-        questionText,
-        imageUrl: questionImageUrl,
-        answers
-    };
+    try {
+        let res;
+        if (qformMode === "edit") {
+            const payload = { id: qformQuestionId, questionText, imageUrl: questionImageUrl, answers };
+            res = await fetch("/api/question/update", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+        } else {
+            const payload = { topicId: Number(topicId), questionText, imageUrl: questionImageUrl, answers };
+            res = await fetch("/api/question/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+        }
 
-    fetch("/api/question/update", {
-        method: "PUT",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify(payload)
-    })
-        .then(async r => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            throw new Error(data.message || data.error || "Saqlashda xatolik");
+        }
 
-            const data = await r.json();
-
-            if (!r.ok) {
-                showAlert(data.error || "Saqlashda xatolik yuz berdi.")
-                return;
-            }
-
-            showAlert("✅ Muvaffaqiyatli saqlandi.", "success");
-
-            editingRow = null; // снимаем флаг после сохранения
-
-            document.querySelectorAll(".comment-col")
-                .forEach(c => c.classList.add("hidden"));//скрываем коммент столбцу
-
-            loadQuestions(topicId, currentPage);
-        })
-        .catch(e => showAlertModal(e.message));
+        showAlert(qformMode === "edit" ? "✅ Muvaffaqiyatli saqlandi." : "✅ Test muvaffaqiyatli saqlandi", "success");
+        closeQuestionFormModal();
+        await reloadCurrentQuestionsView();
+    } catch (err) {
+        console.error(err);
+        showAlertModal("❌ " + (err.message || "Saqlashda xatolik"));
+    } finally {
+        saveBtn.disabled = false;
+    }
 }
 
-function toggleButtons(row, isEditing) {
-
-    row.querySelector(".view-actions").style.display = isEditing ? "none" : "flex";
-    row.querySelector(".edit-actions").style.display = isEditing ? "flex" : "none";
-
-    row.querySelector(".edit").style.display = isEditing ? "none" : "inline-block";
-    row.querySelector(".comment").style.display = isEditing ? "none" : "inline-block";
-
-    row.querySelector(".save").style.display = isEditing ? "inline-block" : "none";
-    row.querySelector(".cancel").style.display = isEditing ? "inline-block" : "none";
-    row.querySelector(".delete").style.display = isEditing ? "inline-block" : "none";
-}
-
-function hideCommentColumn() {
-    document.querySelectorAll(".comment-col")
-        .forEach(c => c.classList.add("hidden"));
+// Tahrirlash modalidan to'g'ridan-to'g'ri o'chirish — mavjud deleteQuestion
+// (soft-delete, "🗑️ O'chirilganlar" panelidan qaytariladi) bilan bir xil.
+async function deleteFromQuestionForm() {
+    if (qformMode !== "edit" || !qformQuestionId) return;
+    closeQuestionFormModal();
+    await deleteQuestion(qformQuestionId);
 }
 
 // "O'chirilganlar savati"ga o'tkazadi (soft-delete) — darhol butunlay
@@ -944,14 +1506,6 @@ async function deleteQuestion(questionId) {
     try {
         const res = await fetch(`/api/question/${questionId}`, {method: "DELETE"});
         if (!res.ok) throw new Error("O‘chirishda xatolik");
-
-        // Сброс флага редактирования, если удаляем текущую редактируемую строку
-        if (editingRow && editingRow.dataset.questionId == questionId) {
-            editingRow = null;
-        }
-
-        // 🔑 ВАЖНО: скрываем колонку комментариев (th + td)
-        hideCommentColumn();
 
         await loadQuestions(topicId, currentPage);
         refreshQuestionTrashBadge();
@@ -1199,8 +1753,15 @@ async function permanentlyDeleteQuestion(questionId) {
     }
 }
 
+// Ilgari test-form.html'ga (butunlay boshqa sahifa) o'tkazardi — endi shu
+// sahifaning o'zida, "Savol formasi" modalini "create" rejimida ochadi
+// (foydalanuvchi so'rovi, 2026-09-05: "yangi test yaratishni ham modalda
+// ochiladigan qilib mosla"). test-form.html sahifasining o'zi hamon
+// mavjud — boshqa kirish nuqtalari (masalan courseDetail.js'dagi "➕
+// Testga savol qo'shish") o'sha sahifaga hamon o'tkazadi, faqat SHU
+// ro'yxat sahifasidagi "➕ TEST YARATISH" tugmasi o'zgardi.
 function createTest() {
-    window.location.href = `/question/${topicId}/create-test-form`;
+    openQuestionFormModal("create");
 }
 
 // "📥 Excel'ga eksport" — shu mavzudagi barcha faol savollarni .xlsx
@@ -1336,9 +1897,15 @@ function showAlert(message, type = "error") {
 //=============================================================================
 //                      MODAL commentary
 //=============================================================================
-// Открытие модала
+// "To'g'ri javob uchun izoh" ko'rish/tahrirlash oynasi — ilgari oddiy
+// <textarea readonly> edi, endi rich-text (boy matn) muharrir, "Savol
+// formasi"dagi 5 ta izoh sub-modali bilan BIR XIL richExec-oilasidan
+// foydalanadi (pastda, "Rich-text muharrir" bo'limida — umumiy, editorId
+// parametr sifatida uzatiladi). Ko'rish rejimida asboblar paneli
+// (".rich-toolbar") CSS orqali yashirin (question.css#commentModal:not(.editing)),
+// "✏️ Tahrirlash" bosilganda "#commentModal"ga ".editing" klassi qo'shiladi.
 const modal = document.getElementById("commentModal");
-const textarea = document.getElementById("modalComment");
+const modalEditor = document.getElementById("modalCommentEditor");
 const editBtn = document.getElementById("modalEdit");
 const saveBtn = document.getElementById("modalSaveBtn");
 const linkBtn = document.getElementById("modalLinkBtn");
@@ -1346,37 +1913,40 @@ const closeBtn = modal.querySelector("button[onclick*='closeCommentModal']");
 
 let currentAnswerId = null;
 let currentQuestionId = null;
-let originalText = "";
+let originalCommentHtml = "";
+
+function isCommentModalEditable() {
+    return modal.classList.contains("editing");
+}
 
 // "🔗 Darsga havola qo'shish" — joriy sahifadagi barcha savollar bitta
 // darsga tegishli bo'lgani uchun (URL'dagi topicId), bir marta
-// yuklanadi (fetchTopicCourseLink / buildTopicLinkHtml / insertTextAtCursor
-// — topicLinkButton.js'da, test-form.js bilan umumiy).
+// yuklanadi (fetchTopicCourseLink / buildTopicLinkHtml — topicLinkButton.js'da,
+// test-form.js bilan umumiy; endi execCommand('insertHTML') orqali
+// qo'yiladi — contenteditable, insertTextAtCursor EMAS — u textarea'ga
+// mo'ljallangan, question.js'dagi boshqa joyda — bu HAM umumiy fayl,
+// o'zgartirilmagan). "Savol formasi"dagi izoh sub-modallari ham SHU
+// o'zgaruvchidan foydalanadi.
 let modalTopicCourseLink = null;
 fetchTopicCourseLink(topicId).then(link => {
     modalTopicCourseLink = link;
     if (link && linkBtn) linkBtn.classList.remove("hidden");
+    document.querySelectorAll(".qform-link-btn").forEach(btn => {
+        if (link) btn.classList.remove("hidden");
+    });
 });
 
 if (linkBtn) {
     linkBtn.onclick = () => {
-        if (!modalTopicCourseLink || textarea.readOnly) return;
-        insertTextAtCursor(textarea, buildTopicLinkHtml(modalTopicCourseLink));
-        saveBtn.disabled = textarea.value === originalText;
+        if (!modalTopicCourseLink || !isCommentModalEditable()) return;
+        modalEditor.focus();
+        document.execCommand("insertHTML", false, buildTopicLinkHtml(modalTopicCourseLink));
     };
 }
 
 function openCommentModal(btn) {
-    const modal = document.getElementById("commentModal");
-    const textarea = document.getElementById("modalComment");
-    const saveBtn = document.getElementById("modalSaveBtn");
     const commentImage = document.getElementById("modalCommentImage");
     const commentVideo = document.getElementById("modalCommentVideo");
-
-    if (!modal || !textarea || !saveBtn) {
-        console.error("Modal, textarea или saveBtn не найдены!");
-        return;
-    }
 
     const answerId = btn.dataset.answerId;
     const questionId = btn.dataset.questionId;
@@ -1391,12 +1961,17 @@ function openCommentModal(btn) {
 
     currentAnswerId = answerId;
     currentQuestionId = questionId;
-    originalText = commentary;
+    originalCommentHtml = commentary;
 
-    textarea.value = commentary;
-    textarea.readOnly = true;
+    modalEditor.innerHTML = commentary;
+    modalEditor.setAttribute("contenteditable", "false");
+    modal.classList.remove("editing");
     saveBtn.disabled = true;
     if (linkBtn) linkBtn.disabled = true;
+
+    injectAlignBars("modalCommentEditor");
+    injectCaptions("modalCommentEditor");
+    attachImageResizeHandlers("modalCommentEditor");
 
     // Rasm/video faqat ko'rish uchun (bu sahifada tahrirlanmaydi)
     if (commentImageUrl) {
@@ -1421,8 +1996,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // Закрытие модала
     window.closeCommentModal = function () {
         modal.classList.remove("show");
-        textarea.value = "";
-        textarea.readOnly = true;
+        modal.classList.remove("editing");
+        modalEditor.innerHTML = "";
+        modalEditor.setAttribute("contenteditable", "false");
         saveBtn.disabled = true;
         if (linkBtn) linkBtn.disabled = true;
 
@@ -1436,23 +2012,25 @@ document.addEventListener("DOMContentLoaded", () => {
     // Режим редактирования
     if (editBtn) {
         editBtn.onclick = () => {
-            textarea.readOnly = false;
-            textarea.focus();
+            modalEditor.setAttribute("contenteditable", "true");
+            modal.classList.add("editing");
+            modalEditor.focus();
             if (linkBtn && modalTopicCourseLink) linkBtn.disabled = false;
         };
     }
 
     // Включение Save при изменении текста
-    if (textarea) {
-        textarea.addEventListener("input", () => {
-            saveBtn.disabled = textarea.value === originalText;
+    if (modalEditor) {
+        modalEditor.addEventListener("input", () => {
+            saveBtn.disabled = modalEditor.innerHTML === originalCommentHtml;
         });
     }
 
     // Сохранение комментария
     if (saveBtn) {
         saveBtn.onclick = async () => {
-            const newComment = textarea.value;
+            cleanupEmptyCaptions("modalCommentEditor");
+            const newComment = modalEditor.innerHTML;
 
             const payload = {
                 questionId: Number(currentQuestionId),
@@ -1477,8 +2055,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 showAlert(data.message, "success");
 
-                originalText = newComment;
-                textarea.readOnly = true;
+                originalCommentHtml = newComment;
+                modalEditor.setAttribute("contenteditable", "false");
+                modal.classList.remove("editing");
                 saveBtn.disabled = true;
                 closeCommentModal();
 
@@ -1498,6 +2077,11 @@ document.addEventListener("DOMContentLoaded", () => {
         closeBtn.onclick = () => closeCommentModal();
     }
 
+    // "Savol formasi" (create/edit) — bir marta yaratiladi va DOM'ga
+    // biriktiriladi (foydalanuvchi so'rovi, 2026-09-05).
+    document.body.insertAdjacentHTML("beforeend", buildQuestionFormModalHtml());
+    document.getElementById("qformCommentaryModalsContainer").innerHTML =
+        ANSWER_LETTERS.map((_, i) => buildCommentaryModalHtml(i)).join("");
 });
 
 //===========================================================================

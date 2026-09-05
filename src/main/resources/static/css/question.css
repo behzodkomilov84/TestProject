@@ -599,31 +599,30 @@ td{
     display: flex;
 }
 
-.modal {
-    width: 70vw;
-    height: 80vh;
-    background: aquamarine;
-    padding: 40px;
-    box-shadow: 0 25px 60px rgba(0, 0, 0, .35);
-    border-radius: 8px;
+/* "To'g'ri javob uchun izoh" ko'rish/tahrirlash oynasi — ilgari 70vw x
+   80vh "aquamarine" quti + oddiy <textarea readonly> edi (agar izoh
+   "Savol formasi"da formatlangan holda yozilgan bo'lsa, xom HTML teglari
+   ko'rinardi). Endi A4 kenglikdagi (courses.css/test-form.css'dagi bilan
+   bir xil andoza) quti, ichida rich-text muharrir (foydalanuvchi so'rovi,
+   2026-09-05: "Izoh ko'rsatish modalini ham tuzatib ber"). */
+.comment-view-modal {
+    width: min(794px, 95vw);
+    max-height: 90vh;
+    overflow-y: auto;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    padding: 18px;
     display: flex;
     flex-direction: column;
+    gap: 8px;
+    animation: modalPopIn .2s cubic-bezier(.2, .9, .3, 1.2);
 }
 
-.modal textarea {
-    width: 100%;
-    min-height: 300px;
-    resize: vertical;
-    font-size: 18px;
-    border-radius: 15px;
-    border: 3px solid yellowgreen;
-    background: ghostwhite;
-    font-weight: 500;
-    padding: 15px;
-    box-sizing: border-box;
-    height: inherit;
-    margin-bottom: 15px;
-    line-height: 2em;
+/* "✏️ Tahrirlash" bosilmaguncha — asboblar paneli yashirin, muharrir
+   o'zi contenteditable="false" (question.js#openCommentModal/editBtn). */
+#commentModal:not(.editing) .rich-toolbar {
+    display: none;
 }
 
 .modal-footer {
@@ -1190,4 +1189,496 @@ td label{
 
 #questionTrashPanel .restore-bulk-btn:hover {
     background: #15803d;
+}
+
+/* ========================================================================
+   "Savol formasi" — yangi savol qo'shish / mavjudini tahrirlash, endi
+   A4 kenglikdagi modalda (foydalanuvchi so'rovi, 2026-09-05: "testni
+   tahrirlashni ham modalda ochiladigan qilib mosla, yangi test
+   yaratishni ham"). Ilgari tahrirlash jadval qatorining o'zida (inline)
+   bo'lardi, yaratish esa butunlay boshqa sahifaga (test-form.html)
+   o'tkazardi — endi ikkalasi HAM shu bitta modalda, test-form.js'dagi
+   bilan bir xil rich-text izoh muharriri bilan (question.js#buildQuestionFormModalHtml).
+   ======================================================================== */
+.question-form-modal {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: min(794px, 95vw);
+    max-height: 90vh;
+    overflow-y: auto;
+    margin: 0;
+    animation: modalPopIn .2s cubic-bezier(.2, .9, .3, 1.2);
+}
+
+.qform-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.qform-group label {
+    font-weight: bold;
+}
+
+.qform-group textarea {
+    width: 100%;
+    min-height: 42px;
+    max-height: 220px;
+    padding: 10px;
+    font-size: 14px;
+    resize: vertical;
+    border-radius: 8px;
+    border: 1px solid #d5dde8;
+}
+
+.qform-answers h3 {
+    margin: 4px 0 6px;
+}
+
+.qform-multi-correct-hint {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.qform-answer {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+/* Eski (5-variant qo'shilishidan OLDIN yaratilgan) savollarda faqat 4 ta
+   javob bor — "E" qatori shu holatda butunlay YASHIRIN (question.js#fillQuestionFormModal),
+   qo'shimcha bo'sh variant sifatida talab qilinmasin deb. */
+.qform-answer.qform-answer-unused {
+    display: none;
+}
+
+.qform-answer input[type="checkbox"] {
+    margin-top: 12px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.qform-answer textarea {
+    flex: 1;
+    min-height: 42px;
+    max-height: 200px;
+    padding: 8px 10px;
+    font-size: 14px;
+    resize: vertical;
+    border-radius: 8px;
+    border: 1px solid #d5dde8;
+}
+
+.qform-comment-btn {
+    margin-top: 6px;
+    background: #1976d2;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.qform-comment-btn.hidden {
+    display: none !important;
+}
+
+.question-form-modal .inline-image-upload {
+    margin-top: 6px;
+}
+
+.question-form-modal .modal-footer {
+    margin-top: 4px;
+    border-top: 1px solid #f1f5f9;
+    padding-top: 14px;
+}
+
+.qform-delete-btn {
+    background: #fdecea;
+    color: #c62828;
+    border: 1px solid #f5c2c0;
+    border-radius: 6px;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-weight: 600;
+    margin-right: auto;
+}
+
+.qform-delete-btn:hover {
+    background: #fbd6d3;
+}
+
+.qform-cancel-btn {
+    background: #e0e0e0;
+    color: #1e293b;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.qform-cancel-btn:hover {
+    opacity: .9;
+}
+
+.qform-save-btn {
+    background: #1976d2;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 18px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.qform-save-btn:hover {
+    background: #125aa3;
+}
+
+.qform-link-btn {
+    background: #00796b;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 13px;
+    align-self: flex-start;
+}
+
+.qform-link-btn.hidden {
+    display: none !important;
+}
+
+/* ========================================================================
+   Izoh muharriri — "Kursga dars qo'shish/tahrirlash" (courseDetail.js/
+   courses.css) va test-form.js/css bilan BIR XIL boy matn tahrirlagichi
+   — bu sahifa o'sha fayllarni ulamagani uchun kerakli qism shu yerda
+   takrorlangan (video/PPT/.docx import KIRITILMAGAN — o'sha darajaga
+   mos). Ikkala joyda ishlatiladi: "Savol formasi"dagi 5 ta izoh
+   sub-modali VA alohida "💬 Izoh ko'rsatish" (#commentModal) ko'rish/
+   tahrirlash oynasi.
+   ======================================================================== */
+.rich-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 6px;
+}
+
+.rich-toolbar button {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #d5dde8;
+    border-radius: 6px;
+    background: white;
+    color: #1e293b;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rich-toolbar button svg {
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    flex-shrink: 0;
+}
+
+.rich-toolbar button:hover {
+    background: #f1f5f9;
+}
+
+.rich-toolbar-sep {
+    width: 1px;
+    height: 20px;
+    background: #e2e8f0;
+    margin: 0 4px;
+}
+
+.rich-toolbar-select {
+    width: auto !important;
+    height: 32px;
+    padding: 0 6px !important;
+    border: 1px solid #d5dde8;
+    border-radius: 6px;
+    background: white;
+    color: #1e293b;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.rich-color-trigger {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 4px !important;
+    border: 1px solid #d5dde8;
+    border-radius: 6px;
+    cursor: pointer;
+    background: white;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.rich-color-preview {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 3px;
+    border: 1px solid rgba(0,0,0,0.15);
+}
+
+.rich-color-palette {
+    position: fixed;
+    z-index: 10000;
+    background: white;
+    border: 1px solid #d5dde8;
+    border-radius: 8px;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    padding: 8px;
+}
+
+.rich-color-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 24px);
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.rich-color-swatch-btn {
+    width: 24px;
+    height: 24px;
+    border: 1px solid rgba(0,0,0,0.15);
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 0;
+}
+
+.rich-color-swatch-btn:hover {
+    outline: 2px solid #2563eb;
+    outline-offset: 1px;
+}
+
+.rich-color-custom-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #475569;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.rich-color-custom-label input[type="color"] {
+    width: 24px !important;
+    height: 24px !important;
+    padding: 0 !important;
+    border: 1px solid #d5dde8;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.rich-text-editor {
+    width: 100%;
+    min-height: 120px;
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid #d5dde8;
+    font-size: 14px;
+    font-family: inherit;
+    line-height: 1.6;
+}
+
+.rich-text-editor:focus {
+    outline: 2px solid #bfdbfe;
+    outline-offset: -1px;
+}
+
+.rich-text-editor:empty::before {
+    content: attr(data-placeholder);
+    color: #94a3b8;
+}
+
+.rich-text-editor p {
+    margin: 0 0 10px;
+}
+
+.rich-text-editor img {
+    max-width: 100%;
+    height: auto;
+}
+
+.rich-img-wrap {
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    vertical-align: bottom;
+}
+
+.rich-img-wrap img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+.rich-img-handle {
+    display: none;
+}
+
+.rich-text-editor .rich-img-handle {
+    display: block;
+    position: absolute;
+    right: -5px;
+    bottom: -5px;
+    width: 12px;
+    height: 12px;
+    background: #2563eb;
+    border: 2px solid white;
+    border-radius: 3px;
+    cursor: nwse-resize;
+}
+
+.rich-img-align-bar {
+    display: none;
+}
+
+.rich-text-editor .rich-img-align-bar {
+    display: flex;
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    gap: 2px;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    padding: 1px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.rich-img-align-bar button {
+    border: none;
+    background: #eee;
+    border-radius: 3px;
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+    line-height: 1;
+    padding: 0;
+    cursor: pointer;
+}
+
+.rich-img-align-bar button:hover {
+    background: #ddd;
+}
+
+.rich-img-wrap.align-left,
+.rich-img-wrap.align-center,
+.rich-img-wrap.align-right {
+    display: block;
+    width: fit-content;
+}
+
+.rich-img-wrap.align-left {
+    margin-left: 0;
+    margin-right: auto;
+}
+
+.rich-img-wrap.align-center {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.rich-img-wrap.align-right {
+    margin-left: auto;
+    margin-right: 0;
+}
+
+.rich-img-caption {
+    display: block;
+    font-size: 13px;
+    color: #64748b;
+    text-align: center;
+    margin-top: 4px;
+    padding: 2px 4px;
+    outline: none;
+}
+
+.rich-img-caption:empty {
+    display: none;
+}
+
+.rich-text-editor .rich-img-caption:empty {
+    display: block;
+}
+
+.rich-text-editor .rich-img-caption:empty::before {
+    content: attr(data-placeholder);
+    color: #b7c0cc;
+    font-style: italic;
+}
+
+.rich-text-editor ul,
+.rich-text-editor ol {
+    margin: 0 0 10px;
+    padding-left: 24px;
+}
+
+.rich-text-editor table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+}
+
+.rich-text-editor table td,
+.rich-text-editor table th {
+    border: 1px solid #e2e8f0;
+    padding: 6px 8px;
+}
+
+/* Savol/javob/izoh rasm-video widget'lari — "Savol formasi" ham
+   ALLAQACHON mavjud ".inline-image-upload"/".inline-video-upload"
+   (buildInlineImageWidget/buildInlineVideoWidget, yuqorida) ni qayta
+   ishlatadi (test-form.css'dagi ".image-upload" oilasi EMAS — bu
+   sahifada ikkita boshqa-boshqa widget tizimi bo'lmasin deb, faqat
+   BITTASI, allaqachon sinovdan o'tgani ishlatiladi). Izoh sub-modali
+   ichida biroz ixchamroq ko'rinishi uchun faqat shu qism qayta
+   belgilanadi.
+   ------------------------------------------------------------------- */
+.qform-commentary-modal .inline-image-preview {
+    max-width: 100px;
+    max-height: 70px;
+}
+
+.qform-commentary-modal .inline-video-preview {
+    max-width: 130px;
+    max-height: 90px;
+}
+
+.qform-commentary-media {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 8px;
+    border-top: 1px solid #eee;
 }

@@ -162,7 +162,6 @@
                 <th>D</th>
                 <th>E</th>
                 <th title="To'g'ri javob">✅</th>
-                <th class="comment-col hidden" title="Izoh">💬To'g'ri <br>javob izohi</th>
                 <th title="Butun dars bo'yicha tartiblaydi, sahifalashdan qat'i nazar">Tartib</th>
                 <th>Amallar</th>
             </tr>
@@ -173,15 +172,78 @@
 
     <div id="pagination" class="pagination"></div>
 
-    <!-- Modal для комментариев -->
+    <!-- Modal для комментариев — endi boy matn (rich-text) ko'rinishida:
+         ilgari oddiy <textarea readonly> edi, shu sabab agar izoh
+         "Savol formasi" (questionFormModal, pastda) orqali formatlangan
+         holda yozilgan bo'lsa, bu yerda XOM HTML teglari ko'rinardi
+         (foydalanuvchi so'rovi, 2026-09-05: "Izoh ko'rsatish modalini
+         ham tuzatib ber"). Toolbar — question.js#richExec va h.k. bilan
+         BIR XIL (editorId parametr sifatida uzatilgani uchun, alohida
+         nusxa yaratishga hojat yo'q), faqat ko'rish rejimida (Tahrirlash
+         bosilmaguncha) CSS orqali yashiriladi (question.css#commentModal:not(.editing)). -->
     <div id="commentModal" class="modal-overlay">
-        <div class="modal">
+        <div class="comment-view-modal">
             <h2 class="modal-h2">To'g'ri javob uchun izoh</h2>
 
-            <textarea id="modalComment" readonly></textarea>
+            <div id="modalCommentToolbar" class="rich-toolbar">
+                <button type="button" onclick="richExec('modalCommentEditor','bold')" title="Qalin (Ctrl+B)"><b>B</b></button>
+                <button type="button" onclick="richExec('modalCommentEditor','italic')" title="Kursiv (Ctrl+I)"><i>I</i></button>
+                <button type="button" onclick="richExec('modalCommentEditor','underline')" title="Tagi chizilgan (Ctrl+U)"><u>U</u></button>
+                <button type="button" onclick="richExec('modalCommentEditor','strikeThrough')" title="Chizib o'tilgan"><s>S</s></button>
+                <button type="button" onclick="richExec('modalCommentEditor','subscript')" title="Indeks (pastki, masalan H₂O)">X<sub>2</sub></button>
+                <button type="button" onclick="richExec('modalCommentEditor','superscript')" title="Daraja (yuqori, masalan x²)">X<sup>2</sup></button>
+                <span class="rich-toolbar-sep"></span>
+                <select class="rich-toolbar-select" title="Shrift turi" onmousedown="saveRichSelection('modalCommentEditor')" onchange="richFontName('modalCommentEditor', this.value); this.selectedIndex=0;">
+                    <option value="" selected disabled>🔤 Shrift</option>
+                    <option value="Arial">Arial</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Courier New">Courier New</option>
+                    <option value="Verdana">Verdana</option>
+                </select>
+                <select class="rich-toolbar-select" title="Shrift o'lchami" onmousedown="saveRichSelection('modalCommentEditor')" onchange="richFontSize('modalCommentEditor', this.value); this.selectedIndex=0;">
+                    <option value="" selected disabled>🔠 O'lcham</option>
+                    <option value="12">12</option>
+                    <option value="14">14</option>
+                    <option value="16">16</option>
+                    <option value="18">18</option>
+                    <option value="20">20</option>
+                    <option value="24">24</option>
+                </select>
+                <span class="rich-toolbar-sep"></span>
+                <button type="button" class="rich-color-trigger" title="🎨 Harf rangi" onclick="toggleColorPalette(this, 'modalCommentEditor', 'fore')"><span class="rich-color-preview" style="background:#000000"></span></button>
+                <button type="button" class="rich-color-trigger" title="🖊️ Fon (bo'yash) rangi" onclick="toggleColorPalette(this, 'modalCommentEditor', 'hilite')"><span class="rich-color-preview" style="background:#fff59d"></span></button>
+                <span class="rich-toolbar-sep"></span>
+                <button type="button" onclick="richExec('modalCommentEditor','justifyLeft')" title="Chapga tekislash"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="2"/><rect x="0" y="5" width="10" height="2"/><rect x="0" y="9" width="16" height="2"/><rect x="0" y="13" width="10" height="2"/></svg></button>
+                <button type="button" onclick="richExec('modalCommentEditor','justifyCenter')" title="Markazga tekislash"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="2"/><rect x="3" y="5" width="10" height="2"/><rect x="0" y="9" width="16" height="2"/><rect x="3" y="13" width="10" height="2"/></svg></button>
+                <button type="button" onclick="richExec('modalCommentEditor','justifyRight')" title="O'ngga tekislash"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="2"/><rect x="6" y="5" width="10" height="2"/><rect x="0" y="9" width="16" height="2"/><rect x="6" y="13" width="10" height="2"/></svg></button>
+                <button type="button" onclick="richExec('modalCommentEditor','justifyFull')" title="Ikki tomonga tekislash"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="0" y="1" width="16" height="2"/><rect x="0" y="5" width="16" height="2"/><rect x="0" y="9" width="16" height="2"/><rect x="0" y="13" width="16" height="2"/></svg></button>
+                <span class="rich-toolbar-sep"></span>
+                <button type="button" onclick="richExec('modalCommentEditor','outdent')" title="Chekinishni kamaytirish"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="7" y="1" width="9" height="2"/><rect x="7" y="7" width="9" height="2"/><rect x="7" y="13" width="9" height="2"/><path d="M5 4 L1 8 L5 12 Z"/></svg></button>
+                <button type="button" onclick="richExec('modalCommentEditor','indent')" title="Chekinishni oshirish"><svg viewBox="0 0 16 16" fill="currentColor"><rect x="7" y="1" width="9" height="2"/><rect x="7" y="7" width="9" height="2"/><rect x="7" y="13" width="9" height="2"/><path d="M1 4 L5 8 L1 12 Z"/></svg></button>
+                <select class="rich-toolbar-select" title="Qator oralig'i" onmousedown="saveRichSelection('modalCommentEditor')" onchange="richLineSpacing('modalCommentEditor', this.value); this.selectedIndex=0;">
+                    <option value="" selected disabled>↕️ Oraliq</option>
+                    <option value="1">1.0</option>
+                    <option value="1.15">1.15</option>
+                    <option value="1.5">1.5</option>
+                    <option value="2">2.0</option>
+                </select>
+                <span class="rich-toolbar-sep"></span>
+                <button type="button" onclick="richExec('modalCommentEditor','insertUnorderedList')" title="Ro'yxat">☰•</button>
+                <button type="button" onclick="richExec('modalCommentEditor','insertOrderedList')" title="Raqamlangan ro'yxat">☰1</button>
+                <button type="button" onclick="triggerImageInsert('modalCommentEditor')" title="Rasm qo'shish">🖼</button>
+                <input type="file" id="modalCommentEditor-imageInput" accept="image/*" style="display:none;" onchange="richInsertImage('modalCommentEditor', this)">
+                <span class="rich-toolbar-sep"></span>
+                <button type="button" onclick="richExec('modalCommentEditor','removeFormat')" title="Formatni tozalash">🧹</button>
+            </div>
 
-            <!-- Izohga biriktirilgan rasm/video (faqat ko'rish uchun — bu
-                 sahifada media tahrirlanmaydi, "Test yaratish" formasida qo'shiladi/o'zgartiriladi) -->
+            <div id="modalCommentEditor" class="rich-text-editor" contenteditable="false"
+                 data-placeholder="To'g'ri javob uchun izoh..."></div>
+
+            <!-- Izohga biriktirilgan rasm/video (alohida yuklangan — bu
+                 rich muharrirdagi INLINE rasmlardan farqli, "Savol
+                 formasi"dagi ✏️Izoh modalidagi pastki "🖼️ Rasm"/"🎬 Video"
+                 tugmalari orqali biriktiriladi). -->
             <img id="modalCommentImage" class="modal-comment-image hidden" alt="Izoh rasmi">
             <video id="modalCommentVideo" class="modal-comment-video hidden" controls></video>
 
