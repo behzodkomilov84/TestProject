@@ -788,6 +788,14 @@ function renderScienceSearchResults(list) {
 function goToScienceSearchResult(topicId, sectionId) {
     const params = new URLSearchParams({ scienceId: scienceSearchScienceId, focus: topicId });
     if (sectionId) params.set("sectionId", sectionId);
+    // "fieldId" HAM o'tkazilishi SHART — topic.js buni o'zining "Orqaga"
+    // havolasida (/science?focus=...) yana ishlatadi (openTopics'dagi
+    // fieldQuery bilan bir xil andoza). Bo'lmasa, "Darslar"dan "Orqaga"
+    // bosilganda joriy Yo'nalish qamrovi yo'qolib, /science sahifasi
+    // FILTRSIZ (butun Bo'limlar ro'yxati bilan) ochilib qolardi —
+    // haqiqiy topilgan bug, foydalanuvchi: "саҳифанинг кўриниши бошқача".
+    if (typeof pageFieldId === "number") params.set("fieldId", pageFieldId);
+    else if (pageFieldId === null) params.set("fieldId", "none");
     window.location.href = `/topics?${params}`;
 }
 

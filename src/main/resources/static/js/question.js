@@ -48,7 +48,14 @@ function handleIncomingFocusOrEdit() {
     if (focusQuestionId) {
         const row = document.querySelector(`tr[data-question-id="${focusQuestionId}"]`);
         if (!row) return;
-        row.scrollIntoView({ behavior: "smooth", block: "center" });
+        // "behavior: smooth" EMAS — "smooth" scroll o'zi ham vaqt oladi
+        // (masalan uzoq ro'yxatda 1 soniyagacha), lekin flash animatsiyasi
+        // DARHOL, PARALLEL boshlanadi — natijada foydalanuvchi qatorga
+        // KO'Z bilan yetib kelguncha sariq rang ALLAQACHON so'nib bo'lgan
+        // bo'lardi (haqiqiy topilgan bug, foydalanuvchi: "background'и
+        // бўялмаяпти"). Instant scroll bilan qator DARHOL ko'rinadi,
+        // shundan keyingina flash boshlanadi — vaqt poygasi yo'q.
+        row.scrollIntoView({ behavior: "auto", block: "center" });
         row.classList.add("question-row-flash");
         setTimeout(() => row.classList.remove("question-row-flash"), 2600);
     }
