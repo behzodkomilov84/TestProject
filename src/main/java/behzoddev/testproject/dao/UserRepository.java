@@ -20,7 +20,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByTelegramId(Long telegramId);
 
+    Optional<User> findByGoogleId(String googleId);
+
     boolean existsByEmail(String email);
+
+    Optional<User> findByEmail(String email);
 
 
 }

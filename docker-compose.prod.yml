@@ -78,6 +78,10 @@ services:
       CLICK_SECRET_KEY: ${CLICK_SECRET_KEY:-}
       CLICK_PAY_BASE_URL: ${CLICK_PAY_BASE_URL:-https://my.click.uz/services/pay}
       PAYMENT_PRICE_PER_MONTH_SOM: ${PAYMENT_PRICE_PER_MONTH_SOM:-50000}
+      # "Google orqali kirish" — Click'dagi bilan bir xil sabab: aniq
+      # ro'yxatlanmasa, .env'da bo'lsa ham konteynerga umuman o'tmaydi.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       # Markazlashtirilgan xato kuzatuvi (Sentry) — .env'da bo'lmasa (bo'sh),
       # logback-spring.xml'dagi SentryAppender jim o'zini o'chiradi.
       SENTRY_DSN: ${SENTRY_DSN:-}

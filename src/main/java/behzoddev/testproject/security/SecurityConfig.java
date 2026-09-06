@@ -61,6 +61,10 @@ public class SecurityConfig {
                                 // orqali kirish" tugmasi (hali login qilinmagan
                                 // holatda keladi, TelegramWidgetLoginController).
                                 "/telegram-login",
+                                // "Google orqali kirish" — Authorization Code
+                                // oqimi (GoogleLoginController), hali login
+                                // qilinmagan holatda keladi.
+                                "/oauth2/google/**",
                                 // Click'ning o'z serverlari chaqiradi — sessiyasiz,
                                 // o'zining imzo tekshiruvi orqali himoyalangan
                                 // (ClickService.verifySign).

@@ -52,6 +52,14 @@ public class User implements UserDetails {
     @Column(name = "telegram_id", unique = true)
     private Long telegramId;
 
+    // Google orqali kirish — Google'ning barqaror "sub" (subject)
+    // identifikatori (foydalanuvchi so'rovi, 2026-09-06). telegramId bilan
+    // bir xil g'oya, faqat String (Google "sub"i String, garchi ko'rinishda
+    // raqamga o'xshasa ham — rasmiy spetsifikatsiyaga ko'ra Long'ga
+    // ishonib bo'lmaydi).
+    @Column(name = "google_id", unique = true, length = 64)
+    private String googleId;
+
     // Profilga qo'shimcha ma'lumotlar (foydalanuvchi so'rovi, 2026-09-06) —
     // "qaysi sohadan, qaysi kasbdagilar foydalanayotganini" bilish uchun.
     // Eski foydalanuvchilarda NULL bo'lishi mumkin — "shart"lik faqat YANGI

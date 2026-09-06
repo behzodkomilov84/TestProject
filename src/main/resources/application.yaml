@@ -87,6 +87,13 @@ telegram:
   bot:
     token: ${TELEGRAM_BOT_TOKEN}
     username: ${TELEGRAM_BOT_USERNAME:study_grow_bot}
+# "Google orqali kirish" — foydalanuvchi so'rovi, 2026-09-06. Google Cloud
+# Console'da yaratilgan OAuth 2.0 Client ID/Secret (bo'sh bo'lsa — tugma
+# ko'rinadi, lekin bosilganda "sozlanmagan" xabari chiqadi, ClickService
+# bilan bir xil "vaqtincha o'chiq" siyosati).
+google:
+  client-id: ${GOOGLE_CLIENT_ID:}
+  client-secret: ${GOOGLE_CLIENT_SECRET:}
 app:
   # Ilovaning o'z ommaviy (tashqi) manzili — botdagi havolalar
   # (masalan avtomatik login) shu bazaga qo'shib quriladi. Ilova o'zi
