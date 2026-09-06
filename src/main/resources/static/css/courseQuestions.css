@@ -257,3 +257,12 @@
     background: #e0f2fe;
     border-color: #7dd3fc;
 }
+
+/* Qidiruv so'zi topilgan joy (courseQuestions.js#highlightText) —
+   foydalanuvchi so'rovi, 2026-09-06: "топилган сўз бўялиб қолсин". */
+.cq-highlight {
+    background: #fde047;
+    color: #1e293b;
+    padding: 0 2px;
+    border-radius: 3px;
+}

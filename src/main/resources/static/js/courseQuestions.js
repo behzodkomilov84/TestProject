@@ -157,7 +157,7 @@ function renderSections() {
                 <div class="cq-section-header-row">
                     <button type="button" class="cq-section-header" onclick="toggleSection(${sectionId})">
                         <span class="cq-chevron" id="cqChevron-${sectionId}">▶</span>
-                        📁 ${escapeHtml(section.title)}
+                        📁 ${highlightText(section.title, searchQuery)}
                     </button>
                     <!-- Shu bitta darsning testlarini alohida eksport
                          qilish (foydalanuvchi so'rovi, 2026-09-06) —
@@ -169,7 +169,7 @@ function renderSections() {
                     <span class="cq-count">${questionsToShow.length} ta test</span>
                 </div>
                 <div class="cq-section-body hidden" id="cqBody-${sectionId}">
-                    ${buildQuestionsTable(questionsToShow, section.topicId)}
+                    ${buildQuestionsTable(questionsToShow, section.topicId, searchQuery)}
                 </div>
             </div>
         `;
@@ -186,7 +186,7 @@ function renderSections() {
     });
 }
 
-function buildQuestionsTable(questions, topicId) {
+function buildQuestionsTable(questions, topicId, query) {
     if (questions.length === 0) {
         return `<p class="cq-empty">Mos test topilmadi.</p>`;
     }
@@ -203,13 +203,13 @@ function buildQuestionsTable(questions, topicId) {
                 </tr>
             </thead>
             <tbody>
-                ${questions.map((qq, i) => buildQuestionRow(qq, i, topicId)).join("")}
+                ${questions.map((qq, i) => buildQuestionRow(qq, i, topicId, query)).join("")}
             </tbody>
         </table>
     `;
 }
 
-function buildQuestionRow(q, index, topicId) {
+function buildQuestionRow(q, index, topicId, query) {
     const answers = (q.answers || []).slice(0, 5);
     const correctLetters = answers
         .map((a, i) => a.isTrue ? ANSWER_LETTERS[i] : null)
@@ -219,7 +219,7 @@ function buildQuestionRow(q, index, topicId) {
     return `
         <tr>
             <td class="cq-num">${index + 1}</td>
-            <td class="cq-question-text">${escapeHtml(q.questionText)}</td>
+            <td class="cq-question-text">${highlightText(q.questionText, query)}</td>
             ${ANSWER_LETTERS.map((_, i) => {
                 const a = answers[i];
                 if (!a) return `<td></td>`;
@@ -257,4 +257,32 @@ function escapeHtml(text) {
     const div = document.createElement("div");
     div.textContent = text ?? "";
     return div.innerHTML;
+}
+
+// Qidiruv so'zi topilgan joyni <mark> bilan bo'yaydi (foydalanuvchi
+// so'rovi, 2026-09-06) — HAR BIR uchrashgan joyi (bittasi emas),
+// katta/kichik harfga QARAMASDAN mos keladi. XSS'dan himoya uchun matn
+// AVVAL bo'laklarga (mos kelgan/kelmagan) bo'linadi, HAR BIR bo'lak
+// ALOHIDA escapeHtml() qilinadi — keyin <mark> teglari qo'shiladi
+// (aks holda escapeHtml()dan KEYIN qidirish, so'rovda "&"/"<" kabi
+// belgilar bo'lsa, escaped matn bilan mos kelmay qolardi).
+function highlightText(text, query) {
+    const raw = text ?? "";
+    const q = (query ?? "").trim();
+    if (!q) return escapeHtml(raw);
+
+    const lowerRaw = raw.toLowerCase();
+    const lowerQuery = q.toLowerCase();
+
+    let result = "";
+    let pos = 0;
+    let idx = lowerRaw.indexOf(lowerQuery, pos);
+    while (idx !== -1) {
+        result += escapeHtml(raw.slice(pos, idx));
+        result += `<mark class="cq-highlight">${escapeHtml(raw.slice(idx, idx + q.length))}</mark>`;
+        pos = idx + q.length;
+        idx = lowerRaw.indexOf(lowerQuery, pos);
+    }
+    result += escapeHtml(raw.slice(pos));
+    return result;
 }
