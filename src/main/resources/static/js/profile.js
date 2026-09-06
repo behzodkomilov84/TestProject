@@ -51,6 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("avatar-file-input").addEventListener("change", uploadAvatar);
     document.getElementById("avatar-telegram-sync-btn").addEventListener("click", syncAvatarFromTelegram);
+    document.getElementById("telegram-disconnect-btn").addEventListener("click", disconnectTelegram);
 });
 
 /* Test tarixi (paginatsiya bilan) endi /student sahifasidagi "Statistika"
@@ -83,12 +84,41 @@ function renderAvatar(avatarUrl) {
 function renderTelegramStatus(connected) {
     const el = document.getElementById("telegram-status");
     const syncBtn = document.getElementById("avatar-telegram-sync-btn");
+    const disconnectBtn = document.getElementById("telegram-disconnect-btn");
 
     el.innerHTML = connected
         ? `<span class="telegram-status-chip telegram-status-connected">✅ Bog'langan</span>`
         : `<span class="telegram-status-chip telegram-status-disconnected">Bog'lanmagan</span>`;
 
     syncBtn.style.display = connected ? "inline-block" : "none";
+    disconnectBtn.style.display = connected ? "inline" : "none";
+}
+
+// "🔌 Uzish" — boshqa Telegram hisobi bilan qayta bog'lash uchun
+// (foydalanuvchi so'rovi, 2026-09-06). Telegram'ning o'zi bitta brauzer
+// sessiyasida faqat bitta hisobni "eslab qoladi" — boshqasiga o'tish
+// uchun avval joriy ulanishni uzish kerak.
+function disconnectTelegram() {
+    showConfirmModal(
+        "Telegramni uzmoqchimisiz? Keyinroq boshqa (yoki shu) Telegram hisobi bilan qayta bog'lashingiz mumkin bo'ladi.",
+        {danger: true}
+    ).then(confirmed => {
+        if (!confirmed) return;
+
+        fetch("/api/profile/telegram/disconnect", {method: "POST"})
+            .then(async r => {
+                if (!r.ok) {
+                    const data = await r.json().catch(() => ({}));
+                    throw new Error(data.error || "Xatolik yuz berdi");
+                }
+            })
+            .then(() => {
+                currentProfile.telegramConnected = false;
+                renderTelegramStatus(false);
+                showAlertModal("✅ Telegram uzildi. Botga /link orqali yoki \"Telegram orqali kirish\" tugmasi orqali qayta bog'lashingiz mumkin.");
+            })
+            .catch(err => showAlertModal(err.message || "Xatolik yuz berdi"));
+    });
 }
 
 function enableEditFullName() {

@@ -100,6 +100,29 @@ public class ProfileService {
         userRepository.save(user);
     }
 
+    // 🔹 Telegramni uzish — boshqa Telegram hisobini bog'lash uchun
+    // (foydalanuvchi so'rovi, 2026-09-06: "Telegram orqali kirishda, boshqa
+    // account orqali kirish ham mumkin bo'lsin" — Telegram'ning o'zi bitta
+    // brauzer sessiyasida faqat bitta hisobni "eslab qoladi", widget buni
+    // o'zgartira olmaydi, shuning uchun sayt tomonidan mumkin bo'lgan
+    // yagona yechim — joriy ulanishni uzib, keyin YANGI Telegram hisobi
+    // bilan qayta bog'lash/kirish). Email yo'q bo'lsa BLOKLANADI — aks
+    // holda foydalanuvchi tasodifiy parolni (TelegramWidgetLoginService
+    // #createUser) bilmagani uchun hisobiga umuman kira olmay qolardi.
+    @Transactional
+    public void disconnectTelegram(User user) {
+        if (user.getTelegramId() == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "Telegram ulanmagan");
+        }
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            throw new ResponseStatusException(BAD_REQUEST,
+                    "❌ Avval emailingizni kiriting — aks holda parolingizni bilmasangiz, hisobingizga qayta kira olmay qolishingiz mumkin.");
+        }
+
+        user.setTelegramId(null);
+        userRepository.save(user);
+    }
+
     // 🔹 Ism/Familiya (foydalanuvchi so'rovi, 2026-09-06).
     @Transactional
     public void changeFullName(User user, ChangeFullNameDto dto) {

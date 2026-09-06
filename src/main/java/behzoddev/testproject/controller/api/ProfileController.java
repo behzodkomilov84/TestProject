@@ -112,6 +112,13 @@ public class ProfileController {
         return Map.of("avatarUrl", url);
     }
 
+    // Telegramni uzish — boshqa Telegram hisobi bilan qayta bog'lash uchun.
+    @PostMapping("/telegram/disconnect")
+    public ResponseEntity<Void> disconnectTelegram(@AuthenticationPrincipal User user) {
+        profileService.disconnectTelegram(user);
+        return ResponseEntity.ok().build();
+    }
+
     // Telefon kiritish formasidagi davlat dropdown'i uchun — barcha
     // libphonenumber qo'llab-quvvatlaydigan davlatlar (qo'lda ro'yxat shart emas).
     @GetMapping("/phone/countries")
