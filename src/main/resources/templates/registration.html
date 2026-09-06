@@ -20,7 +20,7 @@
     <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
 </head>
 <body>
-<div class="container">
+<div class="container container-wide">
     <div class="registration form">
         <header>Ro'yxatdan o'tish</header>
 
@@ -40,14 +40,13 @@
             <!-- Ism/Familiya/Ish-o'qish joyi/Lavozim — MAJBURIY (foydalanuvchi
                  so'rovi, 2026-09-06: "Қайси сохадан, қайси касбдагилар
                  фойдаланаётганлигига қараб хулоса чиқарамиз"). -->
+            <!-- Ish/o'qish joyi va lavozim ENDI bu yerda YO'Q (foydalanuvchi
+                 so'rovi, 2026-09-07: "registration formdan olib tashla") —
+                 kursga kirishda profil-to'ldirish modali orqali so'raladi
+                 (profile-gate.js, RequireProfileFieldsFilter). -->
             <div class="form-row">
                 <input type="text" name="firstName" placeholder="Ismingiz" autocomplete="given-name" required>
                 <input type="text" name="lastName" placeholder="Familiyangiz" autocomplete="family-name" required>
-            </div>
-
-            <div class="form-row">
-                <input type="text" name="workplace" placeholder="Ish yoki o'qish joyingiz" required>
-                <input type="text" name="jobTitle" placeholder="Lavozimingiz (masalan: shifokor, talaba)" required>
             </div>
 
             <div class="form-row">

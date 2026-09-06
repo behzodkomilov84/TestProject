@@ -40,6 +40,15 @@ body {
     border: 1px solid rgba(0, 149, 121, 0.08);
 }
 
+/* Registratsiya sahifasi uchun kengroq variant (foydalanuvchi so'rovi,
+   2026-09-07: "enini kattalashtir, placeholderlar sig'may qolyapti") —
+   login/telegram-tasdiqlash bir ustunli qisqa forma bo'lgani uchun
+   ularga tegilmaydi, faqat shu klass qo'shilgan konteynerga (.form-row
+   ichidagi ikkita maydon ko'proq joy olishi uchun). */
+.container.container-wide {
+    max-width: min(760px, 94vw);
+}
+
 .container .form {
     padding: 2.4rem 2.2rem;
 }

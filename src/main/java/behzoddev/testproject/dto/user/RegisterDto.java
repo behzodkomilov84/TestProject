@@ -6,17 +6,20 @@ import jakarta.validation.constraints.Size;
 
 public record RegisterDto(
         @NotBlank(message = "❌Username bo'sh bo'lishi mumkin emas.") String username,
-        // Ism/Familiya/Ish-o'qish joyi/Lavozim — "qaysi sohadan, qaysi
-        // kasbdagilar foydalanayotganini" bilish uchun majburiy qilingan
-        // (foydalanuvchi so'rovi, 2026-09-06). Tekshiruv UserServiceImpl
-        // #register'da qo'lda (bu loyihada @Valid umuman ulanmagan —
-        // UserMvcController#register @ModelAttribute'ni validatsiyasiz
-        // qabul qiladi, shu sabab bu annotatsiyalar hozircha faqat
-        // hujjatlashtirish uchun, haqiqiy tekshiruv service qatlamida).
+        // Ism/Familiya — "qaysi sohadan, qaysi kasbdagilar
+        // foydalanayotganini" bilish uchun majburiy qilingan (foydalanuvchi
+        // so'rovi, 2026-09-06). Tekshiruv UserServiceImpl#register'da
+        // qo'lda (bu loyihada @Valid umuman ulanmagan — UserMvcController
+        // #register @ModelAttribute'ni validatsiyasiz qabul qiladi, shu
+        // sabab bu annotatsiyalar hozircha faqat hujjatlashtirish uchun,
+        // haqiqiy tekshiruv service qatlamida).
         @NotBlank(message = "❌Ism bo'sh bo'lishi mumkin emas.") String firstName,
         @NotBlank(message = "❌Familiya bo'sh bo'lishi mumkin emas.") String lastName,
-        @NotBlank(message = "❌Ish yoki o'qish joyingizni kiriting.") String workplace,
-        @NotBlank(message = "❌Lavozimingizni kiriting.") String jobTitle,
+        // Ish/o'qish joyi va lavozim ENDI ixtiyoriy (foydalanuvchi so'rovi,
+        // 2026-09-07: "registration formdan olib tashla") — kursga
+        // kirishda profilni to'ldirish modali orqali keyinroq so'raladi.
+        String workplace,
+        String jobTitle,
         // Email ENDI IXTIYORIY — ko'pchilik foydalanuvchida email yo'q yoki
         // o'zi login/parolini bilmaydi (birov ochib bergan). Kiritilsa,
         // formati tekshiriladi (@Email bo'sh qatorni xato deb hisoblamaydi);

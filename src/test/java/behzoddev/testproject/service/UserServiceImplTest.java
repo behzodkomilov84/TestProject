@@ -249,28 +249,25 @@ class UserServiceImplTest {
                 .hasMessageContaining("Familiya");
     }
 
+    // Ish/o'qish joyi va lavozim ENDI ixtiyoriy (foydalanuvchi so'rovi,
+    // 2026-09-07: "registration formdan olib tashla" — bular kursga
+    // kirishda profil-to'ldirish modali orqali keyinroq so'raladi,
+    // profile-gate.js). Bo'sh qoldirilsa xato emas, NULL saqlanadi.
     @Test
-    void register_workplaceBlank_throws() {
-        RegisterDto dto = new RegisterDto("newuser", "Ism", "Familiya", "  ", "Lavozim",
+    void register_blankWorkplaceAndJobTitle_savedAsNull() {
+        RegisterDto dto = new RegisterDto("newuser", "Ism", "Familiya", "  ", "  ",
                 "new@mail.com", null, null, "secret1", "secret1");
         when(userRepository.existsByUsername("newuser")).thenReturn(false);
         when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
+        when(roleRepository.findByRoleName("ROLE_USER")).thenReturn(Optional.of(roleUser));
+        when(passwordEncoder.encode(anyString())).thenReturn("ENCODED");
 
-        assertThatThrownBy(() -> userService.register(dto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Ish yoki o'qish joyi");
-    }
+        userService.register(dto);
 
-    @Test
-    void register_jobTitleBlank_throws() {
-        RegisterDto dto = new RegisterDto("newuser", "Ism", "Familiya", "Ish joyi", "  ",
-                "new@mail.com", null, null, "secret1", "secret1");
-        when(userRepository.existsByUsername("newuser")).thenReturn(false);
-        when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
-
-        assertThatThrownBy(() -> userService.register(dto))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Lavozim");
+        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(captor.capture());
+        assertThat(captor.getValue().getWorkplace()).isNull();
+        assertThat(captor.getValue().getPosition()).isNull();
     }
 
     @Test
