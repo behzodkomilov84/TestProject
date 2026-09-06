@@ -62,7 +62,7 @@ function renderUsers(users, subscriptions) {
             const checked = user.roles.includes(roleName) ? "checked" : "";
             const label = roleName.replace("ROLE_", "");
             return `
-                <label class="role-checkbox" style="margin-right:8px;">
+                <label class="role-checkbox">
                     <input type="checkbox"
                            data-user-id="${user.id}"
                            data-role-name="${roleName}"

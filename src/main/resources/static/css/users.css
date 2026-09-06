@@ -128,10 +128,14 @@ select.role-select {
     font-weight: 700;
 }
 
+/* Foydalanuvchi so'rovi, 2026-09-06: "bir qatorga ter" (gorizontal) —
+   avval "flex-wrap: wrap" bilan OWNER/ADMIN/USER checkboxlari tor
+   ustunda vertikal uch-uchiga tushib qolardi. */
 .roles-cell {
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
+    flex-wrap: nowrap;
+    gap: 10px;
+    white-space: nowrap;
 }
 
 /* Action ustunidagi tugmalar (masalan, blokdan chiqarish + o'chirish) yonma-yon
