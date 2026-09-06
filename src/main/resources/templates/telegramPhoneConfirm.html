@@ -44,8 +44,7 @@
             Davom etish uchun telefon raqamingizni tasdiqlang.
         </p>
 
-        <p style="color: red"
-           th:if="${phoneError}"
+        <p th:if="${phoneError}"
            th:text="${phoneError}"
            class="error-alert"></p>
 

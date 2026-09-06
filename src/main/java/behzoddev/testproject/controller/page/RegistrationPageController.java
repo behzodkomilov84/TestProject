@@ -1,6 +1,5 @@
 package behzoddev.testproject.controller.page;
 
-import behzoddev.testproject.service.PhoneNumberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -13,8 +12,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 @RequiredArgsConstructor
 public class RegistrationPageController {
 
-    private final PhoneNumberService phoneNumberService;
-
     // "Telegram orqali kirish" tugmasi uchun (registration.html) — bir xil
     // g'oya UserMvcController#login bilan (o'zbekcha custom tugma,
     // Telegram'ning tayyor widget'i o'rniga).
@@ -23,7 +20,6 @@ public class RegistrationPageController {
 
     @GetMapping("/registration")
     public String registration(Model model) {
-        model.addAttribute("countries", phoneNumberService.listCountries());
         model.addAttribute("telegramBotId", telegramBotToken.split(":")[0]);
         return "registration";
     }
