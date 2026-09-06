@@ -25,6 +25,11 @@
     <div class="cq-header">
         <button class="cq-back-btn" onclick="location.href='/courses/' + COURSE_ID">← Kursga qaytish</button>
         <h1 id="cqCourseTitle">📋 Barcha savollar</h1>
+        <!-- Shu KURSga bog'langan BARCHA darslarning savollarini BITTA
+             faylga yig'ib eksport qilish (foydalanuvchi so'rovi,
+             2026-09-06) — CourseController#exportCourseQuestionsToExcel/
+             ...ToWordSimple. -->
+        <div id="cqExportButtons" class="cq-export-buttons"></div>
     </div>
 
     <input type="text" id="cqSearchInput" class="cq-search-input"

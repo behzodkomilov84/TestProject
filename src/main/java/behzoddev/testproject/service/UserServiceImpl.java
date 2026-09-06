@@ -1,6 +1,12 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.CourseSectionProgressRepository;
+import behzoddev.testproject.dao.EmailVerificationCodeRepository;
+import behzoddev.testproject.dao.PasswordResetCodeRepository;
+import behzoddev.testproject.dao.RoleAuditLogRepository;
 import behzoddev.testproject.dao.RoleRepository;
+import behzoddev.testproject.dao.TelegramAutoLoginTokenRepository;
+import behzoddev.testproject.dao.TelegramLinkCodeRepository;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.dto.user.ChangeRoleDto;
 import behzoddev.testproject.dto.user.LoginDto;
@@ -38,6 +44,16 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     private final RoleAuditService roleAuditService;
     private final EmailVerificationService emailVerificationService;
     private final PhoneNumberService phoneNumberService;
+    // Foydalanuvchini o'chirishdan OLDIN tozalanadigan "yengil" (ephemeral/
+    // audit) jadvallar — deleteUser() ichida. Har biri FK RESTRICT bo'lgani
+    // uchun (haqiqiy topilgan bug, 2026-09-06 — avval "notifications",
+    // keyin "role_audit_logs" bilan bitta-bittalab topilgan).
+    private final RoleAuditLogRepository roleAuditLogRepository;
+    private final EmailVerificationCodeRepository emailVerificationCodeRepository;
+    private final PasswordResetCodeRepository passwordResetCodeRepository;
+    private final TelegramAutoLoginTokenRepository telegramAutoLoginTokenRepository;
+    private final TelegramLinkCodeRepository telegramLinkCodeRepository;
+    private final CourseSectionProgressRepository courseSectionProgressRepository;
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
@@ -209,10 +225,20 @@ public class UserServiceImpl implements UserDetailsService, UserService {
 
         List<String> roles = targetUser.getRoles().stream().map(Role::getRoleName).sorted().toList();
 
-        // "notifications.user_id" FK RESTRICT (haqiqiy topilgan bug,
-        // 2026-09-06) — foydalanuvchini o'chirishdan OLDIN uning
-        // bildirishnomalari o'chiriladi, aks holda 409 bilan tugardi.
+        // Bir nechta jadval "user_id"/"target_user_id" FK RESTRICT bilan
+        // bog'langan (haqiqiy topilgan bug, 2026-09-06 — avval faqat
+        // "notifications" tuzatilgan edi, keyin xuddi shu muammo
+        // "role_audit_logs"da ham topildi) — o'chirishdan OLDIN barchasi
+        // tozalanadi, aks holda 409 bilan tugaydi. "role_audit_logs.
+        // changed_by_id" ATAYLAB tegilmaydi (boshqa foydalanuvchi haqidagi
+        // tarixiy yozuv yo'qolib qolmasin deb).
         notificationService.deleteAllForUser(targetUserId);
+        roleAuditLogRepository.deleteByTargetUser_Id(targetUserId);
+        emailVerificationCodeRepository.deleteByUser_Id(targetUserId);
+        passwordResetCodeRepository.deleteByUser_Id(targetUserId);
+        telegramAutoLoginTokenRepository.deleteByUser_Id(targetUserId);
+        telegramLinkCodeRepository.deleteByUser_Id(targetUserId);
+        courseSectionProgressRepository.deleteByUser_Id(targetUserId);
 
         userRepository.delete(targetUser);
 

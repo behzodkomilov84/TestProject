@@ -21,4 +21,10 @@ public interface CourseSectionProgressRepository extends JpaRepository<CourseSec
     // parent row" xatosi bilan muvaffaqiyatsiz tugardi (foydalanuvchi shu
     // bo'limni "tugatilgan" deb belgilagan bo'lsa).
     void deleteBySection_Id(Long sectionId);
+
+    // Foydalanuvchini o'chirishdan OLDIN (UserServiceImpl#deleteUser) —
+    // "user_id" FK RESTRICT (notifications/role_audit_logs'dagi bilan
+    // bir xil muammo, 2026-09-06) — yuqoridagi ikkitasidan farqli, bu
+    // yerda FOYDALANUVCHI bo'yicha (kurs/bo'lim emas).
+    void deleteByUser_Id(Long userId);
 }

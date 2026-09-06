@@ -1,11 +1,14 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.CourseRepository;
+import behzoddev.testproject.dao.CourseSectionRepository;
 import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
 import behzoddev.testproject.dto.export.ExportedFileDto;
 import behzoddev.testproject.entity.Answer;
+import behzoddev.testproject.entity.Course;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
@@ -43,6 +46,8 @@ public class WordService {
     private final TopicRepository topicRepository;
     private final TopicSectionRepository topicSectionRepository;
     private final ScienceRepository scienceRepository;
+    private final CourseRepository courseRepository;
+    private final CourseSectionRepository courseSectionRepository;
 
     // Savol/javobga biriktirilgan rasmni diskdan o'qish uchun (DocxImageUtil) —
     // FileStorageService bilan bir xil manba (application.yaml: app.upload.dir).
@@ -84,6 +89,22 @@ public class WordService {
 
         byte[] data = buildDocument("Fan: " + science.getName(), topics, questionsPerTopic(topics));
         return new ExportedFileDto(data, ExportFilenameUtil.sanitize(science.getName()));
+    }
+
+    // "Barcha savollarni ko'rish" sahifasidagi "📝 Word'ga eksport" — shu
+    // KURSga bog'langan BARCHA darslarning (CourseSection#linkedTopic)
+    // savollarini BITTA faylga yig'ib beradi (courseQuestions.js,
+    // foydalanuvchi so'rovi, 2026-09-06) — exportQuestionsForScience bilan
+    // bir xil andoza, faqat mavzular ro'yxati Fan emas, Kurs orqali topiladi.
+    @Transactional(readOnly = true)
+    public ExportedFileDto exportQuestionsForCourse(Long courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Kurs topilmadi: " + courseId));
+        List<Long> topicIds = courseSectionRepository.findDistinctLinkedTopicIdsByCourse_Id(courseId);
+        List<Topic> topics = topicRepository.findAllById(topicIds);
+
+        byte[] data = buildDocument("Kurs: " + course.getTitle(), topics, questionsPerTopic(topics));
+        return new ExportedFileDto(data, ExportFilenameUtil.sanitize(course.getTitle()));
     }
 
     private List<List<Question>> questionsPerTopic(List<Topic> topics) {

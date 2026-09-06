@@ -20,6 +20,33 @@
     font-size: 22px;
 }
 
+/* Shu KURSdagi BARCHA testlarni Excel/Word'ga eksport qilish tugmalari —
+   sarlavha qatorining O'NG tomonida (foydalanuvchi so'rovi, 2026-09-06). */
+.cq-export-buttons {
+    display: flex;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.cq-export-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1.5px solid #dbeafe;
+    background: #f8fbff;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease, transform .1s ease;
+}
+
+.cq-export-btn:hover {
+    transform: scale(1.08);
+    background: #e0f2fe;
+    border-color: #7dd3fc;
+}
+
 .cq-back-btn {
     background: #fff;
     border: 1px solid #d5dde8;
@@ -84,33 +111,73 @@
     background: #fff;
 }
 
+/* Sarlavha (matn+chevron), 2 ta eksport ikonka va son — bitta qatorda.
+   ".cq-section-header" endi TO'LIQ eni EMAS (flex:1) — chunki eksport
+   tugmalari ENDI UNING TASHQARISIDA, birodar element sifatida (button
+   ichida button bo'lishi mumkin emas — foydalanuvchi so'rovi,
+   2026-09-06: har bir darsga alohida eksport ikonkalari). */
+.cq-section-header-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: #f8fafc;
+    padding: 6px 10px 6px 16px;
+}
+
+.cq-section-header-row:hover {
+    background: #f1f5f9;
+}
+
 .cq-section-header {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
     display: flex;
     align-items: center;
     gap: 8px;
     text-align: left;
-    background: #f8fafc;
+    background: transparent;
     border: none;
-    padding: 12px 16px;
+    padding: 6px 0;
     font-size: 14.5px;
     font-weight: 600;
     color: #1e293b;
     cursor: pointer;
 }
 
-.cq-section-header:hover {
-    background: #f1f5f9;
-}
-
 .cq-chevron {
     display: inline-block;
     width: 14px;
     color: #64748b;
+    flex-shrink: 0;
+}
+
+.cq-section-export-btn {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1.5px solid #dbeafe;
+    background: #fff;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease, transform .1s ease;
+}
+
+.cq-section-export-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.cq-section-export-btn:hover {
+    transform: scale(1.1);
+    background: #e0f2fe;
+    border-color: #7dd3fc;
 }
 
 .cq-count {
-    margin-left: auto;
+    flex-shrink: 0;
     color: #64748b;
     font-weight: 500;
     font-size: 12.5px;

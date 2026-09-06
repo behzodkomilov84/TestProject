@@ -14,4 +14,9 @@ public interface TelegramLinkCodeRepository extends JpaRepository<TelegramLinkCo
     );
 
     Optional<TelegramLinkCode> findByCodeAndUsedFalse(String code);
+
+    // Foydalanuvchini o'chirishdan OLDIN (UserServiceImpl#deleteUser) —
+    // "user_id" FK RESTRICT (notifications/role_audit_logs'dagi bilan
+    // bir xil muammo, 2026-09-06).
+    void deleteByUser_Id(Long userId);
 }

@@ -48,6 +48,10 @@ class ExcelServiceTest {
     @Mock
     private behzoddev.testproject.dao.ScienceRepository scienceRepository; // faqat fan eksporti uchun (bu oqimda chaqirilmaydi)
     @Mock
+    private behzoddev.testproject.dao.CourseRepository courseRepository; // faqat kurs eksporti uchun (bu oqimda chaqirilmaydi)
+    @Mock
+    private behzoddev.testproject.dao.CourseSectionRepository courseSectionRepository; // faqat kurs eksporti uchun (bu oqimda chaqirilmaydi)
+    @Mock
     private AnswerService excelAnswerService; // ExcelService'ning o'z isUnique() tekshiruvi uchun
     @Mock
     private AnswerService validationAnswerService; // faqat Validation ichida ishlatiladi (bu oqimda chaqirilmaydi)
@@ -59,7 +63,7 @@ class ExcelServiceTest {
     @BeforeEach
     void setUp() {
         Validation validation = new Validation(validationAnswerService);
-        excelService = new ExcelService(questionService, questionRepository, topicRepository, topicSectionRepository, scienceRepository, excelAnswerService, validation, clamAvScanService);
+        excelService = new ExcelService(questionService, questionRepository, topicRepository, topicSectionRepository, scienceRepository, courseRepository, courseSectionRepository, excelAnswerService, validation, clamAvScanService);
         // Fayl-darajasidagi validatsiya testlari (bo'sh/katta/noto'g'ri kengaytma)
         // qatorlarni umuman o'qishga yetmaydi — shu stublar ular uchun keraksiz
         // bo'lgani uchun lenient qilingan.

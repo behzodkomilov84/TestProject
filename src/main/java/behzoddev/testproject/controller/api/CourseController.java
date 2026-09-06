@@ -11,7 +11,9 @@ import behzoddev.testproject.dto.export.ExportedFileDto;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.CourseService;
 import behzoddev.testproject.service.CourseWordExportService;
+import behzoddev.testproject.service.ExcelService;
 import behzoddev.testproject.service.FileStorageService;
+import behzoddev.testproject.service.WordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -40,6 +42,8 @@ public class CourseController {
     private final CourseService courseService;
     private final FileStorageService fileStorageService;
     private final CourseWordExportService courseWordExportService;
+    private final ExcelService excelService;
+    private final WordService wordService;
 
     @GetMapping
     public List<CourseDto> list(@AuthenticationPrincipal User user) {
@@ -307,6 +311,47 @@ public class CourseController {
     public List<CourseQuestionDto> getQuestionsForCourse(@PathVariable Long courseId,
                                                           @AuthenticationPrincipal User user) {
         return courseService.getQuestionsForCourse(courseId, user);
+    }
+
+    // "📊 Barcha savollarni ko'rish" sahifasidagi "Excel'ga eksport" —
+    // shu kursga bog'langan BARCHA darslarning savollarini BITTA faylga
+    // yig'ib beradi (foydalanuvchi so'rovi, 2026-09-06). Kirish huquqi
+    // xuddi getQuestionsForCourse'dagi kabi (requireManageableCourse) —
+    // @PreAuthorize yetarli EMAS, chunki u faqat "ADMIN yoki OWNER"ligini
+    // tekshiradi, "aynan SHU kursga egalikni" emas.
+    @GetMapping("/{courseId}/export/questions/excel")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public ResponseEntity<byte[]> exportCourseQuestionsToExcel(@PathVariable Long courseId,
+                                                                @AuthenticationPrincipal User user) {
+        courseService.requireManageableCourse(courseId, user);
+        ExportedFileDto file = excelService.exportQuestionsForCourse(courseId);
+
+        ContentDisposition disposition = ContentDisposition.attachment()
+                .filename(file.filenameBase() + ".xlsx", StandardCharsets.UTF_8)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(file.data());
+    }
+
+    // Xuddi yuqoridagi kabi, faqat Word (.docx) formatida.
+    @GetMapping("/{courseId}/export/questions/word-simple")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public ResponseEntity<byte[]> exportCourseQuestionsToWordSimple(@PathVariable Long courseId,
+                                                                     @AuthenticationPrincipal User user) {
+        courseService.requireManageableCourse(courseId, user);
+        ExportedFileDto file = wordService.exportQuestionsForCourse(courseId);
+
+        ContentDisposition disposition = ContentDisposition.attachment()
+                .filename(file.filenameBase() + ".docx", StandardCharsets.UTF_8)
+                .build();
+
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
+                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.wordprocessingml.document"))
+                .body(file.data());
     }
 
     // "➕ Havola qo'shish" — topicId berilsa FAQAT shu mavzudagi, berilmasa

@@ -1,5 +1,7 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.CourseRepository;
+import behzoddev.testproject.dao.CourseSectionRepository;
 import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
@@ -9,6 +11,7 @@ import behzoddev.testproject.dto.excel.ImportResultDto;
 import behzoddev.testproject.dto.export.ExportedFileDto;
 import behzoddev.testproject.dto.question.QuestionSaveDto;
 import behzoddev.testproject.entity.Answer;
+import behzoddev.testproject.entity.Course;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
@@ -72,6 +75,8 @@ public class ExcelService {
     private final TopicRepository topicRepository;
     private final TopicSectionRepository topicSectionRepository;
     private final ScienceRepository scienceRepository;
+    private final CourseRepository courseRepository;
+    private final CourseSectionRepository courseSectionRepository;
     private final DataFormatter formatter = new DataFormatter();
     private final AnswerService answerService;
     private final Validation validation;
@@ -153,6 +158,20 @@ public class ExcelService {
         byte[] data = exportQuestionsForTopics("Fan: " + science.getName(),
                 topicRepository.findByScience_IdAndDeletedAtIsNullOrderByOrderIndexAsc(scienceId));
         return new ExportedFileDto(data, ExportFilenameUtil.sanitize(science.getName()));
+    }
+
+    // "Barcha savollarni ko'rish" sahifasidagi "📊 Excel'ga eksport" —
+    // shu KURSga bog'langan BARCHA darslarning (CourseSection#linkedTopic)
+    // savollarini BITTA faylga yig'ib beradi (courseQuestions.js,
+    // foydalanuvchi so'rovi, 2026-09-06) — exportQuestionsForScience bilan
+    // bir xil andoza, faqat mavzular ro'yxati Fan emas, Kurs orqali topiladi.
+    @Transactional(readOnly = true)
+    public ExportedFileDto exportQuestionsForCourse(Long courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Kurs topilmadi: " + courseId));
+        List<Long> topicIds = courseSectionRepository.findDistinctLinkedTopicIdsByCourse_Id(courseId);
+        byte[] data = exportQuestionsForTopics("Kurs: " + course.getTitle(), topicRepository.findAllById(topicIds));
+        return new ExportedFileDto(data, ExportFilenameUtil.sanitize(course.getTitle()));
     }
 
     // Bu eksport allaqachon import bilan mos EMAS (yuqoridagi izohga

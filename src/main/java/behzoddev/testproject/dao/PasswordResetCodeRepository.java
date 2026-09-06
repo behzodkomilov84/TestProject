@@ -13,4 +13,9 @@ public interface PasswordResetCodeRepository extends JpaRepository<PasswordReset
             String code,
             LocalDateTime now
     );
+
+    // Foydalanuvchini o'chirishdan OLDIN (UserServiceImpl#deleteUser) —
+    // "user_id" FK RESTRICT (notifications/role_audit_logs'dagi bilan
+    // bir xil muammo, 2026-09-06).
+    void deleteByUser_Id(Long userId);
 }
