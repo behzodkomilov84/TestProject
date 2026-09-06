@@ -116,6 +116,31 @@ body {
     cursor: pointer;
 }
 
+.courses-top-bar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* "💬 Forum" — kurs sahifasidagi HAMMAGA ko'rinadigan tugma
+   (foydalanuvchi so'rovi, 2026-09-06) — ".back-btn"dan farqli, ranglik
+   (ko'k) chunki bu asosiy amal (Forumga o'tish), oddiy navigatsiya emas. */
+.forum-btn {
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: none;
+    background: #2563eb;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s ease;
+}
+
+.forum-btn:hover {
+    background: #1d4ed8;
+}
+
 #createCourseBtn {
     padding: 10px 18px;
     border-radius: 10px;

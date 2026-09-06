@@ -45,6 +45,18 @@ public class CourseCatalogPageController {
         return "courseQuestions";
     }
 
+    // "Forum" — kurs foydalanuvchilari kurs muallifiga (yoki umuman
+    // kursga) savol berishi, xohlagan foydalanuvchi esa javob yozishi
+    // mumkin bo'lgan sahifa (foydalanuvchi so'rovi, 2026-09-06). Kirish
+    // huquqi (nashr etilgan kurs — hammaga, qoralama — faqat egasi/OWNER)
+    // API darajasida (CourseForumService#requireViewableCourse) tekshiriladi.
+    @GetMapping("/courses/{id}/forum")
+    public String openCourseForum(@PathVariable Long id, Model model, Authentication authentication) {
+        model.addAttribute("role", primaryRole(authentication));
+        model.addAttribute("courseId", id);
+        return "courseForum";
+    }
+
     @GetMapping("/courses/{courseId}/sections/{sectionId}")
     public String openSectionView(
             @PathVariable Long courseId,

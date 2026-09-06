@@ -430,7 +430,15 @@
              qutisi avtomatik ochilib, kartasi ko'k ramka bilan
              ko'rsatiladi (courses.js#focusCourseId, foydalanuvchi so'rovi
              2026-09-05: science.js'dagi "?focus=" bilan bir xil g'oya). -->
-        <button class="back-btn" onclick="location.href='/courses?focus=' + COURSE_ID">← Kurs yo'nalishlari</button>
+        <div class="courses-top-bar-actions">
+            <!-- "Forum" — ISTALGAN foydalanuvchiga (OWNER/ADMIN/USER) ochiq
+                 (foydalanuvchi so'rovi, 2026-09-06: kurs foydalanuvchilari
+                 kurs muallifiga savol berishi, boshqalar ham javob berishi
+                 mumkin bo'lgan sahifa) — shu sabab OWNER-only boshqaruv
+                 panelidan TASHQARIDA, hamma ko'radigan sarlavha qatorida. -->
+            <button class="forum-btn" onclick="location.href='/courses/' + COURSE_ID + '/forum'" title="Kurs bo'yicha savol-javob forumi">💬 Forum</button>
+            <button class="back-btn" onclick="location.href='/courses?focus=' + COURSE_ID">← Kurs yo'nalishlari</button>
+        </div>
     </header>
 
     <p id="courseDescription" class="course-description"></p>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <title>Forum</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/courses.css">
+    <link rel="stylesheet" href="/css/courseForum.css">
+
+    <script th:inline="javascript">
+        const COURSE_ID = /*[[${courseId}]]*/ 0;
+    </script>
+    <script src="/js/courseForum.js" defer></script>
+    <script src="/js/navbar.js" defer></script>
+</head>
+
+<!-- "data-user-id" — joriy foydalanuvchi id'si, courseForum.js "bu MENING
+     yozuvim" (o'chirish tugmasi) tekshiruvi uchun (student.html'dagi bilan
+     bir xil g'oya). -->
+<body th:attr="data-role=${role}" th:data-user-id="${#authentication.principal.id}">
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="courses-container cf-page">
+    <div class="cf-header">
+        <button class="cf-back-btn" onclick="location.href='/courses/' + COURSE_ID">← Kursga qaytish</button>
+        <h1>💬 Forum</h1>
+    </div>
+    <p class="cf-hint">Kurs bo'yicha savolingizni yozing — kurs muallifi yoki boshqa foydalanuvchilar javob berishi mumkin.</p>
+
+    <div class="cf-new-question-box">
+        <textarea id="cfNewQuestionInput" class="cf-new-question-input" rows="3"
+                  placeholder="Savolingizni shu yerga yozing..."></textarea>
+        <button type="button" id="cfNewQuestionBtn" class="cf-submit-btn">📩 Savol berish</button>
+    </div>
+
+    <div id="cfThreadsList" class="cf-threads-list">
+        <p class="cf-loading">⏳ Yuklanmoqda...</p>
+    </div>
+</div>
+
+</body>
+</html>
