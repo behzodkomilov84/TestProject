@@ -3,6 +3,7 @@ package behzoddev.testproject.controller.page;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.PhoneNumberService;
+import behzoddev.testproject.service.UserServiceImpl;
 import behzoddev.testproject.telegram.service.TelegramWidgetLoginService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -40,6 +41,7 @@ public class TelegramPhoneConfirmController {
 
     private final UserRepository userRepository;
     private final PhoneNumberService phoneNumberService;
+    private final UserServiceImpl userServiceImpl;
 
     @GetMapping("/telegram-phone-confirm")
     public String showForm(HttpServletRequest request, Model model) {
@@ -141,6 +143,12 @@ public class TelegramPhoneConfirmController {
 
         log.info("Telegram orqali kirish: telefon {} bo'yicha mavjud hisobga ({}) ulandi, vaqtinchalik hisob ({}) o'chirildi",
                 normalizedPhone, target.getUsername(), pendingUser.getUsername());
+        // FK RESTRICT jadvallarni oldindan tozalamasdan to'g'ridan-to'g'ri
+        // o'chirish 409 bilan tugaydi (haqiqiy topilgan bug, 2026-09-06:
+        // "Bu amalni bajarib bo'lmadi — bog'liq ma'lumotlar mavjud" — hatto
+        // "yangi" ko'ringan hisobda ham avvalgi urinishlardan bildirishnoma
+        // va h.k. qoldiq bo'lishi mumkin edi).
+        userServiceImpl.deleteFkRestrictedRowsBeforeUserDelete(pendingUser.getId());
         userRepository.delete(pendingUser);
 
         return target;

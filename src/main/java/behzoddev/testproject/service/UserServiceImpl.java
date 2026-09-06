@@ -252,20 +252,7 @@ public class UserServiceImpl implements UserDetailsService, UserService {
 
         List<String> roles = targetUser.getRoles().stream().map(Role::getRoleName).sorted().toList();
 
-        // Bir nechta jadval "user_id"/"target_user_id" FK RESTRICT bilan
-        // bog'langan (haqiqiy topilgan bug, 2026-09-06 — avval faqat
-        // "notifications" tuzatilgan edi, keyin xuddi shu muammo
-        // "role_audit_logs"da ham topildi) — o'chirishdan OLDIN barchasi
-        // tozalanadi, aks holda 409 bilan tugaydi. "role_audit_logs.
-        // changed_by_id" ATAYLAB tegilmaydi (boshqa foydalanuvchi haqidagi
-        // tarixiy yozuv yo'qolib qolmasin deb).
-        notificationService.deleteAllForUser(targetUserId);
-        roleAuditLogRepository.deleteByTargetUser_Id(targetUserId);
-        emailVerificationCodeRepository.deleteByUser_Id(targetUserId);
-        passwordResetCodeRepository.deleteByUser_Id(targetUserId);
-        telegramAutoLoginTokenRepository.deleteByUser_Id(targetUserId);
-        telegramLinkCodeRepository.deleteByUser_Id(targetUserId);
-        courseSectionProgressRepository.deleteByUser_Id(targetUserId);
+        deleteFkRestrictedRowsBeforeUserDelete(targetUserId);
 
         userRepository.delete(targetUser);
 
@@ -274,6 +261,31 @@ public class UserServiceImpl implements UserDetailsService, UserService {
                 .username(targetUser.getUsername())
                 .roles(roles)
                 .build();
+    }
+
+    // Bir nechta jadval "user_id"/"target_user_id" FK RESTRICT bilan
+    // bog'langan (haqiqiy topilgan bug, 2026-09-06 — avval faqat
+    // "notifications" tuzatilgan edi, keyin xuddi shu muammo
+    // "role_audit_logs"da ham topildi) — foydalanuvchini o'chirishdan
+    // OLDIN barchasi tozalanishi shart, aks holda 409 bilan tugaydi.
+    // "role_audit_logs.changed_by_id" ATAYLAB tegilmaydi (boshqa
+    // foydalanuvchi haqidagi tarixiy yozuv yo'qolib qolmasin deb).
+    // Ajratilgan public metod — TelegramPhoneConfirmController ham
+    // xuddi shu tozalashga muhtoj (dublikat "tg_..." hisoblarni telefon
+    // raqami bo'yicha birlashtirib o'chirishda, haqiqiy topilgan bug,
+    // 2026-09-06: "Bu amalni bajarib bo'lmadi — bog'liq ma'lumotlar
+    // mavjud" — hisob "yangi" ko'ringan bo'lsa ham, avvalgi
+    // login/telefon-tasdiqlash urinishlaridan bildirishnoma va h.k.
+    // qoldiqlar yig'ilib qolishi mumkin edi).
+    @Transactional
+    public void deleteFkRestrictedRowsBeforeUserDelete(Long targetUserId) {
+        notificationService.deleteAllForUser(targetUserId);
+        roleAuditLogRepository.deleteByTargetUser_Id(targetUserId);
+        emailVerificationCodeRepository.deleteByUser_Id(targetUserId);
+        passwordResetCodeRepository.deleteByUser_Id(targetUserId);
+        telegramAutoLoginTokenRepository.deleteByUser_Id(targetUserId);
+        telegramLinkCodeRepository.deleteByUser_Id(targetUserId);
+        courseSectionProgressRepository.deleteByUser_Id(targetUserId);
     }
 
     // Brute-force himoyasi orqali bloklangan hisobni OWNER qo'lda ochadi.
