@@ -106,17 +106,14 @@ public class ProfileService {
     // brauzer sessiyasida faqat bitta hisobni "eslab qoladi", widget buni
     // o'zgartira olmaydi, shuning uchun sayt tomonidan mumkin bo'lgan
     // yagona yechim — joriy ulanishni uzib, keyin YANGI Telegram hisobi
-    // bilan qayta bog'lash/kirish). Email yo'q bo'lsa BLOKLANADI — aks
-    // holda foydalanuvchi tasodifiy parolni (TelegramWidgetLoginService
-    // #createUser) bilmagani uchun hisobiga umuman kira olmay qolardi.
+    // bilan qayta bog'lash/kirish). Email talab qilinmaydi (foydalanuvchi
+    // so'rovi, 2026-09-06: "Shuni so'ramasin" — ilgari email yo'q bo'lsa
+    // bloklangandi, chunki tasodifiy parolni bilmasa hisobiga qayta kira
+    // olmay qolishi mumkin edi; endi bu tekshiruv olib tashlandi).
     @Transactional
     public void disconnectTelegram(User user) {
         if (user.getTelegramId() == null) {
             throw new ResponseStatusException(BAD_REQUEST, "Telegram ulanmagan");
-        }
-        if (user.getEmail() == null || user.getEmail().isBlank()) {
-            throw new ResponseStatusException(BAD_REQUEST,
-                    "❌ Avval emailingizni kiriting — aks holda parolingizni bilmasangiz, hisobingizga qayta kira olmay qolishingiz mumkin.");
         }
 
         user.setTelegramId(null);
