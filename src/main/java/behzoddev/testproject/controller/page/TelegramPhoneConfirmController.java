@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 // "Telegram orqali kirish"da HAR SAFAR (hisobda allaqachon bor bo'lsa
 // ham) telefon raqamni so'rash/tasdiqlash bosqichi — MAJBURIY
 // (foydalanuvchi so'rovi, 2026-09-06: "Har safar telegram orqali
@@ -103,14 +105,23 @@ public class TelegramPhoneConfirmController {
     }
 
     private User resolveByPhoneOrKeepPending(User pendingUser, String normalizedPhone) {
-        var existingByPhone = userRepository.findByPhoneNumber(normalizedPhone)
-                .filter(u -> !u.getId().equals(pendingUser.getId()));
+        // Optional emas List — phone_number ustunida UNIQUE cheklov yo'q,
+        // bir nechta hisob bir xil raqamga ega bo'lishi mumkin (haqiqiy
+        // topilgan xato, 2026-09-06: "Query did not return a unique
+        // result"). Shu holatda "haqiqiy" (Telegram orqali avtomatik
+        // yaratilmagan) hisobni ustuvor tanlaymiz.
+        List<User> matches = userRepository.findAllByPhoneNumber(normalizedPhone).stream()
+                .filter(u -> !u.getId().equals(pendingUser.getId()))
+                .toList();
 
-        if (existingByPhone.isEmpty()) {
+        if (matches.isEmpty()) {
             return pendingUser;
         }
 
-        User target = existingByPhone.get();
+        User target = matches.stream()
+                .filter(u -> !TelegramWidgetLoginService.isFreshTelegramPlaceholder(u))
+                .findFirst()
+                .orElse(matches.get(0));
 
         // Faqat "hozirgina, shu Telegram oqimida, hech qanday boshqa
         // ma'lumotsiz yaratilgan" hisobni "tashlab yuboramiz" — real

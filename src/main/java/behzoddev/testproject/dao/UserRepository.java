@@ -26,7 +26,11 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByEmail(String email);
 
-    Optional<User> findByPhoneNumber(String phoneNumber);
+    // Optional emas — phone_number ustunida UNIQUE cheklov yo'q (eski
+    // ma'lumotlarda bir nechta hisob bir xil raqamga ega bo'lishi mumkin,
+    // haqiqiy topilgan holat: 2026-09-06), shuning uchun "Optional"
+    // qaytarilsa Spring Data bitta natijadan ortig'ida xato tashlaydi.
+    List<User> findAllByPhoneNumber(String phoneNumber);
 
 
 }
