@@ -88,8 +88,13 @@ public class GoogleLoginService {
                 .toUriString();
     }
 
+    // "currentUser" — Telegram'dagi bilan bir xil himoya (haqiqiy topilgan
+    // bug, 2026-09-06): agar so'rov ALLAQACHON tizimga kirgan
+    // foydalanuvchidan kelayotgan bo'lsa, JORIY hisobiga ulanadi — email
+    // moslashtirishga ham ishonib o'tirmasdan (masalan Google email'i sayt
+    // hisobinikidan farq qilishi yoki tasdiqlanmagan bo'lishi mumkin).
     @Transactional
-    public User handleCallback(String code) {
+    public User handleCallback(String code, User currentUser) {
         GoogleTokenResponse tokenResponse = restClient.post()
                 .uri(TOKEN_URL)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
@@ -111,9 +116,32 @@ public class GoogleLoginService {
             throw new IllegalStateException("Google profil ma'lumotlarini olib bo'lmadi.");
         }
 
-        return userRepository.findByGoogleId(info.sub())
+        Optional<User> existingByGoogle = userRepository.findByGoogleId(info.sub());
+
+        if (currentUser != null) {
+            return linkToCurrentUser(info, currentUser, existingByGoogle);
+        }
+
+        return existingByGoogle
                 .or(() -> linkByVerifiedEmail(info))
                 .orElseGet(() -> createUser(info));
+    }
+
+    private User linkToCurrentUser(GoogleUserInfo info, User currentUser, Optional<User> existingByGoogle) {
+        if (existingByGoogle.isPresent()) {
+            User linked = existingByGoogle.get();
+            if (!linked.getId().equals(currentUser.getId())) {
+                throw new IllegalStateException("❌ Bu Google hisobi allaqachon boshqa foydalanuvchiga ulangan.");
+            }
+            return linked; // allaqachon o'ziga ulangan
+        }
+
+        currentUser.setGoogleId(info.sub());
+        if (currentUser.getAvatarUrl() == null) currentUser.setAvatarUrl(info.picture());
+        if (currentUser.getFirstName() == null) currentUser.setFirstName(info.given_name());
+        if (currentUser.getLastName() == null) currentUser.setLastName(info.family_name());
+
+        return userRepository.save(currentUser);
     }
 
     private String redirectUri() {

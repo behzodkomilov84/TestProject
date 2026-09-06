@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
@@ -49,6 +50,7 @@ public class GoogleLoginController {
     public String callback(@RequestParam(required = false) String code,
                             @RequestParam(required = false) String state,
                             @RequestParam(required = false) String error,
+                            @AuthenticationPrincipal(errorOnInvalidType = false) User currentUser,
                             HttpServletRequest request, HttpServletResponse response) {
 
         HttpSession session = request.getSession(false);
@@ -65,7 +67,7 @@ public class GoogleLoginController {
 
         User user;
         try {
-            user = googleLoginService.handleCallback(code);
+            user = googleLoginService.handleCallback(code, currentUser);
         } catch (Exception e) {
             log.error("Google orqali kirishda xatolik", e);
             return redirectWithError(request, response, "❌ Google orqali kirishda xatolik yuz berdi.");

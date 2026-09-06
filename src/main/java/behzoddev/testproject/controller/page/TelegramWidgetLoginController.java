@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
@@ -34,10 +35,11 @@ public class TelegramWidgetLoginController {
 
     @GetMapping("/telegram-login")
     public String telegramLogin(@RequestParam Map<String, String> params,
+                                 @AuthenticationPrincipal(errorOnInvalidType = false) User currentUser,
                                  HttpServletRequest request, HttpServletResponse response) {
         User user;
         try {
-            user = telegramWidgetLoginService.resolveUser(params);
+            user = telegramWidgetLoginService.resolveUser(params, currentUser);
         } catch (TelegramWidgetLoginService.InvalidTelegramAuthException e) {
             log.warn("Telegram widget orqali login rad etildi: {}", e.getMessage());
             var flashMap = new FlashMap();

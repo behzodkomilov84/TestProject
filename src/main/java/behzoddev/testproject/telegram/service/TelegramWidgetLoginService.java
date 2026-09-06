@@ -20,6 +20,7 @@ import java.util.Base64;
 import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -59,8 +60,15 @@ public class TelegramWidgetLoginService {
         }
     }
 
+    // "currentUser" — agar so'rov ALLAQACHON tizimga kirgan foydalanuvchidan
+    // kelayotgan bo'lsa (masalan, "/login" sahifasiga o'zi kirib turib,
+    // tugmani sinab ko'rsa) — YANGI/BOSHQA hisob yaratish/almashtirish
+    // o'RNIGA, shu Telegram'ni JORIY hisobiga ulaydi (haqiqiy topilgan bug,
+    // 2026-09-06: aynan shu holatda "tg_..." dublikat hisob yaratilgan
+    // edi). Anonim (login qilmagan) so'rovda — null, avvalgi xulq-atvor
+    // (resolve-yoki-yarat) saqlanadi.
     @Transactional
-    public User resolveUser(Map<String, String> params) {
+    public User resolveUser(Map<String, String> params, User currentUser) {
         if (!verifySignature(params)) {
             throw new InvalidTelegramAuthException("❌ Telegram imzosi noto'g'ri — bu so'rov soxta bo'lishi mumkin.");
         }
@@ -71,9 +79,34 @@ public class TelegramWidgetLoginService {
         }
 
         long telegramId = Long.parseLong(params.get("id"));
+        Optional<User> existingByTelegram = userRepository.findByTelegramId(telegramId);
 
-        return userRepository.findByTelegramId(telegramId)
-                .orElseGet(() -> createUser(telegramId, params));
+        if (currentUser != null) {
+            return linkToCurrentUser(telegramId, params, currentUser, existingByTelegram);
+        }
+
+        return existingByTelegram.orElseGet(() -> createUser(telegramId, params));
+    }
+
+    private User linkToCurrentUser(long telegramId, Map<String, String> params, User currentUser,
+                                    Optional<User> existingByTelegram) {
+        if (existingByTelegram.isPresent()) {
+            User linked = existingByTelegram.get();
+            if (!linked.getId().equals(currentUser.getId())) {
+                throw new InvalidTelegramAuthException(
+                        "❌ Bu Telegram hisobi allaqachon boshqa foydalanuvchiga ulangan.");
+            }
+            return linked; // allaqachon o'ziga ulangan
+        }
+
+        currentUser.setTelegramId(telegramId);
+        if (currentUser.getAvatarUrl() == null) {
+            currentUser.setAvatarUrl(telegramAvatarService.fetchAvatarUrl(telegramId));
+        }
+        if (currentUser.getFirstName() == null) currentUser.setFirstName(params.get("first_name"));
+        if (currentUser.getLastName() == null) currentUser.setLastName(params.get("last_name"));
+
+        return userRepository.save(currentUser);
     }
 
     // Telegram'ning rasmiy tekshirish algoritmi: "hash"dan boshqa barcha
