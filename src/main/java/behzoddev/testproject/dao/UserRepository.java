@@ -45,4 +45,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // xato bermasligi kerak, shuning uchun o'z ID'si chetlab o'tiladi.
     boolean existsByPhoneNumberAndIdNot(String phoneNumber, Long id);
 
+    // "Foydalanuvchilar" sahifasida qo'lda tahrirlashda (foydalanuvchi
+    // so'rovi, 2026-09-07: "qolgan polyalarni ham qo'shish kerak" —
+    // Telegram ID/@username/Google ID ham) unikallikni tekshirish uchun.
+    // "telegram_id"/"google_id" ustunlarida DB darajasida UNIQUE cheklov
+    // bor — qo'lda noto'g'ri (masalan boshqa hisobda allaqachon band)
+    // qiymat kiritilsa, aniq xato bilan oldindan to'xtatiladi.
+    boolean existsByTelegramIdAndIdNot(Long telegramId, Long id);
+
+    boolean existsByGoogleIdAndIdNot(String googleId, Long id);
+
 }

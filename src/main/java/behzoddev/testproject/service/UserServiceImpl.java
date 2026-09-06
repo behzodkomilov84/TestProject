@@ -266,7 +266,8 @@ public class UserServiceImpl implements UserDetailsService, UserService {
 
     // OWNER "Foydalanuvchilar" sahifasidan ma'lumotlarni qo'lda tahrirlashi
     // uchun (foydalanuvchi so'rovi, 2026-09-07: "sahifasiga edit ni
-    // qo'shish kerak"). Username/email/telefon — har biri boshqa
+    // qo'shish kerak", keyin "qolgan polyalarni ham qo'shish kerak").
+    // Username/email/telefon/Telegram ID/Google ID — har biri boshqa
     // hisoblarda band emasligi (o'zining hozirgi qiymati bundan mustasno)
     // tekshiriladi, xuddi ProfileService'dagi kabi.
     @Transactional
@@ -296,6 +297,28 @@ public class UserServiceImpl implements UserDetailsService, UserService {
             }
         }
 
+        // Telegram ID/Google ID — "users" jadvalida UNIQUE cheklovga ega
+        // (foydalanuvchi so'rovi, 2026-09-07: "qolgan polyalarni ham
+        // qo'shish kerak"). Bo'sh qoldirilsa — bog'lanish butunlay olib
+        // tashlanadi (masalan dublikat-hisob muammosini qo'lda tuzatish
+        // uchun foydali).
+        Long newTelegramId = null;
+        if (!isBlank(dto.telegramId())) {
+            try {
+                newTelegramId = Long.parseLong(dto.telegramId().trim());
+            } catch (NumberFormatException e) {
+                throw new IllegalArgumentException("❌Telegram ID faqat raqamlardan iborat bo'lishi kerak.");
+            }
+            if (userRepository.existsByTelegramIdAndIdNot(newTelegramId, targetUserId)) {
+                throw new IllegalArgumentException("❌Bu Telegram ID allaqachon boshqa hisobga bog'langan.");
+            }
+        }
+
+        String newGoogleId = isBlank(dto.googleId()) ? null : dto.googleId().trim();
+        if (newGoogleId != null && userRepository.existsByGoogleIdAndIdNot(newGoogleId, targetUserId)) {
+            throw new IllegalArgumentException("❌Bu Google ID allaqachon boshqa hisobga bog'langan.");
+        }
+
         user.setUsername(newUsername);
         user.setFirstName(isBlank(dto.firstName()) ? null : dto.firstName().trim());
         user.setLastName(isBlank(dto.lastName()) ? null : dto.lastName().trim());
@@ -303,6 +326,9 @@ public class UserServiceImpl implements UserDetailsService, UserService {
         user.setPhoneNumber(newPhone);
         user.setWorkplace(isBlank(dto.workplace()) ? null : dto.workplace().trim());
         user.setPosition(isBlank(dto.jobTitle()) ? null : dto.jobTitle().trim());
+        user.setTelegramId(newTelegramId);
+        user.setTelegramUsername(isBlank(dto.telegramUsername()) ? null : dto.telegramUsername().trim());
+        user.setGoogleId(newGoogleId);
 
         return userRepository.save(user);
     }

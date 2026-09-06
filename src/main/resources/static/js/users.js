@@ -235,6 +235,9 @@ function openEditModal(id) {
     document.getElementById("editPhoneNumber").value = user.phoneNumber || "";
     document.getElementById("editWorkplace").value = user.workplace || "";
     document.getElementById("editJobTitle").value = user.jobTitle || "";
+    document.getElementById("editTelegramId").value = user.telegramId || "";
+    document.getElementById("editTelegramUsername").value = user.telegramUsername || "";
+    document.getElementById("editGoogleId").value = user.googleId || "";
 
     const errorEl = document.getElementById("editUserError");
     errorEl.hidden = true;
@@ -258,7 +261,10 @@ async function submitEditUser(event) {
         email: document.getElementById("editEmail").value.trim(),
         phoneNumber: document.getElementById("editPhoneNumber").value.trim(),
         workplace: document.getElementById("editWorkplace").value.trim(),
-        jobTitle: document.getElementById("editJobTitle").value.trim()
+        jobTitle: document.getElementById("editJobTitle").value.trim(),
+        telegramId: document.getElementById("editTelegramId").value.trim(),
+        telegramUsername: document.getElementById("editTelegramUsername").value.trim(),
+        googleId: document.getElementById("editGoogleId").value.trim()
     };
 
     const errorEl = document.getElementById("editUserError");
