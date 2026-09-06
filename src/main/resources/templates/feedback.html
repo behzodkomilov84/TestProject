@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <title>Fikr va takliflar</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/courses.css">
+    <link rel="stylesheet" href="/css/feedback.css">
+
+    <script src="/js/feedback.js" defer></script>
+    <script src="/js/navbar.js" defer></script>
+</head>
+
+<!-- "data-user-id" — joriy foydalanuvchi id'si, feedback.js "bu MENING
+     yozuvim" (o'chirish tugmasi) tekshiruvi uchun (courseForum.html'dagi
+     bilan bir xil g'oya). -->
+<body th:data-user-id="${#authentication.principal.id}">
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="courses-container fb-page">
+    <div class="fb-header">
+        <button class="fb-back-btn" onclick="location.href='/index'">← Bosh sahifa</button>
+        <h1>💬 Fikr va takliflar</h1>
+    </div>
+    <p class="fb-hint">Sayt bo'yicha fikr yoki taklifingizni yozing — boshqa foydalanuvchilar va jamoamiz javob berishi mumkin.</p>
+
+    <div class="fb-new-thread-box">
+        <textarea id="fbNewThreadInput" class="fb-new-thread-input" rows="3"
+                  placeholder="Fikr yoki taklifingizni shu yerga yozing..."></textarea>
+        <button type="button" id="fbNewThreadBtn" class="fb-submit-btn">📩 Yuborish</button>
+    </div>
+
+    <div id="fbThreadsList" class="fb-threads-list">
+        <p class="fb-loading">⏳ Yuklanmoqda...</p>
+    </div>
+</div>
+
+</body>
+</html>

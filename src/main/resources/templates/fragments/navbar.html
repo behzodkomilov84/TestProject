@@ -89,6 +89,10 @@
         <nav id="nav-menu" class="nav-items">
             <a href="/index">Bosh sahifa</a>
             <a href="/history">Statistika</a>
+            <!-- "Fikr va takliflar" — sayt bo'yicha (global) ochiq taxta,
+                 istalgan login qilgan foydalanuvchiga ochiq (foydalanuvchi
+                 so'rovi, 2026-09-06). -->
+            <a href="/feedback" sec:authorize="isAuthenticated()">💬 Fikr va takliflar</a>
             <!-- Kurslar — "Mavjud kurslar" (hammaga) va "Kursga obuna berish"
                  (faqat OWNER, obuna bilan bog'liq barcha funksiyalar shu
                  alohida sahifada jamlangan) ichki dropdown ichida. -->

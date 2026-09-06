@@ -113,7 +113,12 @@ public class SecurityConfig {
                                 // uchun (ular hali ADMIN emas), shuning uchun umumiy
                                 // "/api/**" (faqat OWNER/ADMIN) qoidasidan oldin, alohida.
                                 "/api/payments/config",
-                                "/api/payments/orders")
+                                "/api/payments/orders",
+                                // "Fikr va takliflar" — sayt bo'yicha (global) ochiq
+                                // taxta, istalgan login qilgan foydalanuvchi (shu
+                                // jumladan ROLE_USER) yoza/javob bera olishi kerak —
+                                // umumiy "/api/**" (faqat OWNER/ADMIN) qoidasidan oldin.
+                                "/api/feedback/**")
                         .authenticated()
 
                         // student API — СНАЧАЛА
