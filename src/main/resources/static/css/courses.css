@@ -976,16 +976,21 @@ body {
     user-select: none;
 }
 
+/* "👁️" — avval "▾" strelka edi, lekin foydalanuvchi uni yaxshi
+   ko'rmayotgani uchun ko'z ikonkasiga almashtirildi va kattalashtirildi
+   (foydalanuvchi so'rovi, 2026-09-06). Strelkadan farqli, ko'zni
+   burish (rotate) ma'nosiz bo'lgani uchun oldingi
+   ".collapsed .manage-panel-chevron { transform: rotate(-90deg) }"
+   olib tashlandi — o'rniga yopiq holatda xiralashtiriladi (opacity),
+   shu bilan panel holati hali ham ko'rinib turadi. */
 .manage-panel-chevron {
-    font-size: 28px;
+    font-size: 40px;
     line-height: 1;
-    color: #64748b;
-    font-weight: 700;
-    transition: transform 0.15s ease;
+    transition: opacity 0.15s ease;
 }
 
 .course-manage-panel.collapsed .manage-panel-chevron {
-    transform: rotate(-90deg);
+    opacity: .55;
 }
 
 .manage-panel-body {
