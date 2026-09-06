@@ -56,6 +56,11 @@ public class SecurityConfig {
                                 // qilinmagan holatda keladi (o'zi bitta martalik
                                 // tokenni tekshirib, login qildiradi).
                                 "/telegram-auto-login",
+                                // Telegram Login Widget'ning redirect manzili —
+                                // login/registratsiya sahifasidagi "Telegram
+                                // orqali kirish" tugmasi (hali login qilinmagan
+                                // holatda keladi, TelegramWidgetLoginController).
+                                "/telegram-login",
                                 // Click'ning o'z serverlari chaqiradi — sessiyasiz,
                                 // o'zining imzo tekshiruvi orqali himoyalangan
                                 // (ClickService.verifySign).

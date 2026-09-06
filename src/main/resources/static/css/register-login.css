@@ -157,6 +157,34 @@ body {
     text-decoration: underline;
 }
 
+/* "Telegram orqali kirish" — login/registration ikkalasida ham bir xil
+   (foydalanuvchi so'rovi, 2026-09-06). Widget'ning o'zi (iframe) Telegram
+   tomonidan chizilgani uchun uning ichki ranglarini o'zgartirib
+   bo'lmaydi — shuning uchun faqat atrofidagi joylashuv (markazga
+   tekislash) va "yoki" ajratuvchisi saytning umumiy uslubiga moslashtiriladi. */
+.social-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 1.3rem 0;
+    color: #999;
+    font-size: 14px;
+}
+
+.social-divider::before,
+.social-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: #ddd;
+}
+
+.telegram-login-box {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
 .success-alert, .error-alert {
     position: fixed;
     top: 10px;

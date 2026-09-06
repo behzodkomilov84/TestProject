@@ -2,6 +2,7 @@ package behzoddev.testproject.controller.page;
 
 import behzoddev.testproject.service.PhoneNumberService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -14,9 +15,15 @@ public class RegistrationPageController {
 
     private final PhoneNumberService phoneNumberService;
 
+    // "Telegram orqali kirish" widget'i uchun (registration.html) — bot
+    // nomi hardcode qilinmasin (application.yaml'dagi bilan bir xil manba).
+    @Value("${telegram.bot.username}")
+    private String telegramBotUsername;
+
     @GetMapping("/registration")
     public String registration(Model model) {
         model.addAttribute("countries", phoneNumberService.listCountries());
+        model.addAttribute("telegramBotUsername", telegramBotUsername);
         return "registration";
     }
 

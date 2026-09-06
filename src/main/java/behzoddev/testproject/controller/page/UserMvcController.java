@@ -3,7 +3,9 @@ package behzoddev.testproject.controller.page;
 import behzoddev.testproject.dto.user.RegisterDto;
 import behzoddev.testproject.service.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -14,6 +16,10 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class UserMvcController {
 
     private final UserServiceImpl userService;
+
+    // "Telegram orqali kirish" widget'i uchun (login.html).
+    @Value("${telegram.bot.username}")
+    private String telegramBotUsername;
 
     @PostMapping("/registration")
     public String register(@ModelAttribute RegisterDto dto,
@@ -49,7 +55,8 @@ public class UserMvcController {
     }
 
     @GetMapping("/login")
-    public String login() {
+    public String login(Model model) {
+        model.addAttribute("telegramBotUsername", telegramBotUsername);
         return "login";
     }
 

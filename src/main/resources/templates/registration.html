@@ -76,6 +76,22 @@
 
             <input type="submit" class="button" value="Ro'yxatdan o'tish">
         </form>
+
+        <!-- "Telegram orqali kirish" — Telegram Login Widget (foydalanuvchi
+             so'rovi, 2026-09-06), login.html'dagi bilan bir xil. Bu yerdan
+             ham xuddi shu havola orqali — parol/username o'ylab topish
+             shart emas, birinchi marta bosilganda akkaunt avtomatik
+             yaratiladi (TelegramWidgetLoginService#createUser). -->
+        <div class="social-divider"><span>yoki</span></div>
+        <div class="telegram-login-box">
+            <script async src="https://telegram.org/js/telegram-widget.js?22"
+                    th:attr="data-telegram-login=${telegramBotUsername}"
+                    data-size="large"
+                    data-radius="8"
+                    data-auth-url="/telegram-login"
+                    data-request-access="write"></script>
+        </div>
+
         <div class="signup">
             <span class="signup">Hisobingiz bormi?
             <label><a href="/login">Kirish</a> </label></span>

@@ -47,6 +47,23 @@
             <a href="/forgot-password">Parolni unutdingizmi?</a>
             <input type="submit" class="button" value="Kirish">
         </form>
+
+        <!-- "Telegram orqali kirish" — Telegram Login Widget (foydalanuvchi
+             so'rovi, 2026-09-06). Bot allaqachon @BotFather'da "/setdomain"
+             bilan shu saytga ruxsat berilgan bo'lishi kerak, aks holda
+             widget xato ko'rsatadi. Bosilganda Telegram foydalanuvchini
+             "data-auth-url"ga (TelegramWidgetLoginController) imzolangan
+             ma'lumotlar bilan qaytaradi. -->
+        <div class="social-divider"><span>yoki</span></div>
+        <div class="telegram-login-box">
+            <script async src="https://telegram.org/js/telegram-widget.js?22"
+                    th:attr="data-telegram-login=${telegramBotUsername}"
+                    data-size="large"
+                    data-radius="8"
+                    data-auth-url="/telegram-login"
+                    data-request-access="write"></script>
+        </div>
+
         <div class="signup" id="signup">
             <span class="signup">Hisobingiz yo'qmi?
             <label><a href="/registration">Ro'yxatdan o'tish</a></label></span>
