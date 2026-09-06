@@ -1,10 +1,14 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.CourseRepository;
 import behzoddev.testproject.dao.CourseSectionProgressRepository;
+import behzoddev.testproject.dao.CourseSubscriptionRepository;
 import behzoddev.testproject.dao.EmailVerificationCodeRepository;
 import behzoddev.testproject.dao.PasswordResetCodeRepository;
+import behzoddev.testproject.dao.PaymentOrderRepository;
 import behzoddev.testproject.dao.RoleAuditLogRepository;
 import behzoddev.testproject.dao.RoleRepository;
+import behzoddev.testproject.dao.SubscriptionRepository;
 import behzoddev.testproject.dao.TelegramAutoLoginTokenRepository;
 import behzoddev.testproject.dao.TelegramLinkCodeRepository;
 import behzoddev.testproject.dao.UserRepository;
@@ -70,6 +74,14 @@ class UserServiceImplTest {
     private TelegramLinkCodeRepository telegramLinkCodeRepository;
     @Mock
     private CourseSectionProgressRepository courseSectionProgressRepository;
+    @Mock
+    private CourseRepository courseRepository;
+    @Mock
+    private SubscriptionRepository subscriptionRepository;
+    @Mock
+    private CourseSubscriptionRepository courseSubscriptionRepository;
+    @Mock
+    private PaymentOrderRepository paymentOrderRepository;
 
     @InjectMocks
     private UserServiceImpl userService;

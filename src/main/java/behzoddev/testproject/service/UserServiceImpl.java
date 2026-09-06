@@ -1,13 +1,18 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.CourseRepository;
 import behzoddev.testproject.dao.CourseSectionProgressRepository;
+import behzoddev.testproject.dao.CourseSubscriptionRepository;
 import behzoddev.testproject.dao.EmailVerificationCodeRepository;
 import behzoddev.testproject.dao.PasswordResetCodeRepository;
+import behzoddev.testproject.dao.PaymentOrderRepository;
 import behzoddev.testproject.dao.RoleAuditLogRepository;
 import behzoddev.testproject.dao.RoleRepository;
+import behzoddev.testproject.dao.SubscriptionRepository;
 import behzoddev.testproject.dao.TelegramAutoLoginTokenRepository;
 import behzoddev.testproject.dao.TelegramLinkCodeRepository;
 import behzoddev.testproject.dao.UserRepository;
+import behzoddev.testproject.entity.Course;
 import behzoddev.testproject.dto.user.ChangeRoleDto;
 import behzoddev.testproject.dto.user.LoginDto;
 import behzoddev.testproject.dto.user.RegisterDto;
@@ -54,6 +59,10 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     private final TelegramAutoLoginTokenRepository telegramAutoLoginTokenRepository;
     private final TelegramLinkCodeRepository telegramLinkCodeRepository;
     private final CourseSectionProgressRepository courseSectionProgressRepository;
+    private final CourseRepository courseRepository;
+    private final SubscriptionRepository subscriptionRepository;
+    private final CourseSubscriptionRepository courseSubscriptionRepository;
+    private final PaymentOrderRepository paymentOrderRepository;
 
     private static boolean isBlank(String s) {
         return s == null || s.isBlank();
@@ -129,6 +138,16 @@ public class UserServiceImpl implements UserDetailsService, UserService {
         String normalizedPhone = null;
         if (dto.phoneNumber() != null && !dto.phoneNumber().isBlank()) {
             normalizedPhone = phoneNumberService.normalize(dto.phoneCountry(), dto.phoneNumber());
+
+            // Unikallikni tekshirish (foydalanuvchi so'rovi, 2026-09-07:
+            // "registratsiyada ... telefon raqamni unikalligini
+            // tekshirsin") — aks holda ikkita hisob bir xil raqamga ega
+            // bo'lib qolishi mumkin edi (haqiqiy topilgan holat, 2026-09-06:
+            // shu sabab Telegram orqali kirishda dublikat-hisob bug'i
+            // yuzaga kelgan edi).
+            if (userRepository.existsByPhoneNumber(normalizedPhone)) {
+                throw new IllegalArgumentException("❌Bu telefon raqam allaqachon ro'yxatdan o'tgan.");
+            }
         }
 
         User user = User.builder()
@@ -252,7 +271,10 @@ public class UserServiceImpl implements UserDetailsService, UserService {
 
         List<String> roles = targetUser.getRoles().stream().map(Role::getRoleName).sorted().toList();
 
-        deleteFkRestrictedRowsBeforeUserDelete(targetUserId);
+        // O'chirilayotgan foydalanuvchi yaratgan kurslar bo'lsa, muallifligi
+        // shu amalni bajarayotgan OWNER'ga o'tkaziladi (currentUser.getId()) —
+        // pastdagi izohga qarang.
+        deleteFkRestrictedRowsBeforeUserDelete(targetUserId, currentUser.getId());
 
         userRepository.delete(targetUser);
 
@@ -268,8 +290,6 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     // "notifications" tuzatilgan edi, keyin xuddi shu muammo
     // "role_audit_logs"da ham topildi) — foydalanuvchini o'chirishdan
     // OLDIN barchasi tozalanishi shart, aks holda 409 bilan tugaydi.
-    // "role_audit_logs.changed_by_id" ATAYLAB tegilmaydi (boshqa
-    // foydalanuvchi haqidagi tarixiy yozuv yo'qolib qolmasin deb).
     // Ajratilgan public metod — TelegramPhoneConfirmController ham
     // xuddi shu tozalashga muhtoj (dublikat "tg_..." hisoblarni telefon
     // raqami bo'yicha birlashtirib o'chirishda, haqiqiy topilgan bug,
@@ -277,15 +297,38 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     // mavjud" — hisob "yangi" ko'ringan bo'lsa ham, avvalgi
     // login/telefon-tasdiqlash urinishlaridan bildirishnoma va h.k.
     // qoldiqlar yig'ilib qolishi mumkin edi).
+    //
+    // "reassignToUserId" — o'chirilayotgan foydalanuvchi NOT NULL FK bilan
+    // "muallif" sifatida bog'langan qatorlar (masalan courses.created_by)
+    // borligi uchun kerak (haqiqiy topilgan bug, 2026-09-07: "BehzodTest"ni
+    // o'chirib bo'lmadi — u ilgari sinov uchun kurs yaratgan, hatto
+    // "savat"ga tashlangan bo'lsa ham qator bazada qolgan edi). Bunday
+    // qatorlar o'chirilmaydi, shu ID'ga o'tkaziladi — deleteUser() chaqirsa
+    // amalni bajarayotgan OWNER, TelegramPhoneConfirmController chaqirsa
+    // birlashtirilayotgan asosiy hisob ("target").
     @Transactional
-    public void deleteFkRestrictedRowsBeforeUserDelete(Long targetUserId) {
+    public void deleteFkRestrictedRowsBeforeUserDelete(Long targetUserId, Long reassignToUserId) {
         notificationService.deleteAllForUser(targetUserId);
         roleAuditLogRepository.deleteByTargetUser_Id(targetUserId);
+        roleAuditLogRepository.clearChangedBy(targetUserId);
         emailVerificationCodeRepository.deleteByUser_Id(targetUserId);
         passwordResetCodeRepository.deleteByUser_Id(targetUserId);
         telegramAutoLoginTokenRepository.deleteByUser_Id(targetUserId);
         telegramLinkCodeRepository.deleteByUser_Id(targetUserId);
         courseSectionProgressRepository.deleteByUser_Id(targetUserId);
+        subscriptionRepository.deleteByUser_Id(targetUserId);
+        subscriptionRepository.clearConfirmedBy(targetUserId);
+        courseSubscriptionRepository.deleteByUser_Id(targetUserId);
+        courseSubscriptionRepository.clearConfirmedBy(targetUserId);
+        paymentOrderRepository.deleteByUser_Id(targetUserId);
+
+        List<Course> authoredCourses = courseRepository.findByCreatedBy_Id(targetUserId);
+        if (!authoredCourses.isEmpty()) {
+            User newOwner = userRepository.findById(reassignToUserId)
+                    .orElseThrow(() -> new RuntimeException("⛔ Muallifligi o'tkaziladigan foydalanuvchi topilmadi"));
+            authoredCourses.forEach(c -> c.setCreatedBy(newOwner));
+            courseRepository.saveAll(authoredCourses);
+        }
     }
 
     // Brute-force himoyasi orqali bloklangan hisobni OWNER qo'lda ochadi.

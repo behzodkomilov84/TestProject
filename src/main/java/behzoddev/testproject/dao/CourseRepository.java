@@ -48,6 +48,17 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     @Query("SELECT c FROM Course c WHERE c.archivedByAdmin IS NOT NULL ORDER BY c.archivedAt DESC")
     List<Course> findArchivedByAdminOrderByArchivedAtDesc();
 
+    // Foydalanuvchini o'chirishdan oldin — "courses.created_by" NOT NULL
+    // FK RESTRICT (haqiqiy topilgan bug, 2026-09-07: o'chirilmoqchi
+    // bo'lgan foydalanuvchi — masalan sinov uchun yaratilgan "BehzodTest" —
+    // ilgari bironta kurs yaratgan bo'lishi mumkin, hatto "savat"ga
+    // (soft-delete) tashlangan bo'lsa ham qator bazada qolaveradi va
+    // deletedAt filtri bu yerda ATAYLAB YO'Q — RESTRICT'ni blokdan
+    // chiqarish uchun ULARNI HAM topish kerak). Kurs o'chirilmaydi —
+    // muallifligi UserServiceImpl#deleteFkRestrictedRowsBeforeUserDelete
+    // ichida boshqa foydalanuvchiga o'tkaziladi.
+    List<Course> findByCreatedBy_Id(Long createdById);
+
     // Yo'nalish kartochkasida "N ta bo'lim" (coursesCatalog.js) —
     // CourseFieldService.toDto. Faqat FAOL (o'chirilmagan) kurslar sanaladi.
     long countByField_IdAndDeletedAtIsNull(Long fieldId);

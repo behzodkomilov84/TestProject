@@ -32,5 +32,17 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // qaytarilsa Spring Data bitta natijadan ortig'ida xato tashlaydi.
     List<User> findAllByPhoneNumber(String phoneNumber);
 
+    // Ro'yxatdan o'tishda unikallikni tekshirish uchun (foydalanuvchi
+    // so'rovi, 2026-09-07: "registratsiyada ... telefon raqamni
+    // unikalligini tekshirsin"). "findAllByPhoneNumber" yuqorida BOR
+    // ma'lumotlarda takrorlanishga toqat qilish uchun ATAYLAB List
+    // qaytaradi — bu metod esa YANGI kiritilgan raqam allaqachon band-
+    // emasligini tekshiradi (Optional/List emas, oddiy boolean yetarli).
+    boolean existsByPhoneNumber(String phoneNumber);
+
+    // Profilni tahrirlashda unikallikni tekshirish uchun — o'zining
+    // (hozirgi) raqamini o'zgartirmasdan saqlab qo'ysa, "band" deb
+    // xato bermasligi kerak, shuning uchun o'z ID'si chetlab o'tiladi.
+    boolean existsByPhoneNumberAndIdNot(String phoneNumber, Long id);
 
 }

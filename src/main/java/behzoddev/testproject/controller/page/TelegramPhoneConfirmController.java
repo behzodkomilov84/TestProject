@@ -152,7 +152,7 @@ public class TelegramPhoneConfirmController {
         // o'CHIRIB (flush bilan) bo'lmasdan, "target"ga bir xil
         // telegram_id'ni yozib bo'lmaydi — aks holda UNIQUE cheklov vaqtincha
         // ikkalasida ham bir xil qiymat bo'lib qolib, xato beradi.
-        userServiceImpl.deleteFkRestrictedRowsBeforeUserDelete(pendingUser.getId());
+        userServiceImpl.deleteFkRestrictedRowsBeforeUserDelete(pendingUser.getId(), target.getId());
         userRepository.delete(pendingUser);
         userRepository.flush();
 

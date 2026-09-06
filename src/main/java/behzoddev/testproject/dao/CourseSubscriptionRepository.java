@@ -3,6 +3,9 @@ package behzoddev.testproject.dao;
 import behzoddev.testproject.entity.CourseSubscription;
 import behzoddev.testproject.entity.enums.CourseSubscriptionStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,4 +35,17 @@ public interface CourseSubscriptionRepository extends JpaRepository<CourseSubscr
     // avval shu kursga tegishli barcha obunalarni o'chirish kerak
     // (CourseService.deleteCourse).
     void deleteByCourse_Id(Long courseId);
+
+    // Foydalanuvchini o'chirishdan oldin — "course_subscriptions.user_id"
+    // NOT NULL FK RESTRICT (haqiqiy topilgan bug, 2026-09-07). O'zining
+    // kurs obuna yozuvlari — o'chirilib ketaveradi.
+    void deleteByUser_Id(Long userId);
+
+    // "confirmed_by" NULL-ga ruxsat beriladi — bu foydalanuvchi OWNER
+    // sifatida BOSHQA birovning kurs obunasini tasdiqlagan bo'lishi
+    // mumkin, o'sha to'lov tarixi yo'qolib qolmasin deb qator
+    // o'chirilmaydi, faqat "kim tasdiqlagani" NULL qilinadi.
+    @Modifying
+    @Query("UPDATE CourseSubscription cs SET cs.confirmedBy = NULL WHERE cs.confirmedBy.id = :userId")
+    void clearConfirmedBy(@Param("userId") Long userId);
 }

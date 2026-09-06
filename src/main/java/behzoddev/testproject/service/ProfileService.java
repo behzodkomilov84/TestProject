@@ -96,6 +96,15 @@ public class ProfileService {
     @Transactional
     public void changePhone(User user, ChangePhoneDto dto) {
         String normalized = phoneNumberService.normalize(dto.isoCode(), dto.rawNumber());
+
+        // Unikallikni tekshirish (foydalanuvchi so'rovi, 2026-09-07:
+        // "profilni tahrirlashda ... telefon raqamni unikalligini
+        // tekshirsin") — o'zining hozirgi raqamini qayta saqlasa xato
+        // bermasligi uchun o'z ID'si chetlab o'tiladi.
+        if (userRepository.existsByPhoneNumberAndIdNot(normalized, user.getId())) {
+            throw new ResponseStatusException(CONFLICT, "Bu telefon raqam allaqachon band");
+        }
+
         user.setPhoneNumber(normalized);
         userRepository.save(user);
     }
