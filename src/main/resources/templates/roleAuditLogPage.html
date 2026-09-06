@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Rol o'zgarishlari tarixi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/css/users.css">
+    <link rel="stylesheet" href="/css/navbar.css">
+
+    <script src="/js/roleAuditLog.js" defer></script>
+    <script src="/js/navbar.js" defer></script>
+</head>
+
+<body th:attr="data-role=${role}">
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container">
+    <header class="top-bar">
+        <h1>📜 Rol o'zgarishlari tarixi</h1>
+        <button class="back-btn" onclick="history.back()">← Назад</button>
+    </header>
+
+    <div class="subscriptions-panel" style="margin-top:0; padding-top:0; border-top:none;">
+        <div class="table-scroll">
+        <table class="subscriptions-table">
+            <thead>
+            <tr>
+                <th>Vaqt</th>
+                <th>Foydalanuvchi</th>
+                <th>Rol</th>
+                <th>Amal</th>
+                <th>Kim tomonidan</th>
+                <th>Manba</th>
+            </tr>
+            </thead>
+            <tbody id="roleAuditTableBody">
+                <tr><td colspan="6" class="empty-row">Yuklanmoqda...</td></tr>
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+</body>
+
+</html>

@@ -9,8 +9,14 @@ body {
     margin: 0;
 }
 
+/* Navbar bilan bir xil kenglikda — navbar'ning o'zi "padding: 0 24px"
+   bilan butun ekran (width:100%) bo'ylab cho'zilgan, container ham xuddi
+   shu chap/o'ng chetlarga to'g'ri kelishi uchun (foydalanuvchi so'rovi,
+   2026-09-06: "container ni nav bilan bir xil kenglikda qil" — jadvalda
+   ko'p ustun bo'lgani uchun tor 900px konteyner yetarli emas edi). */
 .container {
-    max-width: 900px;
+    width: calc(100% - 48px);
+    max-width: none;
     margin: 90px auto;
     background: #fff;
     padding: 24px;
@@ -21,6 +27,7 @@ body {
 
 @media (max-width: 600px) {
     .container {
+        width: calc(100% - 16px);
         margin: 16px auto;
         padding: 16px;
     }
@@ -43,18 +50,23 @@ body {
     -webkit-overflow-scrolling: touch;
 }
 
+/* Font kichiklashtirildi (22px -> 13px) va to'liq border qo'shildi —
+   foydalanuvchi so'rovi, 2026-09-06: ustunlar soni ko'payib (barcha
+   users jadval ustunlari), eski katta shrift bilan jadval o'qish
+   qiyinlashgan edi. */
 .users-table {
     width: 100%;
-    min-width: 640px;
+    min-width: 900px;
     border-collapse: collapse;
-    font-size: 22px;
+    border: 1px solid #d0d5dd;
+    font-size: 13px;
     font-weight: 600;
 }
 
 .users-table th,
 .users-table td {
-    padding: 12px;
-    border-bottom: 1px solid #e0e0e0;
+    padding: 8px 10px;
+    border: 1px solid #d0d5dd;
     text-align: left;
 }
 
@@ -136,7 +148,7 @@ select.role-select {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    font-size: 16px;
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
 }

@@ -10,13 +10,8 @@ if (ROLE !== "ROLE_OWNER") {
 // Barcha mavjud rollar (checkbox sifatida ko'rsatiladi — dual-role)
 const ALL_ROLES = ["ROLE_OWNER", "ROLE_ADMIN", "ROLE_USER"];
 
-let cachedUsers = [];
-
 document.addEventListener("DOMContentLoaded", () => {
     loadUsers();
-    loadPendingSubscriptions();
-    loadRoleAudit();
-    loadMinAmount();
 });
 
 function loadUsers() {
@@ -28,9 +23,7 @@ function loadUsers() {
         fetch("/api/subscriptions").then(r => r.ok ? r.json() : [])
     ])
         .then(([users, subscriptions]) => {
-            cachedUsers = users;
             renderUsers(users, subscriptions);
-            populateManualUserSelect(users);
         })
         .catch(err => {
             showAlertModal("Ошибка загрузки пользователей");
@@ -132,170 +125,6 @@ function renderUsers(users, subscriptions) {
     });
 }
 
-function populateManualUserSelect(users) {
-    const select = document.getElementById("manualUserSelect");
-    if (!select) return;
-
-    select.innerHTML = users
-        .map(u => `<option value="${u.id}">${u.username}</option>`)
-        .join("");
-}
-
-// ================= To'lov / obuna paneli =================
-
-function loadPendingSubscriptions() {
-    fetch("/api/subscriptions?status=PENDING")
-        .then(r => r.ok ? r.json() : [])
-        .then(renderPendingSubscriptions)
-        .catch(err => console.error(err));
-}
-
-function renderPendingSubscriptions(subscriptions) {
-    const tbody = document.getElementById("pendingTableBody");
-    if (!tbody) return;
-
-    if (!subscriptions.length) {
-        tbody.innerHTML = `<tr><td colspan="5" class="empty-row">Kutilayotgan so'rov yo'q</td></tr>`;
-        return;
-    }
-
-    tbody.innerHTML = subscriptions.map(s => `
-        <tr>
-            <td>${s.username}</td>
-            <td>${s.amount} so'm</td>
-            <td>${s.source}</td>
-            <td>${new Date(s.createdAt).toLocaleString("uz-UZ")}</td>
-            <td>
-                <button class="action-btn" onclick="confirmSubscription(${s.id})" title="Tasdiqlash">✅</button>
-                <button class="action-btn" onclick="cancelSubscription(${s.id})" title="Rad etish">❌</button>
-            </td>
-        </tr>
-    `).join("");
-}
-
-// ================= Rol o'zgarishlari tarixi (audit log) =================
-
-const ROLE_AUDIT_ACTION_LABELS = {
-    GRANTED: "✅ berildi",
-    REVOKED: "❌ olib tashlandi"
-};
-
-const ROLE_AUDIT_SOURCE_LABELS = {
-    MANUAL: "Qo'lda (checkbox)",
-    SUBSCRIPTION: "Obuna (to'lov)",
-    SYSTEM: "Tizim (avtomatik)"
-};
-
-function loadRoleAudit() {
-    fetch("/api/users/roles-audit")
-        .then(r => r.ok ? r.json() : [])
-        .then(renderRoleAudit)
-        .catch(err => console.error(err));
-}
-
-function renderRoleAudit(logs) {
-    const tbody = document.getElementById("roleAuditTableBody");
-    if (!tbody) return;
-
-    if (!logs.length) {
-        tbody.innerHTML = `<tr><td colspan="6" class="empty-row">Hali rol o'zgarishi yo'q</td></tr>`;
-        return;
-    }
-
-    tbody.innerHTML = logs.map(l => `
-        <tr>
-            <td>${new Date(l.createdAt).toLocaleString("uz-UZ")}</td>
-            <td>${l.targetUsername}</td>
-            <td>${l.roleName.replace("ROLE_", "")}</td>
-            <td>${ROLE_AUDIT_ACTION_LABELS[l.action] || l.action}</td>
-            <td>${l.changedByUsername}</td>
-            <td>${ROLE_AUDIT_SOURCE_LABELS[l.source] || l.source}</td>
-        </tr>
-    `).join("");
-}
-
-async function confirmSubscription(id) {
-    const months = await showPromptModal("ADMIN huquqi necha oyga beriladi?", "1");
-    if (months === null) return;
-
-    try {
-        const res = await fetch(`/api/subscriptions/${id}/confirm`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ durationMonths: Number(months) || 1 })
-        });
-
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-            showAlertModal(data.error || "Xatolik yuz berdi");
-            return;
-        }
-
-        showAlertModal("✅ Tasdiqlandi, ADMIN huquqi berildi.");
-        loadPendingSubscriptions();
-        loadUsers();
-    } catch (err) {
-        console.error(err);
-        showAlertModal("Network error");
-    }
-}
-
-async function cancelSubscription(id) {
-    if (!await showConfirmModal("So'rovni rad etmoqchimisiz?")) return;
-
-    try {
-        const res = await fetch(`/api/subscriptions/${id}/cancel`, { method: "POST" });
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-            showAlertModal(data.error || "Xatolik yuz berdi");
-            return;
-        }
-
-        loadPendingSubscriptions();
-    } catch (err) {
-        console.error(err);
-        showAlertModal("Network error");
-    }
-}
-
-async function createManualSubscription() {
-    const userId = Number(document.getElementById("manualUserSelect").value);
-    const amount = Number(document.getElementById("manualAmount").value);
-    const durationMonths = Number(document.getElementById("manualDuration").value) || 1;
-    const note = document.getElementById("manualNote").value.trim();
-
-    if (!userId || !amount || amount <= 0) {
-        showAlertModal("❌ Foydalanuvchi va to'g'ri summani kiriting");
-        return;
-    }
-
-    try {
-        const res = await fetch("/api/subscriptions", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId, amount, durationMonths, note })
-        });
-
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-            showAlertModal(data.error || "Xatolik yuz berdi");
-            return;
-        }
-
-        showAlertModal("✅ To'lov qayd qilindi, ADMIN huquqi berildi.");
-        document.getElementById("manualAmount").value = "";
-        document.getElementById("manualNote").value = "";
-        loadUsers();
-        loadRoleAudit();
-    } catch (err) {
-        console.error(err);
-        showAlertModal("Network error");
-    }
-}
-
 async function toggleRole(userId, roleName, checkbox) {
     const adding = checkbox.checked;
 
@@ -307,7 +136,7 @@ async function toggleRole(userId, roleName, checkbox) {
 
         if (response.status === 403) {
             const data = await response.json();
-            showAlertModal(data.error); // ⛔ Siz o'z rolingizni o'zgartira olmaysiz
+            showAlertModal(data.error); // ⛔ O'z rolingizni o'zgartira olmaysiz
             checkbox.checked = !adding; // eski holatga qaytaramiz
             return;
         }
@@ -321,7 +150,6 @@ async function toggleRole(userId, roleName, checkbox) {
 
         const result = await response.json();
         updateRoleColors(checkbox.closest("tr"), result.roles);
-        loadRoleAudit();
     } catch (err) {
         console.error(err);
         showAlertModal("Network error");
@@ -351,49 +179,6 @@ function updateRoleColors(tr, roles) {
             label.style.color = "";
         }
     });
-}
-
-// ================= To'lov sozlamalari (minimal summa) =================
-
-function loadMinAmount() {
-    const input = document.getElementById("minAmountInput");
-    if (!input) return;
-
-    fetch("/api/payments/min-amount")
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-            if (data) input.value = data.minAmountSom;
-        })
-        .catch(err => console.error(err));
-}
-
-async function saveMinAmount() {
-    const value = Number(document.getElementById("minAmountInput").value);
-
-    if (!value || value <= 0) {
-        showAlertModal("❌ To'g'ri summa kiriting");
-        return;
-    }
-
-    try {
-        const res = await fetch("/api/payments/min-amount", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ minAmountSom: value })
-        });
-
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-            showAlertModal(data.error || "Xatolik yuz berdi");
-            return;
-        }
-
-        showAlertModal("✅ Minimal summa saqlandi: " + data.minAmountSom + " so'm");
-    } catch (err) {
-        console.error(err);
-        showAlertModal("Network error");
-    }
 }
 
 async function unlockUser(id) {

@@ -13,24 +13,42 @@ import org.springframework.web.bind.annotation.GetMapping;
 public class UserManagerPageController {
 
 
+    // Bu sahifalarga @PreAuthorize orqali faqat ROLE_OWNER kira oladi, lekin
+    // dual-role tufayli foydalanuvchida boshqa rollar ham bo'lishi mumkin
+    // (masalan ROLE_ADMIN). Shu sabab "findFirst()" o'rniga aynan
+    // ROLE_OWNER'ni qidiramiz — aks holda Set tartibi tasodifiy bo'lgani
+    // uchun boshqa rol birinchi chiqib, JS'dagi tekshiruv xato ishlashi mumkin edi.
     @GetMapping("/users")
     @PreAuthorize("hasAuthority('ROLE_OWNER')")
     public String openUserManagerPage(Model model, Authentication authentication) {
+        model.addAttribute("role", primaryOwnerRole(authentication));
+        return "userManagerPage"; // Thymeleaf шаблон userManagerPage.html
+    }
 
-        // Bu sahifaga @PreAuthorize orqali faqat ROLE_OWNER kira oladi, lekin
-        // dual-role tufayli foydalanuvchida boshqa rollar ham bo'lishi mumkin
-        // (masalan ROLE_ADMIN). Shu sabab "findFirst()" o'rniga aynan
-        // ROLE_OWNER'ni qidiramiz — aks holda Set tartibi tasodifiy bo'lgani
-        // uchun boshqa rol birinchi chiqib, JS'dagi tekshiruv xato ishlashi mumkin edi.
-        String role = authentication.getAuthorities().stream()
+    // "/users" sahifasidan ajratilgan (foydalanuvchi so'rovi, 2026-09-06:
+    // barcha users ustunlari qo'shilgach jadval juda ko'p ustunli bo'lib
+    // qoldi — "Admin obunalari" va "Rol tarixi" alohida sahifalarga
+    // ko'chirildi).
+    @GetMapping("/admin-subscriptions")
+    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    public String openAdminSubscriptionsPage(Model model, Authentication authentication) {
+        model.addAttribute("role", primaryOwnerRole(authentication));
+        return "adminSubscriptionsPage";
+    }
+
+    @GetMapping("/role-audit-log")
+    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    public String openRoleAuditLogPage(Model model, Authentication authentication) {
+        model.addAttribute("role", primaryOwnerRole(authentication));
+        return "roleAuditLogPage";
+    }
+
+    private String primaryOwnerRole(Authentication authentication) {
+        return authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .filter("ROLE_OWNER"::equals)
                 .findFirst()
                 .orElse("UNKNOWN");
-
-        model.addAttribute("role", role);
-
-        return "userManagerPage"; // Thymeleaf шаблон userManagerPage.html
     }
 
 }

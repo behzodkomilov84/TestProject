@@ -13,43 +13,13 @@
     <script src="/js/navbar.js" defer></script>
 </head>
 
-<!-- th:attr гарантирует, что Thymeleaf подставит значение role -->
-<!--<body th:attr="data-role=${role}">
-
-
-<div class="container">
-
-    <header class="top-bar">
-        <h1>👥 Управление пользователями</h1>
-        <button class="back-btn" onclick="history.back()">← Назад</button>
-    </header>
-
-    <table class="users-table">
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Username</th>
-            <th>Role</th>
-            <th>Action</th>
-        </tr>
-        </thead>
-
-        <tbody id="usersTableBody">
-        &lt;!&ndash; users via JS &ndash;&gt;
-        </tbody>
-    </table>
-
-</div>
-
-<script src="/js/users.js"></script>
-</body>-->
 <body th:attr="data-role=${role}">
 
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
 <div class="container">
     <header class="top-bar">
-        <h1>👥 Управление пользователями</h1>
+        <h1>👥 Foydalanuvchilar</h1>
         <button class="back-btn" onclick="history.back()">← Назад</button>
     </header>
 
@@ -76,68 +46,6 @@
         <!-- Подгружается через JS -->
         </tbody>
     </table>
-    </div>
-
-    <!-- To'lov asosida ADMIN (o'qituvchi) huquqini berish paneli -->
-    <div class="subscriptions-panel">
-
-        <h2>⏳ Tasdiq kutilayotgan to'lovlar</h2>
-        <div class="table-scroll">
-        <table class="subscriptions-table">
-            <thead>
-            <tr>
-                <th>Foydalanuvchi</th>
-                <th>Summa</th>
-                <th>Manba</th>
-                <th>So'rov sanasi</th>
-                <th>Amallar</th>
-            </tr>
-            </thead>
-            <tbody id="pendingTableBody">
-                <tr><td colspan="5" class="empty-row">Kutilayotgan so'rov yo'q</td></tr>
-            </tbody>
-        </table>
-        </div>
-
-        <h2>➕ To'lovni qo'lda qayd qilib, ADMIN berish</h2>
-        <div class="manual-subscription-form">
-            <select id="manualUserSelect"></select>
-            <input type="number" id="manualAmount" placeholder="Summa (so'm)" min="1">
-            <input type="number" id="manualDuration" placeholder="Necha oy" value="1" min="1">
-            <input type="text" id="manualNote" placeholder="Izoh (ixtiyoriy)">
-            <button onclick="createManualSubscription()">✅ Tasdiqlash va ADMIN berish</button>
-        </div>
-
-        <!-- Click'ning minimal tranzaksiya summasi — .env/redeploy'siz
-             shu yerdan o'zgartiriladi (PaymentOrderService.createOrder shu
-             chegaradan kam summali buyurtmani rad etadi). -->
-        <h2>⚙️ To'lov sozlamalari</h2>
-        <div class="manual-subscription-form">
-            <input type="number" id="minAmountInput" placeholder="Minimal summa (so'm)" min="1">
-            <button onclick="saveMinAmount()">💾 Saqlash</button>
-        </div>
-    </div>
-
-    <!-- Rol o'zgarishlari tarixi — kim, qachon, kimga qanday rol berdi/olib tashladi -->
-    <div class="subscriptions-panel">
-        <h2>📜 Rol o'zgarishlari tarixi (audit log)</h2>
-        <div class="table-scroll">
-        <table class="subscriptions-table">
-            <thead>
-            <tr>
-                <th>Vaqt</th>
-                <th>Foydalanuvchi</th>
-                <th>Rol</th>
-                <th>Amal</th>
-                <th>Kim tomonidan</th>
-                <th>Manba</th>
-            </tr>
-            </thead>
-            <tbody id="roleAuditTableBody">
-                <tr><td colspan="6" class="empty-row">Yuklanmoqda...</td></tr>
-            </tbody>
-        </table>
-        </div>
     </div>
 </div>
 
