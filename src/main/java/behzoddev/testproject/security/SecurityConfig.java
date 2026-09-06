@@ -61,6 +61,11 @@ public class SecurityConfig {
                                 // orqali kirish" tugmasi (hali login qilinmagan
                                 // holatda keladi, TelegramWidgetLoginController).
                                 "/telegram-login",
+                                // Telegram orqali kirishda MAJBURIY telefon
+                                // tasdiqlash bosqichi — haqiqiy autentifikatsiya
+                                // shu bosqichdan KEYIN o'rnatiladi
+                                // (TelegramPhoneConfirmController).
+                                "/telegram-phone-confirm",
                                 // "Google orqali kirish" — Authorization Code
                                 // oqimi (GoogleLoginController), hali login
                                 // qilinmagan holatda keladi.

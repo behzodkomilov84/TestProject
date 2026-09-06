@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="uz" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telefon raqamni tasdiqlash</title>
+
+    <link rel="stylesheet" href="/css/register-login.css">
+    <link rel="stylesheet" href="/css/country-picker.css">
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+
+    <script th:inline="javascript">
+        const COUNTRIES = /*[[${countries}]]*/ [];
+        const EXISTING_ISO = /*[[${existingPhoneCountryIso}]]*/ "UZ";
+        const EXISTING_NATIONAL = /*[[${existingPhoneNational}]]*/ "";
+    </script>
+    <script src="/js/country-picker.js" defer></script>
+    <script defer>
+        document.addEventListener("DOMContentLoaded", () => {
+            initCountryPicker(
+                document.getElementById("phoneCountryPicker"),
+                COUNTRIES,
+                EXISTING_ISO || "UZ",
+                (iso) => { document.getElementById("phoneCountryHidden").value = iso; }
+            );
+            if (EXISTING_NATIONAL) {
+                document.getElementById("phoneNumberInput").value = EXISTING_NATIONAL;
+            }
+        });
+    </script>
+</head>
+<body>
+<div class="container">
+    <div class="login form">
+        <header>✈️ Telegram orqali kirish</header>
+
+        <p style="text-align:center; color:#555; margin-top:-10px;">
+            Davom etish uchun telefon raqamingizni tasdiqlang.
+        </p>
+
+        <p style="color: red"
+           th:if="${phoneError}"
+           th:text="${phoneError}"
+           class="error-alert"></p>
+
+        <form action="/telegram-phone-confirm" method="post">
+            <div class="phone-field">
+                <div id="phoneCountryPicker"></div>
+                <input type="hidden" name="phoneCountry" id="phoneCountryHidden" value="UZ">
+                <input type="tel" name="phoneNumber" id="phoneNumberInput" placeholder="Telefon raqam" autocomplete="tel" required>
+            </div>
+
+            <input type="submit" class="button" value="Davom etish">
+        </form>
+    </div>
+</div>
+</body>
+</html>

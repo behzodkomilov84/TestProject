@@ -6,11 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,10 +18,14 @@ import java.util.Map;
 // Telegram Login Widget'dan kelgan redirect shu yerga tushadi
 // (foydalanuvchi so'rovi, 2026-09-06: login/registratsiya sahifasiga
 // "Telegram orqali kirish" tugmasi). SecurityConfig'da permitAll — hali
-// login qilinmagan holatda keladi. Sessiyani qo'lda o'rnatish
-// (TelegramAutoLoginController'dagi bilan bir xil andoza) — bu yerda
-// formLogin filtri ishlamaydi, chunki parol yo'q, Telegram'ning o'zi
-// (TelegramWidgetLoginService#resolveUser) shaxsni isbotlagan.
+// login qilinmagan holatda keladi.
+//
+// DIQQAT: bu yerda ENDI to'liq autentifikatsiya (SecurityContext)
+// o'rnatilMAYDI — foydalanuvchi so'rovi bo'yicha (2026-09-06: "Har safar
+// telegram orqali kirishda telefon so'rasin", majburiy, hisobda
+// allaqachon bor bo'lsa ham) resolveUser() dan keyin
+// TelegramPhoneConfirmController'ga yo'naltiriladi, u yerda telefon
+// tasdiqlangandan KEYIN chinakam login sodir bo'ladi.
 @Slf4j
 @Controller
 @RequiredArgsConstructor
@@ -48,13 +48,8 @@ public class TelegramWidgetLoginController {
             return "redirect:/login";
         }
 
-        var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(authentication);
-        SecurityContextHolder.setContext(context);
-        new HttpSessionSecurityContextRepository().saveContext(context, request, response);
-
-        log.info("Telegram widget orqali login: user={}", user.getUsername());
-        return "redirect:/index";
+        request.getSession(true).setAttribute(TelegramPhoneConfirmController.PENDING_USER_SESSION_KEY, user.getId());
+        log.info("Telegram widget orqali shaxs tasdiqlandi (telefon so'ralmoqda): user={}", user.getUsername());
+        return "redirect:/telegram-phone-confirm";
     }
 }
