@@ -128,6 +128,17 @@ public class NotificationService {
         notificationRepository.saveAll(unread);
     }
 
+    // Foydalanuvchini BUTUNLAY o'chirishdan OLDIN chaqiriladi
+    // (UserServiceImpl#deleteUser) — "notifications.user_id" ustunida FK
+    // RESTRICT bo'lgani uchun, aks holda o'chirish 409 (haqiqiy topilgan
+    // bug, foydalanuvchi so'rovi, 2026-09-06 — test hisobni o'chirishga
+    // urinilganda "Ma'lumotlar bazasi cheklovi buzildi: ... fk_notification_user"
+    // xatosi bilan aniqlangan).
+    @Transactional
+    public void deleteAllForUser(Long userId) {
+        notificationRepository.deleteByUser_Id(userId);
+    }
+
     private NotificationDto toDto(Notification n) {
         return NotificationDto.builder()
                 .id(n.getId())

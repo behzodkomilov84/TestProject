@@ -209,6 +209,11 @@ public class UserServiceImpl implements UserDetailsService, UserService {
 
         List<String> roles = targetUser.getRoles().stream().map(Role::getRoleName).sorted().toList();
 
+        // "notifications.user_id" FK RESTRICT (haqiqiy topilgan bug,
+        // 2026-09-06) — foydalanuvchini o'chirishdan OLDIN uning
+        // bildirishnomalari o'chiriladi, aks holda 409 bilan tugardi.
+        notificationService.deleteAllForUser(targetUserId);
+
         userRepository.delete(targetUser);
 
         return UserDto.builder()

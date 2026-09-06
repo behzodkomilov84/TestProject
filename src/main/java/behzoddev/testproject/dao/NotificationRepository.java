@@ -18,4 +18,9 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     long countByUser_IdAndReadFalse(Long userId);
 
     long countByUser_IdAndReadTrue(Long userId);
+
+    // Foydalanuvchini o'chirishdan OLDIN (UserServiceImpl#deleteUser) —
+    // "notifications.user_id" FK RESTRICT bo'lgani uchun, aks holda
+    // o'chirish 409 bilan tugaydi (NotificationService#deleteAllForUser).
+    void deleteByUser_Id(Long userId);
 }
