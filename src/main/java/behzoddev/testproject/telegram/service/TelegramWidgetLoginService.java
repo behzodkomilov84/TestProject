@@ -47,6 +47,7 @@ public class TelegramWidgetLoginService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TelegramAvatarService telegramAvatarService;
     private final SecureRandom random = new SecureRandom();
 
     @Value("${telegram.bot.token}")
@@ -72,7 +73,7 @@ public class TelegramWidgetLoginService {
         long telegramId = Long.parseLong(params.get("id"));
 
         return userRepository.findByTelegramId(telegramId)
-                .orElseGet(() -> createUser(telegramId, params.get("username")));
+                .orElseGet(() -> createUser(telegramId, params));
     }
 
     // Telegram'ning rasmiy tekshirish algoritmi: "hash"dan boshqa barcha
@@ -112,8 +113,13 @@ public class TelegramWidgetLoginService {
     // UserServiceImpl#register'dagi "email yo'q -> darhol faollashtirish"
     // siyosati bilan bir xil g'oya). Parol o'zi HECH QACHON ishlatilmaydi
     // (foydalanuvchi bilmaydi) — tasodifiy, faqat DB "NOT NULL" talabini
-    // qondirish uchun.
-    private User createUser(long telegramId, String telegramUsername) {
+    // qondirish uchun. Ism/familiya Telegram'ning o'zidan olinadi (har doim
+    // beriladi, "last_name" ixtiyoriy bo'lishi mumkin); ish/lavozim esa
+    // Telegram'da yo'q — profilda keyinroq to'ldiriladi (an'anaviy
+    // ro'yxatdan o'tishdagidek majburiy emas, bu yerda UserServiceImpl
+    // #register'dagi tekshiruv qo'llanilmaydi — Telegram orqali tezkor
+    // kirish imkoniyatini blokirovka qilmaslik uchun ataylab).
+    private User createUser(long telegramId, Map<String, String> params) {
         Role userRole = roleRepository.findByRoleName("ROLE_USER")
                 .orElseThrow(() -> new IllegalStateException("ROLE_USER bazada topilmadi"));
 
@@ -125,10 +131,13 @@ public class TelegramWidgetLoginService {
         String randomPassword = Base64.getUrlEncoder().withoutPadding().encodeToString(randomPasswordBytes);
 
         User user = User.builder()
-                .username(generateUniqueUsername(telegramUsername, telegramId))
+                .username(generateUniqueUsername(params.get("username"), telegramId))
                 .password(passwordEncoder.encode(randomPassword))
                 .roles(roles)
                 .telegramId(telegramId)
+                .firstName(params.get("first_name"))
+                .lastName(params.get("last_name"))
+                .avatarUrl(telegramAvatarService.fetchAvatarUrl(telegramId))
                 .emailVerified(true)
                 .build();
 

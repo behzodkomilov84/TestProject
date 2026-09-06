@@ -140,6 +140,70 @@ public class FileStorageService {
     }
 
     /**
+     * Profil rasmi (avatar) — foydalanuvchi tomonidan qo'lda yuklangan,
+     * "avatars" ostki papkasiga saqlanadi (foydalanuvchi so'rovi,
+     * 2026-09-06).
+     */
+    public String storeAvatarImage(MultipartFile file) {
+        return store(file, "avatars", ALLOWED_IMAGE_TYPES, ALLOWED_IMAGE_EXTENSIONS,
+                MAX_IMAGE_SIZE_BYTES, "❌Rasm hajmi 10MB dan katta bo'lishi mumkin emas.",
+                "❌Faqat rasm fayllari (PNG, JPEG, WEBP, GIF) yuklash mumkin.");
+    }
+
+    /**
+     * Profil rasmi — Telegram Bot API'dan yuklab olingan xom baytlar
+     * uchun (TelegramAvatarService). {@link #store} bilan bir xil
+     * tekshiruvlar (Tika magic-byte + ClamAV) qo'llaniladi — MultipartFile
+     * emasligi tashqi (Telegram CDN) manbadan kelgan baytlarga ham xuddi
+     * shu darajada ISHONMASLIK kerakligini o'zgartirmaydi.
+     */
+    public String storeAvatarFromBytes(byte[] content) {
+        if (content == null || content.length == 0) {
+            throw new IllegalArgumentException("❌Fayl bo'sh.");
+        }
+        if (content.length > MAX_IMAGE_SIZE_BYTES) {
+            throw new IllegalArgumentException("❌Rasm hajmi 10MB dan katta bo'lishi mumkin emas.");
+        }
+
+        String detectedType = tika.detect(content);
+        if (!ALLOWED_IMAGE_TYPES.contains(detectedType.toLowerCase())) {
+            throw new IllegalArgumentException("❌Faqat rasm fayllari (PNG, JPEG, WEBP, GIF) yuklash mumkin.");
+        }
+
+        clamAvScanService.scan(content, "telegram-avatar");
+
+        if (detectedType.equalsIgnoreCase("image/heic") || detectedType.equalsIgnoreCase("image/heif")) {
+            content = convertHeicToJpeg(content);
+            detectedType = "image/jpeg";
+        }
+
+        String extension = switch (detectedType.toLowerCase()) {
+            case "image/png" -> ".png";
+            case "image/webp" -> ".webp";
+            case "image/gif" -> ".gif";
+            default -> ".jpg";
+        };
+
+        try {
+            Path targetDir = Path.of(uploadDir, "avatars").toAbsolutePath().normalize();
+            Files.createDirectories(targetDir);
+
+            String newFileName = UUID.randomUUID() + extension;
+            Path targetFile = targetDir.resolve(newFileName).normalize();
+
+            if (!targetFile.startsWith(targetDir)) {
+                throw new IllegalArgumentException("❌Noto'g'ri fayl nomi.");
+            }
+
+            Files.write(targetFile, content);
+            return "/uploads/avatars/" + newFileName;
+        } catch (IOException e) {
+            log.error("Avatar faylini saqlashda xatolik", e);
+            throw new IllegalStateException("❌Faylni saqlab bo'lmadi.", e);
+        }
+    }
+
+    /**
      * PPT/PPTX taqdimotni kurs bo'limi matni ichiga (rich-toolbar, "🎞 PPT
      * qo'shish") slaydlar sifatida qo'shish uchun — LibreOffice orqali
      * PDF'ga, so'ng {@code pdftoppm} orqali har bir sahifa alohida PNG

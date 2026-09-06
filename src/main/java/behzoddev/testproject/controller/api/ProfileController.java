@@ -4,9 +4,12 @@ import behzoddev.testproject.dao.TestSessionRepository;
 import behzoddev.testproject.dto.*;
 import behzoddev.testproject.dto.phone.CountryDto;
 import behzoddev.testproject.dto.profile.ChangeEmailDto;
+import behzoddev.testproject.dto.profile.ChangeFullNameDto;
+import behzoddev.testproject.dto.profile.ChangeJobTitleDto;
 import behzoddev.testproject.dto.profile.ChangePasswordDto;
 import behzoddev.testproject.dto.profile.ChangePhoneDto;
 import behzoddev.testproject.dto.profile.ChangeUsernameDto;
+import behzoddev.testproject.dto.profile.ChangeWorkplaceDto;
 import behzoddev.testproject.dto.profile.ProfileDto;
 import behzoddev.testproject.dto.profile.TestHistoryDto;
 import behzoddev.testproject.dto.testsession.TestStatsDto;
@@ -22,9 +25,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/profile")
@@ -52,8 +57,59 @@ public class ProfileController {
                 user.getRoles().stream()
                         .map(Role::getRoleName)
                         .sorted()
-                        .toList()
+                        .toList(),
+                user.getFirstName(),
+                user.getLastName(),
+                user.getWorkplace(),
+                user.getPosition(),
+                user.getAvatarUrl(),
+                user.getTelegramId() != null
         );
+    }
+
+    // Ism/Familiya (foydalanuvchi so'rovi, 2026-09-06).
+    @PatchMapping("/full-name")
+    public ResponseEntity<Void> changeFullName(
+            @RequestBody ChangeFullNameDto dto,
+            @AuthenticationPrincipal User user
+    ) {
+        profileService.changeFullName(user, dto);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/workplace")
+    public ResponseEntity<Void> changeWorkplace(
+            @RequestBody ChangeWorkplaceDto dto,
+            @AuthenticationPrincipal User user
+    ) {
+        profileService.changeWorkplace(user, dto);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/job-title")
+    public ResponseEntity<Void> changeJobTitle(
+            @RequestBody ChangeJobTitleDto dto,
+            @AuthenticationPrincipal User user
+    ) {
+        profileService.changeJobTitle(user, dto);
+        return ResponseEntity.ok().build();
+    }
+
+    // Profil rasmi — qo'lda yuklash.
+    @PostMapping("/avatar")
+    public Map<String, String> uploadAvatar(
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal User user
+    ) {
+        String url = profileService.uploadAvatar(user, file);
+        return Map.of("avatarUrl", url);
+    }
+
+    // Profil rasmini Telegram'dan qayta yuklab olish.
+    @PostMapping("/avatar/sync-telegram")
+    public Map<String, String> syncAvatarFromTelegram(@AuthenticationPrincipal User user) {
+        String url = profileService.syncAvatarFromTelegram(user);
+        return Map.of("avatarUrl", url);
     }
 
     // Telefon kiritish formasidagi davlat dropdown'i uchun — barcha

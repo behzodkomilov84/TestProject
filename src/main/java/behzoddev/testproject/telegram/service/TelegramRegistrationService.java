@@ -53,6 +53,53 @@ public class TelegramRegistrationService {
         }
 
         sessionService.putTempData(chatId, "reg_username", username);
+        sessionService.setState(chatId, BotState.AWAITING_REG_FIRSTNAME);
+        return prompt(chatId, "👤 Ismingizni kiriting:");
+    }
+
+    // ===== 1.1-1.4. Ism/Familiya/Ish-o'qish joyi/Lavozim (majburiy,
+    // foydalanuvchi so'rovi 2026-09-06 — saytdagi forma bilan bir xil) =====
+
+    public SendMessage applyFirstName(Long chatId, String text) {
+        String firstName = text.trim();
+        if (firstName.isBlank()) {
+            return retry(chatId, "❌ Ism bo'sh bo'lishi mumkin emas.");
+        }
+
+        sessionService.putTempData(chatId, "reg_firstname", firstName);
+        sessionService.setState(chatId, BotState.AWAITING_REG_LASTNAME);
+        return prompt(chatId, "👤 Familiyangizni kiriting:");
+    }
+
+    public SendMessage applyLastName(Long chatId, String text) {
+        String lastName = text.trim();
+        if (lastName.isBlank()) {
+            return retry(chatId, "❌ Familiya bo'sh bo'lishi mumkin emas.");
+        }
+
+        sessionService.putTempData(chatId, "reg_lastname", lastName);
+        sessionService.setState(chatId, BotState.AWAITING_REG_WORKPLACE);
+        return prompt(chatId, "🏢 Ish yoki o'qish joyingizni kiriting (masalan: Toshkent tibbiyot akademiyasi):");
+    }
+
+    public SendMessage applyWorkplace(Long chatId, String text) {
+        String workplace = text.trim();
+        if (workplace.isBlank()) {
+            return retry(chatId, "❌ Ish yoki o'qish joyingizni kiriting.");
+        }
+
+        sessionService.putTempData(chatId, "reg_workplace", workplace);
+        sessionService.setState(chatId, BotState.AWAITING_REG_JOBTITLE);
+        return prompt(chatId, "💼 Lavozimingizni kiriting (masalan: shifokor, talaba, o'qituvchi):");
+    }
+
+    public SendMessage applyJobTitle(Long chatId, String text) {
+        String jobTitle = text.trim();
+        if (jobTitle.isBlank()) {
+            return retry(chatId, "❌ Lavozimingizni kiriting.");
+        }
+
+        sessionService.putTempData(chatId, "reg_jobtitle", jobTitle);
         sessionService.setState(chatId, BotState.AWAITING_REG_EMAIL);
         return prompt(chatId, "📧 Endi email manzilingizni yozing (tasdiqlash kodi shu yerga yuboriladi):");
     }
@@ -146,11 +193,16 @@ public class TelegramRegistrationService {
         Map<String, String> data = sessionService.getTempData(chatId);
 
         String username = data.get("reg_username");
+        String firstName = data.get("reg_firstname");
+        String lastName = data.get("reg_lastname");
+        String workplace = data.get("reg_workplace");
+        String jobTitle = data.get("reg_jobtitle");
         String email = data.get("reg_email");
         String phone = data.get("reg_phone"); // null bo'lishi mumkin — ixtiyoriy
         String password = data.get("reg_password");
 
-        RegisterDto dto = new RegisterDto(username, email, "UZ", phone, password, password);
+        RegisterDto dto = new RegisterDto(username, firstName, lastName, workplace, jobTitle,
+                email, "UZ", phone, password, password);
 
         try {
             userServiceImpl.register(dto);

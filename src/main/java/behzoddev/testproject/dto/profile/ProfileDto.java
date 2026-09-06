@@ -12,5 +12,15 @@ public record ProfileDto(
         String phoneNumberFormatted,
         String phoneCountryIso,
         String phoneNationalNumber,
-        List<String> roles
+        List<String> roles,
+        // Profilga qo'shimcha ma'lumotlar (foydalanuvchi so'rovi, 2026-09-06).
+        String firstName,
+        String lastName,
+        String workplace,
+        String jobTitle,
+        String avatarUrl,
+        // Telegram'ning o'zi (username/id) emas, faqat "bog'langan/
+        // bog'lanmagan" holati ko'rsatiladi — profile.js shunga qarab
+        // status chip'ini chizadi.
+        boolean telegramConnected
 ) {}

@@ -52,6 +52,33 @@ public class User implements UserDetails {
     @Column(name = "telegram_id", unique = true)
     private Long telegramId;
 
+    // Profilga qo'shimcha ma'lumotlar (foydalanuvchi so'rovi, 2026-09-06) —
+    // "qaysi sohadan, qaysi kasbdagilar foydalanayotganini" bilish uchun.
+    // Eski foydalanuvchilarda NULL bo'lishi mumkin — "shart"lik faqat YANGI
+    // ro'yxatdan o'tishda forma darajasida ta'minlanadi (UserServiceImpl
+    // #register), DB darajasida emas (mavjud hisoblarni buzmaslik uchun).
+    @Column(name = "first_name", length = 100)
+    private String firstName;
+
+    @Column(name = "last_name", length = 100)
+    private String lastName;
+
+    // Ish yoki o'qish joyi (masalan "Toshkent tibbiyot akademiyasi").
+    @Column(name = "workplace")
+    private String workplace;
+
+    // Lavozimi (masalan "shifokor", "talaba", "o'qituvchi") — SQL'da
+    // "POSITION" band so'z bo'lgani uchun ustun nomi "job_title".
+    @Column(name = "job_title")
+    private String position;
+
+    // Profil rasmi — "/uploads/avatars/..." (FileStorageService), qo'lda
+    // yuklangan YOKI Telegram orqali kirish/ulanishda avtomatik olingan
+    // (TelegramAvatarService). NULL bo'lsa — frontend standart placeholder
+    // ko'rsatadi.
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
     // Parolni tiklash uchun (email kanali). Eski userlarda bo'sh bo'lishi
     // mumkin — faqat yangi ro'yxatdan o'tishda majburiy qilingan.
     @Column(unique = true)

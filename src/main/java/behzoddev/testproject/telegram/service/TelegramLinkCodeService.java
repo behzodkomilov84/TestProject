@@ -19,6 +19,7 @@ public class TelegramLinkCodeService {
 
     private final TelegramLinkCodeRepository telegramLinkCodeRepository;
     private final UserRepository userRepository;
+    private final TelegramAvatarService telegramAvatarService;
 
     public String generateCode(Long userId) {
 
@@ -54,6 +55,12 @@ public class TelegramLinkCodeService {
 
         User user = link.getUser();
         user.setTelegramId(telegramId); // User.telegramId поле уже есть
+        // Agar profilida hali rasm bo'lmasa — Telegram profilidan avtomatik
+        // olib qo'yamiz (foydalanuvchi so'rovi, 2026-09-06). Mavjud
+        // (masalan qo'lda yuklangan) rasm ustidan YOZILMAYDI.
+        if (user.getAvatarUrl() == null) {
+            user.setAvatarUrl(telegramAvatarService.fetchAvatarUrl(telegramId));
+        }
         userRepository.save(user);
 
         link.setUsed(true);

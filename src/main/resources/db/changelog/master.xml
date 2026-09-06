@@ -48,6 +48,7 @@
     <include file="/db/changelog/question-answer-image-size.sql"/>
     <include file="/db/changelog/course-forum.sql"/>
     <include file="/db/changelog/feedback.sql"/>
+    <include file="/db/changelog/user-profile-fields.sql"/>
 
 
 </databaseChangeLog>

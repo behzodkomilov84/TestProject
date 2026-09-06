@@ -84,7 +84,8 @@ class UserServiceImplTest {
     }
 
     private RegisterDto registerDto(String phoneCountry, String phoneNumber) {
-        return new RegisterDto("newuser", "new@mail.com", phoneCountry, phoneNumber, "secret1", "secret1");
+        return new RegisterDto("newuser", "Ism", "Familiya", "Ish joyi", "Lavozim",
+                "new@mail.com", phoneCountry, phoneNumber, "secret1", "secret1");
     }
 
     // ===== register =====
@@ -161,7 +162,8 @@ class UserServiceImplTest {
     // NULL saqlanadi (bo'sh qator emas) va tasdiqlash kodi umuman yuborilmaydi.
     @Test
     void register_emailBlank_createsUserImmediatelyVerifiedWithoutSendingCode() {
-        RegisterDto dto = new RegisterDto("newuser", "  ", null, null, "secret1", "secret1");
+        RegisterDto dto = new RegisterDto("newuser", "Ism", "Familiya", "Ish joyi", "Lavozim",
+                "  ", null, null, "secret1", "secret1");
         when(userRepository.existsByUsername("newuser")).thenReturn(false);
         when(roleRepository.findByRoleName("ROLE_USER")).thenReturn(Optional.of(roleUser));
         when(passwordEncoder.encode("secret1")).thenReturn("ENCODED");
@@ -192,12 +194,65 @@ class UserServiceImplTest {
 
     @Test
     void register_passwordMismatch_throws() {
-        RegisterDto dto = new RegisterDto("newuser", "new@mail.com", null, null, "secret1", "different");
+        RegisterDto dto = new RegisterDto("newuser", "Ism", "Familiya", "Ish joyi", "Lavozim",
+                "new@mail.com", null, null, "secret1", "different");
         when(userRepository.existsByUsername("newuser")).thenReturn(false);
         when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
 
         assertThatThrownBy(() -> userService.register(dto))
                 .isInstanceOf(PasswordsDoNotMatchException.class);
+    }
+
+    // Ism/Familiya/Ish-o'qish joyi/Lavozim — majburiy (foydalanuvchi so'rovi,
+    // 2026-09-06). Har biri uchun alohida tekshiruv (UserServiceImpl#register).
+    @Test
+    void register_firstNameBlank_throws() {
+        RegisterDto dto = new RegisterDto("newuser", "  ", "Familiya", "Ish joyi", "Lavozim",
+                "new@mail.com", null, null, "secret1", "secret1");
+        when(userRepository.existsByUsername("newuser")).thenReturn(false);
+        when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
+
+        assertThatThrownBy(() -> userService.register(dto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Ism");
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void register_lastNameBlank_throws() {
+        RegisterDto dto = new RegisterDto("newuser", "Ism", "  ", "Ish joyi", "Lavozim",
+                "new@mail.com", null, null, "secret1", "secret1");
+        when(userRepository.existsByUsername("newuser")).thenReturn(false);
+        when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
+
+        assertThatThrownBy(() -> userService.register(dto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Familiya");
+    }
+
+    @Test
+    void register_workplaceBlank_throws() {
+        RegisterDto dto = new RegisterDto("newuser", "Ism", "Familiya", "  ", "Lavozim",
+                "new@mail.com", null, null, "secret1", "secret1");
+        when(userRepository.existsByUsername("newuser")).thenReturn(false);
+        when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
+
+        assertThatThrownBy(() -> userService.register(dto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Ish yoki o'qish joyi");
+    }
+
+    @Test
+    void register_jobTitleBlank_throws() {
+        RegisterDto dto = new RegisterDto("newuser", "Ism", "Familiya", "Ish joyi", "  ",
+                "new@mail.com", null, null, "secret1", "secret1");
+        when(userRepository.existsByUsername("newuser")).thenReturn(false);
+        when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
+
+        assertThatThrownBy(() -> userService.register(dto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Lavozim");
     }
 
     @Test

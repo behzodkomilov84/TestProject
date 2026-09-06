@@ -55,6 +55,10 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     private final TelegramLinkCodeRepository telegramLinkCodeRepository;
     private final CourseSectionProgressRepository courseSectionProgressRepository;
 
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank();
+    }
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository.findByUsername(username)
@@ -88,6 +92,25 @@ public class UserServiceImpl implements UserDetailsService, UserService {
             throw new PasswordsDoNotMatchException("Passwords do not match");
         }
 
+        // 2.1 Ism/Familiya/Ish-o'qish joyi/Lavozim — "to'ldirilishi shart"
+        // (foydalanuvchi so'rovi, 2026-09-06). Faqat shu — an'anaviy
+        // username/parol orqali ro'yxatdan o'tishda tekshiriladi; Telegram
+        // orqali avtomatik yaratilgan hisoblarda ism/familiya Telegram'ning
+        // o'zidan olinadi, ish/lavozim esa keyinroq profildan to'ldiriladi
+        // (TelegramWidgetLoginService#createUser — u yerda bu tekshiruv yo'q).
+        if (isBlank(dto.firstName())) {
+            throw new IllegalArgumentException("❌Ism bo'sh bo'lishi mumkin emas.");
+        }
+        if (isBlank(dto.lastName())) {
+            throw new IllegalArgumentException("❌Familiya bo'sh bo'lishi mumkin emas.");
+        }
+        if (isBlank(dto.workplace())) {
+            throw new IllegalArgumentException("❌Ish yoki o'qish joyingizni kiriting.");
+        }
+        if (isBlank(dto.jobTitle())) {
+            throw new IllegalArgumentException("❌Lavozimingizni kiriting.");
+        }
+
         // 3. Получаем роль USER (роль должна быть создана в БД через Liquibase)
         Role userRole = roleRepository.findByRoleName("ROLE_USER")
                 .orElseThrow(() -> new RuntimeException("ROLE_USER not found in database"));
@@ -110,6 +133,10 @@ public class UserServiceImpl implements UserDetailsService, UserService {
 
         User user = User.builder()
                 .username(dto.username())
+                .firstName(dto.firstName().trim())
+                .lastName(dto.lastName().trim())
+                .workplace(dto.workplace().trim())
+                .position(dto.jobTitle().trim())
                 // Bo'sh qatorni emas, aniq NULL saqlaymiz — aks holda bir nechta
                 // email'siz foydalanuvchida bo'sh qator unique tekshiruviga
                 // (existsByEmail) keyinroq to'g'ri kelmasligi mumkin edi.

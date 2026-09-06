@@ -43,6 +43,12 @@ public enum BotState {
 
     // ===== Botda to'g'ridan-to'g'ri ro'yxatdan o'tish =====
     AWAITING_REG_USERNAME,
+    // Ism/Familiya/Ish-o'qish joyi/Lavozim — majburiy (foydalanuvchi so'rovi,
+    // 2026-09-06), saytdagi ro'yxatdan o'tish formasi bilan bir xil talab.
+    AWAITING_REG_FIRSTNAME,
+    AWAITING_REG_LASTNAME,
+    AWAITING_REG_WORKPLACE,
+    AWAITING_REG_JOBTITLE,
     AWAITING_REG_EMAIL,
     AWAITING_REG_PHONE,
     AWAITING_REG_PASSWORD,

@@ -797,6 +797,10 @@ public class TelegramBot extends TelegramLongPollingBot {
             case AWAITING_MIN_AMOUNT -> ownerService.applyMinAmount(chatId, text);
             case AWAITING_BROADCAST_TEXT -> ownerService.previewBroadcast(chatId, text);
             case AWAITING_REG_USERNAME -> registrationService.applyUsername(chatId, text);
+            case AWAITING_REG_FIRSTNAME -> registrationService.applyFirstName(chatId, text);
+            case AWAITING_REG_LASTNAME -> registrationService.applyLastName(chatId, text);
+            case AWAITING_REG_WORKPLACE -> registrationService.applyWorkplace(chatId, text);
+            case AWAITING_REG_JOBTITLE -> registrationService.applyJobTitle(chatId, text);
             case AWAITING_REG_EMAIL -> registrationService.applyEmail(chatId, text);
             case AWAITING_REG_PHONE -> registrationService.applyPhone(chatId, text);
             case AWAITING_REG_PASSWORD -> registrationService.applyPassword(chatId, text);

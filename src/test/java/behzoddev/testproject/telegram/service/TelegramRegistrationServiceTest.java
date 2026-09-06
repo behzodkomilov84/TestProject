@@ -85,12 +85,83 @@ class TelegramRegistrationServiceTest {
     }
 
     @Test
-    void applyUsername_valid_movesToEmailStep() {
+    void applyUsername_valid_movesToFirstNameStep() {
         when(userRepository.existsByUsername("newstudent")).thenReturn(false);
 
         SendMessage msg = registrationService.applyUsername(CHAT_ID, "newstudent");
 
         verify(sessionService).putTempData(CHAT_ID, "reg_username", "newstudent");
+        verify(sessionService).setState(CHAT_ID, BotState.AWAITING_REG_FIRSTNAME);
+        assertThat(msg.getText()).contains("Ism");
+    }
+
+    // ===== Ism/Familiya/Ish-o'qish joyi/Lavozim (foydalanuvchi so'rovi,
+    // 2026-09-06) =====
+
+    @Test
+    void applyFirstName_blank_retriesWithoutAdvancing() {
+        SendMessage msg = registrationService.applyFirstName(CHAT_ID, "   ");
+
+        assertThat(msg.getText()).contains("Ism bo'sh");
+        verify(sessionService, never()).setState(eq(CHAT_ID), eq(BotState.AWAITING_REG_LASTNAME));
+    }
+
+    @Test
+    void applyFirstName_valid_movesToLastNameStep() {
+        SendMessage msg = registrationService.applyFirstName(CHAT_ID, "Aziz");
+
+        verify(sessionService).putTempData(CHAT_ID, "reg_firstname", "Aziz");
+        verify(sessionService).setState(CHAT_ID, BotState.AWAITING_REG_LASTNAME);
+        assertThat(msg.getText()).contains("Familiya");
+    }
+
+    @Test
+    void applyLastName_blank_retriesWithoutAdvancing() {
+        SendMessage msg = registrationService.applyLastName(CHAT_ID, "   ");
+
+        assertThat(msg.getText()).contains("Familiya bo'sh");
+        verify(sessionService, never()).setState(eq(CHAT_ID), eq(BotState.AWAITING_REG_WORKPLACE));
+    }
+
+    @Test
+    void applyLastName_valid_movesToWorkplaceStep() {
+        SendMessage msg = registrationService.applyLastName(CHAT_ID, "Azizov");
+
+        verify(sessionService).putTempData(CHAT_ID, "reg_lastname", "Azizov");
+        verify(sessionService).setState(CHAT_ID, BotState.AWAITING_REG_WORKPLACE);
+        assertThat(msg.getText()).contains("o'qish joyi");
+    }
+
+    @Test
+    void applyWorkplace_blank_retriesWithoutAdvancing() {
+        SendMessage msg = registrationService.applyWorkplace(CHAT_ID, "   ");
+
+        assertThat(msg.getText()).contains("Ish yoki o'qish joyi");
+        verify(sessionService, never()).setState(eq(CHAT_ID), eq(BotState.AWAITING_REG_JOBTITLE));
+    }
+
+    @Test
+    void applyWorkplace_valid_movesToJobTitleStep() {
+        SendMessage msg = registrationService.applyWorkplace(CHAT_ID, "Toshkent tibbiyot akademiyasi");
+
+        verify(sessionService).putTempData(CHAT_ID, "reg_workplace", "Toshkent tibbiyot akademiyasi");
+        verify(sessionService).setState(CHAT_ID, BotState.AWAITING_REG_JOBTITLE);
+        assertThat(msg.getText()).contains("Lavozim");
+    }
+
+    @Test
+    void applyJobTitle_blank_retriesWithoutAdvancing() {
+        SendMessage msg = registrationService.applyJobTitle(CHAT_ID, "   ");
+
+        assertThat(msg.getText()).contains("Lavozim");
+        verify(sessionService, never()).setState(eq(CHAT_ID), eq(BotState.AWAITING_REG_EMAIL));
+    }
+
+    @Test
+    void applyJobTitle_valid_movesToEmailStep() {
+        SendMessage msg = registrationService.applyJobTitle(CHAT_ID, "Talaba");
+
+        verify(sessionService).putTempData(CHAT_ID, "reg_jobtitle", "Talaba");
         verify(sessionService).setState(CHAT_ID, BotState.AWAITING_REG_EMAIL);
         assertThat(msg.getText()).contains("email");
     }

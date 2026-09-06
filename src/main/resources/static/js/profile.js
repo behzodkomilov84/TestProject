@@ -14,6 +14,12 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("role").innerText =
                 (data.roles || []).map(r => r.replace("ROLE_", "")).join(", ");
 
+            renderFullName(data);
+            document.getElementById("workplace").innerText = data.workplace || "— (kiritilmagan)";
+            document.getElementById("jobtitle").innerText = data.jobTitle || "— (kiritilmagan)";
+            renderAvatar(data.avatarUrl);
+            renderTelegramStatus(data.telegramConnected);
+
             loadPaymentConfig(data.roles || []);
         });
 
@@ -30,6 +36,21 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("edit-phone").addEventListener("click", enableEditPhone);
     document.getElementById("save-phone").addEventListener("click", savePhone);
     document.getElementById("cancel-phone").addEventListener("click", cancelPhoneEdit);
+
+    document.getElementById("edit-fullname").addEventListener("click", enableEditFullName);
+    document.getElementById("save-fullname").addEventListener("click", saveFullName);
+    document.getElementById("cancel-fullname").addEventListener("click", cancelFullNameEdit);
+
+    document.getElementById("edit-workplace").addEventListener("click", enableEditWorkplace);
+    document.getElementById("save-workplace").addEventListener("click", saveWorkplace);
+    document.getElementById("cancel-workplace").addEventListener("click", cancelWorkplaceEdit);
+
+    document.getElementById("edit-jobtitle").addEventListener("click", enableEditJobTitle);
+    document.getElementById("save-jobtitle").addEventListener("click", saveJobTitle);
+    document.getElementById("cancel-jobtitle").addEventListener("click", cancelJobTitleEdit);
+
+    document.getElementById("avatar-file-input").addEventListener("change", uploadAvatar);
+    document.getElementById("avatar-telegram-sync-btn").addEventListener("click", syncAvatarFromTelegram);
 });
 
 /* Test tarixi (paginatsiya bilan) endi /student sahifasidagi "Statistika"
@@ -37,11 +58,235 @@ document.addEventListener("DOMContentLoaded", () => {
    /api/profile/history manbasidan. */
 
 
+/* ===== Ism-Familiya, Ish/o'qish joyi, Lavozim, Avatar, Telegram holati
+   (foydalanuvchi so'rovi, 2026-09-06) ===== */
+
+function renderFullName(data) {
+    const full = [data.firstName, data.lastName].filter(Boolean).join(" ");
+    document.getElementById("fullname").innerText = full || "— (kiritilmagan)";
+}
+
+function renderAvatar(avatarUrl) {
+    const img = document.getElementById("avatar-img");
+    const placeholder = document.getElementById("avatar-placeholder");
+
+    if (avatarUrl) {
+        img.src = avatarUrl;
+        img.style.display = "block";
+        placeholder.style.display = "none";
+    } else {
+        img.style.display = "none";
+        placeholder.style.display = "block";
+    }
+}
+
+function renderTelegramStatus(connected) {
+    const el = document.getElementById("telegram-status");
+    const syncBtn = document.getElementById("avatar-telegram-sync-btn");
+
+    el.innerHTML = connected
+        ? `<span class="telegram-status-chip telegram-status-connected">✅ Bog'langan</span>`
+        : `<span class="telegram-status-chip telegram-status-disconnected">Bog'lanmagan</span>`;
+
+    syncBtn.style.display = connected ? "inline-block" : "none";
+}
+
+function enableEditFullName() {
+    cancelUsernameEdit();
+    cancelEmailEdit();
+    cancelPhoneEdit();
+    cancelWorkplaceEdit();
+    cancelJobTitleEdit();
+
+    document.getElementById("firstname-input").value = currentProfile?.firstName || "";
+    document.getElementById("lastname-input").value = currentProfile?.lastName || "";
+
+    document.getElementById("fullname-view").style.display = "none";
+    document.getElementById("fullname-edit").style.display = "inline";
+    document.getElementById("edit-fullname").style.display = "none";
+}
+
+function cancelFullNameEdit() {
+    document.getElementById("fullname-edit").style.display = "none";
+    document.getElementById("fullname-view").style.display = "inline";
+    document.getElementById("edit-fullname").style.display = "inline";
+}
+
+function saveFullName() {
+    const firstName = document.getElementById("firstname-input").value.trim();
+    const lastName = document.getElementById("lastname-input").value.trim();
+
+    if (!firstName || !lastName) {
+        showAlertModal("Ism va Familiyani to'liq kiriting");
+        return;
+    }
+
+    fetch("/api/profile/full-name", {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({firstName, lastName})
+    })
+        .then(async r => {
+            if (!r.ok) {
+                const data = await r.json().catch(() => ({}));
+                throw new Error(data.error || "Xatolik yuz berdi");
+            }
+        })
+        .then(() => {
+            currentProfile.firstName = firstName;
+            currentProfile.lastName = lastName;
+            renderFullName(currentProfile);
+            cancelFullNameEdit();
+            showAlertModal("✅ Saqlandi");
+        })
+        .catch(err => showAlertModal(err.message || "Xatolik yuz berdi"));
+}
+
+function enableEditWorkplace() {
+    cancelUsernameEdit();
+    cancelEmailEdit();
+    cancelPhoneEdit();
+    cancelFullNameEdit();
+    cancelJobTitleEdit();
+
+    document.getElementById("workplace-input").value = currentProfile?.workplace || "";
+
+    document.getElementById("workplace-view").style.display = "none";
+    document.getElementById("workplace-edit").style.display = "inline";
+    document.getElementById("edit-workplace").style.display = "none";
+}
+
+function cancelWorkplaceEdit() {
+    document.getElementById("workplace-edit").style.display = "none";
+    document.getElementById("workplace-view").style.display = "inline";
+    document.getElementById("edit-workplace").style.display = "inline";
+}
+
+function saveWorkplace() {
+    const workplace = document.getElementById("workplace-input").value.trim();
+
+    if (!workplace) {
+        showAlertModal("Ish yoki o'qish joyingizni kiriting");
+        return;
+    }
+
+    fetch("/api/profile/workplace", {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({workplace})
+    })
+        .then(async r => {
+            if (!r.ok) {
+                const data = await r.json().catch(() => ({}));
+                throw new Error(data.error || "Xatolik yuz berdi");
+            }
+        })
+        .then(() => {
+            currentProfile.workplace = workplace;
+            document.getElementById("workplace").innerText = workplace;
+            cancelWorkplaceEdit();
+            showAlertModal("✅ Saqlandi");
+        })
+        .catch(err => showAlertModal(err.message || "Xatolik yuz berdi"));
+}
+
+function enableEditJobTitle() {
+    cancelUsernameEdit();
+    cancelEmailEdit();
+    cancelPhoneEdit();
+    cancelFullNameEdit();
+    cancelWorkplaceEdit();
+
+    document.getElementById("jobtitle-input").value = currentProfile?.jobTitle || "";
+
+    document.getElementById("jobtitle-view").style.display = "none";
+    document.getElementById("jobtitle-edit").style.display = "inline";
+    document.getElementById("edit-jobtitle").style.display = "none";
+}
+
+function cancelJobTitleEdit() {
+    document.getElementById("jobtitle-edit").style.display = "none";
+    document.getElementById("jobtitle-view").style.display = "inline";
+    document.getElementById("edit-jobtitle").style.display = "inline";
+}
+
+function saveJobTitle() {
+    const jobTitle = document.getElementById("jobtitle-input").value.trim();
+
+    if (!jobTitle) {
+        showAlertModal("Lavozimingizni kiriting");
+        return;
+    }
+
+    fetch("/api/profile/job-title", {
+        method: "PATCH",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({jobTitle})
+    })
+        .then(async r => {
+            if (!r.ok) {
+                const data = await r.json().catch(() => ({}));
+                throw new Error(data.error || "Xatolik yuz berdi");
+            }
+        })
+        .then(() => {
+            currentProfile.jobTitle = jobTitle;
+            document.getElementById("jobtitle").innerText = jobTitle;
+            cancelJobTitleEdit();
+            showAlertModal("✅ Saqlandi");
+        })
+        .catch(err => showAlertModal(err.message || "Xatolik yuz berdi"));
+}
+
+function uploadAvatar(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    fetch("/api/profile/avatar", {method: "POST", body: formData})
+        .then(async r => {
+            if (!r.ok) {
+                const data = await r.json().catch(() => ({}));
+                throw new Error(data.error || "Xatolik yuz berdi");
+            }
+            return r.json();
+        })
+        .then(data => {
+            currentProfile.avatarUrl = data.avatarUrl;
+            renderAvatar(data.avatarUrl);
+            showAlertModal("✅ Rasm saqlandi");
+        })
+        .catch(err => showAlertModal(err.message || "Rasmni yuklashda xatolik"))
+        .finally(() => { e.target.value = ""; });
+}
+
+function syncAvatarFromTelegram() {
+    fetch("/api/profile/avatar/sync-telegram", {method: "POST"})
+        .then(async r => {
+            if (!r.ok) {
+                const data = await r.json().catch(() => ({}));
+                throw new Error(data.error || "Xatolik yuz berdi");
+            }
+            return r.json();
+        })
+        .then(data => {
+            currentProfile.avatarUrl = data.avatarUrl;
+            renderAvatar(data.avatarUrl);
+            showAlertModal("✅ Telegram profilidagi rasm yuklandi");
+        })
+        .catch(err => showAlertModal(err.message || "Telegramdan rasm olishda xatolik"));
+}
+
 function enableEditUsername() {
     // Boshqa maydonlarda saqlanmagan tahrirlash bo'lsa, avval uni bekor qilamiz —
     // aks holda bir vaqtda bir nechta maydon tahrirlash rejimida qolib ketardi.
     cancelEmailEdit();
     cancelPhoneEdit();
+    cancelFullNameEdit();
+    cancelWorkplaceEdit();
+    cancelJobTitleEdit();
 
     const current = document.getElementById("username").innerText;
 
@@ -63,6 +308,9 @@ function cancelUsernameEdit() {
 function enableEditEmail() {
     cancelUsernameEdit();
     cancelPhoneEdit();
+    cancelFullNameEdit();
+    cancelWorkplaceEdit();
+    cancelJobTitleEdit();
 
     const current = document.getElementById("email").innerText;
     const input = document.getElementById("email-input");
@@ -136,6 +384,9 @@ function loadPhoneCountries() {
 function enableEditPhone() {
     cancelUsernameEdit();
     cancelEmailEdit();
+    cancelFullNameEdit();
+    cancelWorkplaceEdit();
+    cancelJobTitleEdit();
 
     const input = document.getElementById("phone-input");
 
