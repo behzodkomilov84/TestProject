@@ -251,6 +251,16 @@ select.role-select {
     padding: 16px;
 }
 
+/* MUHIM TOPILGAN BUG (2026-09-07): "[hidden]" atributi bilan
+   ".edit-modal-overlay { display: flex }" bir xil spetsifiklikka ega
+   (ikkalasi ham 0-1-0), shuning uchun brauzerning "[hidden] {display:
+   none}" standart qoidasi bizning qoidamiz bilan almashtirilib, sahifa
+   ochilishi bilan oyna DOIM ko'rinib turardi (hidden=true bo'lsa ham).
+   Aniq ustunlik berish uchun shu qoida qo'shildi. */
+.edit-modal-overlay[hidden] {
+    display: none;
+}
+
 .edit-modal-box {
     width: min(440px, 100%);
     max-height: 90vh;
