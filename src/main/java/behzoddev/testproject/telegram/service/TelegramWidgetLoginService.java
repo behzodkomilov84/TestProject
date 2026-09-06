@@ -5,6 +5,7 @@ import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.User;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 // so'rovni HMAC-SHA256 imzosi (bot tokeni orqali) bilan tekshirish SHART —
 // aks holda istalgan kishi o'zini istalgan Telegram foydalanuvchisi
 // sifatida ko'rsatib, login qila olardi.
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TelegramWidgetLoginService {
@@ -69,6 +71,9 @@ public class TelegramWidgetLoginService {
     // (resolve-yoki-yarat) saqlanadi.
     @Transactional
     public User resolveUser(Map<String, String> params, User currentUser) {
+        log.info("[TG-DEBUG] resolveUser chaqirildi: params={}, currentUser={}", params,
+                currentUser != null ? currentUser.getUsername() + "(id=" + currentUser.getId() + ")" : "null");
+
         if (!verifySignature(params)) {
             throw new InvalidTelegramAuthException("❌ Telegram imzosi noto'g'ri — bu so'rov soxta bo'lishi mumkin.");
         }
@@ -80,6 +85,8 @@ public class TelegramWidgetLoginService {
 
         long telegramId = Long.parseLong(params.get("id"));
         Optional<User> existingByTelegram = userRepository.findByTelegramId(telegramId);
+        log.info("[TG-DEBUG] telegramId={}, existingByTelegram={}", telegramId,
+                existingByTelegram.map(u -> u.getUsername() + "(id=" + u.getId() + ")").orElse("YO'Q"));
 
         if (currentUser != null) {
             return linkToCurrentUser(telegramId, params, currentUser, existingByTelegram);
@@ -163,18 +170,27 @@ public class TelegramWidgetLoginService {
         random.nextBytes(randomPasswordBytes);
         String randomPassword = Base64.getUrlEncoder().withoutPadding().encodeToString(randomPasswordBytes);
 
+        log.info("[TG-DEBUG] createUser boshlandi: telegramId={}", telegramId);
+
+        String username = generateUniqueUsername(params.get("username"), telegramId);
+        String avatarUrl = telegramAvatarService.fetchAvatarUrl(telegramId);
+
         User user = User.builder()
-                .username(generateUniqueUsername(params.get("username"), telegramId))
+                .username(username)
                 .password(passwordEncoder.encode(randomPassword))
                 .roles(roles)
                 .telegramId(telegramId)
                 .firstName(params.get("first_name"))
                 .lastName(params.get("last_name"))
-                .avatarUrl(telegramAvatarService.fetchAvatarUrl(telegramId))
+                .avatarUrl(avatarUrl)
                 .emailVerified(true)
                 .build();
 
-        return userRepository.save(user);
+        log.info("[TG-DEBUG] save() dan OLDIN: user.getTelegramId()={}", user.getTelegramId());
+        User saved = userRepository.save(user);
+        log.info("[TG-DEBUG] save() dan KEYIN: saved.getId()={}, saved.getTelegramId()={}",
+                saved.getId(), saved.getTelegramId());
+        return saved;
     }
 
     private String generateUniqueUsername(String telegramUsername, long telegramId) {

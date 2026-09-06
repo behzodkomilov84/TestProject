@@ -75,8 +75,11 @@ public class TelegramPhoneConfirmController {
             return "redirect:/telegram-phone-confirm";
         }
 
+        log.info("[TG-DEBUG] phone-confirm submit: user.getId()={}, save()dan OLDIN telegramId={}",
+                user.getId(), user.getTelegramId());
         user.setPhoneNumber(normalized);
-        userRepository.save(user);
+        User saved = userRepository.save(user);
+        log.info("[TG-DEBUG] phone-confirm submit: save()dan KEYIN telegramId={}", saved.getTelegramId());
 
         request.getSession(true).removeAttribute(PENDING_USER_SESSION_KEY);
 
@@ -93,9 +96,14 @@ public class TelegramPhoneConfirmController {
     private User pendingUser(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         Long pendingUserId = session != null ? (Long) session.getAttribute(PENDING_USER_SESSION_KEY) : null;
+        log.info("[TG-DEBUG] pendingUser: sessionId={}, pendingUserId={}",
+                session != null ? session.getId() : "YO'Q", pendingUserId);
         if (pendingUserId == null) {
             return null;
         }
-        return userRepository.findById(pendingUserId).orElse(null);
+        User user = userRepository.findById(pendingUserId).orElse(null);
+        log.info("[TG-DEBUG] pendingUser topildi: username={}, telegramId={}",
+                user != null ? user.getUsername() : "TOPILMADI", user != null ? user.getTelegramId() : null);
+        return user;
     }
 }

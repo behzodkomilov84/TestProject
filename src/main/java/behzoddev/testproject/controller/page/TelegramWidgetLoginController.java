@@ -48,8 +48,10 @@ public class TelegramWidgetLoginController {
             return "redirect:/login";
         }
 
-        request.getSession(true).setAttribute(TelegramPhoneConfirmController.PENDING_USER_SESSION_KEY, user.getId());
-        log.info("Telegram widget orqali shaxs tasdiqlandi (telefon so'ralmoqda): user={}", user.getUsername());
+        var session = request.getSession(true);
+        session.setAttribute(TelegramPhoneConfirmController.PENDING_USER_SESSION_KEY, user.getId());
+        log.info("[TG-DEBUG] telegramLogin: sessionId={}, user.getId()={}, user.getTelegramId()={}, user={}",
+                session.getId(), user.getId(), user.getTelegramId(), user.getUsername());
         return "redirect:/telegram-phone-confirm";
     }
 }
