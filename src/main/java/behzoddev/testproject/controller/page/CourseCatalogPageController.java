@@ -32,6 +32,19 @@ public class CourseCatalogPageController {
         return "courseDetail";
     }
 
+    // "Barcha savollar" — shu kursga bog'langan BARCHA darslarning
+    // testlarini bitta ro'yxatda ko'rsatadi (foydalanuvchi so'rovi,
+    // 2026-09-06). Kirish huquqi (ADMIN — faqat o'zi yaratgan kurs, OWNER
+    // — barchasi) sahifaning o'zida emas, API darajasida (CourseController
+    // #getQuestionsForCourse -> CourseService#requireManageableCourse)
+    // tekshiriladi — bu yerda faqat sahifa qobig'i ochiladi.
+    @GetMapping("/courses/{id}/questions")
+    public String openCourseQuestions(@PathVariable Long id, Model model, Authentication authentication) {
+        model.addAttribute("role", primaryRole(authentication));
+        model.addAttribute("courseId", id);
+        return "courseQuestions";
+    }
+
     @GetMapping("/courses/{courseId}/sections/{sectionId}")
     public String openSectionView(
             @PathVariable Long courseId,

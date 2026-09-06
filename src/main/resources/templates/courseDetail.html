@@ -66,6 +66,14 @@
                      alohida bo'lim) javoblar — har biri mustaqil checkbox
                      orqali (openCourseWordExportModal, courseDetail.js). -->
                 <button id="courseWordExportBtn" onclick="openCourseWordExportModal()" title="Butun kursni Word (.docx) faylga eksport qilish"><svg width="16" height="16" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-3px;margin-right:4px;"><rect x="4" y="4" width="40" height="40" rx="7" fill="#185ABD"/><rect x="4" y="4" width="18" height="40" rx="7" fill="#103F91"/><text x="31" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">W</text></svg>Kursni Word'ga eksport qilish</button>
+                <!-- Shu kursga bog'langan BARCHA darslarning testlarini
+                     bitta ro'yxatda ko'rsatadi (foydalanuvchi so'rovi,
+                     2026-09-06). Kirish huquqi API darajasida tekshiriladi
+                     (CourseController#getQuestionsForCourse —
+                     ADMIN faqat o'zi yaratgan kursniki, OWNER barchasi). -->
+                <button id="courseQuestionsBtn" onclick="location.href='/courses/' + COURSE_ID + '/questions'" title="Shu kursga bog'langan barcha darslarning testlarini bitta ro'yxatda ko'rish">
+                    📋 Barcha savollarni ko'rish
+                </button>
                 <!-- Har bir darsning savollari to'g'ri javob izohida
                      "🔗 Darsga havola qo'shish" orqali qo'shilgan havola
                      O'ZINING darsiga (emas, boshqa darsga) bog'lanib

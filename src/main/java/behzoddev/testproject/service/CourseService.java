@@ -11,6 +11,7 @@ import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
 import behzoddev.testproject.dto.course.*;
+import behzoddev.testproject.dto.question.QuestionDto;
 import behzoddev.testproject.dto.question.TopicQuestionCountDto;
 import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Course;
@@ -27,6 +28,7 @@ import behzoddev.testproject.entity.enums.CourseSectionContentFormat;
 import behzoddev.testproject.entity.enums.CourseSectionType;
 import behzoddev.testproject.entity.enums.CourseSubscriptionStatus;
 import behzoddev.testproject.entity.enums.VideoSourceType;
+import behzoddev.testproject.mapper.QuestionMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -34,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -71,6 +74,7 @@ public class CourseService {
     private final TopicRepository topicRepository;
     private final TopicSectionRepository topicSectionRepository;
     private final QuestionRepository questionRepository;
+    private final QuestionMapper questionMapper;
 
     // "🔗 Darsga havola qo'shish" (topicLinkButton.js#buildTopicLinkHtml)
     // tomonidan izohga qo'shilgan havolani topish uchun — "/courses/
@@ -567,6 +571,42 @@ public class CourseService {
         Course course = getCourseOrThrow(courseId);
         checkCanManage(course, currentUser);
         return course;
+    }
+
+    // "Kurs bo'yicha barcha savollarni ko'rish" sahifasi (foydalanuvchi
+    // so'rovi, 2026-09-06: "Бир курсга тегишли барча саволларни кўриш
+    // саҳифасини қилиш керак. Админ ўзи яратган курс бўйича саволларни
+    // кўра олсин. OWNER барчасини кўра олиши керак") — requireManageableCourse
+    // orqali ANIQ shu tekshiruv (OWNER — istalgan kurs, ADMIN — faqat
+    // o'zi yaratgani) qo'llaniladi, xuddi CourseWordExportService'dagi
+    // kabi. Har bir savol qaysi DARSGA (CourseSection) tegishli ekanini
+    // ham qaytaradi, tartib — dars tartib raqami bo'yicha.
+    @Transactional(readOnly = true)
+    public List<CourseQuestionDto> getQuestionsForCourse(Long courseId, User currentUser) {
+        requireManageableCourse(courseId, currentUser);
+
+        List<CourseSection> linkedSections = courseSectionRepository
+                .findByCourse_IdAndLinkedTopicIsNotNull(courseId)
+                .stream()
+                .sorted(Comparator.comparingInt(CourseSection::getOrderIndex))
+                .toList();
+
+        List<CourseQuestionDto> result = new ArrayList<>();
+        for (CourseSection section : linkedSections) {
+            Topic topic = section.getLinkedTopic();
+            List<Question> questions = questionRepository.getQuestionsByTopicId(topic.getId());
+
+            for (Question question : questions) {
+                result.add(new CourseQuestionDto(
+                        questionMapper.mapQuestiontoQuestionDto(question),
+                        section.getId(),
+                        section.getTitle(),
+                        topic.getId()
+                ));
+            }
+        }
+
+        return result;
     }
 
     @Transactional

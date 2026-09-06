@@ -1,0 +1,192 @@
+/* "📋 Barcha savollarni ko'rish" — courseDetail.html'dagi tugma orqali
+   ochiladi (courseQuestions.js). ".courses-container"dan meros (courses.css)
+   — bu yerda faqat SHU sahifaga xos qo'shimcha uslublar. */
+
+.cq-page {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.cq-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.cq-header h1 {
+    margin: 0;
+    font-size: 22px;
+}
+
+.cq-back-btn {
+    background: #fff;
+    border: 1px solid #d5dde8;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .15s ease;
+}
+
+.cq-back-btn:hover {
+    background: #f1f5f9;
+}
+
+.cq-search-input {
+    width: 100%;
+    max-width: 480px;
+    padding: 10px 14px;
+    border: 1.5px solid #d5dde8;
+    border-radius: 10px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.cq-search-input:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);
+}
+
+.cq-summary {
+    margin: 0;
+    color: #64748b;
+    font-size: 13.5px;
+}
+
+.cq-loading,
+.cq-empty {
+    color: #94a3b8;
+    text-align: center;
+    padding: 24px 0;
+}
+
+.cq-error {
+    color: #b91c1c;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 14px 16px;
+}
+
+.cq-sections-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cq-section {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #fff;
+}
+
+.cq-section-header {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+    background: #f8fafc;
+    border: none;
+    padding: 12px 16px;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: #1e293b;
+    cursor: pointer;
+}
+
+.cq-section-header:hover {
+    background: #f1f5f9;
+}
+
+.cq-chevron {
+    display: inline-block;
+    width: 14px;
+    color: #64748b;
+}
+
+.cq-count {
+    margin-left: auto;
+    color: #64748b;
+    font-weight: 500;
+    font-size: 12.5px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    padding: 2px 10px;
+}
+
+.cq-section-body {
+    overflow-x: auto;
+}
+
+.cq-section-body.hidden {
+    display: none;
+}
+
+.cq-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.cq-table th,
+.cq-table td {
+    padding: 8px 10px;
+    border-top: 1px solid #f1f5f9;
+    text-align: left;
+    vertical-align: top;
+}
+
+.cq-table th {
+    background: #fbfcfe;
+    color: #475569;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+}
+
+.cq-table .cq-num {
+    color: #94a3b8;
+    width: 32px;
+}
+
+.cq-table .cq-question-text {
+    min-width: 220px;
+    font-weight: 500;
+}
+
+.cq-table .cq-correct {
+    background: #e6fffa;
+    font-weight: 600;
+}
+
+.cq-table .cq-correct-letter {
+    white-space: nowrap;
+}
+
+.cq-actions {
+    display: flex;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.cq-action-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1.5px solid #dbeafe;
+    background: #f8fbff;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background .15s ease, border-color .15s ease, transform .1s ease;
+}
+
+.cq-action-btn:hover {
+    transform: scale(1.08);
+    background: #e0f2fe;
+    border-color: #7dd3fc;
+}

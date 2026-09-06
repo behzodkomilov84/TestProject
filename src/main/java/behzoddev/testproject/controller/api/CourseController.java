@@ -4,6 +4,7 @@ import behzoddev.testproject.dto.course.CourseArchivedByAdminDto;
 import behzoddev.testproject.dto.course.CourseChapterDto;
 import behzoddev.testproject.dto.course.CourseDetailDto;
 import behzoddev.testproject.dto.course.CourseDto;
+import behzoddev.testproject.dto.course.CourseQuestionDto;
 import behzoddev.testproject.dto.course.CourseSaveDto;
 import behzoddev.testproject.dto.course.TopicLinkAuditDto;
 import behzoddev.testproject.dto.export.ExportedFileDto;
@@ -293,6 +294,19 @@ public class CourseController {
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
     public List<TopicLinkAuditDto> auditTopicLinks(@PathVariable Long courseId) {
         return courseService.auditTopicLinks(courseId);
+    }
+
+    // "Kurs bo'yicha barcha savollarni ko'rish" sahifasi (foydalanuvchi
+    // so'rovi, 2026-09-06) — ADMIN faqat O'ZI yaratgan kursniki, OWNER
+    // barcha kurslarniki (courseService#requireManageableCourse ANIQ shu
+    // qoidani qo'llaydi — @PreAuthorize BU YERDA yetarli emas, chunki u
+    // faqat "ADMIN yoki OWNER"ligini tekshiradi, "aynan SHU kursga
+    // egalikni" emas).
+    @GetMapping("/{courseId}/questions")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public List<CourseQuestionDto> getQuestionsForCourse(@PathVariable Long courseId,
+                                                          @AuthenticationPrincipal User user) {
+        return courseService.getQuestionsForCourse(courseId, user);
     }
 
     // "➕ Havola qo'shish" — topicId berilsa FAQAT shu mavzudagi, berilmasa
