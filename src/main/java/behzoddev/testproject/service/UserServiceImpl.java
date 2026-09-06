@@ -1,5 +1,6 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.CourseFieldRepository;
 import behzoddev.testproject.dao.CourseRepository;
 import behzoddev.testproject.dao.CourseSectionProgressRepository;
 import behzoddev.testproject.dao.CourseSubscriptionRepository;
@@ -11,8 +12,10 @@ import behzoddev.testproject.dao.RoleRepository;
 import behzoddev.testproject.dao.SubscriptionRepository;
 import behzoddev.testproject.dao.TelegramAutoLoginTokenRepository;
 import behzoddev.testproject.dao.TelegramLinkCodeRepository;
+import behzoddev.testproject.dao.TestSessionRepository;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.entity.Course;
+import behzoddev.testproject.entity.CourseField;
 import behzoddev.testproject.dto.user.ChangeRoleDto;
 import behzoddev.testproject.dto.user.LoginDto;
 import behzoddev.testproject.dto.user.RegisterDto;
@@ -60,9 +63,11 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     private final TelegramLinkCodeRepository telegramLinkCodeRepository;
     private final CourseSectionProgressRepository courseSectionProgressRepository;
     private final CourseRepository courseRepository;
+    private final CourseFieldRepository courseFieldRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final CourseSubscriptionRepository courseSubscriptionRepository;
     private final PaymentOrderRepository paymentOrderRepository;
+    private final TestSessionRepository testSessionRepository;
 
     private static boolean isBlank(String s) {
         return s == null || s.isBlank();
@@ -321,13 +326,26 @@ public class UserServiceImpl implements UserDetailsService, UserService {
         courseSubscriptionRepository.deleteByUser_Id(targetUserId);
         courseSubscriptionRepository.clearConfirmedBy(targetUserId);
         paymentOrderRepository.deleteByUser_Id(targetUserId);
+        testSessionRepository.deleteByUserId(targetUserId);
 
         List<Course> authoredCourses = courseRepository.findByCreatedBy_Id(targetUserId);
-        if (!authoredCourses.isEmpty()) {
+        List<CourseField> authoredFields = courseFieldRepository.findByCreatedBy_Id(targetUserId);
+        if (!authoredCourses.isEmpty() || !authoredFields.isEmpty()) {
             User newOwner = userRepository.findById(reassignToUserId)
                     .orElseThrow(() -> new RuntimeException("⛔ Muallifligi o'tkaziladigan foydalanuvchi topilmadi"));
             authoredCourses.forEach(c -> c.setCreatedBy(newOwner));
             courseRepository.saveAll(authoredCourses);
+            authoredFields.forEach(f -> f.setCreatedBy(newOwner));
+            courseFieldRepository.saveAll(authoredFields);
+        }
+
+        // "archived_by_admin_id" — DB'da ON DELETE SET NULL bo'lsa-da,
+        // Hibernate'ga oldindan aytib qo'yish kerak (yuqoridagi izohga
+        // qarang), aks holda flush vaqtida xato beradi.
+        List<Course> archivedCourses = courseRepository.findByArchivedByAdmin_Id(targetUserId);
+        if (!archivedCourses.isEmpty()) {
+            archivedCourses.forEach(c -> c.setArchivedByAdmin(null));
+            courseRepository.saveAll(archivedCourses);
         }
     }
 

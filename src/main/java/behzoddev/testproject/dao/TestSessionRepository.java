@@ -45,6 +45,14 @@ public interface TestSessionRepository extends JpaRepository<TestSession, Long> 
 
     Optional<TestSession> findByIdAndUserId(Long id, Long userId);
 
+    // Foydalanuvchini o'chirishdan oldin — "test_sessions.user_id" NOT
+    // NULL FK RESTRICT (haqiqiy topilgan bug, 2026-09-07: sinov uchun
+    // yaratilgan "BehzodTest" kabi hisoblar odatda bir nechta test
+    // yechgan bo'ladi). O'zining test tarixi — o'chirilib ketaveradi
+    // (test_session_questions bolalar jadvali DB darajasida ON DELETE
+    // CASCADE bilan avtomatik tozalanadi).
+    void deleteByUserId(Long userId);
+
     @Query("""
             select new behzoddev.testproject.dto.profile.TestHistoryDto
             (

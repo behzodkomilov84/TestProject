@@ -59,6 +59,17 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     // ichida boshqa foydalanuvchiga o'tkaziladi.
     List<Course> findByCreatedBy_Id(Long createdById);
 
+    // Foydalanuvchini o'chirishdan oldin — "archived_by_admin_id" DB
+    // darajasida ON DELETE SET NULL bo'lsa-da, Hibernate SHU TRANZAKSIYA
+    // ICHIDA (o'chirilayotgan User hali persistence context'da bo'lgani
+    // uchun) buni flush vaqtida oldindan tekshirib,
+    // "TransientPropertyValueException" bilan to'xtatib qo'yadi (haqiqiy
+    // topilgan bug, 2026-09-07: ADMIN sifatida boshqa birovning kursini
+    // "Butunlay o'chirish" bilan arxivlagan foydalanuvchini o'chirib
+    // bo'lmadi). Shuning uchun DB cascade'ga tayanmasdan, ilova
+    // darajasida ham oldindan NULL qilinadi.
+    List<Course> findByArchivedByAdmin_Id(Long adminId);
+
     // Yo'nalish kartochkasida "N ta bo'lim" (coursesCatalog.js) —
     // CourseFieldService.toDto. Faqat FAOL (o'chirilmagan) kurslar sanaladi.
     long countByField_IdAndDeletedAtIsNull(Long fieldId);

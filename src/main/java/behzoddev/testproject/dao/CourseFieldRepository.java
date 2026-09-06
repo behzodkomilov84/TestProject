@@ -36,4 +36,11 @@ public interface CourseFieldRepository extends JpaRepository<CourseField, Long> 
     @Query("select case when count(s) > 0 then true else false end from Science s " +
             "where s.field.id = :fieldId and s.deletedAt is null")
     boolean existsActiveScienceByField_Id(Long fieldId);
+
+    // Foydalanuvchini o'chirishdan oldin — "course_fields.created_by" NOT
+    // NULL FK RESTRICT, "courses.created_by" bilan bir xil muammo
+    // (haqiqiy topilgan bug, 2026-09-07). Yo'nalish o'chirilmaydi —
+    // muallifligi UserServiceImpl#deleteFkRestrictedRowsBeforeUserDelete
+    // ichida boshqa foydalanuvchiga o'tkaziladi.
+    List<CourseField> findByCreatedBy_Id(Long createdById);
 }
