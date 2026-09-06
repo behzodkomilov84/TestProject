@@ -48,21 +48,36 @@
             <input type="submit" class="button" value="Kirish">
         </form>
 
-        <!-- "Telegram orqali kirish" — Telegram Login Widget (foydalanuvchi
-             so'rovi, 2026-09-06). Bot allaqachon @BotFather'da "/setdomain"
-             bilan shu saytga ruxsat berilgan bo'lishi kerak, aks holda
-             widget xato ko'rsatadi. Bosilganda Telegram foydalanuvchini
-             "data-auth-url"ga (TelegramWidgetLoginController) imzolangan
-             ma'lumotlar bilan qaytaradi. -->
+        <!-- "Telegram orqali kirish" — Telegram'ning tayyor Login Widget'i
+             o'rniga o'z tugmamiz + "Telegram.Login.auth(...)" custom oauth
+             flow (foydalanuvchi so'rovi, 2026-09-06: "O'zbekcha qil
+             knopkani" — tayyor widget matni rus/ingliz tilida, o'zgartirib
+             bo'lmaydi). Bot allaqachon @BotFather'da "/setdomain" bilan
+             shu saytga ruxsat berilgan bo'lishi kerak. Popup tasdiqlangach
+             natija "/telegram-login"ga (TelegramWidgetLoginController)
+             xuddi tayyor widget'dagi bilan bir xil formatda yuboriladi. -->
         <div class="social-divider"><span>yoki</span></div>
-        <div class="telegram-login-box">
-            <script async src="https://telegram.org/js/telegram-widget.js?22"
-                    th:attr="data-telegram-login=${telegramBotUsername}"
-                    data-size="large"
-                    data-radius="8"
-                    data-auth-url="/telegram-login"
-                    data-request-access="write"></script>
-        </div>
+        <button type="button" class="telegram-login-btn" onclick="telegramLogin()">
+            ✈️ Telegram orqali kirish
+        </button>
+        <script src="https://telegram.org/js/telegram-widget.js?22"></script>
+        <script th:inline="javascript">
+            const TELEGRAM_BOT_ID = /*[[${telegramBotId}]]*/ "";
+
+            function telegramLogin() {
+                if (typeof Telegram === "undefined" || !Telegram.Login) {
+                    alert("Telegram widget hali yuklanmadi, birozdan keyin qaytadan urinib ko'ring.");
+                    return;
+                }
+                Telegram.Login.auth(
+                    {bot_id: TELEGRAM_BOT_ID, request_access: "write"},
+                    function (data) {
+                        if (!data) return; // foydalanuvchi bekor qildi
+                        window.location.href = "/telegram-login?" + new URLSearchParams(data).toString();
+                    }
+                );
+            }
+        </script>
 
         <div class="signup" id="signup">
             <span class="signup">Hisobingiz yo'qmi?

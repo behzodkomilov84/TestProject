@@ -77,20 +77,33 @@
             <input type="submit" class="button" value="Ro'yxatdan o'tish">
         </form>
 
-        <!-- "Telegram orqali kirish" — Telegram Login Widget (foydalanuvchi
-             so'rovi, 2026-09-06), login.html'dagi bilan bir xil. Bu yerdan
-             ham xuddi shu havola orqali — parol/username o'ylab topish
-             shart emas, birinchi marta bosilganda akkaunt avtomatik
-             yaratiladi (TelegramWidgetLoginService#createUser). -->
+        <!-- "Telegram orqali kirish" — login.html'dagi bilan bir xil o'z
+             tugmamiz + custom oauth flow (foydalanuvchi so'rovi,
+             2026-09-06). Parol/username o'ylab topish shart emas, birinchi
+             marta bosilganda akkaunt avtomatik yaratiladi
+             (TelegramWidgetLoginService#createUser). -->
         <div class="social-divider"><span>yoki</span></div>
-        <div class="telegram-login-box">
-            <script async src="https://telegram.org/js/telegram-widget.js?22"
-                    th:attr="data-telegram-login=${telegramBotUsername}"
-                    data-size="large"
-                    data-radius="8"
-                    data-auth-url="/telegram-login"
-                    data-request-access="write"></script>
-        </div>
+        <button type="button" class="telegram-login-btn" onclick="telegramLogin()">
+            ✈️ Telegram orqali kirish
+        </button>
+        <script src="https://telegram.org/js/telegram-widget.js?22"></script>
+        <script th:inline="javascript">
+            const TELEGRAM_BOT_ID = /*[[${telegramBotId}]]*/ "";
+
+            function telegramLogin() {
+                if (typeof Telegram === "undefined" || !Telegram.Login) {
+                    alert("Telegram widget hali yuklanmadi, birozdan keyin qaytadan urinib ko'ring.");
+                    return;
+                }
+                Telegram.Login.auth(
+                    {bot_id: TELEGRAM_BOT_ID, request_access: "write"},
+                    function (data) {
+                        if (!data) return; // foydalanuvchi bekor qildi
+                        window.location.href = "/telegram-login?" + new URLSearchParams(data).toString();
+                    }
+                );
+            }
+        </script>
 
         <div class="signup">
             <span class="signup">Hisobingiz bormi?

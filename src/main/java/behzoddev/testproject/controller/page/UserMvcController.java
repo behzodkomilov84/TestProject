@@ -17,9 +17,16 @@ public class UserMvcController {
 
     private final UserServiceImpl userService;
 
-    // "Telegram orqali kirish" widget'i uchun (login.html).
-    @Value("${telegram.bot.username}")
-    private String telegramBotUsername;
+    // "Telegram orqali kirish" tugmasi uchun (login.html) — Telegram'ning
+    // tayyor (rus/ingliz tilidagi) widget o'rniga o'zimizning o'zbekcha
+    // tugma + "Telegram.Login.auth(...)" custom oauth flow ishlatiladi
+    // (foydalanuvchi so'rovi, 2026-09-06: "O'zbekcha qil knopkani" — tayyor
+    // widget matnini o'zgartirib bo'lmaydi). Bot ID — bot tokenining ":"dan
+    // OLDINGI qismi (Telegram'ning o'zi shunday tuzadi, maxfiy emas —
+    // Login Widget hujjatida ham xuddi shu custom-flow'da ochiq
+    // ishlatiladi: https://core.telegram.org/widgets/login).
+    @Value("${telegram.bot.token}")
+    private String telegramBotToken;
 
     @PostMapping("/registration")
     public String register(@ModelAttribute RegisterDto dto,
@@ -56,7 +63,7 @@ public class UserMvcController {
 
     @GetMapping("/login")
     public String login(Model model) {
-        model.addAttribute("telegramBotUsername", telegramBotUsername);
+        model.addAttribute("telegramBotId", telegramBotToken.split(":")[0]);
         return "login";
     }
 

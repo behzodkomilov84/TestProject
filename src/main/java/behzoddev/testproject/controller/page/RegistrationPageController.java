@@ -15,15 +15,16 @@ public class RegistrationPageController {
 
     private final PhoneNumberService phoneNumberService;
 
-    // "Telegram orqali kirish" widget'i uchun (registration.html) — bot
-    // nomi hardcode qilinmasin (application.yaml'dagi bilan bir xil manba).
-    @Value("${telegram.bot.username}")
-    private String telegramBotUsername;
+    // "Telegram orqali kirish" tugmasi uchun (registration.html) — bir xil
+    // g'oya UserMvcController#login bilan (o'zbekcha custom tugma,
+    // Telegram'ning tayyor widget'i o'rniga).
+    @Value("${telegram.bot.token}")
+    private String telegramBotToken;
 
     @GetMapping("/registration")
     public String registration(Model model) {
         model.addAttribute("countries", phoneNumberService.listCountries());
-        model.addAttribute("telegramBotUsername", telegramBotUsername);
+        model.addAttribute("telegramBotId", telegramBotToken.split(":")[0]);
         return "registration";
     }
 
