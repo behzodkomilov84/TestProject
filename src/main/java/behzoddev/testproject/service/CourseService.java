@@ -1247,6 +1247,12 @@ public class CourseService {
         int chapterCount = (int) courseChapterRepository.countByCourse_Id(course.getId());
         boolean subscribed = currentUser != null && isSubscribed(currentUser, course);
 
+        // "N ta test" — shu kursga bog'langan BARCHA Darslarning (Topic)
+        // faol savollari, jami (getDetail'dagi bilan bir xil g'oya, faqat
+        // bu yerda BITTA umumiy son — har bir dars alohida emas).
+        List<Long> linkedTopicIds = courseSectionRepository.findDistinctLinkedTopicIdsByCourse_Id(course.getId());
+        int testCount = linkedTopicIds.isEmpty() ? 0 : questionRepository.countByTopicIds(linkedTopicIds);
+
         return CourseDto.builder()
                 .id(course.getId())
                 .title(course.getTitle())
@@ -1257,6 +1263,7 @@ public class CourseService {
                 .price(course.getPrice())
                 .sectionCount(sectionCount)
                 .chapterCount(chapterCount)
+                .testCount(testCount)
                 .subscribed(subscribed)
                 .fieldId(course.getField() != null ? course.getField().getId() : null)
                 .fieldName(course.getField() != null ? course.getField().getName() : null)

@@ -22,6 +22,11 @@ public record CourseDto(
         // sectionCount "N ta bo'lim" deb NOTO'G'RI belgilab ko'rsatilardi
         // (haqiqiy foydalanuvchi shikoyati — aslida mavzular soni edi).
         int chapterCount,
+        // Kurs katalogi kartochkasida "N ta test" — shu kursning bog'langan
+        // darslariga tegishli BARCHA faol savollar soni (TEST BOSHQARUVI
+        // tomonidan, CourseSection#linkedTopic orqali) — foydalanuvchi
+        // so'rovi, 2026-09-06: "Жами тестлар сонини ҳам қўшиб қўй".
+        int testCount,
         boolean subscribed, // joriy foydalanuvchi obuna bo'lganmi (yoki kurs bepul/canManage)
         // Bo'lim (Course) qaysi Yo'nalishga tegishli — coursesCatalog.js
         // shu bo'yicha kartalarni guruhlaydi. fieldId=null — "Yo'nalishsiz

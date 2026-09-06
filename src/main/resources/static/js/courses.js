@@ -422,7 +422,7 @@ function renderCourseCard(c, idx, total, fieldId) {
                 <h3 class="course-card-title">${escapeHtml(c.title)}</h3>
                 <p class="course-card-desc">${escapeHtml(c.description || "")}</p>
                 <div class="course-card-footer">
-                    <span>${c.chapterCount} ta mavzu, ${c.sectionCount} ta dars</span>
+                    <span>${c.chapterCount} ta mavzu, ${c.sectionCount} ta dars, ${c.testCount} ta test</span>
                     ${badge}
                 </div>
                 ${moveBtnsHtml}

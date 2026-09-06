@@ -82,6 +82,14 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     @Query("select case when count(cs) > 0 then true else false end from CourseSection cs where cs.chapter.id = :chapterId and cs.deletedAt is null")
     boolean existsByChapter_Id(@Param("chapterId") Long chapterId);
 
+    // Kurs katalogi kartochkasida "N ta test" (jami savollar soni) uchun —
+    // shu kursning BARCHA (istalgan Bo'lim/chapter'dagi) darslari qaysi
+    // TEST BOSHQARUVI Darslariga (Topic) bog'langan bo'lsa, o'sha
+    // Topic id'lari (dublikatsiz) — questionRepository.countByTopicIds
+    // bilan birga ishlatiladi (foydalanuvchi so'rovi, 2026-09-06).
+    @Query("select distinct cs.linkedTopic.id from CourseSection cs where cs.course.id = :courseId and cs.linkedTopic is not null and cs.deletedAt is null")
+    List<Long> findDistinctLinkedTopicIdsByCourse_Id(@Param("courseId") Long courseId);
+
     // Shu FANDAGI qaysi TEST BOSHQARUVI Bo'limlari (TopicSection) biror
     // kursga bog'langanini BULK topish uchun (TopicSectionService.
     // getSectionsByScienceId — "🔗 Kurs: ..." belgisi).
