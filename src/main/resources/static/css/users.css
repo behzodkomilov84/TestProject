@@ -235,3 +235,106 @@ select.role-select {
     flex: 1;
     min-width: 160px;
 }
+
+/* ===== Foydalanuvchini tahrirlash oynasi (Edit modal) =====
+   promptModal.js'dagi bilan bir xil g'oya (markazlashgan overlay), lekin
+   bir nechta maydonli forma bo'lgani uchun alohida, o'zining <style>siz
+   HTML strukturasi bilan (userManagerPage.html) qurilgan. */
+.edit-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, .55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 16px;
+}
+
+.edit-modal-box {
+    width: min(440px, 100%);
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #fff;
+    padding: 24px 26px;
+    border-radius: 16px;
+    box-shadow: 0 25px 60px rgba(15, 23, 42, .35);
+    box-sizing: border-box;
+}
+
+.edit-modal-box h2 {
+    margin: 0 0 16px;
+    font-size: 18px;
+}
+
+.edit-modal-box form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.edit-modal-box label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+}
+
+.edit-modal-box input {
+    font-size: 14px;
+    font-weight: normal;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    outline: none;
+    font-family: inherit;
+}
+
+.edit-modal-box input:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);
+}
+
+.edit-modal-error {
+    margin: 0;
+    color: #dc2626;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.edit-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.edit-modal-actions button {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 600;
+    font-family: inherit;
+}
+
+.edit-modal-cancel {
+    background: #f1f5f9;
+    color: #334155;
+}
+
+.edit-modal-cancel:hover {
+    background: #e2e8f0;
+}
+
+.edit-modal-save {
+    background: #2563eb;
+    color: #fff;
+}
+
+.edit-modal-save:hover {
+    background: #1d4ed8;
+}

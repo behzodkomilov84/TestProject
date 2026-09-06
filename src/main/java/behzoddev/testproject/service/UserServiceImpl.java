@@ -19,6 +19,7 @@ import behzoddev.testproject.entity.CourseField;
 import behzoddev.testproject.dto.user.ChangeRoleDto;
 import behzoddev.testproject.dto.user.LoginDto;
 import behzoddev.testproject.dto.user.RegisterDto;
+import behzoddev.testproject.dto.user.UpdateUserDto;
 import behzoddev.testproject.dto.user.UserDto;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.User;
@@ -261,6 +262,49 @@ public class UserServiceImpl implements UserDetailsService, UserService {
                 .userId(targetUser.getId())
                 .roles(targetUser.getRoles().stream().map(Role::getRoleName).sorted().toList())
                 .build();
+    }
+
+    // OWNER "Foydalanuvchilar" sahifasidan ma'lumotlarni qo'lda tahrirlashi
+    // uchun (foydalanuvchi so'rovi, 2026-09-07: "sahifasiga edit ni
+    // qo'shish kerak"). Username/email/telefon — har biri boshqa
+    // hisoblarda band emasligi (o'zining hozirgi qiymati bundan mustasno)
+    // tekshiriladi, xuddi ProfileService'dagi kabi.
+    @Transactional
+    public User adminUpdateUser(Long targetUserId, UpdateUserDto dto) {
+        User user = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new RuntimeException("⛔ Foydalanuvchi topilmadi"));
+
+        String newUsername = dto.username() == null ? null : dto.username().trim();
+        if (isBlank(newUsername)) {
+            throw new IllegalArgumentException("❌Username bo'sh bo'lishi mumkin emas.");
+        }
+        if (!newUsername.equals(user.getUsername()) && userRepository.existsByUsername(newUsername)) {
+            throw new IllegalArgumentException("❌Bu username allaqachon band.");
+        }
+
+        String newEmail = isBlank(dto.email()) ? null : dto.email().trim();
+        boolean emailChanged = newEmail != null && !newEmail.equalsIgnoreCase(user.getEmail());
+        if (emailChanged && userRepository.existsByEmail(newEmail)) {
+            throw new IllegalArgumentException("❌Bu email allaqachon band.");
+        }
+
+        String newPhone = null;
+        if (!isBlank(dto.phoneNumber())) {
+            newPhone = phoneNumberService.normalize(null, dto.phoneNumber());
+            if (userRepository.existsByPhoneNumberAndIdNot(newPhone, targetUserId)) {
+                throw new IllegalArgumentException("❌Bu telefon raqam allaqachon band.");
+            }
+        }
+
+        user.setUsername(newUsername);
+        user.setFirstName(isBlank(dto.firstName()) ? null : dto.firstName().trim());
+        user.setLastName(isBlank(dto.lastName()) ? null : dto.lastName().trim());
+        user.setEmail(newEmail);
+        user.setPhoneNumber(newPhone);
+        user.setWorkplace(isBlank(dto.workplace()) ? null : dto.workplace().trim());
+        user.setPosition(isBlank(dto.jobTitle()) ? null : dto.jobTitle().trim());
+
+        return userRepository.save(user);
     }
 
     @Transactional

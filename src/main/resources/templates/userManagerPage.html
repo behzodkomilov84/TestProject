@@ -23,6 +23,44 @@
         <button class="back-btn" onclick="history.back()">← Назад</button>
     </header>
 
+    <!-- Foydalanuvchi ma'lumotlarini qo'lda tahrirlash oynasi
+         (foydalanuvchi so'rovi, 2026-09-07: "edit ni qo'shish kerak") —
+         users.js: openEditModal()/closeEditModal()/submitEditUser(). -->
+    <div id="editUserOverlay" class="edit-modal-overlay" hidden>
+        <div class="edit-modal-box">
+            <h2>✏️ Foydalanuvchini tahrirlash</h2>
+            <form id="editUserForm">
+                <input type="hidden" id="editUserId">
+                <label>Username
+                    <input type="text" id="editUsername" required>
+                </label>
+                <label>Ism
+                    <input type="text" id="editFirstName">
+                </label>
+                <label>Familiya
+                    <input type="text" id="editLastName">
+                </label>
+                <label>Email
+                    <input type="email" id="editEmail">
+                </label>
+                <label>Telefon (masalan 901234567)
+                    <input type="text" id="editPhoneNumber">
+                </label>
+                <label>Ish/o'qish joyi
+                    <input type="text" id="editWorkplace">
+                </label>
+                <label>Lavozim
+                    <input type="text" id="editJobTitle">
+                </label>
+                <p id="editUserError" class="edit-modal-error" hidden></p>
+                <div class="edit-modal-actions">
+                    <button type="button" class="edit-modal-cancel" onclick="closeEditModal()">Bekor qilish</button>
+                    <button type="submit" class="edit-modal-save">💾 Saqlash</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="table-scroll">
     <table class="users-table">
         <thead>

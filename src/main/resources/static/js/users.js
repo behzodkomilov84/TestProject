@@ -10,8 +10,13 @@ if (ROLE !== "ROLE_OWNER") {
 // Barcha mavjud rollar (checkbox sifatida ko'rsatiladi — dual-role)
 const ALL_ROLES = ["ROLE_OWNER", "ROLE_ADMIN", "ROLE_USER"];
 
+// Oxirgi yuklangan foydalanuvchilar ro'yxati id bo'yicha — Edit oynasini
+// to'ldirish uchun qayta so'rov yubormasdan shu yerdan olinadi.
+let usersById = {};
+
 document.addEventListener("DOMContentLoaded", () => {
     loadUsers();
+    document.getElementById("editUserForm").addEventListener("submit", submitEditUser);
 });
 
 function loadUsers() {
@@ -51,6 +56,8 @@ function escapeHtml(text) {
 function renderUsers(users, subscriptions) {
     const tbody = document.getElementById("usersTableBody");
     tbody.innerHTML = "";
+
+    usersById = Object.fromEntries(users.map(u => [u.id, u]));
 
     users.forEach(user => {
         const tr = document.createElement("tr");
@@ -107,6 +114,7 @@ function renderUsers(users, subscriptions) {
             <td>${adminDurationText}</td>
             <td>
                 <div class="actions-cell">
+                    <button class="action-btn" onclick="openEditModal(${user.id})" title="Tahrirlash">✏️</button>
                     ${unlockButtonHtml}
                     <button class="action-btn" onclick="deleteUser(${user.id})" title="Delete">🗑️</button>
                 </div>
@@ -209,5 +217,72 @@ async function deleteUser(id) {
     } else if (response.ok) {
         // Успешно — удаляем строку из таблицы
         loadUsers();
+    }
+}
+
+// ===== Foydalanuvchini tahrirlash (Edit modal) =====
+// Foydalanuvchi so'rovi, 2026-09-07: "sahifasiga edit ni qo'shish kerak".
+
+function openEditModal(id) {
+    const user = usersById[id];
+    if (!user) return;
+
+    document.getElementById("editUserId").value = user.id;
+    document.getElementById("editUsername").value = user.username || "";
+    document.getElementById("editFirstName").value = user.firstName || "";
+    document.getElementById("editLastName").value = user.lastName || "";
+    document.getElementById("editEmail").value = user.email || "";
+    document.getElementById("editPhoneNumber").value = user.phoneNumber || "";
+    document.getElementById("editWorkplace").value = user.workplace || "";
+    document.getElementById("editJobTitle").value = user.jobTitle || "";
+
+    const errorEl = document.getElementById("editUserError");
+    errorEl.hidden = true;
+    errorEl.textContent = "";
+
+    document.getElementById("editUserOverlay").hidden = false;
+}
+
+function closeEditModal() {
+    document.getElementById("editUserOverlay").hidden = true;
+}
+
+async function submitEditUser(event) {
+    event.preventDefault();
+
+    const id = document.getElementById("editUserId").value;
+    const dto = {
+        username: document.getElementById("editUsername").value.trim(),
+        firstName: document.getElementById("editFirstName").value.trim(),
+        lastName: document.getElementById("editLastName").value.trim(),
+        email: document.getElementById("editEmail").value.trim(),
+        phoneNumber: document.getElementById("editPhoneNumber").value.trim(),
+        workplace: document.getElementById("editWorkplace").value.trim(),
+        jobTitle: document.getElementById("editJobTitle").value.trim()
+    };
+
+    const errorEl = document.getElementById("editUserError");
+    errorEl.hidden = true;
+
+    try {
+        const response = await fetch(`/api/users/${id}`, {
+            method: "PUT",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify(dto)
+        });
+
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            errorEl.textContent = data.error || "Xatolik yuz berdi";
+            errorEl.hidden = false;
+            return;
+        }
+
+        closeEditModal();
+        loadUsers();
+    } catch (err) {
+        console.error(err);
+        errorEl.textContent = "Network error";
+        errorEl.hidden = false;
     }
 }

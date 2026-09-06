@@ -89,10 +89,33 @@ public class TelegramPhoneConfirmController {
             return "redirect:/telegram-phone-confirm";
         }
 
-        User user = resolveByPhoneOrKeepPending(pendingUser, normalized);
-
-        user.setPhoneNumber(normalized);
-        userRepository.save(user);
+        // Bitta telefonga bitta Telegram ID bog'lanishi kerak (foydalanuvchi
+        // so'rovi, 2026-09-07) — haqiqiy topilgan bug: bu hisobning
+        // ALLAQACHON tasdiqlangan raqami bor bo'lsa-yu, foydalanuvchi
+        // boshqa (masalan xato) raqam kiritsa, ilgari bu SOATSIZ qabul
+        // qilinib, hisobning haqiqiy raqami O'SHA yangi (tasdiqlanmagan)
+        // qiymatga almashtirib yuborilardi. Bundan ham xavfliroq — agar
+        // kiritilgan raqam BOSHQA birovning hisobiga tegishli bo'lsa,
+        // pastdagi resolveByPhoneOrKeepPending O'SHA hisobga "birlashtirib"
+        // yuborishi ham mumkin edi (OTP tekshiruvisiz, faqat raqamni
+        // BILISH orqali BOSHQA odamning hisobiga kirib olish xavfi).
+        // Shuning uchun: agar Telegram ID'ning hisobida ALLAQACHON telefon
+        // bo'lsa — bu ekran endi faqat SHU raqamni TASDIQLAYDI (o'zgartira
+        // olmaydi); merge/qidiruv mantig'i FAQAT hali hech qanday raqami
+        // yo'q (chinakam yangi) hisoblar uchun ishlaydi.
+        User user;
+        if (pendingUser.getPhoneNumber() != null) {
+            if (!pendingUser.getPhoneNumber().equals(normalized)) {
+                redirectAttributes.addFlashAttribute("phoneError",
+                        "❌ Bu Telegram hisobi allaqachon boshqa telefon raqamiga bog'langan. Aynan shu raqamni kiriting.");
+                return "redirect:/telegram-phone-confirm";
+            }
+            user = pendingUser;
+        } else {
+            user = resolveByPhoneOrKeepPending(pendingUser, normalized);
+            user.setPhoneNumber(normalized);
+            userRepository.save(user);
+        }
 
         request.getSession(true).removeAttribute(PENDING_USER_SESSION_KEY);
 

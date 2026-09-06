@@ -427,6 +427,60 @@ class UserServiceImplTest {
         verify(userRepository, never()).delete(any());
     }
 
+    // ===== adminUpdateUser =====
+
+    @Test
+    void adminUpdateUser_success_updatesFieldsAndNormalizesPhone() {
+        User target = User.builder().id(1L).username("bob").email("old@mail.com")
+                .roles(new HashSet<>(Set.of(roleUser))).build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(target));
+        when(userRepository.existsByUsername("bob2")).thenReturn(false);
+        when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
+        when(phoneNumberService.normalize(null, "901234567")).thenReturn("+998901234567");
+        when(userRepository.existsByPhoneNumberAndIdNot("+998901234567", 1L)).thenReturn(false);
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        behzoddev.testproject.dto.user.UpdateUserDto dto = new behzoddev.testproject.dto.user.UpdateUserDto(
+                "bob2", "Ism", "Familiya", "new@mail.com", "901234567", "Ish joyi", "Lavozim");
+
+        User result = userService.adminUpdateUser(1L, dto);
+
+        assertThat(result.getUsername()).isEqualTo("bob2");
+        assertThat(result.getEmail()).isEqualTo("new@mail.com");
+        assertThat(result.getPhoneNumber()).isEqualTo("+998901234567");
+        assertThat(result.getWorkplace()).isEqualTo("Ish joyi");
+        assertThat(result.getPosition()).isEqualTo("Lavozim");
+    }
+
+    @Test
+    void adminUpdateUser_usernameTaken_throws() {
+        User target = User.builder().id(1L).username("bob").roles(new HashSet<>(Set.of(roleUser))).build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(target));
+        when(userRepository.existsByUsername("taken")).thenReturn(true);
+
+        behzoddev.testproject.dto.user.UpdateUserDto dto = new behzoddev.testproject.dto.user.UpdateUserDto(
+                "taken", null, null, null, null, null, null);
+
+        assertThatThrownBy(() -> userService.adminUpdateUser(1L, dto))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void adminUpdateUser_phoneTakenByAnother_throws() {
+        User target = User.builder().id(1L).username("bob").roles(new HashSet<>(Set.of(roleUser))).build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(target));
+        when(phoneNumberService.normalize(null, "901234567")).thenReturn("+998901234567");
+        when(userRepository.existsByPhoneNumberAndIdNot("+998901234567", 1L)).thenReturn(true);
+
+        behzoddev.testproject.dto.user.UpdateUserDto dto = new behzoddev.testproject.dto.user.UpdateUserDto(
+                "bob", null, null, null, "901234567", null, null);
+
+        assertThatThrownBy(() -> userService.adminUpdateUser(1L, dto))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(userRepository, never()).save(any());
+    }
+
     // ===== unlockUser =====
 
     @Test

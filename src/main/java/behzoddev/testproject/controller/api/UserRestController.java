@@ -3,8 +3,10 @@ package behzoddev.testproject.controller.api;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.dto.audit.RoleAuditLogDto;
 import behzoddev.testproject.dto.user.ChangeRoleDto;
+import behzoddev.testproject.dto.user.UpdateUserDto;
 import behzoddev.testproject.dto.user.UserDto;
 import behzoddev.testproject.entity.Role;
+import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.RoleAuditService;
 import behzoddev.testproject.service.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -31,22 +33,40 @@ public class UserRestController {
     public List<UserDto> getAllUsers() {
         return userRepository.findAll()
                 .stream()
-                .map(u -> UserDto.builder()
-                        .id(u.getId())
-                        .username(u.getUsername())
-                        .roles(u.getRoles().stream().map(Role::getRoleName).sorted().toList())
-                        .locked(!u.isAccountNonLocked())
-                        .email(u.getEmail())
-                        .phoneNumber(u.getPhoneNumber())
-                        .telegramId(u.getTelegramId())
-                        .telegramUsername(u.getTelegramUsername())
-                        .googleId(u.getGoogleId())
-                        .firstName(u.getFirstName())
-                        .lastName(u.getLastName())
-                        .workplace(u.getWorkplace())
-                        .jobTitle(u.getPosition())
-                        .build())
+                .map(this::toDto)
                 .toList();
+    }
+
+    // "Foydalanuvchilar" sahifasida ma'lumotlarni qo'lda tahrirlash uchun
+    // (foydalanuvchi so'rovi, 2026-09-07: "sahifasiga edit ni qo'shish
+    // kerak").
+    @PutMapping("/api/users/{id}")
+    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody UpdateUserDto dto) {
+        try {
+            User updated = userServiceImpl.adminUpdateUser(id, dto);
+            return ResponseEntity.ok(toDto(updated));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    private UserDto toDto(User u) {
+        return UserDto.builder()
+                .id(u.getId())
+                .username(u.getUsername())
+                .roles(u.getRoles().stream().map(Role::getRoleName).sorted().toList())
+                .locked(!u.isAccountNonLocked())
+                .email(u.getEmail())
+                .phoneNumber(u.getPhoneNumber())
+                .telegramId(u.getTelegramId())
+                .telegramUsername(u.getTelegramUsername())
+                .googleId(u.getGoogleId())
+                .firstName(u.getFirstName())
+                .lastName(u.getLastName())
+                .workplace(u.getWorkplace())
+                .jobTitle(u.getPosition())
+                .build();
     }
 
     // Rol o'zgarishlari audit tarixi — kim, qachon, kimga qanday rol
