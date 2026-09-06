@@ -48,6 +48,13 @@ function findActiveSubscription(subscriptions, userId) {
         .sort((a, b) => new Date(b.endDate) - new Date(a.endDate))[0];
 }
 
+function escapeHtml(text) {
+    if (text === null || text === undefined) return "";
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function renderUsers(users, subscriptions) {
     const tbody = document.getElementById("usersTableBody");
     tbody.innerHTML = "";
@@ -86,9 +93,23 @@ function renderUsers(users, subscriptions) {
             ? `<button class="action-btn" onclick="unlockUser(${user.id})" title="Blokdan chiqarish">🔓</button>`
             : "";
 
+        // Barcha ustunlar (foydalanuvchi so'rovi, 2026-09-06: "users
+        // jadvalidagi barcha ustunlarni Foydalanuvchilar sahifasiga
+        // chiqar" — Telegram/telefon dublikat muammosini debug qilish
+        // uchun). Bo'sh qiymatlar "—" bilan ko'rsatiladi.
+        const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ") || "—";
+
         tr.innerHTML = `
             <td>${user.id}</td>
             <td>${user.username} ${user.locked ? '<span title="Bloklangan">🔒</span>' : ""}</td>
+            <td>${escapeHtml(fullName)}</td>
+            <td>${escapeHtml(user.email) || "—"}</td>
+            <td>${escapeHtml(user.phoneNumber) || "—"}</td>
+            <td>${user.telegramId ?? "—"}</td>
+            <td>${user.telegramUsername ? "@" + escapeHtml(user.telegramUsername) : "—"}</td>
+            <td>${escapeHtml(user.googleId) || "—"}</td>
+            <td>${escapeHtml(user.workplace) || "—"}</td>
+            <td>${escapeHtml(user.jobTitle) || "—"}</td>
             <td><div class="roles-cell">${checkboxesHtml}</div></td>
             <td>${adminDurationText}</td>
             <td>

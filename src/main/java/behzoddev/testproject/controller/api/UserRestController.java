@@ -31,12 +31,21 @@ public class UserRestController {
     public List<UserDto> getAllUsers() {
         return userRepository.findAll()
                 .stream()
-                .map(u -> new UserDto(
-                        u.getId(),
-                        u.getUsername(),
-                        u.getRoles().stream().map(Role::getRoleName).sorted().toList(),
-                        !u.isAccountNonLocked()
-                ))
+                .map(u -> UserDto.builder()
+                        .id(u.getId())
+                        .username(u.getUsername())
+                        .roles(u.getRoles().stream().map(Role::getRoleName).sorted().toList())
+                        .locked(!u.isAccountNonLocked())
+                        .email(u.getEmail())
+                        .phoneNumber(u.getPhoneNumber())
+                        .telegramId(u.getTelegramId())
+                        .telegramUsername(u.getTelegramUsername())
+                        .googleId(u.getGoogleId())
+                        .firstName(u.getFirstName())
+                        .lastName(u.getLastName())
+                        .workplace(u.getWorkplace())
+                        .jobTitle(u.getPosition())
+                        .build())
                 .toList();
     }
 
