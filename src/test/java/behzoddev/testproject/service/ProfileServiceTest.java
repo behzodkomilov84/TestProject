@@ -21,6 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -51,6 +52,7 @@ class ProfileServiceTest {
     void changeUsername_available_updatesUsername() {
         User user = User.builder().id(1L).username("old").build();
         when(userRepository.existsByUsername("new")).thenReturn(false);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
         profileService.changeUsername(user, new ChangeUsernameDto("new"));
 
@@ -75,6 +77,7 @@ class ProfileServiceTest {
     @Test
     void changeEmail_newUniqueEmail_updates() {
         User user = User.builder().id(1L).email("old@mail.com").build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
 
         profileService.changeEmail(user, new ChangeEmailDto("new@mail.com"));
@@ -85,6 +88,7 @@ class ProfileServiceTest {
     @Test
     void changeEmail_sameAsCurrentIgnoringCase_allowedWithoutUniquenessCheck() {
         User user = User.builder().id(1L).email("Same@Mail.com").build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
         profileService.changeEmail(user, new ChangeEmailDto("same@mail.com"));
 
@@ -104,6 +108,7 @@ class ProfileServiceTest {
     @Test
     void changeEmail_alreadyTakenByAnotherUser_throwsConflict() {
         User user = User.builder().id(1L).email("old@mail.com").build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(userRepository.existsByEmail("taken@mail.com")).thenReturn(true);
 
         assertThatThrownBy(() -> profileService.changeEmail(user, new ChangeEmailDto("taken@mail.com")))
@@ -116,6 +121,7 @@ class ProfileServiceTest {
     @Test
     void changePhone_delegatesNormalizationToPhoneNumberService() {
         User user = User.builder().id(1L).build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(phoneNumberService.normalize("UZ", "901234567")).thenReturn("+998901234567");
 
         profileService.changePhone(user, new ChangePhoneDto("UZ", "901234567"));
@@ -140,6 +146,7 @@ class ProfileServiceTest {
     @Test
     void changePassword_correctCurrentPassword_updatesToEncodedNewPassword() {
         User user = User.builder().id(1L).password("ENCODED_OLD").build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("old", "ENCODED_OLD")).thenReturn(true);
         when(passwordEncoder.encode("newpass1")).thenReturn("ENCODED_NEW");
 

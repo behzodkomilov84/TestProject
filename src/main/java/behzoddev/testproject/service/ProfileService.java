@@ -57,6 +57,23 @@ public class ProfileService {
         this.telegramAvatarService = telegramAvatarService;
     }
 
+    // MUHIM, haqiqiy topilgan bug (2026-09-07): "user" (@AuthenticationPrincipal
+    // orqali kelgan) — HTTP sessiyaga LOGIN vaqtida saqlab qo'yilgan ESKI
+    // (stale) nusxa, har bir so'rovda bazadan qayta o'qilmaydi. Shu
+    // obyektni to'g'ridan-to'g'ri o'zgartirib saqlasak, sessiya
+    // boshlangandan keyin (masalan OWNER admin panelidan, yoki boshqa
+    // qurilma/tabdan) shu foydalanuvchiga kiritilgan BARCHA BOSHQA
+    // o'zgarishlar sessiyadagi eski qiymatlar bilan qayta yozilib,
+    // YO'QOLIB ketardi (masalan: admin panelidan telefon tuzatilgan
+    // bo'lsa-yu, foydalanuvchi shu eski sessiya bilan ismini o'zgartirsa,
+    // telefon yana eski — noto'g'ri — qiymatga qaytib qolardi). Shuning
+    // uchun HAR BIR quyidagi metod DOIM bazadan yangi (fresh) nusxa
+    // olib, faqat O'SHA nusxaga o'zgartirish kiritadi.
+    private User fresh(User user) {
+        return userRepository.findById(user.getId())
+                .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Foydalanuvchi topilmadi"));
+    }
+
     // 🔹 смена имени
     @Transactional
     public void changeUsername(User user, ChangeUsernameDto changeUsernameDto) {
@@ -67,8 +84,9 @@ public class ProfileService {
             );
         }
 
-        user.setUsername(changeUsernameDto.newUsername());
-        userRepository.save(user);
+        User target = fresh(user);
+        target.setUsername(changeUsernameDto.newUsername());
+        userRepository.save(target);
     }
 
     // 🔹 email qo'shish/o'zgartirish (parolni tiklashda zaxira kanal sifatida ishlatiladi)
@@ -81,14 +99,15 @@ public class ProfileService {
             throw new ResponseStatusException(BAD_REQUEST, "Email bo'sh bo'lishi mumkin emas");
         }
 
-        boolean sameAsBefore = newEmail.equalsIgnoreCase(user.getEmail());
+        User target = fresh(user);
+        boolean sameAsBefore = newEmail.equalsIgnoreCase(target.getEmail());
 
         if (!sameAsBefore && userRepository.existsByEmail(newEmail)) {
             throw new ResponseStatusException(CONFLICT, "Bu email allaqachon band");
         }
 
-        user.setEmail(newEmail);
-        userRepository.save(user);
+        target.setEmail(newEmail);
+        userRepository.save(target);
     }
 
     // 🔹 telefon raqam qo'shish/o'zgartirish — PhoneNumberService orqali
@@ -105,8 +124,9 @@ public class ProfileService {
             throw new ResponseStatusException(CONFLICT, "Bu telefon raqam allaqachon band");
         }
 
-        user.setPhoneNumber(normalized);
-        userRepository.save(user);
+        User target = fresh(user);
+        target.setPhoneNumber(normalized);
+        userRepository.save(target);
     }
 
     // 🔹 Telegramni uzish — boshqa Telegram hisobini bog'lash uchun
@@ -125,38 +145,43 @@ public class ProfileService {
             throw new ResponseStatusException(BAD_REQUEST, "Telegram ulanmagan");
         }
 
-        user.setTelegramId(null);
-        userRepository.save(user);
+        User target = fresh(user);
+        target.setTelegramId(null);
+        userRepository.save(target);
     }
 
     // 🔹 Ism/Familiya (foydalanuvchi so'rovi, 2026-09-06).
     @Transactional
     public void changeFullName(User user, ChangeFullNameDto dto) {
-        user.setFirstName(dto.firstName().trim());
-        user.setLastName(dto.lastName().trim());
-        userRepository.save(user);
+        User target = fresh(user);
+        target.setFirstName(dto.firstName().trim());
+        target.setLastName(dto.lastName().trim());
+        userRepository.save(target);
     }
 
     // 🔹 Ish yoki o'qish joyi.
     @Transactional
     public void changeWorkplace(User user, ChangeWorkplaceDto dto) {
-        user.setWorkplace(dto.workplace().trim());
-        userRepository.save(user);
+        User target = fresh(user);
+        target.setWorkplace(dto.workplace().trim());
+        userRepository.save(target);
     }
 
     // 🔹 Lavozimi.
     @Transactional
     public void changeJobTitle(User user, ChangeJobTitleDto dto) {
-        user.setPosition(dto.jobTitle().trim());
-        userRepository.save(user);
+        User target = fresh(user);
+        target.setPosition(dto.jobTitle().trim());
+        userRepository.save(target);
     }
 
     // 🔹 Profil rasmi — qo'lda yuklash (drag&drop yoki fayl tanlash).
     @Transactional
     public String uploadAvatar(User user, MultipartFile file) {
         String url = fileStorageService.storeAvatarImage(file);
-        user.setAvatarUrl(url);
-        userRepository.save(user);
+        User target = fresh(user);
+        target.setAvatarUrl(url);
+        userRepository.save(target);
         return url;
     }
 
@@ -173,8 +198,9 @@ public class ProfileService {
             throw new ResponseStatusException(NOT_FOUND, "Telegram profilida rasm topilmadi");
         }
 
-        user.setAvatarUrl(url);
-        userRepository.save(user);
+        User target = fresh(user);
+        target.setAvatarUrl(url);
+        userRepository.save(target);
         return url;
     }
 
@@ -188,8 +214,9 @@ public class ProfileService {
             );
         }
 
-        user.setPassword(passwordEncoder.encode(dto.newPassword()));
-        userRepository.save(user);
+        User target = fresh(user);
+        target.setPassword(passwordEncoder.encode(dto.newPassword()));
+        userRepository.save(target);
     }
 
     @Transactional(readOnly = true)

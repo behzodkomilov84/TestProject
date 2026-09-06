@@ -136,12 +136,22 @@ public class GoogleLoginService {
             return linked; // allaqachon o'ziga ulangan
         }
 
-        currentUser.setGoogleId(info.sub());
-        if (currentUser.getAvatarUrl() == null) currentUser.setAvatarUrl(info.picture());
-        if (currentUser.getFirstName() == null) currentUser.setFirstName(info.given_name());
-        if (currentUser.getLastName() == null) currentUser.setLastName(info.family_name());
+        // MUHIM, haqiqiy topilgan bug (2026-09-07) — TelegramWidgetLoginService
+        // bilan bir xil muammo: "currentUser" (@AuthenticationPrincipal) HTTP
+        // sessiyaga login vaqtida saqlangan ESKI nusxa, joriy so'rov uchun
+        // bazadan qayta o'qilmaydi. To'g'ridan-to'g'ri saqlasak, sessiya
+        // boshlangandan keyingi (masalan admin panelidan) BARCHA boshqa
+        // o'zgarishlar yo'qolib ketardi. Shuning uchun bazadan yangi nusxa
+        // olinadi.
+        User fresh = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new IllegalStateException("⛔ Foydalanuvchi topilmadi"));
 
-        return userRepository.save(currentUser);
+        fresh.setGoogleId(info.sub());
+        if (fresh.getAvatarUrl() == null) fresh.setAvatarUrl(info.picture());
+        if (fresh.getFirstName() == null) fresh.setFirstName(info.given_name());
+        if (fresh.getLastName() == null) fresh.setLastName(info.family_name());
+
+        return userRepository.save(fresh);
     }
 
     private String redirectUri() {

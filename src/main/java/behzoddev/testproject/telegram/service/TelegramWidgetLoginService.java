@@ -99,15 +99,28 @@ public class TelegramWidgetLoginService {
             return linked; // allaqachon o'ziga ulangan
         }
 
-        currentUser.setTelegramId(telegramId);
-        currentUser.setTelegramUsername(params.get("username"));
-        if (currentUser.getAvatarUrl() == null) {
-            currentUser.setAvatarUrl(telegramAvatarService.fetchAvatarUrl(telegramId));
-        }
-        if (currentUser.getFirstName() == null) currentUser.setFirstName(params.get("first_name"));
-        if (currentUser.getLastName() == null) currentUser.setLastName(params.get("last_name"));
+        // MUHIM, haqiqiy topilgan bug (2026-09-07): "currentUser"
+        // (@AuthenticationPrincipal) — HTTP sessiyaga login vaqtida
+        // saqlab qo'yilgan ESKI (stale) nusxa, joriy so'rov uchun
+        // bazadan qayta o'qilmaydi. Shu obyektni to'g'ridan-to'g'ri
+        // o'zgartirib saqlasak, sessiya boshlangandan keyin (masalan
+        // OWNER admin panelidan) shu foydalanuvchiga kiritilgan BARCHA
+        // boshqa o'zgarishlar (telefon, ism va h.k.) sessiyadagi ESKI
+        // qiymatlar bilan qayta yozilib, YO'QOLIB ketardi. Shuning uchun
+        // DOIM bazadan yangi (fresh) nusxa olinadi, faqat SHU nusxaga
+        // yangi maydonlar qo'shilib saqlanadi.
+        User fresh = userRepository.findById(currentUser.getId())
+                .orElseThrow(() -> new InvalidTelegramAuthException("⛔ Foydalanuvchi topilmadi"));
 
-        return userRepository.save(currentUser);
+        fresh.setTelegramId(telegramId);
+        fresh.setTelegramUsername(params.get("username"));
+        if (fresh.getAvatarUrl() == null) {
+            fresh.setAvatarUrl(telegramAvatarService.fetchAvatarUrl(telegramId));
+        }
+        if (fresh.getFirstName() == null) fresh.setFirstName(params.get("first_name"));
+        if (fresh.getLastName() == null) fresh.setLastName(params.get("last_name"));
+
+        return userRepository.save(fresh);
     }
 
     // Telegram'ning rasmiy tekshirish algoritmi: "hash"dan boshqa barcha
