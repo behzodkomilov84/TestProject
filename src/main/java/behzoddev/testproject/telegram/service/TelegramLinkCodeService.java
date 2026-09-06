@@ -55,6 +55,7 @@ public class TelegramLinkCodeService {
 
         User user = link.getUser();
         user.setTelegramId(telegramId); // User.telegramId поле уже есть
+        user.setTelegramUsername(message.getFrom().getUserName());
         // Agar profilida hali rasm bo'lmasa — Telegram profilidan avtomatik
         // olib qo'yamiz (foydalanuvchi so'rovi, 2026-09-06). Mavjud
         // (masalan qo'lda yuklangan) rasm ustidan YOZILMAYDI.

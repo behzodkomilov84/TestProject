@@ -19,8 +19,10 @@ public record ProfileDto(
         String workplace,
         String jobTitle,
         String avatarUrl,
-        // Telegram'ning o'zi (username/id) emas, faqat "bog'langan/
-        // bog'lanmagan" holati ko'rsatiladi — profile.js shunga qarab
-        // status chip'ini chizadi.
-        boolean telegramConnected
+        boolean telegramConnected,
+        // Telegram'ning o'zi ko'rsatadigan @username — "qaysi Telegram
+        // hisobiga bog'langan" degan savolga inson TANIY oladigan javob
+        // (foydalanuvchi so'rovi, 2026-09-06). NULL bo'lishi mumkin
+        // (Telegram'da username ixtiyoriy).
+        String telegramUsername
 ) {}

@@ -63,7 +63,8 @@ public class ProfileController {
                 user.getWorkplace(),
                 user.getPosition(),
                 user.getAvatarUrl(),
-                user.getTelegramId() != null
+                user.getTelegramId() != null,
+                user.getTelegramUsername()
         );
     }
 

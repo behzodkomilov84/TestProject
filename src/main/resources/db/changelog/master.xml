@@ -50,6 +50,7 @@
     <include file="/db/changelog/feedback.sql"/>
     <include file="/db/changelog/user-profile-fields.sql"/>
     <include file="/db/changelog/google-login.sql"/>
+    <include file="/db/changelog/telegram-username.sql"/>
 
 
 </databaseChangeLog>

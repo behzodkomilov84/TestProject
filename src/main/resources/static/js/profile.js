@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("workplace").innerText = data.workplace || "— (kiritilmagan)";
             document.getElementById("jobtitle").innerText = data.jobTitle || "— (kiritilmagan)";
             renderAvatar(data.avatarUrl);
-            renderTelegramStatus(data.telegramConnected);
+            renderTelegramStatus(data.telegramConnected, data.telegramUsername);
 
             loadPaymentConfig(data.roles || []);
         });
@@ -81,17 +81,31 @@ function renderAvatar(avatarUrl) {
     }
 }
 
-function renderTelegramStatus(connected) {
+function renderTelegramStatus(connected, telegramUsername) {
     const el = document.getElementById("telegram-status");
     const syncBtn = document.getElementById("avatar-telegram-sync-btn");
     const disconnectBtn = document.getElementById("telegram-disconnect-btn");
 
+    // "@username" — qaysi Telegram hisobiga bog'langanini foydalanuvchi
+    // TANIY olishi uchun (foydalanuvchi so'rovi, 2026-09-06: "qaysi
+    // telegram accountga bog'langan, shu yerga qo'sh"). Telegram'da
+    // username ixtiyoriy — bo'lmasa, shunchaki "✅ Bog'langan".
+    const label = connected
+        ? (telegramUsername ? `✅ Bog'langan (@${escapeHtmlText(telegramUsername)})` : "✅ Bog'langan")
+        : "Bog'lanmagan";
+
     el.innerHTML = connected
-        ? `<span class="telegram-status-chip telegram-status-connected">✅ Bog'langan</span>`
-        : `<span class="telegram-status-chip telegram-status-disconnected">Bog'lanmagan</span>`;
+        ? `<span class="telegram-status-chip telegram-status-connected">${label}</span>`
+        : `<span class="telegram-status-chip telegram-status-disconnected">${label}</span>`;
 
     syncBtn.style.display = connected ? "inline-block" : "none";
     disconnectBtn.style.display = connected ? "inline" : "none";
+}
+
+function escapeHtmlText(text) {
+    const div = document.createElement("div");
+    div.textContent = text ?? "";
+    return div.innerHTML;
 }
 
 // "🔌 Uzish" — boshqa Telegram hisobi bilan qayta bog'lash uchun

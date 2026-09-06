@@ -52,6 +52,14 @@ public class User implements UserDetails {
     @Column(name = "telegram_id", unique = true)
     private Long telegramId;
 
+    // Telegram'ning o'zi ko'rsatadigan @username (raqamli telegramId
+    // emas) — profilda "qaysi Telegram hisobiga bog'langan" degan
+    // savolga inson TANIY oladigan javob berish uchun (foydalanuvchi
+    // so'rovi, 2026-09-06). Har bir Telegram foydalanuvchisida username
+    // bo'lmasligi ham mumkin (Telegram'da ixtiyoriy) — shu holda NULL.
+    @Column(name = "telegram_username", length = 64)
+    private String telegramUsername;
+
     // Google orqali kirish — Google'ning barqaror "sub" (subject)
     // identifikatori (foydalanuvchi so'rovi, 2026-09-06). telegramId bilan
     // bir xil g'oya, faqat String (Google "sub"i String, garchi ko'rinishda

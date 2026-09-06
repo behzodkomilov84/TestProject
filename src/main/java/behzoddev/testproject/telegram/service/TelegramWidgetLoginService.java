@@ -5,7 +5,6 @@ import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.User;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,7 +35,6 @@ import java.util.stream.Collectors;
 // so'rovni HMAC-SHA256 imzosi (bot tokeni orqali) bilan tekshirish SHART —
 // aks holda istalgan kishi o'zini istalgan Telegram foydalanuvchisi
 // sifatida ko'rsatib, login qila olardi.
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TelegramWidgetLoginService {
@@ -71,9 +69,6 @@ public class TelegramWidgetLoginService {
     // (resolve-yoki-yarat) saqlanadi.
     @Transactional
     public User resolveUser(Map<String, String> params, User currentUser) {
-        log.info("[TG-DEBUG] resolveUser chaqirildi: params={}, currentUser={}", params,
-                currentUser != null ? currentUser.getUsername() + "(id=" + currentUser.getId() + ")" : "null");
-
         if (!verifySignature(params)) {
             throw new InvalidTelegramAuthException("❌ Telegram imzosi noto'g'ri — bu so'rov soxta bo'lishi mumkin.");
         }
@@ -85,8 +80,6 @@ public class TelegramWidgetLoginService {
 
         long telegramId = Long.parseLong(params.get("id"));
         Optional<User> existingByTelegram = userRepository.findByTelegramId(telegramId);
-        log.info("[TG-DEBUG] telegramId={}, existingByTelegram={}", telegramId,
-                existingByTelegram.map(u -> u.getUsername() + "(id=" + u.getId() + ")").orElse("YO'Q"));
 
         if (currentUser != null) {
             return linkToCurrentUser(telegramId, params, currentUser, existingByTelegram);
@@ -107,6 +100,7 @@ public class TelegramWidgetLoginService {
         }
 
         currentUser.setTelegramId(telegramId);
+        currentUser.setTelegramUsername(params.get("username"));
         if (currentUser.getAvatarUrl() == null) {
             currentUser.setAvatarUrl(telegramAvatarService.fetchAvatarUrl(telegramId));
         }
@@ -170,27 +164,33 @@ public class TelegramWidgetLoginService {
         random.nextBytes(randomPasswordBytes);
         String randomPassword = Base64.getUrlEncoder().withoutPadding().encodeToString(randomPasswordBytes);
 
-        log.info("[TG-DEBUG] createUser boshlandi: telegramId={}", telegramId);
-
-        String username = generateUniqueUsername(params.get("username"), telegramId);
-        String avatarUrl = telegramAvatarService.fetchAvatarUrl(telegramId);
-
         User user = User.builder()
-                .username(username)
+                .username(generateUniqueUsername(params.get("username"), telegramId))
                 .password(passwordEncoder.encode(randomPassword))
                 .roles(roles)
                 .telegramId(telegramId)
+                .telegramUsername(params.get("username"))
                 .firstName(params.get("first_name"))
                 .lastName(params.get("last_name"))
-                .avatarUrl(avatarUrl)
+                .avatarUrl(telegramAvatarService.fetchAvatarUrl(telegramId))
                 .emailVerified(true)
                 .build();
 
-        log.info("[TG-DEBUG] save() dan OLDIN: user.getTelegramId()={}", user.getTelegramId());
-        User saved = userRepository.save(user);
-        log.info("[TG-DEBUG] save() dan KEYIN: saved.getId()={}, saved.getTelegramId()={}",
-                saved.getId(), saved.getTelegramId());
-        return saved;
+        return userRepository.save(user);
+    }
+
+    // "tg_..." avtomatik yaratilgan, hali hech qanday boshqa haqiqiy
+    // ma'lumot (email) qo'shilmagan hisob — TelegramPhoneConfirmController
+    // shu belgi bo'yicha "bu shunchaki bir martalik keraksiz hisobmi,
+    // xavfsiz o'chirsa bo'ladimi" degan qarorni qabul qiladi (foydalanuvchi
+    // so'rovi, 2026-09-06: "Yangi foydalanuvchi yaratmasdan" — telefon
+    // raqami allaqachon BOSHQA hisobda bo'lsa, shu yerda yaratilgan
+    // vaqtinchalik hisob shu usul bilan xavfsiz tashlab yuboriladi).
+    public static boolean isFreshTelegramPlaceholder(User user) {
+        return user.getTelegramId() != null
+                && user.getEmail() == null
+                && user.getUsername() != null
+                && user.getUsername().startsWith("tg_");
     }
 
     private String generateUniqueUsername(String telegramUsername, long telegramId) {

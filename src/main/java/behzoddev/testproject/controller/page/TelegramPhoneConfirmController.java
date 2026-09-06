@@ -3,6 +3,7 @@ package behzoddev.testproject.controller.page;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.PhoneNumberService;
+import behzoddev.testproject.telegram.service.TelegramWidgetLoginService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
@@ -13,13 +14,12 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.FlashMap;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.web.servlet.support.SessionFlashMapManager;
 
 // "Telegram orqali kirish"da HAR SAFAR (hisobda allaqachon bor bo'lsa
 // ham) telefon raqamni so'rash/tasdiqlash bosqichi — MAJBURIY
@@ -52,13 +52,23 @@ public class TelegramPhoneConfirmController {
         return "telegramPhoneConfirm";
     }
 
+    // Haqiqiy topilgan bug (2026-09-06): foydalanuvchi Telegram orqali
+    // kirsa-yu, keyin "🔌 Uzish" bilan uzsa, keyingi urinishda
+    // findByTelegramId topolmasligi sababli HAR SAFAR YANGI "tg_..."
+    // hisob yaratilardi — garchi u aslida telefon raqami bo'yicha
+    // ALLAQACHON mavjud (masalan an'anaviy ro'yxatdan o'tgan) hisobga
+    // tegishli bo'lsa ham. Endi: agar shu telefon raqam BOSHQA hisobda
+    // bo'lsa — O'SHA hisobga ulanamiz, shu oqimda hozirgina yaratilgan
+    // "bo'sh" (email'siz, "tg_..." nomli) hisob esa xavfsiz o'chiriladi
+    // ("Yangi foydalanuvchi yaratmasdan" — foydalanuvchi so'rovi).
+    @Transactional
     @PostMapping("/telegram-phone-confirm")
     public String submit(@RequestParam String phoneCountry,
                           @RequestParam String phoneNumber,
                           HttpServletRequest request, HttpServletResponse response,
                           RedirectAttributes redirectAttributes) {
-        User user = pendingUser(request);
-        if (user == null) {
+        User pendingUser = pendingUser(request);
+        if (pendingUser == null) {
             return "redirect:/login";
         }
 
@@ -75,11 +85,10 @@ public class TelegramPhoneConfirmController {
             return "redirect:/telegram-phone-confirm";
         }
 
-        log.info("[TG-DEBUG] phone-confirm submit: user.getId()={}, save()dan OLDIN telegramId={}",
-                user.getId(), user.getTelegramId());
+        User user = resolveByPhoneOrKeepPending(pendingUser, normalized);
+
         user.setPhoneNumber(normalized);
-        User saved = userRepository.save(user);
-        log.info("[TG-DEBUG] phone-confirm submit: save()dan KEYIN telegramId={}", saved.getTelegramId());
+        userRepository.save(user);
 
         request.getSession(true).removeAttribute(PENDING_USER_SESSION_KEY);
 
@@ -93,17 +102,45 @@ public class TelegramPhoneConfirmController {
         return "redirect:/index";
     }
 
+    private User resolveByPhoneOrKeepPending(User pendingUser, String normalizedPhone) {
+        var existingByPhone = userRepository.findByPhoneNumber(normalizedPhone)
+                .filter(u -> !u.getId().equals(pendingUser.getId()));
+
+        if (existingByPhone.isEmpty()) {
+            return pendingUser;
+        }
+
+        User target = existingByPhone.get();
+
+        // Faqat "hozirgina, shu Telegram oqimida, hech qanday boshqa
+        // ma'lumotsiz yaratilgan" hisobni "tashlab yuboramiz" — real
+        // (masalan email'i bor) hisobni HECH QACHON o'chirmaymiz, faqat
+        // "bog'lash imkonsiz" xabarini beramiz.
+        if (!TelegramWidgetLoginService.isFreshTelegramPlaceholder(pendingUser)) {
+            return pendingUser;
+        }
+
+        if (target.getTelegramId() == null) {
+            target.setTelegramId(pendingUser.getTelegramId());
+            target.setTelegramUsername(pendingUser.getTelegramUsername());
+        }
+        if (target.getAvatarUrl() == null) target.setAvatarUrl(pendingUser.getAvatarUrl());
+        if (target.getFirstName() == null) target.setFirstName(pendingUser.getFirstName());
+        if (target.getLastName() == null) target.setLastName(pendingUser.getLastName());
+
+        log.info("Telegram orqali kirish: telefon {} bo'yicha mavjud hisobga ({}) ulandi, vaqtinchalik hisob ({}) o'chirildi",
+                normalizedPhone, target.getUsername(), pendingUser.getUsername());
+        userRepository.delete(pendingUser);
+
+        return target;
+    }
+
     private User pendingUser(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
         Long pendingUserId = session != null ? (Long) session.getAttribute(PENDING_USER_SESSION_KEY) : null;
-        log.info("[TG-DEBUG] pendingUser: sessionId={}, pendingUserId={}",
-                session != null ? session.getId() : "YO'Q", pendingUserId);
         if (pendingUserId == null) {
             return null;
         }
-        User user = userRepository.findById(pendingUserId).orElse(null);
-        log.info("[TG-DEBUG] pendingUser topildi: username={}, telegramId={}",
-                user != null ? user.getUsername() : "TOPILMADI", user != null ? user.getTelegramId() : null);
-        return user;
+        return userRepository.findById(pendingUserId).orElse(null);
     }
 }
