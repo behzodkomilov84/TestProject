@@ -133,23 +133,36 @@ public class TelegramPhoneConfirmController {
             return pendingUser;
         }
 
-        if (target.getTelegramId() == null) {
-            target.setTelegramId(pendingUser.getTelegramId());
-            target.setTelegramUsername(pendingUser.getTelegramUsername());
-        }
-        if (target.getAvatarUrl() == null) target.setAvatarUrl(pendingUser.getAvatarUrl());
-        if (target.getFirstName() == null) target.setFirstName(pendingUser.getFirstName());
-        if (target.getLastName() == null) target.setLastName(pendingUser.getLastName());
+        // Kerakli qiymatlarni OLDINDAN o'zgaruvchilarga saqlab olamiz —
+        // pastda pendingUser o'chiriladi.
+        Long telegramId = pendingUser.getTelegramId();
+        String telegramUsername = pendingUser.getTelegramUsername();
+        String avatarUrl = pendingUser.getAvatarUrl();
+        String firstName = pendingUser.getFirstName();
+        String lastName = pendingUser.getLastName();
 
         log.info("Telegram orqali kirish: telefon {} bo'yicha mavjud hisobga ({}) ulandi, vaqtinchalik hisob ({}) o'chirildi",
                 normalizedPhone, target.getUsername(), pendingUser.getUsername());
-        // FK RESTRICT jadvallarni oldindan tozalamasdan to'g'ridan-to'g'ri
-        // o'chirish 409 bilan tugaydi (haqiqiy topilgan bug, 2026-09-06:
-        // "Bu amalni bajarib bo'lmadi — bog'liq ma'lumotlar mavjud" — hatto
-        // "yangi" ko'ringan hisobda ham avvalgi urinishlardan bildirishnoma
-        // va h.k. qoldiq bo'lishi mumkin edi).
+
+        // MUHIM TARTIB (haqiqiy topilgan bug, 2026-09-06: "Duplicate entry
+        // ... for key 'users.telegram_id'"): Hibernate bitta flush ichida
+        // BARCHA UPDATE'larni BARCHA DELETE'lardan OLDIN bajaradi — kod
+        // qatorlari tartibidan qat'i nazar. Shuning uchun "pendingUser"ni
+        // (hali telegram_id=shu qiymatga ega) avval haqiqatan ham
+        // o'CHIRIB (flush bilan) bo'lmasdan, "target"ga bir xil
+        // telegram_id'ni yozib bo'lmaydi — aks holda UNIQUE cheklov vaqtincha
+        // ikkalasida ham bir xil qiymat bo'lib qolib, xato beradi.
         userServiceImpl.deleteFkRestrictedRowsBeforeUserDelete(pendingUser.getId());
         userRepository.delete(pendingUser);
+        userRepository.flush();
+
+        if (target.getTelegramId() == null) {
+            target.setTelegramId(telegramId);
+            target.setTelegramUsername(telegramUsername);
+        }
+        if (target.getAvatarUrl() == null) target.setAvatarUrl(avatarUrl);
+        if (target.getFirstName() == null) target.setFirstName(firstName);
+        if (target.getLastName() == null) target.setLastName(lastName);
 
         return target;
     }
