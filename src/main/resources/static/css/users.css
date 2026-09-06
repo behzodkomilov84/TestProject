@@ -56,18 +56,24 @@ body {
    qiyinlashgan edi. */
 .users-table {
     width: 100%;
-    min-width: 900px;
+    min-width: 1200px;
     border-collapse: collapse;
     border: 1px solid #d0d5dd;
     font-size: 13px;
     font-weight: 600;
 }
 
+/* Foydalanuvchi so'rovi, 2026-09-06: "Ish/o'qish joyi ni enini kengaytir,
+   satrni kengaytirvoryapti" — uzun matn (masalan ish joyi nomi) katakka
+   sig'masdan pastga o'ralib, butun qatorni vertikal cho'zib yuborardi.
+   Endi matn bir qatorda qoladi, jadval esa (.table-scroll orqali) kerak
+   bo'lsa gorizontal aylantiriladi. */
 .users-table th,
 .users-table td {
     padding: 8px 10px;
     border: 1px solid #d0d5dd;
     text-align: left;
+    white-space: nowrap;
 }
 
 .users-table th {
