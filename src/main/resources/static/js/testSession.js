@@ -114,10 +114,18 @@ document.addEventListener("DOMContentLoaded", () => {
 // yozib qo'ygan), test sessiyasining OXIRIGACHA (5-savolni yechayotganda
 // ham) ko'rinib turadi — foydalanuvchi so'rovi bo'yicha. Boshqa hollarda
 // (bosh menyudan to'g'ridan-to'g'ri kirilganda) butunlay yashirin qoladi.
+// Foydalanuvchi so'rovi, 2026-09-07: "Тестларда ҳаммасида 'Орқага'
+// қайтиш имконияти бўлсин" — avval bu tugma FAQAT kurs darsidan
+// kelinganda ko'rinardi (returnCourseId bo'lsa), boshqa hollarda
+// (bosh menyudan to'g'ridan-to'g'ri kirilgan oddiy/hard test) umuman
+// yo'q edi. Endi HAR DOIM ko'rinadi: kurs konteksti bo'lsa — o'sha
+// darsga, bo'lmasa — testConfigPage'ga (qayta sozlash) qaytaradi.
+// Test hali TUGAMAGAN bo'lsa — javoblar saqlanmasligi haqida
+// tasdiqlash so'raladi (tasodifan bosib, javoblarni yo'qotib
+// qo'ymasligi uchun); natija allaqachon ko'rsatilgan bo'lsa — to'g'ridan
+// -to'g'ri qaytadi.
 function setupReturnToTopicButton() {
     const courseId = sessionStorage.getItem("returnCourseId");
-    if (!courseId) return;
-
     const sectionId = sessionStorage.getItem("returnSectionId");
     // Kurs sahifasidagi dars KARTOCHKALARI ro'yxatidan ("🎯 Mavzuga oid
     // testlarni yechish", courseDetail.js) kelingan bo'lsa — "sectionId"
@@ -126,13 +134,25 @@ function setupReturnToTopicButton() {
     // /courses/{courseId}?focus= orqali ANIQ shu kartochkaga qaytariladi.
     const focusSectionId = sessionStorage.getItem("returnFocusSectionId");
     const btn = document.getElementById("returnToTopicBtn");
-    btn.classList.remove("hidden");
-    btn.onclick = () => {
-        location.href = sectionId
+
+    const destination = courseId
+        ? (sectionId
             ? `/courses/${courseId}/sections/${sectionId}`
             : focusSectionId
                 ? `/courses/${courseId}?focus=${focusSectionId}`
-                : `/courses/${courseId}`;
+                : `/courses/${courseId}`)
+        : "/testConfigPage";
+
+    btn.textContent = courseId ? "🔙 Darsga qaytish" : "⬅ Orqaga";
+    btn.classList.remove("hidden");
+    btn.onclick = async () => {
+        if (!testState.finished) {
+            const proceed = await showConfirmModal(
+                "❗ Testdan chiqmoqchimisiz? Joriy javoblaringiz saqlanmaydi."
+            );
+            if (!proceed) return;
+        }
+        location.href = destination;
     };
 }
 
