@@ -42,10 +42,12 @@ document.addEventListener("DOMContentLoaded", () => {
     // (avval umuman ko'rsatilmasdi ham). Endi ham xuddi shunday: daraxt
     // ko'rinadi (Yo'nalish/Bo'lim darajasida — QAYSI fanlardan hard
     // savollar olinishini tanlash uchun), lekin Mavzu/Dars darajalari
-    // yashiriladi — ular AVTOMATIK to'liq (default-checked) qolaveradi,
-    // shuning uchun checked leaf-topic ro'yxati "shu fan(lar)dagi BARCHA
-    // darslar" bilan bir xil bo'lib chiqadi (renderHierarchy'dagi CSS
-    // klassi orqali, .hierarchy-tree[data-mode="hard"]).
+    // yashiriladi. Checkbox'lar ENDI default-checked EMAS (foydalanuvchi
+    // so'rovi, 2026-09-07) — foydalanuvchi kerakli Bo'lim(lar)ni belgilasa,
+    // cascadeDown() shu Bo'limning BARCHA (yashirin) Mavzu/Dars
+    // checkbox'larini avtomatik belgilaydi, shuning uchun natija baribir
+    // "shu fan(lar)dagi BARCHA darslar" bilan bir xil bo'lib chiqadi
+    // (renderHierarchy'dagi CSS klassi orqali, .hierarchy-tree[data-mode="hard"]).
 
     // Faqat kurs darsidan ("🎯 Darsga oid testlarni yechish") kelinganda
     // ko'rinadi — boshqa hollarda (bosh menyudan to'g'ridan-to'g'ri
@@ -200,13 +202,18 @@ function fieldKeyOf(field) {
     return field.id ?? "none";
 }
 
+// MUHIM: checkbox'lar ENDI default-checked EMAS (foydalanuvchi so'rovi,
+// 2026-09-07: "Птичкасини по умолчанию олиб ташла" — avval hammasi
+// belgilangan holda boshlanardi, endi foydalanuvchi o'zi kerakli
+// dars(lar)ni tanlaydi; "☑️ Barchasini belgilash" tugmasi bir zumda
+// hammasini belgilash imkonini beradi).
 function renderFieldNode(field) {
     const sciencesHtml = field.sciences.map(renderScienceNode).join("");
     return `
         <details class="hierarchy-field" data-field-id="${field.id ?? ""}">
             <summary>
                 <label onclick="event.stopPropagation()">
-                    <input type="checkbox" class="field-checkbox" checked>
+                    <input type="checkbox" class="field-checkbox">
                     <span class="hierarchy-name">${escapeHierarchyHtml(field.name)}</span>
                 </label>
             </summary>
@@ -221,7 +228,7 @@ function renderScienceNode(science) {
         <details class="hierarchy-science" data-science-id="${science.id}">
             <summary>
                 <label onclick="event.stopPropagation()">
-                    <input type="checkbox" class="science-checkbox" checked>
+                    <input type="checkbox" class="science-checkbox">
                     <span class="hierarchy-name">${escapeHierarchyHtml(science.name)}</span>
                 </label>
             </summary>
@@ -236,7 +243,7 @@ function renderSectionNode(section) {
         <details class="hierarchy-section" data-section-id="${section.id ?? ""}">
             <summary>
                 <label onclick="event.stopPropagation()">
-                    <input type="checkbox" class="section-checkbox" checked>
+                    <input type="checkbox" class="section-checkbox">
                     <span class="hierarchy-name">${escapeHierarchyHtml(section.name)}</span>
                 </label>
             </summary>
@@ -248,7 +255,7 @@ function renderSectionNode(section) {
 function renderTopicRow(topic) {
     return `
         <label class="topic-row" data-topic-id="${topic.id}">
-            <input type="checkbox" class="topic-checkbox" value="${topic.id}" checked>
+            <input type="checkbox" class="topic-checkbox" value="${topic.id}">
             <span class="hierarchy-name">${escapeHierarchyHtml(topic.name)}</span>
             <span class="topic-count">${topic.questionCount} ta test</span>
         </label>
