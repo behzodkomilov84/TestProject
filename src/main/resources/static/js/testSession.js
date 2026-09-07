@@ -179,7 +179,7 @@ function startTimer(min) {
 
         if (time < 0) {
             stopTimer();  // ✅ правильно
-            finishTest();
+            finishTest(true); // vaqt tugadi — tasdiqlash so'ralmaydi
         }
     }, 1000);
 }
@@ -236,7 +236,12 @@ function renderQuestions(questions) {
 
                 <button onclick="goToPreviousQuestion()">AVVALGI</button>
                 <button onclick="goToNextQuestion()">KEYINGI</button>
-                <button onclick="finishTest()">Test Natijasi</button>
+                <!-- Har bir savolda ko'rinadi — hali barcha savollarga
+                     javob berilmagan bo'lsa ham, shu yerdan testni
+                     yakunlab, natijani darhol ko'rish mumkin (tasdiqlash
+                     so'ralgandan keyin), foydalanuvchi so'rovi,
+                     2026-09-07. -->
+                <button onclick="finishTest()">🏁 Yakunlash</button>
             </div>
         `;
         container.appendChild(block);
@@ -353,7 +358,29 @@ function startTest() {
     document.body.classList.add("test-started");
 }
 
-function finishTest() {
+// Har qanday savolda "🏁 Yakunlash" bosilganda — barcha savollarga javob
+// berilmagan bo'lsa ham, testni SHU YERDA yakunlash imkoni (foydalanuvchi
+// so'rovi, 2026-09-07: "тестни ҳали тугатмасдан шу жойида якунлаш
+// тугмаси қўшилсин. Дарҳол натижа кўрсатилсин. Истаса, давом этишни
+// боссин"). Avval bu holatda faqat xato beriladi va yakunlash butunlay
+// bloklangan edi — endi tasdiqlash so'raladi: rozi bo'lsa (javobsiz
+// savollar xato hisoblanib) darhol natija ko'rsatiladi, "Yo'q" desa —
+// hech narsa o'zgarmaydi, test xuddi shu savolda davom etaveradi.
+//
+// "force" — vaqt tugab AVTOMATIK chaqirilganda (startTimer) true beriladi:
+// bu holatda so'rash MA'NOSIZ (vaqt allaqachon tugagan, "davom etish"
+// degan variant yo'q), shuning uchun tasdiqlashsiz to'g'ridan-to'g'ri
+// natija ko'rsatiladi.
+async function finishTest(force = false) {
+
+    const unanswered = testState.questions.filter(q => !testState.answers.has(q.id));
+    if (unanswered.length > 0 && !force) {
+        const proceed = await showConfirmModal(
+            `❗ ${unanswered.length} ta savolga hali javob berilmagan (ular xato hisoblanadi). ` +
+            `Shunga qaramay testni hozir yakunlab, natijani ko'rmoqchimisiz?`
+        );
+        if (!proceed) return; // "Yo'q" — test xuddi shu joyida davom etadi
+    }
 
     testState.finished = true;
 
@@ -363,12 +390,6 @@ function finishTest() {
     const timerEl = document.getElementById("timer");
     if (timerEl) {
         timerEl.style.display = "none";
-    }
-
-    const unanswered = testState.questions.filter(q => !testState.answers.has(q.id));
-    if (unanswered.length > 0) {
-        showAlertModal(`❗ Barcha savollarga javob bering, (${unanswered.length} ta qoldi)`);
-        return;
     }
 
     // ✅ СКРЫВАЕМ progress + timer
