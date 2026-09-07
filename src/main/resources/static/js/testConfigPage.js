@@ -49,24 +49,33 @@ document.addEventListener("DOMContentLoaded", () => {
     // "shu fan(lar)dagi BARCHA darslar" bilan bir xil bo'lib chiqadi
     // (renderHierarchy'dagi CSS klassi orqali, .hierarchy-tree[data-mode="hard"]).
 
-    // Faqat kurs darsidan ("🎯 Darsga oid testlarni yechish") kelinganda
-    // ko'rinadi — boshqa hollarda (bosh menyudan to'g'ridan-to'g'ri
-    // kirilganda, courseId URL'da bo'lmaydi) butunlay yashirin qoladi.
+    // Foydalanuvchi so'rovi, 2026-09-07: "Тестларда ҳаммасида Орқага
+    // қайтиш имконияти бўлсин ... testConfigPage'ga ham qo'sh" —
+    // testSession.js'dagi bilan bir xil g'oya: avval bu tugma FAQAT
+    // kurs darsidan kelinganda ko'rinardi, endi HAR DOIM ko'rinadi.
+    // Bu sahifada hali javob/progress yo'qligi uchun (test hali
+    // boshlanmagan) tasdiqlash so'ralmaydi — to'g'ridan-to'g'ri qaytadi.
+    const backBtn = document.getElementById("backToCourseBtn");
+    backBtn.classList.remove("hidden");
     if (returnCourseId) {
-        const backBtn = document.getElementById("backToCourseBtn");
-        backBtn.classList.remove("hidden");
         // Haqiqiy production bug: ilgari FAQAT kursning o'ziga
         // (/courses/{courseId} — umumiy ro'yxat) qaytarardi, aynan
         // qaysi darsdan kelingani "yo'qolib" ketardi — foydalanuvchi
         // "tashqarida" qolib, qaytadan o'sha darsni qidirishga majbur
         // bo'lardi. Endi returnSectionId bo'lsa, ANIQ o'sha darsning
         // o'ziga qaytaradi.
+        backBtn.textContent = "🔙 Darsga qaytish";
         backBtn.onclick = () => {
             location.href = returnSectionId
                 ? `/courses/${returnCourseId}/sections/${returnSectionId}`
                 : returnFocusSectionId
                     ? `/courses/${returnCourseId}?focus=${returnFocusSectionId}`
                     : `/courses/${returnCourseId}`;
+        };
+    } else {
+        backBtn.textContent = "⬅ Orqaga";
+        backBtn.onclick = () => {
+            location.href = "/index";
         };
     }
 
