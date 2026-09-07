@@ -203,7 +203,7 @@ function fieldKeyOf(field) {
 function renderFieldNode(field) {
     const sciencesHtml = field.sciences.map(renderScienceNode).join("");
     return `
-        <details class="hierarchy-field" open data-field-id="${field.id ?? ""}">
+        <details class="hierarchy-field" data-field-id="${field.id ?? ""}">
             <summary>
                 <label onclick="event.stopPropagation()">
                     <input type="checkbox" class="field-checkbox" checked>
@@ -218,7 +218,7 @@ function renderFieldNode(field) {
 function renderScienceNode(science) {
     const sectionsHtml = science.sections.map(renderSectionNode).join("");
     return `
-        <details class="hierarchy-science" open data-science-id="${science.id}">
+        <details class="hierarchy-science" data-science-id="${science.id}">
             <summary>
                 <label onclick="event.stopPropagation()">
                     <input type="checkbox" class="science-checkbox" checked>
@@ -233,7 +233,7 @@ function renderScienceNode(science) {
 function renderSectionNode(section) {
     const topicsHtml = section.topics.map(renderTopicRow).join("");
     return `
-        <details class="hierarchy-section" open data-section-id="${section.id ?? ""}">
+        <details class="hierarchy-section" data-section-id="${section.id ?? ""}">
             <summary>
                 <label onclick="event.stopPropagation()">
                     <input type="checkbox" class="section-checkbox" checked>
