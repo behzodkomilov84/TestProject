@@ -1,9 +1,16 @@
 package behzoddev.testproject.controller.page;
 
+import behzoddev.testproject.dao.CourseRepository;
+import behzoddev.testproject.dao.TestSessionRepository;
+import behzoddev.testproject.dao.UserRepository;
+import behzoddev.testproject.dto.course.CourseDto;
 import behzoddev.testproject.dto.user.RegisterDto;
+import behzoddev.testproject.entity.User;
+import behzoddev.testproject.service.CourseService;
 import behzoddev.testproject.service.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,11 +18,20 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+
 @Controller
 @RequiredArgsConstructor
 public class UserMvcController {
 
     private final UserServiceImpl userService;
+    // Bosh sahifa (index.html) uchun — chop etilgan kurslar vitrinasi va
+    // jonli statistika (foydalanuvchi so'rovi, 2026-09-08: "БОШ саҳифа
+    // қилишимиз керак... сайтга кирган одам бу сайтда нималар бор?").
+    private final CourseService courseService;
+    private final CourseRepository courseRepository;
+    private final UserRepository userRepository;
+    private final TestSessionRepository testSessionRepository;
 
     // "Telegram orqali kirish" tugmasi uchun (login.html) — Telegram'ning
     // tayyor (rus/ingliz tilidagi) widget o'rniga o'zimizning o'zbekcha
@@ -68,7 +84,21 @@ public class UserMvcController {
     }
 
     @GetMapping("/index")
-    public String login_success() {
+    public String login_success(Model model, @AuthenticationPrincipal User user) {
+        // Kurslar vitrinasi — chop etilgan, eng so'nggi qo'shilgan 6 tasi
+        // (foydalanuvchi so'rovi, 2026-09-08: "курсга ўхшаган карточкалар").
+        List<CourseDto> highlightedCourses = courseService.listCatalog(user).stream()
+                .filter(CourseDto::published)
+                .limit(6)
+                .toList();
+        model.addAttribute("highlightedCourses", highlightedCourses);
+
+        // Jonli statistika — ishonch uyg'otish uchun ("X foydalanuvchi,
+        // Y kurs, Z ta test yechildi").
+        model.addAttribute("totalUsers", userRepository.count());
+        model.addAttribute("totalCourses", courseRepository.countByPublishedTrue());
+        model.addAttribute("totalTestsSolved", testSessionRepository.countByFinishedAtIsNotNull());
+
         return "index";
     }
 

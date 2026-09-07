@@ -16,6 +16,11 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     @Query("SELECT c FROM Course c WHERE c.deletedAt IS NULL AND c.published = true ORDER BY c.createdAt DESC")
     List<Course> findByPublishedTrueOrderByCreatedAtDesc();
 
+    // Bosh sahifadagi "N ta kurs" statistikasi uchun (foydalanuvchi so'rovi,
+    // 2026-09-08).
+    @Query("SELECT COUNT(c) FROM Course c WHERE c.deletedAt IS NULL AND c.published = true")
+    long countByPublishedTrue();
+
     @Query("SELECT c FROM Course c WHERE c.deletedAt IS NULL ORDER BY c.createdAt DESC")
     List<Course> findAllByOrderByCreatedAtDesc();
 

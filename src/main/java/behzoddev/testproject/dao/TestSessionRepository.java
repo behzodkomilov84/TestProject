@@ -53,6 +53,12 @@ public interface TestSessionRepository extends JpaRepository<TestSession, Long> 
     // CASCADE bilan avtomatik tozalanadi).
     void deleteByUserId(Long userId);
 
+    // Bosh sahifadagi "N ta test yechildi" statistikasi uchun — faqat
+    // TUGATILGAN (finishedAt != null) sessiyalar, boshlangan-lekin-
+    // tashlab-ketilganlar hisobga olinmaydi (foydalanuvchi so'rovi,
+    // 2026-09-08: yangi bosh sahifa uchun jonli statistika).
+    long countByFinishedAtIsNotNull();
+
     @Query("""
             select new behzoddev.testproject.dto.profile.TestHistoryDto
             (

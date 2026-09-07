@@ -1,10 +1,18 @@
 <!DOCTYPE html>
-<html lang="ru"
-      xmlns:th="http://www.thymeleaf.org">
+<html lang="uz"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
-    <title>Test Platform</title>
+    <title>Smart-Test — Bilim olishning zamonaviy platformasi</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- SEO/Open Graph — ilgari bo'sh edi ("Описание страницы"), endi
+         to'ldirilgan (foydalanuvchi so'rovi, 2026-09-08: bosh sahifani
+         to'liq qayta qurish loyihasi qismi). -->
+    <meta name="description" content="Smart-Test — testlar, video/matnli kurslar, statistika va Telegram bot orqali bilim olish va o'qitish platformasi.">
+    <meta property="og:title" content="Smart-Test — Bilim olishning zamonaviy platformasi">
+    <meta property="og:description" content="Testlar, kurslar, statistika va Telegram bot — bir joyda.">
+    <meta property="og:type" content="website">
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/navbar.css">
@@ -17,42 +25,348 @@
 
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-<main class="container">
-    <section class="hero">
-        <h1>Bilimingizni sinab ko‘ring</h1>
-        <p> Testlar orqali bilimni mustahkamlash, xatolar ustida ishlash va imtihonlarga tayyorlanish. </p>
-    </section>
+<main>
 
-    <section class="modes">
-        <div class="mode-card practice" onclick="startPractice()">
-            <h2>📝 Amaliyot</h2>
-            <ul>
-                <li>Cheklovsiz vaqt</li>
-                <li>Izohlar mavjud</li>
-                <li>Orqaga qaytish mumkin</li>
+    <!-- ============ 1) HERO — KARUSEL (SLAYDLAR) ============
+         Bootstrap Carousel — targ'ibot slaydlari: (1) shaxsiy salomlashuv +
+         asosiy CTA, (2) kurslar targ'iboti, (3) Telegram bot targ'iboti
+         (foydalanuvchi so'rovi, 2026-09-08: "слайдлардан ҳам фойдалан"). -->
+    <div id="heroCarousel" class="carousel slide hero-carousel" data-bs-ride="carousel" data-bs-interval="6000">
+        <div class="carousel-indicators">
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active" aria-current="true"></button>
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="2"></button>
+        </div>
+        <div class="carousel-inner">
+            <div class="carousel-item active">
+                <div class="hero-slide hero-slide-main">
+                    <div class="hero-slide-inner">
+                        <p class="hero-eyebrow" sec:authorize="isAuthenticated()">
+                            Xush kelibsiz, <b th:text="${#authentication.name}">foydalanuvchi</b>! 👋
+                        </p>
+                        <h1>Bilimingizni sinab ko'ring, kurslar orqali rivojlaning</h1>
+                        <p class="hero-desc">Testlar orqali bilimni mustahkamlash, xatolar ustida ishlash va
+                            imtihonlarga tayyorlanish — endi kurslar, statistika va Telegram bot bilan birga.</p>
+                        <div class="hero-cta-row">
+                            <a href="#modes" class="btn btn-hero-primary">🚀 Testni boshlash</a>
+                            <a href="/courses" class="btn btn-hero-secondary">📚 Kurslarni ko'rish</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <div class="hero-slide hero-slide-courses">
+                    <div class="hero-slide-inner">
+                        <p class="hero-eyebrow">🎓 Kurslar</p>
+                        <h1>Yo'nalish tanlang, mavzuma-mavzu o'rganing</h1>
+                        <p class="hero-desc">Video va matnli darslar, har bir mavzuga bog'langan testlar — bepul
+                            va pullik kurslar, o'z sur'atingizda.</p>
+                        <div class="hero-cta-row">
+                            <a href="/courses" class="btn btn-hero-primary">📚 Kurs yo'nalishlarini ko'rish</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="carousel-item">
+                <div class="hero-slide hero-slide-bot">
+                    <div class="hero-slide-inner">
+                        <p class="hero-eyebrow">🤖 Telegram bot</p>
+                        <h1>Testlarni Telegram orqali ham yeching</h1>
+                        <p class="hero-desc">Bildirishnomalar, testlar va natijalar — telefoningizdan, sayt
+                            ochmasdan ham.</p>
+                        <div class="hero-cta-row">
+                            <a href="#" onclick="linkTelegram(); return false;" class="btn btn-hero-primary">🔗 Telegramga ulanish</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        </button>
+    </div>
 
-            </ul>
-            <button>Boshlash</button>
-        </div>
-        <div class="mode-card exam" onclick="startExam()"><h2>⏱ Imtihon</h2>
-            <ul>
-                <li>Vaqt cheklangan</li>
-                <li>Izohlar yo‘q</li>
-                <li>Natija oxirida</li>
-            </ul>
-            <button onclick="startExam()">Boshlash</button>
-        </div>
-        <div class="mode-card hard" onclick="startHardMode()"><h2>🔥 Murakkab</h2>
-            <ul>
-                <li>Faqat yechilmagan savollar</li>
-                <li>Qisqa vaqt</li>
-                <li>Izohlar yo‘q</li>
-            </ul>
-            <button onclick="startHardMode()">Boshlash</button>
-        </div>
-    </section>
+    <div class="container">
+
+        <!-- ============ 2) "BU YERDA NIMA BOR?" — IMKONIYATLAR TARMOG'I ============ -->
+        <section class="section fade-in-section">
+            <h2 class="section-title">🧭 Bu yerda nima bor?</h2>
+            <p class="section-subtitle">Smart-Test'ning asosiy imkoniyatlari — bir joyda.</p>
+
+            <div class="feature-grid">
+                <a href="#modes" class="feature-card">
+                    <div class="feature-icon">📝</div>
+                    <h3>Testlar</h3>
+                    <p>Amaliyot, imtihon va murakkab rejimlar — cheklovsiz vaqt yoki chinakam imtihon sharoiti.</p>
+                </a>
+                <a href="/courses" class="feature-card">
+                    <div class="feature-icon">🎓</div>
+                    <h3>Kurslar</h3>
+                    <p>Yo'nalish → Bo'lim → Mavzu → Dars — video/matnli darslar, testlar bilan bog'langan.</p>
+                </a>
+                <a href="/history" class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>Statistika</h3>
+                    <p>Har bir testingiz tarixi, foizlar va natijalar — o'sishingizni kuzatib boring.</p>
+                </a>
+                <a href="/teacher/groups" class="feature-card" sec:authorize="hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')">
+                    <div class="feature-icon">👩‍🏫</div>
+                    <h3>O'qituvchilar uchun</h3>
+                    <p>Guruhlar, savollar to'plami, topshiriqlar — o'quvchilaringizni boshqaring.</p>
+                </a>
+                <div class="feature-card" sec:authorize="!hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')">
+                    <div class="feature-icon">👩‍🏫</div>
+                    <h3>O'qituvchilar uchun</h3>
+                    <p>Guruhlar, savollar to'plami, topshiriqlar bilan o'quvchilarni boshqarish imkoniyati.</p>
+                </div>
+                <a href="#" onclick="linkTelegram(); return false;" class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>Telegram bot</h3>
+                    <p>Testlar, bildirishnomalar va natijalar — telefoningizdan, doim yoningizda.</p>
+                </a>
+                <a href="/feedback" class="feature-card">
+                    <div class="feature-icon">💬</div>
+                    <h3>Fikr va takliflar</h3>
+                    <p>G'oyalaringizni yozing — platforma siz bilan birga rivojlanadi.</p>
+                </a>
+            </div>
+        </section>
+
+        <!-- ============ 3) TEST REJIMLARI (hozirgi bo'lim — saqlanadi) ============ -->
+        <section id="modes" class="section modes-section fade-in-section">
+            <h2 class="section-title">📝 Test rejimini tanlang</h2>
+            <p class="section-subtitle">Har bir rejim boshqa maqsad uchun — o'zingizga mosini tanlang.</p>
+
+            <div class="modes">
+                <div class="mode-card practice" onclick="startPractice()">
+                    <h2>📝 Amaliyot</h2>
+                    <ul>
+                        <li>Cheklovsiz vaqt</li>
+                        <li>Izohlar mavjud</li>
+                        <li>Orqaga qaytish mumkin</li>
+                    </ul>
+                    <button>Boshlash</button>
+                </div>
+                <div class="mode-card exam" onclick="startExam()">
+                    <h2>⏱ Imtihon</h2>
+                    <ul>
+                        <li>Vaqt cheklangan</li>
+                        <li>Izohlar yo'q</li>
+                        <li>Natija oxirida</li>
+                    </ul>
+                    <button onclick="startExam()">Boshlash</button>
+                </div>
+                <div class="mode-card hard" onclick="startHardMode()">
+                    <h2>🔥 Murakkab</h2>
+                    <ul>
+                        <li>Faqat yechilmagan savollar</li>
+                        <li>Qisqa vaqt</li>
+                        <li>Izohlar yo'q</li>
+                    </ul>
+                    <button onclick="startHardMode()">Boshlash</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ 4) KURSLAR VITRINASI — KARUSEL ============
+             DB'dan dinamik (UserMvcController#login_success), faqat chop
+             etilgan, so'nggi 6 ta kurs. Bo'sh bo'lsa bo'lim umuman
+             ko'rsatilmaydi. -->
+        <section class="section fade-in-section" th:if="${not #lists.isEmpty(highlightedCourses)}">
+            <h2 class="section-title">🎓 Kurslar vitrinasi</h2>
+            <p class="section-subtitle">So'nggi qo'shilgan kurslardan namunalar.</p>
+
+            <div id="coursesCarousel" class="carousel slide courses-carousel" data-bs-ride="carousel" data-bs-interval="5000">
+                <div class="carousel-indicators" th:if="${highlightedCourses.size() > 1}">
+                    <button th:each="c, iter : ${highlightedCourses}" type="button"
+                            data-bs-target="#coursesCarousel" th:attr="data-bs-slide-to=${iter.index}"
+                            th:class="${iter.index == 0} ? 'active' : ''"></button>
+                </div>
+                <div class="carousel-inner">
+                    <div th:each="c, iter : ${highlightedCourses}"
+                         th:class="${iter.index == 0} ? 'carousel-item active' : 'carousel-item'">
+                        <div class="course-slide" onclick="location.href='/courses/' + this.dataset.id"
+                             th:attr="data-id=${c.id}">
+                            <div class="course-slide-cover"
+                                 th:style="${c.coverImageUrl != null} ? 'background-image:url(' + ${c.coverImageUrl} + ')' : ''">
+                                <span th:if="${c.coverImageUrl == null}" class="course-slide-cover-placeholder">🎓</span>
+                            </div>
+                            <div class="course-slide-body">
+                                <span class="course-slide-badge" th:if="${c.free}">🆓 Bepul</span>
+                                <span class="course-slide-badge paid" th:unless="${c.free}">💳 Pullik</span>
+                                <h3 th:text="${c.title}">Kurs nomi</h3>
+                                <p class="course-slide-author" th:if="${c.authorName}">✍️ Muallif: <span th:text="${c.authorName}">Ism</span></p>
+                                <p class="course-slide-desc" th:text="${c.description}">Tavsif</p>
+                                <div class="course-slide-stats">
+                                    <span th:text="${c.chapterCount} + ' ta mavzu'">0 ta mavzu</span>
+                                    <span th:text="${c.sectionCount} + ' ta dars'">0 ta dars</span>
+                                    <span th:text="${c.testCount} + ' ta test'">0 ta test</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <th:block th:if="${highlightedCourses.size() > 1}">
+                    <button class="carousel-control-prev" type="button" data-bs-target="#coursesCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#coursesCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    </button>
+                </th:block>
+            </div>
+
+            <div class="section-cta">
+                <a href="/courses" class="btn btn-outline-teal">📚 Barcha kurs yo'nalishlarini ko'rish</a>
+            </div>
+        </section>
+
+        <!-- ============ 5) "QANDAY ISHLAYDI" ============ -->
+        <section class="section fade-in-section">
+            <h2 class="section-title">🧩 Qanday ishlaydi</h2>
+
+            <div class="steps-row">
+                <div class="step-card">
+                    <div class="step-num">1</div>
+                    <h3>Ro'yxatdan o'ting</h3>
+                    <p>Bir necha daqiqada hisob yarating — yoki Telegram/Google/Facebook orqali darhol kiring.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-num">2</div>
+                    <h3>Yo'nalish yoki testni tanlang</h3>
+                    <p>Kurslar katalogidan yoki to'g'ridan-to'g'ri test rejimidan boshlang.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-num">3</div>
+                    <h3>O'rganing va yeching</h3>
+                    <p>Darslarni o'qing/ko'ring, testlarni yeching — izohlar bilan xatolaringizni tushuning.</p>
+                </div>
+                <div class="step-card">
+                    <div class="step-num">4</div>
+                    <h3>Natijangizni kuzating</h3>
+                    <p>Statistika sahifasida o'sishingizni, foizlaringizni va tarixingizni ko'ring.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ 6) O'QITUVCHILAR UCHUN ============ -->
+        <section class="section teacher-section fade-in-section">
+            <div class="teacher-section-text">
+                <h2 class="section-title">👩‍🏫 O'qituvchilar va administratorlar uchun</h2>
+                <p>Smart-Test shunchaki test platformasi emas — o'qituvchilar uchun to'liq boshqaruv vositasi:</p>
+                <ul class="teacher-feature-list">
+                    <li>📁 Savollar to'plamini yarating va boshqaring</li>
+                    <li>👥 Guruhlar tuzing, o'quvchilarni qo'shing</li>
+                    <li>📌 Topshiriq bering, natijalarni real vaqtda kuzating</li>
+                    <li>🎓 O'z kurslaringizni yarating — video, matn va testlar bilan</li>
+                </ul>
+                <a href="/teacher/groups" class="btn btn-hero-secondary teacher-btn" sec:authorize="hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')">Guruhlarimga o'tish</a>
+                <a href="/feedback" class="btn btn-hero-secondary teacher-btn" sec:authorize="!hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')">O'qituvchi huquqini so'rash</a>
+            </div>
+        </section>
+
+        <!-- ============ 7) TELEGRAM BOT PROMO ============ -->
+        <section class="section bot-section fade-in-section">
+            <div class="bot-section-inner">
+                <div class="bot-section-icon">🤖</div>
+                <div>
+                    <h2 class="section-title">Telegram bot bilan har doim bog'lanishda bo'ling</h2>
+                    <p>Testlarni to'g'ridan-to'g'ri botda yeching, yangi bildirishnomalarni (obuna tasdiqlandimi,
+                        yangi topshiriqmi) darhol oling — sayt ochish shart emas.</p>
+                    <a href="#" onclick="linkTelegram(); return false;" class="btn btn-hero-primary">🔗 Botga ulanish</a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ 8) JONLI STATISTIKA ============ -->
+        <section class="section stats-section fade-in-section">
+            <div class="stats-row">
+                <div class="stat-item">
+                    <div class="stat-number" th:text="${totalUsers}">0</div>
+                    <div class="stat-label">Foydalanuvchi</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" th:text="${totalCourses}">0</div>
+                    <div class="stat-label">Chop etilgan kurs</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number" th:text="${totalTestsSolved}">0</div>
+                    <div class="stat-label">Yechilgan test</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ 9) FAQ — BOOTSTRAP ACCORDION ============ -->
+        <section class="section fade-in-section">
+            <h2 class="section-title">❓ Ko'p so'raladigan savollar</h2>
+
+            <div class="accordion faq-accordion" id="faqAccordion">
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                            Platformadan foydalanish bepulmi?
+                        </button>
+                    </h3>
+                    <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">Ro'yxatdan o'tish va test rejimlari (Amaliyot/Imtihon/Murakkab)
+                            hamisha bepul. Ba'zi kurslar pullik bo'lishi mumkin — kurs egasi belgilaydi, har bir
+                            kursda narxi aniq ko'rsatiladi.</div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                            Kurs darslari qanday ochiladi?
+                        </button>
+                    </h3>
+                    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">Kurs egasi ikki usuldan birini tanlaydi: darslar ketma-ket
+                            (oldingisi tugatilgach keyingisi ochiladi) yoki barchasi birdaniga ochiladi (pullik
+                            kursda — obuna bo'lgach).</div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                            Telegram bot qanday ishlaydi?
+                        </button>
+                    </h3>
+                    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">Profil menyusidan "Telegramga ulanish"ni bosing — shundan
+                            so'ng testlarni botda ham yechishingiz, saytdagi bildirishnomalarni botda ham
+                            olishingiz mumkin.</div>
+                    </div>
+                </div>
+                <div class="accordion-item">
+                    <h3 class="accordion-header">
+                        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                            O'qituvchi bo'lishni xohlayman — nima qilishim kerak?
+                        </button>
+                    </h3>
+                    <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body">"Fikr va takliflar" sahifasi orqali yoki administrator bilan
+                            bog'lanib, o'qituvchi (ADMIN) huquqini so'rashingiz mumkin.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ 10) YAKUNIY CTA ============ -->
+        <section class="section final-cta-section fade-in-section">
+            <h2>Bugun boshlang — bilimingizni sinab ko'ring</h2>
+            <div class="hero-cta-row">
+                <a href="#modes" class="btn btn-hero-primary">🚀 Testni boshlash</a>
+                <a href="/courses" class="btn btn-hero-secondary">📚 Kurslarni ko'rish</a>
+            </div>
+        </section>
+
+    </div>
 </main>
-<footer class="footer"> © 2026 TestPlatform. Made by Behzod Komilov.</footer>
+
+<footer class="footer"> © 2026 Smart-Test. Made by Behzod Komilov.</footer>
 
 <!--Модал страница для ошибки-->
 <div class="modal fade" id="errorModal">
