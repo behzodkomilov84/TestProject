@@ -23,7 +23,11 @@
         <button class="back-btn" onclick="location.href='/courses'">← Kurs yo'nalishlari</button>
     </header>
 
-    <div class="course-manage-panel">
+    <!-- ROLE_ADMIN uchun ixtiyoriy kursga qo'lda obuna berish yashiriladi
+         (faqat o'z kurslariga so'rovlarni tasdiqlash/rad etish kifoya) —
+         foydalanuvchi qidiruvi (/api/users) baribir faqat ROLE_OWNER'ga
+         ochiq (foydalanuvchi so'rovi, 2026-09-07). -->
+    <div id="grantPanel" class="course-manage-panel">
         <h2>➕ Obuna berish</h2>
         <div class="section-form">
             <label class="content-toggle-label">Kurslar (bir nechtasini tanlash mumkin)</label>
@@ -47,7 +51,7 @@
 
     <div class="course-manage-panel">
         <div class="courses-top-bar" style="margin-bottom: 10px;">
-            <h2 style="margin:0;">📋 Barcha obunalar</h2>
+            <h2 id="subsTableTitle" style="margin:0;">📋 Barcha obunalar</h2>
             <input type="text" id="subsFilter" class="subs-filter-input" placeholder="🔍 Kurs yoki foydalanuvchi bo'yicha filtr..."
                    oninput="renderSubscribers()">
         </div>

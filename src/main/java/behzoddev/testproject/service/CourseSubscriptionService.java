@@ -17,8 +17,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Set;
 
 // Kursga muddatli kirish huquqi (ADMIN-rol obunasi bilan bir xil g'oyada
 // — startDate/endDate). Ikki yo'l bilan boshlanishi mumkin: (1)
@@ -65,13 +67,30 @@ public class CourseSubscriptionService {
 
         courseSubscriptionRepository.save(request);
 
-        // Barcha OWNER'larga xabar beramiz — "Kursga obuna berish" sahifasida
-        // (barcha kurslar obunalari yagona joyda) so'rovni ko'rib, tasdiqlashlari uchun.
-        // Link'da courseId bilan birga userId ham beriladi — shunda OWNER
+        // Barcha ROLE_OWNER'larga xabar beramiz — ular cheklovsiz, HAR QANDAY
+        // kursning so'rovini ko'rishi kerak ("Kursga obuna berish" sahifasida,
+        // barcha kurslar obunalari yagona joyda). Bundan tashqari, kursning
+        // muallifiga (createdBy) HAM alohida xabar beramiz — u ROLE_ADMIN
+        // bo'lsa (o'z kursini yaratgan o'qituvchi), ilgari umuman
+        // bildirishnoma olmasdi; ROLE_OWNER bo'lsa, pastdagi tsiklda
+        // allaqachon xabar olgan bo'ladi — takroriy yubormaslik uchun
+        // "notified" to'plami bilan nazorat qilinadi (foydalanuvchi so'rovi,
+        // 2026-09-07: "билдиришномалар фақат шу админнинг ўзига келсин.
+        // OWNER учун чеклов йўқ").
+        // Link'da courseId bilan birga userId ham beriladi — shunda
         // bildirishnomani bosganda sahifada kurs HAM, so'ragan foydalanuvchi
         // HAM oldindan tanlangan holda ochiladi (qo'lda qidirish shart emas).
+        Set<Long> notified = new HashSet<>();
         for (User owner : userRepository.findByRoles_RoleName("ROLE_OWNER")) {
             notificationService.create(owner,
+                    "🎓 " + user.getUsername() + " \"" + course.getTitle() + "\" kursiga obuna so'radi.",
+                    "/courses/subscriptions?courseId=" + courseId + "&userId=" + user.getId());
+            notified.add(owner.getId());
+        }
+
+        User author = course.getCreatedBy();
+        if (author != null && !notified.contains(author.getId())) {
+            notificationService.create(author,
                     "🎓 " + user.getUsername() + " \"" + course.getTitle() + "\" kursiga obuna so'radi.",
                     "/courses/subscriptions?courseId=" + courseId + "&userId=" + user.getId());
         }
@@ -83,6 +102,9 @@ public class CourseSubscriptionService {
     public CourseSubscriptionDto subscribe(Long courseId, CreateCourseSubscriptionDto dto, User owner) {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new NoSuchElementException("Kurs topilmadi"));
+        // ROLE_ADMIN faqat o'zi yaratgan kursga obuna berishi/tasdiqlashi
+        // mumkin — ROLE_OWNER cheklovsiz (foydalanuvchi so'rovi, 2026-09-07).
+        checkCanManage(course, owner);
 
         User user = userRepository.findById(dto.userId())
                 .orElseThrow(() -> new IllegalArgumentException("❌Foydalanuvchi topilmadi"));
@@ -186,9 +208,12 @@ public class CourseSubscriptionService {
     }
 
     @Transactional
-    public void cancel(Long subscriptionId) {
+    public void cancel(Long subscriptionId, User requester) {
         CourseSubscription subscription = courseSubscriptionRepository.findById(subscriptionId)
                 .orElseThrow(() -> new NoSuchElementException("Obuna topilmadi"));
+        // ROLE_ADMIN faqat o'zi yaratgan kursning obunasini bekor qilishi/
+        // rad etishi mumkin — ROLE_OWNER cheklovsiz (foydalanuvchi so'rovi, 2026-09-07).
+        checkCanManage(subscription.getCourse(), requester);
 
         subscription.setStatus(CourseSubscriptionStatus.CANCELLED);
         courseSubscriptionRepository.save(subscription);
@@ -219,16 +244,48 @@ public class CourseSubscriptionService {
         }
     }
 
+    // requester — ROLE_OWNER cheklovsiz istalgan kursni ko'radi; ROLE_ADMIN
+    // faqat O'ZI yaratgan kursni (foydalanuvchi so'rovi, 2026-09-07:
+    // "билдиришномалар фақат шу админнинг ўзига келсин. OWNER учун чеклов йўқ").
     @Transactional(readOnly = true)
-    public List<CourseSubscriptionDto> listForCourse(Long courseId) {
+    public List<CourseSubscriptionDto> listForCourse(Long courseId, User requester) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new NoSuchElementException("Kurs topilmadi"));
+        checkCanManage(course, requester);
+
         return courseSubscriptionRepository.findByCourse_IdOrderByCreatedAtDesc(courseId)
                 .stream().map(this::toDto).toList();
     }
 
+    // ROLE_OWNER — barcha kurslarning obunalari; ROLE_ADMIN — faqat o'zi
+    // yaratgan kurslarnikini ko'radi (boshqa muallif/adminlarning
+    // obunachilari ro'yxati ko'rinmasligi kerak).
     @Transactional(readOnly = true)
-    public List<CourseSubscriptionDto> listAll() {
-        return courseSubscriptionRepository.findAllByOrderByCreatedAtDesc()
-                .stream().map(this::toDto).toList();
+    public List<CourseSubscriptionDto> listAll(User requester) {
+        List<CourseSubscription> all = courseSubscriptionRepository.findAllByOrderByCreatedAtDesc();
+
+        if (requester.hasRole("ROLE_OWNER")) {
+            return all.stream().map(this::toDto).toList();
+        }
+
+        return all.stream()
+                .filter(s -> canManageCourse(s.getCourse(), requester))
+                .map(this::toDto)
+                .toList();
+    }
+
+    // CourseService#canManageCourse bilan bir xil qoida: ROLE_OWNER —
+    // cheklovsiz, ROLE_ADMIN — faqat o'zi yaratgan kurs.
+    private boolean canManageCourse(Course course, User user) {
+        return user.hasRole("ROLE_OWNER")
+                || (course.getCreatedBy() != null && course.getCreatedBy().getId().equals(user.getId()));
+    }
+
+    private void checkCanManage(Course course, User requester) {
+        if (!canManageCourse(course, requester)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "⛔ Faqat o'zingiz yaratgan kursning obunalarini boshqarishingiz mumkin.");
+        }
     }
 
     private CourseSubscriptionDto toDto(CourseSubscription s) {

@@ -260,6 +260,15 @@ body {
     -webkit-box-orient: vertical;
 }
 
+/* Kurs kartochkasida sarlavha ostida "Muallif: ..." (foydalanuvchi so'rovi,
+   2026-09-07). Tavsifdan ajralib turishi uchun kichikroq, kursivroq. */
+.course-card-author {
+    font-size: 12px;
+    font-style: italic;
+    color: #7c8797;
+    margin: -4px 0 2px;
+}
+
 .course-card-footer {
     display: flex;
     justify-content: space-between;
@@ -1002,6 +1011,14 @@ body {
 }
 
 /* ===== Kurs sahifasi (detail) ===== */
+
+/* Sarlavha ostida "Muallif: ..." (foydalanuvchi so'rovi, 2026-09-07). */
+.course-author-line {
+    font-size: 13px;
+    font-style: italic;
+    color: #7c8797;
+    margin: -6px 0 10px;
+}
 
 .course-description {
     color: #475569;

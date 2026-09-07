@@ -7,8 +7,10 @@ import behzoddev.testproject.dto.course.CourseSubscriptionDto;
 import behzoddev.testproject.dto.course.CreateCourseSubscriptionDto;
 import behzoddev.testproject.entity.Course;
 import behzoddev.testproject.entity.CourseSubscription;
+import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.entity.enums.CourseSubscriptionStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,9 +22,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.Period;
+import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -53,12 +57,18 @@ class CourseSubscriptionServiceTest {
     private Course course;
     private User student;
     private User owner;
+    private User admin;
 
     @BeforeEach
     void setUp() {
-        course = Course.builder().id(1L).title("Java Asoslari").build();
+        owner = User.builder().id(99L).username("owner").roles(new HashSet<>(Set.of(
+                Role.builder().id(1L).roleName("ROLE_OWNER").build()))).build();
+        admin = User.builder().id(50L).username("admin1").roles(new HashSet<>(Set.of(
+                Role.builder().id(2L).roleName("ROLE_ADMIN").build()))).build();
+        // Muallif — checkCanManage testlari uchun (ROLE_OWNER cheklovsiz,
+        // ROLE_ADMIN faqat o'zi yaratgan kursni boshqara oladi).
+        course = Course.builder().id(1L).title("Java Asoslari").createdBy(admin).build();
         student = User.builder().id(1L).username("student1").build();
-        owner = User.builder().id(99L).username("owner").build();
     }
 
     // ===== requestSubscription =====
@@ -81,6 +91,45 @@ class CourseSubscriptionServiceTest {
 
         verify(notificationService).create(eq(owner), anyString(),
                 eq("/courses/subscriptions?courseId=1&userId=1"));
+    }
+
+    // Foydalanuvchi so'rovi, 2026-09-07: "билдиришномалар фақат шу
+    // админнинг ўзига келсин. OWNER учун чеклов йўқ" — ROLE_OWNER'lar
+    // baribir cheklovsiz xabar oladi (yuqoridagi test), lekin bundan
+    // tashqari kursning muallifi (ROLE_ADMIN bo'lsa ham) HAM alohida xabar
+    // olishi kerak — ilgari umuman olmasdi.
+    @Test
+    void requestSubscription_courseHasAdminAuthor_alsoNotifiesAuthor() {
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+                eq(1L), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(false);
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatus(
+                1L, 1L, CourseSubscriptionStatus.PENDING)).thenReturn(false);
+        when(userRepository.findByRoles_RoleName("ROLE_OWNER")).thenReturn(List.of(owner));
+
+        courseSubscriptionService.requestSubscription(1L, student);
+
+        verify(notificationService).create(eq(owner), anyString(),
+                eq("/courses/subscriptions?courseId=1&userId=1"));
+        verify(notificationService).create(eq(admin), anyString(),
+                eq("/courses/subscriptions?courseId=1&userId=1"));
+    }
+
+    // Muallif O'ZI ROLE_OWNER bo'lsa (yuqoridagi tsiklda allaqachon xabar
+    // olgan) — ikkinchi marta (takroriy) bildirishnoma yubormasligi kerak.
+    @Test
+    void requestSubscription_authorIsAlreadyOwner_doesNotNotifyTwice() {
+        course.setCreatedBy(owner);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+                eq(1L), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(false);
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatus(
+                1L, 1L, CourseSubscriptionStatus.PENDING)).thenReturn(false);
+        when(userRepository.findByRoles_RoleName("ROLE_OWNER")).thenReturn(List.of(owner));
+
+        courseSubscriptionService.requestSubscription(1L, student);
+
+        verify(notificationService, times(1)).create(eq(owner), anyString(), anyString());
     }
 
     @Test
@@ -223,6 +272,38 @@ class CourseSubscriptionServiceTest {
                 .hasMessageContaining("allaqachon shu kursga obuna bo'lgan");
     }
 
+    // Kursning muallifi (admin) o'z kursiga obuna berishi/tasdiqlashi
+    // mumkin (foydalanuvchi so'rovi, 2026-09-07).
+    @Test
+    void subscribe_byCourseAuthorAdmin_allowed() {
+        CreateCourseSubscriptionDto dto = new CreateCourseSubscriptionDto(1L, BigDecimal.valueOf(100_000), 1, null);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(student));
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+                eq(1L), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(false);
+        when(courseSubscriptionRepository.findByUser_IdAndCourse_IdAndStatus(
+                1L, 1L, CourseSubscriptionStatus.PENDING)).thenReturn(Optional.empty());
+
+        CourseSubscriptionDto result = courseSubscriptionService.subscribe(1L, dto, admin);
+
+        assertThat(result.status()).isEqualTo("CONFIRMED");
+    }
+
+    // Boshqa admin (kurs muallifi emas) obuna berishga urinsa — rad etiladi
+    // (foydalanuvchi so'rovi, 2026-09-07: "фақат шу админнинг ўзига").
+    @Test
+    void subscribe_byUnrelatedAdmin_throwsAccessDenied() {
+        CreateCourseSubscriptionDto dto = new CreateCourseSubscriptionDto(1L, BigDecimal.valueOf(100_000), 1, null);
+        User otherAdmin = User.builder().id(51L).username("admin2").roles(new HashSet<>(Set.of(
+                Role.builder().id(3L).roleName("ROLE_ADMIN").build()))).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> courseSubscriptionService.subscribe(1L, dto, otherAdmin))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(courseSubscriptionRepository, never()).save(any());
+    }
+
     // ===== cancel =====
 
     @Test
@@ -231,7 +312,7 @@ class CourseSubscriptionServiceTest {
                 .amount(BigDecimal.TEN).status(CourseSubscriptionStatus.PENDING).build();
         when(courseSubscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
 
-        courseSubscriptionService.cancel(7L);
+        courseSubscriptionService.cancel(7L, owner);
 
         assertThat(sub.getStatus()).isEqualTo(CourseSubscriptionStatus.CANCELLED);
         verify(courseSubscriptionRepository).save(sub);
@@ -241,8 +322,77 @@ class CourseSubscriptionServiceTest {
     void cancel_notFound_throws() {
         when(courseSubscriptionRepository.findById(7L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> courseSubscriptionService.cancel(7L))
+        assertThatThrownBy(() -> courseSubscriptionService.cancel(7L, owner))
                 .isInstanceOf(NoSuchElementException.class);
+    }
+
+    // Kursning muallifi (admin) o'z kursining obunasini bekor qila oladi.
+    @Test
+    void cancel_byCourseAuthorAdmin_allowed() {
+        CourseSubscription sub = CourseSubscription.builder().id(7L).user(student).course(course)
+                .amount(BigDecimal.TEN).status(CourseSubscriptionStatus.CONFIRMED).build();
+        when(courseSubscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+
+        courseSubscriptionService.cancel(7L, admin);
+
+        assertThat(sub.getStatus()).isEqualTo(CourseSubscriptionStatus.CANCELLED);
+    }
+
+    // Boshqa admin (kurs muallifi emas) bekor qilishga urinsa — rad etiladi.
+    @Test
+    void cancel_byUnrelatedAdmin_throwsAccessDenied() {
+        User otherAdmin = User.builder().id(51L).username("admin2").roles(new HashSet<>(Set.of(
+                Role.builder().id(3L).roleName("ROLE_ADMIN").build()))).build();
+        CourseSubscription sub = CourseSubscription.builder().id(7L).user(student).course(course)
+                .amount(BigDecimal.TEN).status(CourseSubscriptionStatus.CONFIRMED).build();
+        when(courseSubscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+
+        assertThatThrownBy(() -> courseSubscriptionService.cancel(7L, otherAdmin))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(courseSubscriptionRepository, never()).save(any());
+    }
+
+    // ===== listAll (foydalanuvchi so'rovi, 2026-09-07: ROLE_ADMIN faqat
+    // o'zi yaratgan kurslarning obunalarini ko'rishi kerak) =====
+
+    @Test
+    void listAll_owner_seesEverything() {
+        CourseSubscription sub = CourseSubscription.builder().id(7L).user(student).course(course)
+                .amount(BigDecimal.TEN).status(CourseSubscriptionStatus.CONFIRMED).build();
+        when(courseSubscriptionRepository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of(sub));
+
+        List<CourseSubscriptionDto> result = courseSubscriptionService.listAll(owner);
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void listAll_admin_filtersToOwnCoursesOnly() {
+        Course otherCourse = Course.builder().id(2L).title("Boshqa kurs").createdBy(owner).build();
+        CourseSubscription ownSub = CourseSubscription.builder().id(7L).user(student).course(course)
+                .amount(BigDecimal.TEN).status(CourseSubscriptionStatus.CONFIRMED).build();
+        CourseSubscription otherSub = CourseSubscription.builder().id(8L).user(student).course(otherCourse)
+                .amount(BigDecimal.TEN).status(CourseSubscriptionStatus.CONFIRMED).build();
+        when(courseSubscriptionRepository.findAllByOrderByCreatedAtDesc())
+                .thenReturn(List.of(ownSub, otherSub));
+
+        List<CourseSubscriptionDto> result = courseSubscriptionService.listAll(admin);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).id()).isEqualTo(7L);
+    }
+
+    // ===== listForCourse =====
+
+    @Test
+    void listForCourse_byUnrelatedAdmin_throwsAccessDenied() {
+        User otherAdmin = User.builder().id(51L).username("admin2").roles(new HashSet<>(Set.of(
+                Role.builder().id(3L).roleName("ROLE_ADMIN").build()))).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> courseSubscriptionService.listForCourse(1L, otherAdmin))
+                .isInstanceOf(AccessDeniedException.class);
     }
 
     // ===== expireSubscriptions =====

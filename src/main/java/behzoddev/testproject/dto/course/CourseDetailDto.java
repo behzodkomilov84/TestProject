@@ -22,6 +22,9 @@ public record CourseDetailDto(
         // to'ldirish uchun (courseDetail.js).
         Long fieldId,
         String fieldName,
+        // Sarlavha ostida "Muallif: Ism Familiya" qatori uchun
+        // (Course.createdBy) — foydalanuvchi so'rovi, 2026-09-07.
+        String authorName,
         // "✏️ Tahrirlash" formasidagi radio tanlovini oldindan to'ldirish
         // uchun (foydalanuvchi so'rovi, 2026-09-07).
         boolean sequentialUnlock,

@@ -1056,6 +1056,17 @@ function renderCourse(course) {
     cachedCourse = course;
 
     document.getElementById("courseTitle").textContent = course.title;
+
+    // "Muallif: Ism Familiya" — sarlavha ostida (foydalanuvchi so'rovi,
+    // 2026-09-07). Eski/yetim kurslarda (createdBy topilmasa) yashiriladi.
+    const authorEl = document.getElementById("courseAuthor");
+    if (course.authorName) {
+        authorEl.textContent = "✍️ Muallif: " + course.authorName;
+        authorEl.style.display = "";
+    } else {
+        authorEl.style.display = "none";
+    }
+
     document.getElementById("courseDescription").textContent = course.description || "";
 
     updateSubscribeBanner(course);

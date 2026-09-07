@@ -6,6 +6,18 @@ let allUsers = [];
 let allSubs = [];
 
 document.addEventListener("DOMContentLoaded", () => {
+    // ROLE_ADMIN (kurs muallifi) — faqat o'z kurslarining so'rovlarini
+    // tasdiqlaydi/rad etadi; ixtiyoriy kursga qo'lda obuna berish paneli
+    // (foydalanuvchi qidiruvi /api/users ham ROLE_OWNER'ga cheklangan)
+    // ular uchun yashiriladi (foydalanuvchi so'rovi, 2026-09-07).
+    if (document.body.dataset.role !== "ROLE_OWNER") {
+        const grantPanel = document.getElementById("grantPanel");
+        if (grantPanel) grantPanel.style.display = "none";
+
+        const title = document.getElementById("subsTableTitle");
+        if (title) title.textContent = "📋 Mening kurslarim obunalari";
+    }
+
     loadCourses();
     loadUsers();
     loadSubscribers();

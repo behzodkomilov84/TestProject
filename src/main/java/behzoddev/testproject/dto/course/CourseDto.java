@@ -33,6 +33,9 @@ public record CourseDto(
         // kurslar" psevdo-guruhida (eski kurslar, migratsiyadan oldingi).
         Long fieldId,
         String fieldName,
+        // Kurs kartochkasida sarlavha ostida "Muallif: Ism Familiya" qatori
+        // uchun (Course.createdBy) — foydalanuvchi so'rovi, 2026-09-07.
+        String authorName,
         // Shu Yo'nalish ICHIDA kartochkalarni tartiblash uchun (courses.js
         // shu bo'yicha saralaydi va ⬆⬇ tugmalarini yoqadi/o'chiradi).
         Integer orderIndex,

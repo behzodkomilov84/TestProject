@@ -16,10 +16,16 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-// Kurs obunalari — faqat OWNER (qo'lda tasdiqlaydi, Telegram oqimi yo'q).
+// Kurs obunalari — qo'lda tasdiqlaydi (Telegram oqimi yo'q). ROLE_OWNER
+// cheklovsiz barcha kurslarni boshqaradi; ROLE_ADMIN (kurs muallifi) ham
+// shu yerga kira oladi, lekin faqat O'ZI yaratgan kurs bilan bog'liq
+// amallarni bajara oladi — haqiqiy tekshiruv CourseSubscriptionService
+// ichida (checkCanManage) amalga oshiriladi (foydalanuvchi so'rovi,
+// 2026-09-07: "билдиришномалар фақат шу админнинг ўзига келсин. OWNER
+// учун чеклов йўқ").
 @RestController
 @RequiredArgsConstructor
-@PreAuthorize("hasAuthority('ROLE_OWNER')")
+@PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
 public class CourseSubscriptionController {
 
     private final CourseSubscriptionService courseSubscriptionService;
@@ -78,17 +84,18 @@ public class CourseSubscriptionController {
     }
 
     @GetMapping("/api/courses/{courseId}/subscriptions")
-    public List<CourseSubscriptionDto> listForCourse(@PathVariable Long courseId) {
-        return courseSubscriptionService.listForCourse(courseId);
+    public List<CourseSubscriptionDto> listForCourse(@PathVariable Long courseId,
+                                                       @AuthenticationPrincipal User requester) {
+        return courseSubscriptionService.listForCourse(courseId, requester);
     }
 
     @GetMapping("/api/course-subscriptions")
-    public List<CourseSubscriptionDto> listAll() {
-        return courseSubscriptionService.listAll();
+    public List<CourseSubscriptionDto> listAll(@AuthenticationPrincipal User requester) {
+        return courseSubscriptionService.listAll(requester);
     }
 
     @PostMapping("/api/course-subscriptions/{id}/cancel")
-    public void cancel(@PathVariable Long id) {
-        courseSubscriptionService.cancel(id);
+    public void cancel(@PathVariable Long id, @AuthenticationPrincipal User requester) {
+        courseSubscriptionService.cancel(id, requester);
     }
 }

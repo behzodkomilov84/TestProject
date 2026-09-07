@@ -196,6 +196,7 @@ public class CourseService {
                 .canManage(canManage)
                 .fieldId(course.getField() != null ? course.getField().getId() : null)
                 .fieldName(course.getField() != null ? course.getField().getName() : null)
+                .authorName(formatAuthorName(course.getCreatedBy()))
                 .sequentialUnlock(course.isSequentialUnlock())
                 .sections(sectionDtos)
                 .build();
@@ -1321,10 +1322,25 @@ public class CourseService {
                 .subscribed(subscribed)
                 .fieldId(course.getField() != null ? course.getField().getId() : null)
                 .fieldName(course.getField() != null ? course.getField().getName() : null)
+                .authorName(formatAuthorName(course.getCreatedBy()))
                 .orderIndex(course.getOrderIndex())
                 .createdAt(course.getCreatedAt())
                 .deletedAt(course.getDeletedAt())
                 .build();
+    }
+
+    // Kurs kartochkasi/sahifasida "Muallif: ..." qatori uchun — ism va
+    // familiyasi to'ldirilgan bo'lsa o'shani, aks holda username'ga
+    // tushamiz (foydalanuvchi so'rovi, 2026-09-07: "Автор: курсни
+    // яратувчи исм фамилияси ёзилсин").
+    private String formatAuthorName(User author) {
+        if (author == null) return null;
+
+        String firstName = author.getFirstName() != null ? author.getFirstName().trim() : "";
+        String lastName = author.getLastName() != null ? author.getLastName().trim() : "";
+        String fullName = (firstName + " " + lastName).trim();
+
+        return !fullName.isEmpty() ? fullName : author.getUsername();
     }
 
     /* ================= "🔗 Darsga havola" tekshiruvi ================= */

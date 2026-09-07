@@ -423,6 +423,13 @@ function renderCourseCard(c, idx, total, fieldId) {
 
     const isSelected = c.id === selectedCourseId;
 
+    // Sarlavha ostida "Muallif: Ism Familiya" (foydalanuvchi so'rovi,
+    // 2026-09-07: "барча курсларни тагига... Автор: курсни яратувчи исм
+    // фамилияси ёзилсин").
+    const authorHtml = c.authorName
+        ? `<p class="course-card-author">✍️ Muallif: ${escapeHtml(c.authorName)}</p>`
+        : "";
+
     return `
         <div class="course-card ${isSelected ? "selected" : ""}" id="course-card-${c.id}" tabindex="0"
              onclick="selectCourseCard(${c.id}); location.href='/courses/${c.id}'"
@@ -432,6 +439,7 @@ function renderCourseCard(c, idx, total, fieldId) {
             ${cover}
             <div class="course-card-body">
                 <h3 class="course-card-title">${escapeHtml(c.title)}</h3>
+                ${authorHtml}
                 <p class="course-card-desc">${escapeHtml(c.description || "")}</p>
                 <div class="course-card-footer">
                     <span>${c.chapterCount} ta mavzu, ${c.sectionCount} ta dars, ${c.testCount} ta test</span>
