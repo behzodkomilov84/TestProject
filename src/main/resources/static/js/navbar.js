@@ -176,6 +176,18 @@ function transliteratePageToCyrillic(root) {
     });
 }
 
+// Ilgari faqat "/link 123456" matnini ko'rsatib qo'yardi — botning
+// NOMINI bilmagan foydalanuvchi nima qilishni bilmasdi (haqiqiy
+// foydalanuvchi shikoyati, 2026-09-08). Endi: (1) kod bilan birga
+// bot @username'i ham olinadi (/api/telegram/link javobi kengaytirildi),
+// (2) Telegram deep-link (https://t.me/<bot>?start=link_<kod>) darhol
+// yangi oynada ochiladi — foydalanuvchi bu sahifadan TO'G'RIDAN-TO'G'RI
+// botga o'tadi, (3) botda "START" tugmasini bosishi bilan "/link <kod>"
+// AVTOMATIK yuboriladi (qo'lda yozish shart emas, TelegramBot#route
+// "/start link_<kod>"ni shu tarzda ishlaydi), (4) shu bilan birga to'liq
+// bosqichma-bosqich yo'llanma va zaxira (qo'lda yozish) usuli ham modalda
+// ko'rsatiladi — agar avtomatik oyna ochilishi brauzer tomonidan
+// blocklansa yoki foydalanuvchi uni tasodifan yopib qo'ysa ham.
 async function linkTelegram() {
 
     try {
@@ -185,16 +197,100 @@ async function linkTelegram() {
 
         const data = await res.json().catch(() => ({}));
 
-        if (!res.ok || !data.code) {
+        if (!res.ok || !data.code || !data.botUsername) {
             showAlertModal(data.error || "❌ Kod olishda xatolik yuz berdi. Qayta urinib ko'ring.");
             return;
         }
 
-        showAlertModal("Botga ulanish uchun botga quyidagini yozing: /link " + data.code);
+        const deepLink = "https://t.me/" + data.botUsername + "?start=link_" + data.code;
+        showTelegramLinkModal(data.botUsername, data.code, deepLink);
+
+        // Avtomatik ochish — foydalanuvchi qo'shimcha bosishi shart emas.
+        // Ba'zi brauzerlar popup'ni blocklashi mumkin, shu sabab modaldagi
+        // "🤖 Botga o'tish" tugmasi zaxira sifatida qoladi.
+        window.open(deepLink, "_blank");
     } catch (err) {
         console.error(err);
         showAlertModal("❌ Tarmoq xatoligi — qayta urinib ko'ring.");
     }
+}
+
+let telegramLinkStylesInjected = false;
+
+function injectTelegramLinkStyles() {
+    if (telegramLinkStylesInjected) return;
+    telegramLinkStylesInjected = true;
+
+    const style = document.createElement("style");
+    style.textContent = `
+        .tg-link-overlay {
+            position: fixed; inset: 0; background: rgba(15, 23, 42, .6);
+            backdrop-filter: blur(2px); display: flex; align-items: center;
+            justify-content: center; z-index: 20000; padding: 16px;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        .tg-link-box {
+            width: min(420px, 100%); background: #fff; padding: 26px 24px;
+            border-radius: 16px; box-shadow: 0 25px 60px rgba(15, 23, 42, .35);
+            box-sizing: border-box;
+        }
+        .tg-link-box h2 { margin: 0 0 6px; font-size: 18px; color: #0d3b34; }
+        .tg-link-box .tg-link-bot-name {
+            margin: 0 0 16px; font-size: 13.5px; color: #64748b;
+        }
+        .tg-link-go-btn {
+            display: block; text-align: center; text-decoration: none;
+            background: #29b6f6; color: #fff; font-weight: 700;
+            padding: 12px; border-radius: 10px; margin-bottom: 18px;
+            font-size: 15px; transition: background .15s ease;
+        }
+        .tg-link-go-btn:hover { background: #1e9ede; color: #fff; }
+        .tg-link-steps { margin: 0 0 16px; padding-left: 20px; font-size: 13.5px; color: #334155; line-height: 1.6; }
+        .tg-link-steps li { margin-bottom: 4px; }
+        .tg-link-fallback {
+            font-size: 12.5px; color: #7c8797; background: #f8fafc;
+            border-radius: 8px; padding: 10px 12px; margin-bottom: 18px; line-height: 1.5;
+        }
+        .tg-link-fallback code {
+            background: #e2e8f0; padding: 1px 5px; border-radius: 4px; font-weight: 600;
+        }
+        .tg-link-close-btn {
+            width: 100%; padding: 10px; border-radius: 8px; border: none;
+            background: #f1f5f9; color: #334155; font-weight: 600; cursor: pointer;
+        }
+        .tg-link-close-btn:hover { background: #e2e8f0; }
+    `;
+    document.head.appendChild(style);
+}
+
+function showTelegramLinkModal(botUsername, code, deepLink) {
+    injectTelegramLinkStyles();
+
+    const overlay = document.createElement("div");
+    overlay.className = "tg-link-overlay";
+    overlay.innerHTML = `
+        <div class="tg-link-box">
+            <h2>🤖 Telegramga ulanish</h2>
+            <p class="tg-link-bot-name">Bot: <b>@${botUsername}</b></p>
+            <a class="tg-link-go-btn" href="${deepLink}" target="_blank" rel="noopener">🤖 Botga o'tish</a>
+            <ol class="tg-link-steps">
+                <li>Yangi oyna/ilova ochiladi — Telegram botning suhbat oynasi ko'rinadi.</li>
+                <li>Pastda chiqqan <b>START</b> tugmasini bosing.</li>
+                <li>Hisobingiz <b>avtomatik</b> bog'lanadi — bot tasdiqlash xabarini yuboradi.</li>
+                <li>Shu sahifaga qaytib, uni yangilang — Telegram ulanganini ko'rasiz.</li>
+            </ol>
+            <p class="tg-link-fallback">Agar avtomatik ishlamasa: Telegram'da <b>@${botUsername}</b> botini toping,
+                suhbatni boshlang va xabar oynasiga qo'lda <code>/link ${code}</code> deb yozib yuboring
+                (kod 5 daqiqa amal qiladi).</p>
+            <button type="button" class="tg-link-close-btn" id="tgLinkCloseBtn">Yopish</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    document.getElementById("tgLinkCloseBtn").addEventListener("click", () => overlay.remove());
+    overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) overlay.remove();
+    });
 }
 
 /* ===== Bildirishnomalar (notification center) =====

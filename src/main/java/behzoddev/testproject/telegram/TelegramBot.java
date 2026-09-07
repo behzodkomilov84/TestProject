@@ -713,7 +713,19 @@ public class TelegramBot extends TelegramLongPollingBot {
     // aks holda eski (/link, /pay) buyruqlarga tushadi.
     private SendMessage route(Long chatId, String text, Message msg) {
 
-        if (text.equals("/start")) {
+        // "/start" — oddiy holat; "/start link_695780" — bosh sahifadagi
+        // "🤖 Botga o'tish" havolasi orqali keladi (https://t.me/<bot>?
+        // start=link_695780, Telegram bu parametrni "/start <payload>"
+        // matniga aylantirib yuboradi). Foydalanuvchi kodni QO'LDA
+        // yozishi shart emas — havolani bosib, botning o'zi "START"
+        // tugmasini bossa, hisob avtomatik bog'lanadi (foydalanuvchi
+        // so'rovi, 2026-09-08: "botni nomini bilmaydigan foydalanuvchi
+        // nima qilishni bilmaydi... bot darhol /start bo'lsin").
+        if (text.equals("/start") || text.startsWith("/start ")) {
+            String payload = text.equals("/start") ? "" : text.substring(7).trim();
+            if (payload.startsWith("link_")) {
+                return telegramUserService.linkTelegramSafely(msg, payload.substring(5));
+            }
             return handleStart(chatId);
         }
 

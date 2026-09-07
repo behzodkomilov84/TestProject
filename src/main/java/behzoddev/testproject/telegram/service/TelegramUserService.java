@@ -65,7 +65,7 @@ public class TelegramUserService {
 
             String code = text.substring(6).trim();
 
-            return linkTelegram(msg, code);
+            return linkTelegramSafely(msg, code);
         }
 
         if (text.startsWith("/pay ")) {
@@ -111,6 +111,25 @@ public class TelegramUserService {
         return response;
     }
 
+
+    // "/link <kod>" (qo'lda yozilgan) VA "/start link_<kod>" (bosh
+    // sahifadagi "🤖 Botga o'tish" havolasi orqali, TelegramBot#route)
+    // — ikkalasi ham shu yerga tushadi. linkTelegram() noto'g'ri/eskirgan
+    // kod uchun RuntimeException tashlaydi — bu yerda ushlab, foydalanuvchiga
+    // tushunarli xabar qaytariladi (avval bu xatolik jim qolar edi: eng
+    // yuqori umumiy catch faqat serverda log yozardi, botda hech narsa
+    // ko'rinmasdi — haqiqiy topilgan bug, 2026-09-08).
+    public SendMessage linkTelegramSafely(Message msg, String code) {
+        try {
+            return linkTelegram(msg, code);
+        } catch (RuntimeException e) {
+            SendMessage response = new SendMessage();
+            response.setChatId(msg.getChatId().toString());
+            response.setText("❌ " + e.getMessage() + ". Saytda qaytadan \"Telegramga ulanish\" tugmasini bosib, " +
+                    "yangi kod/havola oling (kod atigi 5 daqiqa amal qiladi).");
+            return response;
+        }
+    }
 
     public SendMessage linkTelegram(Message msg, String code) {
 
