@@ -311,9 +311,22 @@ function syncAncestors(checkbox) {
     }
 }
 
+// Har bir tugunning "aka-uka"larini (bir xil ota ichidagi boshqa
+// farzandlarni) yashiradi — faqat shu tugunning o'zi qoladi.
+function hideSiblings(el) {
+    [...el.parentElement.children].forEach(sibling => {
+        if (sibling !== el) sibling.style.display = "none";
+    });
+}
+
 // Kurs darsidan ("🎯 Darsga oid testlarni yechish") aniq bitta dars bilan
 // kelinganda — bosh menyudagi kabi HAMMASI emas, FAQAT o'sha dars
 // belgilangan holda boshlanadi (avvalgi xulq-atvor bilan bir xil).
+// Foydalanuvchi so'rovi, 2026-09-07: "белгиланган дарсдан бошқа дарслар
+// кўринмасин" — endi FAQAT shu bitta darsgacha bo'lgan aniq yo'l
+// (Yo'nalish/Bo'lim/Mavzu/Dars) ko'rinadi, qolgan HAMMA aka-uka
+// tugunlar (boshqa fanlar, mavzular, darslar) butunlay yashiriladi —
+// foydalanuvchini chalg'itmaydigan, faqat shu dars uchun tor ko'rinish.
 function selectOnlyTopic(topicId) {
     const tree = document.getElementById("hierarchyTree");
     tree.querySelectorAll(".topic-checkbox").forEach(cb => {
@@ -326,6 +339,27 @@ function selectOnlyTopic(topicId) {
     if (targetRow) {
         const topicCheckbox = targetRow.querySelector(".topic-checkbox");
         syncAncestors(topicCheckbox);
+
+        // Aniq yo'ldagi har bir daraja uchun — shu darajadagi BOSHQA
+        // barcha tugunlarni yashiramiz (faqat shu darsga olib boradigan
+        // yagona shox ko'rinib qoladi).
+        hideSiblings(targetRow);
+        const sectionEl = targetRow.closest(".hierarchy-section");
+        if (sectionEl) {
+            hideSiblings(sectionEl);
+            const scienceEl = sectionEl.closest(".hierarchy-science");
+            if (scienceEl) {
+                hideSiblings(scienceEl);
+                const fieldEl = scienceEl.closest(".hierarchy-field");
+                if (fieldEl) hideSiblings(fieldEl);
+            }
+        }
+
+        // "Barchasini belgilash" tugmasi — bitta darslik ro'yxatda
+        // ma'nosiz, shuning uchun shu holatda yashiriladi.
+        const toggleBtn = document.getElementById("toggleAllBtn");
+        if (toggleBtn) toggleBtn.style.display = "none";
+
         // Shu darsgacha bo'lgan barcha <details>'larni ochamiz (aks holda
         // yopiq bo'lib, foydalanuvchiga ko'rinmay qolishi mumkin edi).
         let el = targetRow.closest("details");
