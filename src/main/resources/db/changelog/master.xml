@@ -52,6 +52,7 @@
     <include file="/db/changelog/google-login.sql"/>
     <include file="/db/changelog/telegram-username.sql"/>
     <include file="/db/changelog/facebook-login.sql"/>
+    <include file="/db/changelog/course-sequential-unlock.sql"/>
 
 
 </databaseChangeLog>

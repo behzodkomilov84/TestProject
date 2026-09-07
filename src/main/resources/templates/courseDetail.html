@@ -136,6 +136,21 @@
                 <label class="field-label" for="editCoursePrice">Narxi (so'm)</label>
                 <input type="number" id="editCoursePrice" placeholder="Kurs narxi (so'm)" min="0" step="1000">
             </div>
+
+            <!-- Darslar ochilish tartibi — bepul va pullik kurslarga
+                 birdek tegishli (foydalanuvchi so'rovi, 2026-09-07). -->
+            <div class="content-toggle-label unlock-mode-field">
+                <span class="unlock-mode-title">Darslar ochilish tartibi</span>
+                <label class="unlock-mode-option">
+                    <input type="radio" name="editCourseUnlockMode" value="sequential">
+                    Ketma-ket (har bir Mavzuda oldingi dars tugatilgach, keyingisi ochiladi)
+                </label>
+                <label class="unlock-mode-option">
+                    <input type="radio" name="editCourseUnlockMode" value="all">
+                    Barcha darslar darhol ochiq
+                </label>
+            </div>
+
             <label class="field-label" for="editCourseCoverFile">Muqova rasmi</label>
             <div class="course-form-cover">
                 <img id="editCourseCoverPreview" class="course-cover-preview" style="display:none;" alt="Kurs rasmi">

@@ -48,6 +48,17 @@ public class Course {
     @Column(precision = 12, scale = 2)
     private BigDecimal price;
 
+    // true (standart) — har bir Mavzu (chapter) ICHIDA darslar KETMA-KET
+    // ochiladi (oldingisi tugatilmaguncha keyingisi qulflangan,
+    // CourseService#isSectionUnlockedGivenPrev). false — obuna (yoki
+    // bepul kurs) bo'lsa, BARCHA darslar darhol ochiq (foydalanuvchi
+    // so'rovi, 2026-09-07: "барча дарслар очиқ бўлиши ёки... фақат
+    // 1-дарслари очиқ бўлишини танлаш имкони бўлсин" — ham bepul, ham
+    // pullik kurslarga birdek tegishli).
+    @Column(name = "sequential_unlock", nullable = false)
+    @Builder.Default
+    private boolean sequentialUnlock = true;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;

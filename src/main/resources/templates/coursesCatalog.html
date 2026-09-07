@@ -60,6 +60,22 @@
         <div id="newCoursePriceField">
             <input type="number" id="newCoursePrice" placeholder="Kurs narxi (so'm)" min="0" step="1000">
         </div>
+        <!-- Darslar ochilish tartibi — bepul va pullik kurslarga birdek
+             tegishli (foydalanuvchi so'rovi, 2026-09-07: "барча дарслар
+             очиқ бўлиши ёки... фақат 1-дарслари очиқ бўлишини танлаш
+             имкони бўлсин"). Standart — "ketma-ket" (avvaldan mavjud,
+             hozirgacha yagona bo'lgan xulq-atvor). -->
+        <div class="content-toggle-label unlock-mode-field">
+            <span class="unlock-mode-title">Darslar ochilish tartibi</span>
+            <label class="unlock-mode-option">
+                <input type="radio" name="newCourseUnlockMode" value="sequential" checked>
+                Ketma-ket (har bir Mavzuda oldingi dars tugatilgach, keyingisi ochiladi)
+            </label>
+            <label class="unlock-mode-option">
+                <input type="radio" name="newCourseUnlockMode" value="all">
+                Barcha darslar darhol ochiq
+            </label>
+        </div>
         <div class="course-form-cover">
             <input type="file" id="newCourseCoverFile" accept="image/*">
             <span id="newCourseCoverStatus"></span>

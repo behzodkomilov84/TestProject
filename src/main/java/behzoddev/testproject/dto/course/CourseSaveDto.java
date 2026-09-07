@@ -9,8 +9,13 @@ import java.math.BigDecimal;
 // qaysi Yo'nalishga tegishli — YANGI kurs yaratishda MAJBURIY
 // (CourseService.createCourse null bo'lsa xato qaytaradi), tahrirlashda
 // ham har doim yuboriladi (aks holda mavjud bog'lanish yo'qolib qolmasin).
+// sequentialUnlock — NULL bo'lsa: yaratishda TRUE (standart, ketma-ket)
+// qabul qilinadi, tahrirlashda esa mavjud qiymat o'zgarishsiz qoladi
+// (foydalanuvchi so'rovi, 2026-09-07: "барча дарслар очиқ бўлиши ёки...
+// фақат 1-дарслари очиқ бўлишини танлаш имкони бўлсин").
 public record CourseSaveDto(
         String title, String description, String coverImageUrl,
-        Boolean published, Boolean free, BigDecimal price, Long fieldId
+        Boolean published, Boolean free, BigDecimal price, Long fieldId,
+        Boolean sequentialUnlock
 ) {
 }

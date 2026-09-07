@@ -408,6 +408,38 @@ body {
     width: auto;
 }
 
+/* "Darslar ochilish tartibi" radio guruhi — kurs yaratish/tahrirlash
+   formasida (foydalanuvchi so'rovi, 2026-09-07). ".content-toggle-label"
+   bilan bir xil oilaga tegishli, lekin bir nechta qatorli (checkbox
+   emas, radio ro'yxati) bo'lgani uchun ustunga aylantiriladi. */
+.unlock-mode-field {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    cursor: default;
+}
+
+.unlock-mode-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #4b5d73;
+}
+
+.unlock-mode-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: normal;
+    font-size: 13.5px;
+    cursor: pointer;
+    color: #334155;
+}
+
+.unlock-mode-option input[type="radio"] {
+    width: auto;
+    accent-color: #2563eb;
+}
+
 /* Bo'lim matnini .docx fayldan import qilish — matn maydoni ostida. */
 .import-file-row {
     display: flex;

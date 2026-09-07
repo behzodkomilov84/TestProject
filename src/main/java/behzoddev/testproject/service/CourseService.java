@@ -168,7 +168,8 @@ public class CourseService {
                         .orderIndex(s.getOrderIndex())
                         .type(s.getType().name())
                         .locked(!canManage && !isSectionUnlockedGivenPrev(
-                                currentUser, previousInChapterBySectionId.get(s.getId()), subscribed))
+                                currentUser, previousInChapterBySectionId.get(s.getId()), subscribed,
+                                course.isSequentialUnlock()))
                         .completed(courseSectionProgressRepository
                                 .existsByUser_IdAndSection_Id(currentUser.getId(), s.getId()))
                         .linkedTopicId(s.getLinkedTopic() != null ? s.getLinkedTopic().getId() : null)
@@ -195,6 +196,7 @@ public class CourseService {
                 .canManage(canManage)
                 .fieldId(course.getField() != null ? course.getField().getId() : null)
                 .fieldName(course.getField() != null ? course.getField().getName() : null)
+                .sequentialUnlock(course.isSequentialUnlock())
                 .sections(sectionDtos)
                 .build();
     }
@@ -214,7 +216,8 @@ public class CourseService {
         Map<Long, CourseSection> previousInChapterBySectionId = computePreviousInChapterMap(ordered);
 
         if (!canManage && !isSectionUnlockedGivenPrev(
-                currentUser, previousInChapterBySectionId.get(section.getId()), subscribed)) {
+                currentUser, previousInChapterBySectionId.get(section.getId()), subscribed,
+                course.isSequentialUnlock())) {
             throw new AccessDeniedException("⛔ Bu dars hali ochilmagan. Avval oldingi darsni tugatish kerak.");
         }
 
@@ -233,7 +236,8 @@ public class CourseService {
         // ham allaqachon ochiq bo'lishi mumkin (masalan sahifa birinchi
         // marta ochilganda, video hali ko'rilmagan holatda ham).
         boolean nextUnlocked = next != null && (canManage || isSectionUnlockedGivenPrev(
-                currentUser, previousInChapterBySectionId.get(next.getId()), subscribed));
+                currentUser, previousInChapterBySectionId.get(next.getId()), subscribed,
+                course.isSequentialUnlock()));
 
         return CourseSectionContentDto.builder()
                 .id(section.getId())
@@ -271,7 +275,7 @@ public class CourseService {
         boolean canManage = canManageCourse(course, currentUser);
         boolean subscribed = isSubscribed(currentUser, course);
 
-        if (!canManage && !isSectionUnlocked(currentUser, section, subscribed)) {
+        if (!canManage && !isSectionUnlocked(currentUser, section, subscribed, course.isSequentialUnlock())) {
             throw new AccessDeniedException("⛔ Bu darsni tugatish uchun avval ochilgan bo'lishi kerak.");
         }
 
@@ -301,15 +305,21 @@ public class CourseService {
     // Ko'p darsni BIRGALIKDA hisoblash kerak bo'lganda (getDetail) buning
     // o'rniga computePreviousInChapterMap() + isSectionUnlockedGivenPrev()
     // ishlatiladi (N+1 so'rovning oldini olish uchun).
-    private boolean isSectionUnlocked(User user, CourseSection section, boolean subscribed) {
+    private boolean isSectionUnlocked(User user, CourseSection section, boolean subscribed, boolean sequentialUnlock) {
         List<CourseSection> ordered = courseSectionRepository
                 .findByCourse_IdOrderByOrderIndexAsc(section.getCourse().getId());
         CourseSection prevInChapter = computePreviousInChapterMap(ordered).get(section.getId());
-        return isSectionUnlockedGivenPrev(user, prevInChapter, subscribed);
+        return isSectionUnlockedGivenPrev(user, prevInChapter, subscribed, sequentialUnlock);
     }
 
-    private boolean isSectionUnlockedGivenPrev(User user, CourseSection prevInChapter, boolean subscribed) {
+    // "sequentialUnlock" — kurs sozlamasi (foydalanuvchi so'rovi,
+    // 2026-09-07): false bo'lsa, obuna (yoki bepul kurs) bo'lgan har bir
+    // foydalanuvchiga BARCHA darslar darhol ochiq — ketma-ket tugatish
+    // talab qilinmaydi.
+    private boolean isSectionUnlockedGivenPrev(User user, CourseSection prevInChapter, boolean subscribed,
+                                                boolean sequentialUnlock) {
         if (!subscribed) return false;
+        if (!sequentialUnlock) return true; // "Barcha darslar ochiq" tanlangan
         if (prevInChapter == null) return true; // shu Mavzu (yoki "mavzusizlar" guruhi) ICHIDAGI birinchi dars
 
         return courseSectionProgressRepository.existsByUser_IdAndSection_Id(user.getId(), prevInChapter.getId());
@@ -362,6 +372,7 @@ public class CourseService {
                 .createdBy(owner)
                 .field(field)
                 .orderIndex(nextOrderIndex)
+                .sequentialUnlock(dto.sequentialUnlock() == null || dto.sequentialUnlock())
                 .build();
 
         courseRepository.save(course);
@@ -410,6 +421,9 @@ public class CourseService {
         }
         if (dto.free() != null) {
             course.setFree(dto.free());
+        }
+        if (dto.sequentialUnlock() != null) {
+            course.setSequentialUnlock(dto.sequentialUnlock());
         }
 
         courseRepository.save(course);

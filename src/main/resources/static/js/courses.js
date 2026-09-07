@@ -660,11 +660,14 @@ async function submitCreateCourse() {
         const free = document.getElementById("newCourseFree").checked;
         const priceValue = document.getElementById("newCoursePrice").value;
         const price = !free && priceValue ? Number(priceValue) : null;
+        // Darslar ochilish tartibi (foydalanuvchi so'rovi, 2026-09-07) —
+        // bepul/pullik kursdan qat'i nazar.
+        const sequentialUnlock = document.querySelector('input[name="newCourseUnlockMode"]:checked').value === "sequential";
 
         const res = await fetch("/api/courses", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ title, description, coverImageUrl, published: false, free, price, fieldId: Number(fieldId) })
+            body: JSON.stringify({ title, description, coverImageUrl, published: false, free, price, fieldId: Number(fieldId), sequentialUnlock })
         });
 
         const data = await res.json().catch(() => ({}));

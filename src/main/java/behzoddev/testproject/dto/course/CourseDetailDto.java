@@ -22,6 +22,9 @@ public record CourseDetailDto(
         // to'ldirish uchun (courseDetail.js).
         Long fieldId,
         String fieldName,
+        // "✏️ Tahrirlash" formasidagi radio tanlovini oldindan to'ldirish
+        // uchun (foydalanuvchi so'rovi, 2026-09-07).
+        boolean sequentialUnlock,
         List<CourseSectionSummaryDto> sections
 ) {
 }

@@ -133,6 +133,33 @@ class CourseServiceTest {
                 .isInstanceOf(AccessDeniedException.class);
     }
 
+    // Foydalanuvchi so'rovi, 2026-09-07: "барча дарслар очиқ бўлиши ёки...
+    // фақат 1-дарслари очиқ бўлишини танлаш имкони бўлсин" — kurs
+    // sozlamasida "sequentialUnlock=false" bo'lsa, oldingi dars
+    // tugatilmagan bo'lsa ham, obunachi uchun BARCHA darslar ochiq.
+    @Test
+    void getSectionContent_secondSectionWithoutCompletingFirst_whenSequentialUnlockFalse_isUnlocked() {
+        User user = subscriber();
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner())
+                .sequentialUnlock(false).build();
+        CourseSection section2 = CourseSection.builder().id(2L).course(course).title("2-bo'lim")
+                .orderIndex(2).type(CourseSectionType.TEXT).textContent("matn").build();
+        CourseSection section1 = CourseSection.builder().id(1L).course(course).orderIndex(1).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findById(2L)).thenReturn(Optional.of(section2));
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+                eq(1L), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(true);
+        when(courseSectionProgressRepository.existsByUser_IdAndSection_Id(1L, 2L)).thenReturn(false);
+        when(courseSectionRepository.findByCourse_IdAndOrderIndex(1L, 1)).thenReturn(Optional.of(section1));
+        when(courseSectionRepository.findByCourse_IdAndOrderIndex(1L, 3)).thenReturn(Optional.empty());
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(section1, section2));
+
+        CourseSectionContentDto result = courseService.getSectionContent(1L, 2L, user);
+
+        assertThat(result.title()).isEqualTo("2-bo'lim");
+    }
+
     @Test
     void getSectionContent_secondSectionAfterCompletingFirst_isUnlocked() {
         User user = subscriber();
@@ -656,7 +683,7 @@ class CourseServiceTest {
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
         when(courseFieldRepository.findById(10L)).thenReturn(Optional.of(testField()));
 
-        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null, null, 10L);
+        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null, null, 10L, null);
         courseService.updateCourse(1L, dto, admin);
 
         assertThat(course.getTitle()).isEqualTo("Yangi nom");
@@ -667,7 +694,7 @@ class CourseServiceTest {
         Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
 
-        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null, null, null);
+        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null, null, null, null);
 
         assertThatThrownBy(() -> courseService.updateCourse(1L, dto, admin()))
                 .isInstanceOf(org.springframework.security.access.AccessDeniedException.class)
@@ -1135,10 +1162,64 @@ class CourseServiceTest {
         when(courseRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(courseFieldRepository.findById(10L)).thenReturn(Optional.of(testField()));
 
-        CourseSaveDto dto = new CourseSaveDto("Kurs", null, null, null, true, null, 10L);
+        CourseSaveDto dto = new CourseSaveDto("Kurs", null, null, null, true, null, 10L, null);
         CourseDto result = courseService.createCourse(dto, owner());
 
         assertThat(result.free()).isTrue();
+    }
+
+    // ===== Darslar ochilish tartibi (sequentialUnlock) =====
+    // Foydalanuvchi so'rovi, 2026-09-07: "барча дарслар очиқ бўлиши ёки...
+    // фақат 1-дарслари очиқ бўлишини танлаш имкони бўлсин".
+
+    @Test
+    void createCourse_sequentialUnlockNull_defaultsToTrue() {
+        when(courseRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(courseFieldRepository.findById(10L)).thenReturn(Optional.of(testField()));
+
+        CourseSaveDto dto = new CourseSaveDto("Kurs", null, null, null, null, null, 10L, null);
+        courseService.createCourse(dto, owner());
+
+        org.mockito.ArgumentCaptor<Course> captor = org.mockito.ArgumentCaptor.forClass(Course.class);
+        org.mockito.Mockito.verify(courseRepository).save(captor.capture());
+        assertThat(captor.getValue().isSequentialUnlock()).isTrue();
+    }
+
+    @Test
+    void createCourse_sequentialUnlockFalse_savesAsAllOpen() {
+        when(courseRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(courseFieldRepository.findById(10L)).thenReturn(Optional.of(testField()));
+
+        CourseSaveDto dto = new CourseSaveDto("Kurs", null, null, null, null, null, 10L, false);
+        courseService.createCourse(dto, owner());
+
+        org.mockito.ArgumentCaptor<Course> captor = org.mockito.ArgumentCaptor.forClass(Course.class);
+        org.mockito.Mockito.verify(courseRepository).save(captor.capture());
+        assertThat(captor.getValue().isSequentialUnlock()).isFalse();
+    }
+
+    @Test
+    void updateCourse_sequentialUnlockNull_leavesExistingValueUnchanged() {
+        Course course = Course.builder().id(1L).title("Kurs").sequentialUnlock(false).createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseFieldRepository.findById(10L)).thenReturn(Optional.of(testField()));
+
+        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null, null, 10L, null);
+        courseService.updateCourse(1L, dto, owner());
+
+        assertThat(course.isSequentialUnlock()).isFalse();
+    }
+
+    @Test
+    void updateCourse_sequentialUnlockTrue_updatesExistingValue() {
+        Course course = Course.builder().id(1L).title("Kurs").sequentialUnlock(false).createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseFieldRepository.findById(10L)).thenReturn(Optional.of(testField()));
+
+        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null, null, 10L, true);
+        courseService.updateCourse(1L, dto, owner());
+
+        assertThat(course.isSequentialUnlock()).isTrue();
     }
 
     @Test
@@ -1147,7 +1228,7 @@ class CourseServiceTest {
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
         when(courseFieldRepository.findById(10L)).thenReturn(Optional.of(testField()));
 
-        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null, null, 10L);
+        CourseSaveDto dto = new CourseSaveDto("Yangi nom", null, null, null, null, null, 10L, null);
         courseService.updateCourse(1L, dto, owner());
 
         assertThat(course.isFree()).isTrue();
@@ -1161,7 +1242,7 @@ class CourseServiceTest {
         when(courseFieldRepository.findById(10L)).thenReturn(Optional.of(testField()));
 
         CourseSaveDto dto = new CourseSaveDto("Kurs", null, null, null, false,
-                new java.math.BigDecimal("150000"), 10L);
+                new java.math.BigDecimal("150000"), 10L, null);
         CourseDto result = courseService.createCourse(dto, owner());
 
         assertThat(result.price()).isEqualByComparingTo("150000");
@@ -1175,7 +1256,7 @@ class CourseServiceTest {
         when(courseFieldRepository.findById(10L)).thenReturn(Optional.of(testField()));
 
         CourseSaveDto dto = new CourseSaveDto("Kurs", null, null, null, null,
-                new java.math.BigDecimal("200000"), 10L);
+                new java.math.BigDecimal("200000"), 10L, null);
         courseService.updateCourse(1L, dto, owner());
 
         assertThat(course.getPrice()).isEqualByComparingTo("200000");

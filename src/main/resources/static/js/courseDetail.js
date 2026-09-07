@@ -1667,7 +1667,18 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
     // (courseWordExportModal — butun kurs eksporti bilan bir xil oyna,
     // faqat ko'lami boshqacha; ikonka question.html'dagi Word eksport
     // tugmasi bilan bir xil SVG).
-    const exportChapterBtn = (group.chapterId != null)
+    //
+    // HAQIQIY TOPILGAN BUG (2026-09-07, foydalanuvchi so'rovi: "Курс
+    // Мавзуларидаги Вордга печатни Userларга блоклаб қўйиш керак ...
+    // Ҳеч қандай ҳолатда ҳам вордга экспорт қила олмасин"): shu tugma
+    // (yonidagi delete/reorder tugmalaridan farqli) "cachedCourse.
+    // canManage" bilan cheklanmagan edi — oddiy USER (talaba) ham buni
+    // ko'rib, bosganda backend'ning @PreAuthorize("...OWNER','ADMIN")
+    // tomonidan bloklanib, tushunarsiz 403 xatoga uchrardi. Backend
+    // allaqachon xavfsiz edi (CourseController) — bu yerda faqat UI'da
+    // ko'rinishni ham OWNER/ADMIN bilan cheklaymiz, boshqa shu turdagi
+    // (kurs va dars darajasidagi) eksport tugmalari bilan bir xil qoida.
+    const exportChapterBtn = (cachedCourse && cachedCourse.canManage && group.chapterId != null)
         ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openCourseWordExportModal(${group.chapterId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Shu mavzuni Word (.docx) faylga eksport qilish"><svg width="14" height="14" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" style="vertical-align:-2px;"><rect x="4" y="4" width="40" height="40" rx="7" fill="#185ABD"/><rect x="4" y="4" width="18" height="40" rx="7" fill="#103F91"/><text x="31" y="30" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#fff" text-anchor="middle">W</text></svg></button>`
         : "";
 
@@ -2876,6 +2887,13 @@ function openEditCourseForm() {
     document.getElementById("editCourseFree").checked = !!(cachedCourse && cachedCourse.free);
     document.getElementById("editCoursePrice").value = (cachedCourse && cachedCourse.price) || "";
     onEditCourseFreeToggle();
+
+    // Darslar ochilish tartibi (foydalanuvchi so'rovi, 2026-09-07) —
+    // mavjud qiymatni oldindan belgilaydi (default — "sequential",
+    // cachedCourse.sequentialUnlock hali kelmagan/undefined bo'lsa ham).
+    const unlockMode = (cachedCourse && cachedCourse.sequentialUnlock === false) ? "all" : "sequential";
+    const unlockInput = document.querySelector(`input[name="editCourseUnlockMode"][value="${unlockMode}"]`);
+    if (unlockInput) unlockInput.checked = true;
     loadFieldSelectOptions("editCourseField", cachedCourse && cachedCourse.fieldId);
 
     if (cachedCourse && cachedCourse.coverImageUrl) {
@@ -2966,6 +2984,9 @@ async function submitEditCourse() {
         const free = document.getElementById("editCourseFree").checked;
         const priceValue = document.getElementById("editCoursePrice").value;
         const price = !free && priceValue ? Number(priceValue) : null;
+        // Darslar ochilish tartibi (foydalanuvchi so'rovi, 2026-09-07) —
+        // bepul/pullik kursdan qat'i nazar.
+        const sequentialUnlock = document.querySelector('input[name="editCourseUnlockMode"]:checked').value === "sequential";
 
         const res = await fetch(`/api/courses/${COURSE_ID}`, {
             method: "PUT",
@@ -2973,7 +2994,8 @@ async function submitEditCourse() {
             body: JSON.stringify({
                 title, description, coverImageUrl, free, price,
                 published: cachedCourse.published,
-                fieldId: Number(fieldId)
+                fieldId: Number(fieldId),
+                sequentialUnlock
             })
         });
 
