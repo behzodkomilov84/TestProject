@@ -146,9 +146,14 @@ function setupModeLabel() {
         hard: "🔥 HARD MODE"
     };
 
-    const mode = testState.mode;
+    // Haqiqiy topilgan bug (2026-09-07): "mode" bo'sh/noma'lum bo'lsa
+    // (masalan eski sessionStorage'da qolib ketgan "null" matni),
+    // "mode.toUpperCase()" so'zma-so'z "NULL" chiqarardi (yoki mode
+    // umuman string bo'lmasa — xato berardi). Endi bunday holatlarda
+    // "exam" (oddiy rejim) nomiga tushib qoladi.
+    const mode = (testState.mode && modeNames[testState.mode]) ? testState.mode : "exam";
 
-    label.innerText = modeNames[mode] || mode.toUpperCase();
+    label.innerText = modeNames[mode];
 
     // ключевая строка — режим в body для CSS
     document.body.dataset.mode = mode;

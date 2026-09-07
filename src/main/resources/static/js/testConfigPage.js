@@ -476,7 +476,16 @@ function updateMax() {
 /*==================================================================*/
 function startTest() {
 
-    const mode = sessionStorage.getItem("testMode");
+    // Haqiqiy topilgan bug (2026-09-07): "oddiy" (practice/hard bo'lmagan,
+    // vaqt cheklovli) rejimda "testMode" HECH QACHON aniq qiymatga ega
+    // bo'lmagan — shu bo'sh (null) holatda sessionStorage'ga yozilardi,
+    // u esa faqat STRING saqlaydi, shuning uchun JS "null" qiymati
+    // avtomatik "null" MATNIGA aylanardi. testSession.js buni tanimay,
+    // sahifa tepasida chiroyli nom o'rniga so'zma-so'z "NULL" chiqarardi
+    // (testSession.js#setupModeLabel — u yerda "exam" nomi kutilgan
+    // edi, lekin hech qachon berilmagan edi). Endi bu yerda aniq
+    // "exam" qilib belgilanadi.
+    const mode = sessionStorage.getItem("testMode") || "exam";
     const topicIds = getCheckedTopicIds();
     const limit = Number(document.getElementById("limit").value);
     const timeValue = Number(document.getElementById("time").value);
