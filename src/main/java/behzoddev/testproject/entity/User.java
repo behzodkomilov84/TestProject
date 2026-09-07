@@ -68,6 +68,11 @@ public class User implements UserDetails {
     @Column(name = "google_id", unique = true, length = 64)
     private String googleId;
 
+    // Facebook orqali kirish — Facebook'ning barqaror foydalanuvchi ID'si
+    // (foydalanuvchi so'rovi, 2026-09-07). googleId bilan bir xil g'oya.
+    @Column(name = "facebook_id", unique = true, length = 64)
+    private String facebookId;
+
     // Profilga qo'shimcha ma'lumotlar (foydalanuvchi so'rovi, 2026-09-06) —
     // "qaysi sohadan, qaysi kasbdagilar foydalanayotganini" bilish uchun.
     // Eski foydalanuvchilarda NULL bo'lishi mumkin — "shart"lik faqat YANGI

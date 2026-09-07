@@ -19,6 +19,7 @@ public record UpdateUserDto(
         String jobTitle,
         String telegramId,
         String telegramUsername,
-        String googleId
+        String googleId,
+        String facebookId
 ) {
 }

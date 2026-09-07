@@ -275,6 +275,19 @@ body {
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.14);
 }
 
+/* "Facebook orqali kirish" — Facebook'ning o'z brend ko'k rangi
+   (#1877F2), Telegram/Google bilan bir xil doira andozasi. */
+.facebook-login-btn.social-icon-btn {
+    background: #1877F2;
+    border: none;
+}
+
+.facebook-login-btn.social-icon-btn:hover {
+    background: #145dbf;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 18px rgba(24, 119, 242, 0.4);
+}
+
 /* Tooltip — matn (masalan "Telegram orqali kirish") faqat shu ustiga
    kelinganda, tugma tepasida chiqadi. Native "title" atributi o'rniga
    ATAYLAB shu (kechikishsiz, saytning o'z uslubida, barcha brauzerlarda

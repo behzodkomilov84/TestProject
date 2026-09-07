@@ -108,6 +108,7 @@ function renderUsers(users, subscriptions) {
             <td>${user.telegramId ?? "—"}</td>
             <td>${user.telegramUsername ? "@" + escapeHtml(user.telegramUsername) : "—"}</td>
             <td>${escapeHtml(user.googleId) || "—"}</td>
+            <td>${escapeHtml(user.facebookId) || "—"}</td>
             <td>${escapeHtml(user.workplace) || "—"}</td>
             <td>${escapeHtml(user.jobTitle) || "—"}</td>
             <td><div class="roles-cell">${checkboxesHtml}</div></td>
@@ -238,6 +239,7 @@ function openEditModal(id) {
     document.getElementById("editTelegramId").value = user.telegramId || "";
     document.getElementById("editTelegramUsername").value = user.telegramUsername || "";
     document.getElementById("editGoogleId").value = user.googleId || "";
+    document.getElementById("editFacebookId").value = user.facebookId || "";
 
     const errorEl = document.getElementById("editUserError");
     errorEl.hidden = true;
@@ -264,7 +266,8 @@ async function submitEditUser(event) {
         jobTitle: document.getElementById("editJobTitle").value.trim(),
         telegramId: document.getElementById("editTelegramId").value.trim(),
         telegramUsername: document.getElementById("editTelegramUsername").value.trim(),
-        googleId: document.getElementById("editGoogleId").value.trim()
+        googleId: document.getElementById("editGoogleId").value.trim(),
+        facebookId: document.getElementById("editFacebookId").value.trim()
     };
 
     const errorEl = document.getElementById("editUserError");

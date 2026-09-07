@@ -70,6 +70,8 @@ services:
       # "sozlanmagan" xabari chiqadi).
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
       # Markazlashtirilgan xato kuzatuvi (Sentry, ixtiyoriy — .env'da
       # bo'lmasa, SentryAppender jim o'zini o'chiradi).
       SENTRY_DSN: ${SENTRY_DSN:-}

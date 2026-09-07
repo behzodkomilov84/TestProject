@@ -70,6 +70,7 @@ public class SecurityConfig {
                                 // oqimi (GoogleLoginController), hali login
                                 // qilinmagan holatda keladi.
                                 "/oauth2/google/**",
+                                "/oauth2/facebook/**",
                                 // Click'ning o'z serverlari chaqiradi — sessiyasiz,
                                 // o'zining imzo tekshiruvi orqali himoyalangan
                                 // (ClickService.verifySign).

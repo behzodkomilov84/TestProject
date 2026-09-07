@@ -94,6 +94,11 @@ telegram:
 google:
   client-id: ${GOOGLE_CLIENT_ID:}
   client-secret: ${GOOGLE_CLIENT_SECRET:}
+# "Facebook orqali kirish" — google bilan bir xil g'oya (foydalanuvchi
+# so'rovi, 2026-09-07). Meta for Developers'da yaratilgan App ID/Secret.
+facebook:
+  app-id: ${FACEBOOK_APP_ID:}
+  app-secret: ${FACEBOOK_APP_SECRET:}
 app:
   # Ilovaning o'z ommaviy (tashqi) manzili — botdagi havolalar
   # (masalan avtomatik login) shu bazaga qo'shib quriladi. Ilova o'zi

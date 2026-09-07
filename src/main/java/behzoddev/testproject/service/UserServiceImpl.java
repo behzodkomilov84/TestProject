@@ -315,6 +315,11 @@ public class UserServiceImpl implements UserDetailsService, UserService {
             throw new IllegalArgumentException("❌Bu Google ID allaqachon boshqa hisobga bog'langan.");
         }
 
+        String newFacebookId = isBlank(dto.facebookId()) ? null : dto.facebookId().trim();
+        if (newFacebookId != null && userRepository.existsByFacebookIdAndIdNot(newFacebookId, targetUserId)) {
+            throw new IllegalArgumentException("❌Bu Facebook ID allaqachon boshqa hisobga bog'langan.");
+        }
+
         user.setUsername(newUsername);
         user.setFirstName(isBlank(dto.firstName()) ? null : dto.firstName().trim());
         user.setLastName(isBlank(dto.lastName()) ? null : dto.lastName().trim());
@@ -325,6 +330,7 @@ public class UserServiceImpl implements UserDetailsService, UserService {
         user.setTelegramId(newTelegramId);
         user.setTelegramUsername(isBlank(dto.telegramUsername()) ? null : dto.telegramUsername().trim());
         user.setGoogleId(newGoogleId);
+        user.setFacebookId(newFacebookId);
 
         return userRepository.save(user);
     }

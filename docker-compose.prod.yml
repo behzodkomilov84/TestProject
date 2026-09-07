@@ -82,6 +82,8 @@ services:
       # ro'yxatlanmasa, .env'da bo'lsa ham konteynerga umuman o'tmaydi.
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      FACEBOOK_APP_ID: ${FACEBOOK_APP_ID:-}
+      FACEBOOK_APP_SECRET: ${FACEBOOK_APP_SECRET:-}
       # Markazlashtirilgan xato kuzatuvi (Sentry) — .env'da bo'lmasa (bo'sh),
       # logback-spring.xml'dagi SentryAppender jim o'zini o'chiradi.
       SENTRY_DSN: ${SENTRY_DSN:-}

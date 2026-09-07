@@ -62,6 +62,7 @@ public class UserRestController {
                 .telegramId(u.getTelegramId())
                 .telegramUsername(u.getTelegramUsername())
                 .googleId(u.getGoogleId())
+                .facebookId(u.getFacebookId())
                 .firstName(u.getFirstName())
                 .lastName(u.getLastName())
                 .workplace(u.getWorkplace())

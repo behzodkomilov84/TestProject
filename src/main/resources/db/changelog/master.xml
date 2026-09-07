@@ -51,6 +51,7 @@
     <include file="/db/changelog/user-profile-fields.sql"/>
     <include file="/db/changelog/google-login.sql"/>
     <include file="/db/changelog/telegram-username.sql"/>
+    <include file="/db/changelog/facebook-login.sql"/>
 
 
 </databaseChangeLog>

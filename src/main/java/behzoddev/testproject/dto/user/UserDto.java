@@ -19,6 +19,7 @@ public record UserDto(
         Long telegramId,
         String telegramUsername,
         String googleId,
+        String facebookId,
         String firstName,
         String lastName,
         String workplace,

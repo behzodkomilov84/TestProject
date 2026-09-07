@@ -22,6 +22,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     Optional<User> findByGoogleId(String googleId);
 
+    Optional<User> findByFacebookId(String facebookId);
+
     boolean existsByEmail(String email);
 
     Optional<User> findByEmail(String email);
@@ -54,5 +56,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByTelegramIdAndIdNot(Long telegramId, Long id);
 
     boolean existsByGoogleIdAndIdNot(String googleId, Long id);
+
+    boolean existsByFacebookIdAndIdNot(String facebookId, Long id);
 
 }

@@ -439,7 +439,7 @@ class UserServiceImplTest {
 
         behzoddev.testproject.dto.user.UpdateUserDto dto = new behzoddev.testproject.dto.user.UpdateUserDto(
                 "bob2", "Ism", "Familiya", "new@mail.com", "901234567", "Ish joyi", "Lavozim",
-                null, null, null);
+                null, null, null, null);
 
         User result = userService.adminUpdateUser(1L, dto);
 
@@ -457,7 +457,7 @@ class UserServiceImplTest {
         when(userRepository.existsByUsername("taken")).thenReturn(true);
 
         behzoddev.testproject.dto.user.UpdateUserDto dto = new behzoddev.testproject.dto.user.UpdateUserDto(
-                "taken", null, null, null, null, null, null, null, null, null);
+                "taken", null, null, null, null, null, null, null, null, null, null);
 
         assertThatThrownBy(() -> userService.adminUpdateUser(1L, dto))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -472,7 +472,7 @@ class UserServiceImplTest {
         when(userRepository.existsByPhoneNumberAndIdNot("+998901234567", 1L)).thenReturn(true);
 
         behzoddev.testproject.dto.user.UpdateUserDto dto = new behzoddev.testproject.dto.user.UpdateUserDto(
-                "bob", null, null, null, "901234567", null, null, null, null, null);
+                "bob", null, null, null, "901234567", null, null, null, null, null, null);
 
         assertThatThrownBy(() -> userService.adminUpdateUser(1L, dto))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -486,7 +486,7 @@ class UserServiceImplTest {
         when(userRepository.existsByTelegramIdAndIdNot(555L, 1L)).thenReturn(true);
 
         behzoddev.testproject.dto.user.UpdateUserDto dto = new behzoddev.testproject.dto.user.UpdateUserDto(
-                "bob", null, null, null, null, null, null, "555", null, null);
+                "bob", null, null, null, null, null, null, "555", null, null, null);
 
         assertThatThrownBy(() -> userService.adminUpdateUser(1L, dto))
                 .isInstanceOf(IllegalArgumentException.class);
@@ -500,7 +500,21 @@ class UserServiceImplTest {
         when(userRepository.existsByGoogleIdAndIdNot("abc123", 1L)).thenReturn(true);
 
         behzoddev.testproject.dto.user.UpdateUserDto dto = new behzoddev.testproject.dto.user.UpdateUserDto(
-                "bob", null, null, null, null, null, null, null, null, "abc123");
+                "bob", null, null, null, null, null, null, null, null, "abc123", null);
+
+        assertThatThrownBy(() -> userService.adminUpdateUser(1L, dto))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void adminUpdateUser_facebookIdTakenByAnother_throws() {
+        User target = User.builder().id(1L).username("bob").roles(new HashSet<>(Set.of(roleUser))).build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(target));
+        when(userRepository.existsByFacebookIdAndIdNot("fb123", 1L)).thenReturn(true);
+
+        behzoddev.testproject.dto.user.UpdateUserDto dto = new behzoddev.testproject.dto.user.UpdateUserDto(
+                "bob", null, null, null, null, null, null, null, null, null, "fb123");
 
         assertThatThrownBy(() -> userService.adminUpdateUser(1L, dto))
                 .isInstanceOf(IllegalArgumentException.class);
