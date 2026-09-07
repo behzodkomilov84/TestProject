@@ -450,6 +450,16 @@ function startTest() {
         return;
     }
 
+    // "time" input endi avtomatik "10" bilan to'ldirilmaydi (foydalanuvchi
+    // so'rovi, 2026-09-07) — shuning uchun bo'sh qolishi mumkin, bu yerda
+    // aniq tekshiriladi. "practice" rejimida vaqt cheklovi umuman
+    // ko'rsatilmaydi (timeSection yashirin), shuning uchun bu yerda
+    // tekshirilmaydi.
+    if (mode !== "practice" && timeValue <= 0) {
+        showAlertModal("Vaqtni kiriting");
+        return;
+    }
+
     // Сохраняем данные в sessionStorage
     sessionStorage.setItem("topicIds", JSON.stringify(topicIds));
     sessionStorage.setItem("limit", limit);

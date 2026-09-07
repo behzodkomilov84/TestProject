@@ -70,7 +70,11 @@
 
     <div class="section" id="timeSection">
         Umumiy vaqt (minut)
-        <input type="number" id="time" value="10">
+        <!-- Avval "value=10" bilan boshlanardi (limit input'dagi bilan
+             bir xil chalg'ituvchi muammo) — foydalanuvchi so'rovi,
+             2026-09-07: "вақтни ҳам по умолчанию 10 ни олиб ташла.
+             Placeholder tursin". -->
+        <input type="number" id="time" min="1" placeholder="--Vaqtni kiriting (minutlarda)--">
     </div>
 
     <button onclick="startTest()">Testni boshlash</button>
