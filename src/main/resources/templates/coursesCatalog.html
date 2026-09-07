@@ -73,11 +73,16 @@
             </label>
             <label class="unlock-mode-option">
                 <input type="radio" name="newCourseUnlockMode" value="all">
-                Barcha darslar darhol ochiq
+                Barcha darslar birdaniga ochiladi (pullik kursda — obuna bo'lgach; bepul kursda — darhol)
             </label>
         </div>
         <div class="course-form-cover">
-            <input type="file" id="newCourseCoverFile" accept="image/*">
+            <div class="file-picker-row">
+                <label class="file-picker-btn" for="newCourseCoverFile">📁 Fayl tanlash</label>
+                <span class="file-picker-filename" id="newCourseCoverFileName">Fayl tanlanmagan</span>
+            </div>
+            <input type="file" id="newCourseCoverFile" accept="image/*" class="file-picker-input"
+                   onchange="updateFilePickerName(this, 'newCourseCoverFileName')">
             <span id="newCourseCoverStatus"></span>
         </div>
         <div class="course-form-actions">

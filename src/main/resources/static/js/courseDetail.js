@@ -1,6 +1,18 @@
 let cachedCourse = null;
 let clickPaymentEnabled = false;
 
+// Brauzerning o'z "Fayl tanlash" tugmasi (native <input type="file">)
+// TILGA (masalan ruscha "Выберите файл") qarab chiqadi va matnini
+// o'zgartirib bo'lmaydi — shu sabab ".file-picker-input" bilan
+// ko'rinmas qilib, o'rniga o'zbekcha tugma + shu funksiya orqali
+// tanlangan fayl nomi ko'rsatiladi (foydalanuvchi so'rovi, 2026-09-07:
+// "выберите файлни ўзбекча қил").
+function updateFilePickerName(input, spanId) {
+    const span = document.getElementById(spanId);
+    if (!span) return;
+    span.textContent = (input.files && input.files[0]) ? input.files[0].name : "Fayl tanlanmagan";
+}
+
 // Darslar ro'yxati sahifalanadi — bitta sahifada shuncha karta ko'rsatiladi
 // (renderSections/changeSectionsPage). Sahifa raqami 0'dan boshlanadi. Bu —
 // hech qaysi dars biror Mavzuga biriktirilmagan (eski/oddiy) kurslar
@@ -861,6 +873,8 @@ function onImportFileSelected(fileInput, actionsId) {
 function cancelDocxImport(fileInputId, actionsId) {
     document.getElementById(fileInputId).value = "";
     document.getElementById(actionsId).classList.add('hidden');
+    const nameSpan = document.getElementById(fileInputId + "Name");
+    if (nameSpan) nameSpan.textContent = "Fayl tanlanmagan";
 }
 
 // .docx faylni mammoth.js orqali HTML'ga aylantiradi — abzatslar,
@@ -2884,6 +2898,7 @@ function openEditCourseForm() {
     const preview = document.getElementById("editCourseCoverPreview");
     document.getElementById("editCourseCoverFile").value = "";
     document.getElementById("editCourseCoverStatus").textContent = "";
+    document.getElementById("editCourseCoverFileName").textContent = "Fayl tanlanmagan";
     document.getElementById("editCourseFree").checked = !!(cachedCourse && cachedCourse.free);
     document.getElementById("editCoursePrice").value = (cachedCourse && cachedCourse.price) || "";
     onEditCourseFreeToggle();

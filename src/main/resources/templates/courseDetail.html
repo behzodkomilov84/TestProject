@@ -147,14 +147,19 @@
                 </label>
                 <label class="unlock-mode-option">
                     <input type="radio" name="editCourseUnlockMode" value="all">
-                    Barcha darslar darhol ochiq
+                    Barcha darslar birdaniga ochiladi (pullik kursda — obuna bo'lgach; bepul kursda — darhol)
                 </label>
             </div>
 
             <label class="field-label" for="editCourseCoverFile">Muqova rasmi</label>
             <div class="course-form-cover">
                 <img id="editCourseCoverPreview" class="course-cover-preview" style="display:none;" alt="Kurs rasmi">
-                <input type="file" id="editCourseCoverFile" accept="image/*" onchange="previewEditCourseCover(this)">
+                <div class="file-picker-row">
+                    <label class="file-picker-btn" for="editCourseCoverFile">📁 Fayl tanlash</label>
+                    <span class="file-picker-filename" id="editCourseCoverFileName">Fayl tanlanmagan</span>
+                </div>
+                <input type="file" id="editCourseCoverFile" accept="image/*" class="file-picker-input"
+                       onchange="previewEditCourseCover(this); updateFilePickerName(this, 'editCourseCoverFileName')">
                 <span id="editCourseCoverStatus"></span>
             </div>
             <div class="course-form-actions">
@@ -237,8 +242,10 @@
                 <div id="newSectionTextEditor" class="rich-text-editor" contenteditable="true"
                      data-placeholder="Matn kontenti — yozing yoki PDF/Word'dan joylashtiring (formatlash saqlanadi)"></div>
                 <div class="import-file-row">
-                    <label for="newSectionImportFile">📁 yoki .docx faylni import qilish:</label>
-                    <input type="file" id="newSectionImportFile" accept=".docx" onchange="onImportFileSelected(this, 'newSectionImportActions')">
+                    <label class="file-picker-btn" for="newSectionImportFile">📁 yoki .docx faylni import qilish</label>
+                    <span class="file-picker-filename" id="newSectionImportFileName">Fayl tanlanmagan</span>
+                    <input type="file" id="newSectionImportFile" accept=".docx" class="file-picker-input"
+                           onchange="onImportFileSelected(this, 'newSectionImportActions'); updateFilePickerName(this, 'newSectionImportFileName')">
                     <span id="newSectionImportActions" class="import-actions hidden">
                         <button type="button" onclick="importDocxFile(document.getElementById('newSectionImportFile'), 'newSectionTextEditor')">📥 Import qilish</button>
                         <button type="button" onclick="cancelDocxImport('newSectionImportFile', 'newSectionImportActions')">Bekor qilish</button>
@@ -383,8 +390,10 @@
                 <div id="editSectionTextEditor" class="rich-text-editor" contenteditable="true"
                      data-placeholder="Matn kontenti — yozing yoki PDF/Word'dan joylashtiring (formatlash saqlanadi)"></div>
                 <div class="import-file-row">
-                    <label for="editSectionImportFile">📁 yoki .docx faylni import qilish:</label>
-                    <input type="file" id="editSectionImportFile" accept=".docx" onchange="onImportFileSelected(this, 'editSectionImportActions')">
+                    <label class="file-picker-btn" for="editSectionImportFile">📁 yoki .docx faylni import qilish</label>
+                    <span class="file-picker-filename" id="editSectionImportFileName">Fayl tanlanmagan</span>
+                    <input type="file" id="editSectionImportFile" accept=".docx" class="file-picker-input"
+                           onchange="onImportFileSelected(this, 'editSectionImportActions'); updateFilePickerName(this, 'editSectionImportFileName')">
                     <span id="editSectionImportActions" class="import-actions hidden">
                         <button type="button" onclick="importDocxFile(document.getElementById('editSectionImportFile'), 'editSectionTextEditor')">📥 Import qilish</button>
                         <button type="button" onclick="cancelDocxImport('editSectionImportFile', 'editSectionImportActions')">Bekor qilish</button>

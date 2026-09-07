@@ -318,6 +318,68 @@ body {
     margin-bottom: 20px;
 }
 
+/* Har bir band (nomi, tavsifi, Yo'nalish, Bepul kurs, Darslar ochilish
+   tartibi, Muqova rasmi, tugmalar) o'zaro ANIQ ajralib tursin
+   (foydalanuvchi so'rovi, 2026-09-07: "алоҳида пунктларни ажралиб
+   турадиган CSS қўш" — avval hammasi bir-biriga yopishib, farqlanmay
+   ko'rinardi). Faqat kurs yaratish/tahrirlash MODAL'ida (".course-form-
+   modal"), oddiy (modalsiz) formalarga tegmaydi. */
+.course-form-modal > *:not(:first-child) {
+    padding-top: 14px;
+    border-top: 1px solid #eef1f6;
+}
+
+/* Fayl tanlash — brauzerning o'z tugmasi ("Выберите файл"/"Choose File")
+   brauzer TILI bo'yicha (foydalanuvchi so'rovi, 2026-09-07: "выберите
+   файлни ўзбекча қил") ko'rsatiladi, HTML orqali matnini o'zgartirib
+   bo'lmaydi — shuning uchun asl <input> KO'RINMAS holga keltirilib
+   (lekin funksional — <label for="...">ning o'zi tabiiy ravishda uni
+   ochadi, JS shart emas), o'rniga o'zimizning o'zbekcha tugmamiz
+   ko'rsatiladi. */
+.file-picker-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.file-picker-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.file-picker-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    background: #eef2ff;
+    color: #4338ca;
+    border: 1px solid #c7d2fe;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s ease;
+}
+
+.file-picker-btn:hover {
+    background: #e0e7ff;
+}
+
+.file-picker-filename {
+    font-size: 13px;
+    color: #64748b;
+}
+
 /* "➕ Mavzu qo'shish" / "✏️ Kursni tahrirlash" — endi modal
    (#addSectionForm/#editCourseForm, .modal-overlay ichida). ".section-form"/
    ".course-form"ning o'zi (fon/padding/gap) shu bilan birga qo'llanadi —

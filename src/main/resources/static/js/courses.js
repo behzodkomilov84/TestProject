@@ -7,6 +7,18 @@ const CAN_CREATE_COURSE = ROLE === "ROLE_OWNER" || ROLE === "ROLE_ADMIN";
 
 let allCourses = [];
 let allFields = [];
+
+// Brauzerning o'z "Fayl tanlash" tugmasi (native <input type="file">)
+// TILGA (masalan ruscha "Выберите файл") qarab chiqadi va matnini
+// o'zgartirib bo'lmaydi — shu sabab ".file-picker-input" bilan
+// ko'rinmas qilib, o'rniga o'zbekcha tugma + shu funksiya orqali
+// tanlangan fayl nomi ko'rsatiladi (foydalanuvchi so'rovi, 2026-09-07:
+// "выберите файлни ўзбекча қил").
+function updateFilePickerName(input, spanId) {
+    const span = document.getElementById(spanId);
+    if (!span) return;
+    span.textContent = (input.files && input.files[0]) ? input.files[0].name : "Fayl tanlanmagan";
+}
 // Qaysi Yo'nalish "box"lari ochiq — courseDetail.js#expandedChapterKeys
 // bilan bir xil g'oya (bir nechtasi bir vaqtda ochiq turishi mumkin).
 const expandedFieldKeys = new Set();
