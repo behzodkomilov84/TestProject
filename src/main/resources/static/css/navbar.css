@@ -52,10 +52,28 @@ body.menu-open::after {
 
 /* ===== CENTER USER INFO ===== */
 
+/* MUHIM: grid'ning "1fr" ustuni — nav-items (to'liq inline menyu, ~800px
+   gacha kerak bo'lishi mumkin) va logotip "auto" kengligini OLGANDAN
+   KEYIN qolgan joyni oladi. Uzun foydalanuvchi nomi/rol ro'yxati bilan bu
+   qoldiq joy juda tor bo'lib qolib, matn navbar balandligidan (72px)
+   oshib ketib logotipga yopishib qolar edi (haqiqiy topilgan bug,
+   2026-09-08: "navbar'dagi matn qoplanishi"). min-width:0 — flex/grid
+   elementining standart min-width:auto (kontent bo'yicha) xatti-harakatini
+   bekor qiladi, shunda quyidagi overflow qoidalari ishlay boshlaydi.
+   Asosiy yechim — pastdagi @media qoidasida: nav-items endi ANCHA
+   kengroq ekranlarda ham (1300px) burger-menyuga o'tadi, shuning uchun
+   bu tor holat odatiy ishlatishda deyarli yuzaga kelmasligi kerak. */
 .nav-center {
     text-align: center;
     font-size: 14px;
     line-height: 1.2;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nav-center b {
+    overflow-wrap: break-word;
 }
 
 /* ===== ACTION AREA ===== */
@@ -210,28 +228,21 @@ body.menu-open::after {
     display: block;
 }
 
-/* ===== MOBILE MODE ===== */
-@media (min-width: 769px) and (max-width: 930px) {
-
-    /* скрываем блок пользователя */
-    .nav-center {
-        display: none;
-    }
-
-    /* уменьшаем шрифт меню */
-    .nav-items a,
-    .dropbtn {
-        font-size: 13px;
-        padding: 6px 10px;
-    }
-
-    /* логотип тоже можно слегка уменьшить */
-    .logo-btn {
-        font-size: 18px;
-    }
-}
-
-@media (max-width: 768px) {
+/* ===== MOBILE/BURGER MODE =====
+   Chegara ilgari 768px edi — nav-items (to'liq inline menyu: Bosh sahifa/
+   Statistika/Fikr va takliflar/Kurslar/Panels/Profil) haqiqatda ~800px
+   joy talab qiladi, shu sabab 769px-1300px oralig'idagi (ko'p 13-14"
+   noutbuk, brauzer zoom > 100% yoki yon-yonma oyna) ekranlarda logotip +
+   nav-center (foydalanuvchi nomi/rollari) + nav-items UCHALASI HAM bir
+   qatorga sig'maganda, nav-center juda tor "1fr" ustunga siqilib, matni
+   navbar balandligidan (72px) oshib, logotipga yopishib/ustidan chiqib
+   ketardi (haqiqiy topilgan bug, 2026-09-08: "navbar'dagi matn
+   qoplanishi... menyulari ham chegarasidan chiqib ketgan"). Yechim —
+   burger-menyu chegarasini 1300px'ga ko'tarish: shundan tor ekranlarda
+   nav-items to'liq (mobil bilan bir xil) yon panelga o'tadi, nav-center
+   yashiriladi — hech qachon siqilib qolmaydi. 1300px+ (odatiy monitor/
+   kattaroq noutbuk) da hammasi hozirgidek bir qatorda ko'rinadi. */
+@media (max-width: 1300px) {
 
     .nav-center {
         display: none;
