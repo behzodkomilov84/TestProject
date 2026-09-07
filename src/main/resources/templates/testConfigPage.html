@@ -37,39 +37,34 @@
 
     <h2>Bilimingizni sinab ko'ring</h2>
 
-    <div class="section">
-        <div class="section-title">Bo'limni tanlang</div>
-        <select id="scienceSelect" onchange="loadTopicsFromSelect()">
-            <option value="">-- Bo'limni tanlang --</option>
-        </select>
-    </div>
-
-    <!-- Bo'lim Mavzularga ega bo'lsagina ko'rinadi (masalan Kimyo) — avval
-         Mavzu tanlanadi, keyingina o'sha mavzudagi darslar chiqadi.
-         Mavzusi yo'q bo'limlarda bu qadam butunlay o'tkazib yuboriladi
-         (testConfigPage.js#loadTopics — hidden class bilan yashiriladi). -->
-    <div class="section hidden" id="bolimSection">
-        <div class="section-title">Mavzuni tanlang</div>
-        <select id="sectionSelect" onchange="onSectionSelectChange()">
-            <option value="">-- Mavzuni tanlang --</option>
-        </select>
-    </div>
-
-    <div class="section" id="topicSection">
-        <div class="section-title">Darslarni tanlang</div>
-        <div class="multiselect" id="topicMultiselect">
-            <div class="selectBox" onclick="toggleTopics()">
-                <span id="topicLabel">--Darslarni tanlash uchun bosing--</span>
-                <div class="arrow"></div>
-            </div>
-
-            <div id="topicDropdown" class="checkboxes"></div>
+    <!-- To'rt darajali (Yo'nalish -> Bo'lim -> Mavzu -> Dars) checkbox
+         daraxti — BITTA so'rovda (/api/tests/hierarchy) yuklanadi va shu
+         yerda to'liq qurib chiqiladi (testConfigPage.js#renderHierarchy).
+         Foydalanuvchi so'rovi, 2026-09-07: "танловлар йўналиш, бўлим,
+         мавзу, дарс иерарҳиясида бўлсин ... барчасида танлов checkbox
+         ли бўлсин. По умолчанию барчаси белгиланган бўлсин." -->
+    <div class="section" id="hierarchySection">
+        <div class="section-title-row">
+            <div class="section-title">Yo'nalish / Bo'lim / Mavzu / Darslarni tanlang</div>
+            <button type="button" id="toggleAllBtn" class="toggle-all-btn" onclick="toggleAll()">
+                ☑️ Barchasini bekor qilish
+            </button>
+        </div>
+        <div id="hierarchyTree" class="hierarchy-tree">
+            <div class="hierarchy-loading">Yuklanmoqda...</div>
         </div>
     </div>
 
     <div class="section">
         Mavjud testlar soni: <b><span id="max">0</span></b>
         <input type="number" id="limit" min="1" placeholder="--Test sonini kiriting--">
+        <!-- Avval "limit" avtomatik max qiymat bilan to'ldirilardi
+             (foydalanuvchi buni "o'zgartirib bo'lmaydigan sonmi" deb
+             o'ylab, keyin qiynalib topgan — foydalanuvchi so'rovi,
+             2026-09-07: "По умолчанию (10) ни олиб ташлаб тагига
+             подсказкага ... каби сўз ёз"). Endi bo'sh boshlanadi, o'rniga
+             shu izoh ko'rsatiladi. -->
+        <div class="input-hint">Testda qatnashadigan savollar sonini kiriting</div>
         <div id="limitError" class="error-text"></div>
     </div>
 

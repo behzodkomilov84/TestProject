@@ -55,49 +55,40 @@ h2 {
     margin-bottom: 12px;
 }
 
-/* Subjects (radio buttons) */
-.radio-group label {
-    display: block;
-    padding: 12px 16px;
-    border-radius: 10px;
-    border: 1px solid #dce3ec;
-    margin-bottom: 10px;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.radio-group input {
-    margin-right: 10px;
-}
-
-.radio-group label:hover {
-    background: #f1f6fb;
-    border-color: #4a90e2;
-}
-
-/* Topics (checkboxes) */
-.checkbox-group label {
+/* "Yo'nalish/Bo'lim/Mavzu/Darslarni tanlang" sarlavhasi + "☑️ Barchasini
+   belgilash" tugmasi bir qatorda (foydalanuvchi so'rovi, 2026-09-07). */
+.section-title-row {
     display: flex;
+    align-items: center;
     justify-content: space-between;
-    padding: 10px 14px;
-    border-radius: 10px;
-    border: 1px solid #e1e7ef;
-    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.section-title-row .section-title {
+    margin-bottom: 0;
+}
+
+.toggle-all-btn {
+    margin-top: 0 !important;
+    width: auto !important;
+    padding: 8px 16px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    background: #eef2ff !important;
+    color: #4338ca !important;
+    border: 1px solid #c7d2fe !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
     cursor: pointer;
-    transition: 0.2s;
+    transition: background 0.15s ease, transform 0.1s ease;
 }
 
-.checkbox-group label:hover {
-    background: #f7faff;
-    border-color: #4a90e2;
-}
-
-.badge {
-    background: #e8f0fc;
-    color: #2a5bd7;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 12px;
+.toggle-all-btn:hover {
+    background: #e0e7ff !important;
+    transform: none !important;
+    box-shadow: none !important;
 }
 
 /* Inputs */
@@ -166,70 +157,23 @@ input[type=number] {
     margin: 20px 0;
 }
 
-select {
-    width: 100%;
-    padding: 12px;
-    border-radius: 10px;
-    border: 1px solid #d5dde8;
-    font-size: 16px;
-    background: white;
-}
-
 .hidden {
     display: none !important;
 }
 
-.multiselect {
-    position: relative;
-}
-
-.selectBox {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px;
-    border-radius: 10px;
-    border: 1px solid #d5dde8;
-    cursor: pointer;
-    background: white;
-}
-
-.arrow {
-    width: 0;
-    height: 0;
-    border-left: 6px solid transparent;
-    border-right: 6px solid transparent;
-    border-top: 6px solid #555;
-}
-
-.checkboxes {
-    display: none;
-    position: absolute;
-    width: 100%;
-    background: white;
-    border-radius: 10px;
-    border: 1px solid #d5dde8;
-    margin-top: 5px;
-    max-height: 240px;
-    overflow-y: auto;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-    z-index: 10;
-}
-
-.checkboxes label {
-    display: block;
-    padding: 10px 14px;
-    cursor: pointer;
-}
-
-.checkboxes label:hover {
-    background: #f1f6fb;
-}
-
-
 .error-text {
     color: #dc2626;
     font-size: 14px;
+    margin-top: 6px;
+}
+
+/* "Testda qatnashadigan savollar sonini kiriting" — limit input bo'sh
+   boshlanadi (avval avtomatik "max" bilan to'ldirilib, foydalanuvchini
+   chalg'itardi), o'rniga shu izoh ko'rsatiladi (foydalanuvchi so'rovi,
+   2026-09-07). */
+.input-hint {
+    color: #94a3b8;
+    font-size: 12.5px;
     margin-top: 6px;
 }
 
@@ -242,6 +186,168 @@ body[data-mode="practice"] #timeSection {
     display: none;
 }
 
-body[data-mode="hard"] #topicSection {
-    display: none; /* скрываем выбор темы, но updateMax() всё равно срабатывает */
+/* ==========================================================================
+   TO'RT DARAJALI (Yo'nalish -> Bo'lim -> Mavzu -> Dars) checkbox daraxti
+   (foydalanuvchi so'rovi, 2026-09-07: "танловлар йўналиш, бўлим, мавзу,
+   дарс иерарҳиясида бўлсин ... Чиройли css қўш"). Har bir daraja o'z
+   rangi/siljishi (indent) bilan ajratiladi, <details>/<summary> orqali
+   ochilib-yopiladi (JS shart emas — brauzerning o'zi boshqaradi).
+   ========================================================================== */
+
+.hierarchy-tree {
+    border: 1px solid #e1e7ef;
+    border-radius: 12px;
+    background: #fbfcfe;
+    max-height: 480px;
+    overflow-y: auto;
+    padding: 6px;
+}
+
+.hierarchy-loading {
+    padding: 24px;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.hierarchy-tree summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 10px 12px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+}
+
+.hierarchy-tree summary::-webkit-details-marker {
+    display: none;
+}
+
+/* Ochilish/yopilish uchburchagi — <summary>ning o'zi emas, alohida
+   pseudo-element (aks holda checkbox ustiga bosilganda ham
+   ochilib/yopilib ketardi). */
+.hierarchy-tree summary::before {
+    content: "▸";
+    display: inline-block;
+    width: 16px;
+    color: #94a3b8;
+    transition: transform 0.15s ease;
+    flex-shrink: 0;
+}
+
+details[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+.hierarchy-tree summary label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    cursor: pointer;
+}
+
+.hierarchy-tree input[type=checkbox] {
+    width: 17px;
+    height: 17px;
+    accent-color: #2563eb;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.hierarchy-name {
+    font-size: 14.5px;
+}
+
+/* 1-daraja: Yo'nalish */
+.hierarchy-field {
+    border-bottom: 1px solid #eef1f6;
+}
+
+.hierarchy-field:last-child {
+    border-bottom: none;
+}
+
+.hierarchy-field > summary {
+    font-weight: 700;
+    color: #1e3a8a;
+    background: #eff6ff;
+}
+
+.hierarchy-field > summary:hover {
+    background: #dbeafe;
+}
+
+/* 2-daraja: Bo'lim (Science) */
+.hierarchy-sciences {
+    padding-left: 18px;
+}
+
+.hierarchy-science > summary {
+    font-weight: 600;
+    color: #334155;
+}
+
+.hierarchy-science > summary:hover {
+    background: #f1f5f9;
+}
+
+/* 3-daraja: Mavzu (TopicSection) */
+.hierarchy-sections {
+    padding-left: 18px;
+}
+
+.hierarchy-section > summary {
+    font-weight: 500;
+    color: #475569;
+    font-size: 13.5px;
+}
+
+.hierarchy-section > summary:hover {
+    background: #f8fafc;
+}
+
+/* 4-daraja: Dars (Topic) — eng pastki, HAQIQIY tanlov shu yerda. */
+.hierarchy-topics {
+    padding-left: 34px;
+    padding-top: 2px;
+    padding-bottom: 4px;
+}
+
+.topic-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-size: 13.5px;
+    color: #334155;
+}
+
+.topic-row:hover {
+    background: #f0f5ff;
+}
+
+.topic-count {
+    margin-left: auto;
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* "hard" rejimida — faqat Yo'nalish/Bo'lim darajalari ko'rinadi (QAYSI
+   fan(lar)dan hali yechilmagan savollar olinishini tanlash uchun),
+   Mavzu/Dars darajalari yashiriladi — ular DOIM to'liq belgilangan
+   qolaveradi (testConfigPage.js#renderHierarchy), shuning uchun checked
+   dars ro'yxati "shu fan(lar)dagi BARCHA darslar" bilan bir xil bo'lib
+   chiqadi (avvalgi xulq-atvor bilan bir xil natija, endi bir nechta
+   fan birdan tanlash imkoniyati bilan). */
+.hierarchy-tree[data-mode="hard"] .hierarchy-science > .hierarchy-children {
+    display: none;
+}
+
+.hierarchy-tree[data-mode="hard"] .hierarchy-science > summary::before {
+    visibility: hidden;
 }

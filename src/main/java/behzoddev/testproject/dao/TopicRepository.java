@@ -1,5 +1,6 @@
 package behzoddev.testproject.dao;
 
+import behzoddev.testproject.dto.topic.TestHierarchyRowDto;
 import behzoddev.testproject.dto.topic.TopicIdAndNameDto;
 import behzoddev.testproject.dto.topic.TopicTrashDto;
 import behzoddev.testproject.dto.topic.TopicWithQuestionCountDto;
@@ -82,4 +83,26 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
             "(select count(q) from Question q where q.topic = t)) " +
             "from Topic t where t.science.id = :scienceId and t.deletedAt is not null order by t.deletedAt desc")
     List<TopicTrashDto> findDeletedByScienceId(@Param("scienceId") Long scienceId);
+
+    // testConfigPage.html uchun TO'LIQ to'rt darajali ierarxiya (Yo'nalish
+    // -> Bo'lim -> Mavzu -> Dars) BITTA so'rovda, tekis qatorlar sifatida
+    // (foydalanuvchi so'rovi, 2026-09-07). getTopicsWithQuestionCount
+    // bilan bir xil andoza (LEFT JOIN Question ON ... AND deletedAt IS
+    // NULL + GROUP BY), faqat scienceId bo'yicha filtrlanmaydi va
+    // Fan/Yo'nalish qatlamlari ham qo'shiladi. O'chirilgan Fan/Yo'nalish
+    // — chetlab o'tiladi (o'chirilgan Yo'nalishga hech qanday faol Fan
+    // bog'lanmagan bo'lishi kerak, lekin xavfsizlik uchun aniq tekshiriladi).
+    @Query("select new behzoddev.testproject.dto.topic.TestHierarchyRowDto(" +
+            "f.id, f.name, sc.id, sc.name, sec.id, sec.name, t.id, t.name, count(q.id)) " +
+            "FROM Topic t " +
+            "JOIN t.science sc " +
+            "LEFT JOIN sc.field f ON f.deletedAt IS NULL " +
+            "LEFT JOIN t.section sec " +
+            "LEFT JOIN Question q ON q.topic.id = t.id AND q.deletedAt IS NULL " +
+            "WHERE t.deletedAt IS NULL AND sc.deletedAt IS NULL " +
+            "GROUP BY f.id, f.name, f.orderIndex, sc.id, sc.name, sc.orderIndex, " +
+            "sec.id, sec.name, sec.orderIndex, t.id, t.name, t.orderIndex " +
+            "ORDER BY CASE WHEN f.id IS NULL THEN 1 ELSE 0 END, f.orderIndex, " +
+            "sc.orderIndex, CASE WHEN sec.id IS NULL THEN 1 ELSE 0 END, sec.orderIndex, t.orderIndex")
+    List<TestHierarchyRowDto> findFullHierarchy();
 }

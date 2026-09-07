@@ -1,5 +1,11 @@
 const CURRENT_USER_ID = Number(document.body.dataset.userId);
 
+// Javob variantlari harfli ko'rinishda (A, B, C, D, E) — testSession.js/
+// courseQuestions.js/question.js/test-form.js'dagi bilan bir xil
+// (foydalanuvchi so'rovi, 2026-09-07: "Топшириқни ечаётганда ҳам
+// вариантлар ҳарфли бўлсин").
+const ANSWER_LETTERS = ["A", "B", "C", "D", "E"];
+
 let currentChatAssignment = null;
 let chatModalInstance = null;
 
@@ -607,7 +613,7 @@ function renderTaskQuestions() {
             <div class="exam-answers">
     `;
 
-    q.answers.forEach(a => {
+    q.answers.forEach((a, i) => {
 
         const selected = selectedIds.has(a.id);
         const onchange = isMulti
@@ -621,7 +627,7 @@ function renderTaskQuestions() {
                     ${selected ? "checked" : ""}
                     onchange="${onchange}">
 
-                ${a.text}
+                <b>${ANSWER_LETTERS[i] || ""}) </b>${a.text}
             </label>
         `;
     });
@@ -1066,11 +1072,11 @@ function showResultQuestion(index) {
             <div class="exam-answers">
     `;
 
-    q.answers.forEach(a => {
+    q.answers.forEach((a, i) => {
         let css = "exam-answer";
         if (correctIds.has(a.id)) css += " correct-answer";             // правильный
         if (selectedIds.has(a.id) && !correctIds.has(a.id)) css += " wrong-answer"; // выбранный неверный
-        html += `<div class="${css}">${a.text}</div>`;
+        html += `<div class="${css}"><b>${ANSWER_LETTERS[i] || ""}) </b>${a.text}</div>`;
     });
 
     html += `</div></div>`;

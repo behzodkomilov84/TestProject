@@ -99,8 +99,17 @@ function renderUsers(users, subscriptions) {
         // uchun). Bo'sh qiymatlar "—" bilan ko'rsatiladi.
         const fullName = [user.firstName, user.lastName].filter(Boolean).join(" ") || "—";
 
+        // Avatar — bo'lsa rasm, bo'lmasa ismning bosh harfi bilan doira
+        // (foydalanuvchi so'rovi, 2026-09-07: "фойдаланувчиларнинг
+        // аватарини ҳам қўш").
+        const avatarInitial = (user.firstName || user.username || "?").charAt(0).toUpperCase();
+        const avatarHtml = user.avatarUrl
+            ? `<img class="user-avatar" src="${escapeHtml(user.avatarUrl)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'user-avatar user-avatar-placeholder',textContent:'${avatarInitial}'}))">`
+            : `<div class="user-avatar user-avatar-placeholder">${avatarInitial}</div>`;
+
         tr.innerHTML = `
             <td>${user.id}</td>
+            <td>${avatarHtml}</td>
             <td>${user.username} ${user.locked ? '<span title="Bloklangan">🔒</span>' : ""}</td>
             <td>${escapeHtml(fullName)}</td>
             <td>${escapeHtml(user.email) || "—"}</td>

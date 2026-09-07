@@ -67,6 +67,7 @@ public class UserRestController {
                 .lastName(u.getLastName())
                 .workplace(u.getWorkplace())
                 .jobTitle(u.getPosition())
+                .avatarUrl(u.getAvatarUrl())
                 .build();
     }
 

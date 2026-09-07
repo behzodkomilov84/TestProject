@@ -5,6 +5,7 @@ import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dto.testconfig.MaxRequestDto;
 import behzoddev.testproject.dto.science.ScienceIdAndNameDto;
+import behzoddev.testproject.dto.topic.TestHierarchyRowDto;
 import behzoddev.testproject.dto.topic.TopicWithQuestionCountDto;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.ScienceService;
@@ -39,6 +40,16 @@ public class TestConfigController {
     @PreAuthorize("isAuthenticated()")
     public List<TopicWithQuestionCountDto> getTopics(@PathVariable Long scienceId) {
         return topicService.getTopicsWithQuestionCount(scienceId);
+    }
+
+    // To'rt darajali (Yo'nalish->Bo'lim->Mavzu->Dars) checkbox daraxti
+    // uchun — BITTA so'rovda BARCHA fanlar/mavzular/darslar, tekis
+    // qatorlar sifatida (foydalanuvchi so'rovi, 2026-09-07). Frontend
+    // (testConfigPage.js) shu qatorlardan daraxt qurib chiqadi.
+    @GetMapping("/hierarchy")
+    @PreAuthorize("isAuthenticated()")
+    public List<TestHierarchyRowDto> getHierarchy() {
+        return topicService.getFullHierarchy();
     }
 
     // 3. Max questions

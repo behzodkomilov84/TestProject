@@ -23,6 +23,9 @@ public record UserDto(
         String firstName,
         String lastName,
         String workplace,
-        String jobTitle
+        String jobTitle,
+        // Avatar rasmi — /users sahifasida ko'rsatish uchun (foydalanuvchi
+        // so'rovi, 2026-09-07: "фойдаланувчиларнинг аватарини ҳам қўш").
+        String avatarUrl
 ) {
 }

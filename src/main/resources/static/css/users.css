@@ -80,6 +80,27 @@ body {
     background: #f1f3f5;
 }
 
+/* Avatar ustuni (foydalanuvchi so'rovi, 2026-09-07) — rasm bo'lsa doira
+   shaklida ko'rsatiladi, bo'lmasa (yoki yuklanmasa, onerror orqali)
+   ismning bosh harfi bilan rangli doira-o'rinbosar chiqadi. */
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+}
+
+.user-avatar-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e0e7ff;
+    color: #4338ca;
+    font-weight: 700;
+    font-size: 13px;
+}
+
 .role {
     font-weight: 600;
 }

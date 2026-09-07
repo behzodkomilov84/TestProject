@@ -264,6 +264,13 @@ public class TopicService {
         return topicRepository.getTopicsWithQuestionCount(scienceId);
     }
 
+    // testConfigPage.html'dagi to'rt darajali (Yo'nalish->Bo'lim->Mavzu->
+    // Dars) checkbox daraxti uchun — TestConfigController#getHierarchy.
+    @Transactional(readOnly = true)
+    public List<behzoddev.testproject.dto.topic.TestHierarchyRowDto> getFullHierarchy() {
+        return topicRepository.findFullHierarchy();
+    }
+
     // Test yaratish formasidagi "🔗 Mavzuga havola qo'shish" tugmasi uchun —
     // shu mavzuga bog'langan kurs bo'limi bo'lmasa, bo'sh Optional qaytadi
     // (tugma frontendda shunda yashiriladi/o'chirilgan holatda qoladi).
