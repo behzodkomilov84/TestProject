@@ -1,5 +1,6 @@
 package behzoddev.testproject.controller.page;
 
+import behzoddev.testproject.service.PhoneNumberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
@@ -18,9 +19,17 @@ public class RegistrationPageController {
     @Value("${telegram.bot.token}")
     private String telegramBotToken;
 
+    private final PhoneNumberService phoneNumberService;
+
     @GetMapping("/registration")
     public String registration(Model model) {
         model.addAttribute("telegramBotId", telegramBotToken.split(":")[0]);
+        // Telefon maydoni endi MAJBURIY (foydalanuvchi so'rovi, 2026-09-07)
+        // — davlat tanlash widget'i uchun (country-picker.js, /profile'da
+        // ishlatilgani bilan bir xil), ro'yxat SERVER tomonidan shu yerda
+        // beriladi (bu sahifa anonim — /api/profile/phone/countries
+        // autentifikatsiya talab qiladi, bu yerda ishlatib bo'lmaydi).
+        model.addAttribute("countries", phoneNumberService.listCountries());
         return "registration";
     }
 

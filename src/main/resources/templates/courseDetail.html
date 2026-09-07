@@ -9,6 +9,9 @@
     <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/courses.css">
     <link rel="stylesheet" href="/css/topic-explanation-search.css">
+    <!-- profile-gate.js'dagi telefon maydoni uchun (foydalanuvchi so'rovi,
+         2026-09-07/08: kursga kirish modaliga telefon ham qo'shildi). -->
+    <link rel="stylesheet" href="/css/country-picker.css">
 
     <script th:inline="javascript">
         const COURSE_ID = /*[[${courseId}]]*/ 0;
@@ -21,7 +24,10 @@
     <script src="/js/navbar.js" defer></script>
     <!-- Kursga kirishda profilni to'ldirish talabi (foydalanuvchi
          so'rovi, 2026-09-07) — "/courses/{id}" BITTA kirish nuqtasi
-         bo'lgani uchun shu yerga qo'shish yetarli. -->
+         bo'lgani uchun shu yerga qo'shish yetarli. country-picker.js
+         profile-gate.js'DAN OLDIN kelishi shart (telefon maydoni uchun
+         initCountryPicker'dan foydalanadi, defer tartibi saqlanadi). -->
+    <script src="/js/country-picker.js" defer></script>
     <script src="/js/profile-gate.js" defer></script>
 </head>
 

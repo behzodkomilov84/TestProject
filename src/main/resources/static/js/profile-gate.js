@@ -3,8 +3,15 @@
 // lavozimini registration formdan olib tashla ... Kursga kirmoqchi
 // bo'lganlar uchun sloy qil, yani profildagi hali to'ldirilmagan
 // polyalarni to'ldirish uchun modal ochilsin va majburiy polyalarni
-// to'ldirsin" — bu ikki maydon endi ro'yxatdan o'tishda emas, birinchi
-// marta biror kursga kirishga urinilganda so'raladi).
+// to'ldirsin"). Keyinroq (shu kuni) workplace/jobTitle/telefon qaytadan
+// registratsiya formasiga MAJBURIY sifatida qo'shildi va ism/familiya
+// ham shu ro'yxatga qo'shildi ("бошқа мажбурий поляларни ҳам текширсин,
+// мисол, исм, фамилия") — lekin bu tekshiruv HAMON kerak: Telegram/
+// Google/Facebook orqali ro'yxatdan o'tganlar (UserServiceImpl#register
+// dan umuman o'tmaydi) va eski (o'zgarishdan oldingi) hisoblar uchun bu
+// maydonlar bo'sh bo'lishi mumkin — shu sabab bu yer BARCHA usul bilan
+// ro'yxatdan o'tgan foydalanuvchiga bir xil talabni ta'minlaydigan
+// yagona joy.
 //
 // Bitta joyda, sahifa yuklanishi bilan avtomatik ishga tushadi
 // (courseDetail.html) — "/courses/{id}"ga qanday kirilishidan qat'i
@@ -12,17 +19,32 @@
 // bookmark orqali) bir xil ishlaydi, courses.js'dagi har bir alohida
 // bosish joyini o'zgartirish shart emas.
 //
-// Hech qanday tashqi CSS/HTML'ga bog'liq emas (promptModal.js bilan
-// bir xil g'oya) — shunchaki <script src="/js/profile-gate.js" defer>
-// qo'shish yetarli.
+// country-picker.js'ga bog'liq (telefon maydoni uchun, /profile'dagi
+// bilan bir xil widget) — courseDetail.html'da shu skriptdan KEYIN
+// ulanishi kerak.
+
+let profileGateMissing = null; // {firstName, lastName, workplace, jobTitle, phone} — shu safar aniqlangan bo'sh maydonlar
+let profileGateCountries = null;
+let profileGateCountryPicker = null;
+let profileGateFullProfile = null; // to'liq /api/profile javobi — full-name PATCH uchun mavjud qiymatni topishda kerak
 
 document.addEventListener("DOMContentLoaded", () => {
     fetch("/api/profile")
         .then(r => r.ok ? r.json() : Promise.reject(new Error("profil olinmadi")))
         .then(profile => {
-            const missingWorkplace = !profile.workplace || !profile.workplace.trim();
-            const missingJobTitle = !profile.jobTitle || !profile.jobTitle.trim();
-            if (missingWorkplace || missingJobTitle) {
+            profileGateFullProfile = profile;
+            const isBlank = v => !v || !String(v).trim();
+
+            profileGateMissing = {
+                firstName: isBlank(profile.firstName),
+                lastName: isBlank(profile.lastName),
+                workplace: isBlank(profile.workplace),
+                jobTitle: isBlank(profile.jobTitle),
+                phone: isBlank(profile.phoneNumber)
+            };
+
+            const hasMissing = Object.values(profileGateMissing).some(Boolean);
+            if (hasMissing) {
                 showProfileGateModal();
             }
         })
@@ -77,12 +99,54 @@ function injectProfileGateStyles() {
         .profile-gate-save { background: #009579; color: #fff; }
         .profile-gate-save:hover { background: #007a63; }
         .profile-gate-save:disabled { opacity: .6; cursor: not-allowed; }
+
+        /* Telefon maydoni — davlat tanlash widget'i (country-picker.js)
+           + raqam, bir qatorda ("Ish/o'qish joyingiz" bilan bir xil
+           label ostidagi bo'shliqni saqlash uchun label emas, oddiy div). */
+        .profile-gate-phone-row { display: flex; gap: 8px; margin-top: 5px; }
+        .profile-gate-phone-row .country-picker { flex-shrink: 0; }
+        .profile-gate-phone-row input { margin-top: 0; }
     `;
     document.head.appendChild(style);
 }
 
+// Faqat HALI TO'LDIRILMAGAN maydonlar so'raladi — masalan, eski
+// foydalanuvchida ism/familiya/workplace/jobTitle bor-u, faqat telefon
+// yo'q bo'lsa, modalda YAGONA telefon maydoni chiqadi (foydalanuvchi
+// so'rovi: "агар мажбурий полиаларда маълумотлар бўлса, ... модал
+// очилмасин" — bu qoida HAR BIR maydon darajasida qo'llaniladi).
 function showProfileGateModal() {
     injectProfileGateStyles();
+
+    const m = profileGateMissing;
+
+    const nameFieldsHtml = (m.firstName || m.lastName) ? `
+        <div class="form-row-gate" style="display:flex; gap:10px;">
+            ${m.firstName ? `<label style="flex:1;">Ismingiz
+                <input type="text" id="profileGateFirstName" placeholder="Ismingiz">
+            </label>` : ""}
+            ${m.lastName ? `<label style="flex:1;">Familiyangiz
+                <input type="text" id="profileGateLastName" placeholder="Familiyangiz">
+            </label>` : ""}
+        </div>` : "";
+
+    const workplaceHtml = m.workplace ? `
+        <label>Ish yoki o'qish joyingiz
+            <input type="text" id="profileGateWorkplace" placeholder="Masalan: 1-son maktab">
+        </label>` : "";
+
+    const jobTitleHtml = m.jobTitle ? `
+        <label>Lavozimingiz
+            <input type="text" id="profileGateJobTitle" placeholder="Masalan: shifokor, talaba">
+        </label>` : "";
+
+    const phoneHtml = m.phone ? `
+        <label>Telefon raqamingiz
+            <div class="profile-gate-phone-row">
+                <div id="profileGateCountryPicker"></div>
+                <input type="tel" id="profileGatePhone" placeholder="901234567">
+            </div>
+        </label>` : "";
 
     const overlay = document.createElement("div");
     overlay.className = "profile-gate-overlay";
@@ -91,12 +155,10 @@ function showProfileGateModal() {
             <h2>📋 Profilingizni to'ldiring</h2>
             <p class="profile-gate-desc">Kursga kirishdan oldin quyidagi ma'lumotlarni to'ldiring — bu qaysi soha/kasb vakillari saytdan foydalanayotganini bilishga yordam beradi.</p>
             <p class="profile-gate-error" id="profileGateError" hidden></p>
-            <label>Ish yoki o'qish joyingiz
-                <input type="text" id="profileGateWorkplace" placeholder="Masalan: 1-son maktab">
-            </label>
-            <label>Lavozimingiz
-                <input type="text" id="profileGateJobTitle" placeholder="Masalan: shifokor, talaba">
-            </label>
+            ${nameFieldsHtml}
+            ${workplaceHtml}
+            ${jobTitleHtml}
+            ${phoneHtml}
             <div class="profile-gate-actions">
                 <button type="button" class="profile-gate-cancel" id="profileGateCancel">Bekor qilish</button>
                 <button type="button" class="profile-gate-save" id="profileGateSave">Davom etish</button>
@@ -105,6 +167,19 @@ function showProfileGateModal() {
     `;
     document.body.appendChild(overlay);
 
+    if (m.phone) {
+        fetch("/api/profile/phone/countries")
+            .then(r => r.json())
+            .then(countries => {
+                profileGateCountries = countries;
+                profileGateCountryPicker = initCountryPicker(
+                    document.getElementById("profileGateCountryPicker"),
+                    countries, "UZ", () => {}
+                );
+            })
+            .catch(err => console.error("Davlatlar ro'yxati olinmadi:", err));
+    }
+
     // "Bekor qilish" — kursga kira olmaydi, katalogga qaytariladi
     // (foydalanuvchi maydonlarni to'ldirmasdan kursni ko'ra olmaydi).
     document.getElementById("profileGateCancel").addEventListener("click", () => {
@@ -112,13 +187,18 @@ function showProfileGateModal() {
     });
 
     document.getElementById("profileGateSave").addEventListener("click", async () => {
-        const workplace = document.getElementById("profileGateWorkplace").value.trim();
-        const jobTitle = document.getElementById("profileGateJobTitle").value.trim();
         const errorEl = document.getElementById("profileGateError");
         errorEl.hidden = true;
 
-        if (!workplace || !jobTitle) {
-            errorEl.textContent = "❌ Ikkala maydonni ham to'ldiring.";
+        const firstName = m.firstName ? document.getElementById("profileGateFirstName").value.trim() : null;
+        const lastName = m.lastName ? document.getElementById("profileGateLastName").value.trim() : null;
+        const workplace = m.workplace ? document.getElementById("profileGateWorkplace").value.trim() : null;
+        const jobTitle = m.jobTitle ? document.getElementById("profileGateJobTitle").value.trim() : null;
+        const phoneRaw = m.phone ? document.getElementById("profileGatePhone").value.trim() : null;
+
+        if ((m.firstName && !firstName) || (m.lastName && !lastName) || (m.workplace && !workplace) ||
+            (m.jobTitle && !jobTitle) || (m.phone && !phoneRaw)) {
+            errorEl.textContent = "❌ Barcha maydonlarni to'ldiring.";
             errorEl.hidden = false;
             return;
         }
@@ -126,22 +206,52 @@ function showProfileGateModal() {
         const saveBtn = document.getElementById("profileGateSave");
         saveBtn.disabled = true;
 
-        try {
-            const [wpRes, jtRes] = await Promise.all([
-                fetch("/api/profile/workplace", {
-                    method: "PATCH",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({workplace})
-                }),
-                fetch("/api/profile/job-title", {
-                    method: "PATCH",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({jobTitle})
+        // Ism/familiya bitta endpoint (full-name) orqali BIRGALIKDA
+        // yuboriladi — ChangeFullNameDto ikkalasini ham talab qiladi,
+        // shu sabab faqat bittasi yetishmagan bo'lsa ham, mavjudini
+        // profildan olib to'ldiramiz (bo'sh qator bilan ustidan
+        // yozib qo'ymaslik uchun).
+        const requests = [];
+        if (firstName !== null || lastName !== null) {
+            requests.push(fetch("/api/profile/full-name", {
+                method: "PATCH",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    firstName: firstName ?? profileGateCurrentValue("firstName"),
+                    lastName: lastName ?? profileGateCurrentValue("lastName")
                 })
-            ]);
+            }));
+        }
+        if (workplace !== null) {
+            requests.push(fetch("/api/profile/workplace", {
+                method: "PATCH",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({workplace})
+            }));
+        }
+        if (jobTitle !== null) {
+            requests.push(fetch("/api/profile/job-title", {
+                method: "PATCH",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({jobTitle})
+            }));
+        }
+        if (phoneRaw !== null) {
+            const isoCode = profileGateCountryPicker ? profileGateCountryPicker.getIso() : "UZ";
+            requests.push(fetch("/api/profile/phone", {
+                method: "PATCH",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({isoCode, rawNumber: phoneRaw})
+            }));
+        }
 
-            if (!wpRes.ok || !jtRes.ok) {
-                errorEl.textContent = "❌ Saqlashda xatolik yuz berdi, qayta urinib ko'ring.";
+        try {
+            const results = await Promise.all(requests);
+
+            if (results.some(r => !r.ok)) {
+                const failed = results.find(r => !r.ok);
+                const data = await failed.json().catch(() => ({}));
+                errorEl.textContent = data.error || "❌ Saqlashda xatolik yuz berdi, qayta urinib ko'ring.";
                 errorEl.hidden = false;
                 saveBtn.disabled = false;
                 return;
@@ -155,4 +265,11 @@ function showProfileGateModal() {
             saveBtn.disabled = false;
         }
     });
+}
+
+// full-name endpoint ikkala maydonni ham birga talab qiladi — agar
+// faqat bittasi (masalan familiya) yetishmayotgan bo'lsa, ikkinchisining
+// (ism) profilda ALLAQACHON bor qiymatini shu yordamida topamiz.
+function profileGateCurrentValue(field) {
+    return profileGateFullProfile ? (profileGateFullProfile[field] || "") : "";
 }

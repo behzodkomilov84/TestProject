@@ -107,17 +107,32 @@ public class UserServiceImpl implements UserDetailsService, UserService {
             throw new PasswordsDoNotMatchException("Passwords do not match");
         }
 
-        // 2.1 Ism/Familiya — "to'ldirilishi shart" (foydalanuvchi so'rovi,
-        // 2026-09-06). Ish/o'qish joyi va lavozim ENDI bu yerda talab
-        // QILINMAYDI (foydalanuvchi so'rovi, 2026-09-07: "registration
-        // formdan olib tashla" — ular endi kursga kirishda, profilni
-        // to'ldirish modali orqali so'raladi, RequireProfileFieldsFilter/
-        // profile-gate.js'ga qarang).
+        // 2.1 Ism/Familiya/Ish-o'qish joyi/Lavozim/Telefon — barchasi
+        // "to'ldirilishi shart" (foydalanuvchi so'rovi, 2026-09-06 va
+        // 2026-09-07: avval workplace/jobTitle bu yerdan olib tashlangan
+        // edi — endi qaytadan MAJBURIY qilindi, "registratsiya
+        // formasiga qo'shish kerak"). Email hamon ixtiyoriyligicha qoladi.
+        // Bu tekshiruv faqat KLASSIK (username/parol) ro'yxatdan o'tishga
+        // tegishli — Telegram/Google/Facebook orqali kirish bu metoddan
+        // umuman o'tmaydi, shu sabab o'sha foydalanuvchilar uchun bu
+        // maydonlar kursga kirishda profil-to'ldirish modali orqali
+        // so'raladi (profile-gate.js — u firstName/lastName/workplace/
+        // jobTitle/phoneNumber'ning barchasini tekshiradi, xohlagan yo'l
+        // bilan ro'yxatdan o'tgan bo'lsa ham bir xil talab ta'minlanishi uchun).
         if (isBlank(dto.firstName())) {
             throw new IllegalArgumentException("❌Ism bo'sh bo'lishi mumkin emas.");
         }
         if (isBlank(dto.lastName())) {
             throw new IllegalArgumentException("❌Familiya bo'sh bo'lishi mumkin emas.");
+        }
+        if (isBlank(dto.workplace())) {
+            throw new IllegalArgumentException("❌Ish yoki o'qish joyingizni kiriting.");
+        }
+        if (isBlank(dto.jobTitle())) {
+            throw new IllegalArgumentException("❌Lavozimingizni kiriting.");
+        }
+        if (isBlank(dto.phoneNumber())) {
+            throw new IllegalArgumentException("❌Telefon raqamingizni kiriting.");
         }
 
         // 3. Получаем роль USER (роль должна быть создана в БД через Liquibase)
@@ -133,31 +148,27 @@ public class UserServiceImpl implements UserDetailsService, UserService {
         Set<Role> roles = new HashSet<>();
         roles.add(userRole);
 
-        // Telefon ixtiyoriy — kiritilgan bo'lsa tekshirib E.164'ga o'giramiz,
-        // noto'g'ri bo'lsa ro'yxatdan o'tish shu yerda to'xtaydi (aniq xabar bilan).
-        String normalizedPhone = null;
-        if (dto.phoneNumber() != null && !dto.phoneNumber().isBlank()) {
-            normalizedPhone = phoneNumberService.normalize(dto.phoneCountry(), dto.phoneNumber());
+        // Telefon endi MAJBURIY (yuqorida tekshirildi) — tekshirib E.164'ga
+        // o'giramiz, noto'g'ri bo'lsa ro'yxatdan o'tish shu yerda to'xtaydi
+        // (aniq xabar bilan).
+        String normalizedPhone = phoneNumberService.normalize(dto.phoneCountry(), dto.phoneNumber());
 
-            // Unikallikni tekshirish (foydalanuvchi so'rovi, 2026-09-07:
-            // "registratsiyada ... telefon raqamni unikalligini
-            // tekshirsin") — aks holda ikkita hisob bir xil raqamga ega
-            // bo'lib qolishi mumkin edi (haqiqiy topilgan holat, 2026-09-06:
-            // shu sabab Telegram orqali kirishda dublikat-hisob bug'i
-            // yuzaga kelgan edi).
-            if (userRepository.existsByPhoneNumber(normalizedPhone)) {
-                throw new IllegalArgumentException("❌Bu telefon raqam allaqachon ro'yxatdan o'tgan.");
-            }
+        // Unikallikni tekshirish (foydalanuvchi so'rovi, 2026-09-07:
+        // "registratsiyada ... telefon raqamni unikalligini
+        // tekshirsin") — aks holda ikkita hisob bir xil raqamga ega
+        // bo'lib qolishi mumkin edi (haqiqiy topilgan holat, 2026-09-06:
+        // shu sabab Telegram orqali kirishda dublikat-hisob bug'i
+        // yuzaga kelgan edi).
+        if (userRepository.existsByPhoneNumber(normalizedPhone)) {
+            throw new IllegalArgumentException("❌Bu telefon raqam allaqachon ro'yxatdan o'tgan.");
         }
 
         User user = User.builder()
                 .username(dto.username())
                 .firstName(dto.firstName().trim())
                 .lastName(dto.lastName().trim())
-                // Ish/o'qish joyi va lavozim ENDI ixtiyoriy (bo'sh
-                // qoldirilsa NULL) — kursga kirishda keyinroq to'ldiriladi.
-                .workplace(isBlank(dto.workplace()) ? null : dto.workplace().trim())
-                .position(isBlank(dto.jobTitle()) ? null : dto.jobTitle().trim())
+                .workplace(dto.workplace().trim())
+                .position(dto.jobTitle().trim())
                 // Bo'sh qatorni emas, aniq NULL saqlaymiz — aks holda bir nechta
                 // email'siz foydalanuvchida bo'sh qator unique tekshiruviga
                 // (existsByEmail) keyinroq to'g'ri kelmasligi mumkin edi.

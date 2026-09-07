@@ -110,11 +110,12 @@ class UserServiceImplTest {
 
     @Test
     void register_success_createsUserWithRoleUserAndSendsVerification() {
-        RegisterDto dto = registerDto(null, null);
+        RegisterDto dto = registerDto("UZ", "901234567");
         when(userRepository.existsByUsername("newuser")).thenReturn(false);
         when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
         when(roleRepository.findByRoleName("ROLE_USER")).thenReturn(Optional.of(roleUser));
         when(passwordEncoder.encode("secret1")).thenReturn("ENCODED");
+        when(phoneNumberService.normalize("UZ", "901234567")).thenReturn("+998901234567");
 
         userService.register(dto);
 
@@ -125,7 +126,9 @@ class UserServiceImplTest {
         assertThat(saved.getUsername()).isEqualTo("newuser");
         assertThat(saved.getEmail()).isEqualTo("new@mail.com");
         assertThat(saved.getPassword()).isEqualTo("ENCODED");
-        assertThat(saved.getPhoneNumber()).isNull();
+        assertThat(saved.getPhoneNumber()).isEqualTo("+998901234567");
+        assertThat(saved.getWorkplace()).isEqualTo("Ish joyi");
+        assertThat(saved.getPosition()).isEqualTo("Lavozim");
         assertThat(saved.isEmailVerified()).isFalse();
         assertThat(saved.getRoles()).containsExactly(roleUser);
 
@@ -181,7 +184,7 @@ class UserServiceImplTest {
     @Test
     void register_emailBlank_createsUserImmediatelyVerifiedWithoutSendingCode() {
         RegisterDto dto = new RegisterDto("newuser", "Ism", "Familiya", "Ish joyi", "Lavozim",
-                "  ", null, null, "secret1", "secret1");
+                "  ", "UZ", "901234567", "secret1", "secret1");
         when(userRepository.existsByUsername("newuser")).thenReturn(false);
         when(roleRepository.findByRoleName("ROLE_USER")).thenReturn(Optional.of(roleUser));
         when(passwordEncoder.encode("secret1")).thenReturn("ENCODED");
@@ -249,30 +252,55 @@ class UserServiceImplTest {
                 .hasMessageContaining("Familiya");
     }
 
-    // Ish/o'qish joyi va lavozim ENDI ixtiyoriy (foydalanuvchi so'rovi,
-    // 2026-09-07: "registration formdan olib tashla" — bular kursga
-    // kirishda profil-to'ldirish modali orqali keyinroq so'raladi,
-    // profile-gate.js). Bo'sh qoldirilsa xato emas, NULL saqlanadi.
+    // Ish/o'qish joyi, lavozim va telefon — MAJBURIY (foydalanuvchi so'rovi,
+    // 2026-09-07/08: avval "registration formdan olib tashla" deyilgan edi,
+    // keyinroq shu kuni qaytadan "majburiy, registratsiya formasiga
+    // qo'shish kerak" deb belgilandi). Har biri uchun alohida tekshiruv.
     @Test
-    void register_blankWorkplaceAndJobTitle_savedAsNull() {
-        RegisterDto dto = new RegisterDto("newuser", "Ism", "Familiya", "  ", "  ",
-                "new@mail.com", null, null, "secret1", "secret1");
+    void register_workplaceBlank_throws() {
+        RegisterDto dto = new RegisterDto("newuser", "Ism", "Familiya", "  ", "Lavozim",
+                "new@mail.com", "UZ", "901234567", "secret1", "secret1");
         when(userRepository.existsByUsername("newuser")).thenReturn(false);
         when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
-        when(roleRepository.findByRoleName("ROLE_USER")).thenReturn(Optional.of(roleUser));
-        when(passwordEncoder.encode(anyString())).thenReturn("ENCODED");
 
-        userService.register(dto);
+        assertThatThrownBy(() -> userService.register(dto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Ish yoki o'qish joyi");
 
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(captor.capture());
-        assertThat(captor.getValue().getWorkplace()).isNull();
-        assertThat(captor.getValue().getPosition()).isNull();
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void register_jobTitleBlank_throws() {
+        RegisterDto dto = new RegisterDto("newuser", "Ism", "Familiya", "Ish joyi", "  ",
+                "new@mail.com", "UZ", "901234567", "secret1", "secret1");
+        when(userRepository.existsByUsername("newuser")).thenReturn(false);
+        when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
+
+        assertThatThrownBy(() -> userService.register(dto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Lavozim");
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void register_phoneBlank_throws() {
+        RegisterDto dto = new RegisterDto("newuser", "Ism", "Familiya", "Ish joyi", "Lavozim",
+                "new@mail.com", "UZ", "  ", "secret1", "secret1");
+        when(userRepository.existsByUsername("newuser")).thenReturn(false);
+        when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
+
+        assertThatThrownBy(() -> userService.register(dto))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Telefon raqam");
+
+        verify(userRepository, never()).save(any());
     }
 
     @Test
     void register_roleUserMissingInDatabase_throws() {
-        RegisterDto dto = registerDto(null, null);
+        RegisterDto dto = registerDto("UZ", "901234567");
         when(userRepository.existsByUsername("newuser")).thenReturn(false);
         when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
         when(roleRepository.findByRoleName("ROLE_USER")).thenReturn(Optional.empty());

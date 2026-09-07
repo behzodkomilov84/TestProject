@@ -15,9 +15,19 @@
 
     <!-- Подключение CSS -->
     <link rel="stylesheet" href="/css/register-login.css">
+    <link rel="stylesheet" href="/css/country-picker.css">
 
     <!-- Favicon -->
     <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+
+    <!-- Telefon (majburiy) uchun davlat tanlash widget'i — /profile'dagi
+         bilan bir xil (foydalanuvchi so'rovi, 2026-09-07: "telefon
+         majburiy... registratsiya formasiga qo'shish kerak"). Ro'yxat
+         serverdan Thymeleaf orqali keladi (sahifa anonim). -->
+    <script th:inline="javascript">
+        const REGISTRATION_COUNTRIES = /*[[${countries}]]*/ [];
+    </script>
+    <script src="/js/country-picker.js" defer></script>
 </head>
 <body>
 <div class="container container-wide">
@@ -29,24 +39,32 @@
            class="error-alert"></p>
 
         <form action="/registration" method="post">
-            <!-- Email/telefon endi ro'yxatdan o'tish formasida YO'Q
-                 (foydalanuvchi so'rovi, 2026-09-07: "ixtiyoriy
-                 kiritiladiganlarini olib tashla" — ular baribir ixtiyoriy
-                 bo'lgani uchun formani cho'zib, chalg'itib turardi).
-                 Xohlaganlar ularni keyinroq Profil sahifasidan
-                 qo'shishlari mumkin (ProfileService.changeEmail/changePhone). -->
+            <!-- Email — ixtiyoriy (foydalanuvchi so'rovi, 2026-09-07:
+                 ko'pchilik foydalanuvchida email yo'q yoki o'zi login/
+                 parolini bilmaydi). Kiritilmasa hisob tasdiqlashsiz
+                 darhol faollashadi (UserServiceImpl#register). -->
             <input type="text" name="username" placeholder="Foydalanuvchi nomini kiriting" autocomplete="username" required>
+            <input type="email" name="email" placeholder="Email (ixtiyoriy)" autocomplete="email">
 
-            <!-- Ism/Familiya/Ish-o'qish joyi/Lavozim — MAJBURIY (foydalanuvchi
-                 so'rovi, 2026-09-06: "Қайси сохадан, қайси касбдагилар
-                 фойдаланаётганлигига қараб хулоса чиқарамиз"). -->
-            <!-- Ish/o'qish joyi va lavozim ENDI bu yerda YO'Q (foydalanuvchi
-                 so'rovi, 2026-09-07: "registration formdan olib tashla") —
-                 kursga kirishda profil-to'ldirish modali orqali so'raladi
-                 (profile-gate.js, RequireProfileFieldsFilter). -->
+            <!-- Ism/Familiya/Ish-o'qish joyi/Lavozim/Telefon — barchasi
+                 MAJBURIY (foydalanuvchi so'rovi, 2026-09-06 va 2026-09-07:
+                 "Қайси сохадан, қайси касбдагилар фойдаланаётганлигига
+                 қараб хулоса чиқарамиз" + workplace/jobTitle/telefon
+                 qaytadan formaga qo'shildi). -->
             <div class="form-row">
                 <input type="text" name="firstName" placeholder="Ismingiz" autocomplete="given-name" required>
                 <input type="text" name="lastName" placeholder="Familiyangiz" autocomplete="family-name" required>
+            </div>
+
+            <div class="form-row">
+                <input type="text" name="workplace" placeholder="Ish yoki o'qish joyingiz" autocomplete="organization" required>
+                <input type="text" name="jobTitle" placeholder="Lavozimingiz (masalan: shifokor, talaba)" required>
+            </div>
+
+            <div class="phone-field">
+                <div id="phoneCountryPicker"></div>
+                <input type="hidden" name="phoneCountry" id="phoneCountryHidden" value="UZ">
+                <input type="tel" name="phoneNumber" placeholder="Telefon raqamingiz" autocomplete="tel" required>
             </div>
 
             <div class="form-row">
@@ -97,6 +115,17 @@
                 <span class="social-tooltip">Facebook orqali kirish</span>
             </a>
         </div>
+        <script defer>
+            document.addEventListener("DOMContentLoaded", () => {
+                initCountryPicker(
+                    document.getElementById("phoneCountryPicker"),
+                    REGISTRATION_COUNTRIES,
+                    "UZ",
+                    (iso) => { document.getElementById("phoneCountryHidden").value = iso; }
+                );
+            });
+        </script>
+
         <script src="https://telegram.org/js/telegram-widget.js?22"></script>
         <script th:inline="javascript">
             const TELEGRAM_BOT_ID = /*[[${telegramBotId}]]*/ "";
