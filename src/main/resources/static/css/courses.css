@@ -1312,13 +1312,29 @@ body {
     margin-bottom: 0;
 }
 
-/* "▸" — ochiq holatda 90° buriladi ("▾" ko'rinishini beradi). */
+/* "▸" — ochiq holatda 90° buriladi ("▾" ko'rinishini beradi). Avval
+   13px/och kulrang bo'lib, deyarli ko'rinmas edi (haqiqiy foydalanuvchi
+   shikoyati, screenshot bilan, 2026-09-08: "Чап томонидаги стрелкани
+   анча катталаштириб қўй. Кўзга кўринмаяпти") — anча kattalashtirildi
+   va to'qroq rangga o'zgartirildi, shu bilan birga aylana fon qo'shildi
+   (chindan ham bosiladigan tugmaga o'xshab ko'rinishi uchun). */
 .chapter-box-chevron {
-    display: inline-block;
-    color: #94a3b8;
-    font-size: 13px;
-    transition: transform 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #334155;
+    font-size: 22px;
+    font-weight: 700;
+    transition: transform 0.15s ease, background 0.15s ease;
     flex-shrink: 0;
+}
+
+.chapter-box-title:hover .chapter-box-chevron {
+    background: #cbd5e1;
 }
 
 .chapter-box.expanded .chapter-box-chevron {
