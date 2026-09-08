@@ -413,7 +413,8 @@ function renderCourseCard(c, idx, total, fieldId) {
     } else {
         // Narxi belgilangan bo'lsa — foydalanuvchi obuna so'rovini
         // yuborishdan oldin qancha to'lashini ko'rib turishi uchun.
-        const priceText = c.price ? ` — ${formatPrice(c.price)} so'm` : "";
+        // c.price — 1 OYLIK narx (courseDetail.js'dagi bilan bir xil).
+        const priceText = c.price ? ` — 1 oyga ${formatPrice(c.price)} so'm` : "";
         badge = `<span class="course-badge locked">🔒 Obuna kerak${priceText}</span>`;
     }
 

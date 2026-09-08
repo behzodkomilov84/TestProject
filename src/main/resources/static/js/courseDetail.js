@@ -1149,7 +1149,10 @@ function updateSubscribeBanner(course) {
         return;
     }
 
-    const priceText = course.price ? ` Narxi: ${formatPrice(course.price)} so'm.` : "";
+    // course.price — 1 OYLIK narx (PaymentOrderService.createCourseOrder:
+    // amount = price * durationMonths), shuning uchun izohda muddati ham
+    // aniq ko'rsatiladi (foydalanuvchi so'rovi, 2026-09-08).
+    const priceText = course.price ? ` Narxi: 1 oyga ${formatPrice(course.price)} so'm.` : "";
     document.getElementById("subscribeBannerText").textContent =
         "🔒 Bu kursning to'liq mazmuniga kirish uchun obuna kerak." + priceText;
     requestBtn.style.display = "";
