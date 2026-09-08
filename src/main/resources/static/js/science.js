@@ -390,7 +390,13 @@ function fieldKeyOf(s) {
 function getSortedFieldGroups() {
     const groups = new Map();
     for (const f of allFields) {
-        groups.set(String(f.id), { key: String(f.id), fieldId: f.id, name: f.name, orderIndex: f.orderIndex, items: [] });
+        groups.set(String(f.id), {
+            key: String(f.id), fieldId: f.id, name: f.name, orderIndex: f.orderIndex,
+            // Yo'nalishni yaratgan admin (yoki OWNER) — ✏️/🗑️ tugmalarini
+            // ko'rsatish/yashirish uchun (foydalanuvchi so'rovi, 2026-09-08).
+            canManage: f.canManage !== false,
+            items: []
+        });
     }
 
     itemBlock.forEach((s, i) => {
@@ -429,13 +435,16 @@ function renderFieldGroupBox(group, realFieldGroups) {
             : `<div class="chapter-box-body"><div class="courses-empty">Bu Yo'nalishda hali bo'lim yo'q</div></div>`;
     }
 
-    // "✏️"/"🗑️" — faqat HAQIQIY Yo'nalishlarda (group.fieldId != null),
-    // "— Yo'nalishsiz bo'limlar —" psevdo-guruhida ko'rsatilmaydi
-    // (courses.js#renderFieldBox bilan bir xil qoida).
-    const renameBtn = group.fieldId != null
+    // "✏️"/"🗑️" — faqat HAQIQIY Yo'nalishlarda (group.fieldId != null)
+    // VA joriy foydalanuvchi shu Yo'nalishni boshqara olsa (o'zi
+    // yaratgan yoki OWNER) ko'rsatiladi — "— Yo'nalishsiz bo'limlar —"
+    // psevdo-guruhida ko'rsatilmaydi (courses.js#renderFieldBox bilan
+    // bir xil qoida; canManage — foydalanuvchi so'rovi, 2026-09-08).
+    const canManageField = group.fieldId != null && group.canManage !== false;
+    const renameBtn = canManageField
         ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); renameFieldPrompt(${group.fieldId})" title="Yo'nalish nomini tahrirlash">✏️</button>`
         : "";
-    const deleteBtn = group.fieldId != null
+    const deleteBtn = canManageField
         ? `<button class="chapter-rename-btn danger-btn" onclick="event.stopPropagation(); deleteFieldPrompt(${group.fieldId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Yo'nalishni o'chirish (faqat bo'sh bo'lsa)">🗑️</button>`
         : "";
 

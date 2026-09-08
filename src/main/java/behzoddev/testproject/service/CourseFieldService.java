@@ -8,6 +8,7 @@ import behzoddev.testproject.dto.course.CourseFieldSaveDto;
 import behzoddev.testproject.entity.CourseField;
 import behzoddev.testproject.entity.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,17 +30,37 @@ public class CourseFieldService {
     private final CourseRepository courseRepository;
     private final ScienceRepository scienceRepository;
 
+    // HAQIQIY topilgan bug (2026-09-08): Yo'nalish (CourseField) allaqachon
+    // "createdBy" maydoniga ega edi, lekin rename/delete HECH QANDAY
+    // egalik tekshiruvisiz edi — istalgan ADMIN istalgan boshqa
+    // ADMIN'ning Yo'nalishini o'zgartira/o'chira olardi. Endi Science/
+    // Course bilan bir xil qoida: OWNER cheklovsiz, ADMIN faqat O'ZI
+    // yaratgan Yo'nalishni. Yo'nalishning O'ZI (ro'yxatda ko'rinishi)
+    // HAMON hammaga ochiq — faqat tahrirlash/o'chirish cheklanadi
+    // (foydalanuvchi so'rovi: "tahrirlash, o'chirishlarni hidden qilib
+    // qo'y" — ko'rish emas).
+    private boolean canManageField(CourseField field, User user) {
+        return user.hasRole("ROLE_OWNER")
+                || (field.getCreatedBy() != null && field.getCreatedBy().getId().equals(user.getId()));
+    }
+
+    private void checkCanManageField(CourseField field, User user) {
+        if (!canManageField(field, user)) {
+            throw new AccessDeniedException("⛔ Faqat o'zingiz yaratgan Yo'nalishni tahrirlashingiz yoki o'chirishingiz mumkin.");
+        }
+    }
+
     @Transactional(readOnly = true)
-    public List<CourseFieldDto> listFields() {
+    public List<CourseFieldDto> listFields(User currentUser) {
         return courseFieldRepository.findAllByOrderByOrderIndexAsc().stream()
-                .map(this::toDto)
+                .map(f -> toDto(f, currentUser))
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public List<CourseFieldDto> listDeletedFields() {
+    public List<CourseFieldDto> listDeletedFields(User currentUser) {
         return courseFieldRepository.findAllDeletedOrderByDeletedAtDesc().stream()
-                .map(this::toDto)
+                .map(f -> toDto(f, currentUser))
                 .toList();
     }
 
@@ -58,16 +79,17 @@ public class CourseFieldService {
                 .build();
 
         courseFieldRepository.save(field);
-        return toDto(field);
+        return toDto(field, creator);
     }
 
     @Transactional
-    public CourseFieldDto renameField(Long fieldId, String name) {
+    public CourseFieldDto renameField(Long fieldId, String name, User currentUser) {
         validateName(name);
         CourseField field = getFieldOrThrow(fieldId);
+        checkCanManageField(field, currentUser);
         field.setName(name.trim());
         courseFieldRepository.save(field);
-        return toDto(field);
+        return toDto(field, currentUser);
     }
 
     // Faqat BO'SH (hech qanday faol Kursga/Bo'limga biriktirilmagan)
@@ -78,8 +100,9 @@ public class CourseFieldService {
     // (kurslar katalogi) VA Science (TEST BOSHQARUVI) — chunki Yo'nalish
     // ikkalasi uchun ham UMUMIY (foydalanuvchi so'rovi, 2026-09-05).
     @Transactional
-    public void deleteField(Long fieldId) {
+    public void deleteField(Long fieldId, User currentUser) {
         CourseField field = getFieldOrThrow(fieldId);
+        checkCanManageField(field, currentUser);
 
         if (courseFieldRepository.existsActiveCourseByField_Id(fieldId)) {
             throw new IllegalArgumentException(
@@ -117,9 +140,10 @@ public class CourseFieldService {
     }
 
     @Transactional
-    public void restoreField(Long fieldId) {
+    public void restoreField(Long fieldId, User currentUser) {
         CourseField field = courseFieldRepository.findById(fieldId)
                 .orElseThrow(() -> new NoSuchElementException("Yo'nalish topilmadi"));
+        checkCanManageField(field, currentUser);
 
         if (field.getDeletedAt() == null) {
             throw new IllegalArgumentException("❌ Bu Yo'nalish o'chirilmagan — tiklashning hojati yo'q.");
@@ -141,7 +165,7 @@ public class CourseFieldService {
                 .orElseThrow(() -> new NoSuchElementException("Yo'nalish topilmadi"));
     }
 
-    private CourseFieldDto toDto(CourseField field) {
+    private CourseFieldDto toDto(CourseField field, User currentUser) {
         int courseCount = (int) courseRepository.countByField_IdAndDeletedAtIsNull(field.getId());
         int scienceCount = (int) scienceRepository.countByField_IdAndDeletedAtIsNull(field.getId());
         return CourseFieldDto.builder()
@@ -152,6 +176,7 @@ public class CourseFieldService {
                 .scienceCount(scienceCount)
                 .createdAt(field.getCreatedAt())
                 .deletedAt(field.getDeletedAt())
+                .canManage(canManageField(field, currentUser))
                 .build();
     }
 }

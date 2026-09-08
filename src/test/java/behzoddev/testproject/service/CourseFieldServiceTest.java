@@ -46,6 +46,16 @@ class CourseFieldServiceTest {
                 Role.builder().id(1L).roleName("ROLE_OWNER").build()))).build();
     }
 
+    private User admin() {
+        return User.builder().id(50L).username("admin1").roles(new HashSet<>(Set.of(
+                Role.builder().id(2L).roleName("ROLE_ADMIN").build()))).build();
+    }
+
+    private User otherAdmin() {
+        return User.builder().id(51L).username("admin2").roles(new HashSet<>(Set.of(
+                Role.builder().id(2L).roleName("ROLE_ADMIN").build()))).build();
+    }
+
     @Test
     void createField_blankName_throws() {
         assertThatThrownBy(() -> courseFieldService.createField(new CourseFieldSaveDto(" "), owner()))
@@ -88,7 +98,7 @@ class CourseFieldServiceTest {
 
     @Test
     void renameField_blankName_throws() {
-        assertThatThrownBy(() -> courseFieldService.renameField(1L, " "))
+        assertThatThrownBy(() -> courseFieldService.renameField(1L, " ", owner()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("nomi bo'sh");
     }
@@ -99,7 +109,7 @@ class CourseFieldServiceTest {
         when(courseFieldRepository.findById(1L)).thenReturn(Optional.of(field));
         when(courseFieldRepository.existsActiveCourseByField_Id(1L)).thenReturn(true);
 
-        assertThatThrownBy(() -> courseFieldService.deleteField(1L))
+        assertThatThrownBy(() -> courseFieldService.deleteField(1L, owner()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("kurslar");
 
@@ -116,7 +126,7 @@ class CourseFieldServiceTest {
         when(courseFieldRepository.existsActiveCourseByField_Id(1L)).thenReturn(false);
         when(courseFieldRepository.existsActiveScienceByField_Id(1L)).thenReturn(true);
 
-        assertThatThrownBy(() -> courseFieldService.deleteField(1L))
+        assertThatThrownBy(() -> courseFieldService.deleteField(1L, owner()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("TEST BOSHQARUVI");
 
@@ -129,7 +139,7 @@ class CourseFieldServiceTest {
         when(courseFieldRepository.findById(1L)).thenReturn(Optional.of(field));
         when(courseFieldRepository.existsActiveCourseByField_Id(1L)).thenReturn(false);
 
-        courseFieldService.deleteField(1L);
+        courseFieldService.deleteField(1L, owner());
 
         assertThat(field.getDeletedAt()).isNotNull();
         org.mockito.Mockito.verify(courseFieldRepository).save(field);
@@ -137,12 +147,79 @@ class CourseFieldServiceTest {
 
     @Test
     void restoreField_notDeleted_throws() {
-        CourseField field = CourseField.builder().id(1L).name("Soha").orderIndex(1).build();
+        CourseField field = CourseField.builder().id(1L).name("Soha").orderIndex(1).createdBy(owner()).build();
         when(courseFieldRepository.findById(1L)).thenReturn(Optional.of(field));
 
-        assertThatThrownBy(() -> courseFieldService.restoreField(1L))
+        assertThatThrownBy(() -> courseFieldService.restoreField(1L, owner()))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("o'chirilmagan");
+    }
+
+    // ===== ADMIN faqat o'zi yaratgan Yo'nalishni tahrirlashi/o'chirishi
+    // mumkin (foydalanuvchi so'rovi, 2026-09-08 — haqiqiy topilgan bug:
+    // ilgari HECH QANDAY egalik tekshiruvisiz edi) =====
+
+    @Test
+    void renameField_unrelatedAdmin_throwsAccessDenied() {
+        CourseField field = CourseField.builder().id(1L).name("Soha").orderIndex(1).createdBy(admin()).build();
+        when(courseFieldRepository.findById(1L)).thenReturn(Optional.of(field));
+
+        assertThatThrownBy(() -> courseFieldService.renameField(1L, "Yangi nom", otherAdmin()))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+
+        assertThat(field.getName()).isEqualTo("Soha");
+    }
+
+    @Test
+    void renameField_creatingAdmin_allowed() {
+        CourseField field = CourseField.builder().id(1L).name("Soha").orderIndex(1).createdBy(admin()).build();
+        when(courseFieldRepository.findById(1L)).thenReturn(Optional.of(field));
+
+        courseFieldService.renameField(1L, "Yangi nom", admin());
+
+        assertThat(field.getName()).isEqualTo("Yangi nom");
+    }
+
+    @Test
+    void deleteField_unrelatedAdmin_throwsAccessDenied() {
+        CourseField field = CourseField.builder().id(1L).name("Soha").orderIndex(1).createdBy(admin()).build();
+        when(courseFieldRepository.findById(1L)).thenReturn(Optional.of(field));
+
+        assertThatThrownBy(() -> courseFieldService.deleteField(1L, otherAdmin()))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+
+        assertThat(field.getDeletedAt()).isNull();
+        org.mockito.Mockito.verify(courseFieldRepository, org.mockito.Mockito.never()).save(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void restoreField_unrelatedAdmin_throwsAccessDenied() {
+        CourseField field = CourseField.builder().id(1L).name("Soha").orderIndex(1)
+                .createdBy(admin()).deletedAt(java.time.LocalDateTime.now()).build();
+        when(courseFieldRepository.findById(1L)).thenReturn(Optional.of(field));
+
+        assertThatThrownBy(() -> courseFieldService.restoreField(1L, otherAdmin()))
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
+
+        assertThat(field.getDeletedAt()).isNotNull();
+    }
+
+    @Test
+    void listFields_marksCanManagePerField() {
+        CourseField owned = CourseField.builder().id(1L).name("A").orderIndex(1).createdBy(admin()).build();
+        CourseField notOwned = CourseField.builder().id(2L).name("B").orderIndex(2).createdBy(otherAdmin()).build();
+        when(courseFieldRepository.findAllByOrderByOrderIndexAsc()).thenReturn(List.of(owned, notOwned));
+
+        List<CourseFieldDto> result = courseFieldService.listFields(admin());
+
+        // Yo'nalishning O'ZI hammaga ko'rinadi (filtrlanmaydi) — faqat
+        // canManage farqlanadi (foydalanuvchi so'rovi: "tahrirlash,
+        // o'chirishlarni hidden qilib qo'y" — ko'rish emas).
+        assertThat(result).extracting(CourseFieldDto::id, CourseFieldDto::canManage)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple(1L, true),
+                        org.assertj.core.groups.Tuple.tuple(2L, false)
+                );
     }
 
     @Test
@@ -175,7 +252,7 @@ class CourseFieldServiceTest {
         when(courseFieldRepository.findAllByOrderByOrderIndexAsc()).thenReturn(List.of(f1));
         when(courseRepository.countByField_IdAndDeletedAtIsNull(1L)).thenReturn(3L);
 
-        List<CourseFieldDto> result = courseFieldService.listFields();
+        List<CourseFieldDto> result = courseFieldService.listFields(owner());
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).courseCount()).isEqualTo(3);

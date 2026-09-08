@@ -23,14 +23,14 @@ public class CourseFieldController {
     private final CourseFieldService courseFieldService;
 
     @GetMapping
-    public List<CourseFieldDto> list() {
-        return courseFieldService.listFields();
+    public List<CourseFieldDto> list(@AuthenticationPrincipal User user) {
+        return courseFieldService.listFields(user);
     }
 
     @GetMapping("/deleted")
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
-    public List<CourseFieldDto> deleted() {
-        return courseFieldService.listDeletedFields();
+    public List<CourseFieldDto> deleted(@AuthenticationPrincipal User user) {
+        return courseFieldService.listDeletedFields(user);
     }
 
     @PostMapping
@@ -39,14 +39,21 @@ public class CourseFieldController {
         return courseFieldService.createField(dto, user);
     }
 
+    // ADMIN cheklovi: Yo'nalishni yaratgan foydalanuvchi uning egasi
+    // bo'ladi — faqat o'sha ADMIN (yoki cheklovsiz OWNER) tahrirlashi/
+    // o'chirishi mumkin (foydalanuvchi so'rovi, 2026-09-08: haqiqiy
+    // topilgan bug — ilgari HECH QANDAY egalik tekshiruvisiz edi).
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
-    public CourseFieldDto rename(@PathVariable Long id, @RequestBody CourseFieldSaveDto dto) {
-        return courseFieldService.renameField(id, dto.name());
+    public CourseFieldDto rename(@PathVariable Long id, @RequestBody CourseFieldSaveDto dto,
+                                  @AuthenticationPrincipal User user) {
+        return courseFieldService.renameField(id, dto.name(), user);
     }
 
     // "⬆⬇" — literal "/reorder" segmenti, Spring bunday holatda
     // "{id}" path-variable'dan ustun qo'yadi (loyihadagi bir xil andoza).
+    // ATAYLAB egalikdan mustasno — Science/Course reorder bilan bir xil
+    // sabab (bir nechta egaga tegishli aralash ro'yxat).
     @PutMapping("/reorder")
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
     public void reorder(@RequestBody List<Long> fieldIds) {
@@ -55,13 +62,13 @@ public class CourseFieldController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
-    public void delete(@PathVariable Long id) {
-        courseFieldService.deleteField(id);
+    public void delete(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        courseFieldService.deleteField(id, user);
     }
 
     @PostMapping("/{id}/restore")
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
-    public void restore(@PathVariable Long id) {
-        courseFieldService.restoreField(id);
+    public void restore(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        courseFieldService.restoreField(id, user);
     }
 }

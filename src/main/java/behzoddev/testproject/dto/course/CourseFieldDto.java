@@ -16,6 +16,16 @@ public record CourseFieldDto(
         int scienceCount,
         LocalDateTime createdAt,
         // Ixtiyoriy — faqat "O'chirilganlar savati" ro'yxatida to'ldiriladi.
-        LocalDateTime deletedAt
+        LocalDateTime deletedAt,
+        // Yo'nalishning O'ZI barcha OWNER/ADMIN'ga ko'rinadi (kurs/fan
+        // yaratishda tanlash uchun umumiy/sherik resurs), lekin
+        // tahrirlash/o'chirish FAQAT yaratgan ADMIN'ga (yoki cheklovsiz
+        // OWNER'ga) ochiq — foydalanuvchi so'rovi, 2026-09-08:
+        // "/science/fields sahifasida... agar yo'nalishlarni admin o'zi
+        // yaratmagan bo'lsa tahrirlash, o'chirishlarni hidden qilib
+        // qo'y". Reorder (⬆⬇) ATAYLAB bunga kirmaydi — Science/Course
+        // reorder bilan bir xil sabab (bir nechta egaga tegishli aralash
+        // ro'yxat).
+        boolean canManage
 ) {
 }

@@ -227,8 +227,10 @@ function renderFieldCard(f, idx, total) {
             <div class="field-card-actions">
                 <button onclick="event.stopPropagation(); moveField(${f.id}, -1)" ${upDisabled} title="Yuqoriga">⬆</button>
                 <button onclick="event.stopPropagation(); moveField(${f.id}, 1)" ${downDisabled} title="Pastga">⬇</button>
+                ${f.canManage !== false ? `
                 <button onclick="event.stopPropagation(); renameFieldPrompt(${f.id})" title="Nomini tahrirlash">✏️</button>
                 <button class="danger-btn" onclick="event.stopPropagation(); deleteFieldPrompt(${f.id}, ${JSON.stringify(f.name).replace(/"/g, "&quot;")})" title="O'chirish (faqat bo'sh bo'lsa)">🗑️</button>
+                ` : ""}
                 <!-- "⌨️" belgisi shu qatorning ENG OXIRIGA (🗑️'dan keyin)
                      ko'chirildi — ilgari kartaning TEPASIGA (position:absolute,
                      top:10px;right:10px) qo'yilgan edi, bu qisqa (bitta
