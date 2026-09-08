@@ -280,6 +280,14 @@ async function reloadFromDb(mapping) {
         fieldId: s.fieldId ?? null,
         fieldName: s.fieldName ?? null,
         originalFieldId: s.fieldId ?? null,
+        // Joriy foydalanuvchi shu Fanni boshqara oladimi — ✏️/🗑️/eksport
+        // tugmalarini ko'rsatish/yashirish uchun (foydalanuvchi so'rovi,
+        // 2026-09-08). Haqiqiy topilgan bug: bu maydon shu ro'yxatga
+        // AVVAL qo'shilmagan edi, shu sabab API "canManage:false" qaytarsa
+        // ham, itemBlock'da "undefined" bo'lib qolib, tugmalar HAMON
+        // ko'rsatilardi ("!== false" tekshiruvi undefined'ni ham o'tkazib
+        // yuboradi).
+        canManage: s.canManage !== false,
         mode: "VIEW"
     }));
 
