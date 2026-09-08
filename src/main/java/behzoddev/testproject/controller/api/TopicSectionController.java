@@ -4,6 +4,7 @@ import behzoddev.testproject.dto.section.TopicSectionIdAndNameDto;
 import behzoddev.testproject.dto.section.TopicSectionNameDto;
 import behzoddev.testproject.dto.section.TopicSectionTrashDto;
 import behzoddev.testproject.entity.User;
+import behzoddev.testproject.service.ScienceService;
 import behzoddev.testproject.service.TopicSectionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -22,10 +23,15 @@ import java.util.Map;
 public class TopicSectionController {
 
     private final TopicSectionService topicSectionService;
+    private final ScienceService scienceService;
 
+    // ADMIN o'zi yaratmagan Fanning Bo'limlarini UMUMAN ko'rmasligi kerak
+    // (foydalanuvchi so'rovi, 2026-09-08: "Boshqalarniki ko'rinmasin").
     @GetMapping("/api/topic-section")
     @ResponseBody
-    public ResponseEntity<List<TopicSectionIdAndNameDto>> getSections(@RequestParam Long scienceId) {
+    public ResponseEntity<List<TopicSectionIdAndNameDto>> getSections(@RequestParam Long scienceId,
+                                                                        @AuthenticationPrincipal User user) {
+        scienceService.requireManageableScience(scienceId, user);
         return ResponseEntity.ok(topicSectionService.getSectionsByScienceId(scienceId));
     }
 
@@ -91,7 +97,9 @@ public class TopicSectionController {
     // "O'chirilganlar savati" (Bo'lim darajasida, Fan ichida).
     @GetMapping("/api/topic-section/deleted")
     @ResponseBody
-    public ResponseEntity<List<TopicSectionTrashDto>> getDeleted(@RequestParam Long scienceId) {
+    public ResponseEntity<List<TopicSectionTrashDto>> getDeleted(@RequestParam Long scienceId,
+                                                                    @AuthenticationPrincipal User user) {
+        scienceService.requireManageableScience(scienceId, user);
         return ResponseEntity.ok(topicSectionService.getDeletedSections(scienceId));
     }
 

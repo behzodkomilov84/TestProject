@@ -75,18 +75,25 @@ async function applyScopeBar() {
         if (res.ok) {
             const science = await res.json();
             sectionPageCanManage = science.canManage !== false;
-            applySectionCanManageToUi();
-            if (itemBlock.length > 0) render();
 
             if (bar) {
                 backLink.href = `/science?focus=${scienceId}${fieldQuery}`;
                 nameEl.textContent = science.name;
                 bar.classList.remove("hidden");
             }
+        } else {
+            // 404 — ADMIN o'zi yaratmagan Fanga to'g'ridan-to'g'ri
+            // scienceId bilan kelgan — standart holat "yashirilsin"
+            // bo'lishi kerak (foydalanuvchi so'rovi, 2026-09-08:
+            // "Boshqalarniki ko'rinmasin").
+            sectionPageCanManage = false;
         }
     } catch (err) {
         console.error(err);
+        sectionPageCanManage = false;
     }
+    applySectionCanManageToUi();
+    if (itemBlock.length > 0) render();
 }
 
 // Badge'ni (".notif-badge" — navbar.js#refreshUnreadCount bilan bir xil
@@ -259,13 +266,18 @@ function afterStartPage(mapping) {
 async function reloadFromDb(mapping) {
     const response = await fetch(mapping);
 
-    try {
-        if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
-        }
-    } catch (err) {
-        console.error('Yuklash xatosi:', err);
-        showToast('error', `Bo'limlarni yuklashda xatolik`, 4000);
+    if (!response.ok) {
+        // ADMIN o'zi yaratmagan Fanga to'g'ridan-to'g'ri havola/scienceId
+        // bilan kelsa — backend endi 403 qaytaradi (foydalanuvchi so'rovi,
+        // 2026-09-08: "Boshqalarniki ko'rinmasin"). Xato javob tanasini
+        // massiv sifatida "data.map()"ga yuborish oldingi haqiqiy bug
+        // edi — sahifani butunlay qotirib qo'yardi.
+        console.error('Yuklash xatosi:', response.status);
+        showToast('error', response.status === 403
+            ? `⛔ Bu Fanni ko'rish huquqingiz yo'q`
+            : `Bo'limlarni yuklashda xatolik`, 4000);
+        itemBlock = [];
+        return;
     }
 
     const data = await response.json();

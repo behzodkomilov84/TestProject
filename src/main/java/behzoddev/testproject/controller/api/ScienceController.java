@@ -98,8 +98,8 @@ public class ScienceController {
     }
 
     @GetMapping("/science/full")
-    public ResponseEntity<Set<ScienceDto>> getSciencesFull() {
-        Set<ScienceDto> sciences = scienceService.getAllSciencesDto();
+    public ResponseEntity<Set<ScienceDto>> getSciencesFull(@AuthenticationPrincipal User user) {
+        Set<ScienceDto> sciences = scienceService.getAllSciencesDto(user);
 
         return ResponseEntity.ok(sciences);
     }
@@ -112,8 +112,8 @@ public class ScienceController {
     }
 
     @GetMapping("/science/{scienceId}/full")
-    public ResponseEntity<ScienceDto> getScience(@PathVariable Long scienceId) {
-        ScienceDto scienceDto = scienceService.getScienceById(scienceId).orElseThrow();
+    public ResponseEntity<ScienceDto> getScience(@PathVariable Long scienceId, @AuthenticationPrincipal User user) {
+        ScienceDto scienceDto = scienceService.getScienceById(scienceId, user).orElseThrow();
         return ResponseEntity.ok(scienceDto);
     }
 
@@ -249,8 +249,8 @@ public class ScienceController {
     @GetMapping("/api/science/deleted")
     @ResponseBody
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
-    public ResponseEntity<List<ScienceTrashDto>> getDeletedSciences() {
-        return ResponseEntity.ok(scienceService.getDeletedSciences());
+    public ResponseEntity<List<ScienceTrashDto>> getDeletedSciences(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(scienceService.getDeletedSciences(user));
     }
 
     @PostMapping("/api/science/{scienceId}/restore")

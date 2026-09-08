@@ -28,8 +28,16 @@ public class TopicController {
     private final TopicSectionService topicSectionService;
     private final ScienceService scienceService;
 
+    // ADMIN o'zi yaratmagan Fanning mavzular ro'yxatini UMUMAN
+    // ko'rmasligi kerak (foydalanuvchi so'rovi, 2026-09-08: "OWNER dan
+    // tashqari hamma adminlar faqat o'zi yaratgan testlar iyerarxiyasini
+    // ko'ra olsin. Boshqalarniki ko'rinmasin") — requireManageableScience
+    // OWNER'ga cheklovsiz, boshqa ADMIN uchun AccessDeniedException (403)
+    // tashlaydi.
     @GetMapping("/api/topic")
-    public ResponseEntity<List<TopicIdAndNameDto>> getTopicsByScience(@RequestParam Long scienceId) {
+    public ResponseEntity<List<TopicIdAndNameDto>> getTopicsByScience(@RequestParam Long scienceId,
+                                                                        @AuthenticationPrincipal User user) {
+        scienceService.requireManageableScience(scienceId, user);
         List<TopicIdAndNameDto> topicIdAndNameDtos = topicService.getTopicsByScienceId(scienceId);
 
         return ResponseEntity.ok(topicIdAndNameDtos);
@@ -81,7 +89,9 @@ public class TopicController {
     }
 
     @GetMapping("/science/{scienceId}/topic/{topicId}")
-    public ResponseEntity<TopicIdAndNameDto> getTopicByIds(@PathVariable Long scienceId, @PathVariable Long topicId) {
+    public ResponseEntity<TopicIdAndNameDto> getTopicByIds(@PathVariable Long scienceId, @PathVariable Long topicId,
+                                                              @AuthenticationPrincipal User user) {
+        scienceService.requireManageableScience(scienceId, user);
         TopicIdAndNameDto topicIdAndNameDto = topicService.getTopicByIds(scienceId, topicId);
 
         return ResponseEntity.ok(topicIdAndNameDto);
@@ -137,10 +147,14 @@ public class TopicController {
         return ResponseEntity.ok(Map.of("deleted", topicService.deleteQuestionlessTopics(scienceId, user)));
     }
 
-    // "O'chirilganlar savati" (mavzu darajasida) — faqat OWNER/ADMIN.
+    // "O'chirilganlar savati" (mavzu darajasida) — faqat OWNER/ADMIN, va
+    // faqat o'zi boshqara oladigan Fan uchun (foydalanuvchi so'rovi,
+    // 2026-09-08: "Boshqalarniki ko'rinmasin").
     @GetMapping("/api/topic/deleted")
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
-    public ResponseEntity<List<TopicTrashDto>> getDeleted(@RequestParam Long scienceId) {
+    public ResponseEntity<List<TopicTrashDto>> getDeleted(@RequestParam Long scienceId,
+                                                            @AuthenticationPrincipal User user) {
+        scienceService.requireManageableScience(scienceId, user);
         return ResponseEntity.ok(topicService.getDeletedTopics(scienceId));
     }
 

@@ -387,7 +387,12 @@ class ScienceServiceTest {
     // qilolmasin"). =====
 
     @Test
-    void getAllScienceIdAndNameDto_marksOwnedAndUnownedSciencesCorrectly() {
+    void getAllScienceIdAndNameDto_adminSeesOnlyOwnScience_othersFilteredOut() {
+        // Foydalanuvchi so'rovi, 2026-09-08: "OWNER dan tashqari hamma
+        // adminlar faqat o'zi yaratgan testlar iyerarxiyasini ko'ra
+        // olsin. Boshqalarniki ko'rinmasin" — shu sabab notOwned ro'yxatda
+        // UMUMAN chiqmasligi kerak (canManage=false bilan belgilanib
+        // qolish emas).
         Science owned = Science.builder().id(1L).name("Kimyo").createdBy(admin).build();
         Science notOwned = Science.builder().id(2L).name("Fizika").createdBy(otherAdmin).build();
         when(scienceRepository.findAllScienceNames()).thenReturn(Set.of(
@@ -400,10 +405,7 @@ class ScienceServiceTest {
         Set<ScienceIdAndNameDto> result = scienceService.getAllScienceIdAndNameDto(admin);
 
         assertThat(result).extracting(ScienceIdAndNameDto::id, ScienceIdAndNameDto::canManage)
-                .containsExactlyInAnyOrder(
-                        org.assertj.core.groups.Tuple.tuple(1L, true),
-                        org.assertj.core.groups.Tuple.tuple(2L, false)
-                );
+                .containsExactly(org.assertj.core.groups.Tuple.tuple(1L, true));
     }
 
     @Test
@@ -420,15 +422,17 @@ class ScienceServiceTest {
     // ===== getScienceNameById(Long, User) =====
 
     @Test
-    void getScienceNameById_unrelatedAdmin_canManageFalse() {
+    void getScienceNameById_unrelatedAdmin_returnsEmpty_notVisible() {
+        // Foydalanuvchi so'rovi, 2026-09-08: "Boshqalarniki ko'rinmasin" —
+        // shu sabab canManage=false bilan qaytarish o'rniga endi UMUMAN
+        // ko'rinmaydi (Optional.empty() — 404).
         Science science = Science.builder().id(1L).name("Kimyo").createdBy(admin).build();
         when(scienceRepository.findScienceNameById(1L)).thenReturn(Optional.of(new ScienceIdAndNameDto(1L, "Kimyo", 0)));
         when(scienceRepository.findById(1L)).thenReturn(Optional.of(science));
 
         Optional<ScienceIdAndNameDto> result = scienceService.getScienceNameById(1L, otherAdmin);
 
-        assertThat(result).isPresent();
-        assertThat(result.get().canManage()).isFalse();
+        assertThat(result).isEmpty();
     }
 
     @Test
@@ -441,5 +445,71 @@ class ScienceServiceTest {
 
         assertThat(result).isPresent();
         assertThat(result.get().canManage()).isTrue();
+    }
+
+    // ===== getScienceById(Long, User) — /science/{id}/full =====
+
+    @Test
+    void getScienceById_unrelatedAdmin_returnsEmpty() {
+        Science science = Science.builder().id(1L).name("Kimyo").createdBy(admin).build();
+        when(scienceRepository.findByIdWithTopics(1L)).thenReturn(Optional.of(science));
+
+        assertThat(scienceService.getScienceById(1L, otherAdmin)).isEmpty();
+    }
+
+    @Test
+    void getScienceById_creatingAdmin_returnsMapped() {
+        Science science = Science.builder().id(1L).name("Kimyo").createdBy(admin).build();
+        behzoddev.testproject.dto.science.ScienceDto mapped =
+                new behzoddev.testproject.dto.science.ScienceDto(1L, "Kimyo", Set.of());
+        when(scienceRepository.findByIdWithTopics(1L)).thenReturn(Optional.of(science));
+        when(scienceMapper.mapSciencetoScienceDto(science)).thenReturn(mapped);
+
+        assertThat(scienceService.getScienceById(1L, admin)).contains(mapped);
+    }
+
+    // ===== getAllSciencesDto(User) — /science/full =====
+
+    @Test
+    void getAllSciencesDto_adminSeesOnlyOwnScience() {
+        Science owned = Science.builder().id(1L).name("Kimyo").createdBy(admin).build();
+        Science notOwned = Science.builder().id(2L).name("Fizika").createdBy(otherAdmin).build();
+        when(scienceRepository.findAllWithTopics()).thenReturn(new HashSet<>(Set.of(owned, notOwned)));
+
+        scienceService.getAllSciencesDto(admin);
+
+        org.mockito.ArgumentCaptor<Set<Science>> captor = org.mockito.ArgumentCaptor.forClass(Set.class);
+        verify(scienceMapper).toScinceDtoSet(captor.capture());
+        assertThat(captor.getValue()).containsExactly(owned);
+    }
+
+    // ===== getDeletedSciences(User) — "O'chirilganlar savati" =====
+
+    @Test
+    void getDeletedSciences_adminSeesOnlyOwnDeletedScience() {
+        Science owned = Science.builder().id(1L).name("Kimyo").createdBy(admin).build();
+        Science notOwned = Science.builder().id(2L).name("Fizika").createdBy(otherAdmin).build();
+        when(scienceRepository.findAllDeleted()).thenReturn(List.of(
+                new behzoddev.testproject.dto.science.ScienceTrashDto(1L, "Kimyo", null),
+                new behzoddev.testproject.dto.science.ScienceTrashDto(2L, "Fizika", null)
+        ));
+        when(scienceRepository.findById(1L)).thenReturn(Optional.of(owned));
+        when(scienceRepository.findById(2L)).thenReturn(Optional.of(notOwned));
+
+        List<behzoddev.testproject.dto.science.ScienceTrashDto> result = scienceService.getDeletedSciences(admin);
+
+        assertThat(result).extracting(behzoddev.testproject.dto.science.ScienceTrashDto::id).containsExactly(1L);
+    }
+
+    @Test
+    void getDeletedSciences_owner_seesAll() {
+        when(scienceRepository.findAllDeleted()).thenReturn(List.of(
+                new behzoddev.testproject.dto.science.ScienceTrashDto(1L, "Kimyo", null),
+                new behzoddev.testproject.dto.science.ScienceTrashDto(2L, "Fizika", null)
+        ));
+
+        List<behzoddev.testproject.dto.science.ScienceTrashDto> result = scienceService.getDeletedSciences(owner);
+
+        assertThat(result).hasSize(2);
     }
 }

@@ -75,9 +75,17 @@ async function loadCanManage() {
         if (res.ok) {
             const science = await res.json();
             topicPageCanManage = science.canManage !== false;
+        } else {
+            // 404 — ADMIN o'zi yaratmagan Fanga to'g'ridan-to'g'ri
+            // scienceId bilan kelgan (backend endi bunday Fanni UMUMAN
+            // ko'rsatmaydi) — standart holat "ko'rsatilsin" emas,
+            // "yashirilsin" bo'lishi kerak (foydalanuvchi so'rovi,
+            // 2026-09-08: "Boshqalarniki ko'rinmasin").
+            topicPageCanManage = false;
         }
     } catch (err) {
         console.error(err);
+        topicPageCanManage = false;
     }
     applyCanManageToUi();
     // reloadAll()/render() bilan poyga holati (race) bo'lishi mumkin —
@@ -826,13 +834,19 @@ function afterStartPage(mapping) {
 async function reloadFromDb(mapping) {
     const response = await fetch(mapping);
 
-    try {
-        if (!response.ok) {
-            throw new Error(`Server error: ${response.status}`);
-        }
-    } catch (err) {
-        console.error('Yuklash xatosi:', err);
-        showToast('error', `Mavzularni yuklashda xatolik`, 4000);
+    if (!response.ok) {
+        // ADMIN o'zi yaratmagan Fanga to'g'ridan-to'g'ri havola/scienceId
+        // bilan kelsa — backend endi 403 qaytaradi (foydalanuvchi so'rovi,
+        // 2026-09-08: "Boshqalarniki ko'rinmasin"). Xato javob tanasini
+        // (JSON obyekt, {"error":...}) massiv sifatida "data.map()"ga
+        // yuborish oldingi haqiqiy bug edi — sahifani butunlay
+        // qotirib qo'yardi (uncaught exception).
+        console.error('Yuklash xatosi:', response.status);
+        showToast('error', response.status === 403
+            ? `⛔ Bu Fanni ko'rish huquqingiz yo'q`
+            : `Mavzularni yuklashda xatolik`, 4000);
+        itemBlock = [];
+        return;
     }
 
     const data = await response.json();

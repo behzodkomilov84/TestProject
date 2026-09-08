@@ -12,6 +12,7 @@ import behzoddev.testproject.exception.ErrorResponse;
 import behzoddev.testproject.service.AnswerService;
 import behzoddev.testproject.service.FileStorageService;
 import behzoddev.testproject.service.QuestionService;
+import behzoddev.testproject.service.ScienceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,6 +34,7 @@ public class QuestionController {
     private final QuestionService questionService;
     private final AnswerService answerService;
     private final FileStorageService fileStorageService;
+    private final ScienceService scienceService;
 
     // Savol yoki javob variantiga (masalan, geometrik chizmaga) rasm yuklash.
     // Frontend avval shu endpoint orqali rasmni yuklaydi, qaytgan URL'ni esa
@@ -72,12 +74,18 @@ public class QuestionController {
         }
     }
 
+    // ADMIN o'zi yaratmagan Fanning savollarini UMUMAN ko'rmasligi kerak
+    // (foydalanuvchi so'rovi, 2026-09-08: "OWNER dan tashqari hamma
+    // adminlar faqat o'zi yaratgan testlar iyerarxiyasini ko'ra olsin.
+    // Boshqalarniki ko'rinmasin").
     @GetMapping("/api/question")
     public ResponseEntity<Page<QuestionDto>> getPage(
             @RequestParam Long topicId,
             @PageableDefault(size = 10, page = 0) Pageable pageable,
-            @RequestParam(required = false) String searchQuestionText
+            @RequestParam(required = false) String searchQuestionText,
+            @AuthenticationPrincipal User user
     ) {
+        scienceService.checkCanManageByTopicId(topicId, user);
         Page<QuestionDto> questionDtoPageByTopicId = questionService.getQuestionDtoPageByTopicId(
                 topicId,
                 searchQuestionText,
@@ -90,8 +98,10 @@ public class QuestionController {
     @GetMapping("/api/question/all")
     public ResponseEntity<List<QuestionDto>> getAll(
             @RequestParam Long topicId,
-            @RequestParam(required = false) String searchQuestionText
+            @RequestParam(required = false) String searchQuestionText,
+            @AuthenticationPrincipal User user
     ) {
+        scienceService.checkCanManageByTopicId(topicId, user);
         return ResponseEntity.ok(
                 questionService.findAll(topicId, searchQuestionText)
         );
@@ -222,14 +232,17 @@ public class QuestionController {
     }
 
     @GetMapping("/science/{scienceId}/topic/{topicId}/question")
-    public ResponseEntity<List<QuestionDto>> getQuestionsByIds(@PathVariable Long scienceId, @PathVariable Long topicId) {
+    public ResponseEntity<List<QuestionDto>> getQuestionsByIds(@PathVariable Long scienceId, @PathVariable Long topicId,
+                                                                 @AuthenticationPrincipal User user) {
+        scienceService.requireManageableScience(scienceId, user);
         List<QuestionDto> questionDto = questionService.getQuestionsByIds(scienceId, topicId);
 
         return ResponseEntity.ok(questionDto);
     }
 
     @GetMapping("/question/{questionId}")
-    public ResponseEntity<QuestionDto> getQuestionById(@PathVariable Long questionId) {
+    public ResponseEntity<QuestionDto> getQuestionById(@PathVariable Long questionId, @AuthenticationPrincipal User user) {
+        questionService.checkCanManageQuestionById(questionId, user);
         QuestionDto questionDto = questionService.getQuestionById(questionId);
 
         return ResponseEntity.ok(questionDto);
@@ -302,7 +315,9 @@ public class QuestionController {
     // "O'chirilganlar savati" (savol/test darajasida).
     @GetMapping("/api/question/deleted")
     @ResponseBody
-    public ResponseEntity<List<QuestionTrashDto>> getDeleted(@RequestParam Long topicId) {
+    public ResponseEntity<List<QuestionTrashDto>> getDeleted(@RequestParam Long topicId,
+                                                               @AuthenticationPrincipal User user) {
+        scienceService.checkCanManageByTopicId(topicId, user);
         return ResponseEntity.ok(questionService.getDeletedQuestions(topicId));
     }
 
@@ -310,18 +325,24 @@ public class QuestionController {
     // global savol savati, barcha mavzular birga).
     @GetMapping("/api/question/deleted-by-science")
     @ResponseBody
-    public ResponseEntity<List<QuestionScienceTrashDto>> getDeletedByScience(@RequestParam Long scienceId) {
+    public ResponseEntity<List<QuestionScienceTrashDto>> getDeletedByScience(@RequestParam Long scienceId,
+                                                                               @AuthenticationPrincipal User user) {
+        scienceService.requireManageableScience(scienceId, user);
         return ResponseEntity.ok(questionService.getDeletedQuestionsByScience(scienceId));
     }
 
     // science.html'dagi 🔍 "Bo'lim ichida qidiruv" modali — butun Fan
     // bo'yicha (barcha Mavzu -> Dars -> Savol) savol matnidan qidiradi.
+    // ADMIN o'zi yaratmagan Fan bo'yicha qidira olmasligi kerak
+    // (foydalanuvchi so'rovi, 2026-09-08: "Boshqalarniki ko'rinmasin").
     @GetMapping("/api/question/search-by-science")
     @ResponseBody
     public ResponseEntity<List<QuestionScienceSearchDto>> searchByScience(
             @RequestParam Long scienceId,
-            @RequestParam(required = false) String query
+            @RequestParam(required = false) String query,
+            @AuthenticationPrincipal User user
     ) {
+        scienceService.requireManageableScience(scienceId, user);
         return ResponseEntity.ok(questionService.searchQuestionsByScience(scienceId, query));
     }
 

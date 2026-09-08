@@ -40,8 +40,9 @@ public class ScienceService {
     private final Validation validation;
 
     @Transactional(readOnly = true)
-    public Set<ScienceDto> getAllSciencesDto() {
+    public Set<ScienceDto> getAllSciencesDto(User currentUser) {
         Set<Science> scienceWithTopics = scienceRepository.findAllWithTopics();
+        scienceWithTopics.removeIf(s -> !canManageScience(s, currentUser));
 
         return scienceMapper.toScinceDtoSet(scienceWithTopics);
     }
@@ -54,6 +55,13 @@ public class ScienceService {
     // chiq... FRONTEND da ham modify qilolmasin" — haqiqiy topilgan bug:
     // backend allaqachon bloklagan bo'lsa ham, science.js ✏️🗑️⬆⬇⌨️
     // tugmalarini har doim ko'rsatib turardi).
+    //
+    // ENDI (2026-09-08, keyingi so'rov): "OWNER dan tashqari hamma
+    // adminlar faqat o'zi yaratgan testlar iyerarxiyasini ko'ra olsin.
+    // Boshqalarniki ko'rinmasin" — shu sabab ro'yxat endi FILTRLANADI
+    // ham (faqat canManage=true bo'lganlar qoladi), shunchaki belgilab
+    // qo'yilmaydi. OWNER uchun canManageScience har doim true bo'lgani
+    // uchun bu filtr OWNER'ga hech qanday ta'sir qilmaydi.
     @Transactional(readOnly = true)
     public Set<ScienceIdAndNameDto> getAllScienceIdAndNameDto(User currentUser) {
         Set<ScienceIdAndNameDto> base = scienceRepository.findAllScienceNames();
@@ -68,19 +76,24 @@ public class ScienceService {
                             dto.id(), dto.name(), dto.sectionCount(), dto.fieldId(), dto.fieldName(),
                             science != null && canManageScience(science, currentUser));
                 })
+                .filter(ScienceIdAndNameDto::canManage)
                 .collect(java.util.stream.Collectors.toSet());
     }
 
     @Transactional(readOnly = true)
-    public Optional<ScienceDto> getScienceById(Long id) {
-        return scienceRepository.findByIdWithTopics(id).map(scienceMapper::mapSciencetoScienceDto);
+    public Optional<ScienceDto> getScienceById(Long id, User currentUser) {
+        return scienceRepository.findByIdWithTopics(id)
+                .filter(science -> canManageScience(science, currentUser))
+                .map(scienceMapper::mapSciencetoScienceDto);
     }
 
     // topic.js/topicSection.js — bitta Fan (Science) ichida ishlaydigan
     // sahifalar breadcrumb'ini shu orqali oladi, canManage ham shu bilan
     // birga keladi — sahifadagi BARCHA amallar (qo'shish/tahrirlash/
     // o'chirish/tartiblash/eksport/import) shu bitta bayroqqa qarab
-    // ko'rsatiladi/yashiriladi.
+    // ko'rsatiladi/yashiriladi. ADMIN o'zi yaratmagan Fanga bu orqali
+    // umuman kira olmaydi (Optional.empty() — 404, "ko'rinmasin"
+    // foydalanuvchi so'rovi, 2026-09-08).
     @Transactional(readOnly = true)
     public Optional<ScienceIdAndNameDto> getScienceNameById(Long id, User currentUser) {
         return scienceRepository.findScienceNameById(id)
@@ -89,7 +102,8 @@ public class ScienceService {
                     return new ScienceIdAndNameDto(
                             dto.id(), dto.name(), dto.sectionCount(), dto.fieldId(), dto.fieldName(),
                             science != null && canManageScience(science, currentUser));
-                });
+                })
+                .filter(ScienceIdAndNameDto::canManage);
     }
 
     // ADMIN cheklovi: fanni yaratgan foydalanuvchi uning egasi bo'ladi —
@@ -245,10 +259,20 @@ public class ScienceService {
         scienceRepository.save(science);
     }
 
-    // "O'chirilganlar savati" ro'yxati.
+    // "O'chirilganlar savati" ro'yxati — ADMIN faqat O'ZI o'chirgan (demak
+    // avval o'zi yaratgan) fanlarni ko'radi (foydalanuvchi so'rovi,
+    // 2026-09-08: "Boshqalarniki ko'rinmasin"). OWNER — cheklovsiz.
     @Transactional(readOnly = true)
-    public List<ScienceTrashDto> getDeletedSciences() {
-        return scienceRepository.findAllDeleted();
+    public List<ScienceTrashDto> getDeletedSciences(User currentUser) {
+        List<ScienceTrashDto> all = scienceRepository.findAllDeleted();
+        if (currentUser.hasRole("ROLE_OWNER")) {
+            return all;
+        }
+        return all.stream()
+                .filter(dto -> scienceRepository.findById(dto.id())
+                        .map(s -> canManageScience(s, currentUser))
+                        .orElse(false))
+                .toList();
     }
 
     // "♻️ Tiklash" — fanni savatdan qaytaradi, Bo'lim/mavzu/savollari
