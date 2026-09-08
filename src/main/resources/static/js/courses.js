@@ -37,12 +37,14 @@ let focusCourseId = Number(new URLSearchParams(window.location.search).get("focu
 // orqali ko'rsatiladi — brauzerning standart :focus halqasiga emas.
 let selectedCourseId = null;
 
-// Sahifa birinchi ochilganda — bir marta: "?focus=" bo'lsa o'sha
-// kartaga, bo'lmasa BIRINCHI (orderIndex bo'yicha) Yo'nalishning
-// birinchi kursiga default tanlov qo'yiladi (courseDetail.js#
-// pendingFocusApplied bilan bir xil g'oya) — keyingi qayta chizishlarda
-// (masalan Yo'nalish ochish/yopish) takrorlanmaydi.
-let pendingDefaultCourseSelectionApplied = false;
+// Sahifa birinchi ochilganda "?focus=<id>" bo'lsa — o'sha kursga bir
+// martalik tanlov/scroll qo'yiladi (courseDetail.js#pendingFocusApplied
+// bilan bir xil g'oya). "?focus=" bo'lmasa — ILGARI birinchi Yo'nalishning
+// birinchi kursi default tanlanardi, lekin bu Yo'nalish guruhini
+// majburan ochib yuborardi (haqiqiy foydalanuvchi shikoyati, 2026-09-08:
+// guruhlar "berk" turishi kerak bo'lsa ham birinchisi ochiq chiqardi) —
+// courseDetail.js#selectFirstCardByDefault bilan bir xil sabab bilan
+// olib tashlandi.
 
 document.addEventListener("DOMContentLoaded", () => {
     if (CAN_CREATE_COURSE) {
@@ -161,7 +163,6 @@ function renderGroupedCourses() {
         // (masalan boshqa Yo'nalishni ochish/yopish) foydalanuvchini
         // qaytadan shu kartaga tashlab yubormaslik uchun.
         focusCourseId = null;
-        pendingDefaultCourseSelectionApplied = true;
 
         selectCourseCard(targetId, { scroll: true });
         const card = document.getElementById(`course-card-${targetId}`);
@@ -169,17 +170,16 @@ function renderGroupedCourses() {
             card.classList.add("course-card-focused");
             setTimeout(() => card.classList.remove("course-card-focused"), 2000);
         }
-    } else if (!pendingDefaultCourseSelectionApplied) {
-        // "?focus=" bo'lmasa — BIRINCHI (orderIndex bo'yicha) DARSI... ya'ni
-        // KURSI BOR Yo'nalishning birinchi kursi default tanlanadi
-        // (courseDetail.js#selectFirstCardByDefault bilan bir xil g'oya —
-        // foydalanuvchi so'rovi, 2026-09-05).
-        pendingDefaultCourseSelectionApplied = true;
-        const firstGroupWithItems = groups.find(g => g.items.length > 0);
-        if (firstGroupWithItems) {
-            selectCourseCard(firstGroupWithItems.items[0].id);
-        }
     }
+    // "?focus=" bo'lmasa — ILGARI BIRINCHI Yo'nalishning birinchi kursi
+    // default tanlanardi (courseDetail.js#selectFirstCardByDefault bilan
+    // bir xil g'oya edi), lekin selectCourseCard() kartani DOM'da
+    // topolmasa (guruh yopiq bo'lsa) O'ZI guruhni ochib yuborar edi —
+    // natijada sahifa YANGI yuklanganda Yo'nalishlar "berk" turishi
+    // kerak bo'lsa ham, birinchisi HAR DOIM ochiq chiqardi (haqiqiy
+    // foydalanuvchi shikoyati, 2026-09-08: "sahifa yangi yuklanganda
+    // berk tursin"). courseDetail.js'da xuddi shu sabab bilan avval
+    // butunlay OLIB TASHLANGAN edi (2026-09-08) — endi bu yerda ham.
 }
 
 function toggleFieldBox(key) {
