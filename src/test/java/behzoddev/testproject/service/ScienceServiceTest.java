@@ -353,4 +353,93 @@ class ScienceServiceTest {
         assertThatThrownBy(() -> scienceService.checkCanManageBySectionId(7L, otherAdmin))
                 .isInstanceOf(AccessDeniedException.class);
     }
+
+    // ===== canManageByTopicId (otmaydigan/non-throwing variant) =====
+
+    @Test
+    void canManageByTopicId_ownerOfTopicsScience_returnsTrue() {
+        Science science = Science.builder().id(1L).createdBy(admin).build();
+        Topic topic = Topic.builder().id(3L).science(science).build();
+        when(topicRepository.findById(3L)).thenReturn(Optional.of(topic));
+
+        assertThat(scienceService.canManageByTopicId(3L, admin)).isTrue();
+    }
+
+    @Test
+    void canManageByTopicId_unrelatedAdmin_returnsFalse() {
+        Science science = Science.builder().id(1L).createdBy(admin).build();
+        Topic topic = Topic.builder().id(3L).science(science).build();
+        when(topicRepository.findById(3L)).thenReturn(Optional.of(topic));
+
+        assertThat(scienceService.canManageByTopicId(3L, otherAdmin)).isFalse();
+    }
+
+    @Test
+    void canManageByTopicId_topicNotFound_returnsFalse() {
+        when(topicRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThat(scienceService.canManageByTopicId(999L, admin)).isFalse();
+    }
+
+    // ===== getAllScienceIdAndNameDto(User) — FRONTEND'da tugmalarni
+    // ko'rsatish/yashirish uchun canManage bilan boyitilgan ro'yxat
+    // (foydalanuvchi so'rovi, 2026-09-08: "FRONTEND da ham modify
+    // qilolmasin"). =====
+
+    @Test
+    void getAllScienceIdAndNameDto_marksOwnedAndUnownedSciencesCorrectly() {
+        Science owned = Science.builder().id(1L).name("Kimyo").createdBy(admin).build();
+        Science notOwned = Science.builder().id(2L).name("Fizika").createdBy(otherAdmin).build();
+        when(scienceRepository.findAllScienceNames()).thenReturn(Set.of(
+                new ScienceIdAndNameDto(1L, "Kimyo", 0),
+                new ScienceIdAndNameDto(2L, "Fizika", 0)
+        ));
+        when(scienceRepository.findAllByDeletedAtIsNullOrderByOrderIndex())
+                .thenReturn(List.of(owned, notOwned));
+
+        Set<ScienceIdAndNameDto> result = scienceService.getAllScienceIdAndNameDto(admin);
+
+        assertThat(result).extracting(ScienceIdAndNameDto::id, ScienceIdAndNameDto::canManage)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple(1L, true),
+                        org.assertj.core.groups.Tuple.tuple(2L, false)
+                );
+    }
+
+    @Test
+    void getAllScienceIdAndNameDto_owner_alwaysCanManage() {
+        Science notOwned = Science.builder().id(2L).name("Fizika").createdBy(admin).build();
+        when(scienceRepository.findAllScienceNames()).thenReturn(Set.of(new ScienceIdAndNameDto(2L, "Fizika", 0)));
+        when(scienceRepository.findAllByDeletedAtIsNullOrderByOrderIndex()).thenReturn(List.of(notOwned));
+
+        Set<ScienceIdAndNameDto> result = scienceService.getAllScienceIdAndNameDto(owner);
+
+        assertThat(result).extracting(ScienceIdAndNameDto::canManage).containsExactly(true);
+    }
+
+    // ===== getScienceNameById(Long, User) =====
+
+    @Test
+    void getScienceNameById_unrelatedAdmin_canManageFalse() {
+        Science science = Science.builder().id(1L).name("Kimyo").createdBy(admin).build();
+        when(scienceRepository.findScienceNameById(1L)).thenReturn(Optional.of(new ScienceIdAndNameDto(1L, "Kimyo", 0)));
+        when(scienceRepository.findById(1L)).thenReturn(Optional.of(science));
+
+        Optional<ScienceIdAndNameDto> result = scienceService.getScienceNameById(1L, otherAdmin);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().canManage()).isFalse();
+    }
+
+    @Test
+    void getScienceNameById_creatingAdmin_canManageTrue() {
+        Science science = Science.builder().id(1L).name("Kimyo").createdBy(admin).build();
+        when(scienceRepository.findScienceNameById(1L)).thenReturn(Optional.of(new ScienceIdAndNameDto(1L, "Kimyo", 0)));
+        when(scienceRepository.findById(1L)).thenReturn(Optional.of(science));
+
+        Optional<ScienceIdAndNameDto> result = scienceService.getScienceNameById(1L, admin);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().canManage()).isTrue();
+    }
 }

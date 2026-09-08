@@ -46,9 +46,29 @@ public class ScienceService {
         return scienceMapper.toScinceDtoSet(scienceWithTopics);
     }
 
+    // "canManage" JOriy foydalanuvchiga bog'liq bo'lgani uchun JPQL
+    // proyeksiya query'sida hisoblanmaydi — bazaviy natija olingandan
+    // keyin, SHU YERDA (Java'da) bir xil canManageScience() logikasi
+    // bilan boyitiladi. ADMIN cheklovi FRONTEND'da ham ko'rinishi uchun
+    // (foydalanuvchi so'rovi, 2026-09-08: "Barcha joylarni tekshirib
+    // chiq... FRONTEND da ham modify qilolmasin" — haqiqiy topilgan bug:
+    // backend allaqachon bloklagan bo'lsa ham, science.js ✏️🗑️⬆⬇⌨️
+    // tugmalarini har doim ko'rsatib turardi).
     @Transactional(readOnly = true)
-    public Set<ScienceIdAndNameDto> getAllScienceIdAndNameDto() {
-        return scienceRepository.findAllScienceNames();
+    public Set<ScienceIdAndNameDto> getAllScienceIdAndNameDto(User currentUser) {
+        Set<ScienceIdAndNameDto> base = scienceRepository.findAllScienceNames();
+        Map<Long, Science> byId = scienceRepository.findAllByDeletedAtIsNullOrderByOrderIndex()
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(Science::getId, s -> s));
+
+        return base.stream()
+                .map(dto -> {
+                    Science science = byId.get(dto.id());
+                    return new ScienceIdAndNameDto(
+                            dto.id(), dto.name(), dto.sectionCount(), dto.fieldId(), dto.fieldName(),
+                            science != null && canManageScience(science, currentUser));
+                })
+                .collect(java.util.stream.Collectors.toSet());
     }
 
     @Transactional(readOnly = true)
@@ -56,8 +76,20 @@ public class ScienceService {
         return scienceRepository.findByIdWithTopics(id).map(scienceMapper::mapSciencetoScienceDto);
     }
 
-    public Optional<ScienceIdAndNameDto> getScienceNameById(Long id) {
-        return scienceRepository.findScienceNameById(id);
+    // topic.js/topicSection.js — bitta Fan (Science) ichida ishlaydigan
+    // sahifalar breadcrumb'ini shu orqali oladi, canManage ham shu bilan
+    // birga keladi — sahifadagi BARCHA amallar (qo'shish/tahrirlash/
+    // o'chirish/tartiblash/eksport/import) shu bitta bayroqqa qarab
+    // ko'rsatiladi/yashiriladi.
+    @Transactional(readOnly = true)
+    public Optional<ScienceIdAndNameDto> getScienceNameById(Long id, User currentUser) {
+        return scienceRepository.findScienceNameById(id)
+                .map(dto -> {
+                    Science science = scienceRepository.findById(id).orElse(null);
+                    return new ScienceIdAndNameDto(
+                            dto.id(), dto.name(), dto.sectionCount(), dto.fieldId(), dto.fieldName(),
+                            science != null && canManageScience(science, currentUser));
+                });
     }
 
     // ADMIN cheklovi: fanni yaratgan foydalanuvchi uning egasi bo'ladi —
@@ -151,6 +183,21 @@ public class ScienceService {
         TopicSection section = topicSectionRepository.findById(sectionId)
                 .orElseThrow(() -> new NoSuchElementException("Bo'lim topilmadi"));
         checkCanManage(section.getScience(), currentUser);
+    }
+
+    // checkCanManageByTopicId'ning otmaydigan (non-throwing) varianti —
+    // question.js FRONTEND'da tugmalarni ko'rsatish/yashirish uchun
+    // (TopicController#getTopicName orqali) shunchaki true/false bilishi
+    // kerak, xatolik emas (foydalanuvchi so'rovi, 2026-09-08: "FRONTEND
+    // da ham modify qilolmasin").
+    @Transactional(readOnly = true)
+    public boolean canManageByTopicId(Long topicId, User currentUser) {
+        try {
+            checkCanManageByTopicId(topicId, currentUser);
+            return true;
+        } catch (AccessDeniedException | NoSuchElementException e) {
+            return false;
+        }
     }
 
     private CourseField getFieldOrThrow(Long fieldId) {

@@ -508,7 +508,7 @@ function renderRowHtml(s, i) {
             id="input-${i}"
             class="topic-name ${inputClass}"
             tabindex="-1"
-        ><div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta mavzu</span>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); openScienceSearchModal(${s.id})" title="Shu bo'limdagi savollar orasidan qidirish">${SEARCH_ICON_SVG}</button>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestions(${s.id})" title="Shu bo'limdagi barcha darslarning testlarini Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); openWordExportModal(${s.id})" title="Shu bo'limdagi barcha darslarning testlarini Word'ga eksport qilish">${WORD_ICON_SVG}</button>` : ""}</div></div>
+        ><div class="item-title-row"><span class="item-title-text">${escapeHtml(s.name)}</span>${isLink ? `<span class="item-count-badge">${s.sectionCount} ta mavzu</span>` : ""}${isLink ? `<button class="topic-export-btn" onclick="event.stopPropagation(); openScienceSearchModal(${s.id})" title="Shu bo'limdagi savollar orasidan qidirish">${SEARCH_ICON_SVG}</button>` : ""}${isLink && s.canManage !== false ? `<button class="topic-export-btn" onclick="event.stopPropagation(); exportScienceQuestions(${s.id})" title="Shu bo'limdagi barcha darslarning testlarini Excel'ga eksport qilish">${EXCEL_ICON_SVG}</button>` : ""}${isLink && s.canManage !== false ? `<button class="topic-export-btn" onclick="event.stopPropagation(); openWordExportModal(${s.id})" title="Shu bo'limdagi barcha darslarning testlarini Word'ga eksport qilish">${WORD_ICON_SVG}</button>` : ""}</div></div>
     </div>
         `
         : `
@@ -760,6 +760,11 @@ function renderScienceSearchResults(list) {
     // aynan shu savolga qaratilgan holda (question.js#handleIncomingFocusOrEdit
     // "?focus="/"?edit=" ni o'qiydi). Qatorning O'ZIGA bosilsa — ilgaridek
     // Darsga (topics.html) o'tiladi (goToScienceSearchResult).
+    // "✏️" — faqat shu Fanni boshqara oladigan foydalanuvchiga ko'rsatiladi
+    // ("👁️ Ko'rish" har doim qoladi — ko'rish cheklanmagan, foydalanuvchi
+    // so'rovi, 2026-09-08: "FRONTEND da ham modify qilolmasin").
+    const searchScience = itemBlock.find(s => s.id === scienceSearchScienceId);
+    const canEditSearchResults = !searchScience || searchScience.canManage !== false;
     resultsBox.innerHTML = list.map(q => `
         <div class="science-search-result-row" tabindex="0"
              onclick="goToScienceSearchResult(${q.topicId}, ${q.sectionId ?? 'null'})"
@@ -772,9 +777,11 @@ function renderScienceSearchResults(list) {
                 <button type="button" class="science-search-action-btn view"
                     onclick="event.stopPropagation(); viewScienceSearchResult(${q.topicId}, ${q.id})"
                     title="Savolni ko'rish">👁️</button>
+                ${canEditSearchResults ? `
                 <button type="button" class="science-search-action-btn edit"
                     onclick="event.stopPropagation(); editScienceSearchResult(${q.topicId}, ${q.id})"
                     title="Savolni tahrirlash">✏️</button>
+                ` : ""}
             </div>
         </div>
     `).join("");
@@ -948,11 +955,22 @@ function buttons(s, i) {
         const posInGroup = siblings.indexOf(i);
         const upDisabled = posInGroup <= 0 ? "disabled" : "";
         const downDisabled = posInGroup === siblings.length - 1 ? "disabled" : "";
+        // "✏️ Edit" — o'zgartirish/o'chirish yagona kirish nuqtasi (Delete
+        // faqat edit rejimida ochiladi), shu sabab shu BITTA tugmani
+        // yashirish yetarli. Reorder (⬆⬇) esa QOLDIRILADI — Fanlarning
+        // umumiy tartiblanishi ScienceService.reorderSciences'da ATAYLAB
+        // egalikdan mustasno (bir nechta egaga tegishli aralash ro'yxat,
+        // Course reorder bilan bir xil qoida). Haqiqiy topilgan bug
+        // (2026-09-08): backend allaqachon bloklagan bo'lsa ham, bu
+        // tugma o'zi yaratmagan Fanlar uchun ham HAR DOIM ko'rsatilardi.
+        const editBtn = s.canManage !== false
+            ? `<button onclick="edit(${i})">✏️ Edit</button>`
+            : "";
         return `
             <div class="row-actions">
                 <button class="order-move-btn" onclick="moveUp(${i})" ${upDisabled} title="Yuqoriga">⬆</button>
                 <button class="order-move-btn" onclick="moveDown(${i})" ${downDisabled} title="Pastga">⬇</button>
-                <button onclick="edit(${i})">✏️ Edit</button>
+                ${editBtn}
             </div>
         `;
     }

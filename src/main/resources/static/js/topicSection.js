@@ -39,6 +39,20 @@ const scienceId = getScienceId();
 const pageFieldId = new URLSearchParams(window.location.search).get("fieldId");
 const fieldQuery = pageFieldId != null ? `&fieldId=${pageFieldId}` : "";
 
+// ADMIN cheklovi FRONTEND'da ham ko'rinishi uchun (foydalanuvchi so'rovi,
+// 2026-09-08: "Barcha joylarni tekshirib chiq... FRONTEND da ham modify
+// qilolmasin") — topic.js'dagi bilan bir xil g'oya: bu sahifa BITTA Fan
+// doirasida ishlaydi, TopicSectionService.reorderSections ham xuddi shu
+// Fan egaligini tekshiradi, shu sabab BARCHA amallar uchun bitta umumiy
+// bayroq yetarli.
+let sectionPageCanManage = true;
+
+function applySectionCanManageToUi() {
+    document.querySelectorAll(".section-page-manage-only").forEach(el => {
+        el.style.display = sectionPageCanManage ? "" : "none";
+    });
+}
+
 if (!scienceId) {
     showAlertModal("❌ scienceId topilmadi (HTML dan)");
 } else {
@@ -50,21 +64,26 @@ if (!scienceId) {
 // science.html'dagi "← Yo'nalishlar / <nomi>" bilan bir xil ko'rinish —
 // "← Bo'limlar / <shu Bo'lim nomi>" (foydalanuvchi so'rovi, 2026-09-05:
 // "iyerarxiyaning boshqa qismlariga ham qo'sh"). "/science/{id}" —
-// ScienceIdAndNameDto (name + fieldId/fieldName) qaytaradi.
+// ScienceIdAndNameDto (name + fieldId/fieldName + canManage) qaytaradi.
 async function applyScopeBar() {
     const bar = document.getElementById("sectionScopeBar");
     const backLink = document.getElementById("sectionScopeBackLink");
     const nameEl = document.getElementById("sectionScopeName");
-    if (!bar) return;
 
     try {
         const res = await fetch(`/science/${scienceId}`);
-        if (!res.ok) return;
-        const science = await res.json();
+        if (res.ok) {
+            const science = await res.json();
+            sectionPageCanManage = science.canManage !== false;
+            applySectionCanManageToUi();
+            if (itemBlock.length > 0) render();
 
-        backLink.href = `/science?focus=${scienceId}${fieldQuery}`;
-        nameEl.textContent = science.name;
-        bar.classList.remove("hidden");
+            if (bar) {
+                backLink.href = `/science?focus=${scienceId}${fieldQuery}`;
+                nameEl.textContent = science.name;
+                bar.classList.remove("hidden");
+            }
+        }
     } catch (err) {
         console.error(err);
     }
@@ -628,6 +647,13 @@ async function removeFromUi(i) {
 // ketmasin, tugmalar HECH QACHON torayib/siqilib qolmaydi (flex-shrink:0).
 function buttons(s, i) {
     if (s.mode === "VIEW") {
+        // sectionPageCanManage=false bo'lsa (ADMIN o'zi yaratmagan Fan) —
+        // reorder ⬆⬇ ham, ✏️ Edit ham ko'rsatilmaydi (backend'da ham
+        // xuddi shunday bloklanadi — foydalanuvchi so'rovi, 2026-09-08).
+        if (!sectionPageCanManage) {
+            return `<div class="row-actions"></div>`;
+        }
+
         const upDisabled = i === 0 ? "disabled" : "";
         const downDisabled = i === itemBlock.length - 1 ? "disabled" : "";
         return `

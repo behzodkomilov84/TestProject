@@ -37,8 +37,8 @@ public class ScienceController {
 
     @GetMapping("/api/science")
     @ResponseBody
-    public ResponseEntity<Set<ScienceIdAndNameDto>> getSciences() {
-        Set<ScienceIdAndNameDto> scienceIdsAndNames = scienceService.getAllScienceIdAndNameDto();
+    public ResponseEntity<Set<ScienceIdAndNameDto>> getSciences(@AuthenticationPrincipal User user) {
+        Set<ScienceIdAndNameDto> scienceIdsAndNames = scienceService.getAllScienceIdAndNameDto(user);
 
         return ResponseEntity.ok(scienceIdsAndNames);
     }
@@ -105,8 +105,9 @@ public class ScienceController {
     }
 
     @GetMapping("/science/{scienceId}")
-    public ResponseEntity<ScienceIdAndNameDto> getScienceNameById(@PathVariable Long scienceId) {
-        ScienceIdAndNameDto scienceNameDto = scienceService.getScienceNameById(scienceId).orElseThrow();
+    public ResponseEntity<ScienceIdAndNameDto> getScienceNameById(@PathVariable Long scienceId,
+                                                                    @AuthenticationPrincipal User user) {
+        ScienceIdAndNameDto scienceNameDto = scienceService.getScienceNameById(scienceId, user).orElseThrow();
         return ResponseEntity.ok(scienceNameDto);
     }
 

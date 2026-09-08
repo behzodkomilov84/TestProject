@@ -29,9 +29,11 @@ if (!topicId) {
     // bo'lganda ISHGA TUSHIRILISHI kerak (aks holda tr[data-question-id]
     // hali DOM'da yo'q bo'ladi). Faqat BIR MARTA (sahifa birinchi
     // ochilganda) — keyingi qayta yuklashlarda (o'chirish, qidiruv va h.k.)
-    // takrorlanmaydi.
-    loadAllQuestions().then(() => handleIncomingFocusOrEdit());
-    loadTopicName();
+    // takrorlanmaydi. loadTopicName() ham SHU BILAN BIRGA kutiladi —
+    // aks holda "?edit=" orqali to'g'ridan-to'g'ri kelinganda,
+    // questionPageCanManage hali eski (true) qiymatda bo'lishi mumkin edi
+    // (poyga holati — foydalanuvchi so'rovi, 2026-09-08).
+    Promise.all([loadAllQuestions(), loadTopicName()]).then(() => handleIncomingFocusOrEdit());
     refreshQuestionTrashBadge();
 }
 
@@ -41,7 +43,12 @@ if (!topicId) {
 // (bu funksiya loadAllQuestions() ning fetch'i tugagandan KEYIN chaqiriladi,
 // bu esa DOMContentLoaded'dan doim KEYINROQ sodir bo'ladi).
 function handleIncomingFocusOrEdit() {
-    if (editQuestionId) {
+    // ADMIN o'zi yaratmagan Fanning savoliga "?edit=" havolasi orqali
+    // to'g'ridan-to'g'ri kelsa ham (masalan eski/saqlangan havola) —
+    // tahrirlash rejimi ochilmaydi (backend baribir "⛔" bilan bloklaydi,
+    // lekin frontend'da ham ko'rsatmaslik kerak — foydalanuvchi so'rovi,
+    // 2026-09-08).
+    if (editQuestionId && questionPageCanManage) {
         openQuestionFormModal("edit", Number(editQuestionId));
         return;
     }
@@ -92,16 +99,31 @@ function setTrashBadgeCount(badgeId, count) {
 // Sarlavhada ("Mavzuga oid testlar: <nomi>") aynan qaysi mavzu ekanini
 // ko'rsatish uchun (foydalanuvchi so'rovi — bir nechta mavzu sahifasi
 // ochilganda adashib qolmaslik uchun).
+// ADMIN cheklovi FRONTEND'da ham ko'rinishi uchun (foydalanuvchi so'rovi,
+// 2026-09-08: "Barcha joylarni tekshirib chiq... FRONTEND da ham modify
+// qilolmasin") — bu sahifa BITTA Mavzu (Topic) doirasida ishlaydi,
+// TopicController#getTopicName endi "canManage" ham qaytaradi
+// (ScienceService.canManageByTopicId).
+let questionPageCanManage = true;
+
+function applyQuestionCanManageToUi() {
+    document.querySelectorAll(".question-page-manage-only").forEach(el => {
+        el.style.display = questionPageCanManage ? "" : "none";
+    });
+}
+
 async function loadTopicName() {
     const heading = document.getElementById("topicNameHeading");
-    if (!heading) return;
     try {
         const res = await fetch(`/api/topic/${topicId}/name`);
         if (!res.ok) throw new Error();
         const data = await res.json();
-        heading.textContent = `📋 ${data.name}`;
+        if (heading) heading.textContent = `📋 ${data.name}`;
+        questionPageCanManage = data.canManage !== false;
+        applyQuestionCanManageToUi();
+        if (questions !== null) renderQuestionsTable(questions);
     } catch (err) {
-        heading.textContent = "";
+        if (heading) heading.textContent = "";
     }
 }
 
@@ -217,7 +239,7 @@ function renderQuestionsTable(rows) {
         // lekin savol matnini saqlashda mavjud rasm o'chib ketmasligi uchun kerak).
         row.dataset.imageUrl = q.imageUrl || "";
         row.innerHTML = `
-            <td><input type="checkbox" class="row-select-checkbox" onchange="onRowCheckboxChange(${q.id}, this)"></td>
+            <td>${questionPageCanManage ? `<input type="checkbox" class="row-select-checkbox" onchange="onRowCheckboxChange(${q.id}, this)">` : ""}</td>
             <td class="enumeration">${index + 1}</td>
             <td data-editable>
                 ${q.questionText}
@@ -250,7 +272,7 @@ function renderQuestionsTable(rows) {
             <td class="correct-letter">${correctAnswers.length > 1 ? '<span title="Ko\'p to\'g\'ri javobli savol">🔀</span> ' : ''}<b>${correctLetter}</b></td>
 
             <td class="order-cell">
-                ${canReorder ? `
+                ${(canReorder && questionPageCanManage) ? `
                     <button class="order-move-btn" onclick="moveQuestionUp(${q.id})" title="Yuqoriga">⬆</button>
                     <button class="order-move-btn" onclick="moveQuestionDown(${q.id})" title="Pastga">⬇</button>
                 ` : `<span style="color:#94a3b8; font-size:11px;">—</span>`}
@@ -259,6 +281,7 @@ function renderQuestionsTable(rows) {
             <td class="actions-cell">
                 <div class="view-actions">
 
+                    ${questionPageCanManage ? `
                     <button class="action-btn comment"
                         data-question-id="${q.id}"
                         data-answer-id="${correctAnswer?.id ?? ''}"
@@ -284,6 +307,7 @@ function renderQuestionsTable(rows) {
                     <button class="action-btn delete"
                         onclick="deleteQuestion(${q.id})"
                         title="O‘chirish">❌</button>
+                    ` : ""}
 
                 </div>
             </td>

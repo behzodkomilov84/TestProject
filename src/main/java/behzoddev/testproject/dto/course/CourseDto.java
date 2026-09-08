@@ -43,6 +43,13 @@ public record CourseDto(
         // Ixtiyoriy — faqat "O'chirilganlar savati" ro'yxatida to'ldiriladi
         // (qachon o'chirilganini ko'rsatish uchun). Oddiy katalogda har
         // doim null (soft-deleted kurslar u yerda umuman ko'rinmaydi).
-        LocalDateTime deletedAt
+        LocalDateTime deletedAt,
+        // ADMIN cheklovi FRONTEND'da ham ko'rinishi uchun — CourseDetailDto
+        // (bitta kurs sahifasi)dagi bir xil maydon, endi katalog
+        // ro'yxatida ham (courses.js). Haqiqiy topilgan bug (2026-09-08):
+        // backend allaqachon bloklagan bo'lsa ham, /courses admin
+        // ro'yxatida ✏️🗑️⬆⬇ tugmalari o'zi yaratmagan kurslar uchun
+        // ham HAR DOIM ko'rsatilardi.
+        boolean canManage
 ) {
 }

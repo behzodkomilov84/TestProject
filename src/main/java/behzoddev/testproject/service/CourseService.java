@@ -1326,6 +1326,7 @@ public class CourseService {
                 .orderIndex(course.getOrderIndex())
                 .createdAt(course.getCreatedAt())
                 .deletedAt(course.getDeletedAt())
+                .canManage(currentUser != null && canManageCourse(course, currentUser))
                 .build();
     }
 

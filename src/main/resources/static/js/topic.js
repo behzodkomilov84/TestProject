@@ -54,9 +54,43 @@ const filterFocusId = new URLSearchParams(window.location.search).get("focus");
 
 const scienceId = getScienceId();
 
+// ADMIN cheklovi FRONTEND'da ham ko'rinishi uchun (foydalanuvchi so'rovi,
+// 2026-09-08: "Barcha joylarni tekshirib chiq... FRONTEND da ham modify
+// qilolmasin") — bu sahifa BITTA Fan (Science) doirasida ishlaydi, shu
+// sabab BARCHA amallar (qo'shish/tahrirlash/o'chirish/tartiblash) uchun
+// bitta umumiy bayroq yetarli (TopicService.reorderTopics ham xuddi shu
+// Fan egaligini tekshiradi — TopicSection/Question'dan farqli, bu yerda
+// cross-owner istisno yo'q, shu sabab reorder ham cheklanadi).
+let topicPageCanManage = true;
+
+function applyCanManageToUi() {
+    document.querySelectorAll(".topic-page-manage-only").forEach(el => {
+        el.style.display = topicPageCanManage ? "" : "none";
+    });
+}
+
+async function loadCanManage() {
+    try {
+        const res = await fetch(`/science/${scienceId}`);
+        if (res.ok) {
+            const science = await res.json();
+            topicPageCanManage = science.canManage !== false;
+        }
+    } catch (err) {
+        console.error(err);
+    }
+    applyCanManageToUi();
+    // reloadAll()/render() bilan poyga holati (race) bo'lishi mumkin —
+    // itemBlock ALLAQACHON chizilgan bo'lsa, tugmalarni to'g'ri
+    // bayroq bilan qayta chizamiz (aks holda bir lahzalik "yaltirash"
+    // bo'lishi mumkin edi).
+    if (itemBlock.length > 0) render();
+}
+
 if (!scienceId) {
     showAlertModal("❌ scienceId topilmadi (HTML dan)");
 } else {
+    loadCanManage();
     loadSections().then(() => {
         showSectionFilterBanner();
         applyScopeBar();
@@ -1246,6 +1280,14 @@ async function removeFromUi(i) {
 // HECH QACHON torayib/siqilib qolmaydi (flex-shrink:0).
 function buttons(s, i) {
     if (s.mode === "VIEW") {
+        // topicPageCanManage=false bo'lsa (ADMIN o'zi yaratmagan Fan) —
+        // reorder ⬆⬇ ham, ✏️ Edit ham ko'rsatilmaydi (TopicService.
+        // reorderTopics/checkCanManage backend'da ham xuddi shunday
+        // bloklaydi — foydalanuvchi so'rovi, 2026-09-08).
+        if (!topicPageCanManage) {
+            return `<div class="row-actions"></div>`;
+        }
+
         // Tartib tugmalari (⬆⬇) — bo'lim bo'yicha FILTRLANGAN (ko'rinadigan)
         // ro'yxatdagi o'rniga qarab disabled qilinadi, raw massiv
         // indeksiga emas (chunki qo'shni massiv elementi boshqa bo'limga

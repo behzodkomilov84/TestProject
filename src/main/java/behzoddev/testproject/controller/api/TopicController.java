@@ -6,6 +6,7 @@ import behzoddev.testproject.dto.topic.TopicLocationDto;
 import behzoddev.testproject.dto.topic.TopicNameDto;
 import behzoddev.testproject.dto.topic.TopicTrashDto;
 import behzoddev.testproject.entity.User;
+import behzoddev.testproject.service.ScienceService;
 import behzoddev.testproject.service.TopicSectionService;
 import behzoddev.testproject.service.TopicService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ import java.util.Map;
 public class TopicController {
     private final TopicService topicService;
     private final TopicSectionService topicSectionService;
+    private final ScienceService scienceService;
 
     @GetMapping("/api/topic")
     public ResponseEntity<List<TopicIdAndNameDto>> getTopicsByScience(@RequestParam Long scienceId) {
@@ -87,9 +89,18 @@ public class TopicController {
 
     // Faqat mavzu nomi — question.html sarlavhasida ("Mavzuga oid testlar:
     // <nomi>") ko'rsatish uchun. scienceId shart emas.
+    // canManage ham shu bilan birga qaytariladi — question.js shu bitta
+    // bayroqqa qarab BARCHA savol amallarini (qo'shish/tahrirlash/
+    // o'chirish/tartiblash/import/eksport) ko'rsatadi/yashiradi
+    // (foydalanuvchi so'rovi, 2026-09-08: "FRONTEND da ham modify
+    // qilolmasin").
     @GetMapping("/api/topic/{topicId}/name")
-    public ResponseEntity<Map<String, String>> getTopicName(@PathVariable Long topicId) {
-        return ResponseEntity.ok(Map.of("name", topicService.getTopicName(topicId)));
+    public ResponseEntity<Map<String, Object>> getTopicName(@PathVariable Long topicId,
+                                                              @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(Map.of(
+                "name", topicService.getTopicName(topicId),
+                "canManage", scienceService.canManageByTopicId(topicId, user)
+        ));
     }
 
     // Mavzu qaysi Fan/Bo'limga tegishli ekani — test-form.js'dagi "⬅

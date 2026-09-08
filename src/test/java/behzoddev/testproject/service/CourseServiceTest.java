@@ -831,6 +831,27 @@ class CourseServiceTest {
         assertThat(result.get(0).sectionCount()).isEqualTo(12);
     }
 
+    // canManage — CourseDetailDto'dagi bilan bir xil maydon, endi katalog
+    // ro'yxatida ham (FRONTEND'da tugmalarni ko'rsatish/yashirish uchun,
+    // foydalanuvchi so'rovi, 2026-09-08: "FRONTEND da ham modify qilolmasin").
+    @Test
+    void listCatalog_adminSeesCanManageOnlyForOwnCourses() {
+        User admin = admin();
+        Course own = Course.builder().id(1L).title("O'z kursim").createdBy(admin).published(true).build();
+        Course notOwn = Course.builder().id(2L).title("Boshqa kurs").createdBy(owner()).published(true).build();
+
+        when(courseRepository.findByPublishedTrueOrCreatedBy_IdOrderByCreatedAtDesc(admin.getId()))
+                .thenReturn(List.of(own, notOwn));
+
+        List<CourseDto> result = courseService.listCatalog(admin);
+
+        assertThat(result).extracting(CourseDto::id, CourseDto::canManage)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple(1L, true),
+                        org.assertj.core.groups.Tuple.tuple(2L, false)
+                );
+    }
+
     // ===== reorderChapters =====
     // "⬆⬇" — Bo'lim "box"larini kurs sahifasida yuqoriga/pastga surish.
     // TopicService.reorderTopics bilan bir xil andoza: frontend BUTUN
