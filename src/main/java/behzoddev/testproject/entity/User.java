@@ -2,6 +2,7 @@ package behzoddev.testproject.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.DynamicUpdate;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -13,6 +14,22 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+// @DynamicUpdate — HAQIQIY topilgan bug (2026-09-08): ProfileService'ning
+// har bir change* metodi bazadan "fresh" nusxa o'qib, faqat BITTA maydonni
+// o'zgartirib saqlaydi (ProfileService.fresh() izohiga qarang), lekin
+// Hibernate DEFAULT holda save() paytida entity'dagi BARCHA ustunlarni
+// qayta yozadi — shu jumladan o'sha "fresh" o'qishda olingan, hali eski
+// (boshqa concurrent so'rov hali commit qilmagan) qiymatlarni ham. Profil
+// to'ldirish modali (profile-gate.js) ism/familiya + ish joyi + lavozim +
+// telefonni Promise.all bilan BIR VAQTDA (4 ta alohida PATCH) yuboradi —
+// ikkitasi bir-biridan oldin "fresh" o'qisa, keyin ikkalasi ham commit
+// qilganda, KEYIN commit bo'lgani boshqasining o'zgartirgan ustunini
+// o'zining eski (null) qiymati bilan qayta ustidan yozib, YO'QOTIB
+// yuborardi (masalan: ish joyi saqlanadi, lekin lavozim keyin kelib
+// uni nolga qaytarib qo'yadi). @DynamicUpdate Hibernate'ga FAQAT
+// haqiqatan o'zgargan ustunlarni UPDATE qilishni buyuradi — shu bilan
+// concurrent bitta-maydonli saqlashlar bir-birini endi bosib ketmaydi.
+@DynamicUpdate
 @Entity
 @Table(name = "users")
 @AllArgsConstructor
