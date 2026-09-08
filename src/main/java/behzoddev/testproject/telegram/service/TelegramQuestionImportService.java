@@ -294,7 +294,7 @@ public class TelegramQuestionImportService {
         ByteArrayMultipartFile multipartFile = new ByteArrayMultipartFile(
                 "file", fileName, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileBytes);
 
-        ImportResultDto result = excelService.importQuestions(multipartFile, topicId);
+        ImportResultDto result = excelService.importQuestions(multipartFile, topicId, getUserByChatId(chatId));
 
         if (result.success()) {
             msg.setText("✅ Import muvaffaqiyatli! " + result.imported() + " ta savol qo'shildi.");

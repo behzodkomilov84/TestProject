@@ -85,6 +85,22 @@
              saqlab qoladi). -->
         <script src="/js/promptModal.js" defer></script>
 
+        <!-- Profilni to'ldirish talabi (ism/familiya/ish-o'qish joyi/
+             lavozim/telefon) — ENDI navbar bor BARCHA sahifada (BIR MARTA)
+             ishga tushadi, faqat kurs sahifasida emas (foydalanuvchi
+             so'rovi, 2026-09-08: "Har qanday kirishda ham... profildagi
+             majburiy polyalarni to'ldirsin" — Google orqali birinchi marta
+             kirgan foydalanuvchida bu maydonlar bo'sh bo'lishi mumkin,
+             endi qaysi sahifaga tushishidan qat'i nazar so'raladi).
+             country-picker.js — telefon maydoni uchun (profile-gate.js'DAN
+             OLDIN kelishi shart, defer tartibi saqlanadi). DIQQAT: sahifaning
+             o'z <head>'ida bularni QAYTA ULAMANG — promptModal.js'dagi bilan
+             bir xil "ikki marta yuklash" xatarisi (courseDetail.html'dan
+             shu sabab olib tashlangan). -->
+        <link rel="stylesheet" href="/css/country-picker.css">
+        <script src="/js/country-picker.js" defer></script>
+        <script src="/js/profile-gate.js" defer></script>
+
         <button class="burger" onclick="toggleMenu()">☰</button>
         <nav id="nav-menu" class="nav-items">
             <a href="/index">Bosh sahifa</a>

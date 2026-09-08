@@ -3,6 +3,7 @@ package behzoddev.testproject.service;
 import behzoddev.testproject.dao.CourseFieldRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
+import behzoddev.testproject.dao.TopicSectionRepository;
 import behzoddev.testproject.dto.science.ScienceDto;
 import behzoddev.testproject.dto.science.ScienceIdAndNameDto;
 import behzoddev.testproject.dto.science.ScienceNameDto;
@@ -10,9 +11,12 @@ import behzoddev.testproject.dto.science.ScienceTrashDto;
 import behzoddev.testproject.entity.CourseField;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
+import behzoddev.testproject.entity.TopicSection;
+import behzoddev.testproject.entity.User;
 import behzoddev.testproject.mapper.ScienceMapper;
 import behzoddev.testproject.validation.Validation;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +34,7 @@ public class ScienceService {
 
     private final ScienceRepository scienceRepository;
     private final TopicRepository topicRepository;
+    private final TopicSectionRepository topicSectionRepository;
     private final CourseFieldRepository courseFieldRepository;
     private final ScienceMapper scienceMapper;
     private final Validation validation;
@@ -55,8 +60,14 @@ public class ScienceService {
         return scienceRepository.findScienceNameById(id);
     }
 
+    // ADMIN cheklovi: fanni yaratgan foydalanuvchi uning egasi bo'ladi —
+    // keyinchalik shu fan (va ichidagi Bo'lim/Mavzu/Savollar) FAQAT o'sha
+    // ADMIN (yoki cheklovsiz OWNER) tomonidan boshqarilishi mumkin
+    // (foydalanuvchi so'rovi, 2026-09-08: "ROLE_ADMIN o'zi yaratmagan
+    // hech qaysi joyda o'zgartirish qila olmasin. Kursda, test
+    // boshqaruvida..." — CourseService.createdBy bilan bir xil g'oya).
     @Transactional
-    public Science saveScience(ScienceNameDto scienceNameDto) {
+    public Science saveScience(ScienceNameDto scienceNameDto, User currentUser) {
 
         validation.textFieldMustNotBeEmpty(scienceNameDto.name());
 
@@ -77,6 +88,8 @@ public class ScienceService {
             science.setField(getFieldOrThrow(scienceNameDto.fieldId()));
         }
 
+        science.setCreatedBy(currentUser);
+
         Integer maxOrder = scienceRepository.findMaxOrderIndex();
         science.setOrderIndex(maxOrder != null ? maxOrder + 1 : 1);
 
@@ -89,10 +102,55 @@ public class ScienceService {
     // (chapter) tanlashdan farqli — bu yerda alohida, sodda API). fieldId
     // null bo'lsa — Yo'nalishdan chiqariladi (unlink).
     @Transactional
-    public void assignField(Long scienceId, Long fieldId) {
+    public void assignField(Long scienceId, Long fieldId, User currentUser) {
         Science science = getScienceOrThrow(scienceId);
+        checkCanManage(science, currentUser);
         science.setField(fieldId != null ? getFieldOrThrow(fieldId) : null);
         scienceRepository.save(science);
+    }
+
+    // CourseService.canManageCourse/checkCanManage bilan bir xil qoida:
+    // ROLE_OWNER — cheklovsiz, ROLE_ADMIN — faqat o'zi yaratgan fan.
+    public boolean canManageScience(Science science, User user) {
+        return user.hasRole("ROLE_OWNER")
+                || (science.getCreatedBy() != null && science.getCreatedBy().getId().equals(user.getId()));
+    }
+
+    public void checkCanManage(Science science, User user) {
+        if (!canManageScience(science, user)) {
+            throw new AccessDeniedException("⛔ Faqat o'zingiz yaratgan fanni (va uning Bo'lim/Mavzu/Savollarini) boshqarishingiz mumkin.");
+        }
+    }
+
+    // getScienceOrThrow + checkCanManage — TopicService/TopicSectionService/
+    // QuestionService/QuestionController/TopicController/TopicSectionController
+    // shu orqali boshqarish huquqini tekshiradi (CourseService.
+    // requireManageableCourse bilan bir xil andoza).
+    @Transactional(readOnly = true)
+    public Science requireManageableScience(Long scienceId, User currentUser) {
+        Science science = getScienceOrThrow(scienceId);
+        checkCanManage(science, currentUser);
+        return science;
+    }
+
+    // Quyidagi ikkitasi — ExcelImportController kabi "topicId"/"sectionId"
+    // orqali ishlaydigan (Science'ni bevosita bilmaydigan) joylar uchun
+    // qulaylik: Mavzu/Bo'limdan Fanni topib, xuddi shu tekshiruvni
+    // qo'llaydi (import/eksport — foydalanuvchi so'rovi, 2026-09-08:
+    // "ROLE_ADMIN o'zi yaratmagan kursga/fanga oid ma'lumotlarni excel
+    // word'ga eksport qila olmasin").
+    @Transactional(readOnly = true)
+    public void checkCanManageByTopicId(Long topicId, User currentUser) {
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new NoSuchElementException("Mavzu topilmadi"));
+        checkCanManage(topic.getScience(), currentUser);
+    }
+
+    @Transactional(readOnly = true)
+    public void checkCanManageBySectionId(Long sectionId, User currentUser) {
+        TopicSection section = topicSectionRepository.findById(sectionId)
+                .orElseThrow(() -> new NoSuchElementException("Bo'lim topilmadi"));
+        checkCanManage(section.getScience(), currentUser);
     }
 
     private CourseField getFieldOrThrow(Long fieldId) {
@@ -102,8 +160,9 @@ public class ScienceService {
     }
 
     @Transactional
-    public Science saveScience(Science science) {
+    public Science saveScience(Science science, User currentUser) {
         validation.textFieldMustNotBeEmpty(science.getName());
+        checkCanManage(getScienceOrThrow(science.getId()), currentUser);
 
         return scienceRepository.save(science);
     }
@@ -132,8 +191,9 @@ public class ScienceService {
     // "♻️ Tiklash" bilan bir zumda qaytadi (CourseService.deleteCourse
     // bilan bir xil g'oya).
     @Transactional
-    public void removeScience(Long scienceId) {
+    public void removeScience(Long scienceId, User currentUser) {
         Science science = getScienceOrThrow(scienceId);
+        checkCanManage(science, currentUser);
         science.setDeletedAt(LocalDateTime.now());
         scienceRepository.save(science);
     }
@@ -147,8 +207,9 @@ public class ScienceService {
     // "♻️ Tiklash" — fanni savatdan qaytaradi, Bo'lim/mavzu/savollari
     // avtomatik yana ko'rinadigan bo'ladi (ular hech qachon o'chirilmagan edi).
     @Transactional
-    public void restoreScience(Long scienceId) {
+    public void restoreScience(Long scienceId, User currentUser) {
         Science science = getAnyScienceOrThrow(scienceId);
+        checkCanManage(science, currentUser);
         if (science.getDeletedAt() == null) {
             throw new IllegalArgumentException("❌ Bu fan o'chirilmagan — tiklashning hojati yo'q.");
         }
@@ -162,8 +223,9 @@ public class ScienceService {
     // avval ularni o'chirishi kerak) — GlobalRestExceptionHandler buni
     // tushunarli "bog'liq ma'lumotlar mavjud" xabariga aylantiradi.
     @Transactional
-    public void permanentlyDeleteScience(Long scienceId) {
+    public void permanentlyDeleteScience(Long scienceId, User currentUser) {
         Science science = getAnyScienceOrThrow(scienceId);
+        checkCanManage(science, currentUser);
         if (science.getDeletedAt() == null) {
             throw new IllegalArgumentException(
                     "❌ Bu fanni butunlay o'chirishdan oldin, avval oddiy \"O'chirish\" orqali savatga o'tkazish kerak.");
@@ -188,8 +250,9 @@ public class ScienceService {
     }
 
     @Transactional
-    public void updateScienceName(Long id, String name) {
+    public void updateScienceName(Long id, String name, User currentUser) {
         validation.textFieldMustNotBeEmpty(name);
+        checkCanManage(getScienceOrThrow(id), currentUser);
 
         scienceRepository.updateScienceName(id, name);
     }
@@ -197,7 +260,14 @@ public class ScienceService {
     // Frontend to'liq tartiblangan id ro'yxatini yuboradi (⬆⬇ yoki A-Z/Z-A
     // saralashdan keyin) — biz orderIndex'larni 1'dan qayta hisoblaymiz
     // (CourseService.reorderSections/TopicSectionService.reorderSections
-    // bilan bir xil andoza).
+    // bilan bir xil andoza). ADMIN cheklovi ATAYLAB shu yerda QO'LLANMAYDI —
+    // bu BUTUN fanlar ro'yxatini (turli mualliflarga tegishli fanlar
+    // aralash) qayta tartiblaydi, bitta fanning egasi emas (foydalanuvchi
+    // so'rovi, 2026-09-08'ga ko'ra "o'zgartirish" — kontentga, tartib
+    // (order_index) esa umumiy ro'yxat joylashuvi, boshqa fanning
+    // kontenti/egaligiga tegmaydi — TopicService.reorderTopics/
+    // TopicSectionService.reorderSections/QuestionService.reorderQuestions'dan
+    // farqli, ular BITTA fan doirasida bo'lgani uchun tekshiriladi).
     @Transactional
     public void reorderSciences(List<Long> orderedScienceIds) {
         List<Science> sciences = scienceRepository.findAllByDeletedAtIsNullOrderByOrderIndex();

@@ -296,8 +296,8 @@ public class CourseController {
     // bor bo'lsa TO'G'RI ekanini tekshiradi (courseDetail.js).
     @GetMapping("/{courseId}/topic-links/audit")
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
-    public List<TopicLinkAuditDto> auditTopicLinks(@PathVariable Long courseId) {
-        return courseService.auditTopicLinks(courseId);
+    public List<TopicLinkAuditDto> auditTopicLinks(@PathVariable Long courseId, @AuthenticationPrincipal User user) {
+        return courseService.auditTopicLinks(courseId, user);
     }
 
     // "Kurs bo'yicha barcha savollarni ko'rish" sahifasi (foydalanuvchi

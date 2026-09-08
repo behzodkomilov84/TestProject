@@ -10,10 +10,11 @@
           integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
     <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/profile.css">
-    <link rel="stylesheet" href="/css/country-picker.css">
+    <!-- country-picker.css/js ENDI navbar.html fragment orqali ulanadi
+         (barcha sahifada) — bu yerda qayta ulamang (foydalanuvchi so'rovi,
+         2026-09-08). -->
 
     <script src="/js/navbar.js" defer></script>
-    <script src="/js/country-picker.js" defer></script>
 
 </head>
 
@@ -30,8 +31,8 @@
                  profilidan avtomatik (foydalanuvchi so'rovi, 2026-09-06).
                  Telegram orqali kirgan/ulangan foydalanuvchilarda birinchi
                  login/ulanishdayoq avtomatik to'ldiriladi
-                 (TelegramAvatarService); "🔄 Telegramdan yangilash" tugmasi
-                 faqat Telegram ulangan hisoblarga ko'rinadi. -->
+                 (TelegramAvatarService). "🔄 Telegramdan yangilash" tugmasi
+                 olib tashlandi (foydalanuvchi so'rovi, 2026-09-08). -->
             <div class="avatar-section">
                 <div id="avatar-circle" class="avatar-circle">
                     <span id="avatar-placeholder">👤</span>
@@ -42,9 +43,6 @@
                         📤 Rasm yuklash
                         <input type="file" id="avatar-file-input" accept="image/*" style="display:none;">
                     </label>
-                    <button type="button" id="avatar-telegram-sync-btn" style="display:none;" title="Telegram profilidagi rasmni qayta yuklab olish">
-                        🔄 Telegramdan yangilash
-                    </button>
                 </div>
             </div>
 

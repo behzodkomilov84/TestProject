@@ -14,7 +14,9 @@ import behzoddev.testproject.dto.question.QuestionTrashDto;
 import behzoddev.testproject.dto.teacher.ResponseQuestionTextDto;
 import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Question;
+import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
+import behzoddev.testproject.entity.User;
 import behzoddev.testproject.mapper.AnswerMapper;
 import behzoddev.testproject.mapper.QuestionMapper;
 import behzoddev.testproject.validation.Validation;
@@ -45,6 +47,20 @@ public class QuestionService {
     private final QuestionMapper questionMapper;
     private final AnswerMapper answerMapper;
     private final Validation validation;
+    private final ScienceService scienceService;
+
+    // ADMIN cheklovi — savol qaysi Mavzu (Topic) -> Fan (Science)ga
+    // tegishli ekanini topib, egalik tekshiradi (CourseService.
+    // checkCanManage bilan bir xil andoza, faqat 2 bosqich yuqoriga
+    // ko'tarilib). AnswerService (izoh tahrirlash) ham shu orqali
+    // foydalanadi (foydalanuvchi so'rovi, 2026-09-08).
+    public void checkCanManageQuestion(Question question, User currentUser) {
+        scienceService.checkCanManage(question.getTopic().getScience(), currentUser);
+    }
+
+    public void checkCanManageQuestionById(Long questionId, User currentUser) {
+        checkCanManageQuestion(getAnyQuestionOrThrow(questionId), currentUser);
+    }
 
     @Transactional(readOnly = true)
     public List<QuestionDto> getQuestionsByIds(Long scienceId, Long topicId) {
@@ -127,9 +143,13 @@ public class QuestionService {
     }
 
     @Transactional
-    public Question saveQuestion(Long topicId, QuestionShortDto newQuestion) {
+    public Question saveQuestion(Long topicId, QuestionShortDto newQuestion, User currentUser) {
 
         validation.textFieldMustNotBeEmpty(newQuestion.questionText());
+
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new NoSuchElementException("Mavzu topilmadi"));
+        scienceService.checkCanManage(topic.getScience(), currentUser);
 
         Question question = questionMapper.mapQuestionShortDtoToQuestion(newQuestion);
 
@@ -142,7 +162,7 @@ public class QuestionService {
                 answer.setQuestion(question);
             }
         }
-        question.setTopic(topicRepository.findById(topicId).orElse(null));
+        question.setTopic(topic);
         return questionRepository.save(question);
     }
 
@@ -161,8 +181,9 @@ public class QuestionService {
     // savol O'Z ALOHIDA tranzaksiyasida saqlansa, bitta yomon qator
     // faqat O'ZINI buzadi — qolganlari muvaffaqiyatli import bo'ladi.
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void save(QuestionSaveDto questionSaveDto) {
+    public void save(QuestionSaveDto questionSaveDto, User currentUser) {
         Topic topic = topicRepository.getTopicById(questionSaveDto.topicId());
+        scienceService.checkCanManage(topic.getScience(), currentUser);
 
         validation.textFieldMustNotBeEmpty(questionSaveDto.questionText());
         Integer maxOrderIndex = questionRepository.findMaxOrderIndexByTopicId(questionSaveDto.topicId());
@@ -196,8 +217,9 @@ public class QuestionService {
     // Tiklash" bilan bir zumda qaytadi (CourseService.deleteCourse bilan
     // bir xil g'oya).
     @Transactional
-    public void deleteQuestion(Long questionId) {
+    public void deleteQuestion(Long questionId, User currentUser) {
         Question question = getQuestionOrThrow(questionId);
+        checkCanManageQuestion(question, currentUser);
         question.setDeletedAt(LocalDateTime.now());
         questionRepository.save(question);
     }
@@ -206,16 +228,20 @@ public class QuestionService {
     // orqali belgilangan savollar) — bitta so'rovda BARCHASI soft-delete
     // qilinadi. Allaqachon o'chirilgan (yoki mavjud bo'lmagan) id'lar jim
     // o'tkazib yuboriladi — bitta noto'g'ri id butun amaliyotni
-    // to'xtatib qo'ymasligi uchun. Qaytariladigan son — HAQIQATDA
-    // o'chirilganlar (frontend'da tasdiq xabari uchun).
+    // to'xtatib qo'ymasligi uchun. ADMIN cheklovi — o'zi boshqara olmaydigan
+    // (boshqa fan egasiga tegishli) savollar ham xuddi shunday jim
+    // o'tkazib yuboriladi (bulk tanlovda aralashib qolsa ham xato
+    // bermaydi, faqat o'ziniki bo'lganlar amalga oshiriladi). Qaytariladigan
+    // son — HAQIQATDA o'chirilganlar (frontend'da tasdiq xabari uchun).
     @Transactional
-    public int deleteQuestions(List<Long> questionIds) {
+    public int deleteQuestions(List<Long> questionIds, User currentUser) {
         if (questionIds == null || questionIds.isEmpty()) {
             return 0;
         }
         LocalDateTime now = LocalDateTime.now();
         List<Question> questions = questionRepository.findAllById(questionIds).stream()
                 .filter(q -> q.getDeletedAt() == null)
+                .filter(q -> scienceService.canManageScience(q.getTopic().getScience(), currentUser))
                 .toList();
         questions.forEach(q -> q.setDeletedAt(now));
         questionRepository.saveAll(questions);
@@ -255,12 +281,13 @@ public class QuestionService {
     // turganlarga nisbatan — deleteQuestions/permanentlyDeleteQuestions
     // bilan bir xil "jim o'tkazib yuborish" qoidasi.
     @Transactional
-    public int restoreQuestions(List<Long> questionIds) {
+    public int restoreQuestions(List<Long> questionIds, User currentUser) {
         if (questionIds == null || questionIds.isEmpty()) {
             return 0;
         }
         List<Question> questions = questionRepository.findAllById(questionIds).stream()
                 .filter(q -> q.getDeletedAt() != null)
+                .filter(q -> scienceService.canManageScience(q.getTopic().getScience(), currentUser))
                 .toList();
         questions.forEach(q -> q.setDeletedAt(null));
         questionRepository.saveAll(questions);
@@ -270,8 +297,9 @@ public class QuestionService {
     // "♻️ Tiklash" — savolni savatdan qaytaradi, javoblari avtomatik yana
     // ko'rinadigan bo'ladi (ular hech qachon o'chirilmagan edi).
     @Transactional
-    public void restoreQuestion(Long questionId) {
+    public void restoreQuestion(Long questionId, User currentUser) {
         Question question = getAnyQuestionOrThrow(questionId);
+        checkCanManageQuestion(question, currentUser);
         if (question.getDeletedAt() == null) {
             throw new IllegalArgumentException("❌ Bu savol o'chirilmagan — tiklashning hojati yo'q.");
         }
@@ -283,8 +311,9 @@ public class QuestionService {
     // nisbatan. QAYTARIB BO'LMAYDI: javoblar (Answer) JPA orphanRemoval
     // orqali avtomatik o'chiriladi.
     @Transactional
-    public void permanentlyDeleteQuestion(Long questionId) {
+    public void permanentlyDeleteQuestion(Long questionId, User currentUser) {
         Question question = getAnyQuestionOrThrow(questionId);
+        checkCanManageQuestion(question, currentUser);
         if (question.getDeletedAt() == null) {
             throw new IllegalArgumentException(
                     "❌ Bu savolni butunlay o'chirishdan oldin, avval oddiy \"O'chirish\" orqali savatga o'tkazish kerak.");
@@ -297,13 +326,15 @@ public class QuestionService {
     // (soft-delete qilingan) turganlarga nisbatan — hali savatga
     // o'tkazilmagan (faol) savol tasodifan shu yerdan o'chib ketmasligi
     // uchun (bitta-bitta permanentlyDeleteQuestion bilan bir xil qoida).
+    // ADMIN cheklovi — deleteQuestions'dagi bilan bir xil "jim filtr".
     @Transactional
-    public int permanentlyDeleteQuestions(List<Long> questionIds) {
+    public int permanentlyDeleteQuestions(List<Long> questionIds, User currentUser) {
         if (questionIds == null || questionIds.isEmpty()) {
             return 0;
         }
         List<Question> questions = questionRepository.findAllById(questionIds).stream()
                 .filter(q -> q.getDeletedAt() != null)
+                .filter(q -> scienceService.canManageScience(q.getTopic().getScience(), currentUser))
                 .toList();
         questionRepository.deleteAll(questions);
         return questions.size();
@@ -326,7 +357,7 @@ public class QuestionService {
     }
 
     @Transactional
-    public void updateQuestion(QuestionDto dto) {
+    public void updateQuestion(QuestionDto dto, User currentUser) {
         // 1️⃣ ВАЛИДАЦИЯ (СНАЧАЛА!)
         List<String> answerTextList = dto.answers().stream()
                 .map(AnswerDto::answerText)
@@ -338,6 +369,7 @@ public class QuestionService {
         Question question = questionRepository.findById(dto.id())
                 .orElseThrow(() ->
                         new IllegalArgumentException("Savol ma'lumotlar bazasida topilmadi."));
+        checkCanManageQuestion(question, currentUser);
 
         // O'zini o'ziga "dublikat" deb hisoblab qo'ymaslik uchun hozir tahrirlanayotgan
         // savolni "mavjud savollar" ro'yxatidan chiqarib tashlaymiz (aks holda matn/javoblar
@@ -448,7 +480,11 @@ public class QuestionService {
     // to'liq yangi tartibdagi id ro'yxati (TopicService.reorderTopics /
     // ScienceService.reorderSciences bilan bir xil andoza).
     @Transactional
-    public void reorderQuestions(Long topicId, List<Long> orderedQuestionIds) {
+    public void reorderQuestions(Long topicId, List<Long> orderedQuestionIds, User currentUser) {
+        Topic topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new NoSuchElementException("Mavzu topilmadi"));
+        scienceService.checkCanManage(topic.getScience(), currentUser);
+
         List<Question> questions = questionRepository.findActiveByTopicIdOrderByOrderIndex(topicId);
         Map<Long, Question> byId = new LinkedHashMap<>();
         for (Question q : questions) byId.put(q.getId(), q);

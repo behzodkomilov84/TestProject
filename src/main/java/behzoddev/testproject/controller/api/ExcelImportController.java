@@ -1,8 +1,10 @@
 package behzoddev.testproject.controller.api;
 
 import behzoddev.testproject.dto.export.ExportedFileDto;
+import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.ExamVariantService;
 import behzoddev.testproject.service.ExcelService;
+import behzoddev.testproject.service.ScienceService;
 import behzoddev.testproject.service.WordService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
@@ -11,11 +13,19 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.nio.charset.StandardCharsets;
 
+// DIQQAT: bu controller'dagi BARCHA endpoint'lar ilgari egalik tekshiruvisiz
+// edi (istalgan ROLE_OWNER/ROLE_ADMIN — SecurityConfig'dagi umumiy "/api/**"
+// qoidasi — boshqa birovning Fan/Bo'lim/Mavzusini import/eksport qila
+// olardi). Endi har biri scienceService.checkCanManageBy... orqali
+// tekshiriladi (foydalanuvchi so'rovi, 2026-09-08: "ROLE_ADMIN o'zi
+// yaratmagan kursga/fanga oid ma'lumotlarni excel word'ga eksport qila
+// olmasin").
 @RestController
 @RequestMapping("/api")
 @RequiredArgsConstructor
@@ -24,6 +34,7 @@ public class ExcelImportController {
     private final ExcelService excelService;
     private final WordService wordService;
     private final ExamVariantService examVariantService;
+    private final ScienceService scienceService;
 
     @GetMapping("/export/template")
     public ResponseEntity<Resource> downloadTemplate() throws Exception {
@@ -41,16 +52,19 @@ public class ExcelImportController {
     @PostMapping("/import/excel")
     public ResponseEntity<?> importExcel(
             @RequestParam MultipartFile file,
-            @RequestParam Long topicId
+            @RequestParam Long topicId,
+            @AuthenticationPrincipal User user
     ) {
-        return ResponseEntity.ok(excelService.importQuestions(file, topicId));
+        scienceService.checkCanManageByTopicId(topicId, user);
+        return ResponseEntity.ok(excelService.importQuestions(file, topicId, user));
     }
 
     // "📥 Excel'ga eksport" — shu mavzudagi barcha faol savollarni import
     // shabloni bilan bir xil formatdagi .xlsx faylga yozib, yuklab beradi
     // (question.js — controls qatoridagi tugma).
     @GetMapping("/export/questions")
-    public ResponseEntity<byte[]> exportQuestions(@RequestParam Long topicId) {
+    public ResponseEntity<byte[]> exportQuestions(@RequestParam Long topicId, @AuthenticationPrincipal User user) {
+        scienceService.checkCanManageByTopicId(topicId, user);
         return attachment(excelService.exportQuestions(topicId), ".xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     }
@@ -58,7 +72,8 @@ public class ExcelImportController {
     // "📊 Excel'ga eksport" (Bo'lim miqyosida) — shu Bo'limdagi BARCHA
     // mavzularning savollarini BITTA faylga yig'ib beradi (topicSection.js).
     @GetMapping("/export/questions/section")
-    public ResponseEntity<byte[]> exportQuestionsForSection(@RequestParam Long sectionId) {
+    public ResponseEntity<byte[]> exportQuestionsForSection(@RequestParam Long sectionId, @AuthenticationPrincipal User user) {
+        scienceService.checkCanManageBySectionId(sectionId, user);
         return attachment(excelService.exportQuestionsForSection(sectionId), ".xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     }
@@ -66,7 +81,8 @@ public class ExcelImportController {
     // "📊 Excel'ga eksport" (Fan miqyosida) — shu Fandagi BARCHA
     // mavzularning savollarini BITTA faylga yig'ib beradi (science.js).
     @GetMapping("/export/questions/science")
-    public ResponseEntity<byte[]> exportQuestionsForScience(@RequestParam Long scienceId) {
+    public ResponseEntity<byte[]> exportQuestionsForScience(@RequestParam Long scienceId, @AuthenticationPrincipal User user) {
+        scienceService.requireManageableScience(scienceId, user);
         return attachment(excelService.exportQuestionsForScience(scienceId), ".xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     }
@@ -75,7 +91,8 @@ public class ExcelImportController {
     // etishga tayyor .docx faylga yozib beradi (izohsiz, to'g'ri javobsiz —
     // question.js, Excel eksport tugmasi yonida).
     @GetMapping("/export/questions/word")
-    public ResponseEntity<byte[]> exportQuestionsToWord(@RequestParam Long topicId) {
+    public ResponseEntity<byte[]> exportQuestionsToWord(@RequestParam Long topicId, @AuthenticationPrincipal User user) {
+        scienceService.checkCanManageByTopicId(topicId, user);
         return attachment(wordService.exportQuestionsToWord(topicId), ".docx",
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     }
@@ -84,7 +101,8 @@ public class ExcelImportController {
     // mavzularning savollarini BITTA .docx faylga yig'ib beradi
     // (topicSection.js), har bir mavzu o'z sahifasida.
     @GetMapping("/export/questions/word/section")
-    public ResponseEntity<byte[]> exportQuestionsForSectionToWord(@RequestParam Long sectionId) {
+    public ResponseEntity<byte[]> exportQuestionsForSectionToWord(@RequestParam Long sectionId, @AuthenticationPrincipal User user) {
+        scienceService.checkCanManageBySectionId(sectionId, user);
         return attachment(wordService.exportQuestionsForSection(sectionId), ".docx",
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     }
@@ -93,7 +111,8 @@ public class ExcelImportController {
     // savollarini BITTA .docx faylga yig'ib beradi (science.js), har bir
     // mavzu o'z sahifasida.
     @GetMapping("/export/questions/word/science")
-    public ResponseEntity<byte[]> exportQuestionsForScienceToWord(@RequestParam Long scienceId) {
+    public ResponseEntity<byte[]> exportQuestionsForScienceToWord(@RequestParam Long scienceId, @AuthenticationPrincipal User user) {
+        scienceService.requireManageableScience(scienceId, user);
         return attachment(wordService.exportQuestionsForScience(scienceId), ".docx",
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
     }
@@ -111,8 +130,10 @@ public class ExcelImportController {
             @RequestParam int variantCount,
             @RequestParam int perVariant,
             @RequestParam(defaultValue = "true") boolean shuffleAnswers,
-            @RequestParam(defaultValue = "false") boolean sameQuestions
+            @RequestParam(defaultValue = "false") boolean sameQuestions,
+            @AuthenticationPrincipal User user
     ) {
+        scienceService.checkCanManageByTopicId(topicId, user);
         return attachment(examVariantService.generateVariantsForTopic(topicId, variantCount, perVariant, shuffleAnswers, sameQuestions),
                 ".zip", "application/zip");
     }
@@ -123,8 +144,10 @@ public class ExcelImportController {
             @RequestParam int variantCount,
             @RequestParam int perVariant,
             @RequestParam(defaultValue = "true") boolean shuffleAnswers,
-            @RequestParam(defaultValue = "false") boolean sameQuestions
+            @RequestParam(defaultValue = "false") boolean sameQuestions,
+            @AuthenticationPrincipal User user
     ) {
+        scienceService.checkCanManageBySectionId(sectionId, user);
         return attachment(examVariantService.generateVariantsForSection(sectionId, variantCount, perVariant, shuffleAnswers, sameQuestions),
                 ".zip", "application/zip");
     }
@@ -135,8 +158,10 @@ public class ExcelImportController {
             @RequestParam int variantCount,
             @RequestParam int perVariant,
             @RequestParam(defaultValue = "true") boolean shuffleAnswers,
-            @RequestParam(defaultValue = "false") boolean sameQuestions
+            @RequestParam(defaultValue = "false") boolean sameQuestions,
+            @AuthenticationPrincipal User user
     ) {
+        scienceService.requireManageableScience(scienceId, user);
         return attachment(examVariantService.generateVariantsForScience(scienceId, variantCount, perVariant, shuffleAnswers, sameQuestions),
                 ".zip", "application/zip");
     }

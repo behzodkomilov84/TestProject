@@ -7,6 +7,7 @@ import behzoddev.testproject.dto.question.QuestionSaveDto;
 import behzoddev.testproject.dto.question.QuestionScienceSearchDto;
 import behzoddev.testproject.dto.question.QuestionScienceTrashDto;
 import behzoddev.testproject.dto.question.QuestionTrashDto;
+import behzoddev.testproject.entity.User;
 import behzoddev.testproject.exception.ErrorResponse;
 import behzoddev.testproject.service.AnswerService;
 import behzoddev.testproject.service.FileStorageService;
@@ -17,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -99,9 +101,10 @@ public class QuestionController {
     // keyin, faqat "Hammasi" rejimida) — to'liq yangi tartibdagi id ro'yxati.
     @PostMapping("/api/question/reorder")
     @ResponseBody
-    public ResponseEntity<?> reorder(@RequestParam Long topicId, @RequestBody List<Long> orderedQuestionIds) {
+    public ResponseEntity<?> reorder(@RequestParam Long topicId, @RequestBody List<Long> orderedQuestionIds,
+                                       @AuthenticationPrincipal User user) {
         try {
-            questionService.reorderQuestions(topicId, orderedQuestionIds);
+            questionService.reorderQuestions(topicId, orderedQuestionIds, user);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -110,7 +113,7 @@ public class QuestionController {
 
     @PostMapping("/api/question/save")
     @ResponseBody
-    public ResponseEntity<?> saveQuestion(@RequestBody Map<Object, Object> payload) {
+    public ResponseEntity<?> saveQuestion(@RequestBody Map<Object, Object> payload, @AuthenticationPrincipal User user) {
         try {
             long topicId = Long.parseLong(payload.get("topicId").toString());
 
@@ -195,7 +198,7 @@ public class QuestionController {
                         ));
             }
 
-            questionService.save(newQuestion);
+            questionService.save(newQuestion, user);
 
             return ResponseEntity.ok(Map.of("message", "Muvaffaqiyatli saqlandi."));
         }catch (Exception e) {
@@ -233,10 +236,10 @@ public class QuestionController {
     }
 
     @PutMapping("/api/question/update")
-    public ResponseEntity<?> updateQuestion(@RequestBody QuestionDto payload) {
+    public ResponseEntity<?> updateQuestion(@RequestBody QuestionDto payload, @AuthenticationPrincipal User user) {
 
         try {
-            questionService.updateQuestion(payload);
+            questionService.updateQuestion(payload, user);
 
             return ResponseEntity.ok(
                     Map.of("message", "Updated")
@@ -250,10 +253,10 @@ public class QuestionController {
     }
 
     @PatchMapping("/api/question/updateComment")
-    public ResponseEntity<?> updateComment(@RequestBody ModalCommentSaveDto payload) {
+    public ResponseEntity<?> updateComment(@RequestBody ModalCommentSaveDto payload, @AuthenticationPrincipal User user) {
 
         try {
-            answerService.updateCommentOfTrueAnswer(payload);
+            answerService.updateCommentOfTrueAnswer(payload, user);
 
             return ResponseEntity.ok(
                     Map.of("message", "Muvaffaqiyatli o'zgartirildi.")
@@ -268,9 +271,9 @@ public class QuestionController {
 
 
     @DeleteMapping("/api/question/{id}")
-    public ResponseEntity<?> delete(@PathVariable Long id) {
+    public ResponseEntity<?> delete(@PathVariable Long id, @AuthenticationPrincipal User user) {
         try {
-            questionService.deleteQuestion(id);
+            questionService.deleteQuestion(id, user);
             return ResponseEntity.noContent().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity
@@ -285,9 +288,9 @@ public class QuestionController {
     // hisoblab, to'g'ri metodga yo'naltiradi (id="bulk" deb noto'g'ri
     // talqin qilinmaydi).
     @DeleteMapping("/api/question/bulk")
-    public ResponseEntity<?> deleteBulk(@RequestBody List<Long> ids) {
+    public ResponseEntity<?> deleteBulk(@RequestBody List<Long> ids, @AuthenticationPrincipal User user) {
         try {
-            int deleted = questionService.deleteQuestions(ids);
+            int deleted = questionService.deleteQuestions(ids, user);
             return ResponseEntity.ok(Map.of("deleted", deleted));
         } catch (IllegalArgumentException e) {
             return ResponseEntity
@@ -324,9 +327,9 @@ public class QuestionController {
 
     @PostMapping("/api/question/{id}/restore")
     @ResponseBody
-    public ResponseEntity<?> restore(@PathVariable Long id) {
+    public ResponseEntity<?> restore(@PathVariable Long id, @AuthenticationPrincipal User user) {
         try {
-            questionService.restoreQuestion(id);
+            questionService.restoreQuestion(id, user);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -340,9 +343,9 @@ public class QuestionController {
     // xuddi "/bulk" va "/bulk/permanent"dagi kabi).
     @PostMapping("/api/question/bulk/restore")
     @ResponseBody
-    public ResponseEntity<?> restoreBulk(@RequestBody List<Long> ids) {
+    public ResponseEntity<?> restoreBulk(@RequestBody List<Long> ids, @AuthenticationPrincipal User user) {
         try {
-            int restored = questionService.restoreQuestions(ids);
+            int restored = questionService.restoreQuestions(ids, user);
             return ResponseEntity.ok(Map.of("restored", restored));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -351,9 +354,9 @@ public class QuestionController {
 
     @DeleteMapping("/api/question/{id}/permanent")
     @ResponseBody
-    public ResponseEntity<?> permanentDelete(@PathVariable Long id) {
+    public ResponseEntity<?> permanentDelete(@PathVariable Long id, @AuthenticationPrincipal User user) {
         try {
-            questionService.permanentlyDeleteQuestion(id);
+            questionService.permanentlyDeleteQuestion(id, user);
             return ResponseEntity.ok().build();
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
@@ -366,9 +369,9 @@ public class QuestionController {
     // hisoblanadi (Spring'ning o'zi to'g'ri yo'naltiradi).
     @DeleteMapping("/api/question/bulk/permanent")
     @ResponseBody
-    public ResponseEntity<?> permanentDeleteBulk(@RequestBody List<Long> ids) {
+    public ResponseEntity<?> permanentDeleteBulk(@RequestBody List<Long> ids, @AuthenticationPrincipal User user) {
         try {
-            int deleted = questionService.permanentlyDeleteQuestions(ids);
+            int deleted = questionService.permanentlyDeleteQuestions(ids, user);
             return ResponseEntity.ok(Map.of("deleted", deleted));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));

@@ -51,4 +51,15 @@ public class Science {
     // "♻️ Tiklash" bilan bir zumda qaytadi.
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    // Fanni kim yaratgani — Course.createdBy bilan bir xil g'oya, ADMIN
+    // faqat O'ZI yaratgan fanni (va uning ichidagi Bo'lim/Mavzu/Savollarni)
+    // boshqara olishi uchun (foydalanuvchi so'rovi, 2026-09-08: "ROLE_ADMIN
+    // o'zi yaratmagan hech qaysi joyda o'zgartirish qila olmasin"). Course'dan
+    // farqli — NULLable (mavjud fanlar migratsiyadan oldin muallifsiz
+    // yaratilgan edi; barchasi science-created-by.sql orqali tayinlandi,
+    // amalda NULL bo'lmaydi, lekin ustun DB darajasida ixtiyoriy qoldirilgan).
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private User createdBy;
 }

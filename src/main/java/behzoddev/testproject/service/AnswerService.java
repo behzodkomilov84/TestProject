@@ -3,7 +3,8 @@ package behzoddev.testproject.service;
 import behzoddev.testproject.dao.AnswerRepository;
 import behzoddev.testproject.dto.ModalAnswerCommentSaveDto;
 import behzoddev.testproject.dto.ModalCommentSaveDto;
-import lombok.RequiredArgsConstructor;
+import behzoddev.testproject.entity.User;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,10 +13,20 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class AnswerService {
 
     private final AnswerRepository answerRepository;
+    private final QuestionService questionService;
+
+    // Lombok @RequiredArgsConstructor emas — @Lazy'ni parametrga qo'yish
+    // uchun konstruktor qo'lda yozildi. Sabab: QuestionService -> Validation
+    // -> AnswerService -> QuestionService aylanma bog'lanish (circular
+    // dependency) hosil qilardi; Lazy proxy shu tsiklni uzadi.
+    public AnswerService(AnswerRepository answerRepository,
+                          @Lazy QuestionService questionService) {
+        this.answerRepository = answerRepository;
+        this.questionService = questionService;
+    }
 
     public boolean isUnique(List<String> answersList) {
         Set<String> uniqueAnswers =
@@ -27,8 +38,12 @@ public class AnswerService {
     }
 
     @Transactional
-    public void updateCommentOfTrueAnswer(ModalCommentSaveDto payload) {
+    public void updateCommentOfTrueAnswer(ModalCommentSaveDto payload, User currentUser) {
         Long questionId = (Long) payload.questionId();
+        // ADMIN cheklovi — izoh (commentary) ham savolning bir qismi,
+        // shu sabab savol qaysi Fan-Mavzuga tegishli ekaniga qarab
+        // tekshiriladi (foydalanuvchi so'rovi, 2026-09-08).
+        questionService.checkCanManageQuestionById(questionId, currentUser);
 
         ModalAnswerCommentSaveDto answer = (ModalAnswerCommentSaveDto) payload.trueAnswer();
 

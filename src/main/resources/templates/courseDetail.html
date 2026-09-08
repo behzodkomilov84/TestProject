@@ -9,9 +9,12 @@
     <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/courses.css">
     <link rel="stylesheet" href="/css/topic-explanation-search.css">
-    <!-- profile-gate.js'dagi telefon maydoni uchun (foydalanuvchi so'rovi,
-         2026-09-07/08: kursga kirish modaliga telefon ham qo'shildi). -->
-    <link rel="stylesheet" href="/css/country-picker.css">
+    <!-- country-picker.css/js va profile-gate.js ENDI navbar.html
+         fragment'ining o'zida ulanadi (barcha sahifada, faqat shu yerda
+         emas — foydalanuvchi so'rovi, 2026-09-08). Bu yerda QAYTA
+         ULAMANG — "let" bilan e'lon qilingan o'zgaruvchilar ikki marta
+         yuklansa "Identifier has already been declared" xatosi beradi
+         (promptModal.js'dagi bilan bir xil xatar). -->
 
     <script th:inline="javascript">
         const COURSE_ID = /*[[${courseId}]]*/ 0;
@@ -22,13 +25,6 @@
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
     <script src="/js/courseDetail.js" defer></script>
     <script src="/js/navbar.js" defer></script>
-    <!-- Kursga kirishda profilni to'ldirish talabi (foydalanuvchi
-         so'rovi, 2026-09-07) — "/courses/{id}" BITTA kirish nuqtasi
-         bo'lgani uchun shu yerga qo'shish yetarli. country-picker.js
-         profile-gate.js'DAN OLDIN kelishi shart (telefon maydoni uchun
-         initCountryPicker'dan foydalanadi, defer tartibi saqlanadi). -->
-    <script src="/js/country-picker.js" defer></script>
-    <script src="/js/profile-gate.js" defer></script>
 </head>
 
 <body th:attr="data-role=${role}">

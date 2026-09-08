@@ -5,11 +5,13 @@ import behzoddev.testproject.dto.topic.TopicIdAndNameDto;
 import behzoddev.testproject.dto.topic.TopicLocationDto;
 import behzoddev.testproject.dto.topic.TopicNameDto;
 import behzoddev.testproject.dto.topic.TopicTrashDto;
+import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.TopicSectionService;
 import behzoddev.testproject.service.TopicService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,7 +35,7 @@ public class TopicController {
 
     @PostMapping("/api/topic/save")
 //    @ResponseBody
-    public ResponseEntity<Object> saveTopic(@RequestBody Map<Object, Object> payload) {
+    public ResponseEntity<Object> saveTopic(@RequestBody Map<Object, Object> payload, @AuthenticationPrincipal User user) {
 
         var newTopics = (List<Map<Object, Object>>) payload.get("new");
 
@@ -53,24 +55,24 @@ public class TopicController {
             String name = (String) item.get("name");
             Long sectionId = item.get("sectionId") != null
                     ? ((Number) item.get("sectionId")).longValue() : null;
-            topicService.saveTopic(scienceId, new TopicNameDto(name), sectionId);
+            topicService.saveTopic(scienceId, new TopicNameDto(name), sectionId, user);
         }
 
         // Обновляем существующие
         for (Map<Object, Object> item : needToUpdateTopics) {
             Long id = ((Number) item.get("id")).longValue();
             String name = (String) item.get("name");
-            topicService.updateTopic(id, name);
+            topicService.updateTopic(id, name, user);
             if (item.containsKey("sectionId")) {
                 Long sectionId = item.get("sectionId") != null
                         ? ((Number) item.get("sectionId")).longValue() : null;
-                topicSectionService.assignTopicToSection(id, sectionId);
+                topicSectionService.assignTopicToSection(id, sectionId, user);
             }
         }
 
         // Удаление
         for (Long id : deletedScienceIds) {
-            topicService.removeTopic(id);
+            topicService.removeTopic(id, user);
         }
 
         return ResponseEntity.ok(Map.of("message", "✅ Ma'lumotlar bazaga saqlandi!"));
@@ -110,16 +112,18 @@ public class TopicController {
     // Mavzular tartibini qayta belgilash ("⬆⬇" yoki A-Z/Z-A saralashdan
     // keyin) — to'liq yangi tartibdagi id ro'yxati.
     @PostMapping("/api/topic/reorder")
-    public ResponseEntity<Void> reorder(@RequestParam Long scienceId, @RequestBody List<Long> orderedTopicIds) {
-        topicService.reorderTopics(scienceId, orderedTopicIds);
+    public ResponseEntity<Void> reorder(@RequestParam Long scienceId, @RequestBody List<Long> orderedTopicIds,
+                                          @AuthenticationPrincipal User user) {
+        topicService.reorderTopics(scienceId, orderedTopicIds, user);
         return ResponseEntity.ok().build();
     }
 
     // "🗑️ Testi yo'q mavzularni o'chirish" — shu Fanda hech qanday savoli
     // bo'lmagan BARCHA mavzularni bir yo'la o'chiradi.
     @DeleteMapping("/api/topic/questionless")
-    public ResponseEntity<Map<String, Integer>> deleteQuestionlessTopics(@RequestParam Long scienceId) {
-        return ResponseEntity.ok(Map.of("deleted", topicService.deleteQuestionlessTopics(scienceId)));
+    public ResponseEntity<Map<String, Integer>> deleteQuestionlessTopics(@RequestParam Long scienceId,
+                                                                           @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(Map.of("deleted", topicService.deleteQuestionlessTopics(scienceId, user)));
     }
 
     // "O'chirilganlar savati" (mavzu darajasida) — faqat OWNER/ADMIN.
@@ -131,15 +135,15 @@ public class TopicController {
 
     @PostMapping("/api/topic/{topicId}/restore")
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
-    public ResponseEntity<Void> restore(@PathVariable Long topicId) {
-        topicService.restoreTopic(topicId);
+    public ResponseEntity<Void> restore(@PathVariable Long topicId, @AuthenticationPrincipal User user) {
+        topicService.restoreTopic(topicId, user);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/api/topic/{topicId}/permanent")
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
-    public ResponseEntity<Void> permanentDelete(@PathVariable Long topicId) {
-        topicService.permanentlyDeleteTopic(topicId);
+    public ResponseEntity<Void> permanentDelete(@PathVariable Long topicId, @AuthenticationPrincipal User user) {
+        topicService.permanentlyDeleteTopic(topicId, user);
         return ResponseEntity.ok().build();
     }
 }

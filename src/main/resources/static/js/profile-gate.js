@@ -13,15 +13,15 @@
 // ro'yxatdan o'tgan foydalanuvchiga bir xil talabni ta'minlaydigan
 // yagona joy.
 //
-// Bitta joyda, sahifa yuklanishi bilan avtomatik ishga tushadi
-// (courseDetail.html) — "/courses/{id}"ga qanday kirilishidan qat'i
-// nazar (katalogdan bosib, to'g'ridan-to'g'ri havola orqali yoki
-// bookmark orqali) bir xil ishlaydi, courses.js'dagi har bir alohida
-// bosish joyini o'zgartirish shart emas.
+// ENDI navbar.html fragment orqali BARCHA sahifada (navbar bor joyda)
+// ulanadi — faqat kurs sahifasida emas (foydalanuvchi so'rovi, 2026-09-08:
+// "Har qanday kirishda ham... profildagi majburiy polyalarni to'ldirsin.
+// Modal ko'rinishda"). Sahifa yuklanishi bilan avtomatik ishga tushadi,
+// har bir alohida sahifani o'zgartirish shart emas.
 //
 // country-picker.js'ga bog'liq (telefon maydoni uchun, /profile'dagi
-// bilan bir xil widget) — courseDetail.html'da shu skriptdan KEYIN
-// ulanishi kerak.
+// bilan bir xil widget) — navbar.html'da shu skriptdan KEYIN ulanishi
+// kerak (defer tartibi saqlanadi).
 
 let profileGateMissing = null; // {firstName, lastName, workplace, jobTitle, phone} — shu safar aniqlangan bo'sh maydonlar
 let profileGateCountries = null;
@@ -153,7 +153,7 @@ function showProfileGateModal() {
     overlay.innerHTML = `
         <div class="profile-gate-box">
             <h2>📋 Profilingizni to'ldiring</h2>
-            <p class="profile-gate-desc">Kursga kirishdan oldin quyidagi ma'lumotlarni to'ldiring — bu qaysi soha/kasb vakillari saytdan foydalanayotganini bilishga yordam beradi.</p>
+            <p class="profile-gate-desc">Davom etishdan oldin quyidagi ma'lumotlarni to'ldiring — bu qaysi soha/kasb vakillari saytdan foydalanayotganini bilishga yordam beradi.</p>
             <p class="profile-gate-error" id="profileGateError" hidden></p>
             ${nameFieldsHtml}
             ${workplaceHtml}
@@ -180,10 +180,13 @@ function showProfileGateModal() {
             .catch(err => console.error("Davlatlar ro'yxati olinmadi:", err));
     }
 
-    // "Bekor qilish" — kursga kira olmaydi, katalogga qaytariladi
-    // (foydalanuvchi maydonlarni to'ldirmasdan kursni ko'ra olmaydi).
+    // "Bekor qilish" — endi BUTUN saytda ko'rsatilgani uchun (faqat kurs
+    // sahifasida emas, foydalanuvchi so'rovi, 2026-09-08) qattiq bloklash
+    // o'rniga shu joyida yopiladi — foydalanuvchi joriy sahifada davom
+    // etaveradi, keyingi sahifa yuklanganda (hali to'ldirilmagan bo'lsa)
+    // modal yana chiqadi.
     document.getElementById("profileGateCancel").addEventListener("click", () => {
-        location.href = "/courses";
+        overlay.remove();
     });
 
     document.getElementById("profileGateSave").addEventListener("click", async () => {

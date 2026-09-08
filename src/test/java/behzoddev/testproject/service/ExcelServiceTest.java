@@ -5,6 +5,8 @@ import behzoddev.testproject.dto.excel.ImportResultDto;
 import behzoddev.testproject.dto.question.QuestionSaveDto;
 import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Question;
+import behzoddev.testproject.entity.Role;
+import behzoddev.testproject.entity.User;
 import behzoddev.testproject.validation.Validation;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
@@ -59,11 +61,14 @@ class ExcelServiceTest {
     private ClamAvScanService clamAvScanService;
 
     private ExcelService excelService;
+    private User admin;
 
     @BeforeEach
     void setUp() {
         Validation validation = new Validation(validationAnswerService);
         excelService = new ExcelService(questionService, questionRepository, topicRepository, topicSectionRepository, scienceRepository, courseRepository, courseSectionRepository, excelAnswerService, validation, clamAvScanService);
+        admin = User.builder().id(50L).username("admin1").roles(new java.util.HashSet<>(java.util.Set.of(
+                Role.builder().id(2L).roleName("ROLE_ADMIN").build()))).build();
         // Fayl-darajasidagi validatsiya testlari (bo'sh/katta/noto'g'ri kengaytma)
         // qatorlarni umuman o'qishga yetmaydi — shu stublar ular uchun keraksiz
         // bo'lgani uchun lenient qilingan.
@@ -106,12 +111,12 @@ class ExcelServiceTest {
     void importQuestions_validRow_importsSuccessfully() throws IOException {
         byte[] content = buildWorkbook(new String[]{"2+2 nechiga teng?", "3", "4", "5", "6", "7", "B", "Yig'indi"});
 
-        ImportResultDto result = excelService.importQuestions(excelFile(content), 1L);
+        ImportResultDto result = excelService.importQuestions(excelFile(content), 1L, admin);
 
         assertThat(result.success()).isTrue();
         assertThat(result.imported()).isEqualTo(1L);
         assertThat(result.errors()).isEmpty();
-        verify(questionService).save(any(QuestionSaveDto.class));
+        verify(questionService).save(any(QuestionSaveDto.class), any());
     }
 
     @Test
@@ -119,9 +124,9 @@ class ExcelServiceTest {
         byte[] content = buildWorkbook(new String[]{"Savol", "birinchi", "ikkinchi", "uchinchi", "to'rtinchi", "beshinchi", "C", "Izoh"});
 
         org.mockito.ArgumentCaptor<QuestionSaveDto> captor = org.mockito.ArgumentCaptor.forClass(QuestionSaveDto.class);
-        excelService.importQuestions(excelFile(content), 1L);
+        excelService.importQuestions(excelFile(content), 1L, admin);
 
-        verify(questionService).save(captor.capture());
+        verify(questionService).save(captor.capture(), any());
         assertThat(captor.getValue().answers().get(2).answerText()).isEqualTo("uchinchi");
         assertThat(captor.getValue().answers().get(2).isTrue()).isTrue();
         assertThat(captor.getValue().answers().get(0).isTrue()).isFalse();
@@ -137,9 +142,9 @@ class ExcelServiceTest {
         byte[] content = buildWorkbook(new String[]{"Savol", "birinchi", "ikkinchi", "uchinchi", "to'rtinchi", "beshinchi", "B,D", "Izoh"});
 
         org.mockito.ArgumentCaptor<QuestionSaveDto> captor = org.mockito.ArgumentCaptor.forClass(QuestionSaveDto.class);
-        excelService.importQuestions(excelFile(content), 1L);
+        excelService.importQuestions(excelFile(content), 1L, admin);
 
-        verify(questionService).save(captor.capture());
+        verify(questionService).save(captor.capture(), any());
         assertThat(captor.getValue().answers().get(1).isTrue()).isTrue();  // B
         assertThat(captor.getValue().answers().get(3).isTrue()).isTrue();  // D
         assertThat(captor.getValue().answers().get(0).isTrue()).isFalse();
@@ -154,9 +159,9 @@ class ExcelServiceTest {
         byte[] content = buildWorkbook(new String[]{"Savol", "a", "b", "c", "d", "e", "A E", "Izoh"});
 
         org.mockito.ArgumentCaptor<QuestionSaveDto> captor = org.mockito.ArgumentCaptor.forClass(QuestionSaveDto.class);
-        excelService.importQuestions(excelFile(content), 1L);
+        excelService.importQuestions(excelFile(content), 1L, admin);
 
-        verify(questionService).save(captor.capture());
+        verify(questionService).save(captor.capture(), any());
         assertThat(captor.getValue().answers().get(0).isTrue()).isTrue();  // A
         assertThat(captor.getValue().answers().get(4).isTrue()).isTrue();  // E
     }
@@ -166,11 +171,11 @@ class ExcelServiceTest {
         byte[] content = buildWorkbook(new String[]{"Savol 1", "a", "b", "c", "d", "e", "A", "izoh1"},
                 new String[]{"Savol 2", "a", "b", "c", "d", "e", "B", "izoh2"});
 
-        ImportResultDto result = excelService.importQuestions(excelFile(content), 1L);
+        ImportResultDto result = excelService.importQuestions(excelFile(content), 1L, admin);
 
         assertThat(result.success()).isTrue();
         assertThat(result.imported()).isEqualTo(2L);
-        verify(questionService, times(2)).save(any());
+        verify(questionService, times(2)).save(any(), any());
     }
 
     // ===== qator darajasidagi xatolar (izolyatsiya) =====
@@ -180,7 +185,7 @@ class ExcelServiceTest {
         byte[] content = buildWorkbook(new String[]{"Yaroqsiz savol", "a", "b", "c", "d", "e", "Z", "izoh"},
                 new String[]{"Yaroqli savol", "a", "b", "c", "d", "e", "A", "izoh"});
 
-        ImportResultDto result = excelService.importQuestions(excelFile(content), 1L);
+        ImportResultDto result = excelService.importQuestions(excelFile(content), 1L, admin);
 
         assertThat(result.success()).isFalse();
         assertThat(result.imported()).isEqualTo(1L); // faqat 2-qator
@@ -193,12 +198,12 @@ class ExcelServiceTest {
         when(excelAnswerService.isUnique(any())).thenReturn(false);
         byte[] content = buildWorkbook(new String[]{"Savol", "a", "a", "c", "d", "e", "A", "izoh"});
 
-        ImportResultDto result = excelService.importQuestions(excelFile(content), 1L);
+        ImportResultDto result = excelService.importQuestions(excelFile(content), 1L, admin);
 
         assertThat(result.success()).isFalse();
         assertThat(result.imported()).isZero();
         assertThat(result.errors().get(0)).contains("bir xil bo'lishi mumkin emas");
-        verify(questionService, never()).save(any());
+        verify(questionService, never()).save(any(), any());
     }
 
     @Test
@@ -206,22 +211,22 @@ class ExcelServiceTest {
         when(questionService.isQuestionWithAnswersExists(anyList(), any(QuestionSaveDto.class))).thenReturn(true);
         byte[] content = buildWorkbook(new String[]{"Mavjud savol", "a", "b", "c", "d", "e", "A", "izoh"});
 
-        ImportResultDto result = excelService.importQuestions(excelFile(content), 1L);
+        ImportResultDto result = excelService.importQuestions(excelFile(content), 1L, admin);
 
         assertThat(result.success()).isFalse();
         assertThat(result.errors().get(0)).contains("allaqachon bazada mavjud");
-        verify(questionService, never()).save(any());
+        verify(questionService, never()).save(any(), any());
     }
 
     @Test
     void importQuestions_blankQuestionText_recordsErrorViaRealValidation() throws IOException {
         byte[] content = buildWorkbook(new String[]{"", "a", "b", "c", "d", "e", "A", "izoh"});
 
-        ImportResultDto result = excelService.importQuestions(excelFile(content), 1L);
+        ImportResultDto result = excelService.importQuestions(excelFile(content), 1L, admin);
 
         assertThat(result.success()).isFalse();
         assertThat(result.imported()).isZero();
-        verify(questionService, never()).save(any());
+        verify(questionService, never()).save(any(), any());
     }
 
     // ===== fayl darajasidagi validatsiya =====
@@ -231,7 +236,7 @@ class ExcelServiceTest {
         MockMultipartFile file = new MockMultipartFile("file", "questions.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new byte[0]);
 
-        ImportResultDto result = excelService.importQuestions(file, 1L);
+        ImportResultDto result = excelService.importQuestions(file, 1L, admin);
 
         assertThat(result.success()).isFalse();
         assertThat(result.errors().get(0)).contains("tanlanmagan");
@@ -243,7 +248,7 @@ class ExcelServiceTest {
         MockMultipartFile file = new MockMultipartFile("file", "questions.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", tooLarge);
 
-        ImportResultDto result = excelService.importQuestions(file, 1L);
+        ImportResultDto result = excelService.importQuestions(file, 1L, admin);
 
         assertThat(result.success()).isFalse();
         assertThat(result.errors().get(0)).contains("50MB");
@@ -255,7 +260,7 @@ class ExcelServiceTest {
         byte[] content = buildWorkbook(new String[]{"Savol", "a", "b", "c", "d", "e", "A", "izoh"});
         MockMultipartFile file = new MockMultipartFile("file", "questions.txt", "text/plain", content);
 
-        ImportResultDto result = excelService.importQuestions(file, 1L);
+        ImportResultDto result = excelService.importQuestions(file, 1L, admin);
 
         assertThat(result.success()).isFalse();
         assertThat(result.errors().get(0)).contains(".xlsx");
@@ -267,7 +272,7 @@ class ExcelServiceTest {
         MockMultipartFile file = new MockMultipartFile("file", "questions.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", plainTextBytes);
 
-        ImportResultDto result = excelService.importQuestions(file, 1L);
+        ImportResultDto result = excelService.importQuestions(file, 1L, admin);
 
         assertThat(result.success()).isFalse();
         assertThat(result.errors().get(0)).contains("haqiqiy Excel fayli emas");
@@ -280,11 +285,11 @@ class ExcelServiceTest {
         org.mockito.Mockito.doThrow(new IllegalArgumentException("❌ Fayl zararli dastur (virus) sifatida aniqlandi"))
                 .when(clamAvScanService).scan(any(), any());
 
-        ImportResultDto result = excelService.importQuestions(excelFile(content), 1L);
+        ImportResultDto result = excelService.importQuestions(excelFile(content), 1L, admin);
 
         assertThat(result.success()).isFalse();
         assertThat(result.errors().get(0)).contains("zararli");
-        verify(questionService, never()).save(any());
+        verify(questionService, never()).save(any(), any());
     }
 
     // ===== exportQuestions =====

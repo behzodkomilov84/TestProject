@@ -10,6 +10,7 @@ import behzoddev.testproject.dto.topic.TopicNameDto;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
+import behzoddev.testproject.entity.User;
 import behzoddev.testproject.exception.ErrorResponse;
 import behzoddev.testproject.service.QuestionService;
 import behzoddev.testproject.service.ScienceService;
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,7 +54,7 @@ public class ScienceController {
 
     @PostMapping("/api/science/save")
     @ResponseBody
-    public ResponseEntity<?> saveScience(@RequestBody Map<String, Object> payload) {
+    public ResponseEntity<?> saveScience(@RequestBody Map<String, Object> payload, @AuthenticationPrincipal User user) {
 
         // "new" — {name, fieldId} obyektlar ro'yxati (fieldId — IXTIYORIY,
         // Yo'nalish tanlanmagan bo'lsa null/berilmagan). Ilgari oddiy
@@ -66,28 +68,30 @@ public class ScienceController {
             deletedScienceIds.add(((Number) obj).longValue());
         }
 
-        // Добавляем новые
+        // Добавляем новые — yaratuvchi darhol egasi bo'ladi.
         for (Map<String, Object> item : newSubjects) {
             String name = (String) item.get("name");
             Long fieldId = item.get("fieldId") == null ? null : ((Number) item.get("fieldId")).longValue();
-            scienceService.saveScience(new ScienceNameDto(name, fieldId));
+            scienceService.saveScience(new ScienceNameDto(name, fieldId), user);
         }
 
-        // Обновляем существующие
+        // Обновляем существующие — ADMIN cheklovi: faqat o'zi yaratgan
+        // fanni tahrirlashi mumkin (updateScienceName/assignField ichida
+        // tekshiriladi, boshqa birovning fani bo'lsa AccessDeniedException).
         for (Map<String, Object> item : needToUpdateSubjects) {
             Long id = ((Number) item.get("id")).longValue();
             String name = (String) item.get("name");
-            scienceService.updateScienceName(id, name);
+            scienceService.updateScienceName(id, name, user);
             // fieldId — science.js HAR DOIM joriy qiymatni yuboradi (nom
             // o'zgarmagan, faqat Yo'nalish o'zgargan holatlar ham shu
             // "updated" ro'yxatiga tushadi) — shu sabab shartsiz chaqiriladi.
             Long fieldId = item.get("fieldId") == null ? null : ((Number) item.get("fieldId")).longValue();
-            scienceService.assignField(id, fieldId);
+            scienceService.assignField(id, fieldId, user);
         }
 
         // Удаление
         for (Long id : deletedScienceIds) {
-            scienceService.removeScience(id);
+            scienceService.removeScience(id, user);
         }
 
         return ResponseEntity.ok(Map.of("message", "✅ Ma'lumotlar bazaga saqlandi!"));
@@ -113,7 +117,7 @@ public class ScienceController {
     }
 
     @PostMapping("/science")
-    public ResponseEntity<?> createScience(@Valid @RequestBody ScienceNameDto scienceNameDto) {
+    public ResponseEntity<?> createScience(@Valid @RequestBody ScienceNameDto scienceNameDto, @AuthenticationPrincipal User user) {
 
         Optional<Science> existing = scienceService.getByName(scienceNameDto.name());
         if (existing.isPresent()) {
@@ -124,7 +128,7 @@ public class ScienceController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
         }
 
-        Science science = scienceService.saveScience(scienceNameDto);
+        Science science = scienceService.saveScience(scienceNameDto, user);
         return ResponseEntity
                 .created(URI.create("sciences/" + science.getId())
                 ).body("Science with name '" + scienceNameDto.name() + "' was created");
@@ -133,7 +137,8 @@ public class ScienceController {
     @PostMapping("/science/{scienceId}/topic")
     public ResponseEntity<?> createTopic(
             @PathVariable Long scienceId,
-            @Valid @RequestBody TopicNameDto topicNameDto
+            @Valid @RequestBody TopicNameDto topicNameDto,
+            @AuthenticationPrincipal User user
     ) {
         List<TopicIdAndNameDto> existingTopics =
                 topicService.getTopicsByScienceId(scienceId);
@@ -149,7 +154,7 @@ public class ScienceController {
                     ));
         }
 
-        Topic topic = topicService.saveTopic(scienceId, topicNameDto);
+        Topic topic = topicService.saveTopic(scienceId, topicNameDto, user);
 
         return ResponseEntity.created(
                 URI.create("science/" + scienceId + "/topic/" + topic.getId())
@@ -158,7 +163,8 @@ public class ScienceController {
 
     @PostMapping("topic/{topicId}")
     public ResponseEntity<?> createQuestion(@PathVariable Long topicId,
-                                            @Valid @RequestBody QuestionShortDto newQuestion) {
+                                            @Valid @RequestBody QuestionShortDto newQuestion,
+                                            @AuthenticationPrincipal User user) {
 
         List<QuestionShortDto> existingQuestions =
                 questionService.getQuestionsByTopicId(topicId);
@@ -171,7 +177,7 @@ public class ScienceController {
                     ));
         }
 
-        Question question = questionService.saveQuestion(topicId, newQuestion);
+        Question question = questionService.saveQuestion(topicId, newQuestion, user);
 
         return ResponseEntity.created(
                 URI.create("science/" + scienceService.getScienceIdByTopicId(topicId)
@@ -180,13 +186,13 @@ public class ScienceController {
     }
 
     @PutMapping("/science")
-    public ResponseEntity<?> updateScience(@Valid @RequestBody Science science) {
+    public ResponseEntity<?> updateScience(@Valid @RequestBody Science science, @AuthenticationPrincipal User user) {
 
         boolean scienceNameExist = scienceService.isScienceNameExist(science.getName());
         boolean scienceIdExist = scienceService.isScienceIdExist(science.getId());
 
         if (scienceIdExist && !scienceNameExist) {
-            scienceService.saveScience(science);
+            scienceService.saveScience(science, user);
             return ResponseEntity.noContent().build();
         }
 
@@ -209,8 +215,9 @@ public class ScienceController {
     }
 
     @PatchMapping("/science")
-    public ResponseEntity<Void> updateScienceName(@RequestParam Long id, @Valid @RequestParam String name) {
-        scienceService.updateScienceName(id, name);
+    public ResponseEntity<Void> updateScienceName(@RequestParam Long id, @Valid @RequestParam String name,
+                                                    @AuthenticationPrincipal User user) {
+        scienceService.updateScienceName(id, name, user);
         return ResponseEntity.ok().build();
     }
 
@@ -220,8 +227,9 @@ public class ScienceController {
     @PatchMapping("/api/science/{scienceId}/field")
     @ResponseBody
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
-    public ResponseEntity<Void> assignScienceField(@PathVariable Long scienceId, @RequestBody Map<String, Long> body) {
-        scienceService.assignField(scienceId, body.get("fieldId"));
+    public ResponseEntity<Void> assignScienceField(@PathVariable Long scienceId, @RequestBody Map<String, Long> body,
+                                                     @AuthenticationPrincipal User user) {
+        scienceService.assignField(scienceId, body.get("fieldId"), user);
         return ResponseEntity.ok().build();
     }
 
@@ -231,8 +239,8 @@ public class ScienceController {
     // hali himoyasiz — alohida ko'rib chiqilishi kerak).
     @DeleteMapping("/science/{scienceId}")
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
-    public ResponseEntity<Void> deleteScience(@PathVariable Long scienceId) {
-        scienceService.removeScience(scienceId);
+    public ResponseEntity<Void> deleteScience(@PathVariable Long scienceId, @AuthenticationPrincipal User user) {
+        scienceService.removeScience(scienceId, user);
         return ResponseEntity.noContent().build();
     }
 
@@ -247,16 +255,16 @@ public class ScienceController {
     @PostMapping("/api/science/{scienceId}/restore")
     @ResponseBody
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
-    public ResponseEntity<Void> restoreScience(@PathVariable Long scienceId) {
-        scienceService.restoreScience(scienceId);
+    public ResponseEntity<Void> restoreScience(@PathVariable Long scienceId, @AuthenticationPrincipal User user) {
+        scienceService.restoreScience(scienceId, user);
         return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/api/science/{scienceId}/permanent")
     @ResponseBody
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
-    public ResponseEntity<Void> permanentDeleteScience(@PathVariable Long scienceId) {
-        scienceService.permanentlyDeleteScience(scienceId);
+    public ResponseEntity<Void> permanentDeleteScience(@PathVariable Long scienceId, @AuthenticationPrincipal User user) {
+        scienceService.permanentlyDeleteScience(scienceId, user);
         return ResponseEntity.ok().build();
     }
 
@@ -269,15 +277,15 @@ public class ScienceController {
     // ruxsat qoidasi.
     @DeleteMapping("/topic/{topicId}")
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
-    public ResponseEntity<Void> deleteTopic(@PathVariable Long topicId) {
-        topicService.removeTopic(topicId);
+    public ResponseEntity<Void> deleteTopic(@PathVariable Long topicId, @AuthenticationPrincipal User user) {
+        topicService.removeTopic(topicId, user);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/question/{questionId}")
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
-    public ResponseEntity<Void> deleteQuestion(@PathVariable Long questionId) {
-        questionService.deleteQuestion(questionId);
+    public ResponseEntity<Void> deleteQuestion(@PathVariable Long questionId, @AuthenticationPrincipal User user) {
+        questionService.deleteQuestion(questionId, user);
         return ResponseEntity.noContent().build();
     }
 }

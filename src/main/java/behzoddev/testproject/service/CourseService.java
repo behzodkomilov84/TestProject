@@ -1348,9 +1348,15 @@ public class CourseService {
     // "🔗 Havolalarni tekshirish" (courseDetail.js) — shu kursga bog'langan
     // har bir darsning barcha (faol) savollari to'g'ri javob izohida
     // O'ZINING darsiga havola bor-yo'qligini, bor bo'lsa TO'G'RI
-    // ekanini tekshiradi. Faqat KO'RSATISH uchun — hech narsa o'zgartirmaydi.
+    // ekanini tekshiradi. Faqat KO'RSATISH uchun — hech narsa o'zgartirmaydi,
+    // lekin baribir requireManageableCourse orqali cheklanadi (foydalanuvchi
+    // so'rovi, 2026-09-08: "ROLE_ADMIN o'zi yaratmagan hech qaysi joyda...
+    // o'zgartirish qila olmasin" — bu yerda haqiqiy topilgan bo'shliq edi,
+    // boshqa BARCHA kurs endpoint'lari allaqachon shu tekshiruvni qo'llardi).
     @Transactional(readOnly = true)
-    public List<TopicLinkAuditDto> auditTopicLinks(Long courseId) {
+    public List<TopicLinkAuditDto> auditTopicLinks(Long courseId, User currentUser) {
+        requireManageableCourse(courseId, currentUser);
+
         List<CourseSection> linkedSections = courseSectionRepository.findByCourse_IdAndLinkedTopicIsNotNull(courseId);
 
         List<TopicLinkAuditDto> result = new ArrayList<>();

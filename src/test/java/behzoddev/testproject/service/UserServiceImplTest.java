@@ -32,6 +32,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -99,6 +100,11 @@ class UserServiceImplTest {
     void setUp() {
         roleUser = Role.builder().id(1L).roleName("ROLE_USER").build();
         roleAdmin = Role.builder().id(2L).roleName("ROLE_ADMIN").build();
+        // @Value bilan in'ektsiya qilinadigan maydon — @InjectMocks buni
+        // to'ldirmaydi (Spring konteksti yo'q), qo'lda beriladi. 999L —
+        // boshqa hech qaysi testda ishlatilmaydigan "himoyalangan egasi"
+        // ID'si (mavjud addRole/removeRole testlari 1L/99L ishlatadi).
+        ReflectionTestUtils.setField(userService, "protectedOwnerUserId", 999L);
     }
 
     private RegisterDto registerDto(String phoneCountry, String phoneNumber) {
@@ -372,6 +378,20 @@ class UserServiceImplTest {
         verify(userRepository, never()).save(any());
     }
 
+    // Saytning haqiqiy egasi (protectedOwnerUserId) — HECH KIM (o'zi
+    // emas, boshqa OWNER ham) rolini o'zgartira olmaydi (foydalanuvchi
+    // so'rovi, 2026-09-08).
+    @Test
+    void addRole_protectedOwner_throwsAccessDenied() {
+        User currentUser = User.builder().id(99L).username("owner").roles(new HashSet<>(Set.of(roleAdmin))).build();
+        Authentication auth = org.mockito.Mockito.mock(Authentication.class);
+        when(auth.getPrincipal()).thenReturn(currentUser);
+
+        assertThatThrownBy(() -> userService.addRole(999L, "ROLE_ADMIN", auth))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(userRepository, never()).save(any());
+    }
+
     @Test
     void addRole_targetNotFound_throws() {
         User currentUser = User.builder().id(99L).username("owner").roles(new HashSet<>(Set.of(roleAdmin))).build();
@@ -408,6 +428,17 @@ class UserServiceImplTest {
 
         assertThatThrownBy(() -> userService.removeRole(1L, "ROLE_ADMIN", auth))
                 .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void removeRole_protectedOwner_throwsAccessDenied() {
+        User currentUser = User.builder().id(99L).username("owner").roles(new HashSet<>(Set.of(roleAdmin))).build();
+        Authentication auth = org.mockito.Mockito.mock(Authentication.class);
+        when(auth.getPrincipal()).thenReturn(currentUser);
+
+        assertThatThrownBy(() -> userService.removeRole(999L, "ROLE_ADMIN", auth))
+                .isInstanceOf(AccessDeniedException.class);
+        verify(userRepository, never()).save(any());
     }
 
     @Test

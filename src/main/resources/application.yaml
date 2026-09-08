@@ -104,6 +104,15 @@ app:
   # (masalan avtomatik login) shu bazaga qo'shib quriladi. Ilova o'zi
   # nginx orqasida ishlagani uchun o'z domenini bilmaydi.
   public-base-url: ${APP_PUBLIC_BASE_URL:https://study-grow.uz}
+  # Saytning haqiqiy egasi (Behzod Komilov, users.id=1) — foydalanuvchi
+  # so'rovi, 2026-09-08: "Behzod Komilov'ning rolini hech qanday holatda
+  # ham boshqasi o'zgartira olmasin ... Nomi o'zgarsa ham, foydalanuvchini
+  # eslab qolsin". ID orqali (username/ism-familiya EMAS) — chunki
+  # ikkalasi ham keyinchalik o'zgartirilishi mumkin (ProfileService),
+  # faqat baza ID'si o'zgarmas. UserServiceImpl#addRole/removeRole shu
+  # ID'ga tegishli hisobning rolini HECH KIM (o'zi ham) o'zgartira
+  # olmasligini ta'minlaydi.
+  protected-owner-user-id: ${APP_PROTECTED_OWNER_USER_ID:1}
   # "📦 Backup orqali tiklash" paneli (BackupRestoreService) shu papkadan
   # *.sql.gz fayllarni qidiradi — bo'sh bo'lsa (lokal dev'da odatiy holat),
   # funksiya "0 ta backup" deb jim ko'rsatadi, xato bermaydi. Production'da

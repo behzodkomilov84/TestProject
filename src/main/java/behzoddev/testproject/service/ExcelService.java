@@ -16,6 +16,7 @@ import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.entity.TopicSection;
+import behzoddev.testproject.entity.User;
 import behzoddev.testproject.validation.Validation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -270,7 +271,7 @@ public class ExcelService {
     // tranzaksiyasida saqlanadi, shu sabab bitta qatordagi xatolik
     // qolgan qatorlarning import bo'lishiga xalaqit bermaydi (pastdagi
     // izohga qarang).
-    public ImportResultDto importQuestions(MultipartFile file, Long topicId) {
+    public ImportResultDto importQuestions(MultipartFile file, Long topicId, User currentUser) {
 
         byte[] content;
         try {
@@ -294,7 +295,7 @@ public class ExcelService {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
 
-                imported = getValuesFromCellAndSaveToDataBase(topicId, row, imported, errors, i);
+                imported = getValuesFromCellAndSaveToDataBase(topicId, row, imported, errors, i, currentUser);
             }
 
         } catch (Exception e) {
@@ -308,7 +309,7 @@ public class ExcelService {
         return new ImportResultDto(true, imported, List.of());
     }
 
-    private @Nullable Long getValuesFromCellAndSaveToDataBase(Long topicId, Row row, Long imported, List<String> errors, int i) {
+    private @Nullable Long getValuesFromCellAndSaveToDataBase(Long topicId, Row row, Long imported, List<String> errors, int i, User currentUser) {
         try {
             String qText = cell(row, 0);
             String a = cell(row, 1);
@@ -369,7 +370,7 @@ public class ExcelService {
                 throw new IllegalArgumentException("Bu test ayni shu javoblar bilan allaqachon bazada mavjud.");
             }
 
-            questionService.save(newQuestion);
+            questionService.save(newQuestion, currentUser);
 
             imported++;
 

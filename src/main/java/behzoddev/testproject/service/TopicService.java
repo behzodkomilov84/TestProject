@@ -2,7 +2,6 @@ package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.CourseSectionRepository;
 import behzoddev.testproject.dao.QuestionRepository;
-import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
 import behzoddev.testproject.dto.topic.TopicCourseLinkDto;
@@ -13,8 +12,10 @@ import behzoddev.testproject.dto.topic.TopicNameDto;
 import behzoddev.testproject.dto.topic.TopicTrashDto;
 import behzoddev.testproject.dto.topic.TopicWithQuestionCountDto;
 import behzoddev.testproject.entity.Question;
+import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.entity.TopicSection;
+import behzoddev.testproject.entity.User;
 import behzoddev.testproject.mapper.TopicMapper;
 import behzoddev.testproject.validation.Validation;
 import lombok.RequiredArgsConstructor;
@@ -36,10 +37,10 @@ public class TopicService {
     private final TopicRepository topicRepository;
     private final QuestionRepository questionRepository;
     private final TopicMapper topicMapper;
-    private final ScienceRepository scienceRepository;
     private final TopicSectionRepository topicSectionRepository;
     private final CourseSectionRepository courseSectionRepository;
     private final Validation validation;
+    private final ScienceService scienceService;
 
     public List<TopicIdAndNameDto> getTopicsByScienceId(Long scienceId) {
         List<TopicIdAndNameDto> topics = topicRepository.findTopicsByScienceId(scienceId);
@@ -68,16 +69,19 @@ public class TopicService {
     }
 
     @Transactional
-    public Topic saveTopic(Long scienceId, TopicNameDto topicNameDto) {
-        return saveTopic(scienceId, topicNameDto, null);
+    public Topic saveTopic(Long scienceId, TopicNameDto topicNameDto, User currentUser) {
+        return saveTopic(scienceId, topicNameDto, null, currentUser);
     }
 
     // sectionId — ixtiyoriy, yangi mavzu darhol shu Bo'limga biriktiriladi
     // (topics.html'dagi Bo'lim tanlash dropdown'idan keladi). NULL —
-    // bo'limsiz (eski xulq-atvor).
+    // bo'limsiz (eski xulq-atvor). ADMIN cheklovi: faqat O'ZI yaratgan
+    // Fanga mavzu qo'sha oladi (requireManageableScience — foydalanuvchi
+    // so'rovi, 2026-09-08).
     @Transactional
-    public Topic saveTopic(Long scienceId, TopicNameDto topicNameDto, Long sectionId) {
+    public Topic saveTopic(Long scienceId, TopicNameDto topicNameDto, Long sectionId, User currentUser) {
         validation.textFieldMustNotBeEmpty(topicNameDto.name());
+        Science science = scienceService.requireManageableScience(scienceId, currentUser);
 
         Topic topic = topicMapper.mapTopicNameDtoToTopic(topicNameDto);
 
@@ -86,7 +90,7 @@ public class TopicService {
                 question.setTopic(topic);
             }
         }
-        topic.setScience(scienceRepository.findById(scienceId).orElse(null));
+        topic.setScience(science);
 
         if (sectionId != null) {
             TopicSection section = topicSectionRepository.findById(sectionId).orElse(null);
@@ -104,8 +108,9 @@ public class TopicService {
     // "♻️ Tiklash" bilan bir zumda qaytadi (CourseService.deleteCourse
     // bilan bir xil g'oya).
     @Transactional
-    public void removeTopic(Long topicId) {
+    public void removeTopic(Long topicId, User currentUser) {
         Topic topic = getTopicOrThrow(topicId);
+        scienceService.checkCanManage(topic.getScience(), currentUser);
         topic.setDeletedAt(LocalDateTime.now());
         topicRepository.save(topic);
     }
@@ -117,7 +122,9 @@ public class TopicService {
     // (TopicService.updateTopic'dagi bilan bir xil qoida — faqat kurs
     // ichidan boshqariladi).
     @Transactional
-    public int deleteQuestionlessTopics(Long scienceId) {
+    public int deleteQuestionlessTopics(Long scienceId, User currentUser) {
+        scienceService.requireManageableScience(scienceId, currentUser);
+
         Set<Long> linkedTopicIds = courseSectionRepository.findLinkedCourseTitlesByScienceId(scienceId)
                 .stream()
                 .map(TopicCourseTitleDto::topicId)
@@ -146,8 +153,9 @@ public class TopicService {
     // "♻️ Tiklash" — mavzuni savatdan qaytaradi, savollari avtomatik yana
     // ko'rinadigan bo'ladi (ular hech qachon o'chirilmagan edi).
     @Transactional
-    public void restoreTopic(Long topicId) {
+    public void restoreTopic(Long topicId, User currentUser) {
         Topic topic = getAnyTopicOrThrow(topicId);
+        scienceService.checkCanManage(topic.getScience(), currentUser);
         if (topic.getDeletedAt() == null) {
             throw new IllegalArgumentException("❌ Bu mavzu o'chirilmagan — tiklashning hojati yo'q.");
         }
@@ -160,8 +168,9 @@ public class TopicService {
     // yo'qligi uchun) ANIQ, alohida o'chiriladi (aks holda "egasiz" bo'lib
     // qolib ketardi).
     @Transactional
-    public void permanentlyDeleteTopic(Long topicId) {
+    public void permanentlyDeleteTopic(Long topicId, User currentUser) {
         Topic topic = getAnyTopicOrThrow(topicId);
+        scienceService.checkCanManage(topic.getScience(), currentUser);
         if (topic.getDeletedAt() == null) {
             throw new IllegalArgumentException(
                     "❌ Bu mavzuni butunlay o'chirishdan oldin, avval oddiy \"O'chirish\" orqali savatga o'tkazish kerak.");
@@ -205,7 +214,7 @@ public class TopicService {
     }
 
     @Transactional
-    public void updateTopic(Long id, String name) {
+    public void updateTopic(Long id, String name, User currentUser) {
 
         validation.textFieldMustNotBeEmpty(name);
 
@@ -219,6 +228,7 @@ public class TopicService {
         // bu so'ralmagan.
         Topic existing = topicRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("❌Mavzu topilmadi."));
+        scienceService.checkCanManage(existing.getScience(), currentUser);
 
         if (!existing.getName().equals(name)) {
             // Kursga bog'langan mavzu (ya'ni unga ishora qiluvchi
@@ -241,7 +251,9 @@ public class TopicService {
     // saralashdan keyin) — biz orderIndex'larni 1'dan qayta hisoblaymiz
     // (TopicSectionService.reorderSections bilan bir xil andoza).
     @Transactional
-    public void reorderTopics(Long scienceId, List<Long> orderedTopicIds) {
+    public void reorderTopics(Long scienceId, List<Long> orderedTopicIds, User currentUser) {
+        scienceService.requireManageableScience(scienceId, currentUser);
+
         List<Topic> topics = topicRepository.findByScience_IdAndDeletedAtIsNullOrderByOrderIndexAsc(scienceId);
         Map<Long, Topic> byId = new LinkedHashMap<>();
         for (Topic t : topics) {

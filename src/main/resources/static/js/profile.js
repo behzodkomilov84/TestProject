@@ -50,7 +50,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("cancel-jobtitle").addEventListener("click", cancelJobTitleEdit);
 
     document.getElementById("avatar-file-input").addEventListener("change", uploadAvatar);
-    document.getElementById("avatar-telegram-sync-btn").addEventListener("click", syncAvatarFromTelegram);
     document.getElementById("telegram-disconnect-btn").addEventListener("click", disconnectTelegram);
 });
 
@@ -83,7 +82,6 @@ function renderAvatar(avatarUrl) {
 
 function renderTelegramStatus(connected, telegramUsername) {
     const el = document.getElementById("telegram-status");
-    const syncBtn = document.getElementById("avatar-telegram-sync-btn");
     const disconnectBtn = document.getElementById("telegram-disconnect-btn");
 
     // "@username" — qaysi Telegram hisobiga bog'langanini foydalanuvchi
@@ -98,7 +96,6 @@ function renderTelegramStatus(connected, telegramUsername) {
         ? `<span class="telegram-status-chip telegram-status-connected">${label}</span>`
         : `<span class="telegram-status-chip telegram-status-disconnected">${label}</span>`;
 
-    syncBtn.style.display = connected ? "inline-block" : "none";
     disconnectBtn.style.display = connected ? "inline" : "none";
 }
 
@@ -304,23 +301,6 @@ function uploadAvatar(e) {
         })
         .catch(err => showAlertModal(err.message || "Rasmni yuklashda xatolik"))
         .finally(() => { e.target.value = ""; });
-}
-
-function syncAvatarFromTelegram() {
-    fetch("/api/profile/avatar/sync-telegram", {method: "POST"})
-        .then(async r => {
-            if (!r.ok) {
-                const data = await r.json().catch(() => ({}));
-                throw new Error(data.error || "Xatolik yuz berdi");
-            }
-            return r.json();
-        })
-        .then(data => {
-            currentProfile.avatarUrl = data.avatarUrl;
-            renderAvatar(data.avatarUrl);
-            showAlertModal("✅ Telegram profilidagi rasm yuklandi");
-        })
-        .catch(err => showAlertModal(err.message || "Telegramdan rasm olishda xatolik"));
 }
 
 function enableEditUsername() {

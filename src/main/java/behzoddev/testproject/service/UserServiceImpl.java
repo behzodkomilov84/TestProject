@@ -28,6 +28,7 @@ import behzoddev.testproject.entity.enums.RoleAuditSource;
 import behzoddev.testproject.exception.PasswordsDoNotMatchException;
 import behzoddev.testproject.exception.UserAlreadyExistsException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -53,6 +54,13 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     private final RoleAuditService roleAuditService;
     private final EmailVerificationService emailVerificationService;
     private final PhoneNumberService phoneNumberService;
+
+    // Saytning haqiqiy egasi (Behzod Komilov) — ID orqali, username/ism
+    // emas (ikkalasi ham keyinchalik o'zgarishi mumkin). addRole/removeRole
+    // shu hisobning rolini HECH KIM (o'zi ham) o'zgartira olmasligini
+    // ta'minlaydi (foydalanuvchi so'rovi, 2026-09-08).
+    @Value("${app.protected-owner-user-id}")
+    private Long protectedOwnerUserId;
     // Foydalanuvchini o'chirishdan OLDIN tozalanadigan "yengil" (ephemeral/
     // audit) jadvallar — deleteUser() ichida. Har biri FK RESTRICT bo'lgani
     // uchun (haqiqiy topilgan bug, 2026-09-06 — avval "notifications",
@@ -220,6 +228,12 @@ public class UserServiceImpl implements UserDetailsService, UserService {
             throw new AccessDeniedException("⛔ Siz o'z rolingizni o'zgartira olmaysiz.");
         }
 
+        // Saytning haqiqiy egasi — hech kim (boshqa OWNER ham) rolini
+        // o'zgartira olmaydi (foydalanuvchi so'rovi, 2026-09-08).
+        if (protectedOwnerUserId.equals(targetUserId)) {
+            throw new AccessDeniedException("⛔ Bu hisobning rolini o'zgartirib bo'lmaydi.");
+        }
+
         User targetUser = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new RuntimeException("⛔ Foydalanuvchi topilmadi"));
 
@@ -247,6 +261,12 @@ public class UserServiceImpl implements UserDetailsService, UserService {
 
         if (currentUser.getId().equals(targetUserId)) {
             throw new AccessDeniedException("⛔ Siz o'z rolingizni o'zgartira olmaysiz.");
+        }
+
+        // Saytning haqiqiy egasi — hech kim (boshqa OWNER ham) rolini
+        // o'zgartira olmaydi (foydalanuvchi so'rovi, 2026-09-08).
+        if (protectedOwnerUserId.equals(targetUserId)) {
+            throw new AccessDeniedException("⛔ Bu hisobning rolini o'zgartirib bo'lmaydi.");
         }
 
         User targetUser = userRepository.findById(targetUserId)

@@ -54,9 +54,11 @@ class TelegramQuestionImportServiceTest {
     @InjectMocks
     private TelegramQuestionImportService importService;
 
+    private User teacher;
+
     @BeforeEach
     void setUp() {
-        User teacher = User.builder().id(1L).username("teacher1").telegramId(CHAT_ID).build();
+        teacher = User.builder().id(1L).username("teacher1").telegramId(CHAT_ID).build();
         lenient().when(userRepository.findByTelegramId(CHAT_ID)).thenReturn(java.util.Optional.of(teacher));
         lenient().when(autoLoginService.buildLoginUrl(any(), any()))
                 .thenReturn("https://study-grow.uz/telegram-auto-login?token=stub");
@@ -131,7 +133,7 @@ class TelegramQuestionImportServiceTest {
     @Test
     void importFile_success_reportsImportedCountAndClearsSession() {
         when(sessionService.getTempData(CHAT_ID)).thenReturn(Map.of("tg_importTopicId", "42"));
-        when(excelService.importQuestions(any(MultipartFile.class), eq(42L)))
+        when(excelService.importQuestions(any(MultipartFile.class), eq(42L), eq(teacher)))
                 .thenReturn(new ImportResultDto(true, 5L, List.of()));
 
         SendMessage msg = importService.importFile(CHAT_ID, "content".getBytes(), "questions.xlsx");
@@ -143,7 +145,7 @@ class TelegramQuestionImportServiceTest {
     @Test
     void importFile_partialFailure_listsRowErrors() {
         when(sessionService.getTempData(CHAT_ID)).thenReturn(Map.of("tg_importTopicId", "42"));
-        when(excelService.importQuestions(any(MultipartFile.class), eq(42L)))
+        when(excelService.importQuestions(any(MultipartFile.class), eq(42L), eq(teacher)))
                 .thenReturn(new ImportResultDto(false, 2L, List.of("Row 3: xato")));
 
         SendMessage msg = importService.importFile(CHAT_ID, "content".getBytes(), "questions.xlsx");

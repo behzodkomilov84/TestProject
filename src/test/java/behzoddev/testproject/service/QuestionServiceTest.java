@@ -9,7 +9,10 @@ import behzoddev.testproject.dto.question.QuestionSaveDto;
 import behzoddev.testproject.dto.question.QuestionShortDto;
 import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Question;
+import behzoddev.testproject.entity.Role;
+import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
+import behzoddev.testproject.entity.User;
 import behzoddev.testproject.mapper.AnswerMapper;
 import behzoddev.testproject.mapper.QuestionMapper;
 import behzoddev.testproject.validation.Validation;
@@ -18,13 +21,17 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -34,6 +41,8 @@ import static org.mockito.Mockito.when;
  * emas, QuestionService'ning ular bilan qanday ishlashini tekshiramiz).
  * Validation — haqiqiy klass (faqat uning AnswerService bog'liqligi mock
  * qilinadi), shunda dublikat/bo'sh-maydon tekshiruvlari qayta yozilmaydi.
+ * ScienceService — mock (egalik tekshiruvi ScienceServiceTest'da alohida
+ * qamrab olingan, bu yerda faqat wiring/bog'lanish tekshiriladi).
  */
 @ExtendWith(MockitoExtension.class)
 class QuestionServiceTest {
@@ -50,15 +59,21 @@ class QuestionServiceTest {
     private AnswerMapper answerMapper;
     @Mock
     private AnswerService answerService;
+    @Mock
+    private ScienceService scienceService;
 
     private QuestionService questionService;
+    private User admin;
 
     @BeforeEach
     void setUp() {
         Validation validation = new Validation(answerService);
         questionService = new QuestionService(answerRepository, questionRepository, topicRepository,
-                questionMapper, answerMapper, validation);
+                questionMapper, answerMapper, validation, scienceService);
         lenientIsUniqueTrueByDefault();
+
+        admin = User.builder().id(50L).username("admin1").roles(new HashSet<>(Set.of(
+                Role.builder().id(2L).roleName("ROLE_ADMIN").build()))).build();
     }
 
     private void lenientIsUniqueTrueByDefault() {
@@ -165,7 +180,7 @@ class QuestionServiceTest {
         when(topicRepository.findById(1L)).thenReturn(Optional.of(topic));
         when(questionRepository.save(mapped)).thenReturn(mapped);
 
-        Question result = questionService.saveQuestion(1L, dto);
+        Question result = questionService.saveQuestion(1L, dto, admin);
 
         assertThat(result.getTopic()).isEqualTo(topic);
         assertThat(a1.getQuestion()).isEqualTo(mapped);
@@ -173,10 +188,24 @@ class QuestionServiceTest {
     }
 
     @Test
+    void saveQuestion_unmanageableScience_throwsAndDoesNotSave() {
+        Science science = Science.builder().id(9L).build();
+        Topic topic = Topic.builder().id(1L).name("Mavzu").science(science).build();
+        QuestionShortDto dto = new QuestionShortDto("Yangi savol", null, List.of(answer("A", true)));
+        when(topicRepository.findById(1L)).thenReturn(Optional.of(topic));
+        doThrow(new AccessDeniedException("⛔")).when(scienceService).checkCanManage(science, admin);
+
+        assertThatThrownBy(() -> questionService.saveQuestion(1L, dto, admin))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(questionRepository, org.mockito.Mockito.never()).save(any());
+    }
+
+    @Test
     void saveQuestion_blankQuestionText_throwsBeforeMapping() {
         QuestionShortDto dto = new QuestionShortDto("   ", null, List.of());
 
-        assertThatThrownBy(() -> questionService.saveQuestion(1L, dto))
+        assertThatThrownBy(() -> questionService.saveQuestion(1L, dto, admin))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("bo'sh bo'lishi mumkin emas");
     }
@@ -189,8 +218,9 @@ class QuestionServiceTest {
         Answer blankAnswer = Answer.builder().answerText("").isTrue(true).commentary("izoh").build();
         Question mapped = Question.builder().questionText("Savol").answers(List.of(blankAnswer)).build();
         when(questionMapper.mapQuestionShortDtoToQuestion(dto)).thenReturn(mapped);
+        when(topicRepository.findById(1L)).thenReturn(Optional.of(topic));
 
-        assertThatThrownBy(() -> questionService.saveQuestion(1L, dto))
+        assertThatThrownBy(() -> questionService.saveQuestion(1L, dto, admin))
                 .isInstanceOf(IllegalArgumentException.class);
 
         verify(questionRepository, org.mockito.Mockito.never()).save(any());
@@ -200,10 +230,11 @@ class QuestionServiceTest {
 
     @Test
     void deleteQuestion_softDeletes_doesNotHardDelete() {
-        Question question = Question.builder().id(5L).questionText("Savol").build();
+        Question question = Question.builder().id(5L).questionText("Savol")
+                .topic(Topic.builder().id(1L).build()).build();
         when(questionRepository.findById(5L)).thenReturn(Optional.of(question));
 
-        questionService.deleteQuestion(5L);
+        questionService.deleteQuestion(5L, admin);
 
         assertThat(question.getDeletedAt()).isNotNull();
         verify(questionRepository).save(question);
@@ -214,8 +245,22 @@ class QuestionServiceTest {
     void deleteQuestion_notFound_throws() {
         when(questionRepository.findById(5L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> questionService.deleteQuestion(5L))
+        assertThatThrownBy(() -> questionService.deleteQuestion(5L, admin))
                 .isInstanceOf(java.util.NoSuchElementException.class);
+    }
+
+    @Test
+    void deleteQuestion_unmanageableScience_throws() {
+        Science science = Science.builder().id(9L).build();
+        Question question = Question.builder().id(5L).questionText("Savol")
+                .topic(Topic.builder().id(1L).science(science).build()).build();
+        when(questionRepository.findById(5L)).thenReturn(Optional.of(question));
+        doThrow(new AccessDeniedException("⛔")).when(scienceService).checkCanManage(science, admin);
+
+        assertThatThrownBy(() -> questionService.deleteQuestion(5L, admin))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(questionRepository, org.mockito.Mockito.never()).save(any());
     }
 
     // ===== restoreQuestion =====
@@ -223,10 +268,11 @@ class QuestionServiceTest {
     @Test
     void restoreQuestion_clearsDeletedAt() {
         Question question = Question.builder().id(5L).questionText("Savol")
+                .topic(Topic.builder().id(1L).build())
                 .deletedAt(java.time.LocalDateTime.now()).build();
         when(questionRepository.findById(5L)).thenReturn(Optional.of(question));
 
-        questionService.restoreQuestion(5L);
+        questionService.restoreQuestion(5L, admin);
 
         assertThat(question.getDeletedAt()).isNull();
         verify(questionRepository).save(question);
@@ -234,10 +280,11 @@ class QuestionServiceTest {
 
     @Test
     void restoreQuestion_notDeleted_throws() {
-        Question question = Question.builder().id(5L).questionText("Savol").build();
+        Question question = Question.builder().id(5L).questionText("Savol")
+                .topic(Topic.builder().id(1L).build()).build();
         when(questionRepository.findById(5L)).thenReturn(Optional.of(question));
 
-        assertThatThrownBy(() -> questionService.restoreQuestion(5L))
+        assertThatThrownBy(() -> questionService.restoreQuestion(5L, admin))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("o'chirilmagan");
     }
@@ -247,20 +294,22 @@ class QuestionServiceTest {
     @Test
     void permanentlyDeleteQuestion_softDeletedQuestion_hardDeletes() {
         Question question = Question.builder().id(5L).questionText("Savol")
+                .topic(Topic.builder().id(1L).build())
                 .deletedAt(java.time.LocalDateTime.now()).build();
         when(questionRepository.findById(5L)).thenReturn(Optional.of(question));
 
-        questionService.permanentlyDeleteQuestion(5L);
+        questionService.permanentlyDeleteQuestion(5L, admin);
 
         verify(questionRepository).delete(question);
     }
 
     @Test
     void permanentlyDeleteQuestion_notYetSoftDeleted_throws() {
-        Question question = Question.builder().id(5L).questionText("Savol").build();
+        Question question = Question.builder().id(5L).questionText("Savol")
+                .topic(Topic.builder().id(1L).build()).build();
         when(questionRepository.findById(5L)).thenReturn(Optional.of(question));
 
-        assertThatThrownBy(() -> questionService.permanentlyDeleteQuestion(5L))
+        assertThatThrownBy(() -> questionService.permanentlyDeleteQuestion(5L, admin))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("savatga o'tkazish");
     }

@@ -1,7 +1,6 @@
 package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.CourseSectionRepository;
-import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
 import behzoddev.testproject.dto.section.TopicSectionCourseTitleDto;
@@ -9,8 +8,10 @@ import behzoddev.testproject.dto.section.TopicSectionIdAndNameDto;
 import behzoddev.testproject.dto.section.TopicSectionNameDto;
 import behzoddev.testproject.dto.section.TopicSectionTrashDto;
 import behzoddev.testproject.entity.CourseSection;
+import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
 import behzoddev.testproject.entity.TopicSection;
+import behzoddev.testproject.entity.User;
 import behzoddev.testproject.mapper.TopicSectionMapper;
 import behzoddev.testproject.validation.Validation;
 import lombok.RequiredArgsConstructor;
@@ -34,10 +35,10 @@ public class TopicSectionService {
 
     private final TopicSectionRepository topicSectionRepository;
     private final TopicRepository topicRepository;
-    private final ScienceRepository scienceRepository;
     private final CourseSectionRepository courseSectionRepository;
     private final TopicSectionMapper topicSectionMapper;
     private final Validation validation;
+    private final ScienceService scienceService;
 
     @Transactional(readOnly = true)
     public List<TopicSectionIdAndNameDto> getSectionsByScienceId(Long scienceId) {
@@ -62,8 +63,9 @@ public class TopicSectionService {
     }
 
     @Transactional
-    public TopicSection saveSection(Long scienceId, TopicSectionNameDto dto) {
+    public TopicSection saveSection(Long scienceId, TopicSectionNameDto dto, User currentUser) {
         validation.textFieldMustNotBeEmpty(dto.name());
+        Science science = scienceService.requireManageableScience(scienceId, currentUser);
 
         if (topicSectionRepository.existsByScience_IdAndNameIgnoreCase(scienceId, dto.name().trim())) {
             throw new IllegalArgumentException("❌Bu nomdagi bo'lim allaqachon mavjud.");
@@ -71,7 +73,7 @@ public class TopicSectionService {
 
         TopicSection section = topicSectionMapper.mapNameDtoToTopicSection(dto);
         section.setName(dto.name().trim());
-        section.setScience(scienceRepository.findById(scienceId).orElse(null));
+        section.setScience(science);
 
         int nextOrder = topicSectionRepository.findMaxOrderIndexByScienceId(scienceId) != null
                 ? topicSectionRepository.findMaxOrderIndexByScienceId(scienceId) + 1
@@ -82,11 +84,12 @@ public class TopicSectionService {
     }
 
     @Transactional
-    public void updateSectionName(Long id, String name) {
+    public void updateSectionName(Long id, String name, User currentUser) {
         validation.textFieldMustNotBeEmpty(name);
 
         TopicSection section = topicSectionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("❌Bo'lim topilmadi."));
+        scienceService.checkCanManage(section.getScience(), currentUser);
 
         // Kursga bog'langan bo'lim (ya'ni ichida kursga bog'langan mavzu
         // bor) shu yerdan (TEST BOSHQARUVI) nomini o'zgartirib bo'lmaydi —
@@ -110,8 +113,9 @@ public class TopicSectionService {
     // o'chirilmaydi, mavzulari HAM tegilmay saqlanadi — "♻️ Tiklash"
     // bilan bir zumda qaytadi.
     @Transactional
-    public void removeSection(Long sectionId) {
+    public void removeSection(Long sectionId, User currentUser) {
         TopicSection section = getSectionOrThrow(sectionId);
+        scienceService.checkCanManage(section.getScience(), currentUser);
         section.setDeletedAt(LocalDateTime.now());
         topicSectionRepository.save(section);
     }
@@ -125,8 +129,9 @@ public class TopicSectionService {
     // "♻️ Tiklash" — Bo'limni savatdan qaytaradi, mavzulari avtomatik
     // yana ko'rinadigan bo'ladi (ular hech qachon o'chirilmagan edi).
     @Transactional
-    public void restoreSection(Long sectionId) {
+    public void restoreSection(Long sectionId, User currentUser) {
         TopicSection section = getAnySectionOrThrow(sectionId);
+        scienceService.checkCanManage(section.getScience(), currentUser);
         if (section.getDeletedAt() == null) {
             throw new IllegalArgumentException("❌ Bu bo'lim o'chirilmagan — tiklashning hojati yo'q.");
         }
@@ -138,8 +143,9 @@ public class TopicSectionService {
     // nisbatan. QAYTARIB BO'LMAYDI: mavzular O'ZI o'chmaydi (topics.
     // section_id FK "ON DELETE SET NULL" — bo'limsiz bo'lib qoladi).
     @Transactional
-    public void permanentlyDeleteSection(Long sectionId) {
+    public void permanentlyDeleteSection(Long sectionId, User currentUser) {
         TopicSection section = getAnySectionOrThrow(sectionId);
+        scienceService.checkCanManage(section.getScience(), currentUser);
         if (section.getDeletedAt() == null) {
             throw new IllegalArgumentException(
                     "❌ Bu bo'limni butunlay o'chirishdan oldin, avval oddiy \"O'chirish\" orqali savatga o'tkazish kerak.");
@@ -177,7 +183,9 @@ public class TopicSectionService {
     // tekshiruv shart emas — mavzu bo'lmasa (topicCount==0), demak shu
     // bo'lim orqali hech qanday mavzu kursga ham bog'lanmagan bo'ladi.
     @Transactional
-    public int deleteEmptySections(Long scienceId) {
+    public int deleteEmptySections(Long scienceId, User currentUser) {
+        scienceService.requireManageableScience(scienceId, currentUser);
+
         List<Long> emptyIds = topicSectionRepository.findByScienceIdOrderByOrderIndex(scienceId).stream()
                 .filter(s -> s.topicCount() == 0)
                 .map(TopicSectionIdAndNameDto::id)
@@ -196,7 +204,9 @@ public class TopicSectionService {
     // orderIndex'larni 1'dan qayta hisoblaymiz (CourseService.reorderSections
     // bilan bir xil andoza).
     @Transactional
-    public void reorderSections(Long scienceId, List<Long> orderedSectionIds) {
+    public void reorderSections(Long scienceId, List<Long> orderedSectionIds, User currentUser) {
+        scienceService.requireManageableScience(scienceId, currentUser);
+
         List<TopicSection> sections = topicSectionRepository.findByScience_IdOrderByOrderIndexAsc(scienceId);
         Map<Long, TopicSection> byId = new LinkedHashMap<>();
         for (TopicSection s : sections) {
@@ -219,9 +229,10 @@ public class TopicSectionService {
     // saqlash ishlatiladi — "t.section = :sectionId" null bilan JPQL'da
     // ishonchsiz ishlaydi, shu sabab ataylab shu yo'l tanlangan.
     @Transactional
-    public void assignTopicToSection(Long topicId, Long sectionId) {
+    public void assignTopicToSection(Long topicId, Long sectionId, User currentUser) {
         Topic topic = topicRepository.findById(topicId)
                 .orElseThrow(() -> new IllegalArgumentException("❌Mavzu topilmadi."));
+        scienceService.checkCanManage(topic.getScience(), currentUser);
 
         // Kursga bog'langan mavzu (ya'ni unga ishora qiluvchi CourseSection
         // bor) — Bo'limini ham shu yerdan (TEST BOSHQARUVI) o'zgartirib
