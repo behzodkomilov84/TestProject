@@ -42,8 +42,17 @@ public class ProfileController {
     private final PhoneNumberService phoneNumberService;
 
     // 1️⃣ Профиль
+    // HAQIQIY topilgan bug (2026-09-08): @AuthenticationPrincipal — HTTP
+    // sessiyaga LOGIN vaqtida saqlangan ESKI nusxa, shu safar so'rovda
+    // bazadan qayta o'qilmaydi. Shu sabab profilni PATCH qilingandan keyin
+    // (masalan profile-gate.js modali orqali) ham, o'sha sessiya davomida
+    // bu yer hamon ESKI qiymatlarni qaytarardi — yozuvning o'zi to'g'ri
+    // ishlagan bo'lsa ham, "saqlanmadi" degan noto'g'ri taassurot qoldirib
+    // (ProfileService.fresh() izohiga qarang). Endi har doim bazadan
+    // yangi nusxa o'qiladi.
     @GetMapping
-    public ProfileDto getProfile(@AuthenticationPrincipal User user) {
+    public ProfileDto getProfile(@AuthenticationPrincipal User principal) {
+        User user = profileService.getFreshUser(principal);
         String phone = user.getPhoneNumber();
 
         return new ProfileDto(

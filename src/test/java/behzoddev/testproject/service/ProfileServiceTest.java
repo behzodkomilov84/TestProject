@@ -181,4 +181,31 @@ class ProfileServiceTest {
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.isFirst()).isTrue();
     }
+
+    // ===== getFreshUser =====
+    // Haqiqiy topilgan bug (2026-09-08): GET /api/profile ilgari ESKI
+    // (sessiyaga login vaqtida saqlangan) @AuthenticationPrincipal'dan
+    // to'g'ridan-to'g'ri DTO qurardi, bazadan qayta o'qimasdi — shu sabab
+    // profil PATCH qilingandan keyin (masalan profile-gate.js modali
+    // orqali) ham o'sha sessiya davomida ESKI qiymatlarni qaytarardi.
+
+    @Test
+    void getFreshUser_reloadsFromDatabase_notStaleSessionCopy() {
+        User staleSessionUser = User.builder().id(1L).workplace(null).build();
+        User freshFromDb = User.builder().id(1L).workplace("36-maktab").build();
+        when(userRepository.findById(1L)).thenReturn(Optional.of(freshFromDb));
+
+        User result = profileService.getFreshUser(staleSessionUser);
+
+        assertThat(result.getWorkplace()).isEqualTo("36-maktab");
+    }
+
+    @Test
+    void getFreshUser_userDeleted_throws() {
+        User staleSessionUser = User.builder().id(1L).build();
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> profileService.getFreshUser(staleSessionUser))
+                .isInstanceOf(ResponseStatusException.class);
+    }
 }

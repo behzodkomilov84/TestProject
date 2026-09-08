@@ -74,6 +74,20 @@ public class ProfileService {
                 .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Foydalanuvchi topilmadi"));
     }
 
+    // ProfileController#getProfile (GET /api/profile) shu izohda tasvirlangan
+    // XUDDI SHU bug'ga uchragan edi — DTO to'g'ridan-to'g'ri ESKI (sessiyaga
+    // login vaqtida saqlangan) @AuthenticationPrincipal'dan qurilardi, hech
+    // qachon bazadan qayta o'qilmasdi. Natijada: foydalanuvchi profil
+    // to'ldirish modalida ma'lumotni MUVAFFAQIYATLI saqlagandan keyin ham
+    // (yozuv o'zi to'g'ri ishlagan — sababi shu), o'sha sessiya davomida GET
+    // /api/profile hamon ESKI (bo'sh) qiymatlarni qaytarardi — bu "ma'lumot
+    // saqlanmadi" degan noto'g'ri taassurot qoldirardi (haqiqiy yozuv
+    // muvaffaqiyatli bo'lsa ham). Endi shu yordamchi orqali GET ham har
+    // doim bazadan yangi nusxa o'qiydi (foydalanuvchi so'rovi, 2026-09-08).
+    public User getFreshUser(User user) {
+        return fresh(user);
+    }
+
     // 🔹 смена имени
     @Transactional
     public void changeUsername(User user, ChangeUsernameDto changeUsernameDto) {
