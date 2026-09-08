@@ -50,6 +50,23 @@ body {
     -webkit-overflow-scrolling: touch;
 }
 
+/* Jadval tepasidagi ko'zgu (mirror) gorizontal scroll — jadval ko'p
+   qatorli bo'lganda, pastdagi scrollbar'gacha aylantirmasdan ham
+   gorizontal siljitish mumkin bo'lishi uchun (foydalanuvchi so'rovi,
+   2026-09-08). Ichidagi .table-scroll-top-inner'ning kengligi JS orqali
+   haqiqiy jadval kengligiga moslanadi — o'zi hech narsa ko'rsatmaydi,
+   faqat scrollbar hosil qilish uchun. table-scroll-top-sync.js bilan
+   ikki tomonlama sinxronlanadi. */
+.table-scroll-top {
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 17px;
+}
+
+.table-scroll-top-inner {
+    height: 1px;
+}
+
 /* Font kichiklashtirildi (22px -> 13px) va to'liq border qo'shildi —
    foydalanuvchi so'rovi, 2026-09-06: ustunlar soni ko'payib (barcha
    users jadval ustunlari), eski katta shrift bilan jadval o'qish

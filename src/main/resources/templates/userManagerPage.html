@@ -73,7 +73,15 @@
         </div>
     </div>
 
-    <div class="table-scroll">
+    <!-- Ustki gorizontal scroll — jadval uzun (ko'p qator) bo'lganda
+         pastki scrollbar'gacha aylantirmasdan, tepadan ham gorizontal
+         siljitish mumkin bo'lishi uchun (foydalanuvchi so'rovi,
+         2026-09-08). Kengligi table-scroll-top-sync.js orqali haqiqiy
+         jadval kengligiga moslanadi, ikkalasi bir-biriga sinxronlanadi. -->
+    <div class="table-scroll-top" id="usersTableScrollTop">
+        <div class="table-scroll-top-inner" id="usersTableScrollTopInner"></div>
+    </div>
+    <div class="table-scroll" id="usersTableScroll">
     <table class="users-table">
         <thead>
         <tr>

@@ -141,6 +141,46 @@ function renderUsers(users, subscriptions) {
 
         tbody.appendChild(tr);
     });
+
+    syncTopScrollWidth();
+}
+
+// Jadval tepasidagi ko'zgu (mirror) gorizontal scroll — pastki
+// .table-scroll bilan bir xil kengroq ichki elementga ega bo'lib,
+// ikkalasi bir-biriga scrollLeft orqali sinxronlanadi (foydalanuvchi
+// so'rovi, 2026-09-08: "gorizontal scroll'ni jadval tepasiga ham
+// qo'yish kerak").
+let topScrollSyncInitialized = false;
+
+function syncTopScrollWidth() {
+    const table = document.querySelector(".users-table");
+    const topInner = document.getElementById("usersTableScrollTopInner");
+    if (!table || !topInner) return;
+
+    topInner.style.width = table.scrollWidth + "px";
+
+    if (topScrollSyncInitialized) return;
+    topScrollSyncInitialized = true;
+
+    const topScroll = document.getElementById("usersTableScrollTop");
+    const bottomScroll = document.getElementById("usersTableScroll");
+    let syncing = false;
+
+    topScroll.addEventListener("scroll", () => {
+        if (syncing) return;
+        syncing = true;
+        bottomScroll.scrollLeft = topScroll.scrollLeft;
+        syncing = false;
+    });
+
+    bottomScroll.addEventListener("scroll", () => {
+        if (syncing) return;
+        syncing = true;
+        topScroll.scrollLeft = bottomScroll.scrollLeft;
+        syncing = false;
+    });
+
+    window.addEventListener("resize", syncTopScrollWidth);
 }
 
 async function toggleRole(userId, roleName, checkbox) {
