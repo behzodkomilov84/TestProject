@@ -66,7 +66,11 @@ main {
 }
 
 .hero-slide {
-    min-height: 420px;
+    /* height (min-height emas) — barcha slaydlar bir xil balandlikda
+       turishi uchun (aks holda slayd almashganda balandlik o'zgarib,
+       pastdagi bo'limlar sakrab/ko'zni qamashtirib turardi). */
+    height: 440px;
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -297,7 +301,12 @@ main {
     color: white;
 }
 
-/* ===== 4) KURSLAR VITRINASI ===== */
+/* ===== 4) KURSLAR VITRINASI =====
+   Har bir slayd (kurs) turli uzunlikdagi sarlavha/tavsif/muallif bilan
+   keladi — min-height o'rniga QATTIQ height qo'yilgan, aks holda
+   slayd almashganda balandlik o'zgarib, pastdagi bo'limlar sakrab
+   turardi. h3/desc/author overflow bilan kesilib, fixed balandlikka
+   sig'diriladi. */
 .course-slide {
     display: flex;
     flex-wrap: wrap;
@@ -306,12 +315,11 @@ main {
     overflow: hidden;
     box-shadow: 0 10px 28px rgba(0, 0, 0, .08);
     cursor: pointer;
-    min-height: 260px;
+    height: 320px;
 }
 
 .course-slide-cover {
     flex: 1 1 320px;
-    min-height: 260px;
     background: linear-gradient(135deg, #94a3b8, #64748b);
     background-size: cover;
     background-position: center;
@@ -331,6 +339,26 @@ main {
     display: flex;
     flex-direction: column;
     justify-content: center;
+    overflow: hidden;
+}
+
+/* Tor ekranda cover va body ustma-ust joylashadi (flex-wrap) —
+   shu holatda align-items:stretch ishlamaydi, shuning uchun
+   ikkalasiga ham alohida qattiq balandlik beriladi. */
+@media (max-width: 767.98px) {
+    .course-slide {
+        height: 480px;
+    }
+
+    .course-slide-cover {
+        flex: 0 0 180px;
+        height: 180px;
+    }
+
+    .course-slide-body {
+        flex: 1 1 auto;
+        height: 300px;
+    }
 }
 
 .course-slide-badge {
@@ -354,6 +382,10 @@ main {
     margin: 0 0 6px;
     font-size: 22px;
     color: #0d3b34;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .course-slide-author {
@@ -361,6 +393,9 @@ main {
     font-style: italic;
     color: #7c8797;
     margin: 0 0 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .course-slide-desc {
