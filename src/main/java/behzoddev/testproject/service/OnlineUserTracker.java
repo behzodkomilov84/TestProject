@@ -3,6 +3,7 @@ package behzoddev.testproject.service;
 import behzoddev.testproject.dao.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -45,6 +46,15 @@ public class OnlineUserTracker {
     private final Map<Long, Instant> lastSeenByUserId = new ConcurrentHashMap<>();
     private final Map<Long, Instant> lastPersistedByUserId = new ConcurrentHashMap<>();
 
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-09: "Oxirgi
+    // tashrif" ustuni HAR DOIM "—" ko'rsatardi) — @Modifying @Query
+    // metodlar Spring Data'da CRUD metodlaridan farqli, chaqiruvchi
+    // tarafdan TRANSAKSIYA berilishini talab qiladi ("No active
+    // transaction for update or delete query" — jakarta.persistence.
+    // TransactionRequiredException). @Transactional shu yerda, chunki
+    // touch() HAR DOIM tashqaridan (interceptor/bot) chaqiriladi — Spring
+    // proksi shu orqali ishlaydi (o'z-o'zini chaqirish emas).
+    @Transactional
     public void touch(Long userId) {
         if (userId == null) return;
 

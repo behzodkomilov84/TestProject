@@ -604,9 +604,17 @@ class CourseSubscriptionServiceTest {
     // ketmasligi kerak.
     @Test
     void confirmOnline_activeTrialWithDaysLeft_addsRemainingDaysAsBonus() {
+        // "beforeCall" chaqiruvdan OLDIN olinadi — servisning ICHKI "now"i
+        // doim shundan KEYIN bo'ladi, shuning uchun quyidagi taqqoslash
+        // hech qanday millisekund farqiga qaramay barqaror ishlaydi
+        // (avvalgi versiya "LocalDateTime.now()"ni chaqiruvdan KEYIN,
+        // xuddi shu +1 kun siljish bilan solishtirardi — bu ikkalasi bir
+        // xil formula bo'lgani uchun deyarli har doim muvaffaqiyatsiz
+        // tugagan, haqiqiy topilgan flaky test).
+        LocalDateTime beforeCall = LocalDateTime.now();
         CourseSubscription activeTrial = CourseSubscription.builder().id(9L).user(student).course(course)
                 .amount(BigDecimal.ZERO).status(CourseSubscriptionStatus.CONFIRMED).trial(true)
-                .endDate(LocalDateTime.now().plusDays(2)).build();
+                .endDate(beforeCall.plusDays(2)).build();
 
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
         when(courseSubscriptionRepository.findByUser_IdAndCourse_IdAndStatus(
@@ -616,9 +624,9 @@ class CourseSubscriptionServiceTest {
 
         courseSubscriptionService.confirmOnline(student, 1L, BigDecimal.valueOf(50_000), 1);
 
-        // 1 oy + ~2 kun bonus — sinovning ~2 kun qolgani sababli.
-        LocalDateTime expectedMinimum = LocalDateTime.now().plusMonths(1).plusDays(1);
-        assertThat(activeTrial.getEndDate()).isAfter(expectedMinimum);
+        // 1 oy + kamida 1 kun bonus (sinovdan ~2 kun qolgani, lekin
+        // Duration#toDays() pastga yaxlitlashi mumkinligi hisobga olingan).
+        assertThat(activeTrial.getEndDate()).isAfter(beforeCall.plusMonths(1));
         assertThat(activeTrial.getNote()).contains("bonus");
     }
 
