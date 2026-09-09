@@ -95,6 +95,7 @@ public class UserRestController {
                 .jobTitle(u.getPosition())
                 .avatarUrl(u.getAvatarUrl())
                 .createdAt(u.getCreatedAt())
+                .lastSeenAt(u.getLastSeenAt())
                 .build();
     }
 

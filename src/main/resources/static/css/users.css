@@ -42,18 +42,36 @@ body {
     margin-bottom: 20px;
 }
 
-/* "🟢 Onlayn: N / M foydalanuvchi" — foydalanuvchi so'rovi, 2026-09-09.
-   users.js#refreshOnlineStatus har 20 soniyada yangilaydi. */
-.online-stats-bar {
+/* "👥 Jami ro'yxatdan o'tgan" + "🟢 Hozir onlayn" — ikkita alohida
+   ko'rsatkich yonma-yon (foydalanuvchi so'rovi, 2026-09-09: "jami
+   ro'yxatdan o'tgan foydalanuvchilarni ham alohida qo'shib qo'y").
+   users.js#refreshOnlineStatus faqat onlayn chip'ni har 20 soniyada
+   yangilaydi; jami son renderUsers() har safar (loadUsers) yangilaydi. */
+.user-stats-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
     margin: -8px 0 16px;
+}
+
+.user-stat-chip {
     font-size: 13px;
     font-weight: 600;
-    color: #166534;
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
     border-radius: 999px;
     padding: 6px 14px;
     display: inline-block;
+}
+
+.user-stat-chip-total {
+    color: #1e3a8a;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+}
+
+.user-stat-chip-online {
+    color: #166534;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
 }
 
 /* Tor ekranlarda (mobile/tablet) jadval konteynerdan kengroq bo'lib,
@@ -371,6 +389,35 @@ body {
 
 .role.OWNER {
     color: #c62828;
+}
+
+/* "Obuna holati" ustuni — ADMIN-rol obunasi VA kurs obunalarini
+   birlashtirgan umumiy holat (foydalanuvchi so'rovi, 2026-09-09). */
+.sub-status-badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.sub-status-active {
+    color: #166534;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+}
+
+.sub-status-inactive {
+    color: #64748b;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+}
+
+.sub-status-permanent {
+    color: #7c3aed;
+    background: #f5f3ff;
+    border: 1px solid #ddd6fe;
 }
 
 .action-btn {

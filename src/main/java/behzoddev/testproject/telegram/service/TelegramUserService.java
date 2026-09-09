@@ -13,6 +13,7 @@ import behzoddev.testproject.entity.TelegramLinkCode;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.entity.enums.TaskStatus;
 import behzoddev.testproject.service.AssignmentAttemptService;
+import behzoddev.testproject.service.OnlineUserTracker;
 import behzoddev.testproject.service.StudentService;
 import behzoddev.testproject.service.SubscriptionService;
 import behzoddev.testproject.service.TestSessionService;
@@ -47,14 +48,24 @@ public class TelegramUserService {
     private final SubscriptionService subscriptionService;
     private final TestSessionService testSessionService;
     private final StudentService studentService;
+    private final OnlineUserTracker onlineUserTracker;
     public static final DateTimeFormatter DATE_TIME_FORMATTER =
             DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
     // Akkaunt Telegramga ulanganmi — bo'lmasa null (chaqiruvchi tomon
     // "avval ulang" xabarini ko'rsatadi). Ulangan bo'lsa, User qaytariladi —
     // rolga qarab menyu qurish TelegramMenuService'ga tegishli.
+    // "🟢 Onlayn" statistikasi (foydalanuvchi so'rovi, 2026-09-09) — oddiy
+    // MATNLI xabarlar (TelegramBot#onUpdateReceived) aynan shu metod
+    // orqali foydalanuvchini aniqlaydi, shuning uchun "touch" shu yerda —
+    // TelegramBot#getUserByChatId bilan bir xil, faqat callback tugmalar
+    // uchun ishlaydigan boshqa yo'l.
     public User resolveLinkedUser(Long telegramId) {
-        return userRepository.findByTelegramId(telegramId).orElse(null);
+        User user = userRepository.findByTelegramId(telegramId).orElse(null);
+        if (user != null) {
+            onlineUserTracker.touch(user.getId());
+        }
+        return user;
     }
 
     public SendMessage handleMessage(Message msg) {

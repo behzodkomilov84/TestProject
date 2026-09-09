@@ -23,10 +23,16 @@
         <button class="back-btn" onclick="history.back()">← Назад</button>
     </header>
 
-    <!-- "🟢 Hozir onlayn" statistikasi — Telegramga o'xshagan belgi bilan
-         (foydalanuvchi so'rovi, 2026-09-09) — users.js#refreshOnlineStatus
-         orqali har 20 soniyada yangilanadi. -->
-    <p id="onlineStatsBar" class="online-stats-bar">🟢 Onlayn: — / — foydalanuvchi</p>
+    <!-- "🟢 Hozir onlayn" + "👥 Jami ro'yxatdan o'tgan" — ikkalasi ALOHIDA
+         ko'rsatkich sifatida (foydalanuvchi so'rovi, 2026-09-09: "jami
+         ro'yxatdan o'tgan foydalanuvchilarni ham alohida qo'shib qo'y" —
+         avval bitta "N / M" qatorida birlashtirilgan edi).
+         users.js#refreshOnlineStatus har 20 soniyada yangilaydi (faqat
+         onlayn son), jami son esa loadUsers() har safar yangilaydi. -->
+    <div class="user-stats-row">
+        <span id="totalUsersStat" class="user-stat-chip user-stat-chip-total">👥 Jami ro'yxatdan o'tgan: —</span>
+        <span id="onlineStatsBar" class="user-stat-chip user-stat-chip-online">🟢 Hozir onlayn: —</span>
+    </div>
 
     <!-- Foydalanuvchi ma'lumotlarini qo'lda tahrirlash oynasi
          (foydalanuvchi so'rovi, 2026-09-07: "edit ni qo'shish kerak") —
@@ -147,8 +153,9 @@
             <th>Ish/o'qish joyi</th>
             <th>Lavozim</th>
             <th>Role</th>
-            <th>ADMIN muddati</th>
+            <th>Obuna holati</th>
             <th>Ro'yxatdan o'tgan</th>
+            <th>Oxirgi tashrif</th>
             <th>Action</th>
         </tr>
         </thead>

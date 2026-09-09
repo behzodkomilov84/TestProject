@@ -158,6 +158,14 @@ public class User implements UserDetails {
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    // "/users" sahifasida "Oxirgi tashrif vaqti" ustuni (foydalanuvchi
+    // so'rovi, 2026-09-09) — OnlineUserTracker orqali (throttled) bulk
+    // UPDATE bilan yangilanadi (UserRepository#updateLastSeenAt), shu
+    // sabab @Builder.Default/field initializer SHART EMAS — bu yerda
+    // odatiy "yozib saqlash" oqimi (save()) emas, alohida so'rov ishlaydi.
+    @Column(name = "last_seen_at")
+    private LocalDateTime lastSeenAt;
+
     /**
      * Foydalanuvchida berilgan nomdagi rol bor-yo'qligini tekshiradi.
      * Masalan: user.hasRole("ROLE_ADMIN")

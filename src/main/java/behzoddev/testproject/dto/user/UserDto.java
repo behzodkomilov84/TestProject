@@ -30,6 +30,10 @@ public record UserDto(
         String avatarUrl,
         // "Ro'yxatdan o'tgan sana" ustuni (foydalanuvchi so'rovi,
         // 2026-09-09). Eski hisoblarda null bo'lishi mumkin.
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        // "Oxirgi tashrif vaqti" ustuni (foydalanuvchi so'rovi,
+        // 2026-09-09) — OnlineUserTracker orqali yangilanadi, hech qachon
+        // kuzatilmagan bo'lsa null.
+        LocalDateTime lastSeenAt
 ) {
 }

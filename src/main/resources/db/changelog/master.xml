@@ -56,6 +56,7 @@
     <include file="/db/changelog/science-created-by.sql"/>
     <include file="/db/changelog/course-subscription-trial.sql"/>
     <include file="/db/changelog/user-created-at.sql"/>
+    <include file="/db/changelog/user-last-seen-at.sql"/>
 
 
 </databaseChangeLog>

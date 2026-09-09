@@ -2,7 +2,11 @@ package behzoddev.testproject.dao;
 
 import behzoddev.testproject.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -58,5 +62,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     boolean existsByGoogleIdAndIdNot(String googleId, Long id);
 
     boolean existsByFacebookIdAndIdNot(String facebookId, Long id);
+
+    // "Oxirgi tashrif vaqti" ustuni (foydalanuvchi so'rovi, 2026-09-09) —
+    // OnlineUserTracker orqali (throttled) yangilanadi. Bulk UPDATE
+    // ataylab ishlatilgan — butun User entity'ni yuklab, boshqa
+    // ustunlarni ham qayta yozib (masalan @DynamicUpdate hisobga olsa
+    // ham, ortiqcha SELECT+UPDATE) yubormaslik uchun.
+    @Modifying
+    @Query("UPDATE User u SET u.lastSeenAt = :time WHERE u.id = :id")
+    void updateLastSeenAt(@Param("id") Long id, @Param("time") LocalDateTime time);
 
 }

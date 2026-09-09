@@ -8,6 +8,7 @@ import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.AssignmentAttemptService;
 import behzoddev.testproject.service.NotificationService;
+import behzoddev.testproject.service.OnlineUserTracker;
 import behzoddev.testproject.telegram.service.TelegramAssignmentChatService;
 import behzoddev.testproject.telegram.service.TelegramCourseReaderService;
 import behzoddev.testproject.telegram.service.TelegramMenuService;
@@ -69,6 +70,7 @@ public class TelegramBot extends TelegramLongPollingBot {
     private final TelegramOwnerService ownerService;
     private final TelegramRegistrationService registrationService;
     private final TelegramCourseReaderService courseReaderService;
+    private final OnlineUserTracker onlineUserTracker;
 
     public TelegramBot(
             @Value("${telegram.bot.token}") String token,
@@ -87,7 +89,8 @@ public class TelegramBot extends TelegramLongPollingBot {
             TelegramQuestionImportService questionImportService,
             TelegramOwnerService ownerService,
             TelegramRegistrationService registrationService,
-            TelegramCourseReaderService courseReaderService) {
+            TelegramCourseReaderService courseReaderService,
+            OnlineUserTracker onlineUserTracker) {
         super(token);
         this.token = token;
         this.username = username;
@@ -98,6 +101,7 @@ public class TelegramBot extends TelegramLongPollingBot {
         this.notificationService = notificationService;
         this.sessionService = sessionService;
         this.menuService = menuService;
+        this.onlineUserTracker = onlineUserTracker;
         this.profileService = profileService;
         this.practiceTestService = practiceTestService;
         this.teacherService = teacherService;
@@ -974,10 +978,22 @@ public class TelegramBot extends TelegramLongPollingBot {
         sessionService.putTempData(chatId, COURSE_MSG_IDS_KEY, csv);
     }
 
+    // "🟢 Onlayn" statistikasi (foydalanuvchi so'rovi, 2026-09-09: "Hamma
+    // saytga kirish uchun login orqali kirmaydimi? Qaysi yo'l bilan
+    // kirgan bo'lsa ham") — HAQIQIY TOPILGAN BUG: OnlineUserTracker faqat
+    // veb-saytdagi HTTP so'rovlarni (OnlineUserTrackingInterceptor
+    // orqali) kuzatardi, botdagi harakatlar esa DispatcherServlet/
+    // SecurityContext orqali umuman o'tmaydi — shuning uchun botdan
+    // faol foydalanayotgan userlar "oflayn" ko'rinardi. Bu metod bot
+    // ichida foydalanuvchini aniqlashning YAGONA umumiy nuqtasi bo'lgani
+    // uchun, shu yerda "touch" qilish barcha chaqiruv joylariga (bir necha
+    // o'nlab) alohida-alohida qo'shishning o'rnini bosadi.
     private User getUserByChatId(Long chatId) {
-        return userRepository
+        User user = userRepository
                 .findByTelegramId(chatId)
                 .orElseThrow(() -> new RuntimeException("Foydalanuvchi topilmadi"));
+        onlineUserTracker.touch(user.getId());
+        return user;
     }
 
     @Override

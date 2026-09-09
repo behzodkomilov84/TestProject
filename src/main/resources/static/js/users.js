@@ -26,10 +26,14 @@ function loadUsers() {
             if (!r.ok) throw new Error("403 or not authorized");
             return r.json();
         }),
-        fetch("/api/subscriptions").then(r => r.ok ? r.json() : [])
+        fetch("/api/subscriptions").then(r => r.ok ? r.json() : []),
+        // "Obuna holati" ustuni — ADMIN-rol obunasi bilan bir qatorda,
+        // KURS obunalarini ham hisobga oladi (foydalanuvchi so'rovi,
+        // 2026-09-09: "ikkalasi ham" birlashtirilgan holat).
+        fetch("/api/course-subscriptions").then(r => r.ok ? r.json() : [])
     ])
-        .then(([users, subscriptions]) => {
-            renderUsers(users, subscriptions);
+        .then(([users, subscriptions, courseSubscriptions]) => {
+            renderUsers(users, subscriptions, courseSubscriptions);
         })
         .catch(err => {
             showAlertModal("Ошибка загрузки пользователей");
@@ -37,14 +41,52 @@ function loadUsers() {
         });
 }
 
-// Har bir foydalanuvchi uchun eng so'nggi faol (CONFIRMED, muddati o'tmagan)
-// obunani topadi — ADMIN roli qachongacha amal qilishini ko'rsatish uchun.
-function findActiveSubscription(subscriptions, userId) {
+// Har bir foydalanuvchi uchun BARCHA faol (CONFIRMED, muddati o'tmagan)
+// obunalarni topadi — umumiy so'rov o'lchamdan qat'i nazar bir xil
+// shaklda (userId/status/startDate/endDate) kelgani uchun ADMIN-rol
+// obunasi VA kurs obunalari BIR XIL funksiya bilan tekshiriladi.
+function findActiveSubscriptions(subscriptions, userId) {
     const now = new Date();
+    return subscriptions.filter(s => s.userId === userId && s.status === "CONFIRMED" && s.endDate && new Date(s.endDate) > now);
+}
 
-    return subscriptions
-        .filter(s => s.userId === userId && s.status === "CONFIRMED" && s.endDate && new Date(s.endDate) > now)
-        .sort((a, b) => new Date(b.endDate) - new Date(a.endDate))[0];
+// "🟢 Faol — DD.MM.YYYY – DD.MM.YYYY" / "⚪ Faol emas" — ADMIN-rol
+// obunasi VA kurs obunalarining BARCHASINI birlashtirib, umumiy "hozir
+// biror narsaga to'lab turibdimi" holatini ko'rsatadi (foydalanuvchi
+// so'rovi, 2026-09-09: "статус подписки"). Bir nechta faol obuna bo'lsa —
+// eng ERTA boshlangan va eng KECH tugaydigan sanalar oralig'i ko'rsatiladi.
+function buildSubscriptionStatusHtml(adminSubscriptions, courseSubscriptions, userId) {
+    const active = [
+        ...findActiveSubscriptions(adminSubscriptions, userId),
+        ...findActiveSubscriptions(courseSubscriptions, userId)
+    ];
+
+    if (active.length === 0) {
+        return `<span class="sub-status-badge sub-status-inactive">⚪ Faol emas</span>`;
+    }
+
+    const starts = active.map(s => new Date(s.startDate)).filter(d => !isNaN(d));
+    const ends = active.map(s => new Date(s.endDate)).filter(d => !isNaN(d));
+    const rangeText = starts.length && ends.length
+        ? `${new Date(Math.min(...starts)).toLocaleDateString("uz-UZ")} – ${new Date(Math.max(...ends)).toLocaleDateString("uz-UZ")}`
+        : "";
+    const countText = active.length > 1 ? ` (${active.length} ta)` : "";
+
+    return `<span class="sub-status-badge sub-status-active">🟢 Faol${countText}${rangeText ? " — " + rangeText : ""}</span>`;
+}
+
+// "5 daqiqa oldin" / "2 soat oldin" / "3 kun oldin" — notifications.js'dagi
+// bilan bir xil hisoblash, mustaqil nusxa sifatida (skript yuklanish
+// tartibiga bog'liq bo'lmasin).
+function usersPageTimeAgo(dateStr) {
+    const diffMs = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return "hozir";
+    if (mins < 60) return mins + " daqiqa oldin";
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return hours + " soat oldin";
+    const days = Math.floor(hours / 24);
+    return days + " kun oldin";
 }
 
 function escapeHtml(text) {
@@ -54,11 +96,16 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-function renderUsers(users, subscriptions) {
+function renderUsers(users, subscriptions, courseSubscriptions) {
     const tbody = document.getElementById("usersTableBody");
     tbody.innerHTML = "";
 
     usersById = Object.fromEntries(users.map(u => [u.id, u]));
+
+    // "👥 Jami ro'yxatdan o'tgan" — onlaynlikdan mustaqil, alohida
+    // ko'rsatkich (foydalanuvchi so'rovi, 2026-09-09).
+    document.getElementById("totalUsersStat").textContent =
+        `👥 Jami ro'yxatdan o'tgan: ${users.length}`;
 
     users.forEach(user => {
         const tr = document.createElement("tr");
@@ -80,14 +127,16 @@ function renderUsers(users, subscriptions) {
             `;
         }).join("");
 
-        // ADMIN muddati: agar obuna orqali berilgan bo'lsa — tugash sanasi,
-        // aks holda (obunasiz, checkbox orqali berilgan bo'lsa) "doimiy".
-        let adminDurationText = "—";
-        if (user.roles.includes("ROLE_ADMIN")) {
-            const active = findActiveSubscription(subscriptions, user.id);
-            adminDurationText = active
-                ? "⏳ " + new Date(active.endDate).toLocaleDateString("uz-UZ")
-                : "♾️ doimiy";
+        // "Obuna holati" — ADMIN-rol obunasi VA kurs obunalarining
+        // BARCHASINI birlashtiradi (foydalanuvchi so'rovi, 2026-09-09).
+        // Istisno: ROLE_ADMIN'ga ega, lekin HECH QANDAY faol obunasi
+        // bo'lmagan hisob — bu checkbox orqali qo'lda, obunasiz berilgan
+        // "doimiy" ADMIN degani, "Faol emas" deb ko'rsatish chalg'ituvchi
+        // bo'lardi (eski "ADMIN muddati" ustunidagi "♾️ doimiy" bilan
+        // bir xil ma'no saqlab qolinadi).
+        let subscriptionStatusHtml = buildSubscriptionStatusHtml(subscriptions, courseSubscriptions, user.id);
+        if (subscriptionStatusHtml.includes("sub-status-inactive") && user.roles.includes("ROLE_ADMIN")) {
+            subscriptionStatusHtml = `<span class="sub-status-badge sub-status-permanent">♾️ ADMIN (doimiy)</span>`;
         }
 
         const unlockButtonHtml = user.locked
@@ -123,6 +172,12 @@ function renderUsers(users, subscriptions) {
             ? new Date(user.createdAt).toLocaleDateString("uz-UZ")
             : "—";
 
+        // "Oxirgi tashrif vaqti" (foydalanuvchi so'rovi, 2026-09-09) —
+        // OnlineUserTracker orqali (throttled) yangilanadi, hech qachon
+        // kuzatilmagan bo'lsa (yoki xususiyat qo'shilishidan OLDIN oxirgi
+        // marta kirgan bo'lsa) noma'lum.
+        const lastSeenAtText = user.lastSeenAt ? usersPageTimeAgo(user.lastSeenAt) : "—";
+
         tr.innerHTML = `
             <td class="sticky-col-1">${user.id}</td>
             <td class="sticky-col-2">
@@ -147,8 +202,9 @@ function renderUsers(users, subscriptions) {
             <td>${escapeHtml(user.workplace) || "—"}</td>
             <td>${escapeHtml(user.jobTitle) || "—"}</td>
             <td><div class="roles-cell">${checkboxesHtml}</div></td>
-            <td>${adminDurationText}</td>
+            <td>${subscriptionStatusHtml}</td>
             <td>${createdAtText}</td>
+            <td>${lastSeenAtText}</td>
             <td>
                 <div class="actions-cell">
                     <button class="action-btn" onclick="openEditModal(${user.id})" title="Tahrirlash">✏️</button>
@@ -190,9 +246,10 @@ function refreshOnlineStatus() {
                 if (dot) dot.hidden = false;
             });
 
-            const totalCount = Object.keys(usersById).length;
+            // Jami ro'yxatdan o'tganlar soni endi ALOHIDA ko'rsatkich
+            // (renderUsers#totalUsersStat) — bu yerda faqat onlaynlik.
             document.getElementById("onlineStatsBar").textContent =
-                `🟢 Onlayn: ${status.onlineCount} / ${totalCount} foydalanuvchi`;
+                `🟢 Hozir onlayn: ${status.onlineCount}`;
         })
         .catch(err => console.error(err));
 }

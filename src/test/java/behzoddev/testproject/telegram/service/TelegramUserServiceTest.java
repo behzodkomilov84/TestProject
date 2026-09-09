@@ -12,6 +12,7 @@ import behzoddev.testproject.entity.AssignmentAttempt;
 import behzoddev.testproject.entity.QuestionSet;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.AssignmentAttemptService;
+import behzoddev.testproject.service.OnlineUserTracker;
 import behzoddev.testproject.service.StudentService;
 import behzoddev.testproject.service.SubscriptionService;
 import behzoddev.testproject.service.TestSessionService;
@@ -61,9 +62,37 @@ class TelegramUserServiceTest {
     private TestSessionService testSessionService;
     @Mock
     private StudentService studentService;
+    @Mock
+    private OnlineUserTracker onlineUserTracker;
 
     @InjectMocks
     private TelegramUserService telegramUserService;
+
+    // "🟢 Onlayn" statistikasi (foydalanuvchi so'rovi, 2026-09-09: "Hamma
+    // saytga kirish uchun login orqali kirmaydimi? Qaysi yo'l bilan kirgan
+    // bo'lsa ham") — HAQIQIY TOPILGAN BUG: bot orqali matnli xabar
+    // yuborayotgan foydalanuvchilar OnlineUserTracker'da umuman
+    // ko'rinmasdi (faqat veb-saytdagi HTTP so'rovlar kuzatilardi).
+    @Test
+    void resolveLinkedUser_userFound_touchesOnlineTracker() {
+        User user = User.builder().id(7L).username("bob").telegramId(CHAT_ID).build();
+        when(userRepository.findByTelegramId(CHAT_ID)).thenReturn(Optional.of(user));
+
+        User result = telegramUserService.resolveLinkedUser(CHAT_ID);
+
+        assertThat(result).isEqualTo(user);
+        verify(onlineUserTracker).touch(7L);
+    }
+
+    @Test
+    void resolveLinkedUser_userNotFound_doesNotTouchTracker() {
+        when(userRepository.findByTelegramId(CHAT_ID)).thenReturn(Optional.empty());
+
+        User result = telegramUserService.resolveLinkedUser(CHAT_ID);
+
+        assertThat(result).isNull();
+        verify(onlineUserTracker, org.mockito.Mockito.never()).touch(any());
+    }
 
     @Test
     void sendMyResults_noAssignmentsNoPracticeTests_saysNoneYet() {
