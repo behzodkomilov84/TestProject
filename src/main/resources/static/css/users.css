@@ -594,6 +594,29 @@ select.role-select {
     margin-bottom: 12px;
 }
 
+/* "📋 Barcha obunalar" sarlavhasi + filtr qatori (foydalanuvchi so'rovi,
+   2026-09-09) — /courses/subscriptions'dagi bilan bir xil g'oya, lekin
+   bu sahifa courses.css'ni ulamagani uchun shu yerda ham (takrorlangan
+   holda) e'lon qilingan. */
+.all-subs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.subs-filter-input {
+    width: 100%;
+    max-width: 320px;
+    min-width: 200px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #d5dde8;
+    font-size: 14px;
+    font-family: inherit;
+}
+
 .subscriptions-table {
     width: 100%;
     min-width: 560px;

@@ -11,6 +11,7 @@ if (ROLE !== "ROLE_OWNER") {
 document.addEventListener("DOMContentLoaded", () => {
     loadUsersForSelect();
     loadPendingSubscriptions();
+    loadAllSubscriptions();
     loadMinAmount();
 });
 
@@ -80,6 +81,7 @@ async function confirmSubscription(id) {
 
         showAlertModal("✅ Tasdiqlandi, ADMIN huquqi berildi.");
         loadPendingSubscriptions();
+        loadAllSubscriptions();
     } catch (err) {
         console.error(err);
         showAlertModal("Network error");
@@ -99,9 +101,95 @@ async function cancelSubscription(id) {
         }
 
         loadPendingSubscriptions();
+        loadAllSubscriptions();
     } catch (err) {
         console.error(err);
         showAlertModal("Network error");
+    }
+}
+
+// "📋 Barcha obunalar" — PENDING/CONFIRMED/EXPIRED/CANCELLED barchasi
+// (foydalanuvchi so'rovi, 2026-09-09: "Bekor qilinganlar ro'yxati
+// qayerda saqlanadi?"). /courses/subscriptions'dagi bilan bir xil g'oya.
+let allAdminSubs = [];
+
+function loadAllSubscriptions() {
+    fetch("/api/subscriptions")
+        .then(r => r.ok ? r.json() : [])
+        .then(subs => {
+            allAdminSubs = subs;
+            renderAllSubscriptions();
+        })
+        .catch(err => console.error(err));
+}
+
+const ADMIN_SUB_STATUS_LABELS = {
+    CONFIRMED: "✅ Faol",
+    PENDING: "⏳ Kutilmoqda",
+    EXPIRED: "⌛ Muddati tugagan",
+    CANCELLED: "❌ Bekor qilingan"
+};
+
+function renderAllSubscriptions() {
+    const tbody = document.getElementById("allSubsTableBody");
+    if (!tbody) return;
+
+    const filter = (document.getElementById("allSubsFilter").value || "").trim().toLowerCase();
+    const subs = filter
+        ? allAdminSubs.filter(s => s.username.toLowerCase().includes(filter))
+        : allAdminSubs;
+
+    if (!subs.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-row">Hali obuna yo'q</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = subs.map(s => {
+        const statusClass = s.status === "CONFIRMED" ? "sub-status-active" : "sub-status-inactive";
+        const muddat = s.endDate ? new Date(s.endDate).toLocaleDateString("uz-UZ") : "—";
+        // PENDING'ning o'z tasdiqlash/rad etish tugmalari yuqoridagi
+        // "⏳ Tasdiq kutilayotgan" jadvalida bor — bu yerda takrorlanmaydi,
+        // faqat FAOL (CONFIRMED) obunani bekor qilish imkoni beriladi.
+        const action = s.status === "CONFIRMED"
+            ? `<button class="sub-detail-cancel-btn" onclick="cancelActiveSubscription(${s.id})">❌ Bekor qilish</button>`
+            : "—";
+
+        return `
+            <tr>
+                <td>${escapeHtmlAdmin(s.username)}</td>
+                <td>${Number(s.amount).toLocaleString("uz-UZ")} so'm</td>
+                <td>${escapeHtmlAdmin(s.source)}</td>
+                <td><span class="sub-status-badge ${statusClass}">${ADMIN_SUB_STATUS_LABELS[s.status] || s.status}</span></td>
+                <td>${muddat}</td>
+                <td>${new Date(s.createdAt).toLocaleDateString("uz-UZ")}</td>
+                <td>${action}</td>
+            </tr>
+        `;
+    }).join("");
+}
+
+function escapeHtmlAdmin(text) {
+    const div = document.createElement("div");
+    div.textContent = text ?? "";
+    return div.innerHTML;
+}
+
+async function cancelActiveSubscription(id) {
+    if (!await showConfirmModal(
+        "Ushbu obunani bekor qilmoqchimisiz? Agar bu ADMIN huquqini bergan yagona faol obuna bo'lsa, huquq DARHOL olib tashlanadi."))
+        return;
+
+    try {
+        const res = await fetch(`/api/subscriptions/${id}/cancel`, { method: "POST" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlertModal(data.error || "Xatolik yuz berdi");
+            return;
+        }
+        loadAllSubscriptions();
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
     }
 }
 
@@ -133,6 +221,7 @@ async function createManualSubscription() {
         showAlertModal("✅ To'lov qayd qilindi, ADMIN huquqi berildi.");
         document.getElementById("manualAmount").value = "";
         document.getElementById("manualNote").value = "";
+        loadAllSubscriptions();
     } catch (err) {
         console.error(err);
         showAlertModal("Network error");

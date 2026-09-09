@@ -44,6 +44,36 @@
         </table>
         </div>
 
+        <!-- "Barcha obunalar" — PENDING'dan tashqari, Bekor qilingan/Muddati
+             tugagan obunalar ham shu yerda ko'rinadi (foydalanuvchi
+             so'rovi, 2026-09-09: "Bekor qilinganlar ro'yxati qayerda
+             saqlanadi?" — avval bunday umumiy ro'yxat sahifasi yo'q edi,
+             faqat /courses/subscriptions'da kurs obunalari uchun bor edi).
+             /courses/subscriptions sahifasidagi bilan bir xil andoza. -->
+        <h2 class="all-subs-header">
+            📋 Barcha obunalar
+            <input type="text" id="allSubsFilter" class="subs-filter-input"
+                   placeholder="🔍 Foydalanuvchi bo'yicha filtr..." oninput="renderAllSubscriptions()">
+        </h2>
+        <div class="table-scroll">
+        <table class="subscriptions-table">
+            <thead>
+            <tr>
+                <th>Foydalanuvchi</th>
+                <th>Summa</th>
+                <th>Manba</th>
+                <th>Holat</th>
+                <th>Muddat</th>
+                <th>Sana</th>
+                <th>Amal</th>
+            </tr>
+            </thead>
+            <tbody id="allSubsTableBody">
+                <tr><td colspan="7" class="empty-row">Yuklanmoqda...</td></tr>
+            </tbody>
+        </table>
+        </div>
+
         <h2>➕ To'lovni qo'lda qayd qilib, ADMIN berish</h2>
         <div class="manual-subscription-form">
             <select id="manualUserSelect"></select>
