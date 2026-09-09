@@ -98,7 +98,18 @@ body {
 .users-table {
     width: 100%;
     min-width: 1200px;
-    border-collapse: collapse;
+    /* "collapse" EMAS — "separate" + border-spacing:0. Haqiqiy topilgan
+       bug (2026-09-09): position:sticky (thead va muzlatilgan ustunlar
+       uchun) border-collapse:collapse bilan birga ishlatilganda,
+       Chromium'da sarlavha qatori LAYOUT jihatidan to'g'ri joyda
+       turgani holda (getBoundingClientRect tasdiqlagan) VIZUAL ravishda
+       birinchi qator ICHIGA "sirg'alib" chizilib qolardi — mashhur
+       brauzer nuqsoni, standart yechim aynan shu (border-collapse:
+       separate). Qo'shni katakchalar orasida ikkilangan chegara
+       chizilmasligi uchun har bir katakcha faqat O'NG/PASTKI chegaraga
+       ega (birinchi qator/ustun esa qo'shimcha CHAP/TEPA chegara oladi). */
+    border-collapse: separate;
+    border-spacing: 0;
     border: 1px solid #d0d5dd;
     font-size: 13px;
     font-weight: 600;
@@ -112,9 +123,20 @@ body {
 .users-table th,
 .users-table td {
     padding: 8px 10px;
-    border: 1px solid #d0d5dd;
+    border-right: 1px solid #d0d5dd;
+    border-bottom: 1px solid #d0d5dd;
     text-align: left;
     white-space: nowrap;
+}
+
+/* border-collapse:separate bilan tashqi chegaralar (jadvalning eng
+   birinchi qatori/ustuni) endi qo'lda qo'shilishi kerak. */
+.users-table thead th {
+    border-top: 1px solid #d0d5dd;
+}
+
+.users-table tr > :first-child {
+    border-left: 1px solid #d0d5dd;
 }
 
 .users-table th {
