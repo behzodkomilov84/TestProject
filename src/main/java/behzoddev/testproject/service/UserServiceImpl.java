@@ -7,6 +7,7 @@ import behzoddev.testproject.dao.CourseSubscriptionRepository;
 import behzoddev.testproject.dao.EmailVerificationCodeRepository;
 import behzoddev.testproject.dao.PasswordResetCodeRepository;
 import behzoddev.testproject.dao.PaymentOrderRepository;
+import behzoddev.testproject.dao.PaymentTransactionRepository;
 import behzoddev.testproject.dao.RoleAuditLogRepository;
 import behzoddev.testproject.dao.RoleRepository;
 import behzoddev.testproject.dao.SubscriptionRepository;
@@ -76,6 +77,7 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     private final SubscriptionRepository subscriptionRepository;
     private final CourseSubscriptionRepository courseSubscriptionRepository;
     private final PaymentOrderRepository paymentOrderRepository;
+    private final PaymentTransactionRepository paymentTransactionRepository;
     private final TestSessionRepository testSessionRepository;
 
     private static boolean isBlank(String s) {
@@ -428,6 +430,10 @@ public class UserServiceImpl implements UserDetailsService, UserService {
         subscriptionRepository.clearConfirmedBy(targetUserId);
         courseSubscriptionRepository.deleteByUser_Id(targetUserId);
         courseSubscriptionRepository.clearConfirmedBy(targetUserId);
+        // "payment_transactions.order_id" NOT NULL FK RESTRICT — order'lar
+        // o'chirilishidan OLDIN, ularga bog'langan tranzaksiyalar tozalanishi
+        // shart (haqiqiy topilgan bug, 2026-09-09: "Firuz"ni o'chirib bo'lmadi).
+        paymentTransactionRepository.deleteByOrder_User_Id(targetUserId);
         paymentOrderRepository.deleteByUser_Id(targetUserId);
         testSessionRepository.deleteByUserId(targetUserId);
 

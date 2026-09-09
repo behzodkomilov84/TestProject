@@ -7,6 +7,7 @@ import behzoddev.testproject.dao.CourseSubscriptionRepository;
 import behzoddev.testproject.dao.EmailVerificationCodeRepository;
 import behzoddev.testproject.dao.PasswordResetCodeRepository;
 import behzoddev.testproject.dao.PaymentOrderRepository;
+import behzoddev.testproject.dao.PaymentTransactionRepository;
 import behzoddev.testproject.dao.RoleAuditLogRepository;
 import behzoddev.testproject.dao.RoleRepository;
 import behzoddev.testproject.dao.SubscriptionRepository;
@@ -87,6 +88,8 @@ class UserServiceImplTest {
     private CourseSubscriptionRepository courseSubscriptionRepository;
     @Mock
     private PaymentOrderRepository paymentOrderRepository;
+    @Mock
+    private PaymentTransactionRepository paymentTransactionRepository;
     @Mock
     private TestSessionRepository testSessionRepository;
 
@@ -470,6 +473,12 @@ class UserServiceImplTest {
 
         assertThat(result.username()).isEqualTo("bob");
         verify(userRepository).delete(target);
+        // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-09):
+        // "payment_transactions.order_id" NOT NULL FK RESTRICT bo'lgani
+        // uchun, order'lar o'chirilishidan OLDIN ularga bog'langan
+        // tranzaksiyalar ham tozalanishi shart.
+        verify(paymentTransactionRepository).deleteByOrder_User_Id(1L);
+        verify(paymentOrderRepository).deleteByUser_Id(1L);
     }
 
     @Test

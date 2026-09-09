@@ -15,4 +15,13 @@ public interface PaymentTransactionRepository extends JpaRepository<PaymentTrans
     // Bitta order uchun hali bekor qilinmagan (CREATED yoki PERFORMED) tranzaksiya
     // bormi — Prepare'da "bu order allaqachon band" tekshiruvi uchun.
     List<PaymentTransaction> findByOrder_IdAndStateNot(Long orderId, PaymentTransactionState state);
+
+    // Foydalanuvchini o'chirishdan OLDIN — "payment_transactions.order_id"
+    // NOT NULL FK RESTRICT bo'lgani uchun (haqiqiy topilgan bug,
+    // 2026-09-09: "Firuz"ni o'chirib bo'lmadi, "Cannot delete or update a
+    // parent row: a foreign key constraint fails (payment_transactions,
+    // fk_payment_transactions_order)" — UserServiceImpl.deleteUser()
+    // paymentOrderRepository.deleteByUser_Id() chaqirardi, lekin shu
+    // buyurtmalarga bog'langan tranzaksiyalarni OLDIN tozalamas edi).
+    void deleteByOrder_User_Id(Long userId);
 }
