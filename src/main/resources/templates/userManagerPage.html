@@ -109,6 +109,20 @@
         </div>
     </div>
 
+    <!-- "Obuna holati" belgisi bosilganda — batafsil ma'lumot (qaysi
+         kurs(lar)ga, ADMIN-rol obunasiga oid barcha yozuvlar tarixi)
+         (foydalanuvchi so'rovi, 2026-09-09: "obuna holatiga bosganda
+         detalniy ma'lumotlar ko'rinsin"). users.js#showSubscriptionDetails. -->
+    <div id="subscriptionDetailsOverlay" class="edit-modal-overlay" hidden>
+        <div class="edit-modal-box">
+            <h2 id="subscriptionDetailsTitle">📋 Obuna tarixi</h2>
+            <div id="subscriptionDetailsBody" class="sub-details-body"></div>
+            <div class="edit-modal-actions">
+                <button type="button" class="edit-modal-cancel" onclick="closeSubscriptionDetailsModal()">Yopish</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Ustki gorizontal scroll — jadval uzun (ko'p qator) bo'lganda
          pastki scrollbar'gacha aylantirmasdan, tepadan ham gorizontal
          siljitish mumkin bo'lishi uchun (foydalanuvchi so'rovi,

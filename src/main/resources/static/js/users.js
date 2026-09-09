@@ -14,6 +14,13 @@ const ALL_ROLES = ["ROLE_OWNER", "ROLE_ADMIN", "ROLE_USER"];
 // to'ldirish uchun qayta so'rov yubormasdan shu yerdan olinadi.
 let usersById = {};
 
+// Oxirgi yuklangan obunalar ro'yxati (ADMIN-rol + kurs) — "Obuna holati"
+// belgisi bosilganda detallarni qayta so'rovsiz ko'rsatish uchun
+// (foydalanuvchi so'rovi, 2026-09-09: "obuna holatiga bosganda detalniy
+// ma'lumotlar ko'rinsin: qaysi kursga obuna, adminga...").
+let lastAdminSubscriptions = [];
+let lastCourseSubscriptions = [];
+
 document.addEventListener("DOMContentLoaded", () => {
     loadUsers();
     document.getElementById("editUserForm").addEventListener("submit", submitEditUser);
@@ -75,6 +82,74 @@ function buildSubscriptionStatusHtml(adminSubscriptions, courseSubscriptions, us
     return `<span class="sub-status-badge sub-status-active">🟢 Faol${countText}${rangeText ? " — " + rangeText : ""}</span>`;
 }
 
+// "Obuna holati" belgisi bosilganda — batafsil tarix (foydalanuvchi
+// so'rovi, 2026-09-09: "obuna holatiga bosganda detalniy ma'lumotlar
+// ko'rinsin: qaysi kursga obuna, adminga... primechaniyega o'xshab").
+// FAQAT faol emas, BARCHA (tarixiy — EXPIRED/CANCELLED ham) yozuvlar
+// ko'rsatiladi, chunki bu "nima bo'lgan edi" degan audit ko'rinishi.
+const SUB_STATUS_LABELS = {
+    CONFIRMED: "✅ Faol",
+    PENDING: "⏳ Kutilmoqda",
+    EXPIRED: "⌛ Muddati tugagan",
+    CANCELLED: "❌ Bekor qilingan"
+};
+
+const SUB_SOURCE_LABELS = {
+    ONLINE: "💳 Onlayn to'lov",
+    MANUAL: "✋ Qo'lda berilgan",
+    TELEGRAM: "🤖 Telegram bot orqali"
+};
+
+function renderSubscriptionDetailGroup(title, items, labelFn) {
+    if (!items.length) return "";
+
+    const rows = items.map(s => {
+        const range = s.startDate && s.endDate
+            ? `${new Date(s.startDate).toLocaleDateString("uz-UZ")} – ${new Date(s.endDate).toLocaleDateString("uz-UZ")}`
+            : "—";
+        const statusClass = s.status === "CONFIRMED" ? "sub-status-active" : "sub-status-inactive";
+
+        return `
+            <div class="sub-detail-row">
+                <div class="sub-detail-row-top">
+                    <span class="sub-detail-label">${escapeHtml(labelFn(s))}</span>
+                    <span class="sub-status-badge ${statusClass}">${SUB_STATUS_LABELS[s.status] || s.status}</span>
+                </div>
+                <div class="sub-detail-row-meta">
+                    ${Number(s.amount).toLocaleString("uz-UZ")} so'm · ${range}
+                    ${s.note ? " · " + escapeHtml(s.note) : ""}
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    return `<h3 class="sub-detail-group-title">${title}</h3>${rows}`;
+}
+
+function showSubscriptionDetails(userId) {
+    const user = usersById[userId];
+    if (!user) return;
+
+    const byRecent = (a, b) => new Date(b.createdAt) - new Date(a.createdAt);
+    const adminSubs = lastAdminSubscriptions.filter(s => s.userId === userId).sort(byRecent);
+    const courseSubs = lastCourseSubscriptions.filter(s => s.userId === userId).sort(byRecent);
+
+    document.getElementById("subscriptionDetailsTitle").textContent = `📋 ${user.username} — obuna tarixi`;
+
+    const html =
+        renderSubscriptionDetailGroup("🎓 ADMIN-rol obunalari", adminSubs, s => SUB_SOURCE_LABELS[s.source] || s.source) +
+        renderSubscriptionDetailGroup("📚 Kurs obunalari", courseSubs, s => s.courseTitle);
+
+    document.getElementById("subscriptionDetailsBody").innerHTML =
+        html || `<p class="sub-detail-empty">Obunalar tarixi yo'q.</p>`;
+
+    document.getElementById("subscriptionDetailsOverlay").hidden = false;
+}
+
+function closeSubscriptionDetailsModal() {
+    document.getElementById("subscriptionDetailsOverlay").hidden = true;
+}
+
 // "5 daqiqa oldin" / "2 soat oldin" / "3 kun oldin" — notifications.js'dagi
 // bilan bir xil hisoblash, mustaqil nusxa sifatida (skript yuklanish
 // tartibiga bog'liq bo'lmasin).
@@ -101,6 +176,8 @@ function renderUsers(users, subscriptions, courseSubscriptions) {
     tbody.innerHTML = "";
 
     usersById = Object.fromEntries(users.map(u => [u.id, u]));
+    lastAdminSubscriptions = subscriptions;
+    lastCourseSubscriptions = courseSubscriptions;
 
     // "👥 Jami ro'yxatdan o'tgan" — onlaynlikdan mustaqil, alohida
     // ko'rsatkich (foydalanuvchi so'rovi, 2026-09-09).
@@ -202,7 +279,7 @@ function renderUsers(users, subscriptions, courseSubscriptions) {
             <td>${escapeHtml(user.workplace) || "—"}</td>
             <td>${escapeHtml(user.jobTitle) || "—"}</td>
             <td><div class="roles-cell">${checkboxesHtml}</div></td>
-            <td>${subscriptionStatusHtml}</td>
+            <td class="sub-status-cell" onclick="showSubscriptionDetails(${user.id})" title="Batafsil ma'lumot uchun bosing">${subscriptionStatusHtml}</td>
             <td>${createdAtText}</td>
             <td>${lastSeenAtText}</td>
             <td>

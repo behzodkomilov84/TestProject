@@ -420,6 +420,70 @@ body {
     border: 1px solid #ddd6fe;
 }
 
+/* Butun katakcha bosiladigan qilingan — "Obuna holati" belgisiga bosilsa
+   batafsil tarix ochiladi (foydalanuvchi so'rovi, 2026-09-09). */
+.sub-status-cell {
+    cursor: pointer;
+}
+
+.sub-status-cell:hover .sub-status-badge {
+    filter: brightness(0.96);
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+/* "📋 Obuna tarixi" oynasi (users.js#showSubscriptionDetails). */
+.sub-details-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-height: 50vh;
+    overflow-y: auto;
+}
+
+.sub-detail-group-title {
+    margin: 10px 0 2px;
+    font-size: 13px;
+    color: #475569;
+}
+
+.sub-detail-group-title:first-child {
+    margin-top: 0;
+}
+
+.sub-detail-row {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 8px 12px;
+}
+
+.sub-detail-row-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.sub-detail-label {
+    font-weight: 600;
+    font-size: 13px;
+    color: #1e293b;
+}
+
+.sub-detail-row-meta {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.sub-detail-empty {
+    color: #94a3b8;
+    font-style: italic;
+    font-size: 13px;
+    margin: 0;
+}
+
 .action-btn {
     padding: 8px 12px;
     border-radius: 4px;
