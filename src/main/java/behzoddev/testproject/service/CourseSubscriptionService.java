@@ -5,6 +5,8 @@ import behzoddev.testproject.dao.CourseSubscriptionRepository;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.dto.course.CourseSubscriptionDto;
 import behzoddev.testproject.dto.course.CreateCourseSubscriptionDto;
+import behzoddev.testproject.dto.subscription.MonthlyRevenueDto;
+import behzoddev.testproject.dto.subscription.SubscriptionStatsDto;
 import behzoddev.testproject.entity.Course;
 import behzoddev.testproject.entity.CourseSubscription;
 import behzoddev.testproject.entity.User;
@@ -17,10 +19,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.TreeMap;
 
 // Kursga muddatli kirish huquqi (ADMIN-rol obunasi bilan bir xil g'oyada
 // — startDate/endDate). Ikki yo'l bilan boshlanishi mumkin: (1)
@@ -466,6 +473,81 @@ public class CourseSubscriptionService {
         if (!canManageCourse(course, requester)) {
             throw new org.springframework.security.access.AccessDeniedException(
                     "⛔ Faqat o'zingiz yaratgan kursning obunalarini boshqarishingiz mumkin.");
+        }
+    }
+
+    // "/payments" (to'lov tarixi) sahifasidagi umumiy ko'rsatkichlar —
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-09: "/payments
+    // ma'lumotlari noto'g'ri" — Click'ning o'z panelida 151 000 so'm
+    // ko'rinsa-da, saytimizdagi sahifa faqat 50 000 so'mni ko'rsatardi).
+    // Sabab: /payments FAQAT umumiy Subscription (ADMIN-rol) yozuvlarini
+    // hisoblardi — kurs obunalari uchun to'lovlar (CourseSubscription,
+    // masalan "Bakteriologiya" kursiga 2 oylik 100 000 so'm) butunlay
+    // hisobga olinmasdi. SubscriptionService.getStats() bilan bir xil
+    // hisoblash mantig'i, faqat CourseSubscription uchun — natijalar
+    // /payments'da ikkalasi birlashtirilib ko'rsatiladi.
+    @Transactional(readOnly = true)
+    public SubscriptionStatsDto getStats() {
+        LocalDateTime now = LocalDateTime.now();
+        YearMonth currentMonth = YearMonth.now();
+
+        List<CourseSubscription> all = courseSubscriptionRepository.findAllByOrderByCreatedAtDesc();
+
+        List<CourseSubscription> confirmed = all.stream()
+                .filter(s -> s.getStatus() == CourseSubscriptionStatus.CONFIRMED)
+                .toList();
+
+        BigDecimal totalRevenue = confirmed.stream()
+                .map(CourseSubscription::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal thisMonthRevenue = confirmed.stream()
+                .filter(s -> YearMonth.from(s.getCreatedAt()).equals(currentMonth))
+                .map(CourseSubscription::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        DateTimeFormatter monthKeyFormat = DateTimeFormatter.ofPattern("yyyy-MM");
+        Map<String, MonthlyAccumulator> byMonth = new TreeMap<>();
+        for (CourseSubscription s : confirmed) {
+            String key = YearMonth.from(s.getCreatedAt()).format(monthKeyFormat);
+            byMonth.computeIfAbsent(key, k -> new MonthlyAccumulator()).add(s.getAmount());
+        }
+
+        List<MonthlyRevenueDto> monthlyBreakdown = byMonth.entrySet().stream()
+                .map(e -> MonthlyRevenueDto.builder()
+                        .month(e.getKey())
+                        .amount(e.getValue().total)
+                        .count(e.getValue().count)
+                        .build())
+                .sorted(Comparator.comparing(MonthlyRevenueDto::month))
+                .toList();
+
+        long activeSubscribersCount = confirmed.stream()
+                .filter(s -> s.getEndDate() != null && s.getEndDate().isAfter(now))
+                .count();
+        long pendingCount = all.stream()
+                .filter(s -> s.getStatus() == CourseSubscriptionStatus.PENDING)
+                .count();
+
+        return SubscriptionStatsDto.builder()
+                .totalRevenue(totalRevenue)
+                .thisMonthRevenue(thisMonthRevenue)
+                .totalConfirmedCount(confirmed.size())
+                .activeSubscribersCount(activeSubscribersCount)
+                .pendingCount(pendingCount)
+                .monthlyBreakdown(monthlyBreakdown)
+                .build();
+    }
+
+    // SubscriptionService.MonthlyAccumulator bilan bir xil — oylik
+    // yig'indini hisoblash uchun ichki yordamchi (faqat getStats() ichida).
+    private static class MonthlyAccumulator {
+        private BigDecimal total = BigDecimal.ZERO;
+        private long count = 0;
+
+        void add(BigDecimal amount) {
+            total = total.add(amount);
+            count++;
         }
     }
 

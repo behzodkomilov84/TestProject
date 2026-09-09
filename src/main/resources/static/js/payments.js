@@ -43,17 +43,49 @@ function formatMonth(monthKey) {
     return MONTH_NAMES_UZ[month - 1] + " " + year;
 }
 
+// HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-09: "/payments
+// ma'lumotlari noto'g'ri" — Click'ning o'z panelida 151 000 so'm ko'rinsa-
+// da, bu sahifa faqat 50 000 so'mni ko'rsatardi) — sahifa FAQAT umumiy
+// ADMIN-rol obunalarini (/api/subscriptions/stats) hisoblardi, kurs
+// obunalari uchun to'lovlar (/api/course-subscriptions/stats, masalan
+// "Bakteriologiya" kursiga 2 oylik 100 000 so'm) butunlay tushib qolgan
+// edi. Endi ikkalasi ham olinib, BIRLASHTIRILADI.
 function loadStats() {
-    fetch("/api/subscriptions/stats")
-        .then(r => {
+    Promise.all([
+        fetch("/api/subscriptions/stats").then(r => {
             if (!r.ok) throw new Error("403 or not authorized");
             return r.json();
-        })
-        .then(renderStats)
+        }),
+        fetch("/api/course-subscriptions/stats").then(r => r.ok ? r.json() : null)
+    ])
+        .then(([adminStats, courseStats]) => renderStats(mergeStats(adminStats, courseStats)))
         .catch(err => {
             console.error(err);
             showAlertModal("Statistikani yuklashda xatolik");
         });
+}
+
+// Ikkala manbadan (ADMIN-rol + kurs) kelgan bir xil shakldagi
+// statistikani bitta umumiy ko'rsatkichga birlashtiradi — "Oylar
+// bo'yicha tushum" jadvali ham oy kaliti bo'yicha qo'shiladi.
+function mergeStats(adminStats, courseStats) {
+    if (!courseStats) return adminStats;
+
+    const monthlyByKey = {};
+    [...adminStats.monthlyBreakdown, ...courseStats.monthlyBreakdown].forEach(m => {
+        if (!monthlyByKey[m.month]) monthlyByKey[m.month] = { month: m.month, amount: 0, count: 0 };
+        monthlyByKey[m.month].amount += Number(m.amount);
+        monthlyByKey[m.month].count += m.count;
+    });
+
+    return {
+        totalRevenue: Number(adminStats.totalRevenue) + Number(courseStats.totalRevenue),
+        thisMonthRevenue: Number(adminStats.thisMonthRevenue) + Number(courseStats.thisMonthRevenue),
+        totalConfirmedCount: adminStats.totalConfirmedCount + courseStats.totalConfirmedCount,
+        activeSubscribersCount: adminStats.activeSubscribersCount + courseStats.activeSubscribersCount,
+        pendingCount: adminStats.pendingCount + courseStats.pendingCount,
+        monthlyBreakdown: Object.values(monthlyByKey).sort((a, b) => a.month.localeCompare(b.month))
+    };
 }
 
 function renderStats(stats) {
@@ -85,10 +117,22 @@ function renderMonthlyBreakdown(months) {
     `).join("");
 }
 
+// ADMIN-rol obunalari VA kurs obunalari — ikkalasi ham olib, bitta
+// jadvalda (createdAt bo'yicha eng so'nggisi tepada) ko'rsatiladi
+// (foydalanuvchi so'rovi, 2026-09-09: "/payments ma'lumotlari noto'g'ri").
 function loadHistory() {
-    fetch("/api/subscriptions")
-        .then(r => r.ok ? r.json() : [])
-        .then(renderHistory)
+    Promise.all([
+        fetch("/api/subscriptions").then(r => r.ok ? r.json() : []),
+        fetch("/api/course-subscriptions").then(r => r.ok ? r.json() : [])
+    ])
+        .then(([adminSubs, courseSubs]) => {
+            const tagged = [
+                ...adminSubs.map(s => ({ ...s, service: "🎓 ADMIN huquqi" })),
+                ...courseSubs.map(s => ({ ...s, service: "📚 " + s.courseTitle }))
+            ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+            renderHistory(tagged);
+        })
         .catch(err => console.error(err));
 }
 
@@ -99,20 +143,29 @@ const STATUS_LABELS_UZ = {
     EXPIRED: "Muddati tugagan"
 };
 
+const SOURCE_LABELS_UZ = {
+    MANUAL: "✋ Qo'lda berilgan",
+    ONLINE: "💳 Onlayn to'lov (Click)",
+    TELEGRAM: "🤖 Telegram bot orqali",
+    TRIAL: "🎁 Bepul sinov",
+    REQUESTED: "📩 So'rov"
+};
+
 function renderHistory(subscriptions) {
     const tbody = document.getElementById("historyTableBody");
     if (!tbody) return;
 
     if (!subscriptions.length) {
-        tbody.innerHTML = `<tr><td colspan="7" class="empty-row">Hali to'lov yo'q</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="empty-row">Hali to'lov yo'q</td></tr>`;
         return;
     }
 
     tbody.innerHTML = subscriptions.map(s => `
         <tr>
             <td>${s.username}</td>
+            <td>${s.service}</td>
             <td>${formatSum(s.amount)}</td>
-            <td>${s.source}</td>
+            <td>${SOURCE_LABELS_UZ[s.source] || s.source}</td>
             <td><span class="status-badge ${s.status}">${STATUS_LABELS_UZ[s.status] || s.status}</span></td>
             <td>${new Date(s.createdAt).toLocaleString("uz-UZ")}</td>
             <td>${s.endDate ? new Date(s.endDate).toLocaleDateString("uz-UZ") : "—"}</td>

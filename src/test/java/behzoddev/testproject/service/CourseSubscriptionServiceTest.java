@@ -5,6 +5,7 @@ import behzoddev.testproject.dao.CourseSubscriptionRepository;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.dto.course.CourseSubscriptionDto;
 import behzoddev.testproject.dto.course.CreateCourseSubscriptionDto;
+import behzoddev.testproject.dto.subscription.SubscriptionStatsDto;
 import behzoddev.testproject.entity.Course;
 import behzoddev.testproject.entity.CourseSubscription;
 import behzoddev.testproject.entity.Role;
@@ -507,6 +508,49 @@ class CourseSubscriptionServiceTest {
                 .isInstanceOf(AccessDeniedException.class);
 
         verify(courseSubscriptionRepository, never()).delete(any(CourseSubscription.class));
+    }
+
+    // ===== getStats ("/payments" sahifasi uchun, foydalanuvchi so'rovi,
+    // 2026-09-09: "/payments ma'lumotlari noto'g'ri" — bu sahifa avval
+    // kurs obunalarini umuman hisobga olmasdi) =====
+
+    @Test
+    void getStats_onlyCountsConfirmedRevenue() {
+        CourseSubscription confirmed1 = CourseSubscription.builder().id(1L).user(student).course(course)
+                .amount(BigDecimal.valueOf(50_000)).status(CourseSubscriptionStatus.CONFIRMED)
+                .endDate(LocalDateTime.now().plusMonths(1)).createdAt(LocalDateTime.now()).build();
+        CourseSubscription confirmed2 = CourseSubscription.builder().id(2L).user(student).course(course)
+                .amount(BigDecimal.valueOf(50_000)).status(CourseSubscriptionStatus.CONFIRMED)
+                .endDate(LocalDateTime.now().minusDays(1)).createdAt(LocalDateTime.now()).build();
+        CourseSubscription cancelled = CourseSubscription.builder().id(3L).user(student).course(course)
+                .amount(BigDecimal.valueOf(999_999)).status(CourseSubscriptionStatus.CANCELLED)
+                .createdAt(LocalDateTime.now()).build();
+        CourseSubscription pending = CourseSubscription.builder().id(4L).user(student).course(course)
+                .amount(BigDecimal.ZERO).status(CourseSubscriptionStatus.PENDING)
+                .createdAt(LocalDateTime.now()).build();
+        when(courseSubscriptionRepository.findAllByOrderByCreatedAtDesc())
+                .thenReturn(List.of(confirmed1, confirmed2, cancelled, pending));
+
+        SubscriptionStatsDto stats = courseSubscriptionService.getStats();
+
+        // Faqat 2 ta CONFIRMED hisoblanadi — CANCELLED (999 999) va
+        // PENDING umuman kirmaydi.
+        assertThat(stats.totalRevenue()).isEqualByComparingTo("100000");
+        assertThat(stats.totalConfirmedCount()).isEqualTo(2);
+        assertThat(stats.pendingCount()).isEqualTo(1);
+        // Faqat endDate hali kelmagan (confirmed1) "faol" hisoblanadi.
+        assertThat(stats.activeSubscribersCount()).isEqualTo(1);
+    }
+
+    @Test
+    void getStats_noSubscriptions_returnsZeroes() {
+        when(courseSubscriptionRepository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of());
+
+        SubscriptionStatsDto stats = courseSubscriptionService.getStats();
+
+        assertThat(stats.totalRevenue()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(stats.totalConfirmedCount()).isEqualTo(0);
+        assertThat(stats.monthlyBreakdown()).isEmpty();
     }
 
     // ===== listAll (foydalanuvchi so'rovi, 2026-09-07: ROLE_ADMIN faqat

@@ -5,6 +5,7 @@ import behzoddev.testproject.dto.course.CreateCourseSubscriptionDto;
 import behzoddev.testproject.dto.course.UpdateCourseSubscriptionDto;
 import behzoddev.testproject.dto.payment.CreatePaymentOrderDto;
 import behzoddev.testproject.dto.payment.PaymentOrderDto;
+import behzoddev.testproject.dto.subscription.SubscriptionStatsDto;
 import behzoddev.testproject.entity.PaymentOrder;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.CourseSubscriptionService;
@@ -101,6 +102,16 @@ public class CourseSubscriptionController {
     @GetMapping("/api/course-subscriptions")
     public List<CourseSubscriptionDto> listAll(@AuthenticationPrincipal User requester) {
         return courseSubscriptionService.listAll(requester);
+    }
+
+    // "/payments" sahifasi uchun — kurs obunalari bo'yicha umumiy
+    // ko'rsatkichlar (SubscriptionService.getStats() bilan birlashtirilib
+    // ko'rsatiladi). Faqat OWNER — barcha kurslarning umumiy moliyaviy
+    // holati, ROLE_ADMIN o'z kursidan tashqarisini ko'rmasligi kerak.
+    @GetMapping("/api/course-subscriptions/stats")
+    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    public SubscriptionStatsDto stats() {
+        return courseSubscriptionService.getStats();
     }
 
     @PostMapping("/api/course-subscriptions/{id}/cancel")
