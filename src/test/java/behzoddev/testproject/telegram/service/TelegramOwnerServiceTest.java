@@ -179,9 +179,11 @@ class TelegramOwnerServiceTest {
 
     @Test
     void rejectPayment_success_cancels() {
+        when(userRepository.findByTelegramId(CHAT_ID)).thenReturn(Optional.of(owner));
+
         SendMessage msg = ownerService.rejectPayment(CHAT_ID, 1L);
 
-        verify(subscriptionService).cancel(1L);
+        verify(subscriptionService).cancel(1L, owner);
         assertThat(msg.getText()).contains("rad etildi");
     }
 

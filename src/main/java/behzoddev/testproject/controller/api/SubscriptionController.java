@@ -45,9 +45,13 @@ public class SubscriptionController {
         return ResponseEntity.ok(subscriptionService.confirm(id, months, owner));
     }
 
+    // PENDING so'rovni rad etadi YOKI allaqachon FAOL (CONFIRMED) obunani
+    // bekor qilib, ROLE_ADMIN'ni darhol olib tashlaydi (foydalanuvchi
+    // so'rovi, 2026-09-09: "қўлда берилган админни бекор қилишни қаерга
+    // қиламан?").
     @PostMapping("/{id}/cancel")
-    public ResponseEntity<SubscriptionDto> cancel(@PathVariable Long id) {
-        return ResponseEntity.ok(subscriptionService.cancel(id));
+    public ResponseEntity<SubscriptionDto> cancel(@PathVariable Long id, @AuthenticationPrincipal User requester) {
+        return ResponseEntity.ok(subscriptionService.cancel(id, requester));
     }
 
     @GetMapping

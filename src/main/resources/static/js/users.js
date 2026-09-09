@@ -28,7 +28,10 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function loadUsers() {
-    Promise.all([
+    // "return" — cancelSubscriptionFromDetails() jadval yangilanishini
+    // "await" qilib, keyin o'sha oynani qayta ochishi uchun (foydalanuvchi
+    // so'rovi, 2026-09-09).
+    return Promise.all([
         fetch("/api/users").then(r => {
             if (!r.ok) throw new Error("403 or not authorized");
             return r.json();
@@ -100,7 +103,11 @@ const SUB_SOURCE_LABELS = {
     TELEGRAM: "🤖 Telegram bot orqali"
 };
 
-function renderSubscriptionDetailGroup(title, items, labelFn) {
+// "cancelUrlFn" — berilsa, FAOL (CONFIRMED) yozuvlarga "❌ Bekor qilish"
+// tugmasi qo'shiladi (foydalanuvchi so'rovi, 2026-09-09: "қўлда берилган
+// админни бекор қилишни қаерга қиламан?" — bu oyna orqali to'g'ridan-
+// to'g'ri bekor qilish imkoni).
+function renderSubscriptionDetailGroup(title, items, labelFn, cancelUrlFn) {
     if (!items.length) return "";
 
     const rows = items.map(s => {
@@ -108,6 +115,9 @@ function renderSubscriptionDetailGroup(title, items, labelFn) {
             ? `${new Date(s.startDate).toLocaleDateString("uz-UZ")} – ${new Date(s.endDate).toLocaleDateString("uz-UZ")}`
             : "—";
         const statusClass = s.status === "CONFIRMED" ? "sub-status-active" : "sub-status-inactive";
+        const cancelBtn = (s.status === "CONFIRMED" && cancelUrlFn)
+            ? `<button class="sub-detail-cancel-btn" onclick="cancelSubscriptionFromDetails('${cancelUrlFn(s)}', ${s.userId})">❌ Bekor qilish</button>`
+            : "";
 
         return `
             <div class="sub-detail-row">
@@ -119,6 +129,7 @@ function renderSubscriptionDetailGroup(title, items, labelFn) {
                     ${Number(s.amount).toLocaleString("uz-UZ")} so'm · ${range}
                     ${s.note ? " · " + escapeHtml(s.note) : ""}
                 </div>
+                ${cancelBtn}
             </div>
         `;
     }).join("");
@@ -137,13 +148,39 @@ function showSubscriptionDetails(userId) {
     document.getElementById("subscriptionDetailsTitle").textContent = `📋 ${user.username} — obuna tarixi`;
 
     const html =
-        renderSubscriptionDetailGroup("🎓 ADMIN-rol obunalari", adminSubs, s => SUB_SOURCE_LABELS[s.source] || s.source) +
-        renderSubscriptionDetailGroup("📚 Kurs obunalari", courseSubs, s => s.courseTitle);
+        renderSubscriptionDetailGroup("🎓 ADMIN-rol obunalari", adminSubs, s => SUB_SOURCE_LABELS[s.source] || s.source,
+            s => `/api/subscriptions/${s.id}/cancel`) +
+        renderSubscriptionDetailGroup("📚 Kurs obunalari", courseSubs, s => s.courseTitle,
+            s => `/api/course-subscriptions/${s.id}/cancel`);
 
     document.getElementById("subscriptionDetailsBody").innerHTML =
         html || `<p class="sub-detail-empty">Obunalar tarixi yo'q.</p>`;
 
     document.getElementById("subscriptionDetailsOverlay").hidden = false;
+}
+
+// FAOL obunani (ADMIN-rol yoki kurs) shu oynaning ichidan bekor qilish
+// (foydalanuvchi so'rovi, 2026-09-09). ADMIN-rol obunasi bo'lsa VA bu
+// foydalanuvchining yagona faol obunasi bo'lsa — ROLE_ADMIN DARHOL
+// olib tashlanadi (SubscriptionService.cancel — server tarafida).
+async function cancelSubscriptionFromDetails(endpoint, userId) {
+    if (!await showConfirmModal(
+        "Ushbu obunani bekor qilmoqchimisiz? Agar bu ADMIN huquqini bergan yagona faol obuna bo'lsa, huquq DARHOL olib tashlanadi."))
+        return;
+
+    try {
+        const res = await fetch(endpoint, { method: "POST" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlertModal(data.error || "Xatolik yuz berdi");
+            return;
+        }
+        await loadUsers();
+        showSubscriptionDetails(userId);
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
+    }
 }
 
 function closeSubscriptionDetailsModal() {

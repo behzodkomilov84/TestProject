@@ -200,12 +200,12 @@ class SubscriptionServiceTest {
     // ===== cancel =====
 
     @Test
-    void cancel_success() {
+    void cancel_pendingRequest_success() {
         Subscription pending = Subscription.builder().id(7L).user(owner).amount(BigDecimal.TEN)
                 .source(SubscriptionSource.TELEGRAM).status(SubscriptionStatus.PENDING).build();
         when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(pending));
 
-        SubscriptionDto result = subscriptionService.cancel(7L);
+        SubscriptionDto result = subscriptionService.cancel(7L, owner);
 
         assertThat(result.status()).isEqualTo("CANCELLED");
     }
@@ -213,12 +213,12 @@ class SubscriptionServiceTest {
     // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-09): rad
     // etilganda foydalanuvchiga bildirishnoma yubormas edi.
     @Test
-    void cancel_success_notifiesUser() {
+    void cancel_pendingRequest_notifiesUserWithRejectedWording() {
         Subscription pending = Subscription.builder().id(7L).user(owner).amount(BigDecimal.TEN)
                 .source(SubscriptionSource.TELEGRAM).status(SubscriptionStatus.PENDING).build();
         when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(pending));
 
-        subscriptionService.cancel(7L);
+        subscriptionService.cancel(7L, owner);
 
         verify(notificationService).create(eq(owner), org.mockito.ArgumentMatchers.contains("rad etildi"), anyString());
     }
@@ -227,19 +227,60 @@ class SubscriptionServiceTest {
     void cancel_notFound_throws() {
         when(subscriptionRepository.findById(7L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> subscriptionService.cancel(7L))
+        assertThatThrownBy(() -> subscriptionService.cancel(7L, owner))
                 .isInstanceOf(NoSuchElementException.class);
     }
 
     @Test
-    void cancel_notPending_throws() {
-        Subscription confirmed = Subscription.builder().id(7L).user(owner).amount(BigDecimal.TEN)
-                .source(SubscriptionSource.MANUAL).status(SubscriptionStatus.CONFIRMED).build();
-        when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(confirmed));
+    void cancel_alreadyCancelled_throws() {
+        Subscription cancelled = Subscription.builder().id(7L).user(owner).amount(BigDecimal.TEN)
+                .source(SubscriptionSource.MANUAL).status(SubscriptionStatus.CANCELLED).build();
+        when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(cancelled));
 
-        assertThatThrownBy(() -> subscriptionService.cancel(7L))
+        assertThatThrownBy(() -> subscriptionService.cancel(7L, owner))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("Faqat kutilayotgan so'rovni bekor qilish mumkin");
+                .hasMessageContaining("Faqat kutilayotgan yoki faol obunani bekor qilish mumkin");
+    }
+
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-09: "қўлда
+    // берилган админни бекор қилишни қаерга қиламан?") — allaqachon FAOL
+    // (CONFIRMED) obunani bekor qilishning hech qanday yo'li yo'q edi.
+    @Test
+    void cancel_activeConfirmedSubscription_revokesAdminRoleImmediately() {
+        User admin = userWithRoles(5L, roleUser, roleAdmin);
+        Subscription confirmed = Subscription.builder().id(7L).user(admin).amount(BigDecimal.TEN)
+                .source(SubscriptionSource.MANUAL).status(SubscriptionStatus.CONFIRMED)
+                .endDate(LocalDateTime.now().plusMonths(1)).build();
+        when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(confirmed));
+        when(subscriptionRepository.existsByUser_IdAndStatusAndEndDateAfter(
+                eq(5L), eq(SubscriptionStatus.CONFIRMED), any())).thenReturn(false);
+        when(roleRepository.findByRoleName("ROLE_ADMIN")).thenReturn(Optional.of(roleAdmin));
+
+        SubscriptionDto result = subscriptionService.cancel(7L, owner);
+
+        assertThat(result.status()).isEqualTo("CANCELLED");
+        assertThat(admin.hasRole("ROLE_ADMIN")).isFalse();
+        verify(notificationService).create(eq(admin), org.mockito.ArgumentMatchers.contains("bekor qilindi"), anyString());
+        verify(roleAuditService).record(eq(admin), eq(owner), eq("ROLE_ADMIN"), eq(RoleAuditAction.REVOKED), eq(RoleAuditSource.MANUAL));
+    }
+
+    // Foydalanuvchida BOSHQA faol obuna ham bo'lsa (masalan, bir nechta
+    // to'lov qatori) — ROLE_ADMIN saqlanib qoladi, faqat SHU obuna qatori
+    // bekor qilinadi.
+    @Test
+    void cancel_activeConfirmedSubscription_otherActiveExists_keepsAdminRole() {
+        User admin = userWithRoles(5L, roleUser, roleAdmin);
+        Subscription confirmed = Subscription.builder().id(7L).user(admin).amount(BigDecimal.TEN)
+                .source(SubscriptionSource.MANUAL).status(SubscriptionStatus.CONFIRMED)
+                .endDate(LocalDateTime.now().plusMonths(1)).build();
+        when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(confirmed));
+        when(subscriptionRepository.existsByUser_IdAndStatusAndEndDateAfter(
+                eq(5L), eq(SubscriptionStatus.CONFIRMED), any())).thenReturn(true);
+
+        subscriptionService.cancel(7L, owner);
+
+        assertThat(admin.hasRole("ROLE_ADMIN")).isTrue();
+        verify(roleAuditService, never()).record(any(), any(), anyString(), any(), any());
     }
 
     // ===== confirmOnline =====

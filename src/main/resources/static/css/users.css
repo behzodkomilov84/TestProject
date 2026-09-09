@@ -484,6 +484,26 @@ body {
     margin: 0;
 }
 
+/* "❌ Bekor qilish" — FAOL obuna yozuvini shu oynaning ichidan bekor
+   qilish (foydalanuvchi so'rovi, 2026-09-09: "қўлда берилган админни
+   бекор қилишни қаерга қиламан?"). */
+.sub-detail-cancel-btn {
+    margin-top: 8px;
+    padding: 5px 12px;
+    border: none;
+    border-radius: 999px;
+    background: #fee2e2;
+    color: #991b1b;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter .15s ease;
+}
+
+.sub-detail-cancel-btn:hover {
+    filter: brightness(1.08);
+}
+
 .action-btn {
     padding: 8px 12px;
     border-radius: 4px;

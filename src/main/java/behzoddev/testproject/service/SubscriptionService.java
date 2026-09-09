@@ -217,26 +217,52 @@ public class SubscriptionService {
         });
     }
 
+    // "❌ Bekor qilish" — PENDING so'rovni rad etadi VA (foydalanuvchi
+    // so'rovi, 2026-09-09: "қўлда берилган админни бекор қилишни қаерга
+    // қиламан?") ALLAQACHON FAOL (CONFIRMED — qo'lda yoki onlayn berilgan)
+    // obunani ham bekor qilib, agar boshqa faol obuna qolmagan bo'lsa,
+    // ROLE_ADMIN'ni darhol olib tashlaydi. Ilgari bu metod FAQAT PENDING
+    // uchun ishlardi — CONFIRMED obunani bekor qilishning hech qanday
+    // UI/endpoint yo'li yo'q edi (faqat scheduled job orqali muddat
+    // tugashi yoki Click chargeback orqali avtomatik bekor bo'lardi).
     @Transactional
-    public SubscriptionDto cancel(Long subscriptionId) {
+    public SubscriptionDto cancel(Long subscriptionId, User requester) {
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
                 .orElseThrow(() -> new NoSuchElementException("So'rov topilmadi"));
 
-        if (subscription.getStatus() != SubscriptionStatus.PENDING) {
-            throw new IllegalArgumentException("Faqat kutilayotgan so'rovni bekor qilish mumkin");
+        SubscriptionStatus previousStatus = subscription.getStatus();
+        if (previousStatus != SubscriptionStatus.PENDING && previousStatus != SubscriptionStatus.CONFIRMED) {
+            throw new IllegalArgumentException("Faqat kutilayotgan yoki faol obunani bekor qilish mumkin");
         }
 
         subscription.setStatus(SubscriptionStatus.CANCELLED);
+
+        String message;
+        if (previousStatus == SubscriptionStatus.PENDING) {
+            message = "❌ ADMIN huquqiga so'rovingiz administrator tomonidan rad etildi.";
+        } else {
+            User user = subscription.getUser();
+            // Shu obuna ENDI CANCELLED bo'lgani uchun, quyidagi tekshiruv
+            // uni o'z ichiga olmaydi — faqat BOSHQA hali faol obunalar bor-
+            // yo'qligini ko'radi (reverseOnline/expireSubscriptions bilan
+            // bir xil mantiq).
+            boolean hasOtherActive = subscriptionRepository.existsByUser_IdAndStatusAndEndDateAfter(
+                    user.getId(), SubscriptionStatus.CONFIRMED, LocalDateTime.now());
+            if (!hasOtherActive) {
+                revokeAdmin(user, requester, RoleAuditSource.MANUAL);
+            }
+            message = "⚠️ ADMIN huquqingiz administrator tomonidan bekor qilindi.";
+        }
 
         // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-09:
         // "Foydalanuvchini obunasi rad etildi, lekin bildirishnomaga
         // kelmadi USER ga") — CourseSubscriptionService.cancel() bilan bir
         // xil kamchilik, shu yerda ham tuzatildi.
-        notificationService.create(subscription.getUser(),
-                "❌ ADMIN huquqiga so'rovingiz administrator tomonidan rad etildi.",
-                "/profile");
+        notificationService.create(subscription.getUser(), message, "/profile");
 
-        log.info("ADMIN obunasi so'rovi rad etildi: user={}", subscription.getUser().getUsername());
+        log.info("ADMIN obunasi {}: user={}, requester={}",
+                previousStatus == SubscriptionStatus.PENDING ? "rad etildi" : "bekor qilindi",
+                subscription.getUser().getUsername(), requester.getUsername());
 
         return toDto(subscription);
     }
@@ -384,9 +410,16 @@ public class SubscriptionService {
         roleAuditService.record(user, owner, ADMIN_ROLE, RoleAuditAction.GRANTED, RoleAuditSource.SUBSCRIPTION);
     }
 
-    // Faqat scheduled job (expireSubscriptions) orqali chaqiriladi — inson
-    // ishtirok etmagani uchun changedBy=null, source=SYSTEM.
+    // Avtomatik (inson ishtirokisiz) hollar uchun qisqa yo'l — scheduled
+    // job (expireSubscriptions) va Click chargeback (reverseOnline).
     private void revokeAdmin(User user) {
+        revokeAdmin(user, null, RoleAuditSource.SYSTEM);
+    }
+
+    // OWNER FAOL obunani qo'lda bekor qilganda ham shu metod ishlatiladi
+    // (cancel()) — changedBy/source shu holatni audit tarixida to'g'ri
+    // aks ettirish uchun aniq beriladi.
+    private void revokeAdmin(User user, User changedBy, RoleAuditSource source) {
         if (!user.hasRole(ADMIN_ROLE)) return;
 
         // Xavfsizlik: foydalanuvchida kamida bitta rol qolishi shart.
@@ -396,7 +429,7 @@ public class SubscriptionService {
             user.getRoles().remove(adminRole);
             userRepository.save(user);
 
-            roleAuditService.record(user, null, ADMIN_ROLE, RoleAuditAction.REVOKED, RoleAuditSource.SYSTEM);
+            roleAuditService.record(user, changedBy, ADMIN_ROLE, RoleAuditAction.REVOKED, source);
         });
     }
 

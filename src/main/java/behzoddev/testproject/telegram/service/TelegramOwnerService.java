@@ -185,7 +185,8 @@ public class TelegramOwnerService {
 
     public SendMessage rejectPayment(Long chatId, Long subscriptionId) {
         try {
-            subscriptionService.cancel(subscriptionId);
+            User owner = getUserByChatId(chatId);
+            subscriptionService.cancel(subscriptionId, owner);
             return success(chatId, "❌ So'rov rad etildi.");
         } catch (Exception e) {
             return success(chatId, "❌ " + e.getMessage());
