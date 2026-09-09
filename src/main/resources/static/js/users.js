@@ -17,6 +17,7 @@ let usersById = {};
 document.addEventListener("DOMContentLoaded", () => {
     loadUsers();
     document.getElementById("editUserForm").addEventListener("submit", submitEditUser);
+    document.getElementById("telegramMessageForm").addEventListener("submit", submitTelegramMessage);
 });
 
 function loadUsers() {
@@ -107,10 +108,22 @@ function renderUsers(users, subscriptions) {
             ? `<img class="user-avatar" src="${escapeHtml(user.avatarUrl)}" alt="" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'user-avatar user-avatar-placeholder',textContent:'${avatarInitial}'}))">`
             : `<div class="user-avatar user-avatar-placeholder">${avatarInitial}</div>`;
 
+        // "✉️" — Telegram orqali shaxsiy xabar yuborish (foydalanuvchi
+        // so'rovi, 2026-09-09). Faqat foydalanuvchi Telegramga ulangan
+        // (telegramId bor) bo'lsa ko'rinadi — aks holda yuborish mumkin
+        // emas (NotificationService.sendOwnerMessage shu shartni serverda
+        // ham tekshiradi).
+        const tgMessageBtnHtml = user.telegramId
+            ? `<button class="tg-message-btn" onclick="openTelegramMessageModal(${user.id})" title="Telegram orqali shaxsiy xabar yuborish">✉️</button>`
+            : "";
+
         tr.innerHTML = `
             <td class="sticky-col-1">${user.id}</td>
             <td class="sticky-col-2">${avatarHtml}</td>
-            <td class="sticky-col-3" title="${escapeHtml(user.username)}">${user.username} ${user.locked ? '<span title="Bloklangan">🔒</span>' : ""}</td>
+            <td class="sticky-col-3" title="${escapeHtml(user.username)}">
+                <span class="username-cell-text">${user.username} ${user.locked ? '<span title="Bloklangan">🔒</span>' : ""}</span>
+                ${tgMessageBtnHtml}
+            </td>
             <td>${escapeHtml(fullName)}</td>
             <td>${escapeHtml(user.email) || "—"}</td>
             <td>${escapeHtml(user.phoneNumber) || "—"}</td>
@@ -447,6 +460,66 @@ async function submitEditUser(event) {
     } catch (err) {
         console.error(err);
         errorEl.textContent = "Network error";
+        errorEl.hidden = false;
+    }
+}
+
+// ===== Telegram orqali shaxsiy xabar (foydalanuvchi so'rovi, 2026-09-09) =====
+
+function openTelegramMessageModal(id) {
+    const user = usersById[id];
+    if (!user) return;
+
+    document.getElementById("tgMessageUserId").value = user.id;
+    document.getElementById("tgMessageUserLabel").textContent =
+        `Kimga: ${user.username}` + (user.telegramUsername ? ` (@${user.telegramUsername})` : "");
+    document.getElementById("tgMessageText").value = "";
+
+    const errorEl = document.getElementById("tgMessageError");
+    errorEl.hidden = true;
+    errorEl.textContent = "";
+
+    document.getElementById("telegramMessageOverlay").hidden = false;
+    document.getElementById("tgMessageText").focus();
+}
+
+function closeTelegramMessageModal() {
+    document.getElementById("telegramMessageOverlay").hidden = true;
+}
+
+async function submitTelegramMessage(event) {
+    event.preventDefault();
+
+    const id = document.getElementById("tgMessageUserId").value;
+    const text = document.getElementById("tgMessageText").value.trim();
+    const errorEl = document.getElementById("tgMessageError");
+    errorEl.hidden = true;
+
+    if (!text) {
+        errorEl.textContent = "Xabar matni bo'sh bo'lishi mumkin emas";
+        errorEl.hidden = false;
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/users/${id}/telegram-message`, {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({text})
+        });
+
+        if (!response.ok) {
+            const data = await response.json().catch(() => ({}));
+            errorEl.textContent = data.error || "Xatolik yuz berdi";
+            errorEl.hidden = false;
+            return;
+        }
+
+        closeTelegramMessageModal();
+        showAlertModal("✅ Xabar yuborildi.");
+    } catch (err) {
+        console.error(err);
+        errorEl.textContent = "Tarmoq xatoligi";
         errorEl.hidden = false;
     }
 }

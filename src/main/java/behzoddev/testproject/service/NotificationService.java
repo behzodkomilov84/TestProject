@@ -41,6 +41,33 @@ public class NotificationService {
         this.telegramBot = telegramBot;
     }
 
+    // "/users" sahifasidagi ✉️ ikonkasi — OWNER Telegram bot orqali
+    // foydalanuvchiga to'g'ridan-to'g'ri shaxsiy xabar yubora oladi
+    // (foydalanuvchi so'rovi, 2026-09-09). Mavjud create()/sendTelegramCopy
+    // infratuzilmasi qayta ishlatiladi — shu bilan xabar AVTOMATIK ravishda
+    // sayt bildirishnomalar markazida ham saqlanadi (tarix/audit uchun,
+    // "✅ O'qildim" tugmasi bilan Telegram'dagi bilan bir xil).
+    private static final int OWNER_MESSAGE_MAX_LENGTH = 2000;
+
+    @Transactional
+    public void sendOwnerMessage(User targetUser, String text) {
+        if (targetUser.getTelegramId() == null) {
+            throw new IllegalArgumentException("❌Bu foydalanuvchi Telegram botga ulanmagan — xabar yuborib bo'lmaydi");
+        }
+        if (text == null || text.trim().isEmpty()) {
+            throw new IllegalArgumentException("❌Xabar matni bo'sh bo'lishi mumkin emas");
+        }
+
+        String trimmed = text.trim();
+        if (trimmed.length() > OWNER_MESSAGE_MAX_LENGTH) {
+            throw new IllegalArgumentException(
+                    "❌Xabar juda uzun (ko'pi bilan " + OWNER_MESSAGE_MAX_LENGTH + " ta belgi bo'lishi kerak)");
+        }
+
+        create(targetUser, "✉️ Administrator (OWNER) dan shaxsiy xabar:\n\n" + trimmed, null);
+        log.info("OWNER foydalanuvchiga shaxsiy xabar yubordi: user={}", targetUser.getUsername());
+    }
+
     @Transactional
     public void create(User user, String message, String link) {
         Notification notification = notificationRepository.save(Notification.builder()

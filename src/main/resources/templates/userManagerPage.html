@@ -73,6 +73,31 @@
         </div>
     </div>
 
+    <!-- "✉️" ikonkasi orqali — OWNER Telegram bot orqali foydalanuvchiga
+         to'g'ridan-to'g'ri shaxsiy xabar yuboradi (foydalanuvchi so'rovi,
+         2026-09-09: "USERNAME yoniga bitta ikonka qo'ygin... bot orqali
+         unga shaxsiy habar jo'natish mumkin bo'lsin OWNER nomidan"). Faqat
+         Telegram ulangan (telegramId bor) foydalanuvchilarda ko'rinadi —
+         users.js#renderUsers. -->
+    <div id="telegramMessageOverlay" class="edit-modal-overlay" hidden>
+        <div class="edit-modal-box">
+            <h2>✉️ Telegram orqali shaxsiy xabar</h2>
+            <form id="telegramMessageForm">
+                <input type="hidden" id="tgMessageUserId">
+                <p id="tgMessageUserLabel" class="tg-message-user-label"></p>
+                <label>Xabar matni
+                    <textarea id="tgMessageText" rows="5" maxlength="2000" required
+                              placeholder="Foydalanuvchiga yubormoqchi bo'lgan xabaringizni yozing..."></textarea>
+                </label>
+                <p id="tgMessageError" class="edit-modal-error" hidden></p>
+                <div class="edit-modal-actions">
+                    <button type="button" class="edit-modal-cancel" onclick="closeTelegramMessageModal()">Bekor qilish</button>
+                    <button type="submit" class="edit-modal-save">📤 Yuborish</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Ustki gorizontal scroll — jadval uzun (ko'p qator) bo'lganda
          pastki scrollbar'gacha aylantirmasdan, tepadan ham gorizontal
          siljitish mumkin bo'lishi uchun (foydalanuvchi so'rovi,

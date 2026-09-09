@@ -243,18 +243,57 @@ body {
    tbody bilan ustunlar to'g'ri tekislanishi uchun. */
 .users-table thead .sticky-col-1 { width: 50px; }
 .users-table thead .sticky-col-2 { width: 56px; }
-.users-table thead .sticky-col-3 { width: 150px; }
+.users-table thead .sticky-col-3 { width: 185px; }
 
 .users-table tbody .sticky-col-1 { left: 0; width: 50px; }
 .users-table tbody .sticky-col-2 { left: 50px; width: 56px; }
 .users-table tbody .sticky-col-3 {
     left: 106px;
-    width: 150px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    width: 185px;
+    /* "✉️" tugmasi HAR DOIM to'liq ko'rinishi kerak — kesilib ketmasligi
+       uchun endi katakning o'zi emas, faqat ICHIDAGI username matni
+       (.username-cell-text) qisqartiriladi (foydalanuvchi so'rovi,
+       2026-09-09). */
+    display: flex;
+    align-items: center;
+    gap: 4px;
     /* Muzlatilgan (frozen) va oddiy aylanadigan ustunlar chegarasini
        ko'zga ko'rinadigan qilish uchun. */
     box-shadow: 2px 0 4px rgba(0, 0, 0, .08);
+}
+
+.username-cell-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+/* "✉️" — Telegram orqali shaxsiy xabar (foydalanuvchi so'rovi,
+   2026-09-09). Boshqa amal tugmalaridan (.action-btn — o'chirish uchun
+   qizg'ish) ajralib turishi uchun alohida (ko'k, xabar/muloqot rangi)
+   uslub bilan. */
+.tg-message-btn {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background .15s ease, transform .1s ease;
+}
+
+.tg-message-btn:hover {
+    background: #bfdbfe;
+    transform: scale(1.08);
 }
 
 /* Avatar ustuni (foydalanuvchi so'rovi, 2026-09-07) — rasm bo'lsa doira
@@ -503,6 +542,32 @@ select.role-select {
 .edit-modal-box input:focus {
     border-color: #2563eb;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);
+}
+
+/* "✉️ Telegram orqali shaxsiy xabar" oynasidagi matn maydoni — mavjud
+   .edit-modal-box input bilan bir xil uslub, faqat balandroq va
+   ko'p qatorli (foydalanuvchi so'rovi, 2026-09-09). */
+.edit-modal-box textarea {
+    font-size: 14px;
+    font-weight: normal;
+    padding: 8px 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    outline: none;
+    font-family: inherit;
+    resize: vertical;
+}
+
+.edit-modal-box textarea:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, .15);
+}
+
+.tg-message-user-label {
+    margin: -4px 0 0;
+    font-size: 13px;
+    color: #475569;
+    font-weight: 600;
 }
 
 .edit-modal-error {

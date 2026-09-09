@@ -91,6 +91,66 @@ class NotificationServiceTest {
         verify(notificationRepository).save(any());
     }
 
+    // ===== sendOwnerMessage ("/users" sahifasidagi ✉️ ikonkasi) =====
+
+    @Test
+    void sendOwnerMessage_userWithTelegram_savesAndSendsWithOwnerPrefix() throws Exception {
+        User user = User.builder().id(1L).username("bob").telegramId(555L).build();
+        when(notificationRepository.save(any())).thenAnswer(inv -> {
+            Notification n = inv.getArgument(0);
+            n.setId(42L);
+            return n;
+        });
+
+        notificationService.sendOwnerMessage(user, "  Salom, iltimos vazifani bajaring.  ");
+
+        ArgumentCaptor<Notification> saveCaptor = ArgumentCaptor.forClass(Notification.class);
+        verify(notificationRepository).save(saveCaptor.capture());
+        // Matn TRIM qilingan holda saqlanadi, boshiga OWNER izohi qo'shiladi.
+        assertThat(saveCaptor.getValue().getMessage())
+                .contains("Administrator (OWNER) dan shaxsiy xabar")
+                .contains("Salom, iltimos vazifani bajaring.")
+                .doesNotContain("  Salom");
+
+        ArgumentCaptor<SendMessage> tgCaptor = ArgumentCaptor.forClass(SendMessage.class);
+        verify(telegramBot).execute(tgCaptor.capture());
+        assertThat(tgCaptor.getValue().getChatId()).isEqualTo("555");
+    }
+
+    @Test
+    void sendOwnerMessage_userWithoutTelegram_throwsWithoutSaving() {
+        User user = User.builder().id(1L).username("bob").telegramId(null).build();
+
+        assertThatThrownBy(() -> notificationService.sendOwnerMessage(user, "Salom"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Telegram botga ulanmagan");
+
+        verify(notificationRepository, never()).save(any());
+    }
+
+    @Test
+    void sendOwnerMessage_blankText_throwsWithoutSaving() {
+        User user = User.builder().id(1L).username("bob").telegramId(555L).build();
+
+        assertThatThrownBy(() -> notificationService.sendOwnerMessage(user, "   "))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("bo'sh bo'lishi mumkin emas");
+
+        verify(notificationRepository, never()).save(any());
+    }
+
+    @Test
+    void sendOwnerMessage_tooLong_throwsWithoutSaving() {
+        User user = User.builder().id(1L).username("bob").telegramId(555L).build();
+        String tooLong = "a".repeat(2001);
+
+        assertThatThrownBy(() -> notificationService.sendOwnerMessage(user, tooLong))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("juda uzun");
+
+        verify(notificationRepository, never()).save(any());
+    }
+
     // ===== list / unreadCount / listByStatus / stats =====
 
     @Test

@@ -3,10 +3,12 @@ package behzoddev.testproject.controller.api;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.dto.audit.RoleAuditLogDto;
 import behzoddev.testproject.dto.user.ChangeRoleDto;
+import behzoddev.testproject.dto.user.SendTelegramMessageDto;
 import behzoddev.testproject.dto.user.UpdateUserDto;
 import behzoddev.testproject.dto.user.UserDto;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.User;
+import behzoddev.testproject.service.NotificationService;
 import behzoddev.testproject.service.RoleAuditService;
 import behzoddev.testproject.service.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 @RestController
 @RequiredArgsConstructor
@@ -27,6 +30,7 @@ public class UserRestController {
     private final UserRepository userRepository;
     private final UserServiceImpl userServiceImpl;
     private final RoleAuditService roleAuditService;
+    private final NotificationService notificationService;
 
     @GetMapping("/api/users")
     @PreAuthorize("hasAuthority('ROLE_OWNER')")
@@ -47,6 +51,25 @@ public class UserRestController {
             User updated = userServiceImpl.adminUpdateUser(id, dto);
             return ResponseEntity.ok(toDto(updated));
         } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // "/users" sahifasidagi USERNAME yonidagi ✉️ ikonkasi — OWNER
+    // foydalanuvchiga Telegram bot orqali shaxsiy xabar yuboradi
+    // (foydalanuvchi so'rovi, 2026-09-09: "bot orqali unga shaxsiy habar
+    // jo'natish mumkin bo'lsin OWNER nomidan"). Haqiqiy yuborish
+    // NotificationService.sendOwnerMessage ichida — shu bilan xabar
+    // AVTOMATIK sayt bildirishnomalar markazida ham saqlanadi.
+    @PostMapping("/api/users/{id}/telegram-message")
+    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    public ResponseEntity<?> sendTelegramMessage(@PathVariable Long id, @RequestBody SendTelegramMessageDto dto) {
+        try {
+            User target = userRepository.findById(id)
+                    .orElseThrow(() -> new NoSuchElementException("Foydalanuvchi topilmadi"));
+            notificationService.sendOwnerMessage(target, dto.text());
+            return ResponseEntity.ok(Map.of("sent", true));
+        } catch (IllegalArgumentException | NoSuchElementException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
