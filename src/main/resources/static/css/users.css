@@ -158,25 +158,36 @@ body {
    orqali qaysi qator qaysi foydalanuvchiga tegishli ekani hech qachon
    yo'qolmaydi. Qattiq kenglik (JS emas, CSS) — sticky "left" offsetlari
    oldindan ma'lum bo'lishi uchun. Fon ATAYLAB TO'LIQ (opak) — aks holda
-   pastdagi (gorizontal aylantirilgan) ustunlar tagidan ko'rinib turardi. */
-.users-table .sticky-col-1,
-.users-table .sticky-col-2,
-.users-table .sticky-col-3 {
+   pastdagi (gorizontal aylantirilgan) ustunlar tagidan ko'rinib turardi.
+   MUHIM (haqiqiy topilgan bug, 2026-09-09, jonli tekshiruvda topildi):
+   sticky-left FAQAT tbody katakchalariga qo'llanadi, thead'ga EMAS —
+   BIR XIL katakchada ham sticky-top (yuqorida), ham sticky-left birga
+   qo'llanilsa, Chromium jadval sarlavhasini VIZUAL ravishda birinchi
+   qator ICHIGA "sirg'atib" chizib qo'yadigan mashhur render nuqsoniga
+   ega (border-collapse:separate ham yordam bermadi — sinovdan o'tkazildi,
+   asosiy sabab aynan shu ikki yo'nalishli sticky kombinatsiyasi edi).
+   Natijada: sarlavhadagi ID/Avatar/Username YOZUVLARI gorizontal
+   aylantirilganda (pastga SIRALGAN holda emas, oddiy holatda) chapga
+   suriladi — lekin bu kamdan-kam holat (odatda avval pastga, keyin
+   gorizontal alohida aylantiriladi), va sarlavha TEPADA to'g'ri
+   turishi ustuvor talab edi. */
+.users-table tbody .sticky-col-1,
+.users-table tbody .sticky-col-2,
+.users-table tbody .sticky-col-3 {
     position: sticky;
     z-index: 2;
     background: #fff;
 }
 
-.users-table thead th.sticky-col-1,
-.users-table thead th.sticky-col-2,
-.users-table thead th.sticky-col-3 {
-    z-index: 4; /* tepa-chap burchak — ham sticky-top, ham sticky-left */
-    background: #f1f3f5;
-}
+/* Kengliklar hamon mos kelishi kerak (thead sticky-left OLMASA ham) —
+   tbody bilan ustunlar to'g'ri tekislanishi uchun. */
+.users-table thead .sticky-col-1 { width: 50px; }
+.users-table thead .sticky-col-2 { width: 56px; }
+.users-table thead .sticky-col-3 { width: 150px; }
 
-.users-table .sticky-col-1 { left: 0; width: 50px; }
-.users-table .sticky-col-2 { left: 50px; width: 56px; }
-.users-table .sticky-col-3 {
+.users-table tbody .sticky-col-1 { left: 0; width: 50px; }
+.users-table tbody .sticky-col-2 { left: 50px; width: 56px; }
+.users-table tbody .sticky-col-3 {
     left: 106px;
     width: 150px;
     overflow: hidden;
