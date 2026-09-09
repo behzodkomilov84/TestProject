@@ -34,6 +34,7 @@ import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -319,6 +320,32 @@ class CourseSubscriptionServiceTest {
         verify(courseSubscriptionRepository).save(sub);
     }
 
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-09: "Foydalanuvchini
+    // obunasi rad etildi, lekin bildirishnomaga kelmadi USER ga") — PENDING
+    // so'rov rad etilganda foydalanuvchiga xabar borishi kerak, aniq "rad
+    // etildi" so'zi bilan (CONFIRMED obuna bekor qilinganidan farqli matn).
+    @Test
+    void cancel_wasPending_notifiesUserWithRejectedWording() {
+        CourseSubscription sub = CourseSubscription.builder().id(7L).user(student).course(course)
+                .amount(BigDecimal.TEN).status(CourseSubscriptionStatus.PENDING).build();
+        when(courseSubscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+
+        courseSubscriptionService.cancel(7L, owner);
+
+        verify(notificationService).create(eq(student), contains("rad etildi"), eq("/courses/1"));
+    }
+
+    @Test
+    void cancel_wasConfirmed_notifiesUserWithCancelledWording() {
+        CourseSubscription sub = CourseSubscription.builder().id(7L).user(student).course(course)
+                .amount(BigDecimal.TEN).status(CourseSubscriptionStatus.CONFIRMED).build();
+        when(courseSubscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+
+        courseSubscriptionService.cancel(7L, owner);
+
+        verify(notificationService).create(eq(student), contains("bekor qilindi"), eq("/courses/1"));
+    }
+
     @Test
     void cancel_notFound_throws() {
         when(courseSubscriptionRepository.findById(7L)).thenReturn(Optional.empty());
@@ -541,6 +568,76 @@ class CourseSubscriptionServiceTest {
         assertThat(result.id()).isEqualTo(5L);
         assertThat(pending.getStatus()).isEqualTo(CourseSubscriptionStatus.CONFIRMED);
         verify(courseSubscriptionRepository, times(1)).save(pending);
+    }
+
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-09): sinov
+    // FAOL paytida to'lansa, yangi qator yaratish o'rniga O'SHA sinov
+    // qatorining o'zi to'lovga "yangilanishi" kerak — aks holda ikkita
+    // CONFIRMED qator qolib, eski sinov qatori keyinroq muddati tugab
+    // "EXPIRED" bo'lganda, allaqachon to'lagan foydalanuvchiga
+    // chalg'ituvchi "sinov tugadi" xabari yuborilardi.
+    @Test
+    void confirmOnline_activeTrialExists_upgradesSameRowInsteadOfCreatingNew() {
+        CourseSubscription activeTrial = CourseSubscription.builder().id(9L).user(student).course(course)
+                .amount(BigDecimal.ZERO).status(CourseSubscriptionStatus.CONFIRMED).trial(true)
+                .endDate(LocalDateTime.now().plusDays(2)).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSubscriptionRepository.findByUser_IdAndCourse_IdAndStatus(
+                1L, 1L, CourseSubscriptionStatus.PENDING)).thenReturn(Optional.empty());
+        when(courseSubscriptionRepository.findByUser_IdAndCourse_IdAndStatus(
+                1L, 1L, CourseSubscriptionStatus.CONFIRMED)).thenReturn(Optional.of(activeTrial));
+
+        CourseSubscriptionDto result =
+                courseSubscriptionService.confirmOnline(student, 1L, BigDecimal.valueOf(50_000), 1);
+
+        assertThat(result.id()).isEqualTo(9L);
+        assertThat(activeTrial.isTrial()).isFalse();
+        assertThat(activeTrial.getAmount()).isEqualByComparingTo("50000");
+        verify(courseSubscriptionRepository, times(1)).save(activeTrial);
+    }
+
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-09: "3 кун
+    // триал берилди... тўлаган суммасига кўра берилган муддатга бонус
+    // кунлари ҳам қўшиб берилсин") — sinov FAOL paytida to'lansa, undan
+    // qolgan kunlar to'langan muddatga QO'SHILISHI kerak, yo'qolib
+    // ketmasligi kerak.
+    @Test
+    void confirmOnline_activeTrialWithDaysLeft_addsRemainingDaysAsBonus() {
+        CourseSubscription activeTrial = CourseSubscription.builder().id(9L).user(student).course(course)
+                .amount(BigDecimal.ZERO).status(CourseSubscriptionStatus.CONFIRMED).trial(true)
+                .endDate(LocalDateTime.now().plusDays(2)).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSubscriptionRepository.findByUser_IdAndCourse_IdAndStatus(
+                1L, 1L, CourseSubscriptionStatus.PENDING)).thenReturn(Optional.empty());
+        when(courseSubscriptionRepository.findByUser_IdAndCourse_IdAndStatus(
+                1L, 1L, CourseSubscriptionStatus.CONFIRMED)).thenReturn(Optional.of(activeTrial));
+
+        courseSubscriptionService.confirmOnline(student, 1L, BigDecimal.valueOf(50_000), 1);
+
+        // 1 oy + ~2 kun bonus — sinovning ~2 kun qolgani sababli.
+        LocalDateTime expectedMinimum = LocalDateTime.now().plusMonths(1).plusDays(1);
+        assertThat(activeTrial.getEndDate()).isAfter(expectedMinimum);
+        assertThat(activeTrial.getNote()).contains("bonus");
+    }
+
+    @Test
+    void confirmOnline_noActiveTrial_noBonusDaysAdded() {
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSubscriptionRepository.findByUser_IdAndCourse_IdAndStatus(
+                1L, 1L, CourseSubscriptionStatus.PENDING)).thenReturn(Optional.empty());
+        when(courseSubscriptionRepository.findByUser_IdAndCourse_IdAndStatus(
+                1L, 1L, CourseSubscriptionStatus.CONFIRMED)).thenReturn(Optional.empty());
+
+        ArgumentCaptor<CourseSubscription> captor = ArgumentCaptor.forClass(CourseSubscription.class);
+
+        courseSubscriptionService.confirmOnline(student, 1L, BigDecimal.valueOf(50_000), 1);
+
+        verify(courseSubscriptionRepository).save(captor.capture());
+        assertThat(Period.between(captor.getValue().getStartDate().toLocalDate(),
+                captor.getValue().getEndDate().toLocalDate()).toTotalMonths()).isEqualTo(1);
+        assertThat(captor.getValue().getNote()).doesNotContain("bonus");
     }
 
     @Test

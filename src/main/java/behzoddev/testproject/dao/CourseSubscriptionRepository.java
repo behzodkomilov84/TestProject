@@ -27,6 +27,16 @@ public interface CourseSubscriptionRepository extends JpaRepository<CourseSubscr
     boolean existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
             Long userId, Long courseId, CourseSubscriptionStatus status, LocalDateTime time);
 
+    // PaymentOrderService#createCourseOrder uchun — "allaqachon obuna
+    // bo'lgansiz" tekshiruvi FAQAT haqiqiy (pullik) faol obunani hisobga
+    // olishi kerak, "🎁 bepul sinov" (trial=true) ni EMAS — aks holda
+    // sinov faol paytida "💳 Hoziroq to'lash" tugmasi HECH QACHON
+    // ishlamas edi (haqiqiy topilgan bug, foydalanuvchi so'rovi,
+    // 2026-09-09: "3 кун триал берилди. Лекин 'Хозироқ тўлашни боссам
+    // шу чиқаяпти'" — "Siz allaqachon shu kursga obuna bo'lgansiz").
+    boolean existsByUser_IdAndCourse_IdAndStatusAndEndDateAfterAndTrialFalse(
+            Long userId, Long courseId, CourseSubscriptionStatus status, LocalDateTime time);
+
     Optional<CourseSubscription> findByUser_IdAndCourse_IdAndStatus(Long userId, Long courseId, CourseSubscriptionStatus status);
 
     List<CourseSubscription> findByCourse_IdOrderByCreatedAtDesc(Long courseId);

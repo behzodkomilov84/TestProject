@@ -227,6 +227,17 @@ public class SubscriptionService {
         }
 
         subscription.setStatus(SubscriptionStatus.CANCELLED);
+
+        // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-09:
+        // "Foydalanuvchini obunasi rad etildi, lekin bildirishnomaga
+        // kelmadi USER ga") — CourseSubscriptionService.cancel() bilan bir
+        // xil kamchilik, shu yerda ham tuzatildi.
+        notificationService.create(subscription.getUser(),
+                "❌ ADMIN huquqiga so'rovingiz administrator tomonidan rad etildi.",
+                "/profile");
+
+        log.info("ADMIN obunasi so'rovi rad etildi: user={}", subscription.getUser().getUsername());
+
         return toDto(subscription);
     }
 

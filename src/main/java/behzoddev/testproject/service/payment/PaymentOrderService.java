@@ -106,7 +106,11 @@ public class PaymentOrderService {
             throw new IllegalStateException("❌Kurs narxi hali belgilanmagan — OWNER bilan bog'laning");
         }
 
-        if (courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+        // "Trial=false" — bepul sinov FAOL bo'lganda bu tekshiruv
+        // bloklamasligi kerak, chunki aynan shu payt "💳 Hoziroq to'lash"
+        // tugmasi bilan oldindan to'lash imkoni berilishi kerak (haqiqiy
+        // topilgan bug, foydalanuvchi so'rovi, 2026-09-09).
+        if (courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfterAndTrialFalse(
                 user.getId(), courseId, CourseSubscriptionStatus.CONFIRMED, LocalDateTime.now())) {
             throw new IllegalArgumentException("❌Siz allaqachon shu kursga obuna bo'lgansiz");
         }

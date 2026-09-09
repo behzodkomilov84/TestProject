@@ -269,13 +269,30 @@ class PaymentOrderServiceTest {
     @Test
     void createCourseOrder_alreadySubscribed_throws() {
         when(courseRepository.findById(5L)).thenReturn(Optional.of(paidCourse()));
-        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfterAndTrialFalse(
                 eq(user.getId()), eq(5L), eq(behzoddev.testproject.entity.enums.CourseSubscriptionStatus.CONFIRMED), any()))
                 .thenReturn(true);
 
         assertThatThrownBy(() -> paymentOrderService.createCourseOrder(user, 5L, 1))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("allaqachon shu kursga obuna");
+    }
+
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-09: "3 кун
+    // триал берилди. Лекин 'Хозироқ тўлашни боссам шу чиқаяпти'" —
+    // "Siz allaqachon shu kursga obuna bo'lgansiz") — bepul sinov FAOL
+    // paytida to'lov BLOKLANMASLIGI kerak, aks holda oldindan to'lash
+    // imkoni umuman ishlamas edi.
+    @Test
+    void createCourseOrder_activeTrial_doesNotBlock() {
+        when(courseRepository.findById(5L)).thenReturn(Optional.of(paidCourse()));
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfterAndTrialFalse(
+                eq(user.getId()), eq(5L), eq(behzoddev.testproject.entity.enums.CourseSubscriptionStatus.CONFIRMED), any()))
+                .thenReturn(false);
+
+        PaymentOrder order = paymentOrderService.createCourseOrder(user, 5L, 1);
+
+        assertThat(order.getStatus()).isEqualTo(PaymentOrderStatus.CREATED);
     }
 
     @Test

@@ -210,6 +210,19 @@ class SubscriptionServiceTest {
         assertThat(result.status()).isEqualTo("CANCELLED");
     }
 
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-09): rad
+    // etilganda foydalanuvchiga bildirishnoma yubormas edi.
+    @Test
+    void cancel_success_notifiesUser() {
+        Subscription pending = Subscription.builder().id(7L).user(owner).amount(BigDecimal.TEN)
+                .source(SubscriptionSource.TELEGRAM).status(SubscriptionStatus.PENDING).build();
+        when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(pending));
+
+        subscriptionService.cancel(7L);
+
+        verify(notificationService).create(eq(owner), org.mockito.ArgumentMatchers.contains("rad etildi"), anyString());
+    }
+
     @Test
     void cancel_notFound_throws() {
         when(subscriptionRepository.findById(7L)).thenReturn(Optional.empty());

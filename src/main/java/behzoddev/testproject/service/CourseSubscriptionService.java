@@ -83,9 +83,13 @@ public class CourseSubscriptionService {
 
         courseSubscriptionRepository.save(subscription);
 
+        // Matn aniqlik uchun tuzatildi (foydalanuvchi so'rovi, 2026-09-09:
+        // "Хабар берамиз эмас тўловга қадар блокланади дейиш керак") —
+        // "xabar beramiz" chalg'ituvchi edi, aslida muddat tugagach kurs
+        // TO'LOVGA QADAR yopiladi (kirish avtomatik bloklanadi).
         notificationService.create(user,
                 "🎁 \"" + course.getTitle() + "\" kursidan " + TRIAL_DURATION_DAYS +
-                        " kun BEPUL foydalanishingiz mumkin! Muddati tugagach, xabar beramiz.",
+                        " kun BEPUL foydalanishingiz mumkin! Muddati tugagach, to'lov qilmaguningizcha kursga kirish bloklanadi.",
                 "/courses/" + courseId);
 
         log.info("Kursga bepul sinov berildi: user={}, course={}, {} kun",
@@ -214,26 +218,55 @@ public class CourseSubscriptionService {
 
         // Agar oldindan PENDING so'rov bo'lsa — o'shani tasdiqlaymiz
         // (subscribe() bilan bir xil — yangi qator yaratib, eskisini
-        // "yetim" qoldirmaymiz).
+        // "yetim" qoldirmaymiz). SHUNINGDEK: agar hozir FAOL "🎁 bepul
+        // sinov" bo'lsa — o'sha QATORNI TO'LOVGA "yangilaymiz" (yangi
+        // qator yaratmaymiz) — aks holda ikkita CONFIRMED qator qolib
+        // ketardi va eski sinov qatori kunlik job orqali keyinroq
+        // "EXPIRED" bo'lib, allaqachon to'lagan foydalanuvchiga
+        // chalg'ituvchi "sinov tugadi" xabari yuborardi (haqiqiy topilgan
+        // bug, foydalanuvchi so'rovi, 2026-09-09).
         CourseSubscription subscription = courseSubscriptionRepository
                 .findByUser_IdAndCourse_IdAndStatus(user.getId(), courseId, CourseSubscriptionStatus.PENDING)
+                .or(() -> courseSubscriptionRepository
+                        .findByUser_IdAndCourse_IdAndStatus(user.getId(), courseId, CourseSubscriptionStatus.CONFIRMED)
+                        .filter(CourseSubscription::isTrial))
                 .orElseGet(() -> CourseSubscription.builder().user(user).course(course).build());
+
+        // "Bonus kunlar" — sinov FAOL paytida to'lansa, undan qolgan
+        // kunlar to'langan muddatga QO'SHIB beriladi, yo'qolib ketmaydi
+        // (foydalanuvchi so'rovi, 2026-09-09: "тўлаган суммасига кўра
+        // берилган муддатга бонус кунлари ҳам қўшиб берилсин"). Status
+        // o'zgartirilishidan OLDIN hisoblanadi — pastda subscription
+        // endDate/trial allaqachon qayta yozilgan bo'lmasin.
+        long bonusDays = 0;
+        if (subscription.isTrial() && subscription.getEndDate() != null && subscription.getEndDate().isAfter(now)) {
+            bonusDays = java.time.Duration.between(now, subscription.getEndDate()).toDays();
+            // To'liq kunga yetmagan (masalan 5 soat) qolgan vaqt ham
+            // yo'qolib ketmasligi kerak — hech bo'lmasa 1 kun beriladi.
+            if (bonusDays <= 0) {
+                bonusDays = 1;
+            }
+        }
 
         subscription.setAmount(amount);
         subscription.setStatus(CourseSubscriptionStatus.CONFIRMED);
         subscription.setStartDate(now);
-        subscription.setEndDate(now.plusMonths(months));
-        subscription.setNote("Onlayn to'lov (Click) orqali avtomatik tasdiqlandi");
+        subscription.setEndDate(now.plusMonths(months).plusDays(bonusDays));
+        subscription.setNote(bonusDays > 0
+                ? "Onlayn to'lov (Click) orqali avtomatik tasdiqlandi (+" + bonusDays + " kun sinov bonusi)"
+                : "Onlayn to'lov (Click) orqali avtomatik tasdiqlandi");
+        subscription.setTrial(false);
 
         courseSubscriptionRepository.save(subscription);
 
+        String bonusText = bonusDays > 0 ? " + " + bonusDays + " kun bonus" : "";
         notificationService.create(user,
                 "✅ \"" + course.getTitle() + "\" kursiga onlayn to'lov orqali obuna bo'ldingiz (" + months +
-                        " oy)! Endi 1-bo'lim ochiq.",
+                        " oy" + bonusText + ")! Endi 1-bo'lim ochiq.",
                 "/courses/" + courseId);
 
-        log.info("Kurs obunasi (ONLINE) tasdiqlandi: user={}, course={}, muddat={} oy",
-                user.getUsername(), course.getTitle(), months);
+        log.info("Kurs obunasi (ONLINE) tasdiqlandi: user={}, course={}, muddat={} oy, bonus={} kun",
+                user.getUsername(), course.getTitle(), months, bonusDays);
 
         return toDto(subscription);
     }
@@ -269,8 +302,27 @@ public class CourseSubscriptionService {
         // rad etishi mumkin — ROLE_OWNER cheklovsiz (foydalanuvchi so'rovi, 2026-09-07).
         checkCanManage(subscription.getCourse(), requester);
 
+        // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-09:
+        // "Foydalanuvchini obunasi rad etildi, lekin bildirishnomaga
+        // kelmadi USER ga") — bu metod PENDING so'rovni ("rad etish") VA
+        // CONFIRMED obunani ("bekor qilish") bir xil holatga o'tkazadi,
+        // lekin foydalanuvchiga hech qachon xabar bermas edi. Status
+        // o'zgartirilishidan OLDIN saqlab qo'yiladi — matn shunga qarab
+        // to'g'ri so'z bilan ("rad etildi" / "bekor qilindi") tanlanadi.
+        boolean wasPending = subscription.getStatus() == CourseSubscriptionStatus.PENDING;
+
         subscription.setStatus(CourseSubscriptionStatus.CANCELLED);
         courseSubscriptionRepository.save(subscription);
+
+        String message = wasPending
+                ? "❌ \"" + subscription.getCourse().getTitle() + "\" kursiga obuna so'rovingiz administrator tomonidan rad etildi."
+                : "⚠️ \"" + subscription.getCourse().getTitle() + "\" kursiga obunangiz administrator tomonidan bekor qilindi.";
+
+        notificationService.create(subscription.getUser(), message, "/courses/" + subscription.getCourse().getId());
+
+        log.info("Kurs obunasi {}: user={}, course={}, requester={}",
+                wasPending ? "rad etildi" : "bekor qilindi",
+                subscription.getUser().getUsername(), subscription.getCourse().getTitle(), requester.getUsername());
     }
 
     // Har kuni 00:35'da ishga tushadi (SubscriptionService.expireSubscriptions
