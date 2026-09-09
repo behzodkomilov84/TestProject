@@ -63,7 +63,8 @@ public class SubscriptionController {
             @RequestBody UpdateSubscriptionDto dto,
             @AuthenticationPrincipal User requester
     ) {
-        return ResponseEntity.ok(subscriptionService.updateSubscription(id, dto.amount(), dto.durationMonths(), requester));
+        return ResponseEntity.ok(subscriptionService.updateSubscription(
+                id, dto.amount(), dto.durationMonths(), dto.source(), requester));
     }
 
     // "🗑️ O'chirish" — "cancel"dan farqli, yozuvni BUTUNLAY o'chiradi.

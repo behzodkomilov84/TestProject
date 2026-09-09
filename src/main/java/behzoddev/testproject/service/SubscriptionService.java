@@ -274,7 +274,8 @@ public class SubscriptionService {
     // "qayta tiklash" tugmasi shart emas (CourseSubscriptionService.
     // updateSubscription bilan bir xil g'oya).
     @Transactional
-    public SubscriptionDto updateSubscription(Long subscriptionId, BigDecimal amount, Integer durationMonths, User requester) {
+    public SubscriptionDto updateSubscription(Long subscriptionId, BigDecimal amount, Integer durationMonths,
+                                               String source, User requester) {
         Subscription subscription = subscriptionRepository.findById(subscriptionId)
                 .orElseThrow(() -> new NoSuchElementException("Obuna topilmadi"));
 
@@ -283,6 +284,18 @@ public class SubscriptionService {
         }
         if (durationMonths == null || durationMonths <= 0) {
             throw new IllegalArgumentException("❌Muddat noto'g'ri");
+        }
+
+        // "Manba"ni ham tahrirlash imkoni (foydalanuvchi so'rovi,
+        // 2026-09-09: "Админ обуналарини таҳрирлашда манбасини ҳам
+        // таҳрирлаш мумкин бўлсин"). Bo'sh/null bo'lsa — mavjud manba
+        // o'zgarishsiz qoladi (eski frontend/so'rovlar bilan moslik uchun).
+        if (source != null && !source.isBlank()) {
+            try {
+                subscription.setSource(SubscriptionSource.valueOf(source.trim().toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                throw new IllegalArgumentException("❌Manba noto'g'ri (MANUAL, ONLINE yoki TELEGRAM bo'lishi kerak)");
+            }
         }
 
         LocalDateTime startDate = subscription.getStartDate() != null ? subscription.getStartDate() : LocalDateTime.now();

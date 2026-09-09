@@ -296,13 +296,41 @@ class SubscriptionServiceTest {
         when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
         when(roleRepository.findByRoleName("ROLE_ADMIN")).thenReturn(Optional.of(roleAdmin));
 
-        SubscriptionDto result = subscriptionService.updateSubscription(7L, BigDecimal.valueOf(200_000), 3, owner);
+        SubscriptionDto result = subscriptionService.updateSubscription(7L, BigDecimal.valueOf(200_000), 3, null, owner);
 
         assertThat(sub.getAmount()).isEqualByComparingTo("200000");
         assertThat(sub.getEndDate()).isEqualTo(start.plusMonths(3));
         assertThat(sub.getStatus()).isEqualTo(SubscriptionStatus.CONFIRMED);
         assertThat(targetUser.hasRole("ROLE_ADMIN")).isTrue();
         assertThat(result.id()).isEqualTo(7L);
+        // "source" null berilganda mavjud manba o'zgarishsiz qoladi.
+        assertThat(sub.getSource()).isEqualTo(SubscriptionSource.MANUAL);
+    }
+
+    // "Manba"ni ham tahrirlash imkoni (foydalanuvchi so'rovi, 2026-09-09:
+    // "Админ обуналарини таҳрирлашда манбасини ҳам таҳрирлаш мумкин
+    // бўлсин").
+    @Test
+    void updateSubscription_sourceProvided_updatesSource() {
+        Subscription sub = Subscription.builder().id(7L).user(owner).amount(BigDecimal.TEN)
+                .source(SubscriptionSource.ONLINE).status(SubscriptionStatus.CONFIRMED).build();
+        when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+
+        subscriptionService.updateSubscription(7L, BigDecimal.TEN, 1, "manual", owner);
+
+        // Kichik/katta harf farqi muhim emas — server tarafda normalizatsiya qilinadi.
+        assertThat(sub.getSource()).isEqualTo(SubscriptionSource.MANUAL);
+    }
+
+    @Test
+    void updateSubscription_invalidSource_throws() {
+        Subscription sub = Subscription.builder().id(7L).user(owner).amount(BigDecimal.TEN)
+                .source(SubscriptionSource.ONLINE).status(SubscriptionStatus.CONFIRMED).build();
+        when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+
+        assertThatThrownBy(() -> subscriptionService.updateSubscription(7L, BigDecimal.TEN, 1, "NOT_A_SOURCE", owner))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Manba noto'g'ri");
     }
 
     // Eskirgan (EXPIRED) yoki bekor qilingan (CANCELLED) obunani
@@ -315,7 +343,7 @@ class SubscriptionServiceTest {
         when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
         when(roleRepository.findByRoleName("ROLE_ADMIN")).thenReturn(Optional.of(roleAdmin));
 
-        subscriptionService.updateSubscription(7L, BigDecimal.valueOf(50_000), 1, owner);
+        subscriptionService.updateSubscription(7L, BigDecimal.valueOf(50_000), 1, null, owner);
 
         assertThat(sub.getStatus()).isEqualTo(SubscriptionStatus.CONFIRMED);
         assertThat(targetUser.hasRole("ROLE_ADMIN")).isTrue();
@@ -325,7 +353,7 @@ class SubscriptionServiceTest {
     void updateSubscription_notFound_throws() {
         when(subscriptionRepository.findById(7L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> subscriptionService.updateSubscription(7L, BigDecimal.TEN, 1, owner))
+        assertThatThrownBy(() -> subscriptionService.updateSubscription(7L, BigDecimal.TEN, 1, null, owner))
                 .isInstanceOf(NoSuchElementException.class);
     }
 
@@ -335,7 +363,7 @@ class SubscriptionServiceTest {
                 .source(SubscriptionSource.MANUAL).status(SubscriptionStatus.CONFIRMED).build();
         when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
 
-        assertThatThrownBy(() -> subscriptionService.updateSubscription(7L, BigDecimal.ZERO, 1, owner))
+        assertThatThrownBy(() -> subscriptionService.updateSubscription(7L, BigDecimal.ZERO, 1, null, owner))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -345,7 +373,7 @@ class SubscriptionServiceTest {
                 .source(SubscriptionSource.MANUAL).status(SubscriptionStatus.CONFIRMED).build();
         when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
 
-        assertThatThrownBy(() -> subscriptionService.updateSubscription(7L, BigDecimal.TEN, 0, owner))
+        assertThatThrownBy(() -> subscriptionService.updateSubscription(7L, BigDecimal.TEN, 0, null, owner))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 

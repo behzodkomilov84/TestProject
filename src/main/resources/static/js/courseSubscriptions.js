@@ -216,7 +216,7 @@ function renderSubscribers() {
         : allSubs;
 
     if (!subs.length) {
-        tbody.innerHTML = `<tr><td colspan="7" class="empty-row">Hali obuna yo'q</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" class="empty-row">Hali obuna yo'q</td></tr>`;
         return;
     }
 
@@ -225,6 +225,17 @@ function renderSubscribers() {
         PENDING: "⏳ So'rov kutmoqda",
         EXPIRED: "⌛ Muddati tugagan",
         CANCELLED: "❌ Bekor qilingan"
+    };
+
+    // "Manba" — qanday yo'l bilan berilgani (foydalanuvchi so'rovi,
+    // 2026-09-09: "қайси усулда обуна берилганини қўшиш керак: автоматик
+    // (клик орқали тўлов орқали)ми ёки қўлдами?") — serverda hisoblanadi
+    // (CourseSubscriptionService#subscriptionSource).
+    const sourceLabels = {
+        MANUAL: "✋ Qo'lda berilgan",
+        ONLINE: "💳 Onlayn to'lov (Click)",
+        TRIAL: "🎁 Bepul sinov",
+        REQUESTED: "📩 So'rov"
     };
 
     tbody.innerHTML = subs.map(s => {
@@ -253,6 +264,7 @@ function renderSubscribers() {
                 <td>${escapeHtml(s.username)}</td>
                 <td>${Number(s.amount).toLocaleString("uz-UZ")} so'm</td>
                 <td>${statusLabels[s.status] || s.status}</td>
+                <td>${sourceLabels[s.source] || s.source || "—"}</td>
                 <td>${muddat}</td>
                 <td>${new Date(s.createdAt).toLocaleDateString("uz-UZ")}</td>
                 <td>${actions}</td>

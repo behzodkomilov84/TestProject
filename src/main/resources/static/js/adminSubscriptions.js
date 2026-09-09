@@ -130,6 +130,16 @@ const ADMIN_SUB_STATUS_LABELS = {
     CANCELLED: "❌ Bekor qilingan"
 };
 
+// "Manba" ustuni — /courses/subscriptions'dagi bilan bir xil g'oyada,
+// lekin bu yerda enum tayyor holda keladi (Subscription.source), hisoblab
+// olish shart emas (foydalanuvchi so'rovi, 2026-09-09: "қайси усулда
+// обуна берилганини қўшиш керак").
+const ADMIN_SUB_SOURCE_LABELS = {
+    MANUAL: "✋ Qo'lda berilgan",
+    ONLINE: "💳 Onlayn to'lov (Click)",
+    TELEGRAM: "🤖 Telegram bot orqali"
+};
+
 function renderAllSubscriptions() {
     const tbody = document.getElementById("allSubsTableBody");
     if (!tbody) return;
@@ -166,7 +176,7 @@ function renderAllSubscriptions() {
             <tr>
                 <td>${escapeHtmlAdmin(s.username)}</td>
                 <td>${Number(s.amount).toLocaleString("uz-UZ")} so'm</td>
-                <td>${escapeHtmlAdmin(s.source)}</td>
+                <td>${ADMIN_SUB_SOURCE_LABELS[s.source] || escapeHtmlAdmin(s.source)}</td>
                 <td><span class="sub-status-badge ${statusClass}">${ADMIN_SUB_STATUS_LABELS[s.status] || s.status}</span></td>
                 <td>${muddat}</td>
                 <td>${new Date(s.createdAt).toLocaleDateString("uz-UZ")}</td>
@@ -229,11 +239,25 @@ async function editAdminSubscription(id) {
         return;
     }
 
+    // "Manba"ni ham tahrirlash imkoni (foydalanuvchi so'rovi, 2026-09-09:
+    // "Админ обуналарини таҳрирлашда манбасини ҳам таҳрирлаш мумкин
+    // бўлсин"). Bo'sh qoldirilsa — mavjud manba o'zgarishsiz qoladi.
+    const sourceStr = await showPromptModal(
+        "Manba (MANUAL, ONLINE yoki TELEGRAM — bo'sh qoldirsangiz o'zgarmaydi):",
+        sub.source || "");
+    if (sourceStr === null) return;
+
+    const trimmedSource = sourceStr.trim().toUpperCase();
+    if (trimmedSource && !["MANUAL", "ONLINE", "TELEGRAM"].includes(trimmedSource)) {
+        showAlertModal("❌ Manba noto'g'ri (MANUAL, ONLINE yoki TELEGRAM bo'lishi kerak)");
+        return;
+    }
+
     try {
         const res = await fetch(`/api/subscriptions/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ amount, durationMonths })
+            body: JSON.stringify({ amount, durationMonths, source: trimmedSource || null })
         });
 
         const data = await res.json().catch(() => ({}));

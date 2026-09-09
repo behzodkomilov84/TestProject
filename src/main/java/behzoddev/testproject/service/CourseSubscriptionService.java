@@ -350,6 +350,11 @@ public class CourseSubscriptionService {
         subscription.setEndDate(startDate.plusMonths(durationMonths));
         subscription.setStatus(CourseSubscriptionStatus.CONFIRMED);
         subscription.setTrial(false);
+        // "Manba" ustunida to'g'ri "✋ Qo'lda berilgan" ko'rsatilishi
+        // uchun (foydalanuvchi so'rovi, 2026-09-09) — bu OWNER/ADMIN'ning
+        // o'zi bajargan qo'lda amal, avvalgi manba (masalan onlayn to'lov)
+        // endi eskirgan hisoblanadi.
+        subscription.setConfirmedBy(requester);
 
         courseSubscriptionRepository.save(subscription);
 
@@ -477,6 +482,23 @@ public class CourseSubscriptionService {
                 .endDate(s.getEndDate())
                 .note(s.getNote())
                 .createdAt(s.getCreatedAt())
+                .source(subscriptionSource(s))
                 .build();
+    }
+
+    // CourseSubscription'da alohida "source" ustuni yo'q — mavjud
+    // confirmedBy/trial maydonlaridan hisoblanadi: trial=true bo'lsa
+    // bepul sinov; confirmedBy to'ldirilgan bo'lsa OWNER/ADMIN qo'lda
+    // tasdiqlagan (subscribe()); aks holda (ikkalasi ham yo'q) Click
+    // orqali avtomatik (confirmOnline() confirmedBy'ni HECH QACHON
+    // to'ldirmaydi — inson ishtirok etmagani uchun).
+    private String subscriptionSource(CourseSubscription s) {
+        // PENDING — foydalanuvchining o'zi "obuna berishni so'rayman"
+        // so'rovi, hali hech kim tasdiqlamagan — "ONLINE" deb ko'rsatish
+        // noto'g'ri bo'lardi.
+        if (s.getStatus() == CourseSubscriptionStatus.PENDING) return "REQUESTED";
+        if (s.isTrial()) return "TRIAL";
+        if (s.getConfirmedBy() != null) return "MANUAL";
+        return "ONLINE";
     }
 }

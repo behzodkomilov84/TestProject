@@ -184,6 +184,9 @@ class CourseSubscriptionServiceTest {
         CourseSubscriptionDto result = courseSubscriptionService.subscribe(1L, dto, owner);
 
         assertThat(result.status()).isEqualTo("CONFIRMED");
+        // "Manba" — OWNER qo'lda tasdiqladi (foydalanuvchi so'rovi,
+        // 2026-09-09: "қайси усулда обуна берилганини қўшиш керак").
+        assertThat(result.source()).isEqualTo("MANUAL");
         ArgumentCaptor<CourseSubscription> captor = ArgumentCaptor.forClass(CourseSubscription.class);
         verify(courseSubscriptionRepository).save(captor.capture());
         assertThat(Period.between(captor.getValue().getStartDate().toLocalDate(),
@@ -399,6 +402,10 @@ class CourseSubscriptionServiceTest {
         assertThat(sub.getEndDate()).isEqualTo(start.plusMonths(3));
         assertThat(sub.getStatus()).isEqualTo(CourseSubscriptionStatus.CONFIRMED);
         assertThat(result.id()).isEqualTo(7L);
+        // Tahrirlangandan keyin "Manba" — "qo'lda berilgan" (foydalanuvchi
+        // so'rovi, 2026-09-09) — OWNER'ning o'zi bajargan amal.
+        assertThat(sub.getConfirmedBy()).isEqualTo(owner);
+        assertThat(result.source()).isEqualTo("MANUAL");
         verify(notificationService).create(eq(student), anyString(), eq("/courses/1"));
     }
 
@@ -611,6 +618,8 @@ class CourseSubscriptionServiceTest {
         assertThat(saved.getAmount()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(saved.getEndDate()).isCloseTo(LocalDateTime.now().plusDays(3), within(1, java.time.temporal.ChronoUnit.MINUTES));
         assertThat(result).isNotNull();
+        // "Manba" — bepul sinov (foydalanuvchi so'rovi, 2026-09-09).
+        assertThat(result.source()).isEqualTo("TRIAL");
 
         verify(notificationService).create(eq(student), anyString(), eq("/courses/1"));
     }
@@ -666,6 +675,10 @@ class CourseSubscriptionServiceTest {
                 courseSubscriptionService.confirmOnline(student, 1L, BigDecimal.valueOf(100_000), 2);
 
         assertThat(result.status()).isEqualTo("CONFIRMED");
+        // "Manba" — Click orqali avtomatik, inson ishtirokisiz
+        // (foydalanuvchi so'rovi, 2026-09-09: "автоматик (клик орқали
+        // тўлов орқали)ми ёки қўлдами?").
+        assertThat(result.source()).isEqualTo("ONLINE");
         ArgumentCaptor<CourseSubscription> captor = ArgumentCaptor.forClass(CourseSubscription.class);
         verify(courseSubscriptionRepository).save(captor.capture());
         assertThat(captor.getValue().getAmount()).isEqualByComparingTo("100000");
