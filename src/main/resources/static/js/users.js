@@ -21,6 +21,18 @@ let usersById = {};
 let lastAdminSubscriptions = [];
 let lastCourseSubscriptions = [];
 
+// "dd.mm.yyyy" — barcha sanalar shu formatda (foydalanuvchi so'rovi,
+// 2026-09-09: "Барча сана форматини дд.мм.гггг форматида ёз"). Qo'lda
+// yozilgan — "toLocaleDateString" brauzer/OS lokaliga qarab har xil
+// natija berishi mumkin edi (formatPrice()dagi bilan bir xil sabab).
+function formatDateDMY(date) {
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d)) return "—";
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    return `${day}.${month}.${d.getFullYear()}`;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     loadUsers();
     document.getElementById("editUserForm").addEventListener("submit", submitEditUser);
@@ -78,7 +90,7 @@ function buildSubscriptionStatusHtml(adminSubscriptions, courseSubscriptions, us
     const starts = active.map(s => new Date(s.startDate)).filter(d => !isNaN(d));
     const ends = active.map(s => new Date(s.endDate)).filter(d => !isNaN(d));
     const rangeText = starts.length && ends.length
-        ? `${new Date(Math.min(...starts)).toLocaleDateString("uz-UZ")} – ${new Date(Math.max(...ends)).toLocaleDateString("uz-UZ")}`
+        ? `${formatDateDMY(Math.min(...starts))} – ${formatDateDMY(Math.max(...ends))}`
         : "";
     const countText = active.length > 1 ? ` (${active.length} ta)` : "";
 
@@ -112,7 +124,7 @@ function renderSubscriptionDetailGroup(title, items, labelFn, cancelUrlFn) {
 
     const rows = items.map(s => {
         const range = s.startDate && s.endDate
-            ? `${new Date(s.startDate).toLocaleDateString("uz-UZ")} – ${new Date(s.endDate).toLocaleDateString("uz-UZ")}`
+            ? `${formatDateDMY(s.startDate)} – ${formatDateDMY(s.endDate)}`
             : "—";
         const statusClass = s.status === "CONFIRMED" ? "sub-status-active" : "sub-status-inactive";
         const cancelBtn = (s.status === "CONFIRMED" && cancelUrlFn)
@@ -282,9 +294,7 @@ function renderUsers(users, subscriptions, courseSubscriptions) {
 
         // "Ro'yxatdan o'tgan sana" (foydalanuvchi so'rovi, 2026-09-09).
         // Migratsiyadan OLDIN yaratilgan eski hisoblarda noma'lum (null).
-        const createdAtText = user.createdAt
-            ? new Date(user.createdAt).toLocaleDateString("uz-UZ")
-            : "—";
+        const createdAtText = user.createdAt ? formatDateDMY(user.createdAt) : "—";
 
         // "Oxirgi tashrif vaqti" (foydalanuvchi so'rovi, 2026-09-09) —
         // OnlineUserTracker orqali (throttled) yangilanadi, hech qachon

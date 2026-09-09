@@ -104,7 +104,18 @@
         <button class="burger" onclick="toggleMenu()">☰</button>
         <nav id="nav-menu" class="nav-items">
             <a href="/index">Bosh sahifa</a>
-            <a href="/history">Statistika</a>
+            <!-- "Statistika" endi dropdown — "To'lov tarixi" va "Rol tarixi"
+                 Owner Panel'dan shu yerga ko'chirildi (foydalanuvchi
+                 so'rovi, 2026-09-09: "/role-audit-log va /payments
+                 sahifasini Statistika menyusiga ol"). -->
+            <div class="dropdown">
+                <button class="dropbtn">📊 Statistika ▾</button>
+                <div class="dropdown-content">
+                    <a href="/history">📈 Umumiy statistika</a>
+                    <a href="/payments" sec:authorize="hasAuthority('ROLE_OWNER')">💳 To'lov tarixi</a>
+                    <a href="/role-audit-log" sec:authorize="hasAuthority('ROLE_OWNER')">📜 Rol tarixi</a>
+                </div>
+            </div>
             <!-- "Fikr va takliflar" — sayt bo'yicha (global) ochiq taxta,
                  istalgan login qilgan foydalanuvchiga ochiq (foydalanuvchi
                  so'rovi, 2026-09-06). -->
@@ -141,11 +152,11 @@
                         <button class="dropbtn sub-dropbtn owner-link" type="button">Owner Panel ▾</button>
                         <div class="sub-dropdown-content">
                             <a href="/users">Foydalanuvchilar</a>
-                            <a href="/payments">To'lov tarixi</a>
                             <!-- "/users" sahifasidan ajratilgan (foydalanuvchi
-                                 so'rovi, 2026-09-06). -->
+                                 so'rovi, 2026-09-06). "To'lov tarixi"/"Rol
+                                 tarixi" — "Statistika" menyusiga ko'chirildi
+                                 (foydalanuvchi so'rovi, 2026-09-09). -->
                             <a href="/admin-subscriptions">💳 Admin obunalari</a>
-                            <a href="/role-audit-log">📜 Rol tarixi</a>
                             <!-- FAQAT OWNER ko'radigan sahifalar — Admin Panel'da
                                  EMAS, shu yerda (ADMIN'ga umuman ko'rinmasligi
                                  kerak, foydalanuvchi ANIQ shuni so'ragan). -->
