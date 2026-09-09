@@ -553,6 +553,35 @@ class CourseSubscriptionServiceTest {
         assertThat(stats.monthlyBreakdown()).isEmpty();
     }
 
+    // "🎁 Bepul sinov" bonus emas — haqiqiy to'lov (foydalanuvchi so'rovi,
+    // 2026-09-09: "bonuslarni to'lovlar soniga qo'shma").
+    @Test
+    void getStats_trialSubscriptions_excludedFromPaymentCount() {
+        CourseSubscription paid = CourseSubscription.builder().id(1L).user(student).course(course)
+                .amount(BigDecimal.valueOf(50_000)).status(CourseSubscriptionStatus.CONFIRMED).trial(false)
+                .endDate(LocalDateTime.now().plusMonths(1)).createdAt(LocalDateTime.now()).build();
+        CourseSubscription trial1 = CourseSubscription.builder().id(2L).user(student).course(course)
+                .amount(BigDecimal.ZERO).status(CourseSubscriptionStatus.CONFIRMED).trial(true)
+                .endDate(LocalDateTime.now().plusDays(3)).createdAt(LocalDateTime.now()).build();
+        CourseSubscription trial2 = CourseSubscription.builder().id(3L).user(student).course(course)
+                .amount(BigDecimal.ZERO).status(CourseSubscriptionStatus.CONFIRMED).trial(true)
+                .endDate(LocalDateTime.now().plusDays(2)).createdAt(LocalDateTime.now()).build();
+        when(courseSubscriptionRepository.findAllByOrderByCreatedAtDesc())
+                .thenReturn(List.of(paid, trial1, trial2));
+
+        SubscriptionStatsDto stats = courseSubscriptionService.getStats();
+
+        // Faqat 1 ta haqiqiy to'lov — 2 ta bonus sinov "to'lovlar soni"ga
+        // kirmaydi.
+        assertThat(stats.totalConfirmedCount()).isEqualTo(1);
+        assertThat(stats.totalRevenue()).isEqualByComparingTo("50000");
+        assertThat(stats.monthlyBreakdown()).hasSize(1);
+        assertThat(stats.monthlyBreakdown().get(0).count()).isEqualTo(1);
+        // Lekin "faol obunachilar" — bu kirish huquqi haqida, trial
+        // foydalanuvchilar ham shu yerga kiradi (3 nafar hammasi faol).
+        assertThat(stats.activeSubscribersCount()).isEqualTo(3);
+    }
+
     // ===== listAll (foydalanuvchi so'rovi, 2026-09-07: ROLE_ADMIN faqat
     // o'zi yaratgan kurslarning obunalarini ko'rishi kerak) =====
 

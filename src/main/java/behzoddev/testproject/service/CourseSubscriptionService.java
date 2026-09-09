@@ -497,18 +497,27 @@ public class CourseSubscriptionService {
                 .filter(s -> s.getStatus() == CourseSubscriptionStatus.CONFIRMED)
                 .toList();
 
-        BigDecimal totalRevenue = confirmed.stream()
+        // "🎁 Bepul sinov" — bonus, HAQIQIY TO'LOV EMAS (amount=0), shuning
+        // uchun "to'lovlar soni" statistikasidan chiqarib tashlanadi
+        // (foydalanuvchi so'rovi, 2026-09-09: "bonuslarni to'lovlar soniga
+        // qo'shma"). Tushum (revenue) hisobiga ta'siri yo'q — trial'ning
+        // summasi baribir 0, faqat SON noto'g'ri shishib ko'rinardi.
+        List<CourseSubscription> paidConfirmed = confirmed.stream()
+                .filter(s -> !s.isTrial())
+                .toList();
+
+        BigDecimal totalRevenue = paidConfirmed.stream()
                 .map(CourseSubscription::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal thisMonthRevenue = confirmed.stream()
+        BigDecimal thisMonthRevenue = paidConfirmed.stream()
                 .filter(s -> YearMonth.from(s.getCreatedAt()).equals(currentMonth))
                 .map(CourseSubscription::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         DateTimeFormatter monthKeyFormat = DateTimeFormatter.ofPattern("yyyy-MM");
         Map<String, MonthlyAccumulator> byMonth = new TreeMap<>();
-        for (CourseSubscription s : confirmed) {
+        for (CourseSubscription s : paidConfirmed) {
             String key = YearMonth.from(s.getCreatedAt()).format(monthKeyFormat);
             byMonth.computeIfAbsent(key, k -> new MonthlyAccumulator()).add(s.getAmount());
         }
@@ -522,6 +531,9 @@ public class CourseSubscriptionService {
                 .sorted(Comparator.comparing(MonthlyRevenueDto::month))
                 .toList();
 
+        // "Faol obunachilar" — bu "to'lov" emas, "hozir kirish huquqi
+        // bormi" degan ko'rsatkich, shuning uchun trial foydalanuvchilar
+        // HAM shu yerga kiradi (ular ham hozir haqiqatan faol).
         long activeSubscribersCount = confirmed.stream()
                 .filter(s -> s.getEndDate() != null && s.getEndDate().isAfter(now))
                 .count();
@@ -532,7 +544,7 @@ public class CourseSubscriptionService {
         return SubscriptionStatsDto.builder()
                 .totalRevenue(totalRevenue)
                 .thisMonthRevenue(thisMonthRevenue)
-                .totalConfirmedCount(confirmed.size())
+                .totalConfirmedCount(paidConfirmed.size())
                 .activeSubscribersCount(activeSubscribersCount)
                 .pendingCount(pendingCount)
                 .monthlyBreakdown(monthlyBreakdown)
