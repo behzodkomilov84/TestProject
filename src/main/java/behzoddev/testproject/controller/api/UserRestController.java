@@ -3,12 +3,14 @@ package behzoddev.testproject.controller.api;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.dto.audit.RoleAuditLogDto;
 import behzoddev.testproject.dto.user.ChangeRoleDto;
+import behzoddev.testproject.dto.user.OnlineStatusDto;
 import behzoddev.testproject.dto.user.SendTelegramMessageDto;
 import behzoddev.testproject.dto.user.UpdateUserDto;
 import behzoddev.testproject.dto.user.UserDto;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.NotificationService;
+import behzoddev.testproject.service.OnlineUserTracker;
 import behzoddev.testproject.service.RoleAuditService;
 import behzoddev.testproject.service.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ public class UserRestController {
     private final UserServiceImpl userServiceImpl;
     private final RoleAuditService roleAuditService;
     private final NotificationService notificationService;
+    private final OnlineUserTracker onlineUserTracker;
 
     @GetMapping("/api/users")
     @PreAuthorize("hasAuthority('ROLE_OWNER')")
@@ -91,6 +94,21 @@ public class UserRestController {
                 .workplace(u.getWorkplace())
                 .jobTitle(u.getPosition())
                 .avatarUrl(u.getAvatarUrl())
+                .createdAt(u.getCreatedAt())
+                .build();
+    }
+
+    // "🟢 Hozir onlayn" belgisi va statistika — /users sahifasida
+    // periodik so'raladi (foydalanuvchi so'rovi, 2026-09-09). Butun
+    // jadvalni qayta yuklashdan farqli, faqat shu yengil ma'lumot
+    // qaytariladi — checkbox/forma holatini buzmasdan.
+    @GetMapping("/api/users/online-status")
+    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    public OnlineStatusDto getOnlineStatus() {
+        var onlineIds = onlineUserTracker.onlineUserIds();
+        return OnlineStatusDto.builder()
+                .onlineUserIds(onlineIds)
+                .onlineCount(onlineIds.size())
                 .build();
     }
 

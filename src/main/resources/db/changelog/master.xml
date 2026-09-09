@@ -55,6 +55,7 @@
     <include file="/db/changelog/course-sequential-unlock.sql"/>
     <include file="/db/changelog/science-created-by.sql"/>
     <include file="/db/changelog/course-subscription-trial.sql"/>
+    <include file="/db/changelog/user-created-at.sql"/>
 
 
 </databaseChangeLog>

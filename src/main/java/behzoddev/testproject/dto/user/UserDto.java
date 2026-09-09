@@ -2,6 +2,7 @@ package behzoddev.testproject.dto.user;
 
 import lombok.Builder;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 // Foydalanuvchi so'rovi, 2026-09-06: "users jadvalidagi barcha ustunlarni
@@ -26,6 +27,9 @@ public record UserDto(
         String jobTitle,
         // Avatar rasmi — /users sahifasida ko'rsatish uchun (foydalanuvchi
         // so'rovi, 2026-09-07: "фойдаланувчиларнинг аватарини ҳам қўш").
-        String avatarUrl
+        String avatarUrl,
+        // "Ro'yxatdan o'tgan sana" ustuni (foydalanuvchi so'rovi,
+        // 2026-09-09). Eski hisoblarda null bo'lishi mumkin.
+        LocalDateTime createdAt
 ) {
 }

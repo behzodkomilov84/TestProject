@@ -147,6 +147,17 @@ public class User implements UserDetails {
     @Column(name = "locked_until")
     private LocalDateTime lockedUntil;
 
+    // "/users" sahifasida "Ro'yxatdan o'tgan sana" ustuni (foydalanuvchi
+    // so'rovi, 2026-09-09). NULL bo'lishi mumkin — mavjud (migratsiyadan
+    // OLDIN yaratilgan) hisoblar uchun haqiqiy sana noma'lum, sahifada "—"
+    // ko'rsatiladi. YANGI User obyekti (ro'yxatdan o'tish) qurilganda field
+    // initializer orqali avtomatik "hozir"ga o'rnatiladi — Hibernate DB'dan
+    // O'QIGANDA esa bu qiymat haqiqiy saqlangan (yoki null) qiymat bilan
+    // almashtiriladi (Notification.createdAt bilan bir xil andoza).
+    @Column(name = "created_at")
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
+
     /**
      * Foydalanuvchida berilgan nomdagi rol bor-yo'qligini tekshiradi.
      * Masalan: user.hasRole("ROLE_ADMIN")

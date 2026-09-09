@@ -23,6 +23,11 @@
         <button class="back-btn" onclick="history.back()">← Назад</button>
     </header>
 
+    <!-- "🟢 Hozir onlayn" statistikasi — Telegramga o'xshagan belgi bilan
+         (foydalanuvchi so'rovi, 2026-09-09) — users.js#refreshOnlineStatus
+         orqali har 20 soniyada yangilanadi. -->
+    <p id="onlineStatsBar" class="online-stats-bar">🟢 Onlayn: — / — foydalanuvchi</p>
+
     <!-- Foydalanuvchi ma'lumotlarini qo'lda tahrirlash oynasi
          (foydalanuvchi so'rovi, 2026-09-07: "edit ni qo'shish kerak") —
          users.js: openEditModal()/closeEditModal()/submitEditUser(). -->
@@ -143,6 +148,7 @@
             <th>Lavozim</th>
             <th>Role</th>
             <th>ADMIN muddati</th>
+            <th>Ro'yxatdan o'tgan</th>
             <th>Action</th>
         </tr>
         </thead>

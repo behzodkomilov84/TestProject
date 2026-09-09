@@ -117,9 +117,20 @@ function renderUsers(users, subscriptions) {
             ? `<button class="tg-message-btn" onclick="openTelegramMessageModal(${user.id})" title="Telegram orqali shaxsiy xabar yuborish">✉️</button>`
             : "";
 
+        // "Ro'yxatdan o'tgan sana" (foydalanuvchi so'rovi, 2026-09-09).
+        // Migratsiyadan OLDIN yaratilgan eski hisoblarda noma'lum (null).
+        const createdAtText = user.createdAt
+            ? new Date(user.createdAt).toLocaleDateString("uz-UZ")
+            : "—";
+
         tr.innerHTML = `
             <td class="sticky-col-1">${user.id}</td>
-            <td class="sticky-col-2">${avatarHtml}</td>
+            <td class="sticky-col-2">
+                <div class="avatar-wrap">
+                    ${avatarHtml}
+                    <span class="online-dot" id="online-dot-${user.id}" title="Hozir onlayn" hidden></span>
+                </div>
+            </td>
             <td class="sticky-col-3" title="${escapeHtml(user.username)}">
                 <div class="username-cell-row">
                     <span class="username-cell-text">${user.username} ${user.locked ? '<span title="Bloklangan">🔒</span>' : ""}</span>
@@ -137,6 +148,7 @@ function renderUsers(users, subscriptions) {
             <td>${escapeHtml(user.jobTitle) || "—"}</td>
             <td><div class="roles-cell">${checkboxesHtml}</div></td>
             <td>${adminDurationText}</td>
+            <td>${createdAtText}</td>
             <td>
                 <div class="actions-cell">
                     <button class="action-btn" onclick="openEditModal(${user.id})" title="Tahrirlash">✏️</button>
@@ -158,7 +170,36 @@ function renderUsers(users, subscriptions) {
     });
 
     syncTopScrollWidth();
+    refreshOnlineStatus();
 }
+
+// ===== "🟢 Hozir onlayn" (foydalanuvchi so'rovi, 2026-09-09) =====
+// Butun jadvalni qayta yuklamasdan (loadUsers() checkbox/forma holatini
+// buzardi), faqat yengil /api/users/online-status so'ralib, har bir
+// qatordagi nuqta va yuqoridagi statistika yangilanadi.
+
+function refreshOnlineStatus() {
+    fetch("/api/users/online-status")
+        .then(r => r.ok ? r.json() : null)
+        .then(status => {
+            if (!status) return;
+
+            document.querySelectorAll(".online-dot").forEach(dot => dot.hidden = true);
+            status.onlineUserIds.forEach(id => {
+                const dot = document.getElementById(`online-dot-${id}`);
+                if (dot) dot.hidden = false;
+            });
+
+            const totalCount = Object.keys(usersById).length;
+            document.getElementById("onlineStatsBar").textContent =
+                `🟢 Onlayn: ${status.onlineCount} / ${totalCount} foydalanuvchi`;
+        })
+        .catch(err => console.error(err));
+}
+
+// Sahifa ochiq turganda statistika "jonli" (real-time'ga yaqin) bo'lib
+// tursin — har 20 soniyada yangilanadi (notif badge bilan bir xil andoza).
+setInterval(refreshOnlineStatus, 20000);
 
 // Jadval tepasidagi ko'zgu (mirror) gorizontal scroll — pastki
 // .table-scroll bilan bir xil kengroq ichki elementga ega bo'lib,
