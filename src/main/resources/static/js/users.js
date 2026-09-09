@@ -162,6 +162,8 @@ function syncTopScrollWidth() {
     topInner.style.width = table.scrollWidth + "px";
     fixedInner.style.width = table.scrollWidth + "px";
     positionFixedScrollBar();
+    buildFixedHeader();
+    positionFixedHeader();
 
     if (topScrollSyncInitialized) return;
     topScrollSyncInitialized = true;
@@ -179,12 +181,78 @@ function syncTopScrollWidth() {
             bars.forEach(other => {
                 if (other !== bar) other.scrollLeft = bar.scrollLeft;
             });
+            // Qotirilgan sarlavhaning aylanadigan qismini (frozen
+            // bo'lmagan ustunlar) ham xuddi shu gorizontal siljishga
+            // sinxronlaydi — position:sticky EMAS, oddiy transform,
+            // shu sabab hech qanday table-cell nuqsoniga ega emas.
+            const headerInner = document.getElementById("usersTableHeaderFixedInner");
+            if (headerInner) headerInner.style.transform = `translateX(-${bottomScroll.scrollLeft}px)`;
             syncing = false;
         });
     });
 
     window.addEventListener("resize", syncTopScrollWidth);
-    window.addEventListener("scroll", updateFixedScrollBarVisibility, { passive: true });
+    window.addEventListener("scroll", () => {
+        updateFixedScrollBarVisibility();
+        updateFixedHeaderVisibility();
+    }, { passive: true });
+}
+
+// Ekranga qotirilgan sarlavha ("zakrepit verx", foydalanuvchi so'rovi,
+// 2026-09-09) — position:sticky jadval katakchalarida chuqur LAYOUT/
+// PAINT uzilishiga ega ekanligi (getBoundingClientRect va
+// elementFromPoint bir-biriga zid natija berishi) uch marta jonli
+// tekshiruvda tasdiqlangani sabab, ASL <thead> oddiy (static) qoldirilib,
+// UNING nusxasi shu yerda position:fixed <div>lar bilan (jadval
+// katakchalari EMAS) alohida quriladi — table-scroll-fixed (pastki
+// scrollbar) bilan bir xil, allaqachon ishonchli ishlagan andoza.
+function buildFixedHeader() {
+    const ths = [...document.querySelectorAll(".users-table thead th")];
+    const frozenContainer = document.getElementById("usersTableHeaderFixedFrozen");
+    const scrollContainer = document.getElementById("usersTableHeaderFixedInner");
+    if (!ths.length || !frozenContainer || !scrollContainer) return;
+
+    frozenContainer.innerHTML = "";
+    scrollContainer.innerHTML = "";
+
+    ths.forEach((th, i) => {
+        const div = document.createElement("div");
+        div.className = "fx-cell";
+        div.textContent = th.textContent.trim();
+        // Haqiqiy chizilgan (auto-hisoblangan) kenglikni o'qib, aynan
+        // shu qiymatni qattiq belgilaymiz — shu bilan nusxa asl
+        // ustunlar bilan pixel-aniqlikda tekislanadi.
+        const width = th.getBoundingClientRect().width;
+        div.style.width = width + "px";
+        (i < 3 ? frozenContainer : scrollContainer).appendChild(div);
+    });
+}
+
+function positionFixedHeader() {
+    const bottomScroll = document.getElementById("usersTableScroll");
+    const fixedHeader = document.getElementById("usersTableHeaderFixed");
+    if (!bottomScroll || !fixedHeader) return;
+
+    const rect = bottomScroll.getBoundingClientRect();
+    fixedHeader.style.left = rect.left + "px";
+    fixedHeader.style.width = rect.width + "px";
+
+    const headerInner = document.getElementById("usersTableHeaderFixedInner");
+    if (headerInner) headerInner.style.transform = `translateX(-${bottomScroll.scrollLeft}px)`;
+
+    updateFixedHeaderVisibility();
+}
+
+// Nusxa FAQAT asl <thead> ekranning (navbar ostidagi, 72px) tepasidan
+// chiqib ketganda ko'rinadi — aks holda ikkita sarlavha bir vaqtda
+// ko'rinib, ortiqcha g'ijimlanish hosil qilardi.
+function updateFixedHeaderVisibility() {
+    const realThead = document.querySelector(".users-table thead");
+    const fixedHeader = document.getElementById("usersTableHeaderFixed");
+    if (!realThead || !fixedHeader) return;
+
+    const rect = realThead.getBoundingClientRect();
+    fixedHeader.hidden = !(rect.top < 72);
 }
 
 // Ekranga qotirilgan pastki scrollbar — FAQAT jadval haqiqatan

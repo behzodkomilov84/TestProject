@@ -151,11 +151,67 @@ body {
    elementFromPoint() (haqiqiy chizilgan/bosiladigan joyni tekshiruvchi)
    uni FAQAT birinchi qatordan PASTDA deb topadi — ya'ni LAYOUT va PAINT
    o'rtasida haqiqiy uzilish (jonli tekshiruvda uch xil usul bilan
-   tasdiqlandi, 2026-09-09). Bu shunchaki CSS xatosi emas, balki shu
-   muhitdagi chuqur render nuqsoni. Vaqt cheklovi tufayli sarlavhani
-   qotirish OLIB TASHLANDI (ishonchli JS-asoslangan pozitsiyalash
-   qayta yozish talab qilardi) — FAQAT ustunlarni qotirish (pastda)
-   qoldirildi, u alohida to'g'ri ishlaydi. */
+   tasdiqlandi, 2026-09-09). Shu sabab jadval katakchalarida
+   position:sticky UMUMAN ishlatilmaydi — buning o'rniga asl <thead>
+   ODDIY (static) qoldiriladi, uning nusxasi esa PASTKI SCROLLBAR'DA
+   (table-scroll-fixed) ALLAQACHON ISHONCHLI ISHLAGAN andoza bo'yicha
+   position:fixed <div>lar (jadval katakchalari EMAS) bilan alohida
+   quriladi — bu texnika hech qanday sticky/table-cell nuqsoniga
+   ega emas. */
+.table-header-fixed {
+    position: fixed;
+    top: 72px;
+    display: flex;
+    overflow: hidden;
+    background: #f1f3f5;
+    border-top: 1px solid #d0d5dd;
+    border-bottom: 1px solid #d0d5dd;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .08);
+    z-index: 600;
+}
+
+.table-header-fixed[hidden] {
+    display: none;
+}
+
+/* Muzlatilgan (ID/Avatar/Username) sarlavha katakchalari — DOIM
+   ko'rinadi, gorizontal aylantirish transform'idan mustasno (pastdagi
+   .table-header-fixed-inner'dan farqli). */
+.table-header-fixed-frozen {
+    display: flex;
+    flex-shrink: 0;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, .08);
+}
+
+/* Qolgan ustunlar — kesilgan (overflow:hidden) oyna ichida,
+   users.js orqali .table-header-fixed-inner'ga transform:translateX
+   bilan pastdagi .table-scroll bilan sinxron suriladi. */
+.table-header-fixed-scroll-clip {
+    overflow: hidden;
+    flex: 1;
+}
+
+.table-header-fixed-inner {
+    display: flex;
+}
+
+.table-header-fixed .fx-cell {
+    padding: 8px 10px;
+    border-right: 1px solid #d0d5dd;
+    font-weight: 600; /* .users-table'ning bazaviy og'irligi bilan bir xil */
+    font-size: 13px;
+    white-space: nowrap;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    background: #f1f3f5;
+}
+
+/* Asl jadvalning birinchi ustuni ham chap chegaraga ega
+   (.users-table tr > :first-child) — nusxa pixel-aniq tekislanishi
+   uchun shu yerda ham takrorlanadi. */
+.table-header-fixed-frozen .fx-cell:first-child {
+    border-left: 1px solid #d0d5dd;
+}
 
 /* Birinchi 3 ustun (ID/Avatar/Username) — jadval gorizontal
    aylantirilganda ham DOIM ko'rinib tursin ("zakrepit levo"), shu

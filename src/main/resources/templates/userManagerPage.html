@@ -81,6 +81,25 @@
     <div class="table-scroll-top" id="usersTableScrollTop">
         <div class="table-scroll-top-inner" id="usersTableScrollTopInner"></div>
     </div>
+
+    <!-- Sarlavhani ekranga QOTIRISH ("zakrepit verx", foydalanuvchi
+         so'rovi, 2026-09-09) — position:sticky jadval katakchalarida
+         chuqur LAYOUT/PAINT uzilishiga ega ekanligi 3 marta jonli
+         tekshiruvda tasdiqlandi (getBoundingClientRect va
+         elementFromPoint bir-biriga zid natija berardi). Shu sabab
+         ASL <thead> oddiy (static) qoldirilib, UNING nusxasi shu yerda
+         position:fixed <div>lar bilan (jadval katakchalari EMAS)
+         alohida quriladi — xuddi table-scroll-fixed (pastki scrollbar)
+         kabi, allaqachon ishonchli ishlagan andoza. Faqat asl sarlavha
+         ekrandan (navbar ostidan) chiqib ketganda ko'rinadi, JS orqali
+         (users.js#updateFixedHeaderVisibility). -->
+    <div class="table-header-fixed" id="usersTableHeaderFixed" hidden>
+        <div class="table-header-fixed-frozen" id="usersTableHeaderFixedFrozen"></div>
+        <div class="table-header-fixed-scroll-clip">
+            <div class="table-header-fixed-inner" id="usersTableHeaderFixedInner"></div>
+        </div>
+    </div>
+
     <div class="table-scroll" id="usersTableScroll">
     <table class="users-table">
         <thead>
