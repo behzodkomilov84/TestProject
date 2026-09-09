@@ -15,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -47,6 +48,13 @@ class PasswordResetServiceTest {
     @InjectMocks
     private PasswordResetService passwordResetService;
 
+    // @InjectMocks @Value maydonlarini to'ldirmaydi (UserServiceImplTest'da
+    // ham xuddi shu andoza — protectedOwnerUserId).
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(passwordResetService, "botUsername", "study_grow_bot");
+    }
+
     // ===== requestReset =====
 
     @Test
@@ -62,6 +70,21 @@ class PasswordResetServiceTest {
         assertThat(captor.getValue().getChannel()).isEqualTo(PasswordResetChannel.TELEGRAM);
         verify(telegramBot).execute(any(org.telegram.telegrambots.meta.api.methods.send.SendMessage.class));
         verify(emailService, never()).sendPasswordResetCode(anyString(), anyString());
+    }
+
+    // Foydalanuvchi so'rovi, 2026-09-09: "botni nomini ham qo'sh...
+    // habarni ichiga link ham qo'sh, botga olib boradigan" — kod qaysi
+    // botga yuborilganini bilish va bir bosishda o'sha chatga o'tish
+    // uchun.
+    @Test
+    void requestReset_userWithTelegram_messageIncludesBotNameAndLink() throws Exception {
+        User user = User.builder().id(1L).username("bob").telegramId(555L).email("bob@mail.com").build();
+        when(userRepository.findByUsername("bob")).thenReturn(Optional.of(user));
+
+        String result = passwordResetService.requestReset("bob");
+
+        assertThat(result).contains("study_grow_bot");
+        assertThat(result).contains("https://t.me/study_grow_bot");
     }
 
     @Test

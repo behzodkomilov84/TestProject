@@ -9,6 +9,7 @@ import behzoddev.testproject.exception.PasswordsDoNotMatchException;
 import behzoddev.testproject.telegram.TelegramBot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,14 @@ public class PasswordResetService {
     private final TelegramBot telegramBot;
     private final SecureRandom secureRandom = new SecureRandom();
 
+    // TelegramLinkCodeController'dagi bilan bir xil andoza — botning nomi
+    // xabarga (foydalanuvchi qayerga kod kelganini bilishi uchun) va
+    // to'g'ridan-to'g'ri botga olib boradigan havolaga kerak (foydalanuvchi
+    // so'rovi, 2026-09-09: "botni nomini ham qo'sh... habarni ichiga link
+    // ham qo'sh, botga olib boradigan").
+    @Value("${telegram.bot.username}")
+    private String botUsername;
+
     @Transactional
     public String requestReset(String username) {
         User user = userRepository.findByUsername(username)
@@ -63,7 +72,12 @@ public class PasswordResetService {
 
         if (channel == PasswordResetChannel.TELEGRAM) {
             sendViaTelegram(user.getTelegramId(), code);
-            return "✅ Tasdiqlash kodi Telegram orqali yuborildi.";
+            // Bot nomi + to'g'ridan-to'g'ri botga olib boradigan havola —
+            // foydalanuvchi qayerga (qaysi bot) kod kelganini bilishi va
+            // bir bosishda o'sha chatga o'tishi uchun (reset-password.html
+            // th:utext bilan ko'rsatadi, HTML sifatida).
+            return "✅ Tasdiqlash kodi <b>@" + botUsername + "</b> Telegram botiga yuborildi. " +
+                    "<a href=\"https://t.me/" + botUsername + "\" target=\"_blank\">🤖 Botni ochish</a>";
         }
 
         boolean sent = emailService.sendPasswordResetCode(user.getEmail(), code);

@@ -343,3 +343,15 @@ body {
     z-index: 1000;
 }
 
+/* infoMessage endi ichida "Botni ochish" havolasi bo'lishi mumkin
+   (PasswordResetService#requestReset, Telegram orqali) — ko'zga
+   ko'rinadigan/bosiladigan qilib alohida ranglandi (foydalanuvchi
+   so'rovi, 2026-09-09). */
+.success-alert a {
+    display: inline-block;
+    margin-left: 8px;
+    color: #0d7a63;
+    font-weight: 700;
+    text-decoration: underline;
+}
+
