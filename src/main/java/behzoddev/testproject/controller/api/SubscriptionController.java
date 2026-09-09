@@ -4,6 +4,7 @@ import behzoddev.testproject.dto.subscription.ConfirmSubscriptionDto;
 import behzoddev.testproject.dto.subscription.CreateSubscriptionDto;
 import behzoddev.testproject.dto.subscription.SubscriptionDto;
 import behzoddev.testproject.dto.subscription.SubscriptionStatsDto;
+import behzoddev.testproject.dto.subscription.UpdateSubscriptionDto;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +53,24 @@ public class SubscriptionController {
     @PostMapping("/{id}/cancel")
     public ResponseEntity<SubscriptionDto> cancel(@PathVariable Long id, @AuthenticationPrincipal User requester) {
         return ResponseEntity.ok(subscriptionService.cancel(id, requester));
+    }
+
+    // "✏️ Tahrirlash" — mavjud obunaning summasi/muddatini o'zgartiradi
+    // (foydalanuvchi so'rovi, 2026-09-09).
+    @PutMapping("/{id}")
+    public ResponseEntity<SubscriptionDto> update(
+            @PathVariable Long id,
+            @RequestBody UpdateSubscriptionDto dto,
+            @AuthenticationPrincipal User requester
+    ) {
+        return ResponseEntity.ok(subscriptionService.updateSubscription(id, dto.amount(), dto.durationMonths(), requester));
+    }
+
+    // "🗑️ O'chirish" — "cancel"dan farqli, yozuvni BUTUNLAY o'chiradi.
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id, @AuthenticationPrincipal User requester) {
+        subscriptionService.delete(id, requester);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping

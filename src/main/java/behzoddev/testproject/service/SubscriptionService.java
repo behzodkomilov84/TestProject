@@ -267,6 +267,76 @@ public class SubscriptionService {
         return toDto(subscription);
     }
 
+    // "✏️ Tahrirlash" — mavjud obunaning summasi/muddatini o'zgartiradi
+    // (foydalanuvchi so'rovi, 2026-09-09: "/admin-subscriptions'ga
+    // tahrirlash, o'chirishni ham qo'sh"). CANCELLED/EXPIRED obunani tahrirlash
+    // uni QAYTA FAOLlashtiradi VA ROLE_ADMIN'ni qayta beradi — alohida
+    // "qayta tiklash" tugmasi shart emas (CourseSubscriptionService.
+    // updateSubscription bilan bir xil g'oya).
+    @Transactional
+    public SubscriptionDto updateSubscription(Long subscriptionId, BigDecimal amount, Integer durationMonths, User requester) {
+        Subscription subscription = subscriptionRepository.findById(subscriptionId)
+                .orElseThrow(() -> new NoSuchElementException("Obuna topilmadi"));
+
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("❌To'lov summasi noto'g'ri");
+        }
+        if (durationMonths == null || durationMonths <= 0) {
+            throw new IllegalArgumentException("❌Muddat noto'g'ri");
+        }
+
+        LocalDateTime startDate = subscription.getStartDate() != null ? subscription.getStartDate() : LocalDateTime.now();
+        subscription.setAmount(amount);
+        subscription.setStartDate(startDate);
+        subscription.setEndDate(startDate.plusMonths(durationMonths));
+        subscription.setStatus(SubscriptionStatus.CONFIRMED);
+        subscription.setConfirmedBy(requester);
+
+        grantAdmin(subscription.getUser(), requester);
+
+        notificationService.create(subscription.getUser(),
+                "✏️ ADMIN huquqingiz administrator tomonidan yangilandi (" + durationMonths + " oy).",
+                "/profile");
+
+        log.info("ADMIN obunasi tahrirlandi: id={}, user={}, muddat={} oy, requester={}",
+                subscriptionId, subscription.getUser().getUsername(), durationMonths, requester.getUsername());
+
+        return toDto(subscription);
+    }
+
+    // "🗑️ O'chirish" — "cancel"dan (holatni CANCELLED qilib saqlaydi)
+    // farqli, yozuvni BUTUNLAY o'chiradi (foydalanuvchi so'rovi,
+    // 2026-09-09). Agar hali FAOL (CONFIRMED) yozuv o'chirilsa — "osilib
+    // qolgan" ADMIN huquqi paydo bo'lmasligi uchun (yozuv o'chirilgani
+    // sabab hech qanday keyingi job buni topa olmas edi), xuddi cancel()
+    // kabi darhol tekshiriladi va, agar boshqa faol obuna qolmagan
+    // bo'lsa, ROLE_ADMIN ham olib tashlanadi.
+    @Transactional
+    public void delete(Long subscriptionId, User requester) {
+        Subscription subscription = subscriptionRepository.findById(subscriptionId)
+                .orElseThrow(() -> new NoSuchElementException("Obuna topilmadi"));
+
+        boolean wasActiveConfirmed = subscription.getStatus() == SubscriptionStatus.CONFIRMED;
+        User user = subscription.getUser();
+
+        subscriptionRepository.delete(subscription);
+
+        // "delete" avtomatik flush qilinadi — quyidagi so'rov endi
+        // o'chirilgan yozuvni o'zini hisoblamaydi.
+        if (wasActiveConfirmed) {
+            boolean hasOtherActive = subscriptionRepository.existsByUser_IdAndStatusAndEndDateAfter(
+                    user.getId(), SubscriptionStatus.CONFIRMED, LocalDateTime.now());
+            if (!hasOtherActive) {
+                revokeAdmin(user, requester, RoleAuditSource.MANUAL);
+                notificationService.create(user,
+                        "⚠️ ADMIN huquqingiz administrator tomonidan bekor qilindi.", "/profile");
+            }
+        }
+
+        log.info("ADMIN obunasi butunlay o'chirildi: id={}, user={}, requester={}",
+                subscriptionId, user.getUsername(), requester.getUsername());
+    }
+
     // OWNER uchun to'lov tarixi/hisobot sahifasidagi umumiy ko'rsatkichlar.
     // Faqat CONFIRMED to'lovlar haqiqiy tushum hisoblanadi (PENDING hali
     // to'lanmagan, CANCELLED/EXPIRED esa tushum emas).

@@ -283,6 +283,132 @@ class SubscriptionServiceTest {
         verify(roleAuditService, never()).record(any(), any(), anyString(), any(), any());
     }
 
+    // ===== updateSubscription ("/admin-subscriptions" — "✏️ Tahrirlash",
+    // foydalanuvchi so'rovi, 2026-09-09) =====
+
+    @Test
+    void updateSubscription_success_recalculatesEndDateAndGrantsAdmin() {
+        User targetUser = userWithRoles(5L, roleUser);
+        LocalDateTime start = LocalDateTime.now().minusDays(10);
+        Subscription sub = Subscription.builder().id(7L).user(targetUser).amount(BigDecimal.TEN)
+                .source(SubscriptionSource.MANUAL).status(SubscriptionStatus.CONFIRMED)
+                .startDate(start).endDate(start.plusMonths(1)).build();
+        when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+        when(roleRepository.findByRoleName("ROLE_ADMIN")).thenReturn(Optional.of(roleAdmin));
+
+        SubscriptionDto result = subscriptionService.updateSubscription(7L, BigDecimal.valueOf(200_000), 3, owner);
+
+        assertThat(sub.getAmount()).isEqualByComparingTo("200000");
+        assertThat(sub.getEndDate()).isEqualTo(start.plusMonths(3));
+        assertThat(sub.getStatus()).isEqualTo(SubscriptionStatus.CONFIRMED);
+        assertThat(targetUser.hasRole("ROLE_ADMIN")).isTrue();
+        assertThat(result.id()).isEqualTo(7L);
+    }
+
+    // Eskirgan (EXPIRED) yoki bekor qilingan (CANCELLED) obunani
+    // tahrirlash uni qayta FAOLlashtiradi va ROLE_ADMIN'ni qayta beradi.
+    @Test
+    void updateSubscription_cancelledSubscription_reactivatesAndRegrantsAdmin() {
+        User targetUser = userWithRoles(5L, roleUser);
+        Subscription sub = Subscription.builder().id(7L).user(targetUser).amount(BigDecimal.TEN)
+                .source(SubscriptionSource.MANUAL).status(SubscriptionStatus.CANCELLED).build();
+        when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+        when(roleRepository.findByRoleName("ROLE_ADMIN")).thenReturn(Optional.of(roleAdmin));
+
+        subscriptionService.updateSubscription(7L, BigDecimal.valueOf(50_000), 1, owner);
+
+        assertThat(sub.getStatus()).isEqualTo(SubscriptionStatus.CONFIRMED);
+        assertThat(targetUser.hasRole("ROLE_ADMIN")).isTrue();
+    }
+
+    @Test
+    void updateSubscription_notFound_throws() {
+        when(subscriptionRepository.findById(7L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> subscriptionService.updateSubscription(7L, BigDecimal.TEN, 1, owner))
+                .isInstanceOf(NoSuchElementException.class);
+    }
+
+    @Test
+    void updateSubscription_invalidAmount_throws() {
+        Subscription sub = Subscription.builder().id(7L).user(owner).amount(BigDecimal.TEN)
+                .source(SubscriptionSource.MANUAL).status(SubscriptionStatus.CONFIRMED).build();
+        when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+
+        assertThatThrownBy(() -> subscriptionService.updateSubscription(7L, BigDecimal.ZERO, 1, owner))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void updateSubscription_invalidDuration_throws() {
+        Subscription sub = Subscription.builder().id(7L).user(owner).amount(BigDecimal.TEN)
+                .source(SubscriptionSource.MANUAL).status(SubscriptionStatus.CONFIRMED).build();
+        when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+
+        assertThatThrownBy(() -> subscriptionService.updateSubscription(7L, BigDecimal.TEN, 0, owner))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    // ===== delete ("/admin-subscriptions" — "🗑️ O'chirish", foydalanuvchi
+    // so'rovi, 2026-09-09) =====
+
+    @Test
+    void delete_confirmedSubscription_noOtherActive_revokesAdminAndNotifies() {
+        User admin = userWithRoles(5L, roleUser, roleAdmin);
+        Subscription sub = Subscription.builder().id(7L).user(admin).amount(BigDecimal.TEN)
+                .source(SubscriptionSource.MANUAL).status(SubscriptionStatus.CONFIRMED)
+                .endDate(LocalDateTime.now().plusMonths(1)).build();
+        when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+        when(subscriptionRepository.existsByUser_IdAndStatusAndEndDateAfter(
+                eq(5L), eq(SubscriptionStatus.CONFIRMED), any())).thenReturn(false);
+        when(roleRepository.findByRoleName("ROLE_ADMIN")).thenReturn(Optional.of(roleAdmin));
+
+        subscriptionService.delete(7L, owner);
+
+        verify(subscriptionRepository).delete(sub);
+        assertThat(admin.hasRole("ROLE_ADMIN")).isFalse();
+        verify(notificationService).create(eq(admin), org.mockito.ArgumentMatchers.contains("bekor qilindi"), anyString());
+    }
+
+    @Test
+    void delete_confirmedSubscription_otherActiveExists_keepsAdminRole() {
+        User admin = userWithRoles(5L, roleUser, roleAdmin);
+        Subscription sub = Subscription.builder().id(7L).user(admin).amount(BigDecimal.TEN)
+                .source(SubscriptionSource.MANUAL).status(SubscriptionStatus.CONFIRMED)
+                .endDate(LocalDateTime.now().plusMonths(1)).build();
+        when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+        when(subscriptionRepository.existsByUser_IdAndStatusAndEndDateAfter(
+                eq(5L), eq(SubscriptionStatus.CONFIRMED), any())).thenReturn(true);
+
+        subscriptionService.delete(7L, owner);
+
+        verify(subscriptionRepository).delete(sub);
+        assertThat(admin.hasRole("ROLE_ADMIN")).isTrue();
+    }
+
+    // Allaqachon CANCELLED/EXPIRED bo'lgan yozuvni o'chirish — endi FAOL
+    // emasligi sababli ROLE_ADMIN tekshiruvi umuman ishga tushmaydi.
+    @Test
+    void delete_alreadyCancelledSubscription_doesNotTouchRole() {
+        Subscription sub = Subscription.builder().id(7L).user(owner).amount(BigDecimal.TEN)
+                .source(SubscriptionSource.MANUAL).status(SubscriptionStatus.CANCELLED).build();
+        when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+
+        subscriptionService.delete(7L, owner);
+
+        verify(subscriptionRepository).delete(sub);
+        verify(subscriptionRepository, never()).existsByUser_IdAndStatusAndEndDateAfter(any(), any(), any());
+        verify(roleAuditService, never()).record(any(), any(), anyString(), any(), any());
+    }
+
+    @Test
+    void delete_notFound_throws() {
+        when(subscriptionRepository.findById(7L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> subscriptionService.delete(7L, owner))
+                .isInstanceOf(NoSuchElementException.class);
+    }
+
     // ===== confirmOnline =====
 
     @Test

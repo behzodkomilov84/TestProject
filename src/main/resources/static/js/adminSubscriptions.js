@@ -148,11 +148,19 @@ function renderAllSubscriptions() {
         const statusClass = s.status === "CONFIRMED" ? "sub-status-active" : "sub-status-inactive";
         const muddat = s.endDate ? new Date(s.endDate).toLocaleDateString("uz-UZ") : "—";
         // PENDING'ning o'z tasdiqlash/rad etish tugmalari yuqoridagi
-        // "⏳ Tasdiq kutilayotgan" jadvalida bor — bu yerda takrorlanmaydi,
-        // faqat FAOL (CONFIRMED) obunani bekor qilish imkoni beriladi.
-        const action = s.status === "CONFIRMED"
-            ? `<button class="sub-detail-cancel-btn" onclick="cancelActiveSubscription(${s.id})">❌ Bekor qilish</button>`
-            : "—";
+        // "⏳ Tasdiq kutilayotgan" jadvalida bor — bu yerda takrorlanmaydi.
+        // "✏️ Tahrirlash" — PENDING'dan tashqari barcha holatlarda (eskirgan/
+        // bekor qilinganni ham qayta faollashtiradi), "🗑️ O'chirish" — HAR
+        // DOIM (foydalanuvchi so'rovi, 2026-09-09: "тахрирлаш, ўчиришни
+        // ҳам қўш" — /courses/subscriptions'dagi bilan bir xil g'oya).
+        let action = "";
+        if (s.status !== "PENDING") {
+            action += `<button class="sub-action-btn sub-action-edit" onclick="editAdminSubscription(${s.id})">✏️ Tahrirlash</button>`;
+        }
+        if (s.status === "CONFIRMED") {
+            action += `<button class="sub-action-btn sub-action-cancel" onclick="cancelActiveSubscription(${s.id})">❌ Bekor qilish</button>`;
+        }
+        action += `<button class="sub-action-btn sub-action-delete" onclick="deleteAdminSubscriptionPermanently(${s.id})">🗑️ O'chirish</button>`;
 
         return `
             <tr>
@@ -181,6 +189,77 @@ async function cancelActiveSubscription(id) {
 
     try {
         const res = await fetch(`/api/subscriptions/${id}/cancel`, { method: "POST" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlertModal(data.error || "Xatolik yuz berdi");
+            return;
+        }
+        loadAllSubscriptions();
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
+    }
+}
+
+// "✏️ Tahrirlash" — mavjud ADMIN-rol obunasining summasi/muddatini
+// o'zgartiradi (foydalanuvchi so'rovi, 2026-09-09). Eskirgan/bekor
+// qilingan obunani tahrirlash uni qayta FAOLlashtirib, ROLE_ADMIN'ni
+// qayta beradi (serverda — SubscriptionService.updateSubscription).
+async function editAdminSubscription(id) {
+    const sub = allAdminSubs.find(s => s.id === id);
+    if (!sub) return;
+
+    const amountStr = await showPromptModal(
+        `"${sub.username}" uchun yangi summa (so'm):`,
+        String(Math.round(Number(sub.amount) || 0)));
+    if (amountStr === null) return;
+
+    const amount = Number(amountStr);
+    if (isNaN(amount) || amount <= 0) {
+        showAlertModal("❌ Noto'g'ri summa");
+        return;
+    }
+
+    const durationStr = await showPromptModal("Yangi muddat (necha oy, boshlanish sanasidan):", "1");
+    if (durationStr === null) return;
+
+    const durationMonths = Number(durationStr);
+    if (!durationMonths || durationMonths <= 0) {
+        showAlertModal("❌ Noto'g'ri muddat");
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/subscriptions/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ amount, durationMonths })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            showAlertModal(data.error || "Xatolik yuz berdi");
+            return;
+        }
+
+        showAlertModal("✅ Obuna yangilandi");
+        loadAllSubscriptions();
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
+    }
+}
+
+// "🗑️ O'chirish" — "Bekor qilish"dan (holatni CANCELLED qilib saqlaydi)
+// farqli, yozuvni BUTUNLAY o'chiradi (foydalanuvchi so'rovi, 2026-09-09).
+async function deleteAdminSubscriptionPermanently(id) {
+    if (!await showConfirmModal(
+        "Bu obuna yozuvini BUTUNLAY o'chirmoqchimisiz? Agar hali faol bo'lsa, ADMIN huquqi ham darhol olib tashlanadi. Bu amalni ortga qaytarib bo'lmaydi."))
+        return;
+
+    try {
+        const res = await fetch(`/api/subscriptions/${id}`, { method: "DELETE" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
             showAlertModal(data.error || "Xatolik yuz berdi");
