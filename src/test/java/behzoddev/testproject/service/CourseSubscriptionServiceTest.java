@@ -381,6 +381,127 @@ class CourseSubscriptionServiceTest {
         verify(courseSubscriptionRepository, never()).save(any());
     }
 
+    // ===== updateSubscription ("/courses/subscriptions" — "✏️ Tahrirlash",
+    // foydalanuvchi so'rovi, 2026-09-09) =====
+
+    @Test
+    void updateSubscription_success_recalculatesEndDateFromStartDate() {
+        LocalDateTime start = LocalDateTime.now().minusDays(10);
+        CourseSubscription sub = CourseSubscription.builder().id(7L).user(student).course(course)
+                .amount(BigDecimal.TEN).status(CourseSubscriptionStatus.CONFIRMED)
+                .startDate(start).endDate(start.plusMonths(1)).build();
+        when(courseSubscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+
+        CourseSubscriptionDto result = courseSubscriptionService.updateSubscription(
+                7L, BigDecimal.valueOf(200_000), 3, owner);
+
+        assertThat(sub.getAmount()).isEqualByComparingTo("200000");
+        assertThat(sub.getEndDate()).isEqualTo(start.plusMonths(3));
+        assertThat(sub.getStatus()).isEqualTo(CourseSubscriptionStatus.CONFIRMED);
+        assertThat(result.id()).isEqualTo(7L);
+        verify(notificationService).create(eq(student), anyString(), eq("/courses/1"));
+    }
+
+    // Eskirgan (EXPIRED) yoki adashib bekor qilingan (CANCELLED) obunani
+    // tahrirlash uni qayta FAOLlashtiradi — alohida "qayta tiklash"
+    // tugmasi shart emas.
+    @Test
+    void updateSubscription_expiredSubscription_reactivatesToConfirmed() {
+        CourseSubscription sub = CourseSubscription.builder().id(7L).user(student).course(course)
+                .amount(BigDecimal.TEN).status(CourseSubscriptionStatus.EXPIRED)
+                .startDate(LocalDateTime.now().minusMonths(2)).endDate(LocalDateTime.now().minusDays(5)).build();
+        when(courseSubscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+
+        courseSubscriptionService.updateSubscription(7L, BigDecimal.valueOf(50_000), 1, owner);
+
+        assertThat(sub.getStatus()).isEqualTo(CourseSubscriptionStatus.CONFIRMED);
+    }
+
+    @Test
+    void updateSubscription_notFound_throws() {
+        when(courseSubscriptionRepository.findById(7L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> courseSubscriptionService.updateSubscription(7L, BigDecimal.TEN, 1, owner))
+                .isInstanceOf(NoSuchElementException.class);
+    }
+
+    @Test
+    void updateSubscription_unrelatedAdmin_throwsAccessDenied() {
+        User otherAdmin = User.builder().id(51L).username("admin2").roles(new HashSet<>(Set.of(
+                Role.builder().id(3L).roleName("ROLE_ADMIN").build()))).build();
+        CourseSubscription sub = CourseSubscription.builder().id(7L).user(student).course(course)
+                .amount(BigDecimal.TEN).status(CourseSubscriptionStatus.CONFIRMED).build();
+        when(courseSubscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+
+        assertThatThrownBy(() -> courseSubscriptionService.updateSubscription(7L, BigDecimal.TEN, 1, otherAdmin))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(courseSubscriptionRepository, never()).save(any());
+    }
+
+    @Test
+    void updateSubscription_negativeAmount_throws() {
+        CourseSubscription sub = CourseSubscription.builder().id(7L).user(student).course(course)
+                .amount(BigDecimal.TEN).status(CourseSubscriptionStatus.CONFIRMED).build();
+        when(courseSubscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+
+        assertThatThrownBy(() -> courseSubscriptionService.updateSubscription(7L, BigDecimal.valueOf(-1), 1, owner))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(courseSubscriptionRepository, never()).save(any());
+    }
+
+    @Test
+    void updateSubscription_invalidDuration_throws() {
+        CourseSubscription sub = CourseSubscription.builder().id(7L).user(student).course(course)
+                .amount(BigDecimal.TEN).status(CourseSubscriptionStatus.CONFIRMED).build();
+        when(courseSubscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+
+        assertThatThrownBy(() -> courseSubscriptionService.updateSubscription(7L, BigDecimal.TEN, 0, owner))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        verify(courseSubscriptionRepository, never()).save(any());
+    }
+
+    // ===== delete ("/courses/subscriptions" — "🗑️ O'chirish", foydalanuvchi
+    // so'rovi, 2026-09-09: "cancel"dan farqli, yozuvni BUTUNLAY o'chiradi) =====
+
+    @Test
+    void delete_success_removesRowWithoutNotifying() {
+        CourseSubscription sub = CourseSubscription.builder().id(7L).user(student).course(course)
+                .amount(BigDecimal.TEN).status(CourseSubscriptionStatus.CANCELLED).build();
+        when(courseSubscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+
+        courseSubscriptionService.delete(7L, owner);
+
+        verify(courseSubscriptionRepository).delete(sub);
+        // Ma'muriy tozalash amali — foydalanuvchining kirish huquqiga
+        // ta'sir qilmaydi, shuning uchun xabar yuborilmaydi.
+        verify(notificationService, never()).create(any(), anyString(), anyString());
+    }
+
+    @Test
+    void delete_notFound_throws() {
+        when(courseSubscriptionRepository.findById(7L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> courseSubscriptionService.delete(7L, owner))
+                .isInstanceOf(NoSuchElementException.class);
+    }
+
+    @Test
+    void delete_unrelatedAdmin_throwsAccessDenied() {
+        User otherAdmin = User.builder().id(51L).username("admin2").roles(new HashSet<>(Set.of(
+                Role.builder().id(3L).roleName("ROLE_ADMIN").build()))).build();
+        CourseSubscription sub = CourseSubscription.builder().id(7L).user(student).course(course)
+                .amount(BigDecimal.TEN).status(CourseSubscriptionStatus.CONFIRMED).build();
+        when(courseSubscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+
+        assertThatThrownBy(() -> courseSubscriptionService.delete(7L, otherAdmin))
+                .isInstanceOf(AccessDeniedException.class);
+
+        verify(courseSubscriptionRepository, never()).delete(any(CourseSubscription.class));
+    }
+
     // ===== listAll (foydalanuvchi so'rovi, 2026-09-07: ROLE_ADMIN faqat
     // o'zi yaratgan kurslarning obunalarini ko'rishi kerak) =====
 

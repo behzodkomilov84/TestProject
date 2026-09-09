@@ -228,13 +228,22 @@ function renderSubscribers() {
     };
 
     tbody.innerHTML = subs.map(s => {
-        let actions = "—";
+        // "✏️ Tahrirlash" — PENDING'dan tashqari barcha holatlarda
+        // (CONFIRMED/EXPIRED/CANCELLED) ko'rinadi: eskirgan yoki adashib
+        // bekor qilingan obunani ham shu orqali qayta faollashtirish
+        // mumkin. "🗑️ O'chirish" — HAR DOIM, "Bekor qilish"dan farqli
+        // (yozuvni butunlay o'chiradi) (foydalanuvchi so'rovi, 2026-09-09).
+        let actions;
         if (s.status === "PENDING") {
-            actions = `<button onclick="confirmRequest(${s.id})">✅ Tasdiqlash</button>
-                       <button onclick="cancelSubscription(${s.id})">❌ Rad etish</button>`;
+            actions = `<button class="sub-action-btn sub-action-confirm" onclick="confirmRequest(${s.id})">✅ Tasdiqlash</button>
+                       <button class="sub-action-btn sub-action-reject" onclick="cancelSubscription(${s.id})">❌ Rad etish</button>`;
         } else if (s.status === "CONFIRMED") {
-            actions = `<button onclick="cancelSubscription(${s.id})">Bekor qilish</button>`;
+            actions = `<button class="sub-action-btn sub-action-edit" onclick="editSubscription(${s.id})">✏️ Tahrirlash</button>
+                       <button class="sub-action-btn sub-action-cancel" onclick="cancelSubscription(${s.id})">Bekor qilish</button>`;
+        } else {
+            actions = `<button class="sub-action-btn sub-action-edit" onclick="editSubscription(${s.id})">✏️ Tahrirlash</button>`;
         }
+        actions += `<button class="sub-action-btn sub-action-delete" onclick="deleteSubscriptionPermanently(${s.id})">🗑️ O'chirish</button>`;
 
         const muddat = s.endDate ? new Date(s.endDate).toLocaleDateString("uz-UZ") : "—";
 
@@ -299,6 +308,77 @@ async function cancelSubscription(id) {
 
     try {
         const res = await fetch(`/api/course-subscriptions/${id}/cancel`, { method: "POST" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlertModal(data.error || "Xatolik yuz berdi");
+            return;
+        }
+        loadSubscribers();
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
+    }
+}
+
+// "✏️ Tahrirlash" — mavjud obunaning summasi/muddatini o'zgartiradi
+// (foydalanuvchi so'rovi, 2026-09-09: "Edit ni ham qo'sh, muddatini
+// o'zgartirishimiz mumkin"). confirmRequest() bilan bir xil ketma-ket
+// showPromptModal andozasi, joriy qiymatlar oldindan to'ldirilgan holda.
+async function editSubscription(id) {
+    const sub = allSubs.find(s => s.id === id);
+    if (!sub) return;
+
+    const amountStr = await showPromptModal(
+        `"${sub.username}" — "${sub.courseTitle}": yangi summa (so'm):`,
+        String(Math.round(Number(sub.amount) || 0)));
+    if (amountStr === null) return;
+
+    const amount = Number(amountStr);
+    if (isNaN(amount) || amount < 0) {
+        showAlertModal("❌ Noto'g'ri summa");
+        return;
+    }
+
+    const durationStr = await showPromptModal("Yangi muddat (necha oy, boshlanish sanasidan):", "1");
+    if (durationStr === null) return;
+
+    const durationMonths = Number(durationStr);
+    if (!durationMonths || durationMonths <= 0) {
+        showAlertModal("❌ Noto'g'ri muddat");
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/course-subscriptions/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ amount, durationMonths })
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            showAlertModal(data.error || "Xatolik yuz berdi");
+            return;
+        }
+
+        showAlertModal("✅ Obuna yangilandi");
+        loadSubscribers();
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
+    }
+}
+
+// "🗑️ O'chirish" — "Bekor qilish"dan (cancel — holatni CANCELLED qilib
+// saqlaydi) farqli, yozuvni BUTUNLAY o'chiradi (foydalanuvchi so'rovi,
+// 2026-09-09).
+async function deleteSubscriptionPermanently(id) {
+    if (!await showConfirmModal("Bu obuna yozuvini BUTUNLAY o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi."))
+        return;
+
+    try {
+        const res = await fetch(`/api/course-subscriptions/${id}`, { method: "DELETE" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
             showAlertModal(data.error || "Xatolik yuz berdi");

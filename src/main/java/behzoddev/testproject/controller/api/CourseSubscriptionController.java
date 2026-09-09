@@ -2,6 +2,7 @@ package behzoddev.testproject.controller.api;
 
 import behzoddev.testproject.dto.course.CourseSubscriptionDto;
 import behzoddev.testproject.dto.course.CreateCourseSubscriptionDto;
+import behzoddev.testproject.dto.course.UpdateCourseSubscriptionDto;
 import behzoddev.testproject.dto.payment.CreatePaymentOrderDto;
 import behzoddev.testproject.dto.payment.PaymentOrderDto;
 import behzoddev.testproject.entity.PaymentOrder;
@@ -105,5 +106,23 @@ public class CourseSubscriptionController {
     @PostMapping("/api/course-subscriptions/{id}/cancel")
     public void cancel(@PathVariable Long id, @AuthenticationPrincipal User requester) {
         courseSubscriptionService.cancel(id, requester);
+    }
+
+    // "✏️ Tahrirlash" — mavjud obunaning summasi/muddatini o'zgartiradi
+    // (foydalanuvchi so'rovi, 2026-09-09).
+    @PutMapping("/api/course-subscriptions/{id}")
+    public CourseSubscriptionDto update(
+            @PathVariable Long id,
+            @RequestBody UpdateCourseSubscriptionDto dto,
+            @AuthenticationPrincipal User requester
+    ) {
+        return courseSubscriptionService.updateSubscription(id, dto.amount(), dto.durationMonths(), requester);
+    }
+
+    // "🗑️ O'chirish" — "cancel" (bekor qilish, holatni CANCELLED qilib
+    // saqlab qoladi) dan farqli, yozuvni BUTUNLAY o'chiradi.
+    @DeleteMapping("/api/course-subscriptions/{id}")
+    public void delete(@PathVariable Long id, @AuthenticationPrincipal User requester) {
+        courseSubscriptionService.delete(id, requester);
     }
 }

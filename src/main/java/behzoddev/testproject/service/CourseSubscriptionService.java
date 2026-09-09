@@ -325,6 +325,66 @@ public class CourseSubscriptionService {
                 subscription.getUser().getUsername(), subscription.getCourse().getTitle(), requester.getUsername());
     }
 
+    // "/courses/subscriptions" sahifasidagi "✏️ Tahrirlash" — mavjud
+    // obunaning summasi/muddatini o'zgartiradi (foydalanuvchi so'rovi,
+    // 2026-09-09: "Edit ni ham qo'sh, muddatini o'zgartirishimiz mumkin").
+    // CANCELLED/EXPIRED obunani tahrirlash uni QAYTA FAOLlashtiradi —
+    // bu OWNER uchun "adashib bekor qilingan/eskirgan obunani tuzatish"
+    // amaliy stsenariysini alohida "qayta tiklash" tugmasisiz yopadi.
+    @Transactional
+    public CourseSubscriptionDto updateSubscription(Long subscriptionId, BigDecimal amount, Integer durationMonths, User requester) {
+        CourseSubscription subscription = courseSubscriptionRepository.findById(subscriptionId)
+                .orElseThrow(() -> new NoSuchElementException("Obuna topilmadi"));
+        checkCanManage(subscription.getCourse(), requester);
+
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("❌To'lov summasi noto'g'ri");
+        }
+        if (durationMonths == null || durationMonths <= 0) {
+            throw new IllegalArgumentException("❌Muddat noto'g'ri");
+        }
+
+        LocalDateTime startDate = subscription.getStartDate() != null ? subscription.getStartDate() : LocalDateTime.now();
+        subscription.setAmount(amount);
+        subscription.setStartDate(startDate);
+        subscription.setEndDate(startDate.plusMonths(durationMonths));
+        subscription.setStatus(CourseSubscriptionStatus.CONFIRMED);
+        subscription.setTrial(false);
+
+        courseSubscriptionRepository.save(subscription);
+
+        notificationService.create(subscription.getUser(),
+                "✏️ \"" + subscription.getCourse().getTitle() + "\" kursidagi obunangiz administrator tomonidan " +
+                        "yangilandi (" + durationMonths + " oy).",
+                "/courses/" + subscription.getCourse().getId());
+
+        log.info("Kurs obunasi tahrirlandi: id={}, user={}, course={}, muddat={} oy, requester={}",
+                subscriptionId, subscription.getUser().getUsername(), subscription.getCourse().getTitle(),
+                durationMonths, requester.getUsername());
+
+        return toDto(subscription);
+    }
+
+    // "/courses/subscriptions" sahifasidagi "🗑️ O'chirish" — "Bekor
+    // qilish"dan (cancel()) farqli, yozuvni butunlay o'chiradi (soft
+    // CANCELLED holatga o'tkazish emas). Foydalanuvchiga xabar YUBORILMAYDI
+    // — bu ko'proq eski/xato yozuvlarni tozalash uchun ma'muriy amal,
+    // kirish huquqiga ta'sir qiladigan qaror emas (agar hali CONFIRMED
+    // bo'lsa ham, xohlagan holatda o'chirish OWNER'ning o'zi tanlagan
+    // ataylab qilingan tozalash harakati hisoblanadi).
+    @Transactional
+    public void delete(Long subscriptionId, User requester) {
+        CourseSubscription subscription = courseSubscriptionRepository.findById(subscriptionId)
+                .orElseThrow(() -> new NoSuchElementException("Obuna topilmadi"));
+        checkCanManage(subscription.getCourse(), requester);
+
+        courseSubscriptionRepository.delete(subscription);
+
+        log.info("Kurs obunasi butunlay o'chirildi: id={}, user={}, course={}, requester={}",
+                subscriptionId, subscription.getUser().getUsername(), subscription.getCourse().getTitle(),
+                requester.getUsername());
+    }
+
     // Har kuni 00:35'da ishga tushadi (SubscriptionService.expireSubscriptions
     // bilan bir xil pattern, faqat bir oz boshqa vaqtda — bir vaqtda ikkita
     // job MySQL'ga urilib qolmasligi uchun): muddati o'tgan CONFIRMED kurs
