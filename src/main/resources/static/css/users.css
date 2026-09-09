@@ -250,16 +250,21 @@ body {
 .users-table tbody .sticky-col-3 {
     left: 106px;
     width: 185px;
-    /* "✉️" tugmasi HAR DOIM to'liq ko'rinishi kerak — kesilib ketmasligi
-       uchun endi katakning o'zi emas, faqat ICHIDAGI username matni
-       (.username-cell-text) qisqartiriladi (foydalanuvchi so'rovi,
-       2026-09-09). */
+    /* MUHIM: "display:flex" TO'G'RIDAN-TO'G'RI <td>'ning o'zida
+       QO'YILMAYDI — bu <td>'ni jadval katakchasi (table-cell) rejimidan
+       chiqarib yuborib, <th> bilan ustunlar mos kelmay qolishiga va
+       qator balandligi buzilishiga olib keldi (foydalanuvchi skrinshotda
+       ko'rsatgan "xunuk" ko'rinish, 2026-09-09). Flex endi FAQAT ichidagi
+       .username-cell-row wrapper'da — <td>'ning o'zi oddiy table-cell
+       bo'lib qoladi. */
+    box-shadow: 2px 0 4px rgba(0, 0, 0, .08);
+}
+
+.username-cell-row {
     display: flex;
     align-items: center;
     gap: 4px;
-    /* Muzlatilgan (frozen) va oddiy aylanadigan ustunlar chegarasini
-       ko'zga ko'rinadigan qilish uchun. */
-    box-shadow: 2px 0 4px rgba(0, 0, 0, .08);
+    min-width: 0;
 }
 
 .username-cell-text {

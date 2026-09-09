@@ -121,8 +121,10 @@ function renderUsers(users, subscriptions) {
             <td class="sticky-col-1">${user.id}</td>
             <td class="sticky-col-2">${avatarHtml}</td>
             <td class="sticky-col-3" title="${escapeHtml(user.username)}">
-                <span class="username-cell-text">${user.username} ${user.locked ? '<span title="Bloklangan">🔒</span>' : ""}</span>
-                ${tgMessageBtnHtml}
+                <div class="username-cell-row">
+                    <span class="username-cell-text">${user.username} ${user.locked ? '<span title="Bloklangan">🔒</span>' : ""}</span>
+                    ${tgMessageBtnHtml}
+                </div>
             </td>
             <td>${escapeHtml(fullName)}</td>
             <td>${escapeHtml(user.email) || "—"}</td>
