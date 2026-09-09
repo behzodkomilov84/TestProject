@@ -217,10 +217,34 @@ public class TelegramBot extends TelegramLongPollingBot {
                     trackCourseMessage(chatId, execute(courseReaderService.openCourse(getUserByChatId(chatId), courseId)));
                     return;
                 }
-                // ===== Kursga Click orqali onlayn to'lash (OWNER tasdig'ini kutmasdan) =====
+                // ===== "🎁 3 kunlik bepul sinov" — OWNER tasdig'ini kutmasdan
+                // darhol kirish beriladi (foydalanuvchi so'rovi, 2026-09-09:
+                // "Botlarda ham to'g'ri ishlasin"). =====
+                if (data.startsWith("course_trial_")) {
+                    Long courseId = Long.parseLong(data.replace("course_trial_", ""));
+                    deleteTrackedCourseMessages(chatId);
+                    trackCourseMessage(chatId, execute(courseReaderService.startTrial(getUserByChatId(chatId), courseId)));
+                    return;
+                }
+                // ===== Kursga Click orqali to'lash — muddat (1/3/6 oy) tanlangandan
+                // keyingi haqiqiy buyurtma yaratish. DIQQAT: "course_paydur_"
+                // tekshiruvi "course_pay_" dan OLDIN turishi shart — aks holda
+                // "course_pay_".startsWith(...) pastdagi umumiyroq shart bilan
+                // noto'g'ri (muddatsiz) ushlanib qolardi. =====
+                if (data.startsWith("course_paydur_")) {
+                    String rest = data.replace("course_paydur_", "");
+                    int sep = rest.lastIndexOf('_');
+                    Long courseId = Long.parseLong(rest.substring(0, sep));
+                    int months = Integer.parseInt(rest.substring(sep + 1));
+                    execute(courseReaderService.payWithClick(getUserByChatId(chatId), courseId, months));
+                    return;
+                }
+                // ===== Kursga Click orqali onlayn to'lash (OWNER tasdig'ini
+                // kutmasdan) — endi darhol emas, avval muddat tanlash menyusi
+                // ko'rsatiladi (showPaymentDurationOptions). =====
                 if (data.startsWith("course_pay_")) {
                     Long courseId = Long.parseLong(data.replace("course_pay_", ""));
-                    execute(courseReaderService.payWithClick(getUserByChatId(chatId), courseId));
+                    execute(courseReaderService.showPaymentDurationOptions(getUserByChatId(chatId), courseId));
                     return;
                 }
                 // ===== Kursga obuna so'rovi (OWNER qo'lda tasdiqlaydi) — botning o'zidan =====

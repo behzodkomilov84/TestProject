@@ -22,6 +22,7 @@ import behzoddev.testproject.entity.Course;
 import behzoddev.testproject.entity.CourseChapter;
 import behzoddev.testproject.entity.CourseField;
 import behzoddev.testproject.entity.CourseSection;
+import behzoddev.testproject.entity.CourseSubscription;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.Topic;
@@ -36,6 +37,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -1176,6 +1179,110 @@ class CourseServiceTest {
         assertThat(result.subscribed()).isTrue();
         org.mockito.Mockito.verify(courseSubscriptionRepository, org.mockito.Mockito.never())
                 .existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(any(), any(), any(), any());
+    }
+
+    // ===== getDetail — "🎁 3 kunlik bepul sinov" maydonlari (foydalanuvchi so'rovi, 2026-09-09) =====
+
+    @Test
+    void getDetail_paidCourseNotSubscribedNeverUsedTrial_trialAvailableTrue() {
+        User user = subscriber();
+        Course course = Course.builder().id(1L).title("Pullik kurs").published(true).free(false)
+                .price(BigDecimal.valueOf(50_000)).createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+                eq(user.getId()), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(false);
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatus(
+                user.getId(), 1L, CourseSubscriptionStatus.PENDING)).thenReturn(false);
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndTrialTrue(user.getId(), 1L)).thenReturn(false);
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of());
+
+        CourseDetailDto result = courseService.getDetail(1L, user);
+
+        assertThat(result.trialAvailable()).isTrue();
+        assertThat(result.trialActive()).isFalse();
+        assertThat(result.trialEndDate()).isNull();
+    }
+
+    @Test
+    void getDetail_paidCourseAlreadyUsedTrial_trialAvailableFalse() {
+        User user = subscriber();
+        Course course = Course.builder().id(1L).title("Pullik kurs").published(true).free(false)
+                .price(BigDecimal.valueOf(50_000)).createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+                eq(user.getId()), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(false);
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatus(
+                user.getId(), 1L, CourseSubscriptionStatus.PENDING)).thenReturn(false);
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndTrialTrue(user.getId(), 1L)).thenReturn(true);
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of());
+
+        CourseDetailDto result = courseService.getDetail(1L, user);
+
+        assertThat(result.trialAvailable()).isFalse();
+    }
+
+    @Test
+    void getDetail_freeCourse_trialNeverAvailable() {
+        User user = subscriber();
+        Course course = Course.builder().id(1L).title("Bepul kurs").published(true).free(true).createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of());
+
+        CourseDetailDto result = courseService.getDetail(1L, user);
+
+        // Bepul kursda sinovga hojat yo'q — trialAvailable HAR DOIM false,
+        // course.isFree() shartida qisqa yo'l bilan to'xtaydi (repository'ga
+        // qo'shimcha so'rov ketmaydi).
+        assertThat(result.trialAvailable()).isFalse();
+    }
+
+    @Test
+    void getDetail_activeTrialSubscription_trialActiveTrueWithEndDate() {
+        User user = subscriber();
+        Course course = Course.builder().id(1L).title("Pullik kurs").published(true).free(false)
+                .price(BigDecimal.valueOf(50_000)).createdBy(owner()).build();
+        LocalDateTime endDate = LocalDateTime.now().plusDays(2);
+        CourseSubscription trialSub = CourseSubscription.builder().id(9L).user(user).course(course)
+                .amount(BigDecimal.ZERO).status(CourseSubscriptionStatus.CONFIRMED).trial(true)
+                .endDate(endDate).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+                eq(user.getId()), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(true);
+        when(courseSubscriptionRepository.findByUser_IdAndCourse_IdAndStatus(
+                user.getId(), 1L, CourseSubscriptionStatus.CONFIRMED)).thenReturn(Optional.of(trialSub));
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of());
+
+        CourseDetailDto result = courseService.getDetail(1L, user);
+
+        assertThat(result.subscribed()).isTrue();
+        assertThat(result.trialActive()).isTrue();
+        assertThat(result.trialEndDate()).isEqualTo(endDate);
+        // Sinov allaqachon FAOL bo'lgani uchun, endi trialAvailable
+        // false bo'lishi shart (subscribed=true shartida to'xtaydi).
+        assertThat(result.trialAvailable()).isFalse();
+    }
+
+    @Test
+    void getDetail_paidNonTrialSubscription_trialActiveFalse() {
+        User user = subscriber();
+        Course course = Course.builder().id(1L).title("Pullik kurs").published(true).free(false)
+                .price(BigDecimal.valueOf(50_000)).createdBy(owner()).build();
+        CourseSubscription paidSub = CourseSubscription.builder().id(9L).user(user).course(course)
+                .amount(BigDecimal.valueOf(50_000)).status(CourseSubscriptionStatus.CONFIRMED).trial(false)
+                .endDate(LocalDateTime.now().plusMonths(1)).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+                eq(user.getId()), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(true);
+        when(courseSubscriptionRepository.findByUser_IdAndCourse_IdAndStatus(
+                user.getId(), 1L, CourseSubscriptionStatus.CONFIRMED)).thenReturn(Optional.of(paidSub));
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of());
+
+        CourseDetailDto result = courseService.getDetail(1L, user);
+
+        assertThat(result.trialActive()).isFalse();
+        assertThat(result.trialEndDate()).isNull();
     }
 
     @Test

@@ -15,6 +15,12 @@ public interface CourseSubscriptionRepository extends JpaRepository<CourseSubscr
 
     boolean existsByUser_IdAndCourse_IdAndStatus(Long userId, Long courseId, CourseSubscriptionStatus status);
 
+    // "3 kunlik bepul sinov" allaqachon ishlatilganmi (holatidan qat'i
+    // nazar — CONFIRMED/EXPIRED/CANCELLED, faqat BIR MARTA berilishi
+    // kerak) — CourseSubscriptionService#startFreeTrial shu bilan
+    // tekshiradi (foydalanuvchi so'rovi, 2026-09-09).
+    boolean existsByUser_IdAndCourse_IdAndTrialTrue(Long userId, Long courseId);
+
     // Haqiqiy (real-time) kirish tekshiruvi uchun — status=CONFIRMED bo'lsa-da,
     // kunlik expireSubscriptions() job'i hali ishlamagan bo'lishi mumkin,
     // shuning uchun endDate to'g'ridan-to'g'ri tekshiriladi.

@@ -288,6 +288,42 @@ class PaymentOrderServiceTest {
                 .hasMessageContaining("minimal chegaradan");
     }
 
+    // "Bonus" muddat chegirmasi — 1 oy 100%, 3 oy 80%, 6 oy 70%
+    // (foydalanuvchi so'rovi, 2026-09-09: "1 ойни таласа 100%, 3 ойга -
+    // 80%, 6 ойга - 70%").
+    @Test
+    void createCourseOrder_threeMonths_appliesTwentyPercentDiscount() {
+        when(courseRepository.findById(5L)).thenReturn(Optional.of(paidCourse()));
+
+        PaymentOrder order = paymentOrderService.createCourseOrder(user, 5L, 3);
+
+        // 100 000 * 3 * 0.80 = 240 000 (300 000'dan 60 000 kam).
+        assertThat(order.getAmount()).isEqualByComparingTo("240000");
+        assertThat(order.getDurationMonths()).isEqualTo(3);
+    }
+
+    @Test
+    void createCourseOrder_sixMonths_appliesThirtyPercentDiscount() {
+        when(courseRepository.findById(5L)).thenReturn(Optional.of(paidCourse()));
+
+        PaymentOrder order = paymentOrderService.createCourseOrder(user, 5L, 6);
+
+        // 100 000 * 6 * 0.70 = 420 000 (600 000'dan 180 000 kam).
+        assertThat(order.getAmount()).isEqualByComparingTo("420000");
+        assertThat(order.getDurationMonths()).isEqualTo(6);
+    }
+
+    @Test
+    void createCourseOrder_twelveMonths_appliesSameThirtyPercentDiscountAsSixPlus() {
+        when(courseRepository.findById(5L)).thenReturn(Optional.of(paidCourse()));
+
+        PaymentOrder order = paymentOrderService.createCourseOrder(user, 5L, 12);
+
+        // 100 000 * 12 * 0.70 = 840 000 — 6 oydan ko'p muddatlar ham eng
+        // katta (70%) chegirmani oladi, alohida "yana ham arzonroq" pog'ona yo'q.
+        assertThat(order.getAmount()).isEqualByComparingTo("840000");
+    }
+
     // ===== markPaid / reversePaidOrder — kurs to'lovi (courseId belgilangan) =====
 
     @Test

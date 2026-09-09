@@ -54,6 +54,7 @@
     <include file="/db/changelog/facebook-login.sql"/>
     <include file="/db/changelog/course-sequential-unlock.sql"/>
     <include file="/db/changelog/science-created-by.sql"/>
+    <include file="/db/changelog/course-subscription-trial.sql"/>
 
 
 </databaseChangeLog>

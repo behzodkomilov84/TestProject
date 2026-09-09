@@ -19,6 +19,7 @@ import behzoddev.testproject.entity.CourseChapter;
 import behzoddev.testproject.entity.CourseField;
 import behzoddev.testproject.entity.CourseSection;
 import behzoddev.testproject.entity.CourseSectionProgress;
+import behzoddev.testproject.entity.CourseSubscription;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
@@ -139,6 +140,26 @@ public class CourseService {
         boolean requestPending = !subscribed && courseSubscriptionRepository
                 .existsByUser_IdAndCourse_IdAndStatus(currentUser.getId(), courseId, CourseSubscriptionStatus.PENDING);
 
+        // "🎁 3 kunlik bepul sinov" holati — foydalanuvchi so'rovi,
+        // 2026-09-09. trialAvailable — hali sinovdan foydalanmagan
+        // bo'lsa (kurs bepul bo'lmasa) tugma ko'rsatish uchun.
+        // trialActive/trialEndDate — HOZIR faol CONFIRMED obuna aynan
+        // sinov orqali berilgan bo'lsa (bannerdagi "N kun qoldi" uchun).
+        boolean trialAvailable = !course.isFree() && !subscribed
+                && !courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndTrialTrue(currentUser.getId(), courseId);
+        boolean trialActive = false;
+        LocalDateTime trialEndDate = null;
+        if (subscribed && !canManage) {
+            CourseSubscription activeSubscription = courseSubscriptionRepository
+                    .findByUser_IdAndCourse_IdAndStatus(currentUser.getId(), courseId, CourseSubscriptionStatus.CONFIRMED)
+                    .filter(CourseSubscription::isTrial)
+                    .orElse(null);
+            if (activeSubscription != null) {
+                trialActive = true;
+                trialEndDate = activeSubscription.getEndDate();
+            }
+        }
+
         List<CourseSection> sections = courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(courseId);
 
         // Har bir bog'langan darsning nechta faol savoli borligi — BULK
@@ -194,6 +215,9 @@ public class CourseService {
                 .subscribed(subscribed || canManage)
                 .requestPending(requestPending)
                 .canManage(canManage)
+                .trialAvailable(trialAvailable)
+                .trialActive(trialActive)
+                .trialEndDate(trialEndDate)
                 .fieldId(course.getField() != null ? course.getField().getId() : null)
                 .fieldName(course.getField() != null ? course.getField().getName() : null)
                 .authorName(formatAuthorName(course.getCreatedBy()))

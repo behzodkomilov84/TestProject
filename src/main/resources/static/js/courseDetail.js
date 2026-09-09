@@ -1136,16 +1136,23 @@ function updateSubscribeBanner(course) {
     const showBanner = !course.subscribed && !course.canManage;
     document.getElementById("subscribeBanner").style.display = showBanner ? "flex" : "none";
 
+    // "🎁 Bepul sinov faol" — alohida banner, subscribeBanner bilan bir
+    // vaqtda hech qachon ikkalasi ko'rinmaydi (sinov faol bo'lsa
+    // subscribed=true, shuning uchun showBanner=false).
+    updateTrialActiveBanner(course);
+
     if (!showBanner) return;
 
-    const requestBtn = document.getElementById("requestSubscriptionBtn");
+    const trialBtn = document.getElementById("startTrialBtn");
     const payBtn = document.getElementById("payWithClickBtn");
+    const requestBtn = document.getElementById("requestSubscriptionBtn");
 
     if (course.requestPending) {
         document.getElementById("subscribeBannerText").textContent =
             "⏳ Obunaga so'rovingiz yuborilgan — administrator (OWNER) javobini kuting.";
-        requestBtn.style.display = "none";
+        trialBtn.style.display = "none";
         payBtn.style.display = "none";
+        requestBtn.style.display = "none";
         return;
     }
 
@@ -1155,21 +1162,129 @@ function updateSubscribeBanner(course) {
     const priceText = course.price ? ` Narxi: 1 oyga ${formatPrice(course.price)} so'm.` : "";
     document.getElementById("subscribeBannerText").textContent =
         "🔒 Bu kursning to'liq mazmuniga kirish uchun obuna kerak." + priceText;
-    requestBtn.style.display = "";
+
+    // "🎁 3 kunlik bepul sinov" — foydalanuvchi hali shu kursda sinovdan
+    // foydalanmagan bo'lsa (backend hisoblab beradi: CourseService#getDetail).
+    trialBtn.style.display = course.trialAvailable ? "" : "none";
 
     // Onlayn to'lov faqat Click ulangan VA kurs narxi belgilangan bo'lsa
-    // ko'rinadi (narxsiz kursda avtomatik summani hisoblab bo'lmaydi —
-    // bunday holda faqat "so'rov yuborish" orqali, OWNER summani qo'lda
-    // belgilaydi).
-    payBtn.style.display = (clickPaymentEnabled && course.price) ? "" : "none";
+    // ko'rinadi (narxsiz kursda avtomatik summani hisoblab bo'lmaydi).
+    const payAvailable = !!(clickPaymentEnabled && course.price);
+    payBtn.style.display = payAvailable ? "" : "none";
+
+    // "✉️ Administratorga murojaat qilish" — faqat na sinov, na to'lov
+    // imkoni bo'lmagan kamdan-kam holatda (masalan narx hali
+    // belgilanmagan yoki Click ulanmagan VA foydalanuvchi sinovni
+    // allaqachon ishlatib bo'lgan) zaxira sifatida ko'rinadi.
+    requestBtn.style.display = (!course.trialAvailable && !payAvailable) ? "" : "none";
 }
 
-async function payWithClick() {
+// "🎁 Bepul sinov faol — N kun qoldi" — kurs allaqachon ochiq bo'lsa ham
+// (subscribed=true, trial=true), foydalanuvchi muddat tugashidan oldin
+// xohlasa to'lab qo'yishi mumkin (foydalanuvchi so'rovi, 2026-09-09:
+// "Бонус кун тугаса автомат ҳабар бериши керак" — avtomatik xabar
+// CourseSubscriptionService#expireSubscriptions orqali allaqachon
+// ishlaydi, bu banner esa muddat TUGAMASDAN oldingi eslatma).
+function updateTrialActiveBanner(course) {
+    const banner = document.getElementById("trialActiveBanner");
+    if (!banner) return;
+
+    if (!course.trialActive || !course.trialEndDate) {
+        banner.style.display = "none";
+        return;
+    }
+
+    const msLeft = new Date(course.trialEndDate).getTime() - Date.now();
+    const daysLeft = Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24)));
+    const dayWord = daysLeft === 1 ? "kun" : "kun";
+    document.getElementById("trialActiveBannerText").textContent =
+        `🎁 Bepul sinov muddatidan foydalanyapsiz — ${daysLeft} ${dayWord} qoldi. ` +
+        "Muddat tugagach, kursdan foydalanish uchun to'lov qilishingiz kerak bo'ladi.";
+
+    const payBtn = document.getElementById("trialBannerPayBtn");
+    payBtn.style.display = (clickPaymentEnabled && course.price) ? "" : "none";
+
+    banner.style.display = "flex";
+}
+
+async function startTrial() {
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/subscriptions/trial`, { method: "POST" });
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            showAlertModal(data.error || "Xatolik yuz berdi");
+            return;
+        }
+
+        showAlertModal("🎁 3 kunlik bepul sinov faollashtirildi! Kursdan hoziroq foydalanishingiz mumkin.");
+        loadCourse();
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
+    }
+}
+
+// "💳 To'lov — muddatni tanlang" oynasi — 1/3/6 oylik variantlar, uzoqroq
+// muddatga bonus chegirma bilan (foydalanuvchi so'rovi, 2026-09-09).
+// Ko'rsatilgan raqamlar faqat TAXMINIY — haqiqiy summa HAR DOIM serverda
+// (PaymentOrderService#createCourseOrder) qayta hisoblanadi.
+const PAYMENT_DURATION_DISCOUNTS = [
+    { months: 1, multiplier: 1.0 },
+    { months: 3, multiplier: 0.8 },
+    { months: 6, multiplier: 0.7 }
+];
+
+let selectedPaymentMonths = 1;
+
+function openPaymentModal() {
+    if (!cachedCourse || !cachedCourse.price) return;
+    selectedPaymentMonths = 1;
+    renderPaymentOptions();
+    document.getElementById("paymentModal").classList.add("show");
+}
+
+function closePaymentModal() {
+    document.getElementById("paymentModal").classList.remove("show");
+}
+
+function renderPaymentOptions() {
+    const price = Number(cachedCourse.price);
+    const container = document.getElementById("paymentDurationOptions");
+    container.innerHTML = "";
+
+    PAYMENT_DURATION_DISCOUNTS.forEach(({ months, multiplier }) => {
+        const fullPrice = price * months;
+        const total = Math.round(fullPrice * multiplier);
+        const savings = Math.round(fullPrice - total);
+
+        const card = document.createElement("div");
+        card.className = "payment-duration-card" + (months === selectedPaymentMonths ? " selected" : "");
+        card.onclick = () => { selectedPaymentMonths = months; renderPaymentOptions(); };
+
+        const discountBadge = multiplier < 1
+            ? `<span class="payment-discount-badge">-${Math.round((1 - multiplier) * 100)}%</span>`
+            : "";
+        const savingsLine = savings > 0
+            ? `<div class="payment-duration-savings">${formatPrice(savings)} so'm tejaysiz</div>`
+            : "";
+
+        card.innerHTML =
+            discountBadge +
+            `<div class="payment-duration-months">${months} oy</div>` +
+            `<div class="payment-duration-total">${formatPrice(total)} so'm</div>` +
+            savingsLine;
+
+        container.appendChild(card);
+    });
+}
+
+async function confirmPayment() {
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/subscriptions/pay`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ durationMonths: 1, provider: "CLICK" })
+            body: JSON.stringify({ durationMonths: selectedPaymentMonths, provider: "CLICK" })
         });
 
         const data = await res.json().catch(() => ({}));

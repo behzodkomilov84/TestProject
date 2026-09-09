@@ -260,6 +260,109 @@ class TelegramCourseReaderServiceTest {
         assertThat(msg.getText()).contains("topilmadi");
     }
 
+    // ===== "🎁 3 kunlik bepul sinov" tugmasi (accessDeniedMessage ichida) =====
+
+    @Test
+    void openCourse_trialAvailable_showsTrialButtonAndHidesRequestButton() {
+        User user = student();
+        CourseDetailDto course = CourseDetailDto.builder().id(5L).title("Kimyo").published(true)
+                .free(false).subscribed(false).canManage(false).trialAvailable(true).sections(List.of()).build();
+        when(courseService.getDetail(5L, user)).thenReturn(course);
+
+        SendMessage msg = courseReaderService.openCourse(user, 5L);
+
+        InlineKeyboardMarkup markup = (InlineKeyboardMarkup) msg.getReplyMarkup();
+        boolean hasTrialButton = markup.getKeyboard().stream()
+                .flatMap(List::stream)
+                .anyMatch(b -> "course_trial_5".equals(b.getCallbackData()));
+        boolean hasRequestButton = markup.getKeyboard().stream()
+                .flatMap(List::stream)
+                .anyMatch(b -> "course_request_5".equals(b.getCallbackData()));
+        assertThat(hasTrialButton).isTrue();
+        // Sinov mumkin bo'lsa, zaxira "administratorga murojaat" tugmasi keraksiz.
+        assertThat(hasRequestButton).isFalse();
+    }
+
+    @Test
+    void openCourse_trialUnavailableAndNoPayment_showsRequestButtonAsFallback() {
+        User user = student();
+        CourseDetailDto course = CourseDetailDto.builder().id(5L).title("Kimyo").published(true)
+                .free(false).subscribed(false).canManage(false).trialAvailable(false).sections(List.of()).build();
+        when(courseService.getDetail(5L, user)).thenReturn(course);
+
+        SendMessage msg = courseReaderService.openCourse(user, 5L);
+
+        InlineKeyboardMarkup markup = (InlineKeyboardMarkup) msg.getReplyMarkup();
+        boolean hasRequestButton = markup.getKeyboard().stream()
+                .flatMap(List::stream)
+                .anyMatch(b -> "course_request_5".equals(b.getCallbackData()));
+        assertThat(hasRequestButton).isTrue();
+    }
+
+    // ===== startTrial =====
+
+    @Test
+    void startTrial_success_reopensCourseNowUnlocked() {
+        User user = student();
+        CourseDetailDto unlocked = CourseDetailDto.builder().id(5L).title("Kimyo").published(true)
+                .free(false).subscribed(true).canManage(false).trialActive(true).sections(List.of()).build();
+        when(courseService.getDetail(5L, user)).thenReturn(unlocked);
+
+        SendMessage msg = courseReaderService.startTrial(user, 5L);
+
+        org.mockito.Mockito.verify(courseSubscriptionService).startFreeTrial(5L, user);
+        // Muvaffaqiyatli sinovdan keyin kurs endi OCHIQ holda qaytadi
+        // (accessDeniedMessage emas, darslar ro'yxati).
+        assertThat(msg.getText()).doesNotContain("obuna kerak");
+    }
+
+    @Test
+    void startTrial_alreadyUsed_showsErrorMessage() {
+        User user = student();
+        org.mockito.Mockito.doThrow(new IllegalArgumentException("❌Bu kurs uchun bepul sinov muddatingiz allaqachon ishlatilgan"))
+                .when(courseSubscriptionService).startFreeTrial(5L, user);
+
+        SendMessage msg = courseReaderService.startTrial(user, 5L);
+
+        assertThat(msg.getText()).contains("allaqachon ishlatilgan");
+    }
+
+    // ===== showPaymentDurationOptions (muddat tanlash) =====
+
+    @Test
+    void showPaymentDurationOptions_showsThreeDiscountedDurationButtons() {
+        User user = student();
+        CourseDetailDto course = CourseDetailDto.builder().id(5L).title("Kimyo").published(true)
+                .free(false).subscribed(false).canManage(false)
+                .price(new java.math.BigDecimal("100000")).sections(List.of()).build();
+        when(courseService.getDetail(5L, user)).thenReturn(course);
+
+        SendMessage msg = courseReaderService.showPaymentDurationOptions(user, 5L);
+
+        InlineKeyboardMarkup markup = (InlineKeyboardMarkup) msg.getReplyMarkup();
+        List<InlineKeyboardButton> allButtons = markup.getKeyboard().stream()
+                .flatMap(List::stream).toList();
+        assertThat(allButtons).anyMatch(b -> "course_paydur_5_1".equals(b.getCallbackData()));
+        assertThat(allButtons).anyMatch(b -> "course_paydur_5_3".equals(b.getCallbackData()));
+        assertThat(allButtons).anyMatch(b -> "course_paydur_5_6".equals(b.getCallbackData()));
+        // 1 oy = 100 000 (chegirmasiz), 3 oy = 240 000 (80%), 6 oy = 420 000 (70%).
+        assertThat(allButtons.get(0).getText()).contains("100 000 so'm");
+        assertThat(allButtons.get(1).getText()).contains("240 000 so'm").contains("-20%");
+        assertThat(allButtons.get(2).getText()).contains("420 000 so'm").contains("-30%");
+    }
+
+    @Test
+    void showPaymentDurationOptions_priceNotSet_showsErrorMessage() {
+        User user = student();
+        CourseDetailDto course = CourseDetailDto.builder().id(5L).title("Kimyo").published(true)
+                .free(false).subscribed(false).canManage(false).sections(List.of()).build();
+        when(courseService.getDetail(5L, user)).thenReturn(course);
+
+        SendMessage msg = courseReaderService.showPaymentDurationOptions(user, 5L);
+
+        assertThat(msg.getText()).contains("narxi hali belgilanmagan");
+    }
+
     // ===== showSectionsPage (sahifalash) =====
 
     @Test
@@ -573,7 +676,7 @@ class TelegramCourseReaderServiceTest {
         when(paymentOrderService.createCourseOrder(user, 5L, 1)).thenReturn(order);
         when(clickService.buildPayUrl(order, "/courses/5")).thenReturn("https://my.click.uz/services/pay?x=1");
 
-        SendMessage msg = courseReaderService.payWithClick(user, 5L);
+        SendMessage msg = courseReaderService.payWithClick(user, 5L, 1);
 
         InlineKeyboardMarkup markup = (InlineKeyboardMarkup) msg.getReplyMarkup();
         assertThat(markup.getKeyboard().get(0).get(0).getWebApp().getUrl())
@@ -586,7 +689,7 @@ class TelegramCourseReaderServiceTest {
         when(paymentOrderService.createCourseOrder(user, 5L, 1))
                 .thenThrow(new IllegalStateException("❌Kurs narxi hali belgilanmagan — OWNER bilan bog'laning"));
 
-        SendMessage msg = courseReaderService.payWithClick(user, 5L);
+        SendMessage msg = courseReaderService.payWithClick(user, 5L, 1);
 
         assertThat(msg.getText()).contains("narxi hali belgilanmagan");
     }

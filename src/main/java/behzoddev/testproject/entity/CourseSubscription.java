@@ -54,6 +54,18 @@ public class CourseSubscription {
     @Column(length = 500)
     private String note;
 
+    // "3 kunlik bepul sinov" orqali berilganmi — bitta foydalanuvchi
+    // bitta kursda FAQAT BIR MARTA sinovdan foydalana olishi uchun
+    // (CourseSubscriptionService#startFreeTrial, foydalanuvchi so'rovi,
+    // 2026-09-09). MUHIM: maydon nomi ATAYLAB "trial" (isTrial EMAS) —
+    // Lombok "isX" boshlanadigan boolean maydonlar uchun getter/setter
+    // nomlarida chalkash assimetriya hosil qiladi (isTrial() lekin
+    // setTrial(), setIsTrial() EMAS). Oddiy "trial" nomi bilan getter/
+    // setter bashorat qilinadigan bo'ladi: isTrial()/setTrial().
+    @Column(name = "is_trial", nullable = false)
+    @Builder.Default
+    private boolean trial = false;
+
     @Column(name = "created_at", nullable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

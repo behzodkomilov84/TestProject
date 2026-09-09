@@ -137,10 +137,22 @@ public class TelegramCourseReaderService {
 
         List<List<InlineKeyboardButton>> rows = new ArrayList<>();
 
-        // Saytdagi "💳 Click orqali to'lash" bilan bir xil — narx belgilangan
-        // va Click ulangan bo'lsa, to'lov muvaffaqiyatli bo'lishi bilanoq
-        // (OWNER kutmasdan) kursga kirish avtomatik ochiladi.
-        if (clickService.isEnabled() && course.price() != null) {
+        // "🎁 3 kunlik bepul sinov" — saytdagi bilan bir xil, OWNER
+        // tasdig'ini kutmasdan darhol kirish beradi (foydalanuvchi so'rovi,
+        // 2026-09-09: "Botlarda ham to'g'ri ishlasin"). Asosiy (birinchi)
+        // tugma sifatida ko'rsatiladi — saytdagi banner bilan bir xil tartib.
+        boolean payAvailable = clickService.isEnabled() && course.price() != null;
+        if (course.trialAvailable()) {
+            InlineKeyboardButton trialBtn = new InlineKeyboardButton();
+            trialBtn.setText("🎁 3 kunlik bepul sinov");
+            trialBtn.setCallbackData("course_trial_" + course.id());
+            rows.add(List.of(trialBtn));
+        }
+
+        // Saytdagi "💳 Click orqali to'lash" bilan bir xil — endi darhol
+        // to'lov o'rniga, avval muddat tanlash menyusi ko'rsatiladi
+        // (showPaymentDurationOptions).
+        if (payAvailable) {
             InlineKeyboardButton payBtn = new InlineKeyboardButton();
             payBtn.setText("💳 Click orqali to'lash");
             payBtn.setCallbackData("course_pay_" + course.id());
@@ -150,12 +162,15 @@ public class TelegramCourseReaderService {
         // Obuna so'rovi endi saytga o'tkazuvchi havola emas — to'g'ridan-
         // to'g'ri botning o'zida yuboriladi (CourseSubscriptionService.
         // requestSubscription), OWNER buni "Kursga obuna berish"
-        // sahifasida ko'rib, qo'lda tasdiqlaydi.
+        // sahifasida ko'rib, qo'lda tasdiqlaydi. Sinov tugmasi bilan
+        // almashtirilgani sabab, endi faqat na sinov, na to'lov mumkin
+        // bo'lgan zaxira holatda ko'rinadi (saytdagi #requestSubscriptionBtn
+        // bilan bir xil mantiq).
         if (course.requestPending()) {
             text.append("\n\n⏳ Obunaga so'rovingiz allaqachon yuborilgan — administrator (OWNER) javobini kuting.");
-        } else {
+        } else if (!course.trialAvailable() && !payAvailable) {
             InlineKeyboardButton requestBtn = new InlineKeyboardButton();
-            requestBtn.setText("📩 Obunaga so'rov yuborish");
+            requestBtn.setText("✉️ Administratorga murojaat qilish");
             requestBtn.setCallbackData("course_request_" + course.id());
             rows.add(List.of(requestBtn));
         }
@@ -184,16 +199,83 @@ public class TelegramCourseReaderService {
         }
     }
 
-    // "💳 Click orqali to'lash" tugmasi bosilganda — TelegramMenuService.
+    // "🎁 3 kunlik bepul sinov" tugmasi bosilganda — saytdagi startTrial()
+    // bilan bir xil (CourseSubscriptionService.startFreeTrial orqali), OWNER
+    // tasdig'ini kutmasdan darhol kirish beriladi. Muvaffaqiyatli bo'lsa,
+    // kurs endi ochilgan holda qayta ko'rsatiladi (openCourse) — foydalanuvchi
+    // qo'shimcha tugma bosishga hojat qolmasdan darsni boshlashi mumkin.
+    public SendMessage startTrial(User user, Long courseId) {
+        try {
+            courseSubscriptionService.startFreeTrial(courseId, user);
+        } catch (IllegalArgumentException | NoSuchElementException e) {
+            return simpleMessage(user, "❌ " + e.getMessage());
+        }
+        return openCourse(user, courseId);
+    }
+
+    // "💳 Click orqali to'lash" tugmasi bosilganda — endi darhol to'lov
+    // o'rniga, saytdagi #paymentModal bilan bir xil g'oyada, avval muddat
+    // (1/3/6 oy) tanlash menyusi ko'rsatiladi (foydalanuvchi so'rovi,
+    // 2026-09-09: "тўлов саҳифасида ҳам неча ойга обуна бўлишини танлаш
+    // имкони бўлиши керак" + "Botlarda ham to'g'ri ishlasin"). Ko'rsatilgan
+    // raqamlar taxminiy — haqiqiy summa payWithClick() chaqirilganda
+    // serverda (PaymentOrderService) qayta hisoblanadi.
+    private static final int[] PAYMENT_DURATION_MONTHS = {1, 3, 6};
+    private static final int[] PAYMENT_DURATION_PERCENT = {100, 80, 70};
+
+    public SendMessage showPaymentDurationOptions(User user, Long courseId) {
+        CourseDetailDto course;
+        try {
+            course = courseService.getDetail(courseId, user);
+        } catch (NoSuchElementException e) {
+            return simpleMessage(user, "❌ Kurs topilmadi.");
+        }
+
+        if (course.price() == null) {
+            return simpleMessage(user, "❌ Kurs narxi hali belgilanmagan — administrator bilan bog'laning.");
+        }
+
+        SendMessage msg = new SendMessage();
+        msg.setChatId(user.getTelegramId().toString());
+        msg.setParseMode("HTML");
+        msg.setText("💳 <b>" + escape(course.title()) + "</b>\n\nTo'lov uchun muddatni tanlang " +
+                "(uzoqroq muddatga to'lasangiz — chegirma katta bo'ladi):");
+
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
+        for (int i = 0; i < PAYMENT_DURATION_MONTHS.length; i++) {
+            int months = PAYMENT_DURATION_MONTHS[i];
+            int percent = PAYMENT_DURATION_PERCENT[i];
+            java.math.BigDecimal total = course.price()
+                    .multiply(java.math.BigDecimal.valueOf(months))
+                    .multiply(java.math.BigDecimal.valueOf(percent))
+                    .divide(java.math.BigDecimal.valueOf(100))
+                    .setScale(0, java.math.RoundingMode.HALF_UP);
+
+            String label = months + " oy — " + formatPrice(total) + " so'm" +
+                    (percent < 100 ? " (-" + (100 - percent) + "%)" : "");
+            InlineKeyboardButton btn = new InlineKeyboardButton();
+            btn.setText(label);
+            btn.setCallbackData("course_paydur_" + courseId + "_" + months);
+            rows.add(List.of(btn));
+        }
+        rows.add(List.of(button("🔙 Orqaga", "course_open_" + courseId)));
+
+        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
+        markup.setKeyboard(rows);
+        msg.setReplyMarkup(markup);
+        return msg;
+    }
+
+    // Muddat tanlangandan (showPaymentDurationOptions) keyin — TelegramMenuService.
     // createClickPaymentLink bilan bir xil g'oya: checkout link Telegram
     // "Web App" tugmasi sifatida beriladi, botdan chiqmasdan (o'zining
     // ichki brauzerida) to'lov yakunlanadi.
-    public SendMessage payWithClick(User user, Long courseId) {
+    public SendMessage payWithClick(User user, Long courseId, int months) {
         SendMessage msg = new SendMessage();
         msg.setChatId(user.getTelegramId().toString());
 
         try {
-            PaymentOrder order = paymentOrderService.createCourseOrder(user, courseId, 1);
+            PaymentOrder order = paymentOrderService.createCourseOrder(user, courseId, months);
             String checkoutUrl = clickService.buildPayUrl(order, "/courses/" + courseId);
 
             msg.setText("💳 To'lovni yakunlash uchun quyidagi tugmani bosing " +

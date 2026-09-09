@@ -111,7 +111,16 @@ public class PaymentOrderService {
             throw new IllegalArgumentException("❌Siz allaqachon shu kursga obuna bo'lgansiz");
         }
 
-        BigDecimal amount = course.getPrice().multiply(BigDecimal.valueOf(months));
+        // Muddat bo'yicha chegirma — "bonus" sifatida uzoqroq muddatga
+        // to'lashni rag'batlantirish uchun (foydalanuvchi so'rovi,
+        // 2026-09-09: "1 ойни таласа 100%, 3 ойга - 80%, 6 ойга - 70%").
+        // Narx HAR DOIM shu yerda (serverda) hisoblanadi — frontend
+        // faqat ko'rsatish uchun taxminiy hisoblaydi, haqiqiy summa
+        // hech qachon mijozdan qabul qilinmaydi.
+        BigDecimal amount = course.getPrice()
+                .multiply(BigDecimal.valueOf(months))
+                .multiply(discountMultiplierFor(months))
+                .setScale(0, java.math.RoundingMode.HALF_UP);
 
         BigDecimal minAmount = getMinAmountSom();
         if (amount.compareTo(minAmount) < 0) {
@@ -132,6 +141,17 @@ public class PaymentOrderService {
                 order.getId(), user.getUsername(), course.getTitle(), amount, months);
 
         return order;
+    }
+
+    // "Bonus" chegirma jadvali — faqat KURS to'lovlariga (createCourseOrder)
+    // tegishli, umumiy ADMIN-rol obunasiga (createOrder) EMAS (foydalanuvchi
+    // so'rovi kurs kontekstida edi: "тўлов саҳифасида... қанча ойга
+    // тўлашини танлаш"). 1 oy — chegirmasiz (100%), 3 oy — 20% chegirma
+    // (80%), 6 oy va undan ko'p — 30% chegirma (70%).
+    private BigDecimal discountMultiplierFor(int months) {
+        if (months >= 6) return new BigDecimal("0.70");
+        if (months >= 3) return new BigDecimal("0.80");
+        return BigDecimal.ONE;
     }
 
     @Transactional(readOnly = true)

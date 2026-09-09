@@ -41,6 +41,14 @@ public class CourseSubscriptionController {
         courseSubscriptionService.requestSubscription(courseId, user);
     }
 
+    // "🎁 3 kunlik bepul sinov" — OWNER tasdig'ini kutmasdan, DARHOL
+    // kirish beriladi (foydalanuvchi so'rovi, 2026-09-09).
+    @PostMapping("/api/courses/{courseId}/subscriptions/trial")
+    @PreAuthorize("isAuthenticated()")
+    public CourseSubscriptionDto startTrial(@PathVariable Long courseId, @AuthenticationPrincipal User user) {
+        return courseSubscriptionService.startFreeTrial(courseId, user);
+    }
+
     // "💳 Click orqali to'lash" — OWNER tasdig'ini kutmasdan, to'lov
     // muvaffaqiyatli bo'lishi bilanoq kursga kirish avtomatik ochiladi
     // (PaymentOrderService.markPaid -> CourseSubscriptionService.confirmOnline).

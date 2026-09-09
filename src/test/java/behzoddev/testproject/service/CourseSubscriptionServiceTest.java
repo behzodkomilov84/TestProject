@@ -30,6 +30,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -413,6 +414,26 @@ class CourseSubscriptionServiceTest {
         verify(notificationService).create(eq(student), anyString(), eq("/courses/1"));
     }
 
+    // "🎁 3 kunlik bepul sinov" muddati tugaganda — oddiy obunadan farqli
+    // xabar matni ("to'lov qilishingiz mumkin"), foydalanuvchi so'rovi,
+    // 2026-09-09: "Бонус кун тугаса автомат ҳабар бериши керак".
+    @Test
+    void expireSubscriptions_trialExpired_notifiesWithPaymentPrompt() {
+        CourseSubscription expiringTrial = CourseSubscription.builder().id(9L).user(student).course(course)
+                .amount(BigDecimal.ZERO).status(CourseSubscriptionStatus.CONFIRMED).trial(true)
+                .endDate(LocalDateTime.now().minusDays(1)).build();
+
+        when(courseSubscriptionRepository.findByStatusAndEndDateBefore(
+                eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(List.of(expiringTrial));
+
+        courseSubscriptionService.expireSubscriptions();
+
+        assertThat(expiringTrial.getStatus()).isEqualTo(CourseSubscriptionStatus.EXPIRED);
+        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+        verify(notificationService).create(eq(student), messageCaptor.capture(), eq("/courses/1"));
+        assertThat(messageCaptor.getValue()).contains("BEPUL sinovingiz tugadi").contains("to'lov qilishingiz mumkin");
+    }
+
     @Test
     void expireSubscriptions_noneExpired_doesNothing() {
         when(courseSubscriptionRepository.findByStatusAndEndDateBefore(
@@ -421,6 +442,68 @@ class CourseSubscriptionServiceTest {
         courseSubscriptionService.expireSubscriptions();
 
         verify(notificationService, never()).create(any(), anyString(), anyString());
+    }
+
+    // ===== startFreeTrial =====
+
+    @Test
+    void startFreeTrial_eligibleUser_createsConfirmedTrialSubscriptionAndNotifies() {
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+                eq(1L), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(false);
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndTrialTrue(1L, 1L)).thenReturn(false);
+
+        CourseSubscriptionDto result = courseSubscriptionService.startFreeTrial(1L, student);
+
+        ArgumentCaptor<CourseSubscription> captor = ArgumentCaptor.forClass(CourseSubscription.class);
+        verify(courseSubscriptionRepository).save(captor.capture());
+        CourseSubscription saved = captor.getValue();
+        assertThat(saved.getStatus()).isEqualTo(CourseSubscriptionStatus.CONFIRMED);
+        assertThat(saved.isTrial()).isTrue();
+        assertThat(saved.getAmount()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(saved.getEndDate()).isCloseTo(LocalDateTime.now().plusDays(3), within(1, java.time.temporal.ChronoUnit.MINUTES));
+        assertThat(result).isNotNull();
+
+        verify(notificationService).create(eq(student), anyString(), eq("/courses/1"));
+    }
+
+    @Test
+    void startFreeTrial_courseIsFree_throws() {
+        Course freeCourse = Course.builder().id(2L).title("Bepul kurs").free(true).createdBy(admin).build();
+        when(courseRepository.findById(2L)).thenReturn(Optional.of(freeCourse));
+
+        assertThatThrownBy(() -> courseSubscriptionService.startFreeTrial(2L, student))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("bepul");
+
+        verify(courseSubscriptionRepository, never()).save(any());
+    }
+
+    @Test
+    void startFreeTrial_alreadySubscribed_throws() {
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+                eq(1L), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(true);
+
+        assertThatThrownBy(() -> courseSubscriptionService.startFreeTrial(1L, student))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("allaqachon shu kursga obuna");
+
+        verify(courseSubscriptionRepository, never()).save(any());
+    }
+
+    @Test
+    void startFreeTrial_alreadyUsedTrial_throws() {
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+                eq(1L), eq(1L), eq(CourseSubscriptionStatus.CONFIRMED), any())).thenReturn(false);
+        when(courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndTrialTrue(1L, 1L)).thenReturn(true);
+
+        assertThatThrownBy(() -> courseSubscriptionService.startFreeTrial(1L, student))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("allaqachon ishlatilgan");
+
+        verify(courseSubscriptionRepository, never()).save(any());
     }
 
     // ===== confirmOnline (PaymentOrderService.markPaid'dan chaqiriladi) =====

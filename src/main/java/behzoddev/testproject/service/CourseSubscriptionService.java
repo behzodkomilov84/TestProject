@@ -34,11 +34,65 @@ import java.util.Set;
 public class CourseSubscriptionService {
 
     private static final int DEFAULT_DURATION_MONTHS = 1;
+    private static final int TRIAL_DURATION_DAYS = 3;
 
     private final CourseSubscriptionRepository courseSubscriptionRepository;
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+
+    // "🎁 3 kunlik bepul sinov" — foydalanuvchi so'rovi, 2026-09-09:
+    // avvalgi "Obunaga so'rov yuborish" (PENDING, OWNER tasdig'i kerak)
+    // o'rniga endi shu TUGMA bosilganda OWNER kutmasdan, DARHOL 3
+    // kunlik BEPUL kirish beriladi (subscribe()/confirmOnline() bilan
+    // bir xil "CONFIRMED" holat — shu sabab mavjud expireSubscriptions()
+    // kunlik job'i muddat tugaganda AVTOMATIK ravishda EXPIRED qilib,
+    // bildirishnoma yuboradi — alohida yangi mexanizm shart emas).
+    // Bitta foydalanuvchi bitta kursda FAQAT BIR MARTA sinovdan
+    // foydalana oladi (CourseSubscription.trial bilan nazorat qilinadi).
+    @Transactional
+    public CourseSubscriptionDto startFreeTrial(Long courseId, User user) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new NoSuchElementException("Kurs topilmadi"));
+
+        if (course.isFree()) {
+            throw new IllegalArgumentException("❌Bu kurs allaqachon bepul — sinovga hojat yo'q");
+        }
+
+        if (courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndStatusAndEndDateAfter(
+                user.getId(), courseId, CourseSubscriptionStatus.CONFIRMED, LocalDateTime.now())) {
+            throw new IllegalArgumentException("❌Siz allaqachon shu kursga obuna bo'lgansiz");
+        }
+
+        if (courseSubscriptionRepository.existsByUser_IdAndCourse_IdAndTrialTrue(user.getId(), courseId)) {
+            throw new IllegalArgumentException("❌Bu kurs uchun bepul sinov muddatingiz allaqachon ishlatilgan");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        CourseSubscription subscription = CourseSubscription.builder()
+                .user(user)
+                .course(course)
+                .amount(BigDecimal.ZERO)
+                .status(CourseSubscriptionStatus.CONFIRMED)
+                .startDate(now)
+                .endDate(now.plusDays(TRIAL_DURATION_DAYS))
+                .trial(true)
+                .note("🎁 3 kunlik bepul sinov (bonus)")
+                .build();
+
+        courseSubscriptionRepository.save(subscription);
+
+        notificationService.create(user,
+                "🎁 \"" + course.getTitle() + "\" kursidan " + TRIAL_DURATION_DAYS +
+                        " kun BEPUL foydalanishingiz mumkin! Muddati tugagach, xabar beramiz.",
+                "/courses/" + courseId);
+
+        log.info("Kursga bepul sinov berildi: user={}, course={}, {} kun",
+                user.getUsername(), course.getTitle(), TRIAL_DURATION_DAYS);
+
+        return toDto(subscription);
+    }
 
     // Foydalanuvchi kurs sahifasida "Obunaga so'rov yuborish" tugmasini
     // bosganda chaqiriladi — hali to'lov summasi yo'q, OWNER buni
@@ -235,12 +289,22 @@ public class CourseSubscriptionService {
             subscription.setStatus(CourseSubscriptionStatus.EXPIRED);
             courseSubscriptionRepository.save(subscription);
 
-            notificationService.create(subscription.getUser(),
-                    "⌛ \"" + subscription.getCourse().getTitle() + "\" kursiga obunangiz muddati tugadi.",
+            // Bepul sinov (trial) tugagandan keyingi xabar — to'lovga
+            // yo'naltiruvchi alohida matn bilan (foydalanuvchi so'rovi,
+            // 2026-09-09: "Бонус кун тугаса автомат ҳабар бериши керак...
+            // тўлов саҳифасига олиб бориши керак"). Link kurs sahifasiga
+            // olib boradi — o'sha yerda to'lov modali (1/3/6 oy, chegirma
+            // bilan) avtomatik ko'rinadi, chunki obuna endi mavjud emas.
+            String message = subscription.isTrial()
+                    ? "⌛ \"" + subscription.getCourse().getTitle() + "\" kursidagi 3 kunlik BEPUL sinovingiz tugadi. " +
+                            "Davom etish uchun endi to'lov qilishingiz mumkin."
+                    : "⌛ \"" + subscription.getCourse().getTitle() + "\" kursiga obunangiz muddati tugadi.";
+
+            notificationService.create(subscription.getUser(), message,
                     "/courses/" + subscription.getCourse().getId());
 
-            log.info("Kurs obunasi muddati tugadi: user={}, course={}",
-                    subscription.getUser().getUsername(), subscription.getCourse().getTitle());
+            log.info("Kurs obunasi muddati tugadi: user={}, course={}, trial={}",
+                    subscription.getUser().getUsername(), subscription.getCourse().getTitle(), subscription.isTrial());
         }
     }
 
