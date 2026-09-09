@@ -107,6 +107,17 @@
         </tbody>
     </table>
     </div>
+
+    <!-- Ekranga QOTIRILGAN (fixed) gorizontal scroll — sahifani pastga
+         aylantirganda ham (jadval ko'p qatorli bo'lgani uchun) doim
+         ko'rinib turadi, tepadagi/pastdagi scrollbar'gacha qaytadan
+         aylantirish shart emas (foydalanuvchi so'rovi, 2026-09-09).
+         Kengligi/joylashuvi table-scroll-top-sync.js orqali jadval
+         konteyneriga aniq moslanadi, faqat jadval haqiqatan gorizontal
+         aylantirilishi kerak bo'lgandagina ko'rinadi. -->
+    <div class="table-scroll-fixed" id="usersTableScrollFixed" hidden>
+        <div class="table-scroll-top-inner" id="usersTableScrollFixedInner"></div>
+    </div>
 </div>
 
 </body>

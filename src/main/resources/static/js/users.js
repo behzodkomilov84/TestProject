@@ -147,40 +147,78 @@ function renderUsers(users, subscriptions) {
 
 // Jadval tepasidagi ko'zgu (mirror) gorizontal scroll — pastki
 // .table-scroll bilan bir xil kengroq ichki elementga ega bo'lib,
-// ikkalasi bir-biriga scrollLeft orqali sinxronlanadi (foydalanuvchi
-// so'rovi, 2026-09-08: "gorizontal scroll'ni jadval tepasiga ham
-// qo'yish kerak").
+// UCHALASI (tepa/pastki/ekranga qotirilgan) bir-biriga scrollLeft
+// orqali sinxronlanadi (foydalanuvchi so'rovi, 2026-09-08: "gorizontal
+// scroll'ni jadval tepasiga ham qo'yish kerak"; 2026-09-09: "fixed
+// qilish kerak" — sahifa pastga aylantirilganda ham ko'rinib tursin).
 let topScrollSyncInitialized = false;
 
 function syncTopScrollWidth() {
     const table = document.querySelector(".users-table");
     const topInner = document.getElementById("usersTableScrollTopInner");
-    if (!table || !topInner) return;
+    const fixedInner = document.getElementById("usersTableScrollFixedInner");
+    if (!table || !topInner || !fixedInner) return;
 
     topInner.style.width = table.scrollWidth + "px";
+    fixedInner.style.width = table.scrollWidth + "px";
+    positionFixedScrollBar();
 
     if (topScrollSyncInitialized) return;
     topScrollSyncInitialized = true;
 
     const topScroll = document.getElementById("usersTableScrollTop");
     const bottomScroll = document.getElementById("usersTableScroll");
+    const fixedScroll = document.getElementById("usersTableScrollFixed");
+    const bars = [topScroll, bottomScroll, fixedScroll];
     let syncing = false;
 
-    topScroll.addEventListener("scroll", () => {
-        if (syncing) return;
-        syncing = true;
-        bottomScroll.scrollLeft = topScroll.scrollLeft;
-        syncing = false;
-    });
-
-    bottomScroll.addEventListener("scroll", () => {
-        if (syncing) return;
-        syncing = true;
-        topScroll.scrollLeft = bottomScroll.scrollLeft;
-        syncing = false;
+    bars.forEach(bar => {
+        bar.addEventListener("scroll", () => {
+            if (syncing) return;
+            syncing = true;
+            bars.forEach(other => {
+                if (other !== bar) other.scrollLeft = bar.scrollLeft;
+            });
+            syncing = false;
+        });
     });
 
     window.addEventListener("resize", syncTopScrollWidth);
+    window.addEventListener("scroll", updateFixedScrollBarVisibility, { passive: true });
+}
+
+// Ekranga qotirilgan pastki scrollbar — FAQAT jadval haqiqatan
+// gorizontal aylantirilishi kerak bo'lganda VA jadvalning o'z (native)
+// pastki scrollbar'i hozir ekrandan tashqarida (ko'rinmayotgan) bo'lsa
+// ko'rsatiladi — aks holda ikkita scrollbar bir vaqtda ko'rinib,
+// ortiqcha g'ijimlanish hosil qilardi.
+function positionFixedScrollBar() {
+    const bottomScroll = document.getElementById("usersTableScroll");
+    const fixedScroll = document.getElementById("usersTableScrollFixed");
+    if (!bottomScroll || !fixedScroll) return;
+
+    const rect = bottomScroll.getBoundingClientRect();
+    fixedScroll.style.left = rect.left + "px";
+    fixedScroll.style.width = rect.width + "px";
+
+    updateFixedScrollBarVisibility();
+}
+
+function updateFixedScrollBarVisibility() {
+    const bottomScroll = document.getElementById("usersTableScroll");
+    const fixedScroll = document.getElementById("usersTableScrollFixed");
+    if (!bottomScroll || !fixedScroll) return;
+
+    const rect = bottomScroll.getBoundingClientRect();
+    const isScrollable = bottomScroll.scrollWidth > bottomScroll.clientWidth + 1;
+    // Jadvalning O'ZINING pastki cheti (shu yerda native scrollbar
+    // turadi) ekrandan pastda qolgan VA jadval hozir ko'rinishda
+    // (yuqori cheti hali ekran ostiga tushib ketmagan) — shu holatda
+    // qotirilgan scrollbar kerak.
+    const nativeScrollbarOffscreen = rect.bottom > window.innerHeight;
+    const tableStillVisible = rect.top < window.innerHeight;
+
+    fixedScroll.hidden = !(isScrollable && nativeScrollbarOffscreen && tableStillVisible);
 }
 
 async function toggleRole(userId, roleName, checkbox) {

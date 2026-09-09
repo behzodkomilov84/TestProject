@@ -67,6 +67,30 @@ body {
     height: 1px;
 }
 
+/* Ekranga qotirilgan (fixed) gorizontal scroll — .table-scroll-top bilan
+   bir xil g'oya, faqat "position: fixed" orqali sahifa vertikal
+   aylantirilganda ham DOIM ko'rinib turadi (foydalanuvchi so'rovi,
+   2026-09-09: "gorizontal scroll ni fixed qilish kerak"). Joylashuvi
+   (left/width) JS orqali jadval konteynerining haqiqiy chegarasiga
+   moslanadi — default holatda "hidden" (faqat jadval haqiqatan
+   gorizontal aylantirilishi kerak bo'lganda va sahifaning o'z
+   scrollbar'i ko'rinmayotganda ko'rsatiladi, table-scroll-top-sync.js). */
+.table-scroll-fixed {
+    position: fixed;
+    bottom: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 17px;
+    background: #fff;
+    border-top: 1px solid #d0d5dd;
+    box-shadow: 0 -2px 6px rgba(0, 0, 0, .08);
+    z-index: 500;
+}
+
+.table-scroll-fixed[hidden] {
+    display: none;
+}
+
 /* Font kichiklashtirildi (22px -> 13px) va to'liq border qo'shildi —
    foydalanuvchi so'rovi, 2026-09-06: ustunlar soni ko'payib (barcha
    users jadval ustunlari), eski katta shrift bilan jadval o'qish
