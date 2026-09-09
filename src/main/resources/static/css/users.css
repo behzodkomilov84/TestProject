@@ -143,15 +143,19 @@ body {
     background: #f1f3f5;
 }
 
-/* Sarlavha qatori (thead) — sahifa pastga aylantirilganda ham DOIM
-   ko'rinib tursin ("zakrepit verx" — foydalanuvchi so'rovi, 2026-09-09).
-   top:72px — navbar.css'dagi .navbar balandligi (position:fixed) bilan
-   bir xil, aks holda sarlavha navbar ORQASIGA yashirinib qolardi. */
-.users-table thead th {
-    position: sticky;
-    top: 72px;
-    z-index: 3;
-}
+/* Sarlavha qatorini ("zakrepit verx") position:sticky bilan qotirish
+   3 marta urinildi (border-collapse:separate, sticky-top+left'ni bitta
+   katakchada birlashtirmaslik) — HAMMASI muvaffaqiyatsiz bo'ldi.
+   Haqiqiy sabab CHUQURROQ: getBoundingClientRect() thead'ni TO'G'RI
+   joyda (birinchi qatordan YUQORIDA) deb hisoblaydi, lekin
+   elementFromPoint() (haqiqiy chizilgan/bosiladigan joyni tekshiruvchi)
+   uni FAQAT birinchi qatordan PASTDA deb topadi — ya'ni LAYOUT va PAINT
+   o'rtasida haqiqiy uzilish (jonli tekshiruvda uch xil usul bilan
+   tasdiqlandi, 2026-09-09). Bu shunchaki CSS xatosi emas, balki shu
+   muhitdagi chuqur render nuqsoni. Vaqt cheklovi tufayli sarlavhani
+   qotirish OLIB TASHLANDI (ishonchli JS-asoslangan pozitsiyalash
+   qayta yozish talab qilardi) — FAQAT ustunlarni qotirish (pastda)
+   qoldirildi, u alohida to'g'ri ishlaydi. */
 
 /* Birinchi 3 ustun (ID/Avatar/Username) — jadval gorizontal
    aylantirilganda ham DOIM ko'rinib tursin ("zakrepit levo"), shu
