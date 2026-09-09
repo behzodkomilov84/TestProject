@@ -121,6 +121,49 @@ body {
     background: #f1f3f5;
 }
 
+/* Sarlavha qatori (thead) — sahifa pastga aylantirilganda ham DOIM
+   ko'rinib tursin ("zakrepit verx" — foydalanuvchi so'rovi, 2026-09-09).
+   top:72px — navbar.css'dagi .navbar balandligi (position:fixed) bilan
+   bir xil, aks holda sarlavha navbar ORQASIGA yashirinib qolardi. */
+.users-table thead th {
+    position: sticky;
+    top: 72px;
+    z-index: 3;
+}
+
+/* Birinchi 3 ustun (ID/Avatar/Username) — jadval gorizontal
+   aylantirilganda ham DOIM ko'rinib tursin ("zakrepit levo"), shu
+   orqali qaysi qator qaysi foydalanuvchiga tegishli ekani hech qachon
+   yo'qolmaydi. Qattiq kenglik (JS emas, CSS) — sticky "left" offsetlari
+   oldindan ma'lum bo'lishi uchun. Fon ATAYLAB TO'LIQ (opak) — aks holda
+   pastdagi (gorizontal aylantirilgan) ustunlar tagidan ko'rinib turardi. */
+.users-table .sticky-col-1,
+.users-table .sticky-col-2,
+.users-table .sticky-col-3 {
+    position: sticky;
+    z-index: 2;
+    background: #fff;
+}
+
+.users-table thead th.sticky-col-1,
+.users-table thead th.sticky-col-2,
+.users-table thead th.sticky-col-3 {
+    z-index: 4; /* tepa-chap burchak — ham sticky-top, ham sticky-left */
+    background: #f1f3f5;
+}
+
+.users-table .sticky-col-1 { left: 0; width: 50px; }
+.users-table .sticky-col-2 { left: 50px; width: 56px; }
+.users-table .sticky-col-3 {
+    left: 106px;
+    width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* Muzlatilgan (frozen) va oddiy aylanadigan ustunlar chegarasini
+       ko'zga ko'rinadigan qilish uchun. */
+    box-shadow: 2px 0 4px rgba(0, 0, 0, .08);
+}
+
 /* Avatar ustuni (foydalanuvchi so'rovi, 2026-09-07) — rasm bo'lsa doira
    shaklida ko'rsatiladi, bo'lmasa (yoki yuklanmasa, onerror orqali)
    ismning bosh harfi bilan rangli doira-o'rinbosar chiqadi. */

@@ -108,9 +108,9 @@ function renderUsers(users, subscriptions) {
             : `<div class="user-avatar user-avatar-placeholder">${avatarInitial}</div>`;
 
         tr.innerHTML = `
-            <td>${user.id}</td>
-            <td>${avatarHtml}</td>
-            <td>${user.username} ${user.locked ? '<span title="Bloklangan">🔒</span>' : ""}</td>
+            <td class="sticky-col-1">${user.id}</td>
+            <td class="sticky-col-2">${avatarHtml}</td>
+            <td class="sticky-col-3" title="${escapeHtml(user.username)}">${user.username} ${user.locked ? '<span title="Bloklangan">🔒</span>' : ""}</td>
             <td>${escapeHtml(fullName)}</td>
             <td>${escapeHtml(user.email) || "—"}</td>
             <td>${escapeHtml(user.phoneNumber) || "—"}</td>
