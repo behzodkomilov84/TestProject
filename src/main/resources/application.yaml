@@ -18,9 +18,18 @@ spring:
     change-log: classpath:db/changelog/master.xml
   servlet:
     multipart:
-      # Video izohlar ham qo'llab-quvvatlanadi (50MB gacha), shu sabab limit oshirildi.
-      max-file-size: 50MB
-      max-request-size: 55MB
+      # 2026-09-10'da oshirildi (HAQIQIY TOPILGAN BUG: "Failed to parse
+      # multipart servlet request" — "📥 Darslar + testlarni import
+      # qilish" bir martada bir nechta .docx'ni (mammoth.js orqali
+      # rasmlari BASE64 sifatida ko'milgan HTML'ga aylantirilib) BITTA
+      # JSON qismida yuboradi — 10 ta rasmli dars bilan ham eski 50MB
+      # (bitta qism uchun) / 55MB (umumiy) chegaradan osongina oshib
+      # ketardi, dizayn maqsadi esa 200 ta faylgacha). "max-file-size" —
+      # BITTA multipart qismi uchun (video, yoki barcha darslarning HTML
+      # matni birlashgan "items" JSON qismi); "max-request-size" — butun
+      # so'rov uchun (barcha .xlsx fayllar + "items" birga).
+      max-file-size: 200MB
+      max-request-size: 300MB
   # Parolni tiklash — email kanali uchun SMTP sozlamalari. Standart qiymat
   # Brevo (smtp-relay.brevo.com) — Gmail'dan farqli o'laroq, 2FA/App Password
   # bilan ovora bo'lish shart emas, ro'yxatdan o'tib SMTP key olish kifoya

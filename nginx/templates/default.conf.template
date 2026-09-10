@@ -41,9 +41,13 @@ server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "SAMEORIGIN" always;
 
-    # application.yaml'dagi spring.servlet.multipart.max-request-size (55MB)
-    # bilan mos — aks holda katta video izohlar nginx darajasida rad etiladi.
-    client_max_body_size 55M;
+    # application.yaml'dagi spring.servlet.multipart.max-request-size bilan
+    # MOS bo'lishi shart — aks holda katta so'rovlar nginx darajasida rad
+    # etiladi (Spring'gacha yetib bormaydi). 2026-09-10'da 300MB'ga
+    # oshirildi (HAQIQIY TOPILGAN BUG — "📥 Darslar + testlarni import
+    # qilish": bir nechta rasmli .docx bitta so'rovda yuborilganda, eski
+    # 55M chegara ham nginx'da, ham Spring'da oshib ketardi).
+    client_max_body_size 300M;
 
     location / {
         proxy_pass http://app:8080;
