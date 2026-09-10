@@ -13,6 +13,10 @@ import java.util.List;
 @Builder
 public record BulkLessonImportResultDto(
         int sectionsCreated,
+        // Butun kursda (istalgan Mavzuda) shu nomli dars ALLAQACHON mavjud
+        // bo'lgani uchun o'tkazib yuborilgan darslar soni — qayta import
+        // ikki nusxa yaratmasligi uchun (foydalanuvchi so'rovi, 2026-09-10).
+        int sectionsSkipped,
         int sectionsWithTests,
         long questionsImported,
         List<String> warnings,

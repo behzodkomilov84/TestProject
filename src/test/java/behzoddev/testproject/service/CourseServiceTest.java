@@ -1155,6 +1155,44 @@ class CourseServiceTest {
                 .isInstanceOf(AccessDeniedException.class);
     }
 
+    // HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi, 2026-09-10: "агар
+    // бу дарслар мавжуд бўлса, қайта юклаб қўймаслигини ҳам, тестлар ҳам
+    // қайта юкланмаслигини ҳам текшир. Бутун курс бўйича текшириши
+    // керак") — qayta import bir xil nomli darsni (BOSHQA Mavzuda bo'lsa
+    // ham) ikkinchi marta yaratmasligi, testlarini ham qayta
+    // yuklamasligi kerak.
+    @Test
+    void bulkImportLessonsWithTests_titleAlreadyExistsAnywhereInCourse_skipsWithoutCreatingOrImportingTests() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter chapter = testChapter(course);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findById(7L)).thenReturn(Optional.of(chapter));
+        // Boshqa (istalgan) Mavzuda shu nomli dars ALLAQACHON mavjud —
+        // kurs darajasida tekshiriladi, joriy Mavzuga bog'liq emas.
+        when(courseSectionRepository.existsByCourse_IdAndTitleIgnoreCase(1L, "001. Dars")).thenReturn(true);
+
+        MockMultipartFile xlsx = new MockMultipartFile("xlsxFiles", "001. Dars.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new byte[]{1, 2, 3});
+        List<LessonImportItemDto> items = List.of(
+                new LessonImportItemDto("001. Dars", "<p>matn</p>", "001. Dars.xlsx"));
+
+        BulkLessonImportResultDto result = courseService.bulkImportLessonsWithTests(
+                1L, 7L, items, List.of(xlsx), owner());
+
+        assertThat(result.sectionsCreated()).isZero();
+        assertThat(result.sectionsSkipped()).isEqualTo(1);
+        assertThat(result.sectionsWithTests()).isZero();
+        assertThat(result.questionsImported()).isZero();
+        assertThat(result.warnings()).hasSize(1);
+        assertThat(result.warnings().get(0)).contains("001. Dars").contains("ALLAQACHON mavjud");
+
+        // Dars ham, uning testlari ham QAYTA yaratilmagan/yuklanmagan —
+        // addSection() va excelService.importQuestions() UMUMAN
+        // chaqirilmagan bo'lishi kerak.
+        org.mockito.Mockito.verify(courseSectionRepository, org.mockito.Mockito.never()).save(any());
+        org.mockito.Mockito.verifyNoInteractions(excelService);
+    }
+
     @Test
     void bulkImportLessonsWithTests_withoutMatchingXlsx_createsSectionAndWarns() {
         Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();

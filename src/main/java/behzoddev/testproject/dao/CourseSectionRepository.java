@@ -25,6 +25,17 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     @Query("select cs from CourseSection cs where cs.course.id = :courseId and cs.deletedAt is null order by cs.orderIndex asc")
     List<CourseSection> findByCourse_IdOrderByOrderIndexAsc(@Param("courseId") Long courseId);
 
+    // Butun KURS bo'yicha (istalgan Mavzuda, faqat joriy Mavzuda emas) shu
+    // nomli dars ALLAQACHON mavjudmi — paketli import
+    // (CourseService.bulkImportLessonsWithTests) qayta ishga tushirilganda
+    // bir xil darsni (va uning testlarini) ikki marta yaratib qo'ymaslik
+    // uchun (foydalanuvchi so'rovi, 2026-09-10: "агар бу дарслар мавжуд
+    // бўлса, қайта юклаб қўймаслигини... Бутун курс бўйича текшириши
+    // керак").
+    @Query("select case when count(cs) > 0 then true else false end from CourseSection cs " +
+            "where cs.course.id = :courseId and lower(cs.title) = lower(:title) and cs.deletedAt is null")
+    boolean existsByCourse_IdAndTitleIgnoreCase(@Param("courseId") Long courseId, @Param("title") String title);
+
     @Query("select cs from CourseSection cs where cs.course.id = :courseId and cs.orderIndex = :orderIndex and cs.deletedAt is null")
     Optional<CourseSection> findByCourse_IdAndOrderIndex(@Param("courseId") Long courseId, @Param("orderIndex") int orderIndex);
 

@@ -739,6 +739,7 @@ public class CourseService {
                 .collect(Collectors.toMap(MultipartFile::getOriginalFilename, f -> f, (a, b) -> a));
 
         int sectionsCreated = 0;
+        int sectionsSkipped = 0;
         int sectionsWithTests = 0;
         long questionsImported = 0;
         List<String> warnings = new ArrayList<>();
@@ -748,6 +749,22 @@ public class CourseService {
             String title = item.title() == null ? "" : item.title().trim();
             if (title.isEmpty()) {
                 errors.add("Nomsiz fayl o'tkazib yuborildi.");
+                continue;
+            }
+
+            // HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi, 2026-09-10:
+            // "агар бу дарслар мавжуд бўлса, қайта юклаб қўймаслигини ҳам,
+            // тестлар ҳам қайта юкланмаслигини ҳам текшир. Бутун курс бўйича
+            // текшириши керак") — import qayta ishga tushirilsa (masalan
+            // xatolikdan keyin yoki tasodifan ikki marta bosilsa), bir xil
+            // nomli dars boshqa Mavzuda ham bo'lsa — BUTUN KURS bo'yicha
+            // tekshiriladi (faqat joriy Mavzu EMAS), topilsa esa bu element
+            // BUTUNLAY o'tkazib yuboriladi (na dars, na testlar qayta
+            // yaratilmaydi — ExcelService'ning o'zidagi savol-darajasidagi
+            // dublikat tekshiruvi bilan ikki bosqichli himoya).
+            if (courseSectionRepository.existsByCourse_IdAndTitleIgnoreCase(courseId, title)) {
+                sectionsSkipped++;
+                warnings.add("\"" + title + "\" — bu nomdagi dars kursda ALLAQACHON mavjud, o'tkazib yuborildi (qayta yuklanmadi).");
                 continue;
             }
 
@@ -780,12 +797,13 @@ public class CourseService {
             }
         }
 
-        log.info("Paketli import yakunlandi: kurs={}, mavzu={}, darslar={}, testli={}, savollar={}, user={}",
-                course.getTitle(), chapter.getName(), sectionsCreated, sectionsWithTests, questionsImported,
+        log.info("Paketli import yakunlandi: kurs={}, mavzu={}, darslar={}, o'tkazib yuborilgan={}, testli={}, savollar={}, user={}",
+                course.getTitle(), chapter.getName(), sectionsCreated, sectionsSkipped, sectionsWithTests, questionsImported,
                 currentUser.getUsername());
 
         return BulkLessonImportResultDto.builder()
                 .sectionsCreated(sectionsCreated)
+                .sectionsSkipped(sectionsSkipped)
                 .sectionsWithTests(sectionsWithTests)
                 .questionsImported(questionsImported)
                 .warnings(warnings)

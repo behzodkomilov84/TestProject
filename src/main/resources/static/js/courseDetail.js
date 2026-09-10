@@ -2889,6 +2889,7 @@ function showBulkImportResult(data, fatalError) {
     } else {
         let html = `<div class="bulk-import-stats">
             <div class="bulk-import-stat"><span class="bulk-import-stat-num">${data.sectionsCreated}</span><span>dars yaratildi</span></div>
+            <div class="bulk-import-stat"><span class="bulk-import-stat-num">${data.sectionsSkipped}</span><span>allaqachon bor edi</span></div>
             <div class="bulk-import-stat"><span class="bulk-import-stat-num">${data.sectionsWithTests}</span><span>testli</span></div>
             <div class="bulk-import-stat"><span class="bulk-import-stat-num">${data.questionsImported}</span><span>savol import qilindi</span></div>
         </div>`;
