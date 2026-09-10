@@ -12,6 +12,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.servlet.FlashMap;
 import org.springframework.web.servlet.support.SessionFlashMapManager;
@@ -24,9 +25,18 @@ import java.nio.charset.StandardCharsets;
 public class SecurityConfig {
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, LoginAttemptService loginAttemptService) {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, LoginAttemptService loginAttemptService,
+                                                     FreshAuthoritiesFilter freshAuthoritiesFilter) {
         http
                 .csrf(csrf -> csrf.disable())
+                // Sessiyadagi (login paytida "muzlatilgan") rollarni har
+                // so'rovda (throttled) DB bilan sinxronlaydi — pastdagi
+                // ".hasAnyAuthority(...)" qoidalari AuthorizationFilter
+                // orqali tekshiriladi, shuning uchun bu filter ANIQ shundan
+                // OLDIN turishi shart (haqiqiy topilgan kamchilik,
+                // foydalanuvchi so'rovi, 2026-09-10 — FreshAuthoritiesFilter
+                // izohiga qarang).
+                .addFilterBefore(freshAuthoritiesFilter, AuthorizationFilter.class)
                 // Referrer-Policy: brauzer boshqa domenga (yoki hatto shu
                 // domendagi boshqa sahifaga) o'tganda to'liq URL'ni (query
                 // string bilan) Referer header'i sifatida yubormasligi
