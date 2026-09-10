@@ -8,6 +8,27 @@ if (ROLE !== "ROLE_OWNER") {
     location.href = "/login";
 }
 
+// "uz-UZ" lokali bu muhitda dd.mm.yyyy'ni ISHONCHLI bermaydi (JVM/brauzer
+// ICU versiyasiga qarab boshqa formatga tushib qolishi mumkin edi) —
+// /users sahifasida ham xuddi shu sabab bilan aniq formatlagichga
+// o'tilgan edi (foydalanuvchi so'rovi, 2026-09-10: shu yerda ham qil).
+function formatDateDMY(date) {
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d)) return "—";
+    const day = String(d.getDate()).padStart(2, "0");
+    const month = String(d.getMonth() + 1).padStart(2, "0");
+    return `${day}.${month}.${d.getFullYear()}`;
+}
+
+// "10.09.2026 14:35" — sana + vaqt (masalan "qachon so'ralgan" ustuni).
+function formatDateTimeDMY(date) {
+    const d = date instanceof Date ? date : new Date(date);
+    if (isNaN(d)) return "—";
+    const hours = String(d.getHours()).padStart(2, "0");
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    return `${formatDateDMY(d)} ${hours}:${minutes}`;
+}
+
 document.addEventListener("DOMContentLoaded", () => {
     loadUsersForSelect();
     loadPendingSubscriptions();
@@ -52,7 +73,7 @@ function renderPendingSubscriptions(subscriptions) {
             <td>${s.username}</td>
             <td>${s.amount} so'm</td>
             <td>${s.source}</td>
-            <td>${new Date(s.createdAt).toLocaleString("uz-UZ")}</td>
+            <td>${formatDateTimeDMY(s.createdAt)}</td>
             <td>
                 <button class="action-btn" onclick="confirmSubscription(${s.id})" title="Tasdiqlash">✅</button>
                 <button class="action-btn" onclick="cancelSubscription(${s.id})" title="Rad etish">❌</button>
@@ -156,7 +177,7 @@ function renderAllSubscriptions() {
 
     tbody.innerHTML = subs.map(s => {
         const statusClass = s.status === "CONFIRMED" ? "sub-status-active" : "sub-status-inactive";
-        const muddat = s.endDate ? new Date(s.endDate).toLocaleDateString("uz-UZ") : "—";
+        const muddat = s.endDate ? formatDateDMY(s.endDate) : "—";
         // PENDING'ning o'z tasdiqlash/rad etish tugmalari yuqoridagi
         // "⏳ Tasdiq kutilayotgan" jadvalida bor — bu yerda takrorlanmaydi.
         // "✏️ Tahrirlash" — PENDING'dan tashqari barcha holatlarda (eskirgan/
@@ -179,7 +200,7 @@ function renderAllSubscriptions() {
                 <td>${ADMIN_SUB_SOURCE_LABELS[s.source] || escapeHtmlAdmin(s.source)}</td>
                 <td><span class="sub-status-badge ${statusClass}">${ADMIN_SUB_STATUS_LABELS[s.status] || s.status}</span></td>
                 <td>${muddat}</td>
-                <td>${new Date(s.createdAt).toLocaleDateString("uz-UZ")}</td>
+                <td>${formatDateDMY(s.createdAt)}</td>
                 <td>${action}</td>
             </tr>
         `;
