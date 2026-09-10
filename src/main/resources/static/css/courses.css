@@ -23,7 +23,17 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
+    /* HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-10: "modal
+       mavjud modalni orqasiga ochilyapti. Ko'rinmaydigan bo'lib
+       ochilyapti") — bu oyna "➕ Dars qo'shish"/"✏️ Tahrirlash" kabi
+       BOSHQA modal (".modal-overlay", z-index 9999) ICHIDAGI rich-matn
+       asboblar panelidan ("🎬") ochiladi, lekin o'zining z-index'i
+       (1000) o'sha modaldan PASTROQ edi — shu sabab orqasida, ko'rinmas
+       holda ochilib qolardi (faqat tashqi modal yopilgach ko'rinardi).
+       promptModal.js'dagi (showConfirmModal/showAlertModal) BILAN BIR
+       XIL qoida — 10000, ".modal-overlay"dan albatta USTUN turishi
+       uchun. */
+    z-index: 10000;
 }
 
 .video-insert-modal-box {
