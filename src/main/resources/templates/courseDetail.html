@@ -109,6 +109,17 @@
             </div>
 
             <div id="sectionTrashPanel" style="display:none;">
+                <!-- "Bittada tiklaydigan va o'chiradigan knopka" (foydalanuvchi
+                     so'rovi, 2026-09-10) — panelda ko'rinayotgan HAMMA
+                     o'chirilgan darslarni bir bosishda tiklaydi/butunlay
+                     o'chiradi (courseDetail.js — restoreAllSections /
+                     permanentlyDeleteAllSections). Ro'yxat bo'sh bo'lsa
+                     yashirin turadi. -->
+                <div id="sectionTrashBulkActions" class="section-trash-bulk-actions hidden">
+                    <span class="section-trash-bulk-count"><span id="sectionTrashCount">0</span> ta o'chirilgan dars</span>
+                    <button id="sectionTrashRestoreAllBtn" class="trash-restore-all-btn" onclick="restoreAllSections()">♻️ Barchasini tiklash</button>
+                    <button id="sectionTrashDeleteAllBtn" class="trash-delete-all-btn" onclick="permanentlyDeleteAllSections()">🗑️ Barchasini butunlay o'chirish</button>
+                </div>
                 <div id="sectionTrashList"></div>
             </div>
 

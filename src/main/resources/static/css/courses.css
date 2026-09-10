@@ -2723,6 +2723,112 @@ body {
     gap: 8px;
 }
 
+/* HAQIQIY TOPILGAN KAMCHILIK: "🗑️ O'chirilgan darslar" panelidagi har bir
+   qatordagi "♻️ Tiklash" / "🗑️ Butunlay o'chirish" tugmalari ilgari HECH
+   QANDAY CSS'ga ega emas edi (brauzerning standart kulrang tugma
+   ko'rinishi) — sahifadagi boshqa barcha rangli, dumaloq burchakli
+   tugmalar bilan solishtirganda juda xunuk edi (foydalanuvchi so'rovi,
+   2026-09-10: "knopkalarga chiroyli css qo'sh... CSS'iga e'tibor ber"). */
+.trash-restore-btn,
+.trash-delete-btn {
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    white-space: nowrap;
+}
+
+.trash-restore-btn {
+    background: #ecfdf5;
+    border: 1.5px solid #34d399;
+    color: #047857;
+}
+
+.trash-restore-btn:hover {
+    background: #10b981;
+    border-color: #10b981;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(16, 185, 129, .3);
+}
+
+.trash-delete-btn {
+    background: #fef2f2;
+    border: 1.5px solid #f87171;
+    color: #b91c1c;
+}
+
+.trash-delete-btn:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(220, 38, 38, .3);
+}
+
+/* "Bittada tiklaydigan va o'chiradigan knopka" (foydalanuvchi so'rovi,
+   2026-09-10) — panel ro'yxatining USTIDA turadigan, HAMMA elementga
+   birdan ta'sir qiladigan ikkita tugma + nechta element borligi. */
+.section-trash-bulk-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+}
+
+.section-trash-bulk-count {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    margin-right: auto;
+}
+
+.trash-restore-all-btn,
+.trash-delete-all-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 9px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.trash-restore-all-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, .3);
+}
+
+.trash-restore-all-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, .4);
+}
+
+.trash-delete-all-btn {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, .3);
+}
+
+.trash-delete-all-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(220, 38, 38, .4);
+}
+
+.trash-restore-all-btn:disabled,
+.trash-delete-all-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
 /* "🔗 Havolalarni tekshirish" paneli (courseDetail.js — topicLinkAuditList).
    Faqat MUAMMOSI BOR mavzular shu batafsil ("row") ko'rinishda chiqadi —
    to'g'ri bo'lganlari alohida-alohida ko'rsatilmaydi, ".topic-link-audit-

@@ -3777,6 +3777,14 @@ async function deleteSection(sectionId) {
 // ro'yxati (bir zumda "♻️ Tiklash" qilinadigan). Panel yopiq holatda
 // boshlanadi, bosilganda ochilib ro'yxatni yuklaydi.
 let sectionTrashOpen = false;
+// Panelda hozir ko'rsatilayotgan elementlar — "♻️ Barchasini tiklash" /
+// "🗑️ Barchasini butunlay o'chirish" (foydalanuvchi so'rovi, 2026-09-10:
+// "Bittada tiklaydigan va o'chiradigan knopka qo'sh") shu ro'yxat bo'yicha
+// KETMA-KET (bittalab, mavjud bitta-elementli endpoint'lar orqali) ishlaydi
+// — alohida "bulk" backend endpoint yaratishning hojati yo'q, chunki har
+// bir chaqiruv baribir o'zi try/catch bilan himoyalangan (bittasi
+// muvaffaqiyatsiz bo'lsa ham, qolganlari davom etadi).
+let sectionTrashItems = [];
 
 function toggleSectionTrash() {
     sectionTrashOpen = !sectionTrashOpen;
@@ -3789,6 +3797,7 @@ function toggleSectionTrash() {
 async function loadSectionTrash() {
     const list = document.getElementById("sectionTrashList");
     list.innerHTML = "<p>Yuklanmoqda...</p>";
+    document.getElementById("sectionTrashBulkActions").classList.add("hidden");
 
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/sections/deleted`);
@@ -3797,17 +3806,20 @@ async function loadSectionTrash() {
             return;
         }
         const items = await res.json();
+        sectionTrashItems = items;
         setTrashBadgeCount("courseSectionTrashBadge", items.length);
         if (!items.length) {
             list.innerHTML = "<p>O'chirilgan dars yo'q</p>";
             return;
         }
+        document.getElementById("sectionTrashCount").textContent = items.length;
+        document.getElementById("sectionTrashBulkActions").classList.remove("hidden");
         list.innerHTML = items.map(s => `
             <div class="row">
                 <div>${escapeHtml(s.title)} — ${formatSectionTrashDate(s.deletedAt)}da o'chirilgan</div>
                 <div class="row-actions">
-                    <button onclick="restoreSection(${s.id})">♻️ Tiklash</button>
-                    <button class="danger-btn" onclick="permanentlyDeleteSection(${s.id}, ${JSON.stringify(s.title).replace(/"/g, "&quot;")})">🗑️ Butunlay o'chirish</button>
+                    <button class="trash-restore-btn" onclick="restoreSection(${s.id})">♻️ Tiklash</button>
+                    <button class="trash-delete-btn" onclick="permanentlyDeleteSection(${s.id}, ${JSON.stringify(s.title).replace(/"/g, "&quot;")})">🗑️ Butunlay o'chirish</button>
                 </div>
             </div>
         `).join("");
@@ -3815,6 +3827,55 @@ async function loadSectionTrash() {
         console.error(err);
         list.innerHTML = "<p>Tarmoq xatoligi</p>";
     }
+}
+
+// "♻️ Barchasini tiklash" — panelda ko'rinayotgan HAMMA o'chirilgan
+// darslarni bittada qaytaradi (foydalanuvchi so'rovi, 2026-09-10).
+async function restoreAllSections() {
+    if (!sectionTrashItems.length) return;
+    if (!await showConfirmModal(`♻️ ${sectionTrashItems.length} ta darsning HAMMASINI tiklamoqchimisiz?`)) return;
+
+    const btn = document.getElementById("sectionTrashRestoreAllBtn");
+    btn.disabled = true;
+    let okCount = 0;
+    for (const s of sectionTrashItems) {
+        try {
+            const res = await fetch(`/api/courses/${COURSE_ID}/sections/${s.id}/restore`, { method: "POST" });
+            if (res.ok) okCount++;
+        } catch (err) {
+            console.error(err);
+        }
+    }
+    btn.disabled = false;
+
+    loadSectionTrash();
+    loadCourse();
+    showAlertModal(`✅ ${okCount}/${sectionTrashItems.length} ta dars tiklandi.`);
+}
+
+// "🗑️ Barchasini butunlay o'chirish" — QAYTARIB BO'LMAYDIGAN amal, shu
+// sabab ikki marta (danger) tasdiq so'raladi — bitta elementni butunlay
+// o'chirishdagi bilan bir xil ehtiyotkorlik darajasi.
+async function permanentlyDeleteAllSections() {
+    if (!sectionTrashItems.length) return;
+    if (!await showConfirmModal(`⚠️ "O'chirilganlar savati"dagi ${sectionTrashItems.length} ta darsning HAMMASINI BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`, { danger: true })) return;
+    if (!await showConfirmModal("Haqiqatan ham ishonchingiz komilmi?", { danger: true })) return;
+
+    const btn = document.getElementById("sectionTrashDeleteAllBtn");
+    btn.disabled = true;
+    let okCount = 0;
+    for (const s of sectionTrashItems) {
+        try {
+            const res = await fetch(`/api/courses/${COURSE_ID}/sections/${s.id}/permanent`, { method: "DELETE" });
+            if (res.ok) okCount++;
+        } catch (err) {
+            console.error(err);
+        }
+    }
+    btn.disabled = false;
+
+    loadSectionTrash();
+    showAlertModal(`✅ ${okCount}/${sectionTrashItems.length} ta dars butunlay o'chirildi.`);
 }
 
 function formatSectionTrashDate(isoString) {
