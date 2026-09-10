@@ -2,6 +2,7 @@ package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.CourseRepository;
 import behzoddev.testproject.dao.CourseSubscriptionRepository;
+import behzoddev.testproject.dao.PaymentOrderRepository;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.dto.course.CourseSubscriptionDto;
 import behzoddev.testproject.dto.course.CreateCourseSubscriptionDto;
@@ -47,6 +48,7 @@ public class CourseSubscriptionService {
     private final CourseRepository courseRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final PaymentOrderRepository paymentOrderRepository;
 
     // "🎁 3 kunlik bepul sinov" — foydalanuvchi so'rovi, 2026-09-09:
     // avvalgi "Obunaga so'rov yuborish" (PENDING, OWNER tasdig'i kerak)
@@ -389,6 +391,14 @@ public class CourseSubscriptionService {
         CourseSubscription subscription = courseSubscriptionRepository.findById(subscriptionId)
                 .orElseThrow(() -> new NoSuchElementException("Obuna topilmadi"));
         checkCanManage(subscription.getCourse(), requester);
+
+        // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-10: Click
+        // panelida to'lov "muvaffaqiyatli" ko'rinsa-da, /payments'da
+        // butunlay yo'q edi) — "subscription_id" haqiqiy FK EMAS, shuning
+        // uchun bu yozuv o'chirilganda unga ishora qiluvchi PaymentOrder
+        // "osilib qolgan" (dangling) havola bilan qolib ketardi
+        // (SubscriptionService.delete bilan bir xil tuzatish).
+        paymentOrderRepository.clearSubscriptionId(subscriptionId);
 
         courseSubscriptionRepository.delete(subscription);
 

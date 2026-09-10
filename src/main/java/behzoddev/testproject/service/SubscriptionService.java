@@ -1,5 +1,6 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.PaymentOrderRepository;
 import behzoddev.testproject.dao.RoleRepository;
 import behzoddev.testproject.dao.SubscriptionRepository;
 import behzoddev.testproject.dao.UserRepository;
@@ -56,6 +57,7 @@ public class SubscriptionService {
     private final NotificationService notificationService;
     private final RoleAuditService roleAuditService;
     private final EmailService emailService;
+    private final PaymentOrderRepository paymentOrderRepository;
 
     @Transactional
     public SubscriptionDto createManual(CreateSubscriptionDto dto, User owner) {
@@ -331,6 +333,13 @@ public class SubscriptionService {
 
         boolean wasActiveConfirmed = subscription.getStatus() == SubscriptionStatus.CONFIRMED;
         User user = subscription.getUser();
+
+        // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-10: Click
+        // panelida to'lov "muvaffaqiyatli" ko'rinsa-da, /payments'da
+        // butunlay yo'q edi) — "subscription_id" haqiqiy FK EMAS, shuning
+        // uchun bu yozuv o'chirilganda unga ishora qiluvchi PaymentOrder
+        // "osilib qolgan" (dangling) havola bilan qolib ketardi.
+        paymentOrderRepository.clearSubscriptionId(subscriptionId);
 
         subscriptionRepository.delete(subscription);
 

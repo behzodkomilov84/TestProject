@@ -1,5 +1,6 @@
 package behzoddev.testproject.service;
 
+import behzoddev.testproject.dao.PaymentOrderRepository;
 import behzoddev.testproject.dao.RoleRepository;
 import behzoddev.testproject.dao.SubscriptionRepository;
 import behzoddev.testproject.dao.UserRepository;
@@ -59,6 +60,8 @@ class SubscriptionServiceTest {
     private RoleAuditService roleAuditService;
     @Mock
     private EmailService emailService;
+    @Mock
+    private PaymentOrderRepository paymentOrderRepository;
 
     @InjectMocks
     private SubscriptionService subscriptionService;
@@ -435,6 +438,22 @@ class SubscriptionServiceTest {
 
         assertThatThrownBy(() -> subscriptionService.delete(7L, owner))
                 .isInstanceOf(NoSuchElementException.class);
+    }
+
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-10: Click
+    // panelida to'lov "muvaffaqiyatli" ko'rinsa-da, /payments'da butunlay
+    // yo'q edi) — "subscription_id" haqiqiy FK EMAS, shuning uchun bu
+    // yozuv o'chirilganda unga ishora qiluvchi PaymentOrder "osilib
+    // qolgan" havola bilan qolib ketardi.
+    @Test
+    void delete_success_clearsDanglingPaymentOrderReference() {
+        Subscription sub = Subscription.builder().id(7L).user(owner).amount(BigDecimal.TEN)
+                .source(SubscriptionSource.MANUAL).status(SubscriptionStatus.CANCELLED).build();
+        when(subscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+
+        subscriptionService.delete(7L, owner);
+
+        verify(paymentOrderRepository).clearSubscriptionId(7L);
     }
 
     // ===== confirmOnline =====

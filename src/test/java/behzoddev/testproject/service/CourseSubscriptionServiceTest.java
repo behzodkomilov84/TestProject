@@ -2,6 +2,7 @@ package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.CourseRepository;
 import behzoddev.testproject.dao.CourseSubscriptionRepository;
+import behzoddev.testproject.dao.PaymentOrderRepository;
 import behzoddev.testproject.dao.UserRepository;
 import behzoddev.testproject.dto.course.CourseSubscriptionDto;
 import behzoddev.testproject.dto.course.CreateCourseSubscriptionDto;
@@ -53,6 +54,8 @@ class CourseSubscriptionServiceTest {
     private UserRepository userRepository;
     @Mock
     private NotificationService notificationService;
+    @Mock
+    private PaymentOrderRepository paymentOrderRepository;
 
     @InjectMocks
     private CourseSubscriptionService courseSubscriptionService;
@@ -486,6 +489,22 @@ class CourseSubscriptionServiceTest {
         // Ma'muriy tozalash amali — foydalanuvchining kirish huquqiga
         // ta'sir qilmaydi, shuning uchun xabar yuborilmaydi.
         verify(notificationService, never()).create(any(), anyString(), anyString());
+    }
+
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-10: Click
+    // panelida to'lov "muvaffaqiyatli" ko'rinsa-da, /payments'da butunlay
+    // yo'q edi) — "subscription_id" haqiqiy FK EMAS, shuning uchun bu
+    // yozuv o'chirilganda unga ishora qiluvchi PaymentOrder "osilib
+    // qolgan" havola bilan qolib ketardi.
+    @Test
+    void delete_success_clearsDanglingPaymentOrderReference() {
+        CourseSubscription sub = CourseSubscription.builder().id(7L).user(student).course(course)
+                .amount(BigDecimal.TEN).status(CourseSubscriptionStatus.CANCELLED).build();
+        when(courseSubscriptionRepository.findById(7L)).thenReturn(Optional.of(sub));
+
+        courseSubscriptionService.delete(7L, owner);
+
+        verify(paymentOrderRepository).clearSubscriptionId(7L);
     }
 
     @Test
