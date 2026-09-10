@@ -11,6 +11,7 @@ import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
 import behzoddev.testproject.dto.course.*;
+import behzoddev.testproject.dto.excel.ImportResultDto;
 import behzoddev.testproject.dto.question.QuestionDto;
 import behzoddev.testproject.dto.question.TopicQuestionCountDto;
 import behzoddev.testproject.entity.Answer;
@@ -31,9 +32,11 @@ import behzoddev.testproject.entity.enums.CourseSubscriptionStatus;
 import behzoddev.testproject.entity.enums.VideoSourceType;
 import behzoddev.testproject.mapper.QuestionMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -61,6 +64,7 @@ import java.util.stream.Collectors;
  * (foydalanuvchi so'rovi bo'yicha, 2026-09-03; "Mavzusiz" — chapter=null —
  * darslar ham o'zaro bitta mustaqil guruh hisoblanadi).
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CourseService {
@@ -76,6 +80,11 @@ public class CourseService {
     private final TopicSectionRepository topicSectionRepository;
     private final QuestionRepository questionRepository;
     private final QuestionMapper questionMapper;
+    // "📥 Darslar + testlarni import qilish" (foydalanuvchi so'rovi,
+    // 2026-09-10) — har bir yaratilgan darsga mos .xlsx faylni ExcelService
+    // orqali import qilish uchun (mavjud, sinovdan o'tgan mexanizm qayta
+    // ishlatiladi — o'z ExcelService'ini yozish shart emas).
+    private final ExcelService excelService;
 
     // "🔗 Darsga havola qo'shish" (topicLinkButton.js#buildTopicLinkHtml)
     // tomonidan izohga qo'shilgan havolani topish uchun — "/courses/
@@ -680,6 +689,107 @@ public class CourseService {
                 .chapterId(section.getChapter() != null ? section.getChapter().getId() : null)
                 .chapterName(section.getChapter() != null ? section.getChapter().getName() : null)
                 .chapterOrderIndex(section.getChapter() != null ? section.getChapter().getOrderIndex() : null)
+                .build();
+    }
+
+    // "📥 Darslar + testlarni import qilish" — "Mavzu" kartochkasidagi
+    // paketli import (foydalanuvchi so'rovi, 2026-09-10): bir nechta
+    // .docx (brauzerda mammoth.js orqali HTML'ga aylantirilgan, rasmlari
+    // bilan — mavjud bitta faylli import, courseDetail.js#importDocxFile,
+    // bilan bir xil mexanizm) + mos nomli .xlsx (test savollari) fayllarni
+    // BITTADA import qiladi. Har bir .docx uchun — ANIQ SHU Mavzu ichida
+    // yangi dars (CourseSection) yaratiladi (addSection() — mavjud,
+    // sinovdan o'tgan yo'l bilan bir xil), mos .xlsx bo'lsa — o'sha darsga
+    // avtomatik bog'langan Fan/Mavzu (resolveLinkedTopic — Fan nomi
+    // sifatida KURS nomi ishlatiladi, Mavzu nomi — dars nomi) ostiga
+    // ExcelService orqali savollar import qilinadi. Bitta faylning
+    // muvaffaqiyatsizligi QOLGANLARINI TO'XTATMAYDI — har bir element
+    // alohida try/catch bilan o'raladi (ExcelService.importQuestions'dagi
+    // "bitta qatordagi xatolik boshqalarga xalaqit bermaydi" bilan bir
+    // xil falsafa), natija oxirida statistikasi bilan qaytariladi.
+    @Transactional
+    public BulkLessonImportResultDto bulkImportLessonsWithTests(
+            Long courseId, Long chapterId, List<LessonImportItemDto> items,
+            List<MultipartFile> xlsxFiles, User currentUser) {
+
+        Course course = getCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
+
+        CourseChapter chapter = courseChapterRepository.findById(chapterId)
+                .filter(c -> c.getCourse().getId().equals(courseId))
+                .orElseThrow(() -> new IllegalArgumentException("❌ Mavzu topilmadi."));
+
+        if (items == null || items.isEmpty()) {
+            throw new IllegalArgumentException("❌ Import qilinadigan fayl tanlanmagan.");
+        }
+        if (items.size() > 200) {
+            throw new IllegalArgumentException("❌ Bir martada ko'pi bilan 200 ta fayl import qilish mumkin.");
+        }
+
+        // "Fan" sifatida KURS nomi ishlatiladi — foydalanuvchi bulk import
+        // paytida Fan/Mavzu tanlamaydi ("topic sifatida emas, dars
+        // sifatida yaratilsin" — foydalanuvchi so'rovi), shu sabab TEST
+        // BOSHQARUVI tarafidagi bog'lanish TO'LIQ AVTOMATIK
+        // (resolveLinkedTopic — mavjud bo'lsa topiladi, bo'lmasa aynan
+        // shu nom bilan yaratiladi).
+        String scienceName = course.getTitle();
+
+        Map<String, MultipartFile> xlsxByName = (xlsxFiles == null ? List.<MultipartFile>of() : xlsxFiles).stream()
+                .filter(f -> f.getOriginalFilename() != null)
+                .collect(Collectors.toMap(MultipartFile::getOriginalFilename, f -> f, (a, b) -> a));
+
+        int sectionsCreated = 0;
+        int sectionsWithTests = 0;
+        long questionsImported = 0;
+        List<String> warnings = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+
+        for (LessonImportItemDto item : items) {
+            String title = item.title() == null ? "" : item.title().trim();
+            if (title.isEmpty()) {
+                errors.add("Nomsiz fayl o'tkazib yuborildi.");
+                continue;
+            }
+
+            try {
+                CourseSectionSaveDto sectionDto = new CourseSectionSaveDto(
+                        title, CourseSectionType.TEXT.name(), item.html(),
+                        null, null, null,
+                        scienceName, title, chapter.getId(), null,
+                        CourseSectionContentFormat.HTML.name());
+
+                CourseSectionSummaryDto created = addSection(courseId, sectionDto, currentUser);
+                sectionsCreated++;
+
+                MultipartFile xlsx = item.xlsxFileName() != null ? xlsxByName.get(item.xlsxFileName()) : null;
+                if (xlsx == null || xlsx.isEmpty()) {
+                    warnings.add("\"" + title + "\" — mos test fayli (.xlsx) topilmadi, testsiz import qilindi.");
+                    continue;
+                }
+
+                ImportResultDto qResult = excelService.importQuestions(xlsx, created.linkedTopicId(), currentUser);
+                if (qResult.imported() != null && qResult.imported() > 0) {
+                    sectionsWithTests++;
+                    questionsImported += qResult.imported();
+                }
+                if (!qResult.errors().isEmpty()) {
+                    warnings.add("\"" + title + "\" testlarida: " + String.join("; ", qResult.errors()));
+                }
+            } catch (Exception e) {
+                errors.add("\"" + title + "\": " + e.getMessage());
+            }
+        }
+
+        log.info("Paketli import yakunlandi: kurs={}, mavzu={}, darslar={}, testli={}, savollar={}, user={}",
+                course.getTitle(), chapter.getName(), sectionsCreated, sectionsWithTests, questionsImported,
+                currentUser.getUsername());
+
+        return BulkLessonImportResultDto.builder()
+                .sectionsCreated(sectionsCreated)
+                .sectionsWithTests(sectionsWithTests)
+                .questionsImported(questionsImported)
+                .warnings(warnings)
+                .errors(errors)
                 .build();
     }
 

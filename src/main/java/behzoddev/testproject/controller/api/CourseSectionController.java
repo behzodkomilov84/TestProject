@@ -1,13 +1,16 @@
 package behzoddev.testproject.controller.api;
 
+import behzoddev.testproject.dto.course.BulkLessonImportResultDto;
 import behzoddev.testproject.dto.course.CourseSectionContentDto;
 import behzoddev.testproject.dto.course.CourseSectionSaveDto;
 import behzoddev.testproject.dto.course.CourseSectionSummaryDto;
 import behzoddev.testproject.dto.course.CourseSectionTrashDto;
+import behzoddev.testproject.dto.course.LessonImportItemDto;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.CourseService;
 import behzoddev.testproject.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -54,6 +57,24 @@ public class CourseSectionController {
             @AuthenticationPrincipal User user
     ) {
         return courseService.addSection(courseId, dto, user);
+    }
+
+    // "📥 Darslar + testlarni import qilish" — "Mavzu" kartochkasidagi
+    // amallar qatoridan (foydalanuvchi so'rovi, 2026-09-10). "items" —
+    // brauzerda mammoth.js orqali har bir .docx'dan olingan HTML'lar
+    // ro'yxati (JSON qism); "xlsxFiles" — tanlangan .xlsx fayllarning
+    // o'zi (haqiqiy multipart), har biri o'z ASL nomi (getOriginalFilename)
+    // orqali item.xlsxFileName()'ga mos kelib bog'lanadi.
+    @PostMapping(value = "/bulk-import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public BulkLessonImportResultDto bulkImport(
+            @PathVariable Long courseId,
+            @RequestParam Long chapterId,
+            @RequestPart("items") List<LessonImportItemDto> items,
+            @RequestPart(value = "xlsxFiles", required = false) List<MultipartFile> xlsxFiles,
+            @AuthenticationPrincipal User user
+    ) {
+        return courseService.bulkImportLessonsWithTests(courseId, chapterId, items, xlsxFiles, user);
     }
 
     @PutMapping("/{sectionId}")

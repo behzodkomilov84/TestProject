@@ -617,6 +617,55 @@
     </div>
 </div>
 
+<!-- "📥 Darslar + testlarni import qilish" — "Mavzu" kartochkasidagi
+     paketli import oynasi (foydalanuvchi so'rovi, 2026-09-10). Bir xil
+     nomli .docx (dars matni, rasmlari bilan — brauzerda mammoth.js
+     orqali) + .xlsx (o'sha darsning testlari) fayl juftliklarini
+     BIRDANIGA (ko'pi bilan 200 ta fayl) import qiladi. courseDetail.js:
+     openBulkImportModal() / handleBulkImportFilesSelected() /
+     runBulkImport() / closeBulkImportModal(). -->
+<div id="bulkImportModal" class="modal-overlay">
+    <div class="word-export-modal bulk-import-modal">
+        <h2 class="modal-h2" id="bulkImportModalTitle">📥 Darslar + testlarni import qilish</h2>
+
+        <p class="word-export-hint bulk-import-intro" style="border-top:none;padding-top:0;">
+            Bitta darsga oid <strong>ikkita fayl</strong>ni BIR XIL nom bilan tanlang:
+            <code>.docx</code> — dars matni (formatlash va rasmlari bilan SAQLANADI),
+            <code>.xlsx</code> — o'sha darsning test savollari (ixtiyoriy — bo'lmasa,
+            dars baribir testsiz yaratiladi). Masalan: <code>01-dars.docx</code> +
+            <code>01-dars.xlsx</code> — ikkalasi ham "01-dars" nomli dars sifatida
+            birlashtiriladi. Bir martada ko'pi bilan <strong>200 ta fayl</strong>
+            tanlash mumkin.
+        </p>
+
+        <!-- 1-BOSQICH: fayl tanlash -->
+        <div id="bulkImportSelectStep">
+            <label class="bulk-import-file-picker">
+                <input type="file" id="bulkImportFileInput" multiple accept=".docx,.xlsx"
+                       onchange="handleBulkImportFilesSelected()" hidden>
+                <span id="bulkImportFilePickerLabel">📎 Fayllarni tanlash (.docx + .xlsx)</span>
+            </label>
+
+            <div id="bulkImportPreview" class="bulk-import-preview hidden"></div>
+        </div>
+
+        <!-- 2-BOSQICH: jarayon (mammoth.js konvertatsiyasi + serverga yuborish) -->
+        <div id="bulkImportProgressStep" class="bulk-import-progress hidden">
+            <div class="bulk-import-spinner"></div>
+            <p id="bulkImportProgressText">Fayllar o'qilmoqda...</p>
+        </div>
+
+        <!-- 3-BOSQICH: natija statistikasi -->
+        <div id="bulkImportResultStep" class="bulk-import-result hidden"></div>
+
+        <div class="modal-footer">
+            <button type="button" id="bulkImportCancelBtn" onclick="closeBulkImportModal()">Bekor qilish</button>
+            <button type="button" id="bulkImportConfirmBtn" class="export-excel-btn hidden" onclick="runBulkImport()">📥 Import qilish</button>
+            <button type="button" id="bulkImportCloseBtn" class="export-excel-btn hidden" onclick="closeBulkImportModal()">Yopish</button>
+        </div>
+    </div>
+</div>
+
 <!-- "💳 To'lov — muddatni tanlang" — 1/3/6 oylik variantlar, uzoqroq
      muddatga "bonus" chegirma bilan (foydalanuvchi so'rovi, 2026-09-09:
      "тўлов саҳифасида ҳам неча ойга обуна бўлишини танлаш имкони

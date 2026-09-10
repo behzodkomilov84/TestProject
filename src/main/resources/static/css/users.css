@@ -772,6 +772,86 @@ select.role-select {
     min-width: 160px;
 }
 
+/* Qidiriladigan foydalanuvchi combobox (foydalanuvchi so'rovi,
+   2026-09-10: "foydalanuvchi nomini tez topadigan mexanizm... CSS ni
+   chiroyli qil") — adminSubscriptions.js: filterManualUserDropdown().
+   Oddiy <select>'dan farqli, ochilganda Ism/username bo'yicha yozib
+   qidirish mumkin. */
+.user-search-combo {
+    position: relative;
+    flex: 1;
+    min-width: 220px;
+}
+
+.user-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #d5dde8;
+    font-size: 14px;
+    font-family: inherit;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.user-search-input:focus {
+    outline: none;
+    border-color: #185ABD;
+    box-shadow: 0 0 0 3px rgba(24, 90, 189, .12);
+}
+
+.user-search-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    max-height: 260px;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #d5dde8;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, .15);
+    padding: 6px;
+}
+
+.user-search-option {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+}
+
+.user-search-option:hover {
+    background: #eff6ff;
+}
+
+.user-search-option-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: #1e293b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.user-search-option-username {
+    flex-shrink: 0;
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.user-search-empty {
+    padding: 10px;
+    font-size: 13px;
+    color: #94a3b8;
+    text-align: center;
+    font-style: italic;
+}
+
 /* ===== Foydalanuvchini tahrirlash oynasi (Edit modal) =====
    promptModal.js'dagi bilan bir xil g'oya (markazlashgan overlay), lekin
    bir nechta maydonli forma bo'lgani uchun alohida, o'zining <style>siz

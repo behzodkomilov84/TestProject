@@ -43,6 +43,19 @@ public class UserManagerPageController {
         return "roleAuditLogPage";
     }
 
+    // "⚙️ To'lov sozlamalari" — /admin-subscriptions'dan ajratildi
+    // (foydalanuvchi so'rovi, 2026-09-10: "bu faqat admin uchun
+    // bo'lmasa, barcha to'lovlar uchun bo'lsa, bu yerdan olib, alohida
+    // ⚙️ Sozlamalar tugmasi bilan OWNER PANEL ga joyla" — Click'ning
+    // minimal tranzaksiya summasi ADMIN-rol VA kurs to'lovlarining
+    // IKKALASIGA ham tegishli).
+    @GetMapping("/payment-settings")
+    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    public String openPaymentSettingsPage(Model model, Authentication authentication) {
+        model.addAttribute("role", primaryOwnerRole(authentication));
+        return "paymentSettingsPage";
+    }
+
     private String primaryOwnerRole(Authentication authentication) {
         return authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)

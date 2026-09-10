@@ -10,6 +10,7 @@ import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
+import behzoddev.testproject.dto.course.BulkLessonImportResultDto;
 import behzoddev.testproject.dto.course.CourseChapterDto;
 import behzoddev.testproject.dto.course.CourseDetailDto;
 import behzoddev.testproject.dto.course.CourseDto;
@@ -17,6 +18,8 @@ import behzoddev.testproject.dto.course.CourseSaveDto;
 import behzoddev.testproject.dto.course.CourseSectionContentDto;
 import behzoddev.testproject.dto.course.CourseSectionSaveDto;
 import behzoddev.testproject.dto.course.CourseSectionSummaryDto;
+import behzoddev.testproject.dto.course.LessonImportItemDto;
+import behzoddev.testproject.dto.excel.ImportResultDto;
 import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Course;
 import behzoddev.testproject.entity.CourseChapter;
@@ -35,6 +38,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
@@ -80,6 +84,8 @@ class CourseServiceTest {
     private TopicSectionRepository topicSectionRepository;
     @Mock
     private QuestionRepository questionRepository;
+    @Mock
+    private ExcelService excelService;
 
     @InjectMocks
     private CourseService courseService;
@@ -1090,6 +1096,159 @@ class CourseServiceTest {
         org.mockito.Mockito.verify(courseSectionRepository).save(sectionCaptor.capture());
         assertThat(sectionCaptor.getValue().getLinkedTopic()).isNull();
         org.mockito.Mockito.verifyNoInteractions(scienceRepository, topicRepository);
+    }
+
+    // ===== bulkImportLessonsWithTests ("📥 Darslar + testlarni import
+    // qilish" — Mavzu kartochkasidan, foydalanuvchi so'rovi, 2026-09-10) =====
+
+    private CourseChapter testChapter(Course course) {
+        return CourseChapter.builder().id(7L).course(course).name("1-Mavzu").orderIndex(1).build();
+    }
+
+    @Test
+    void bulkImportLessonsWithTests_chapterNotFound_throws() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findById(7L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> courseService.bulkImportLessonsWithTests(
+                1L, 7L, List.of(new LessonImportItemDto("Dars 1", "<p>matn</p>", null)), List.of(), owner()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Mavzu topilmadi");
+    }
+
+    @Test
+    void bulkImportLessonsWithTests_emptyItems_throws() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findById(7L)).thenReturn(Optional.of(testChapter(course)));
+
+        assertThatThrownBy(() -> courseService.bulkImportLessonsWithTests(1L, 7L, List.of(), List.of(), owner()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("tanlanmagan");
+    }
+
+    @Test
+    void bulkImportLessonsWithTests_moreThan200Items_throws() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findById(7L)).thenReturn(Optional.of(testChapter(course)));
+
+        List<LessonImportItemDto> tooMany = java.util.stream.IntStream.range(0, 201)
+                .mapToObj(i -> new LessonImportItemDto("Dars " + i, "<p>matn</p>", null))
+                .toList();
+
+        assertThatThrownBy(() -> courseService.bulkImportLessonsWithTests(1L, 7L, tooMany, List.of(), owner()))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("200");
+    }
+
+    @Test
+    void bulkImportLessonsWithTests_unrelatedAdmin_throwsAccessDenied() {
+        User admin = User.builder().id(50L).username("admin1").roles(new HashSet<>(Set.of(
+                Role.builder().id(3L).roleName("ROLE_ADMIN").build()))).build();
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> courseService.bulkImportLessonsWithTests(
+                1L, 7L, List.of(new LessonImportItemDto("Dars 1", "<p>matn</p>", null)), List.of(), admin))
+                .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void bulkImportLessonsWithTests_withoutMatchingXlsx_createsSectionAndWarns() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter chapter = testChapter(course);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findById(7L)).thenReturn(Optional.of(chapter));
+        when(courseSectionRepository.findTopByCourse_IdOrderByOrderIndexDesc(1L)).thenReturn(Optional.empty());
+        when(courseSectionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        // Har bir dars uchun avtomatik Fan/Mavzu bog'lanishi ham
+        // sinaladi (resolveLinkedTopic — scienceName=kurs nomi,
+        // topicName=dars nomi HAR DOIM beriladi, testsiz darsda ham).
+        behzoddev.testproject.entity.Science science =
+                behzoddev.testproject.entity.Science.builder().id(10L).name("Kurs").build();
+        when(scienceRepository.findByName("Kurs")).thenReturn(Optional.of(science));
+        behzoddev.testproject.entity.Topic topic =
+                behzoddev.testproject.entity.Topic.builder().id(20L).name("001. Dars").science(science).build();
+        when(topicRepository.findByScience_IdAndName(10L, "001. Dars")).thenReturn(Optional.of(topic));
+
+        List<LessonImportItemDto> items = List.of(new LessonImportItemDto("001. Dars", "<p>matn</p>", null));
+
+        BulkLessonImportResultDto result = courseService.bulkImportLessonsWithTests(1L, 7L, items, List.of(), owner());
+
+        assertThat(result.sectionsCreated()).isEqualTo(1);
+        assertThat(result.sectionsWithTests()).isZero();
+        assertThat(result.warnings()).hasSize(1);
+        assertThat(result.warnings().get(0)).contains("001. Dars").contains("testsiz");
+        org.mockito.Mockito.verifyNoInteractions(excelService);
+    }
+
+    @Test
+    void bulkImportLessonsWithTests_withMatchingXlsx_importsQuestionsIntoAutoCreatedTopic() {
+        Course course = Course.builder().id(1L).title("BAKTERIOLOGIYA").createdBy(owner()).build();
+        CourseChapter chapter = testChapter(course);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findById(7L)).thenReturn(Optional.of(chapter));
+        when(courseSectionRepository.findTopByCourse_IdOrderByOrderIndexDesc(1L)).thenReturn(Optional.empty());
+        when(courseSectionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        behzoddev.testproject.entity.Science science =
+                behzoddev.testproject.entity.Science.builder().id(10L).name("BAKTERIOLOGIYA").build();
+        when(scienceRepository.findByName("BAKTERIOLOGIYA")).thenReturn(Optional.of(science));
+
+        behzoddev.testproject.entity.Topic topic =
+                behzoddev.testproject.entity.Topic.builder().id(20L).name("001. Dars").science(science).build();
+        when(topicRepository.findByScience_IdAndName(10L, "001. Dars")).thenReturn(Optional.of(topic));
+
+        MockMultipartFile xlsx = new MockMultipartFile("xlsxFiles", "001. Dars.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new byte[]{1, 2, 3});
+        // MUHIM: owner() bir MARTA chaqirilib, saqlab qo'yiladi — har
+        // chaqiruv YANGI User obyekti yaratadi, User entity'da equals()
+        // qayta yozilmagan bo'lsa, Mockito'ning when(...) argument
+        // solishtiruvi (default .equals()) ikkita HAR XIL obyektni mos
+        // kelmaydi deb hisoblab, stub ishlamay qolgan edi.
+        User currentUser = owner();
+        when(excelService.importQuestions(xlsx, 20L, currentUser))
+                .thenReturn(new ImportResultDto(true, 12L, List.of()));
+
+        List<LessonImportItemDto> items = List.of(
+                new LessonImportItemDto("001. Dars", "<p>matn</p>", "001. Dars.xlsx"));
+
+        BulkLessonImportResultDto result = courseService.bulkImportLessonsWithTests(
+                1L, 7L, items, List.of(xlsx), currentUser);
+
+        assertThat(result.sectionsCreated()).isEqualTo(1);
+        assertThat(result.sectionsWithTests()).isEqualTo(1);
+        assertThat(result.questionsImported()).isEqualTo(12L);
+        assertThat(result.warnings()).isEmpty();
+    }
+
+    @Test
+    void bulkImportLessonsWithTests_oneItemFailsWithBlankTitle_othersStillSucceed() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter chapter = testChapter(course);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findById(7L)).thenReturn(Optional.of(chapter));
+        when(courseSectionRepository.findTopByCourse_IdOrderByOrderIndexDesc(1L)).thenReturn(Optional.empty());
+        when(courseSectionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        behzoddev.testproject.entity.Science science =
+                behzoddev.testproject.entity.Science.builder().id(10L).name("Kurs").build();
+        when(scienceRepository.findByName("Kurs")).thenReturn(Optional.of(science));
+        behzoddev.testproject.entity.Topic topic =
+                behzoddev.testproject.entity.Topic.builder().id(20L).name("Yaxshi dars").science(science).build();
+        when(topicRepository.findByScience_IdAndName(10L, "Yaxshi dars")).thenReturn(Optional.of(topic));
+
+        List<LessonImportItemDto> items = List.of(
+                new LessonImportItemDto("   ", "<p>matn</p>", null),
+                new LessonImportItemDto("Yaxshi dars", "<p>matn</p>", null));
+
+        BulkLessonImportResultDto result = courseService.bulkImportLessonsWithTests(1L, 7L, items, List.of(), owner());
+
+        assertThat(result.sectionsCreated()).isEqualTo(1);
+        assertThat(result.errors()).hasSize(1);
     }
 
     // ===== reorderSections: yuqoriga/pastga ko'chirish va A-Z/Z-A saralash =====

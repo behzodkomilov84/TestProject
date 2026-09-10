@@ -1850,17 +1850,44 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
         `;
     }
 
+    // "📥" — shu Mavzuga bir nechta .docx (dars) + .xlsx (test) faylni
+    // BIRDANIGA import qilish (foydalanuvchi so'rovi, 2026-09-10).
+    const bulkImportBtn = (cachedCourse && cachedCourse.canManage && group.chapterId != null)
+        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openBulkImportModal(${group.chapterId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Darslar + testlarni paketli import qilish">📥</button>`
+        : "";
+
+    // Amallar ko'payib ketgani sabab (foydalanuvchi so'rovi, 2026-09-10:
+    // "actionlar ko'payib ketsa, ularni ham hide/unhide qiladigan qil") —
+    // endi HAMMASI "⋯" tugmasi orqali yig'ilib/ochilib turadigan alohida
+    // qatorda (har safar qayta chizilganda yopiq holatga qaytadi — oddiy
+    // va bashorat qilinadigan xulq-atvor).
+    const actionsHtml = `${moveBtns}${addTopicBtn}${bulkImportBtn}${exportChapterBtn}${renameBtn}${deleteWithTopicsBtn}`;
+    const hasActions = actionsHtml.trim() !== "";
+
     return `
         <div class="chapter-box ${isExpanded ? "expanded" : "collapsed"}">
             <h3 class="chapter-box-title" onclick="toggleChapterBox('${group.key}')" title="${isExpanded ? "Yig'ish" : "Ochish"}">
                 <span class="chapter-box-chevron">▸</span>
                 📂 ${escapeHtml(group.name)}
                 <span class="chapter-box-count">(dars — ${group.items.length} ta, jami testlar — ${totalQuestions} ta)</span>
-                <span class="chapter-box-actions">${moveBtns}${addTopicBtn}${exportChapterBtn}${renameBtn}${deleteWithTopicsBtn}</span>
+                ${hasActions ? `
+                <span class="chapter-box-actions">
+                    <button class="chapter-actions-toggle" onclick="event.stopPropagation(); toggleChapterActions('${group.key}')" title="Amallar">⋯</button>
+                    <span class="chapter-box-actions-extra hidden" id="chapterActionsExtra-${group.key}">${actionsHtml}</span>
+                </span>` : ""}
             </h3>
             ${bodyHtml}
         </div>
     `;
+}
+
+// "⋯" bosilganda — shu Mavzuning amallar qatorini ochadi/yopadi
+// (foydalanuvchi so'rovi, 2026-09-10). Holat saqlanmaydi — har qayta
+// chizishda (masalan boshqa amal bajarilganda) yopiq holatga qaytadi,
+// bu shunchaki tasodifiy ochiq qolib ketmasligi uchun ataylab shunday.
+function toggleChapterActions(key) {
+    const el = document.getElementById(`chapterActionsExtra-${key}`);
+    if (el) el.classList.toggle("hidden");
 }
 
 // Faqat "chapterKey" mavzusiga (yoki "none" — mavzusiz darslar
@@ -2653,6 +2680,233 @@ function showWordExportModal(title) {
 
 function closeCourseWordExportModal() {
     document.getElementById("courseWordExportModal").classList.remove("show");
+}
+
+// ===== "📥 Darslar + testlarni import qilish" (foydalanuvchi so'rovi,
+// 2026-09-10) — "Mavzu" kartochkasidan bir nechta .docx (dars matni,
+// rasmlari bilan) + mos nomli .xlsx (test savollari) fayllarni
+// BIRDANIGA import qilish. .docx -> HTML konvertatsiyasi mavjud
+// importDocxFile() bilan BIR XIL mexanizm (mammoth.js, brauzerda) —
+// faqat ko'p faylga aylantirilgan holda. .xlsx'lar esa haqiqiy fayl
+// sifatida serverga yuborilib, u yerda ExcelService orqali import
+// qilinadi (o'zgarmagan, mavjud mexanizm). =====
+
+let bulkImportChapterId = null;
+let bulkImportPairs = []; // [{title, docxFile, xlsxFile}]
+let bulkImportNeedsReload = false;
+
+function openBulkImportModal(chapterId, chapterName) {
+    bulkImportChapterId = chapterId;
+    bulkImportPairs = [];
+    bulkImportNeedsReload = false;
+
+    document.getElementById("bulkImportModalTitle").textContent = `📥 "${chapterName}" — darslar + testlarni import qilish`;
+    document.getElementById("bulkImportFileInput").value = "";
+    document.getElementById("bulkImportFilePickerLabel").textContent = "📎 Fayllarni tanlash (.docx + .xlsx)";
+
+    document.getElementById("bulkImportSelectStep").classList.remove("hidden");
+    document.getElementById("bulkImportPreview").classList.add("hidden");
+    document.getElementById("bulkImportPreview").innerHTML = "";
+    document.getElementById("bulkImportProgressStep").classList.add("hidden");
+    document.getElementById("bulkImportResultStep").classList.add("hidden");
+    document.getElementById("bulkImportResultStep").innerHTML = "";
+
+    document.getElementById("bulkImportConfirmBtn").classList.add("hidden");
+    document.getElementById("bulkImportCloseBtn").classList.add("hidden");
+    document.getElementById("bulkImportCancelBtn").classList.remove("hidden");
+
+    document.getElementById("bulkImportModal").classList.add("show");
+}
+
+function closeBulkImportModal() {
+    document.getElementById("bulkImportModal").classList.remove("show");
+    // Import muvaffaqiyatli yakunlangan bo'lsa — endi yangi darslar
+    // ko'rinishi uchun ro'yxatni yangilaymiz (oynani yopganda, jarayon
+    // paytida EMAS — natijani ko'rib ulgurishi uchun).
+    if (bulkImportNeedsReload) {
+        bulkImportNeedsReload = false;
+        loadCourse();
+    }
+}
+
+// "001. Fan nomi..docx" -> "001. Fan nomi." (faqat OXIRGI kengaytma
+// olib tashlanadi — sarlavhaning o'zida nuqta bo'lishi mumkin).
+function stripFileExtension(filename) {
+    const idx = filename.lastIndexOf(".");
+    return idx > 0 ? filename.substring(0, idx) : filename;
+}
+
+function handleBulkImportFilesSelected() {
+    const input = document.getElementById("bulkImportFileInput");
+    const files = Array.from(input.files || []);
+
+    if (files.length === 0) {
+        bulkImportPairs = [];
+        document.getElementById("bulkImportPreview").classList.add("hidden");
+        document.getElementById("bulkImportConfirmBtn").classList.add("hidden");
+        return;
+    }
+
+    if (files.length > 200) {
+        showAlertModal(`❌ Bir martada ko'pi bilan 200 ta fayl tanlash mumkin (siz ${files.length} ta tanladingiz).`);
+        input.value = "";
+        bulkImportPairs = [];
+        document.getElementById("bulkImportPreview").classList.add("hidden");
+        document.getElementById("bulkImportConfirmBtn").classList.add("hidden");
+        return;
+    }
+
+    // Bir xil BAZAVIY nomdagi (kengaytmasiz) .docx + .xlsx bir dars
+    // juftligi sifatida birlashtiriladi.
+    const byBase = new Map();
+    for (const file of files) {
+        const lower = file.name.toLowerCase();
+        const isDocx = lower.endsWith(".docx");
+        const isXlsx = lower.endsWith(".xlsx");
+        if (!isDocx && !isXlsx) continue;
+
+        const base = stripFileExtension(file.name);
+        if (!byBase.has(base)) byBase.set(base, { title: base, docxFile: null, xlsxFile: null });
+        const entry = byBase.get(base);
+        if (isDocx) entry.docxFile = file;
+        if (isXlsx) entry.xlsxFile = file;
+    }
+
+    // Faqat .docx BOR juftliklar dars sifatida yaratiladi — yolg'iz
+    // .xlsx (mos .docx'siz) e'tiborga olinmaydi (test mustaqil holda
+    // hech qaysi darsga tegishli bo'lolmaydi).
+    const allEntries = Array.from(byBase.values());
+    bulkImportPairs = allEntries.filter(e => e.docxFile != null);
+    const orphanXlsxCount = allEntries.filter(e => e.docxFile == null && e.xlsxFile != null).length;
+
+    document.getElementById("bulkImportFilePickerLabel").textContent =
+        `📎 ${files.length} ta fayl tanlandi — qaytadan tanlash uchun bosing`;
+
+    renderBulkImportPreview(orphanXlsxCount);
+}
+
+function renderBulkImportPreview(orphanXlsxCount) {
+    const withTests = bulkImportPairs.filter(p => p.xlsxFile != null).length;
+    const withoutTests = bulkImportPairs.length - withTests;
+
+    let html = `<div class="bulk-import-summary">
+        📄 <strong>${bulkImportPairs.length}</strong> ta dars topildi
+        (${withTests} tasi testlar bilan, ${withoutTests} tasi testsiz).
+    </div>`;
+
+    if (orphanXlsxCount > 0) {
+        html += `<div class="bulk-import-warning-line">⚠️ ${orphanXlsxCount} ta .xlsx fayl mos nomli .docx topilmagani uchun e'tiborga olinmadi.</div>`;
+    }
+
+    if (bulkImportPairs.length > 0) {
+        html += `<div class="bulk-import-pair-list">` + bulkImportPairs.map(p => `
+            <div class="bulk-import-pair-row">
+                <span class="bulk-import-pair-title">${escapeHtml(p.title)}</span>
+                <span class="bulk-import-pair-badge ${p.xlsxFile ? "has-test" : "no-test"}">${p.xlsxFile ? "✅ test bilan" : "⚠️ testsiz"}</span>
+            </div>
+        `).join("") + `</div>`;
+    }
+
+    const previewEl = document.getElementById("bulkImportPreview");
+    previewEl.innerHTML = html;
+    previewEl.classList.remove("hidden");
+
+    document.getElementById("bulkImportConfirmBtn").classList.toggle("hidden", bulkImportPairs.length === 0);
+}
+
+async function runBulkImport() {
+    if (!bulkImportPairs.length || !bulkImportChapterId) return;
+
+    document.getElementById("bulkImportSelectStep").classList.add("hidden");
+    document.getElementById("bulkImportConfirmBtn").classList.add("hidden");
+    document.getElementById("bulkImportCancelBtn").classList.add("hidden");
+    document.getElementById("bulkImportProgressStep").classList.remove("hidden");
+
+    const progressText = document.getElementById("bulkImportProgressText");
+    const items = [];
+    const xlsxFiles = [];
+
+    try {
+        // .docx -> HTML konvertatsiyasi BRAUZERDA (mammoth.js) — bitta
+        // faylli importDocxFile() bilan bir xil kutubxona/andoza, faqat
+        // ketma-ket bir nechta fayl uchun.
+        for (let i = 0; i < bulkImportPairs.length; i++) {
+            const pair = bulkImportPairs[i];
+            progressText.textContent = `Fayllar o'qilmoqda... (${i + 1}/${bulkImportPairs.length}) — ${pair.title}`;
+
+            let html = "";
+            try {
+                const arrayBuffer = await pair.docxFile.arrayBuffer();
+                const result = await mammoth.convertToHtml({ arrayBuffer });
+                html = result.value.replace(/<br\s*\/?>/gi, " ");
+            } catch (err) {
+                console.error(err);
+                html = `<p>⚠️ Bu darsning matnini o'qib bo'lmadi: ${escapeHtml(err.message)}</p>`;
+            }
+
+            items.push({
+                title: pair.title,
+                html: html,
+                xlsxFileName: pair.xlsxFile ? pair.xlsxFile.name : null
+            });
+            if (pair.xlsxFile) xlsxFiles.push(pair.xlsxFile);
+        }
+
+        progressText.textContent = "Serverga yuborilmoqda...";
+
+        const formData = new FormData();
+        formData.append("items", new Blob([JSON.stringify(items)], { type: "application/json" }));
+        xlsxFiles.forEach(f => formData.append("xlsxFiles", f, f.name));
+
+        const res = await fetch(`/api/courses/${COURSE_ID}/sections/bulk-import?chapterId=${bulkImportChapterId}`, {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        document.getElementById("bulkImportProgressStep").classList.add("hidden");
+
+        if (!res.ok) {
+            showBulkImportResult(null, data.error || "Import qilishda xatolik yuz berdi.");
+            return;
+        }
+
+        bulkImportNeedsReload = true;
+        showBulkImportResult(data, null);
+    } catch (err) {
+        console.error(err);
+        document.getElementById("bulkImportProgressStep").classList.add("hidden");
+        showBulkImportResult(null, "Tarmoq xatoligi: " + err.message);
+    }
+}
+
+function showBulkImportResult(data, fatalError) {
+    const resultEl = document.getElementById("bulkImportResultStep");
+
+    if (fatalError) {
+        resultEl.innerHTML = `<div class="bulk-import-fatal-error">❌ ${escapeHtml(fatalError)}</div>`;
+    } else {
+        let html = `<div class="bulk-import-stats">
+            <div class="bulk-import-stat"><span class="bulk-import-stat-num">${data.sectionsCreated}</span><span>dars yaratildi</span></div>
+            <div class="bulk-import-stat"><span class="bulk-import-stat-num">${data.sectionsWithTests}</span><span>testli</span></div>
+            <div class="bulk-import-stat"><span class="bulk-import-stat-num">${data.questionsImported}</span><span>savol import qilindi</span></div>
+        </div>`;
+
+        if (data.warnings && data.warnings.length) {
+            html += `<div class="bulk-import-warnings"><h4>⚠️ Ogohlantirishlar</h4>` +
+                data.warnings.map(w => `<div class="bulk-import-warning-line">${escapeHtml(w)}</div>`).join("") + `</div>`;
+        }
+        if (data.errors && data.errors.length) {
+            html += `<div class="bulk-import-errors"><h4>❌ Xatolar</h4>` +
+                data.errors.map(e => `<div class="bulk-import-warning-line">${escapeHtml(e)}</div>`).join("") + `</div>`;
+        }
+
+        resultEl.innerHTML = html;
+    }
+
+    resultEl.classList.remove("hidden");
+    document.getElementById("bulkImportCloseBtn").classList.remove("hidden");
 }
 
 // "Testlar" o'chirilsa — "Test javoblari" ma'nosiz bo'lib qoladi

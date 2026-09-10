@@ -88,30 +88,34 @@
                 kutmasdan) beriladi.
             </p>
             <div class="manual-subscription-form">
-                <select id="manualUserSelect"></select>
+                <!-- Oddiy <select> o'rniga qidiriladigan combobox
+                     (foydalanuvchi so'rovi, 2026-09-10: "foydalanuvchi
+                     nomini tez topadigan mexanizm o'ylab top va joyla.
+                     Ismlar A-Z tursin. username bo'yicha qidiruv ham
+                     bo'lsin") — adminSubscriptions.js: filterManualUserDropdown() /
+                     selectManualUserFromDataset(). -->
+                <div class="user-search-combo">
+                    <input type="text" id="manualUserSearchInput" class="user-search-input"
+                           placeholder="🔍 Ism yoki username bo'yicha qidirish..."
+                           autocomplete="off"
+                           oninput="filterManualUserDropdown()"
+                           onfocus="filterManualUserDropdown()"
+                           onblur="hideManualUserDropdownDelayed()">
+                    <input type="hidden" id="manualUserSelectedId">
+                    <div id="manualUserDropdownList" class="user-search-dropdown hidden"></div>
+                </div>
                 <input type="number" id="manualAmount" placeholder="Summa (so'm)" min="1">
-                <input type="number" id="manualDuration" placeholder="Necha oy" value="1" min="1">
+                <input type="number" id="manualDuration" placeholder="Necha oy (standart: 1)" min="1">
                 <input type="text" id="manualNote" placeholder="Izoh (ixtiyoriy)">
                 <button onclick="createManualSubscription()">✅ Tasdiqlash va ADMIN berish</button>
             </div>
         </div>
 
-        <!-- Click'ning minimal tranzaksiya summasi — .env/redeploy'siz
-             shu yerdan o'zgartiriladi (PaymentOrderService.createOrder shu
-             chegaradan kam summali buyurtmani rad etadi). -->
-        <div class="admin-sub-box">
-            <h2>⚙️ To'lov sozlamalari</h2>
-            <p class="admin-sub-desc">
-                Click to'lov tizimi juda kichik summadagi tranzaksiyalarni qabul qilmaydi.
-                Shu yerda belgilangan summadan KAM bo'lgan har qanday to'lov (ADMIN yoki
-                kurs obunasi, muddatidan qat'i nazar) Click orqali boshlanishidan oldin
-                avtomatik rad etiladi ("To'lov summasi minimal chegaradan kam" xatosi bilan).
-            </p>
-            <div class="manual-subscription-form">
-                <input type="number" id="minAmountInput" placeholder="Minimal summa (so'm)" min="1">
-                <button onclick="saveMinAmount()">💾 Saqlash</button>
-            </div>
-        </div>
+        <!-- "⚙️ To'lov sozlamalari" bo'limi OLIB TASHLANDI — bu faqat
+             ADMIN obunalariga emas, BARCHA to'lovlarga (kurs obunalari
+             ham) tegishli, shuning uchun endi alohida "/payment-settings"
+             sahifasida, OWNER Panel'dagi "⚙️ Sozlamalar" tugmasi orqali
+             (foydalanuvchi so'rovi, 2026-09-10). -->
     </div>
 </div>
 

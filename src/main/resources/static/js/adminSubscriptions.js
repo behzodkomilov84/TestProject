@@ -40,7 +40,6 @@ function formatDateTimeDMY(date) {
 document.addEventListener("DOMContentLoaded", () => {
     loadUsersForSelect();
     loadAllSubscriptions();
-    loadMinAmount();
 });
 
 function loadUsersForSelect() {
@@ -50,13 +49,62 @@ function loadUsersForSelect() {
         .catch(err => console.error(err));
 }
 
-function populateManualUserSelect(users) {
-    const select = document.getElementById("manualUserSelect");
-    if (!select) return;
+// "Foydalanuvchi nomini tez topadigan mexanizm" (foydalanuvchi so'rovi,
+// 2026-09-10) — oddiy <select> o'rniga qidiriladigan combobox: Ism
+// Familiya (yo'q bo'lsa username) bo'yicha A-Z saralanadi, qidiruv
+// ikkalasi (Ism Familiya VA username) bo'yicha ham ishlaydi.
+let allUsersForManualSelect = [];
 
-    select.innerHTML = users
-        .map(u => `<option value="${u.id}">${u.username}</option>`)
-        .join("");
+function populateManualUserSelect(users) {
+    allUsersForManualSelect = users
+        .map(u => ({
+            id: u.id,
+            username: u.username,
+            displayName: [u.firstName, u.lastName].filter(Boolean).join(" ") || u.username
+        }))
+        .sort((a, b) => a.displayName.localeCompare(b.displayName, "uz"));
+}
+
+function filterManualUserDropdown() {
+    const query = document.getElementById("manualUserSearchInput").value.trim().toLowerCase();
+    const list = document.getElementById("manualUserDropdownList");
+
+    const matches = (query
+        ? allUsersForManualSelect.filter(u =>
+            u.displayName.toLowerCase().includes(query) || u.username.toLowerCase().includes(query))
+        : allUsersForManualSelect
+    ).slice(0, 50); // juda uzun ro'yxat DOM'ni yuklab qo'ymasin
+
+    list.innerHTML = matches.length
+        ? matches.map(u => `
+            <div class="user-search-option" data-user-id="${u.id}" onmousedown="selectManualUserFromDataset(this)">
+                <span class="user-search-option-name">${escapeHtmlAdmin(u.displayName)}</span>
+                <span class="user-search-option-username">@${escapeHtmlAdmin(u.username)}</span>
+            </div>
+        `).join("")
+        : `<div class="user-search-empty">Hech kim topilmadi</div>`;
+
+    list.classList.remove("hidden");
+}
+
+function selectManualUserFromDataset(el) {
+    const id = el.dataset.userId;
+    const user = allUsersForManualSelect.find(u => String(u.id) === id);
+    if (!user) return;
+
+    document.getElementById("manualUserSelectedId").value = user.id;
+    document.getElementById("manualUserSearchInput").value = user.displayName;
+    document.getElementById("manualUserDropdownList").classList.add("hidden");
+}
+
+// "onmousedown" (blur'dan OLDIN ishlaydi) orqali tanlov ulgurishi uchun
+// kichik kechikish bilan yopiladi — aks holda oddiy "onblur" ro'yxatni
+// klik yetib bormasdan yashirib qo'yardi.
+function hideManualUserDropdownDelayed() {
+    setTimeout(() => {
+        const list = document.getElementById("manualUserDropdownList");
+        if (list) list.classList.add("hidden");
+    }, 150);
 }
 
 // "📋 Barcha obunalar" — PENDING/CONFIRMED/EXPIRED/CANCELLED barchasi
@@ -248,13 +296,13 @@ async function deleteAdminSubscriptionPermanently(id) {
 }
 
 async function createManualSubscription() {
-    const userId = Number(document.getElementById("manualUserSelect").value);
+    const userId = Number(document.getElementById("manualUserSelectedId").value);
     const amount = Number(document.getElementById("manualAmount").value);
     const durationMonths = Number(document.getElementById("manualDuration").value) || 1;
     const note = document.getElementById("manualNote").value.trim();
 
     if (!userId || !amount || amount <= 0) {
-        showAlertModal("❌ Foydalanuvchi va to'g'ri summani kiriting");
+        showAlertModal("❌ Foydalanuvchini ro'yxatdan tanlang va to'g'ri summani kiriting");
         return;
     }
 
@@ -273,7 +321,10 @@ async function createManualSubscription() {
         }
 
         showAlertModal("✅ To'lov qayd qilindi, ADMIN huquqi berildi.");
+        document.getElementById("manualUserSearchInput").value = "";
+        document.getElementById("manualUserSelectedId").value = "";
         document.getElementById("manualAmount").value = "";
+        document.getElementById("manualDuration").value = "";
         document.getElementById("manualNote").value = "";
         loadAllSubscriptions();
     } catch (err) {
@@ -282,43 +333,10 @@ async function createManualSubscription() {
     }
 }
 
-function loadMinAmount() {
-    const input = document.getElementById("minAmountInput");
-    if (!input) return;
-
-    fetch("/api/payments/min-amount")
-        .then(r => r.ok ? r.json() : null)
-        .then(data => {
-            if (data) input.value = data.minAmountSom;
-        })
-        .catch(err => console.error(err));
-}
-
-async function saveMinAmount() {
-    const value = Number(document.getElementById("minAmountInput").value);
-
-    if (!value || value <= 0) {
-        showAlertModal("❌ To'g'ri summa kiriting");
-        return;
-    }
-
-    try {
-        const res = await fetch("/api/payments/min-amount", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ minAmountSom: value })
-        });
-
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-            showAlertModal(data.error || "Xatolik yuz berdi");
-            return;
-        }
-
-        showAlertModal("✅ Minimal summa saqlandi: " + data.minAmountSom + " so'm");
-    } catch (err) {
-        console.error(err);
-        showAlertModal("Network error");
-    }
-}
+// "⚙️ To'lov sozlamalari" (loadMinAmount/saveMinAmount) OLIB
+// TASHLANDI — bu faqat ADMIN obunalariga emas, BARCHA to'lovlarga
+// (kurs obunalari ham) tegishli bo'lgani uchun, endi alohida
+// "⚙️ Sozlamalar" sahifasida (paymentSettings.js — foydalanuvchi
+// so'rovi, 2026-09-10: "bu faqat admin uchun bo'lmasa, barcha
+// to'lovlar uchun bo'lsa, bu yerdan olib, alohida ⚙️ Sozlamalar
+// tugmasi bilan OWNER PANEL ga joyla").

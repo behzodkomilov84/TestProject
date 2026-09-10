@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>To'lov sozlamalari</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+    <link rel="stylesheet" href="/css/users.css">
+    <link rel="stylesheet" href="/css/navbar.css">
+
+    <script src="/js/paymentSettings.js" defer></script>
+    <script src="/js/navbar.js" defer></script>
+</head>
+
+<body th:attr="data-role=${role}">
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container">
+    <header class="top-bar">
+        <h1>⚙️ To'lov sozlamalari</h1>
+        <button class="back-btn" onclick="history.back()">← Назад</button>
+    </header>
+
+    <!-- "/admin-subscriptions"dan ajratildi (foydalanuvchi so'rovi,
+         2026-09-10: "bu faqat admin uchun bo'lmasa, barcha to'lovlar
+         uchun bo'lsa") — Click'ning minimal tranzaksiya summasi ADMIN-rol
+         VA kurs to'lovlarining IKKALASIGA ham tegishli. -->
+    <div class="subscriptions-panel" style="margin-top:0; padding-top:0; border-top:none;">
+        <div class="admin-sub-box">
+            <h2>💳 Click — minimal tranzaksiya summasi</h2>
+            <p class="admin-sub-desc">
+                Click to'lov tizimi juda kichik summadagi tranzaksiyalarni qabul qilmaydi.
+                Shu yerda belgilangan summadan KAM bo'lgan har qanday to'lov —
+                <strong>ADMIN-rol obunasi</strong> ("/admin-subscriptions") <strong>yoki
+                kurs obunasi</strong> ("/courses/subscriptions"), muddatidan qat'i nazar —
+                Click orqali boshlanishidan oldin avtomatik rad etiladi ("To'lov summasi
+                minimal chegaradan kam" xatosi bilan). O'zgartirish darhol kuchga kiradi,
+                qayta deploy shart emas.
+            </p>
+            <div class="manual-subscription-form">
+                <input type="number" id="minAmountInput" placeholder="Minimal summa (so'm)" min="1">
+                <button onclick="saveMinAmount()">💾 Saqlash</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+
+</html>

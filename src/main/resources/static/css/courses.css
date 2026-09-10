@@ -1193,6 +1193,216 @@ body {
     box-shadow: 0 2px 5px rgba(220, 38, 38, .4);
 }
 
+/* ========================================================================
+   "📥 Darslar + testlarni import qilish" oynasi (foydalanuvchi so'rovi,
+   2026-09-10) — courseDetail.js: openBulkImportModal() va atrofidagilar.
+   ======================================================================== */
+.bulk-import-modal {
+    width: min(560px, 92vw);
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.bulk-import-intro {
+    line-height: 1.6;
+}
+
+.bulk-import-intro code {
+    background: #e2e8f0;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+/* Fayl tanlash tugmasi — chiroyli, ko'zga tashlanadigan (foydalanuvchi
+   so'rovi: "Knopkalarga chiroyli css qo'sh"). */
+.bulk-import-file-picker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 18px;
+    border: 2px dashed #93c5fd;
+    border-radius: 12px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    text-align: center;
+    transition: background .15s ease, border-color .15s ease;
+}
+
+.bulk-import-file-picker:hover {
+    background: #dbeafe;
+    border-color: #60a5fa;
+}
+
+.bulk-import-preview {
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.bulk-import-summary {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 10px 14px;
+}
+
+.bulk-import-pair-list {
+    max-height: 220px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 6px;
+}
+
+.bulk-import-pair-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.bulk-import-pair-row:hover {
+    background: #f8fafc;
+}
+
+.bulk-import-pair-title {
+    color: #1e293b;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.bulk-import-pair-badge {
+    flex-shrink: 0;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+.bulk-import-pair-badge.has-test {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.bulk-import-pair-badge.no-test {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.bulk-import-progress {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 30px 10px;
+}
+
+.bulk-import-spinner {
+    width: 34px;
+    height: 34px;
+    border: 4px solid #dbeafe;
+    border-top-color: #185ABD;
+    border-radius: 50%;
+    animation: bulkImportSpin 0.8s linear infinite;
+}
+
+@keyframes bulkImportSpin {
+    to { transform: rotate(360deg); }
+}
+
+#bulkImportProgressText {
+    font-size: 13px;
+    color: #475569;
+    text-align: center;
+    margin: 0;
+}
+
+.bulk-import-result {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.bulk-import-stats {
+    display: flex;
+    gap: 10px;
+}
+
+.bulk-import-stat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 12px 8px;
+    font-size: 12px;
+    color: #64748b;
+    text-align: center;
+}
+
+.bulk-import-stat-num {
+    font-size: 22px;
+    font-weight: 800;
+    color: #103F91;
+}
+
+.bulk-import-warnings h4,
+.bulk-import-errors h4 {
+    margin: 0 0 6px;
+    font-size: 13px;
+}
+
+.bulk-import-warnings {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 10px 14px;
+}
+
+.bulk-import-errors {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 10px 14px;
+}
+
+.bulk-import-warning-line {
+    font-size: 12px;
+    color: #475569;
+    line-height: 1.6;
+    word-break: break-word;
+}
+
+.bulk-import-fatal-error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    color: #dc2626;
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-weight: 600;
+    font-size: 13px;
+}
+
 .course-manage-panel {
     background: white;
     border-radius: 12px;
@@ -1501,6 +1711,41 @@ body {
     align-items: center;
     gap: 8px;
     margin-left: auto;
+}
+
+/* "⋯" — amallar soni ko'payib ketgani sabab, endi HAMMASI shu tugma
+   orqali ochilib/yopilib turadi (foydalanuvchi so'rovi, 2026-09-10:
+   "actionlar ko'payib ketsa, ularni ham hide/unhide qiladigan qil"). */
+.chapter-actions-toggle {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #475569;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background .15s ease, border-color .15s ease;
+}
+
+.chapter-actions-toggle:hover {
+    background: #eef2f7;
+    border-color: #cbd5e1;
+}
+
+.chapter-box-actions-extra {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.chapter-box-actions-extra.hidden {
+    display: none;
 }
 
 /* "✏️" — bo'lim nomini tahrirlash (renameChapterPrompt, courseDetail.js).
