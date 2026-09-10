@@ -14,7 +14,6 @@ import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.AssignmentAttemptService;
 import behzoddev.testproject.service.OnlineUserTracker;
 import behzoddev.testproject.service.StudentService;
-import behzoddev.testproject.service.SubscriptionService;
 import behzoddev.testproject.service.TestSessionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,8 +55,6 @@ class TelegramUserServiceTest {
     private AssignmentAttemptService assignmentAttemptService;
     @Mock
     private AssignmentRepository assignmentRepository;
-    @Mock
-    private SubscriptionService subscriptionService;
     @Mock
     private TestSessionService testSessionService;
     @Mock

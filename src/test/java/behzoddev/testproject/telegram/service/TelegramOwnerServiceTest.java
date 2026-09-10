@@ -1,7 +1,6 @@
 package behzoddev.testproject.telegram.service;
 
 import behzoddev.testproject.dao.UserRepository;
-import behzoddev.testproject.dto.subscription.SubscriptionDto;
 import behzoddev.testproject.dto.subscription.SubscriptionStatsDto;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.User;
@@ -19,7 +18,6 @@ import org.springframework.security.core.Authentication;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -128,63 +126,20 @@ class TelegramOwnerServiceTest {
     }
 
     // ===== To'lovlar =====
+    // "Kutilayotgan so'rovlar" ro'yxati/tasdiqlash/rad etish OLIB
+    // TASHLANDI (foydalanuvchi so'rovi, 2026-09-10) — endi faqat
+    // statistika.
 
     @Test
-    void listPendingPayments_none_showsStatsOnly() {
-        when(subscriptionService.listPending()).thenReturn(List.of());
+    void showPaymentStats_displaysRevenueAndActiveSubscribers() {
         when(subscriptionService.getStats()).thenReturn(SubscriptionStatsDto.builder()
                 .totalRevenue(BigDecimal.valueOf(500_000)).thisMonthRevenue(BigDecimal.valueOf(100_000))
                 .totalConfirmedCount(10).activeSubscribersCount(3).pendingCount(0)
                 .monthlyBreakdown(List.of()).build());
 
-        SendMessage msg = ownerService.listPendingPayments(owner);
+        SendMessage msg = ownerService.showPaymentStats(owner);
 
-        assertThat(msg.getText()).contains("kutilayotgan so'rov yo'q");
-    }
-
-    @Test
-    void listPendingPayments_hasPending_listsButtons() {
-        when(subscriptionService.listPending()).thenReturn(List.of(
-                new SubscriptionDto(1L, 5L, "student1", BigDecimal.valueOf(50_000), "TELEGRAM", "PENDING",
-                        null, null, null, LocalDateTime.now())
-        ));
-        when(subscriptionService.getStats()).thenReturn(SubscriptionStatsDto.builder()
-                .totalRevenue(BigDecimal.ZERO).thisMonthRevenue(BigDecimal.ZERO)
-                .totalConfirmedCount(0).activeSubscribersCount(0).pendingCount(1)
-                .monthlyBreakdown(List.of()).build());
-
-        SendMessage msg = ownerService.listPendingPayments(owner);
-
-        assertThat(msg.getReplyMarkup()).isNotNull();
-    }
-
-    @Test
-    void showPaymentDetail_alreadyHandled_saysSo() {
-        when(subscriptionService.listPending()).thenReturn(List.of());
-
-        SendMessage msg = ownerService.showPaymentDetail(CHAT_ID, 999L);
-
-        assertThat(msg.getText()).contains("allaqachon ko'rib chiqilgan");
-    }
-
-    @Test
-    void confirmPayment_success_grantsAdmin() {
-        when(userRepository.findByTelegramId(CHAT_ID)).thenReturn(Optional.of(owner));
-
-        SendMessage msg = ownerService.confirmPayment(CHAT_ID, 1L);
-
-        verify(subscriptionService).confirm(1L, null, owner);
-        assertThat(msg.getText()).contains("✅");
-    }
-
-    @Test
-    void rejectPayment_success_cancels() {
-        when(userRepository.findByTelegramId(CHAT_ID)).thenReturn(Optional.of(owner));
-
-        SendMessage msg = ownerService.rejectPayment(CHAT_ID, 1L);
-
-        verify(subscriptionService).cancel(1L, owner);
-        assertThat(msg.getText()).contains("rad etildi");
+        assertThat(msg.getText()).contains("500 000").contains("100 000").contains("3");
     }
 
     // ===== Tizim sozlamalari =====

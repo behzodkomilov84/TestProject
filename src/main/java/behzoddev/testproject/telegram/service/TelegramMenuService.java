@@ -162,11 +162,9 @@ public class TelegramMenuService {
 
         if (user.hasRole("ROLE_OWNER")) {
             sb.append(BTN_USERS).append(" — rol berish/olib tashlash, blokdan chiqarish.\n");
-            sb.append(BTN_PAYMENTS).append(" — kutilayotgan to'lovlarni tasdiqlash/rad etish, hisobot.\n");
+            sb.append(BTN_PAYMENTS).append(" — to'lov statistikasi (tushum, faol obunachilar).\n");
             sb.append(BTN_SETTINGS).append(" — Click minimal tranzaksiya summasi.\n");
             sb.append(BTN_BROADCAST).append(" — barcha foydalanuvchilarga xabar.\n");
-        } else {
-            sb.append("\n/pay &lt;summa&gt; — to'lov chekini qo'lda tasdiqlatish uchun so'rov (masalan: /pay 50000).\n");
         }
 
         sb.append("/cancel — joriy amalni bekor qilish.\n");

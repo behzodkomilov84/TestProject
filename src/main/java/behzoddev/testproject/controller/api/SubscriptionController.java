@@ -1,6 +1,5 @@
 package behzoddev.testproject.controller.api;
 
-import behzoddev.testproject.dto.subscription.ConfirmSubscriptionDto;
 import behzoddev.testproject.dto.subscription.CreateSubscriptionDto;
 import behzoddev.testproject.dto.subscription.SubscriptionDto;
 import behzoddev.testproject.dto.subscription.SubscriptionStatsDto;
@@ -34,17 +33,11 @@ public class SubscriptionController {
         return ResponseEntity.ok(subscriptionService.createManual(dto, owner));
     }
 
-    // Telegram orqali kelgan (yoki boshqa manbadan PENDING holatidagi)
-    // so'rovni tasdiqlash — ADMIN roli shu muddatga beriladi.
-    @PostMapping("/{id}/confirm")
-    public ResponseEntity<SubscriptionDto> confirm(
-            @PathVariable Long id,
-            @RequestBody(required = false) ConfirmSubscriptionDto dto,
-            @AuthenticationPrincipal User owner
-    ) {
-        Integer months = dto == null ? null : dto.durationMonths();
-        return ResponseEntity.ok(subscriptionService.confirm(id, months, owner));
-    }
+    // "/{id}/confirm" (PENDING so'rovni tasdiqlash) OLIB TASHLANDI
+    // (foydalanuvchi so'rovi, 2026-09-10: "bu logikani barcha joydan
+    // olib tashla" — qo'lda/botdagi PENDING so'rov yaratish yo'li
+    // umuman yo'qotildi, shuning uchun tasdiqlaydigan hech narsa
+    // qolmadi).
 
     // PENDING so'rovni rad etadi YOKI allaqachon FAOL (CONFIRMED) obunani
     // bekor qilib, ROLE_ADMIN'ni darhol olib tashlaydi (foydalanuvchi
@@ -74,13 +67,11 @@ public class SubscriptionController {
         return ResponseEntity.ok().build();
     }
 
+    // "status=PENDING" filtri OLIB TASHLANDI — SubscriptionService.listPending()
+    // endi mavjud emas (foydalanuvchi so'rovi, 2026-09-10). "Barcha
+    // obunalar" jadvali (listAll) baribir HAMMA holatni o'z ichiga oladi.
     @GetMapping
-    public ResponseEntity<List<SubscriptionDto>> list(
-            @RequestParam(required = false) String status
-    ) {
-        if ("PENDING".equalsIgnoreCase(status)) {
-            return ResponseEntity.ok(subscriptionService.listPending());
-        }
+    public ResponseEntity<List<SubscriptionDto>> list() {
         return ResponseEntity.ok(subscriptionService.listAll());
     }
 

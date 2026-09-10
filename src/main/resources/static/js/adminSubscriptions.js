@@ -29,9 +29,16 @@ function formatDateTimeDMY(date) {
     return `${formatDateDMY(d)} ${hours}:${minutes}`;
 }
 
+// "⏳ Tasdiq kutilayotgan to'lovlar" bo'limi (va uni boshqargan
+// loadPendingSubscriptions/renderPendingSubscriptions/confirmSubscription/
+// cancelSubscription funksiyalari) OLIB TASHLANDI (foydalanuvchi so'rovi,
+// 2026-09-10: "bu logikani barcha joydan olib tashla, botdan ham.
+// To'lovlarni faqat hozircha clickdan qabul qilamiz"). "Barcha
+// obunalar" jadvali (pastda) hali ham eski PENDING qatorlarni (agar
+// tarixda qolgan bo'lsa) ko'rsatadi — faqat yangi qo'lda so'rov
+// yaratish yo'li endi yo'q.
 document.addEventListener("DOMContentLoaded", () => {
     loadUsersForSelect();
-    loadPendingSubscriptions();
     loadAllSubscriptions();
     loadMinAmount();
 });
@@ -50,83 +57,6 @@ function populateManualUserSelect(users) {
     select.innerHTML = users
         .map(u => `<option value="${u.id}">${u.username}</option>`)
         .join("");
-}
-
-function loadPendingSubscriptions() {
-    fetch("/api/subscriptions?status=PENDING")
-        .then(r => r.ok ? r.json() : [])
-        .then(renderPendingSubscriptions)
-        .catch(err => console.error(err));
-}
-
-function renderPendingSubscriptions(subscriptions) {
-    const tbody = document.getElementById("pendingTableBody");
-    if (!tbody) return;
-
-    if (!subscriptions.length) {
-        tbody.innerHTML = `<tr><td colspan="5" class="empty-row">Kutilayotgan so'rov yo'q</td></tr>`;
-        return;
-    }
-
-    tbody.innerHTML = subscriptions.map(s => `
-        <tr>
-            <td>${s.username}</td>
-            <td>${s.amount} so'm</td>
-            <td>${s.source}</td>
-            <td>${formatDateTimeDMY(s.createdAt)}</td>
-            <td>
-                <button class="action-btn" onclick="confirmSubscription(${s.id})" title="Tasdiqlash">✅</button>
-                <button class="action-btn" onclick="cancelSubscription(${s.id})" title="Rad etish">❌</button>
-            </td>
-        </tr>
-    `).join("");
-}
-
-async function confirmSubscription(id) {
-    const months = await showPromptModal("ADMIN huquqi necha oyga beriladi?", "1");
-    if (months === null) return;
-
-    try {
-        const res = await fetch(`/api/subscriptions/${id}/confirm`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ durationMonths: Number(months) || 1 })
-        });
-
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-            showAlertModal(data.error || "Xatolik yuz berdi");
-            return;
-        }
-
-        showAlertModal("✅ Tasdiqlandi, ADMIN huquqi berildi.");
-        loadPendingSubscriptions();
-        loadAllSubscriptions();
-    } catch (err) {
-        console.error(err);
-        showAlertModal("Network error");
-    }
-}
-
-async function cancelSubscription(id) {
-    if (!await showConfirmModal("So'rovni rad etmoqchimisiz?")) return;
-
-    try {
-        const res = await fetch(`/api/subscriptions/${id}/cancel`, { method: "POST" });
-        const data = await res.json().catch(() => ({}));
-
-        if (!res.ok) {
-            showAlertModal(data.error || "Xatolik yuz berdi");
-            return;
-        }
-
-        loadPendingSubscriptions();
-        loadAllSubscriptions();
-    } catch (err) {
-        console.error(err);
-        showAlertModal("Network error");
-    }
 }
 
 // "📋 Barcha obunalar" — PENDING/CONFIRMED/EXPIRED/CANCELLED barchasi

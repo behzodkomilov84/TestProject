@@ -72,7 +72,10 @@ public class TelegramConfig {
                     BotCommand.builder().command("start").description("Botni ishga tushirish / asosiy menyu").build(),
                     BotCommand.builder().command("menu").description("Asosiy menyuni qayta ko'rsatish").build(),
                     BotCommand.builder().command("link").description("Akkauntni ulash (masalan: /link 123456)").build(),
-                    BotCommand.builder().command("pay").description("To'lov so'rovi yuborish (masalan: /pay 50000)").build(),
+                    // "/pay" OLIB TASHLANDI (foydalanuvchi so'rovi, 2026-09-10:
+                    // "To'lovlarni faqat hozircha clickdan qabul qilamiz") —
+                    // ADMIN huquqini sotib olish endi faqat "💳 Obunam"
+                    // menyusidagi Click tugmasi orqali.
                     BotCommand.builder().command("cancel").description("Joriy amalni bekor qilish").build()
             );
 

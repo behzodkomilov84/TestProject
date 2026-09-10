@@ -95,60 +95,17 @@ public class SubscriptionService {
         return toDto(subscription);
     }
 
-    // Telegram bot orqali kelgan to'lov so'rovi — hali tasdiqlanmagan holatda
-    // yaratiladi, OWNER /users sahifasida ko'rib chiqib tasdiqlaydi/rad etadi.
-    @Transactional
-    public SubscriptionDto createPendingFromTelegram(Long telegramId, BigDecimal amount) {
-        User user = userRepository.findByTelegramId(telegramId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Foydalanuvchi topilmadi. Avval saytda Telegramni ulang."));
-
-        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("To'lov summasi noto'g'ri");
-        }
-
-        Subscription subscription = Subscription.builder()
-                .user(user)
-                .amount(amount)
-                .source(SubscriptionSource.TELEGRAM)
-                .status(SubscriptionStatus.PENDING)
-                .build();
-
-        subscriptionRepository.save(subscription);
-
-        log.info("Obuna so'rovi (TELEGRAM) yaratildi: user={}, summa={}", user.getUsername(), amount);
-
-        return toDto(subscription);
-    }
-
-    @Transactional
-    public SubscriptionDto confirm(Long subscriptionId, Integer durationMonths, User owner) {
-        Subscription subscription = subscriptionRepository.findById(subscriptionId)
-                .orElseThrow(() -> new NoSuchElementException("So'rov topilmadi"));
-
-        if (subscription.getStatus() != SubscriptionStatus.PENDING) {
-            throw new IllegalArgumentException("Bu so'rov allaqachon ko'rib chiqilgan");
-        }
-
-        int months = durationMonths == null ? DEFAULT_DURATION_MONTHS : durationMonths;
-        LocalDateTime now = LocalDateTime.now();
-
-        subscription.setStatus(SubscriptionStatus.CONFIRMED);
-        subscription.setStartDate(now);
-        subscription.setEndDate(now.plusMonths(months));
-        subscription.setConfirmedBy(owner);
-
-        grantAdmin(subscription.getUser(), owner);
-
-        notificationService.create(subscription.getUser(),
-                "✅ ADMIN huquqingiz tasdiqlandi! Endi " + months + " oy davomida o'qituvchi sifatida ishlashingiz mumkin.",
-                "/profile");
-
-        log.info("Obuna so'rovi tasdiqlandi: user={}, muddat={} oy, owner={}",
-                subscription.getUser().getUsername(), months, owner.getUsername());
-
-        return toDto(subscription);
-    }
+    // "createPendingFromTelegram" (Telegram bot "/pay <summa>" qo'lda
+    // to'lov so'rovi) va "confirm" (o'sha PENDING so'rovni OWNER
+    // tasdiqlashi) OLIB TASHLANDI (foydalanuvchi so'rovi, 2026-09-10:
+    // "bu logikani barcha joydan olib tashla, botdan ham. To'lovlarni
+    // faqat hozircha clickdan qabul qilamiz"). ADMIN huquqini olish
+    // endi FAQAT ikki yo'l bilan: Click orqali onlayn to'lov
+    // (confirmOnline — avtomatik CONFIRMED) yoki OWNER'ning qo'lda
+    // qayd qilishi (createManual — darhol CONFIRMED). Eski PENDING
+    // qatorlar (agar tarixda qolgan bo'lsa) hali ham "Barcha
+    // obunalar"da ko'rinadi va cancel()/delete() orqali boshqarilishi
+    // mumkin — faqat ularni ENDI hech kim yaratolmaydi.
 
     // Click orqali avtomatik to'lov muvaffaqiyatli yakunlanganda
     // (PaymentOrderService.markPaid) chaqiriladi — inson (OWNER) ishtirok
@@ -437,12 +394,6 @@ public class SubscriptionService {
             total = total.add(amount);
             count++;
         }
-    }
-
-    @Transactional(readOnly = true)
-    public List<SubscriptionDto> listPending() {
-        return subscriptionRepository.findByStatusOrderByCreatedAtDesc(SubscriptionStatus.PENDING)
-                .stream().map(this::toDto).toList();
     }
 
     @Transactional(readOnly = true)

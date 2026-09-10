@@ -31,41 +31,15 @@
          tushuntiruvchi qisqa matn (.admin-sub-desc) qo'shildi. -->
     <div class="subscriptions-panel" style="margin-top:0; padding-top:0; border-top:none;">
 
-        <div class="admin-sub-box">
-            <h2>⏳ Tasdiq kutilayotgan to'lovlar</h2>
-            <!-- Foydalanuvchi so'rovi, 2026-09-10: "nimaga ishlaydi? Agar
-                 kerak bo'lmasa olib tashlash kerak" — TEKSHIRILDI: hali
-                 ham FAOL va kerakli funksiya, o'chirilmagan. Bu Click
-                 orqali ONLAYN to'lovdan (avtomatik tasdiqlanadi, bu yerga
-                 umuman tushmaydi) FARQLI — Telegram botda "/pay <summa>"
-                 buyrug'i bilan (chek/skrinshot alohida xabar sifatida
-                 yuborilib) qo'lda so'ralgan to'lovlar shu yerda
-                 to'planadi. -->
-            <p class="admin-sub-desc">
-                Bu yerga faqat botda <code>/pay &lt;summa&gt;</code> buyrug'i orqali qo'lda
-                yuborilgan to'lov so'rovlari tushadi (foydalanuvchi chek/skrinshotni botga
-                alohida rasm sifatida yuboradi, siz uni Telegram'da ko'rib tasdiqlaysiz yoki
-                rad etasiz). Click orqali onlayn to'langan obunalar bu yerga TUSHMAYDI —
-                ular avtomatik tasdiqlanib, to'g'ridan-to'g'ri pastdagi "Barcha obunalar"da
-                paydo bo'ladi.
-            </p>
-            <div class="table-scroll">
-            <table class="subscriptions-table">
-                <thead>
-                <tr>
-                    <th>Foydalanuvchi</th>
-                    <th>Summa</th>
-                    <th>Manba</th>
-                    <th>So'rov sanasi</th>
-                    <th>Amallar</th>
-                </tr>
-                </thead>
-                <tbody id="pendingTableBody">
-                    <tr><td colspan="5" class="empty-row">Kutilayotgan so'rov yo'q</td></tr>
-                </tbody>
-            </table>
-            </div>
-        </div>
+        <!-- "⏳ Tasdiq kutilayotgan to'lovlar" bo'limi OLIB TASHLANDI
+             (foydalanuvchi so'rovi, 2026-09-10: "bu logikani barcha
+             joydan olib tashla, botdan ham. To'lovlarni faqat hozircha
+             clickdan qabul qilamiz"). Qo'lda ("/pay <summa>" bot
+             buyrug'i orqali chek/skrinshot bilan) so'ralgan to'lov
+             endi umuman mumkin emas — YAGONA yo'l Click orqali onlayn
+             to'lov (avtomatik tasdiqlanadi) yoki OWNER'ning pastdagi
+             "➕ To'lovni qo'lda qayd qilib, ADMIN berish" orqali
+             to'g'ridan-to'g'ri CONFIRMED holatda yaratishi. -->
 
         <!-- "Barcha obunalar" — PENDING'dan tashqari, Bekor qilingan/Muddati
              tugagan obunalar ham shu yerda ko'rinadi (foydalanuvchi
@@ -80,10 +54,11 @@
                        placeholder="🔍 Foydalanuvchi bo'yicha filtr..." oninput="renderAllSubscriptions()">
             </h2>
             <p class="admin-sub-desc">
-                ADMIN-rol obunalarining to'liq tarixi — manbasidan qat'i nazar (qo'lda,
-                Click orqali onlayn, botdagi <code>/pay</code> so'rovi). Shu yerdan tahrirlash
-                (✏️), bekor qilish (❌ — faqat FAOL bo'lsa, ROLE_ADMIN darhol olib tashlanadi)
-                va butunlay o'chirish (🗑️) mumkin.
+                ADMIN-rol obunalarining to'liq tarixi — manbasidan qat'i nazar (qo'lda yoki
+                Click orqali onlayn; eski "botdagi /pay so'rovi" manbali qatorlar ham shu
+                yerda tarixiy sifatida qolgan bo'lishi mumkin). Shu yerdan tahrirlash (✏️),
+                bekor qilish (❌ — faqat FAOL bo'lsa, ROLE_ADMIN darhol olib tashlanadi) va
+                butunlay o'chirish (🗑️) mumkin.
             </p>
             <div class="table-scroll">
             <table class="subscriptions-table">

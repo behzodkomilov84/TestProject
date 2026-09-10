@@ -1,7 +1,6 @@
 package behzoddev.testproject.telegram.service;
 
 import behzoddev.testproject.dao.UserRepository;
-import behzoddev.testproject.dto.subscription.SubscriptionDto;
 import behzoddev.testproject.dto.subscription.SubscriptionStatsDto;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.User;
@@ -110,9 +109,13 @@ public class TelegramOwnerService {
     }
 
     // ================= 💰 To'lovlar =================
+    // "Kutilayotgan so'rovlar" ro'yxati + tasdiqlash/rad etish (showPaymentDetail/
+    // confirmPayment/rejectPayment) OLIB TASHLANDI (foydalanuvchi so'rovi,
+    // 2026-09-10: "bu logikani barcha joydan olib tashla, botdan ham.
+    // To'lovlarni faqat hozircha clickdan qabul qilamiz") — endi faqat
+    // umumiy statistika ko'rsatiladi.
 
-    public SendMessage listPendingPayments(User owner) {
-        List<SubscriptionDto> pending = subscriptionService.listPending();
+    public SendMessage showPaymentStats(User owner) {
         SubscriptionStatsDto stats = subscriptionService.getStats();
 
         SendMessage msg = new SendMessage();
@@ -122,75 +125,10 @@ public class TelegramOwnerService {
         sb.append("Jami tushum: ").append(formatSom(stats.totalRevenue())).append("\n");
         sb.append("Shu oy: ").append(formatSom(stats.thisMonthRevenue())).append("\n");
         sb.append("Faol obunachilar: ").append(stats.activeSubscribersCount()).append("\n");
-        sb.append("Kutilayotgan so'rovlar: ").append(stats.pendingCount()).append("\n");
 
         msg.setParseMode("HTML");
-
-        if (pending.isEmpty()) {
-            sb.append("\nHozircha kutilayotgan so'rov yo'q.");
-            msg.setText(sb.toString());
-            return msg;
-        }
-
-        sb.append("\nKo'rib chiqish uchun so'rovni tanlang:");
         msg.setText(sb.toString());
-
-        List<List<InlineKeyboardButton>> rows = new ArrayList<>();
-        for (SubscriptionDto s : pending) {
-            rows.add(List.of(button(s.username() + " — " + formatSom(s.amount()), "tg_paydetail_" + s.id())));
-        }
-        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        markup.setKeyboard(rows);
-        msg.setReplyMarkup(markup);
         return msg;
-    }
-
-    public SendMessage showPaymentDetail(Long chatId, Long subscriptionId) {
-        SubscriptionDto s = subscriptionService.listPending().stream()
-                .filter(p -> p.id().equals(subscriptionId))
-                .findFirst()
-                .orElse(null);
-
-        SendMessage msg = new SendMessage();
-        msg.setChatId(chatId.toString());
-
-        if (s == null) {
-            msg.setText("⚠️ Bu so'rov allaqachon ko'rib chiqilgan.");
-            return msg;
-        }
-
-        msg.setText("💰 <b>" + escape(s.username()) + "</b>\n" +
-                "Summa: " + formatSom(s.amount()) + "\n" +
-                "Manba: " + s.source() + "\n" +
-                (s.note() != null ? "Izoh: " + escape(s.note()) + "\n" : ""));
-        msg.setParseMode("HTML");
-
-        InlineKeyboardButton confirm = button("✅ Tasdiqlash", "tg_payok_" + subscriptionId);
-        InlineKeyboardButton reject = button("❌ Rad etish", "tg_payno_" + subscriptionId);
-        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        markup.setKeyboard(List.of(List.of(confirm, reject)));
-        msg.setReplyMarkup(markup);
-        return msg;
-    }
-
-    public SendMessage confirmPayment(Long chatId, Long subscriptionId) {
-        User owner = getUserByChatId(chatId);
-        try {
-            subscriptionService.confirm(subscriptionId, null, owner);
-            return success(chatId, "✅ To'lov tasdiqlandi, ADMIN huquqi berildi.");
-        } catch (Exception e) {
-            return success(chatId, "❌ " + e.getMessage());
-        }
-    }
-
-    public SendMessage rejectPayment(Long chatId, Long subscriptionId) {
-        try {
-            User owner = getUserByChatId(chatId);
-            subscriptionService.cancel(subscriptionId, owner);
-            return success(chatId, "❌ So'rov rad etildi.");
-        } catch (Exception e) {
-            return success(chatId, "❌ " + e.getMessage());
-        }
     }
 
     // BigDecimal.toBigInteger'dan qo'lda guruhlash — String.format("%,.0f", ...)

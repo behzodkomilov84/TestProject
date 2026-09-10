@@ -545,25 +545,11 @@ public class TelegramBot extends TelegramLongPollingBot {
                     return;
                 }
 
-                // ===== OWNER: To'lovlar =====
-                if (data.startsWith("tg_paydetail_")) {
-                    Long subscriptionId = Long.parseLong(data.replace("tg_paydetail_", ""));
-                    deleteMessageSafely(chatId, callbackMsgId);
-                    execute(ownerService.showPaymentDetail(chatId, subscriptionId));
-                    return;
-                }
-                if (data.startsWith("tg_payok_")) {
-                    Long subscriptionId = Long.parseLong(data.replace("tg_payok_", ""));
-                    deleteMessageSafely(chatId, callbackMsgId);
-                    execute(ownerService.confirmPayment(chatId, subscriptionId));
-                    return;
-                }
-                if (data.startsWith("tg_payno_")) {
-                    Long subscriptionId = Long.parseLong(data.replace("tg_payno_", ""));
-                    deleteMessageSafely(chatId, callbackMsgId);
-                    execute(ownerService.rejectPayment(chatId, subscriptionId));
-                    return;
-                }
+                // "tg_paydetail_"/"tg_payok_"/"tg_payno_" (kutilayotgan
+                // to'lovni ko'rib chiqish/tasdiqlash/rad etish) OLIB
+                // TASHLANDI (foydalanuvchi so'rovi, 2026-09-10) — "💰
+                // To'lovlar" endi faqat statistika ko'rsatadi (pastdagi
+                // BTN_PAYMENTS ishlovchisiga qarang).
 
                 // ===== OWNER: Tizim sozlamalari =====
                 if (data.equals("tg_settings_edit")) {
@@ -912,7 +898,7 @@ public class TelegramBot extends TelegramLongPollingBot {
             case BTN_QUESTIONS -> questionImportService.startFlow(user.getTelegramId());
             case BTN_ASSIGNMENT_CHATS -> chatService.listAssignments(user);
             case BTN_USERS -> ownerService.startUserSearch(user.getTelegramId());
-            case BTN_PAYMENTS -> ownerService.listPendingPayments(user);
+            case BTN_PAYMENTS -> ownerService.showPaymentStats(user);
             case BTN_SETTINGS -> ownerService.showSettings(user.getTelegramId());
             case BTN_BROADCAST -> ownerService.startBroadcast(user.getTelegramId());
             default -> menuService.comingSoon(user);

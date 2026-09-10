@@ -162,43 +162,11 @@ class SubscriptionServiceTest {
         verify(roleAuditService, never()).record(any(), any(), any(), any(), any());
     }
 
-    // ===== confirm =====
-
-    @Test
-    void confirm_success() {
-        User user = userWithRoles(1L, roleUser);
-        Subscription pending = Subscription.builder().id(5L).user(user).amount(BigDecimal.TEN)
-                .source(SubscriptionSource.TELEGRAM).status(SubscriptionStatus.PENDING).build();
-
-        when(subscriptionRepository.findById(5L)).thenReturn(Optional.of(pending));
-        when(roleRepository.findByRoleName("ROLE_ADMIN")).thenReturn(Optional.of(roleAdmin));
-
-        SubscriptionDto result = subscriptionService.confirm(5L, 2, owner);
-
-        assertThat(result.status()).isEqualTo("CONFIRMED");
-        assertThat(user.hasRole("ROLE_ADMIN")).isTrue();
-        verify(notificationService).create(eq(user), anyString(), eq("/profile"));
-    }
-
-    @Test
-    void confirm_notFound_throws() {
-        when(subscriptionRepository.findById(5L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> subscriptionService.confirm(5L, 1, owner))
-                .isInstanceOf(NoSuchElementException.class)
-                .hasMessageContaining("So'rov topilmadi");
-    }
-
-    @Test
-    void confirm_alreadyProcessed_throws() {
-        Subscription confirmed = Subscription.builder().id(5L).user(owner).amount(BigDecimal.TEN)
-                .source(SubscriptionSource.MANUAL).status(SubscriptionStatus.CONFIRMED).build();
-        when(subscriptionRepository.findById(5L)).thenReturn(Optional.of(confirmed));
-
-        assertThatThrownBy(() -> subscriptionService.confirm(5L, 1, owner))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("allaqachon ko'rib chiqilgan");
-    }
+    // "confirm" (PENDING so'rovni OWNER tasdiqlashi) va uni yaratuvchi
+    // "createPendingFromTelegram" (bot "/pay" buyrug'i) OLIB TASHLANDI
+    // (foydalanuvchi so'rovi, 2026-09-10: "bu logikani barcha joydan
+    // olib tashla, botdan ham. To'lovlarni faqat hozircha clickdan
+    // qabul qilamiz").
 
     // ===== cancel =====
 

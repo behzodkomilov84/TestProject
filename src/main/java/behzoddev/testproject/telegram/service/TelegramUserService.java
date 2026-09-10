@@ -15,7 +15,6 @@ import behzoddev.testproject.entity.enums.TaskStatus;
 import behzoddev.testproject.service.AssignmentAttemptService;
 import behzoddev.testproject.service.OnlineUserTracker;
 import behzoddev.testproject.service.StudentService;
-import behzoddev.testproject.service.SubscriptionService;
 import behzoddev.testproject.service.TestSessionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -28,7 +27,6 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -45,7 +43,6 @@ public class TelegramUserService {
     private final AssignmentAttemptRepository assignmentAttemptRepository;
     private final AssignmentAttemptService assignmentAttemptService;
     private final AssignmentRepository assignmentRepository;
-    private final SubscriptionService subscriptionService;
     private final TestSessionService testSessionService;
     private final StudentService studentService;
     private final OnlineUserTracker onlineUserTracker;
@@ -79,46 +76,17 @@ public class TelegramUserService {
             return linkTelegramSafely(msg, code);
         }
 
-        if (text.startsWith("/pay ")) {
-
-            String amountText = text.substring(5).trim();
-
-            return requestAdminSubscription(msg, amountText);
-        }
+        // "/pay <summa>" (qo'lda to'lov so'rovi, chek/skrinshot bilan)
+        // OLIB TASHLANDI (foydalanuvchi so'rovi, 2026-09-10: "bu logikani
+        // barcha joydan olib tashla, botdan ham. To'lovlarni faqat
+        // hozircha clickdan qabul qilamiz") — ADMIN huquqini sotib olish
+        // endi FAQAT "💳 Obunam" menyusidagi Click orqali to'lash tugmasi
+        // bilan (TelegramMenuService.showSubscriptionInfo -> pay_click_1m).
 
         SendMessage response = new SendMessage();
         response.setChatId(msg.getChatId().toString());
         response.setText("Noma'lum buyruq!!! Kodni ushbu tartibda kiriting: /link 123456\n\n" +
-                "ADMIN (o'qituvchi) huquqiga o'tish uchun to'lovni tasdiqlashga so'rov yuborish: /pay 50000\n" +
-                "(to'lov chekini/skrinshotini shu botga alohida xabar sifatida yuboring — OWNER ko'rib chiqib tasdiqlaydi)");
-        return response;
-    }
-
-    // Foydalanuvchi Telegram orqali "/pay <summa>" yuborganda ADMIN obunasiga
-    // PENDING so'rov yaratiladi. Haqiqiy to'lov tasdiqlanishi (chek/skrinshot)
-    // hozircha botda avtomatlashtirilmagan — OWNER buni /users sahifasida
-    // ko'rib chiqib qo'lda tasdiqlaydi yoki rad etadi.
-    public SendMessage requestAdminSubscription(Message msg, String amountText) {
-
-        SendMessage response = new SendMessage();
-        response.setChatId(msg.getChatId().toString());
-
-        BigDecimal amount;
-        try {
-            amount = new BigDecimal(amountText.replace(",", "."));
-        } catch (NumberFormatException e) {
-            response.setText("❌ Summa noto'g'ri. Masalan: /pay 50000");
-            return response;
-        }
-
-        try {
-            subscriptionService.createPendingFromTelegram(msg.getFrom().getId(), amount);
-            response.setText("✅ So'rovingiz qabul qilindi (" + amountText + " so'm).\n" +
-                    "OWNER tasdiqlagach, ADMIN (o'qituvchi) huquqi ochiladi.");
-        } catch (IllegalArgumentException e) {
-            response.setText("❌ " + e.getMessage());
-        }
-
+                "ADMIN (o'qituvchi) huquqini Click orqali sotib olish uchun \"💳 Obunam\" menyusidan foydalaning.");
         return response;
     }
 
