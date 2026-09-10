@@ -3022,3 +3022,38 @@ body {
     transform: translateY(0);
     box-shadow: 0 2px 8px rgba(16, 63, 145, .35);
 }
+
+/* "📥 Import qilish" / "Yopish" — bulk-import-modal'dagi ASOSIY
+   (primary) amallar (foydalanuvchi so'rovi, 2026-09-10: "chiroyli css
+   qo'sh"). HAQIQIY TOPILGAN BUG: bu tugmalar "export-excel-btn" KLASSI
+   bilan belgilangan edi, lekin haqiqiy uslub yuqorida FAQAT ID orqali
+   (#courseWordExportConfirmBtn) e'lon qilingan — "export-excel-btn"
+   sifatida hech qanday qoida yo'q edi, shu sabab tugma brauzer
+   standart (stilllanmagan) ko'rinishida chiqib qolgan. #courseWordExportConfirmBtn
+   bilan bir xil uslub, shu ID'larga qo'llanildi. */
+#bulkImportConfirmBtn,
+#bulkImportCloseBtn {
+    background: linear-gradient(135deg, #185ABD, #103F91);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 22px;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: .2px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(16, 63, 145, .35);
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+
+#bulkImportConfirmBtn:hover,
+#bulkImportCloseBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(16, 63, 145, .45);
+}
+
+#bulkImportConfirmBtn:active,
+#bulkImportCloseBtn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(16, 63, 145, .35);
+}
