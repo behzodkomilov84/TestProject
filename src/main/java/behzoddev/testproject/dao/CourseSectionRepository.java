@@ -36,6 +36,17 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
             "where cs.course.id = :courseId and lower(cs.title) = lower(:title) and cs.deletedAt is null")
     boolean existsByCourse_IdAndTitleIgnoreCase(@Param("courseId") Long courseId, @Param("title") String title);
 
+    // Xuddi shu tekshiruv, lekin natijaning O'ZINI (faqat bor/yo'qligini
+    // emas) qaytaradi — paketli importda FAQAT .xlsx (test) fayl
+    // tanlanganda (mos .docx SHU importda yo'q — foydalanuvchi avvalroq
+    // darslarni allaqachon testsiz import qilib bo'lgan) ishlatiladi:
+    // ALLAQACHON mavjud darsni (va uning TEST BOSHQARUVIga bog'langan
+    // Mavzusini) topib, testlarni O'SHA darsga biriktirish uchun
+    // (foydalanuvchi so'rovi, 2026-09-10: "10 ta test fayllarni import
+    // qilsam, darslarini topib qo'shilmayapti").
+    @Query("select cs from CourseSection cs where cs.course.id = :courseId and lower(cs.title) = lower(:title) and cs.deletedAt is null")
+    Optional<CourseSection> findByCourse_IdAndTitleIgnoreCase(@Param("courseId") Long courseId, @Param("title") String title);
+
     @Query("select cs from CourseSection cs where cs.course.id = :courseId and cs.orderIndex = :orderIndex and cs.deletedAt is null")
     Optional<CourseSection> findByCourse_IdAndOrderIndex(@Param("courseId") Long courseId, @Param("orderIndex") int orderIndex);
 

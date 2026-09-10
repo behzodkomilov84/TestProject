@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
@@ -68,6 +70,28 @@ public class GlobalRestExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of("error", "Bu amalni bajarib bo'lmadi — bog'liq ma'lumotlar mavjud."));
+    }
+
+    // Multipart (fayl yuklash) so'rovlarida past darajadagi (Spring/Tomcat)
+    // texnik xatolar — masalan "Failed to parse multipart servlet request"
+    // (foydalanuvchi so'rovi, 2026-09-10: shunga o'xshash xabarlar
+    // TUSHUNARLI TILDA berilsin). Bularning aksariyati so'rov hajmi
+    // sozlangan chegaradan (application.yaml'dagi max-file-size/
+    // max-request-size, YOKI nginx'dagi client_max_body_size) oshib
+    // ketganda yuz beradi — MaxUploadSizeExceededException aniq shu
+    // holat, umumiy MultipartException esa boshqa (masalan noto'g'ri
+    // shakllangan so'rov) holatlarni ham qamrab oladi. Ikkalasi ham xom
+    // ingliz-texnik matn o'rniga bitta tushunarli o'zbekcha xabar bilan
+    // almashtiriladi — bu handler pastdagi umumiy Exception.class'dan
+    // OLDIN turadi (Spring eng mos handler'ni o'zi tanlaydi, lekin
+    // o'qish qulayligi uchun mantiqiy tartibda joylashtirilgan).
+    @ExceptionHandler(MultipartException.class)
+    public ResponseEntity<Map<String, String>> handleMultipartException(MultipartException ex) {
+        log.warn("Multipart so'rovni qayta ishlashda xatolik: {}", ex.getMessage());
+        String message = (ex instanceof MaxUploadSizeExceededException)
+                ? "❌ Yuklangan fayllar hajmi ruxsat etilgan chegaradan katta. Fayllar sonini yoki hajmini kamaytirib qayta urinib ko'ring."
+                : "❌ Fayllarni yuklashda xatolik yuz berdi (so'rov noto'g'ri shakllangan yoki internet aloqasi uzilib qolgan bo'lishi mumkin). Qayta urinib ko'ring.";
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", message));
     }
 
     // Qolgan barcha xatolar (biznes-validatsiya RuntimeException'lari va h.k.)

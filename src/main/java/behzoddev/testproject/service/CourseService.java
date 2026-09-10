@@ -752,6 +752,55 @@ public class CourseService {
                 continue;
             }
 
+            boolean hasDocxContent = item.html() != null && !item.html().isBlank();
+
+            // HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi, 2026-09-10:
+            // "10 ta test fayllarni import qilsam, darslarini topib
+            // qo'shilmayapti") — foydalanuvchi AVVAL faqat .docx fayllarni
+            // (testsiz) import qilib bo'lgach, KEYINROQ shu darslarga
+            // mos .xlsx (test) fayllarni ALOHIDA tanlab yuborishi mumkin
+            // (mos .docx SHU importda YO'Q). Bunday holatda dars QAYTA
+            // YARATILMAYDI — ALLAQACHON mavjud dars BUTUN KURS bo'yicha
+            // (courseDetail.js tomonidan title bo'yicha "docxFile: null"
+            // element sifatida yuborilgan) topilib, uning TEST BOSHQARUVIGA
+            // bog'langan Mavzusiga to'g'ridan-to'g'ri testlar qo'shiladi.
+            if (!hasDocxContent) {
+                Optional<CourseSection> existingForTests = courseSectionRepository
+                        .findByCourse_IdAndTitleIgnoreCase(courseId, title);
+                if (existingForTests.isEmpty()) {
+                    errors.add("\"" + title + "\" — bu nomdagi dars kursda topilmadi (avval shu nomdagi .docx faylni import qiling), test o'tkazib yuborildi.");
+                    continue;
+                }
+                MultipartFile xlsxOnly = item.xlsxFileName() != null ? xlsxByName.get(item.xlsxFileName()) : null;
+                if (xlsxOnly == null || xlsxOnly.isEmpty()) {
+                    warnings.add("\"" + title + "\" — test fayli topilmadi, o'tkazib yuborildi.");
+                    continue;
+                }
+                try {
+                    CourseSection existingSection = existingForTests.get();
+                    Topic linkedTopic = existingSection.getLinkedTopic();
+                    if (linkedTopic == null) {
+                        // Ehtimoldan yiroq, lekin himoya sifatida — agar
+                        // negadir bog'lanmagan bo'lsa, xuddi yangi dars
+                        // yaratilgandagi kabi avtomatik topib/yaratib olinadi.
+                        linkedTopic = resolveLinkedTopic(scienceName, title, chapter);
+                        existingSection.setLinkedTopic(linkedTopic);
+                        courseSectionRepository.save(existingSection);
+                    }
+                    ImportResultDto qResultOnly = excelService.importQuestions(xlsxOnly, linkedTopic.getId(), currentUser);
+                    if (qResultOnly.imported() != null && qResultOnly.imported() > 0) {
+                        sectionsWithTests++;
+                        questionsImported += qResultOnly.imported();
+                    }
+                    if (!qResultOnly.errors().isEmpty()) {
+                        warnings.add("\"" + title + "\" testlarida: " + String.join("; ", qResultOnly.errors()));
+                    }
+                } catch (Exception e) {
+                    errors.add("\"" + title + "\": " + e.getMessage());
+                }
+                continue;
+            }
+
             // HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi, 2026-09-10:
             // "агар бу дарслар мавжуд бўлса, қайта юклаб қўймаслигини ҳам,
             // тестлар ҳам қайта юкланмаслигини ҳам текшир. Бутун курс бўйича

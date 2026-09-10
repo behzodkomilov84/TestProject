@@ -2772,39 +2772,59 @@ function handleBulkImportFilesSelected() {
         if (isXlsx) entry.xlsxFile = file;
     }
 
-    // Faqat .docx BOR juftliklar dars sifatida yaratiladi — yolg'iz
-    // .xlsx (mos .docx'siz) e'tiborga olinmaydi (test mustaqil holda
-    // hech qaysi darsga tegishli bo'lolmaydi).
+    // HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi, 2026-09-10: "10 ta
+    // test fayllarni import qilsam, darslarini topib qo'shilmayapti") —
+    // ilgari yolg'iz .xlsx (mos .docx'siz shu tanlovda) butunlay e'tiborga
+    // olinmasdi. Lekin haqiqiy foydalanish holati bor: foydalanuvchi AVVAL
+    // faqat .docx fayllarni (testsiz) import qilib bo'lgach, KEYINROQ shu
+    // darslarga mos .xlsx fayllarni ALOHIDA tanlab, ularga test qo'shmoqchi
+    // bo'lishi mumkin. Shu sabab yolg'iz .xlsx endi ham ro'yxatga
+    // (docxFile: null bilan) qo'shiladi — backend uni "mos nomdagi dars
+    // kursda ALLAQACHON bormi" deb tekshiradi, bo'lsa o'sha darsga testni
+    // biriktiradi, bo'lmasa xato sifatida qaytaradi.
     const allEntries = Array.from(byBase.values());
-    bulkImportPairs = allEntries.filter(e => e.docxFile != null);
-    const orphanXlsxCount = allEntries.filter(e => e.docxFile == null && e.xlsxFile != null).length;
+    bulkImportPairs = allEntries.filter(e => e.docxFile != null || e.xlsxFile != null);
 
     document.getElementById("bulkImportFilePickerLabel").textContent =
         `📎 ${files.length} ta fayl tanlandi — qaytadan tanlash uchun bosing`;
 
-    renderBulkImportPreview(orphanXlsxCount);
+    renderBulkImportPreview();
 }
 
-function renderBulkImportPreview(orphanXlsxCount) {
-    const withTests = bulkImportPairs.filter(p => p.xlsxFile != null).length;
-    const withoutTests = bulkImportPairs.length - withTests;
+function renderBulkImportPreview() {
+    const newLessons = bulkImportPairs.filter(p => p.docxFile != null);
+    const testOnly = bulkImportPairs.filter(p => p.docxFile == null);
+    const withTests = newLessons.filter(p => p.xlsxFile != null).length;
+    const withoutTests = newLessons.length - withTests;
 
     let html = `<div class="bulk-import-summary">
-        📄 <strong>${bulkImportPairs.length}</strong> ta dars topildi
-        (${withTests} tasi testlar bilan, ${withoutTests} tasi testsiz).
-    </div>`;
-
-    if (orphanXlsxCount > 0) {
-        html += `<div class="bulk-import-warning-line">⚠️ ${orphanXlsxCount} ta .xlsx fayl mos nomli .docx topilmagani uchun e'tiborga olinmadi.</div>`;
+        📄 <strong>${newLessons.length}</strong> ta yangi dars topildi
+        (${withTests} tasi testlar bilan, ${withoutTests} tasi testsiz)`;
+    if (testOnly.length > 0) {
+        html += `, <strong>${testOnly.length}</strong> ta mavjud darsga test biriktiriladi`;
     }
+    html += `.</div>`;
 
     if (bulkImportPairs.length > 0) {
-        html += `<div class="bulk-import-pair-list">` + bulkImportPairs.map(p => `
+        html += `<div class="bulk-import-pair-list">` + bulkImportPairs.map(p => {
+            let badgeClass, badgeText;
+            if (p.docxFile == null) {
+                badgeClass = "has-test";
+                badgeText = "🔗 mavjud darsga test";
+            } else if (p.xlsxFile != null) {
+                badgeClass = "has-test";
+                badgeText = "✅ test bilan";
+            } else {
+                badgeClass = "no-test";
+                badgeText = "⚠️ testsiz";
+            }
+            return `
             <div class="bulk-import-pair-row">
                 <span class="bulk-import-pair-title">${escapeHtml(p.title)}</span>
-                <span class="bulk-import-pair-badge ${p.xlsxFile ? "has-test" : "no-test"}">${p.xlsxFile ? "✅ test bilan" : "⚠️ testsiz"}</span>
+                <span class="bulk-import-pair-badge ${badgeClass}">${badgeText}</span>
             </div>
-        `).join("") + `</div>`;
+        `;
+        }).join("") + `</div>`;
     }
 
     const previewEl = document.getElementById("bulkImportPreview");
@@ -2834,14 +2854,20 @@ async function runBulkImport() {
             const pair = bulkImportPairs[i];
             progressText.textContent = `Fayllar o'qilmoqda... (${i + 1}/${bulkImportPairs.length}) — ${pair.title}`;
 
-            let html = "";
-            try {
-                const arrayBuffer = await pair.docxFile.arrayBuffer();
-                const result = await mammoth.convertToHtml({ arrayBuffer });
-                html = result.value.replace(/<br\s*\/?>/gi, " ");
-            } catch (err) {
-                console.error(err);
-                html = `<p>⚠️ Bu darsning matnini o'qib bo'lmadi: ${escapeHtml(err.message)}</p>`;
+            // "docxFile" yo'q — bu FAQAT test (.xlsx) elementi, mos .docx
+            // shu tanlovda yo'q (dars avvalroq import qilingan bo'lishi
+            // kerak). "html: null" backend'ga "bu yangi dars EMAS, faqat
+            // mavjud darsga test biriktir" degan signal beradi.
+            let html = null;
+            if (pair.docxFile != null) {
+                try {
+                    const arrayBuffer = await pair.docxFile.arrayBuffer();
+                    const result = await mammoth.convertToHtml({ arrayBuffer });
+                    html = result.value.replace(/<br\s*\/?>/gi, " ");
+                } catch (err) {
+                    console.error(err);
+                    html = `<p>⚠️ Bu darsning matnini o'qib bo'lmadi: ${escapeHtml(err.message)}</p>`;
+                }
             }
 
             items.push({
