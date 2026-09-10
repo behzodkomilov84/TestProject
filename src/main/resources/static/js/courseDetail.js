@@ -1796,8 +1796,12 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
     // "➕" — ANIQ shu Mavzuga dars qo'shish (openAddSectionForm forceChapterId
     // bilan) — bosilganda "Mavzu" tanlovi avtomatik shu mavzuga o'rnatiladi,
     // qayta tanlash shart emas (foydalanuvchi ANIQ shuni so'ragan).
-    const addTopicBtn = (cachedCourse && cachedCourse.canManage && group.chapterId != null)
-        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openAddSectionForm(${group.chapterId})" title="Shu mavzuga dars qo'shish">➕</button>`
+    // "— Mavzusiz darslar —" psevdo-guruhida ham ko'rinadi (foydalanuvchi
+    // so'rovi, 2026-09-10: "Mavzusiz darslarga ham actionlarni qo'sh") —
+    // "'none'" (haqiqiy chapterId EMAS) forceChapterId sifatida
+    // uzatiladi, "Mavzu tanlanmasin" degan ma'noda.
+    const addTopicBtn = (cachedCourse && cachedCourse.canManage)
+        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openAddSectionForm(${group.chapterId != null ? group.chapterId : "'none'"})" title="Shu mavzuga dars qo'shish">➕</button>`
         : "";
 
     // "✏️" — faqat haqiqiy mavzularda (group.chapterId != null), "—
@@ -1851,9 +1855,13 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
     }
 
     // "📥" — shu Mavzuga bir nechta .docx (dars) + .xlsx (test) faylni
-    // BIRDANIGA import qilish (foydalanuvchi so'rovi, 2026-09-10).
-    const bulkImportBtn = (cachedCourse && cachedCourse.canManage && group.chapterId != null)
-        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openBulkImportModal(${group.chapterId}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Darslar + testlarni paketli import qilish">📥</button>`
+    // BIRDANIGA import qilish (foydalanuvchi so'rovi, 2026-09-10). "—
+    // Mavzusiz darslar —" psevdo-guruhida ham ko'rinadi (foydalanuvchi
+    // so'rovi, 2026-09-10: "Mavzusiz darslarga ham actionlarni qo'sh") —
+    // chapterId sifatida "null" uzatiladi, backend buni "Mavzusiz yarat"
+    // deb tushunadi (CourseService.bulkImportLessonsWithTests).
+    const bulkImportBtn = (cachedCourse && cachedCourse.canManage)
+        ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openBulkImportModal(${group.chapterId != null ? group.chapterId : "null"}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Darslar + testlarni paketli import qilish">📥</button>`
         : "";
 
     // Amallar ko'payib ketgani sabab (foydalanuvchi so'rovi, 2026-09-10:
@@ -2691,12 +2699,19 @@ function closeCourseWordExportModal() {
 // sifatida serverga yuborilib, u yerda ExcelService orqali import
 // qilinadi (o'zgarmagan, mavjud mexanizm). =====
 
+// "bulkImportChapterId" — null bo'lishi ATAYLAB mumkin ("— Mavzusiz
+// darslar —" psevdo-guruhidan ochilganda, foydalanuvchi so'rovi,
+// 2026-09-10) — shu sabab "oyna umuman ochilganmi" holatini ALOHIDA
+// "bulkImportModalOpen" bayrog'i bilan kuzatamiz (aks holda chapterId'ning
+// "null" qiymati "oyna hali ochilmagan" bilan aralashib ketardi).
 let bulkImportChapterId = null;
+let bulkImportModalOpen = false;
 let bulkImportPairs = []; // [{title, docxFile, xlsxFile}]
 let bulkImportNeedsReload = false;
 
 function openBulkImportModal(chapterId, chapterName) {
     bulkImportChapterId = chapterId;
+    bulkImportModalOpen = true;
     bulkImportPairs = [];
     bulkImportNeedsReload = false;
 
@@ -2720,6 +2735,7 @@ function openBulkImportModal(chapterId, chapterName) {
 
 function closeBulkImportModal() {
     document.getElementById("bulkImportModal").classList.remove("show");
+    bulkImportModalOpen = false;
     // Import muvaffaqiyatli yakunlangan bo'lsa — endi yangi darslar
     // ko'rinishi uchun ro'yxatni yangilaymiz (oynani yopganda, jarayon
     // paytida EMAS — natijani ko'rib ulgurishi uchun).
@@ -2835,7 +2851,11 @@ function renderBulkImportPreview() {
 }
 
 async function runBulkImport() {
-    if (!bulkImportPairs.length || !bulkImportChapterId) return;
+    // "bulkImportChapterId" NULL bo'lishi mumkin — "— Mavzusiz darslar —"
+    // psevdo-guruhidan import qilinsa (foydalanuvchi so'rovi, 2026-09-10),
+    // shu sabab "oyna ochilganmi" tekshiruvi UNING O'ZI bilan emas,
+    // alohida "bulkImportModalOpen" bayrog'i bilan qilinadi.
+    if (!bulkImportPairs.length || !bulkImportModalOpen) return;
 
     document.getElementById("bulkImportSelectStep").classList.add("hidden");
     document.getElementById("bulkImportConfirmBtn").classList.add("hidden");
@@ -2884,7 +2904,15 @@ async function runBulkImport() {
         formData.append("items", new Blob([JSON.stringify(items)], { type: "application/json" }));
         xlsxFiles.forEach(f => formData.append("xlsxFiles", f, f.name));
 
-        const res = await fetch(`/api/courses/${COURSE_ID}/sections/bulk-import?chapterId=${bulkImportChapterId}`, {
+        // "chapterId" so'rov parametri — FAQAT haqiqiy Mavzu tanlangan
+        // bo'lsa qo'shiladi; "— Mavzusiz darslar —"dan import qilinganda
+        // (bulkImportChapterId === null) umuman uzatilmaydi — backend buni
+        // "Mavzusiz yarat" deb tushunadi (CourseSectionController#bulkImport
+        // — @RequestParam(required = false) Long chapterId).
+        const bulkImportUrl = `/api/courses/${COURSE_ID}/sections/bulk-import` +
+            (bulkImportChapterId != null ? `?chapterId=${bulkImportChapterId}` : "");
+
+        const res = await fetch(bulkImportUrl, {
             method: "POST",
             body: formData
         });
@@ -3538,7 +3566,13 @@ async function openAddSectionForm(forceChapterId) {
         await populateChapterSelect("newSectionChapterSelect", null, "new");
     }
 
-    if (forceChapterId != null) {
+    if (forceChapterId === "none") {
+        // "— Mavzusiz darslar —" psevdo-guruhidagi "➕" tugmasi (foydalanuvchi
+        // so'rovi, 2026-09-10: "Mavzusiz darslarga ham actionlarni qo'sh") —
+        // "null" (forceChapterId berilmagan holat) dan FARQLI ravishda,
+        // aniq "Mavzu tanlanmasin" degan ma'noni bildiradi.
+        document.getElementById("newSectionChapterSelect").value = "";
+    } else if (forceChapterId != null) {
         // "id:<id>" — populateChapterSelect'da HAR BIR kurs Mavzusi
         // (bo'sh bo'lganlari ham) shu formatda ro'yxatda bor, Bo'lim
         // tanlovidan qat'i nazar (courseChapters — kurs bo'yicha,

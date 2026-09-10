@@ -65,11 +65,15 @@ public class CourseSectionController {
     // ro'yxati (JSON qism); "xlsxFiles" — tanlangan .xlsx fayllarning
     // o'zi (haqiqiy multipart), har biri o'z ASL nomi (getOriginalFilename)
     // orqali item.xlsxFileName()'ga mos kelib bog'lanadi.
+    // "chapterId" ixtiyoriy (foydalanuvchi so'rovi, 2026-09-10: "Mavzusiz
+    // darslarga ham actionlarni qo'sh") — bo'sh qoldirilsa, import
+    // qilingan darslar "— Mavzusiz darslar —" psevdo-guruhiga tushadi
+    // (xuddi oddiy bitta-dars qo'shishda "— Mavzusiz —" tanlanganidek).
     @PostMapping(value = "/bulk-import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
     public BulkLessonImportResultDto bulkImport(
             @PathVariable Long courseId,
-            @RequestParam Long chapterId,
+            @RequestParam(required = false) Long chapterId,
             @RequestPart("items") List<LessonImportItemDto> items,
             @RequestPart(value = "xlsxFiles", required = false) List<MultipartFile> xlsxFiles,
             @AuthenticationPrincipal User user

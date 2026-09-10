@@ -715,9 +715,18 @@ public class CourseService {
         Course course = getCourseOrThrow(courseId);
         checkCanManage(course, currentUser);
 
-        CourseChapter chapter = courseChapterRepository.findById(chapterId)
-                .filter(c -> c.getCourse().getId().equals(courseId))
-                .orElseThrow(() -> new IllegalArgumentException("❌ Mavzu topilmadi."));
+        // "chapterId" bo'sh (null) bo'lishi mumkin — foydalanuvchi so'rovi
+        // (2026-09-10: "Mavzusiz darslarga ham actionlarni qo'sh"): "—
+        // Mavzusiz darslar —" psevdo-guruhidan ham paketli import
+        // ishlatilishi mumkin, natijada yaratilgan darslar CHAPTER'SIZ
+        // (xuddi oddiy bitta-dars qo'shishda "— Mavzusiz —" tanlangandagi
+        // kabi — addSection/resolveChapter'dagi bilan bir xil qoida).
+        CourseChapter chapter = null;
+        if (chapterId != null) {
+            chapter = courseChapterRepository.findById(chapterId)
+                    .filter(c -> c.getCourse().getId().equals(courseId))
+                    .orElseThrow(() -> new IllegalArgumentException("❌ Mavzu topilmadi."));
+        }
 
         if (items == null || items.isEmpty()) {
             throw new IllegalArgumentException("❌ Import qilinadigan fayl tanlanmagan.");
@@ -821,7 +830,7 @@ public class CourseService {
                 CourseSectionSaveDto sectionDto = new CourseSectionSaveDto(
                         title, CourseSectionType.TEXT.name(), item.html(),
                         null, null, null,
-                        scienceName, title, chapter.getId(), null,
+                        scienceName, title, chapter != null ? chapter.getId() : null, null,
                         CourseSectionContentFormat.HTML.name());
 
                 CourseSectionSummaryDto created = addSection(courseId, sectionDto, currentUser);
@@ -847,7 +856,7 @@ public class CourseService {
         }
 
         log.info("Paketli import yakunlandi: kurs={}, mavzu={}, darslar={}, o'tkazib yuborilgan={}, testli={}, savollar={}, user={}",
-                course.getTitle(), chapter.getName(), sectionsCreated, sectionsSkipped, sectionsWithTests, questionsImported,
+                course.getTitle(), chapter != null ? chapter.getName() : "(Mavzusiz)", sectionsCreated, sectionsSkipped, sectionsWithTests, questionsImported,
                 currentUser.getUsername());
 
         return BulkLessonImportResultDto.builder()
