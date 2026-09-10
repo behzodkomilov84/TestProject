@@ -69,6 +69,46 @@ body {
     margin-top: 16px;
 }
 
+/* HAQIQIY TOPILGAN KAMCHILIK: bu ikkita tugma ("✅ Qo'shish" / "Bekor
+   qilish") ilgari HECH QANDAY CSS'ga ega emas edi — brauzerning standart
+   ko'rinishida chiqardi (foydalanuvchi so'rovi, 2026-09-10: "yaratilgan
+   lekin css qo'shilmagan knopkalarni ham chiroyli qilib chiq"). Boshqa
+   modal oynalardagi (.word-export-modal) "birinchi/ikkinchi tugma" uslubi
+   bilan bir xil mantiq — ":first-child" o'rniga bu yerda ANIQ IKKITA
+   tugma bor, shu sabab tartib bo'yicha ":last-child" (Bekor qilish, oxirgi)
+   va qolgani (✅ Qo'shish, asosiy amal) ajratildi. -->
+.video-insert-modal-actions button {
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease, border-color .15s ease;
+}
+
+.video-insert-modal-actions button:not(:last-child) {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #fff;
+    border: none;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, .3);
+}
+
+.video-insert-modal-actions button:not(:last-child):hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, .4);
+}
+
+.video-insert-modal-actions button:last-child {
+    background: #fff;
+    color: #475569;
+    border: 1px solid #d5dde8;
+}
+
+.video-insert-modal-actions button:last-child:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+
 .courses-container {
     max-width: 1000px;
     margin: 90px auto 40px;
@@ -1199,6 +1239,12 @@ body {
    ======================================================================== */
 .bulk-import-modal {
     width: min(560px, 92vw);
+    max-height: 85vh;
+    overflow-y: auto;
+}
+
+.bulk-restore-modal {
+    width: min(520px, 92vw);
     max-height: 85vh;
     overflow-y: auto;
 }
@@ -3138,7 +3184,8 @@ body {
    standart (stilllanmagan) ko'rinishida chiqib qolgan. #courseWordExportConfirmBtn
    bilan bir xil uslub, shu ID'larga qo'llanildi. */
 #bulkImportConfirmBtn,
-#bulkImportCloseBtn {
+#bulkImportCloseBtn,
+#bulkRestoreConfirmBtn {
     background: linear-gradient(135deg, #185ABD, #103F91);
     color: #fff;
     border: none;
@@ -3153,13 +3200,109 @@ body {
 }
 
 #bulkImportConfirmBtn:hover,
-#bulkImportCloseBtn:hover {
+#bulkImportCloseBtn:hover,
+#bulkRestoreConfirmBtn:hover {
     transform: translateY(-1px);
     box-shadow: 0 6px 18px rgba(16, 63, 145, .45);
 }
 
 #bulkImportConfirmBtn:active,
-#bulkImportCloseBtn:active {
+#bulkImportCloseBtn:active,
+#bulkRestoreConfirmBtn:active {
     transform: translateY(0);
     box-shadow: 0 2px 8px rgba(16, 63, 145, .35);
+}
+
+#bulkRestoreConfirmBtn:disabled {
+    opacity: .6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* "♻️ Barchasini tiklash" — mavzu tanlash oynasi (foydalanuvchi so'rovi,
+   2026-09-10: "barchasini tiklashni bosganda mavzuni tanlash chiqshin —
+   barchasi uchun bitta va barchasiga alohida"). */
+.restore-mode-choice {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 14px 0;
+}
+
+.restore-mode-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    color: #334155;
+    transition: border-color .15s ease, background .15s ease;
+}
+
+.restore-mode-option:has(input:checked) {
+    border-color: #2563eb;
+    background: #eff6ff;
+}
+
+.restore-mode-option input[type="radio"] {
+    accent-color: #2563eb;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.restore-chapter-select {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1.5px solid #cbd5e1;
+    background: #fff;
+    font-size: 13px;
+    color: #1e293b;
+    cursor: pointer;
+    transition: border-color .15s ease;
+}
+
+.restore-chapter-select:hover,
+.restore-chapter-select:focus {
+    border-color: #2563eb;
+    outline: none;
+}
+
+.restore-individual-list {
+    max-height: 280px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-right: 4px;
+}
+
+.restore-individual-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+
+.restore-individual-title {
+    font-size: 13px;
+    color: #334155;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.restore-individual-row .restore-chapter-select {
+    width: 220px;
+    flex-shrink: 0;
 }

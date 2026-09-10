@@ -106,11 +106,19 @@ public class CourseSectionController {
         return courseService.getDeletedSections(courseId, user);
     }
 
+    // "chapterId" + "setChapter" — ixtiyoriy (foydalanuvchi so'rovi,
+    // 2026-09-10: "Barchasini tiklash"da mavzu tanlash). "setChapter"
+    // yuborilmasa (standart — false) — chapter TEGILMAYDI, eski oddiy
+    // "bitta darsni tiklash" xulq-atvori. "setChapter=true" bilan
+    // chaqirilganda "chapterId" HAR DOIM qo'llaniladi (null bo'lsa —
+    // "— Mavzusiz —"ga o'rnatiladi, bu ham qonuniy tanlov).
     @PostMapping("/{sectionId}/restore")
     @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
     public void restore(@PathVariable Long courseId, @PathVariable Long sectionId,
+                         @RequestParam(required = false) Long chapterId,
+                         @RequestParam(defaultValue = "false") boolean setChapter,
                          @AuthenticationPrincipal User user) {
-        courseService.restoreSection(courseId, sectionId, user);
+        courseService.restoreSection(courseId, sectionId, chapterId, setChapter, user);
     }
 
     @DeleteMapping("/{sectionId}/permanent")

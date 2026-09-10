@@ -936,8 +936,23 @@ public class CourseService {
 
     // "♻️ Tiklash" — darsni savatdan qaytaradi, progress yozuvlari
     // avtomatik yana ko'rinadigan bo'ladi (ular hech qachon o'chirilmagan edi).
+    //
+    // "chapterId" + "setChapter" — foydalanuvchi so'rovi, 2026-09-10:
+    // "barchasini tiklashni bosganda mavzuni tanlash chiqshin (barchasi
+    // uchun bitta va barchasiga alohida)". Sabab — agar darsning ASL
+    // mavzusi (CourseChapter) "🗑️ Mavzu + darslarni birga o'chirish"
+    // orqali HARD-DELETE qilingan bo'lsa (deleteChapterWithLinkedTopics —
+    // mavzuning o'zi soft-delete tizimiga kirmaydi), tiklangan dars
+    // avtomatik "— Mavzusiz darslar —"ga tushib qoladi — foydalanuvchi
+    // buni bittalab qo'lda tuzatishning o'rniga, tiklash paytining O'ZIDA
+    // (bittada yoki har biriga alohida) to'g'ri mavzuga biriktirmoqchi.
+    // "setChapter=false" (standart, eski chaqiruvlar) — chapter TEGILMAYDI
+    // (oddiy bitta darsni tiklashdagi eski xulq-atvor saqlanadi).
+    // "setChapter=true" — "chapterId" HAR DOIM qo'llaniladi, hatto null
+    // bo'lsa ham (— foydalanuvchi ANIQ "— Mavzusiz —"ni tanlagan bo'lishi
+    // mumkin, bu ham qonuniy tanlov).
     @Transactional
-    public void restoreSection(Long courseId, Long sectionId, User currentUser) {
+    public void restoreSection(Long courseId, Long sectionId, Long chapterId, boolean setChapter, User currentUser) {
         Course course = getCourseOrThrow(courseId);
         checkCanManage(course, currentUser);
         CourseSection section = getAnySectionOrThrow(sectionId, courseId);
@@ -945,6 +960,29 @@ public class CourseService {
             throw new IllegalArgumentException("❌ Bu dars o'chirilmagan — tiklashning hojati yo'q.");
         }
         section.setDeletedAt(null);
+
+        if (setChapter) {
+            CourseChapter chapter = null;
+            if (chapterId != null) {
+                chapter = courseChapterRepository.findById(chapterId)
+                        .filter(c -> c.getCourse().getId().equals(courseId))
+                        .orElseThrow(() -> new IllegalArgumentException("❌ Mavzu topilmadi."));
+            }
+            section.setChapter(chapter);
+            // Kurs Mavzusi o'zgarganda — TEST BOSHQARUVIdagi bog'lanish ham
+            // (agar mavjud bo'lsa) shu YANGI mavzuga mos ravishda qayta
+            // hisoblanadi, xuddi updateSection()'dagi bilan bir xil qoida
+            // (resolveLinkedTopic — Fan/Mavzu nomlari darsning o'zidan
+            // olinadi, chunki bulk-import darslar TEST BOSHQARUVIga aynan
+            // shu tarzda bog'langan edi).
+            if (section.getLinkedTopic() != null) {
+                section.setLinkedTopic(resolveLinkedTopic(
+                        section.getLinkedTopic().getScience().getName(),
+                        section.getLinkedTopic().getName(),
+                        chapter));
+            }
+        }
+
         courseSectionRepository.save(section);
     }
 

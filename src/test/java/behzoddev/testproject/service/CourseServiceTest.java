@@ -748,9 +748,47 @@ class CourseServiceTest {
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
         when(courseSectionRepository.findById(5L)).thenReturn(Optional.of(section));
 
-        courseService.restoreSection(1L, 5L, owner());
+        courseService.restoreSection(1L, 5L, null, false, owner());
 
         assertThat(section.getDeletedAt()).isNull();
+        org.mockito.Mockito.verify(courseSectionRepository).save(section);
+    }
+
+    // HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi, 2026-09-10:
+    // "barchasini tiklashni bosganda mavzuni tanlash chiqshin") — agar
+    // darsning ASL mavzusi hard-delete qilingan bo'lsa, dars "Mavzusiz"ga
+    // tushib qoladi; endi tiklash paytining o'zida yangi mavzuga
+    // biriktirish mumkin ("setChapter=true").
+    @Test
+    void restoreSection_withSetChapterTrue_reassignsChapter() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseSection section = CourseSection.builder().id(5L).course(course).orderIndex(1)
+                .deletedAt(java.time.LocalDateTime.now()).build();
+        CourseChapter newChapter = CourseChapter.builder().id(9L).course(course).name("Yangi mavzu").build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findById(5L)).thenReturn(Optional.of(section));
+        when(courseChapterRepository.findById(9L)).thenReturn(Optional.of(newChapter));
+
+        courseService.restoreSection(1L, 5L, 9L, true, owner());
+
+        assertThat(section.getDeletedAt()).isNull();
+        assertThat(section.getChapter()).isEqualTo(newChapter);
+        org.mockito.Mockito.verify(courseSectionRepository).save(section);
+    }
+
+    @Test
+    void restoreSection_withSetChapterTrueAndNullChapterId_setsMavzusiz() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter oldChapter = CourseChapter.builder().id(3L).course(course).name("Eski mavzu").build();
+        CourseSection section = CourseSection.builder().id(5L).course(course).orderIndex(1).chapter(oldChapter)
+                .deletedAt(java.time.LocalDateTime.now()).build();
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findById(5L)).thenReturn(Optional.of(section));
+
+        courseService.restoreSection(1L, 5L, null, true, owner());
+
+        assertThat(section.getDeletedAt()).isNull();
+        assertThat(section.getChapter()).isNull();
         org.mockito.Mockito.verify(courseSectionRepository).save(section);
     }
 

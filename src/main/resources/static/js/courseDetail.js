@@ -3864,24 +3864,98 @@ async function loadSectionTrash() {
 }
 
 // "♻️ Barchasini tiklash" — panelda ko'rinayotgan HAMMA o'chirilgan
-// darslarni bittada qaytaradi (foydalanuvchi so'rovi, 2026-09-10).
+// darslarni bittada qaytaradi (foydalanuvchi so'rovi, 2026-09-10). Endi
+// darhol tiklamaydi — avval mavzu tanlash oynasini ochadi ("barchasini
+// tiklashni bosganda mavzuni tanlash chiqshin — barchasi uchun bitta va
+// barchasiga alohida"), chunki agar darsning ASL mavzusi o'chirilgan
+// bo'lsa, tiklangan dars "— Mavzusiz darslar —"ga tushib qoladi.
 async function restoreAllSections() {
     if (!sectionTrashItems.length) return;
-    if (!await showConfirmModal(`♻️ ${sectionTrashItems.length} ta darsning HAMMASINI tiklamoqchimisiz?`)) return;
+    await openBulkRestoreModal();
+}
 
-    const btn = document.getElementById("sectionTrashRestoreAllBtn");
+// "bulkRestoreChapters" — kursning barcha Mavzulari (id, name), oyna
+// ochilganda BIR MARTA yuklanadi, ikkala rejimda (single/individual) ham
+// shu ro'yxatdan foydalaniladi.
+let bulkRestoreChapters = [];
+
+async function openBulkRestoreModal() {
+    document.getElementById("bulkRestoreCount").textContent = sectionTrashItems.length;
+
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/chapters`);
+        bulkRestoreChapters = res.ok ? await res.json() : [];
+    } catch (err) {
+        console.error(err);
+        bulkRestoreChapters = [];
+    }
+
+    const optionsHtml = '<option value="">— Mavzusiz —</option>' +
+        bulkRestoreChapters.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join("");
+
+    document.getElementById("bulkRestoreSingleChapterSelect").innerHTML = optionsHtml;
+
+    // "Har biriga alohida" ro'yxati — har bir o'chirilgan darsning nomi
+    // + o'zining ALOHIDA mavzu tanlovi (standart holatda "— Mavzusiz —").
+    document.getElementById("bulkRestoreIndividualList").innerHTML = sectionTrashItems.map(s => `
+        <div class="restore-individual-row">
+            <span class="restore-individual-title">${escapeHtml(s.title)}</span>
+            <select class="restore-chapter-select restore-individual-select" data-section-id="${s.id}">${optionsHtml}</select>
+        </div>
+    `).join("");
+
+    // Har safar oyna ochilganda "bitta mavzu" rejimidan boshlanadi —
+    // bashorat qilinadigan, oddiy standart holat.
+    document.querySelector('input[name="bulkRestoreMode"][value="single"]').checked = true;
+    switchBulkRestoreMode("single");
+
+    document.getElementById("bulkRestoreModal").classList.add("show");
+}
+
+function closeBulkRestoreModal() {
+    document.getElementById("bulkRestoreModal").classList.remove("show");
+}
+
+function switchBulkRestoreMode(mode) {
+    document.getElementById("bulkRestoreSingleBlock").classList.toggle("hidden", mode !== "single");
+    document.getElementById("bulkRestoreIndividualBlock").classList.toggle("hidden", mode !== "individual");
+}
+
+async function confirmBulkRestoreWithChapters() {
+    const mode = document.querySelector('input[name="bulkRestoreMode"]:checked').value;
+
+    // "chapterFor(sectionId)" — har bir darsga qo'llaniladigan chapterId
+    // (bo'sh string — "" — "— Mavzusiz —" degani, backend'ga null
+    // sifatida uzatiladi).
+    let chapterFor;
+    if (mode === "single") {
+        const value = document.getElementById("bulkRestoreSingleChapterSelect").value;
+        chapterFor = () => value;
+    } else {
+        const selects = document.querySelectorAll(".restore-individual-select");
+        const bySectionId = new Map();
+        selects.forEach(sel => bySectionId.set(Number(sel.dataset.sectionId), sel.value));
+        chapterFor = (sectionId) => bySectionId.get(sectionId) ?? "";
+    }
+
+    const btn = document.getElementById("bulkRestoreConfirmBtn");
     btn.disabled = true;
+
     let okCount = 0;
     for (const s of sectionTrashItems) {
+        const chapterId = chapterFor(s.id);
+        const url = `/api/courses/${COURSE_ID}/sections/${s.id}/restore?setChapter=true` +
+            (chapterId ? `&chapterId=${chapterId}` : "");
         try {
-            const res = await fetch(`/api/courses/${COURSE_ID}/sections/${s.id}/restore`, { method: "POST" });
+            const res = await fetch(url, { method: "POST" });
             if (res.ok) okCount++;
         } catch (err) {
             console.error(err);
         }
     }
-    btn.disabled = false;
 
+    btn.disabled = false;
+    closeBulkRestoreModal();
     loadSectionTrash();
     loadCourse();
     showAlertModal(`✅ ${okCount}/${sectionTrashItems.length} ta dars tiklandi.`);

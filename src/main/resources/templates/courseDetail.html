@@ -680,6 +680,53 @@
     </div>
 </div>
 
+<!-- "♻️ Barchasini tiklash" bosilganda chiqadigan mavzu tanlash oynasi
+     (foydalanuvchi so'rovi, 2026-09-10: "barchasini tiklashni bosganda
+     mavzuni tanlash chiqshin — barchasi uchun bitta va barchasiga
+     alohida"). Sabab — agar darsning ASL mavzusi "🗑️ Mavzu + darslarni
+     birga o'chirish" bilan HARD-DELETE qilingan bo'lsa, tiklangan dars
+     avtomatik "— Mavzusiz darslar —"ga tushib qoladi; bu oyna orqali
+     tiklash paytining o'zida to'g'ri mavzuga biriktirish mumkin.
+     courseDetail.js: openBulkRestoreModal() / switchBulkRestoreMode() /
+     confirmBulkRestoreWithChapters() / closeBulkRestoreModal(). -->
+<div id="bulkRestoreModal" class="modal-overlay">
+    <div class="word-export-modal bulk-restore-modal">
+        <h2 class="modal-h2">♻️ <span id="bulkRestoreCount">0</span> ta darsni tiklash — mavzu tanlang</h2>
+
+        <p class="word-export-hint" style="border-top:none;padding-top:0;">
+            Bu darslarning ASL mavzusi o'chirilgan bo'lishi mumkin — shu sabab
+            tiklashdan oldin ularni qaysi mavzuga biriktirishni tanlang (yoki
+            "— Mavzusiz —" qoldiring).
+        </p>
+
+        <div class="restore-mode-choice">
+            <label class="restore-mode-option">
+                <input type="radio" name="bulkRestoreMode" value="single" checked
+                       onchange="switchBulkRestoreMode('single')">
+                <span>Barchasiga <strong>BITTA</strong> mavzu tanlash</span>
+            </label>
+            <label class="restore-mode-option">
+                <input type="radio" name="bulkRestoreMode" value="individual"
+                       onchange="switchBulkRestoreMode('individual')">
+                <span>Har biriga <strong>ALOHIDA</strong> mavzu tanlash</span>
+            </label>
+        </div>
+
+        <div id="bulkRestoreSingleBlock" class="restore-single-block">
+            <select id="bulkRestoreSingleChapterSelect" class="restore-chapter-select"></select>
+        </div>
+
+        <div id="bulkRestoreIndividualBlock" class="restore-individual-block hidden">
+            <div id="bulkRestoreIndividualList" class="restore-individual-list"></div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" onclick="closeBulkRestoreModal()">Bekor qilish</button>
+            <button type="button" id="bulkRestoreConfirmBtn" class="export-excel-btn" onclick="confirmBulkRestoreWithChapters()">♻️ Tiklash</button>
+        </div>
+    </div>
+</div>
+
 <!-- "💳 To'lov — muddatni tanlang" — 1/3/6 oylik variantlar, uzoqroq
      muddatga "bonus" chegirma bilan (foydalanuvchi so'rovi, 2026-09-09:
      "тўлов саҳифасида ҳам неча ойга обуна бўлишини танлаш имкони
