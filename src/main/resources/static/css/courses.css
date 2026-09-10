@@ -76,7 +76,7 @@ body {
    modal oynalardagi (.word-export-modal) "birinchi/ikkinchi tugma" uslubi
    bilan bir xil mantiq — ":first-child" o'rniga bu yerda ANIQ IKKITA
    tugma bor, shu sabab tartib bo'yicha ":last-child" (Bekor qilish, oxirgi)
-   va qolgani (✅ Qo'shish, asosiy amal) ajratildi. -->
+   va qolgani (✅ Qo'shish, asosiy amal) ajratildi. */
 .video-insert-modal-actions button {
     padding: 8px 18px;
     border-radius: 999px;
