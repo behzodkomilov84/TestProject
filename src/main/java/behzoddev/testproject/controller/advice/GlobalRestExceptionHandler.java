@@ -87,10 +87,19 @@ public class GlobalRestExceptionHandler {
     // o'qish qulayligi uchun mantiqiy tartibda joylashtirilgan).
     @ExceptionHandler(MultipartException.class)
     public ResponseEntity<Map<String, String>> handleMultipartException(MultipartException ex) {
-        log.warn("Multipart so'rovni qayta ishlashda xatolik: {}", ex.getMessage());
+        // To'liq stek (sabab zanjiri bilan) — haqiqiy sabab ko'pincha
+        // "Failed to parse multipart servlet request" xabarining o'zida
+        // KO'RINMAYDI (masalan 2026-09-10'da real sabab Tomcat
+        // connector'ining "max-http-form-post-size"i — bosh xabar
+        // umuman shuni aytmasdi, faqat to'liq stek orqali topildi).
+        log.warn("Multipart so'rovni qayta ishlashda xatolik: {}", ex.getMessage(), ex);
+        // DIQQAT: frontend (courseDetail.js#showBulkImportResult) bu
+        // xabarga o'zi "❌ " prefiksini qo'shadi — shu sabab bu yerda
+        // QAYTA qo'shilmaydi (aks holda "❌ ❌ ..." bo'lib ikki marta
+        // chiqib qolardi — haqiqiy topilgan bug).
         String message = (ex instanceof MaxUploadSizeExceededException)
-                ? "❌ Yuklangan fayllar hajmi ruxsat etilgan chegaradan katta. Fayllar sonini yoki hajmini kamaytirib qayta urinib ko'ring."
-                : "❌ Fayllarni yuklashda xatolik yuz berdi (so'rov noto'g'ri shakllangan yoki internet aloqasi uzilib qolgan bo'lishi mumkin). Qayta urinib ko'ring.";
+                ? "Yuklangan fayllar hajmi ruxsat etilgan chegaradan katta. Fayllar sonini yoki hajmini kamaytirib qayta urinib ko'ring."
+                : "Fayllarni yuklashda xatolik yuz berdi (so'rov noto'g'ri shakllangan yoki internet aloqasi uzilib qolgan bo'lishi mumkin). Qayta urinib ko'ring.";
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", message));
     }
 

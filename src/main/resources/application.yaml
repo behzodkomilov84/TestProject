@@ -85,7 +85,30 @@ server.servlet.session.cookie.max-age: -1 # -1 означает: cookie живё
 server.servlet.session.timeout: 30m
 server:
   tomcat:
-    secure-random-algorithm=NativePRNGNonBlocking
+    # DIQQAT: bu qator ilgari "secure-random-algorithm=NativePRNGNonBlocking"
+    # (teng belgisi bilan, ":" EMAS) deb yozilgan edi — bu YAML kalit-
+    # qiymat jufti EMAS, balki "tomcat"ning o'zi uchun bitta oddiy SATR
+    # (scalar) qiymat sifatida tasodifan "ishlayotgandek" ko'rinardi (xato
+    # bermasdi, lekin Spring buni HECH QANDAY haqiqiy sozlama sifatida
+    # tanimasdi — o'lik/ishlamaydigan qator edi). Shu qatorning ostiga
+    # (max-http-form-post-size) haqiqiy ikkinchi sozlama qo'shilganda
+    # SnakeYAML "tomcat" bir vaqtning o'zida ham satr, ham xarita (mapping)
+    # bo'lolmasligini aniqlab, butun faylni parse qila olmay qoldi
+    # (production'da ilova umuman ishga tushmay qolardi — HAQIQIY
+    # TOPILGAN, jiddiy bug). To'g'ri YAML formatga ":" bilan tuzatildi.
+    secure-random-algorithm: NativePRNGNonBlocking
+    # HAQIQIY TOPILGAN BUG (2026-09-10): "spring.servlet.multipart.max-
+    # request-size" (yuqorida) va nginx'dagi "client_max_body_size"ni
+    # 200/300MB'ga oshirganimizdan KEYIN HAM "📥 Darslar + testlarni
+    # import qilish" (bir nechta .xlsx fayl, masalan 10 ta) hamon xom
+    # "Failed to parse multipart servlet request" xatosini berardi —
+    # sabab BUTUNLAY BOSHQA, UCHINCHI chegara ekan: Tomcat connector'ining
+    # o'z "max-http-form-post-size"i (Spring Boot standart qiymati — bor-
+    # yo'g'i 2MB!), bu Spring multipart resolveri ishga tushishidan
+    # OLDIN, servlet darajasida so'rov tanasini o'qishni butunlay
+    # to'xtatadi. Shu sabab qolgan ikkitasi bilan BIR XIL qiymatga
+    # (300MB) oshirilishi shart.
+    max-http-form-post-size: 300MB
   # Nginx kabi reverse proxy orqasida ishlaganda X-Forwarded-* header'larni
   # to'g'ri o'qishi uchun (https/http'ni to'g'ri aniqlash — shunga qarab
   # redirect URL'lar va "Secure" cookie to'g'ri ishlaydi). Standart "none" —
