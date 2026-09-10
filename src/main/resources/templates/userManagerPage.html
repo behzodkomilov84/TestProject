@@ -123,6 +123,19 @@
         </div>
     </div>
 
+    <!-- "Oxirgi tashrif vaqti" katakchasi bosilganda — saytda jami necha
+         soat, kurslar kesimida taqsimot (foydalanuvchi so'rovi,
+         2026-09-10). users.js#showUserActivity. -->
+    <div id="userActivityOverlay" class="edit-modal-overlay" hidden>
+        <div class="edit-modal-box">
+            <h2 id="userActivityTitle">⏱️ Saytda o'tkazgan vaqti</h2>
+            <div id="userActivityBody" class="sub-details-body"></div>
+            <div class="edit-modal-actions">
+                <button type="button" class="edit-modal-cancel" onclick="closeUserActivityModal()">Yopish</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Ustki gorizontal scroll — jadval uzun (ko'p qator) bo'lganda
          pastki scrollbar'gacha aylantirmasdan, tepadan ham gorizontal
          siljitish mumkin bo'lishi uchun (foydalanuvchi so'rovi,

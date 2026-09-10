@@ -6,12 +6,14 @@ import behzoddev.testproject.dto.user.ChangeRoleDto;
 import behzoddev.testproject.dto.user.OnlineStatusDto;
 import behzoddev.testproject.dto.user.SendTelegramMessageDto;
 import behzoddev.testproject.dto.user.UpdateUserDto;
+import behzoddev.testproject.dto.user.UserActivitySummaryDto;
 import behzoddev.testproject.dto.user.UserDto;
 import behzoddev.testproject.entity.Role;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.service.NotificationService;
 import behzoddev.testproject.service.OnlineUserTracker;
 import behzoddev.testproject.service.RoleAuditService;
+import behzoddev.testproject.service.UserActivityService;
 import behzoddev.testproject.service.UserServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -34,6 +36,7 @@ public class UserRestController {
     private final RoleAuditService roleAuditService;
     private final NotificationService notificationService;
     private final OnlineUserTracker onlineUserTracker;
+    private final UserActivityService userActivityService;
 
     @GetMapping("/api/users")
     @PreAuthorize("hasAuthority('ROLE_OWNER')")
@@ -111,6 +114,15 @@ public class UserRestController {
                 .onlineUserIds(onlineIds)
                 .onlineCount(onlineIds.size())
                 .build();
+    }
+
+    // "/users" sahifasidagi "Oxirgi tashrif vaqti" katakchasi bosilganda
+    // — "Saytda jami necha soat" + kurslar kesimidagi taqsimot
+    // (foydalanuvchi so'rovi, 2026-09-10).
+    @GetMapping("/api/users/{id}/activity")
+    @PreAuthorize("hasAuthority('ROLE_OWNER')")
+    public UserActivitySummaryDto getUserActivity(@PathVariable Long id) {
+        return userActivityService.getSummary(id);
     }
 
     // Rol o'zgarishlari audit tarixi — kim, qachon, kimga qanday rol

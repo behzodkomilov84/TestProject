@@ -199,6 +199,74 @@ function closeSubscriptionDetailsModal() {
     document.getElementById("subscriptionDetailsOverlay").hidden = true;
 }
 
+// ===== "Oxirgi tashrif vaqti" — saytda o'tkazgan vaqt (foydalanuvchi
+// so'rovi, 2026-09-10: "jami necha soat saytdan foydalandi? Kurslar
+// kesimida qancha soatlari kursga aloqador sahifalarda ketyapti?") =====
+
+// 5000 (soniya) -> "1 soat 23 daqiqa". Taxminiy (heuristik) ko'rsatkich
+// — UserActivityTracker'ning izohiga qarang (haqiqiy stopwatch emas,
+// ketma-ket so'rovlar orasidagi "faol" oraliqlar yig'indisi).
+function formatDurationHM(totalSeconds) {
+    if (!totalSeconds || totalSeconds <= 0) return "0 daqiqa";
+
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    const days = Math.floor(totalMinutes / (60 * 24));
+    const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+    const minutes = totalMinutes % 60;
+
+    const parts = [];
+    if (days > 0) parts.push(days + " kun");
+    if (hours > 0) parts.push(hours + " soat");
+    if (minutes > 0 || parts.length === 0) parts.push(minutes + " daqiqa");
+    return parts.join(" ");
+}
+
+async function showUserActivity(userId) {
+    const user = usersById[userId];
+    if (!user) return;
+
+    document.getElementById("userActivityTitle").textContent = `⏱️ ${user.username} — saytda o'tkazgan vaqti`;
+    document.getElementById("userActivityBody").innerHTML = `<p class="sub-detail-empty">Yuklanmoqda...</p>`;
+    document.getElementById("userActivityOverlay").hidden = false;
+
+    try {
+        const res = await fetch(`/api/users/${userId}/activity`);
+        if (!res.ok) {
+            document.getElementById("userActivityBody").innerHTML =
+                `<p class="sub-detail-empty">Ma'lumotni yuklab bo'lmadi.</p>`;
+            return;
+        }
+        const summary = await res.json();
+
+        const totalHtml = `<div class="activity-total">🕐 Saytda jami: <strong>${formatDurationHM(summary.totalSeconds)}</strong></div>`;
+
+        let breakdownHtml;
+        if (!summary.courseBreakdown.length) {
+            breakdownHtml = `<p class="sub-detail-empty">Kurslarga oid sahifalarda hali vaqt o'tkazmagan.</p>`;
+        } else {
+            const rows = summary.courseBreakdown.map(c => `
+                <div class="sub-detail-row">
+                    <div class="sub-detail-row-top">
+                        <span class="sub-detail-label">${escapeHtml(c.courseTitle)}</span>
+                        <span class="sub-status-badge sub-status-active">${formatDurationHM(c.totalSeconds)}</span>
+                    </div>
+                </div>
+            `).join("");
+            breakdownHtml = `<h3 class="sub-detail-group-title">📚 Kurslar kesimida</h3>${rows}`;
+        }
+
+        document.getElementById("userActivityBody").innerHTML = totalHtml + breakdownHtml;
+    } catch (err) {
+        console.error(err);
+        document.getElementById("userActivityBody").innerHTML =
+            `<p class="sub-detail-empty">Tarmoq xatoligi.</p>`;
+    }
+}
+
+function closeUserActivityModal() {
+    document.getElementById("userActivityOverlay").hidden = true;
+}
+
 // "5 daqiqa oldin" / "2 soat oldin" / "3 kun oldin" — notifications.js'dagi
 // bilan bir xil hisoblash, mustaqil nusxa sifatida (skript yuklanish
 // tartibiga bog'liq bo'lmasin).
@@ -328,7 +396,7 @@ function renderUsers(users, subscriptions, courseSubscriptions) {
             <td><div class="roles-cell">${checkboxesHtml}</div></td>
             <td class="sub-status-cell" onclick="showSubscriptionDetails(${user.id})" title="Batafsil ma'lumot uchun bosing">${subscriptionStatusHtml}</td>
             <td>${createdAtText}</td>
-            <td>${lastSeenAtText}</td>
+            <td class="last-seen-cell" onclick="showUserActivity(${user.id})" title="Saytda o'tkazgan vaqti uchun bosing">${lastSeenAtText}</td>
             <td>
                 <div class="actions-cell">
                     <button class="action-btn" onclick="openEditModal(${user.id})" title="Tahrirlash">✏️</button>

@@ -1185,23 +1185,61 @@ function updateSubscribeBanner(course) {
 // "Бонус кун тугаса автомат ҳабар бериши керак" — avtomatik xabar
 // CourseSubscriptionService#expireSubscriptions orqali allaqachon
 // ishlaydi, bu banner esa muddat TUGAMASDAN oldingi eslatma).
+// Jonli hisoblagich (countdown) — "2 kun 5 soat 52 daqiqa qoldi" kabi,
+// har daqiqada yangilanadi (foydalanuvchi so'rovi, 2026-09-10). Oldingi
+// interval har chaqiruvda to'xtatiladi — aks holda loadCourse() qayta
+// ishga tushganda (masalan to'lovdan keyin) bir nechta interval bir
+// vaqtda ishlab, bir-birining ustidan yozib turardi.
+let trialCountdownInterval = null;
+
 function updateTrialActiveBanner(course) {
     const banner = document.getElementById("trialActiveBanner");
     if (!banner) return;
+
+    if (trialCountdownInterval) {
+        clearInterval(trialCountdownInterval);
+        trialCountdownInterval = null;
+    }
 
     if (!course.trialActive || !course.trialEndDate) {
         banner.style.display = "none";
         return;
     }
 
-    const msLeft = new Date(course.trialEndDate).getTime() - Date.now();
-    const daysLeft = Math.max(0, Math.ceil(msLeft / (1000 * 60 * 60 * 24)));
-    const dayWord = daysLeft === 1 ? "kun" : "kun";
-    document.getElementById("trialActiveBannerText").textContent =
-        `🎁 Bepul sinov muddatidan foydalanyapsiz — ${daysLeft} ${dayWord} qoldi. ` +
-        "Muddat tugagach, kursdan foydalanish uchun to'lov qilishingiz kerak bo'ladi.";
-
+    const endTime = new Date(course.trialEndDate).getTime();
     const payBtn = document.getElementById("trialBannerPayBtn");
+
+    function render() {
+        const msLeft = endTime - Date.now();
+
+        if (msLeft <= 0) {
+            document.getElementById("trialActiveBannerText").textContent =
+                "⌛ Bepul sinov muddati tugadi. Kursdan foydalanish uchun to'lov qiling.";
+            if (trialCountdownInterval) {
+                clearInterval(trialCountdownInterval);
+                trialCountdownInterval = null;
+            }
+            return;
+        }
+
+        const totalMinutes = Math.floor(msLeft / 60000);
+        const days = Math.floor(totalMinutes / (60 * 24));
+        const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+        const minutes = totalMinutes % 60;
+
+        const parts = [];
+        if (days > 0) parts.push(days + " kun");
+        if (days > 0 || hours > 0) parts.push(hours + " soat");
+        parts.push(minutes + " daqiqa");
+
+        document.getElementById("trialActiveBannerText").textContent =
+            `🎁 Bepul sinov muddatidan foydalanyapsiz — ${parts.join(" ")} qoldi. ` +
+            "Muddat tugagach, kursdan foydalanish uchun to'lov qilishingiz kerak bo'ladi.";
+    }
+
+    render();
+    trialCountdownInterval = setInterval(render, 60000);
+
     payBtn.style.display = (clickPaymentEnabled && course.price) ? "" : "none";
 
     banner.style.display = "flex";

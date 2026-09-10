@@ -432,6 +432,32 @@ body {
     text-decoration-style: dotted;
 }
 
+/* "Oxirgi tashrif vaqti" katakchasi — bosilganda saytda o'tkazgan vaqt
+   oynasi ochiladi (foydalanuvchi so'rovi, 2026-09-10). */
+.last-seen-cell {
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-decoration-color: #94a3b8;
+}
+
+.last-seen-cell:hover {
+    color: #185ABD;
+}
+
+/* "⏱️ Saytda o'tkazgan vaqti" oynasidagi "Jami" qatori
+   (users.js#showUserActivity). */
+.activity-total {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 4px;
+}
+
 /* "📋 Obuna tarixi" oynasi (users.js#showSubscriptionDetails). */
 .sub-details-body {
     display: flex;
