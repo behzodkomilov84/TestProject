@@ -53,6 +53,17 @@ public class UserActivityTracker {
             Pattern.compile("^/(?:api/)?courses/(\\d+)(?:/.*)?$");
 
     private final Map<Long, Instant> lastRequestTimeByUserId = new ConcurrentHashMap<>();
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-10: "дарсга
+    // кириб шу саҳифада 3-4 дақиқа турдим. Лекин счётчик вақтни
+    // ҳисобламабди" — umumiy vaqt hisoblangan, lekin kurs kesimida 0
+    // qolgan): "gapSeconds" — foydalanuvchi OLDINGI so'ralgan sahifada
+    // (shu URI) qancha vaqt o'tirgani, hozirgi (yangi) so'rov sahifasida
+    // EMAS. Shu sabab kurs ID ham OLDINGI URI'dan olinishi kerak — avval
+    // hozirgi (yangi) so'rov URI'sidan olinardi, ya'ni "dars sahifasida
+    // 4 daqiqa o'tirib, keyin /users'ga o'tish" holatida o'sha 4 daqiqa
+    // /users kursga oid bo'lmagani uchun umuman hech qaysi kursga
+    // yozilmay, faqat umumiy vaqtga qo'shilib qolardi.
+    private final Map<Long, String> lastRequestUriByUserId = new ConcurrentHashMap<>();
     private final Map<Long, AtomicLong> pendingTotalSeconds = new ConcurrentHashMap<>();
     private final Map<CourseKey, AtomicLong> pendingCourseSeconds = new ConcurrentHashMap<>();
 
@@ -60,15 +71,18 @@ public class UserActivityTracker {
         if (userId == null) return;
 
         Instant now = Instant.now();
-        Instant last = lastRequestTimeByUserId.put(userId, now);
-        if (last == null) return;
+        Instant lastTime = lastRequestTimeByUserId.put(userId, now);
+        String lastUri = lastRequestUriByUserId.put(userId, requestUri);
+        if (lastTime == null) return;
 
-        long gapSeconds = Duration.between(last, now).getSeconds();
+        long gapSeconds = Duration.between(lastTime, now).getSeconds();
         if (gapSeconds <= 0 || gapSeconds > ACTIVE_GAP_THRESHOLD_SECONDS) return;
 
         pendingTotalSeconds.computeIfAbsent(userId, k -> new AtomicLong()).addAndGet(gapSeconds);
 
-        Long courseId = extractCourseId(requestUri);
+        // "lastUri" — foydalanuvchi shu ORALIQda (gapSeconds) turgan
+        // sahifa, "requestUri" (hozirgi, yangi so'rov) EMAS.
+        Long courseId = extractCourseId(lastUri);
         if (courseId != null) {
             pendingCourseSeconds.computeIfAbsent(new CourseKey(userId, courseId), k -> new AtomicLong())
                     .addAndGet(gapSeconds);

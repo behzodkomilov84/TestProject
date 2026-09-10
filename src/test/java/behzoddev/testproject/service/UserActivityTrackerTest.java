@@ -104,6 +104,29 @@ class UserActivityTrackerTest {
         assertThat(courseMap.values().iterator().next().get()).isGreaterThanOrEqualTo(20);
     }
 
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-10: "дарсга
+    // кириб шу саҳифада 3-4 дақиқа турдим. Лекин счётчик вақтни
+    // ҳисобламабди" — umumiy vaqt hisoblangan, lekin kurs kesimida 0
+    // qolgan) — gapSeconds foydalanuvchi OLDINGI (kurs) sahifasida
+    // turgan vaqti, shuning uchun keyingi so'rov KURSGA OID BO'LMASA
+    // ham (masalan darsni o'qib, keyin /users'ga o'tsa), o'sha vaqt
+    // baribir OLDINGI (kurs) sahifasiga yozilishi kerak.
+    @Test
+    void track_courseThenNonCoursePage_creditsGapToThePreviousCoursePage() throws Exception {
+        tracker.track(1L, "/courses/6/sections/100");
+        // Foydalanuvchi shu darsda 4 daqiqa "o'qib" turdi.
+        lastRequestTimeMap().put(1L, Instant.now().minusSeconds(240));
+
+        // Keyin KURSGA ALOQASI YO'Q sahifaga o'tdi.
+        tracker.track(1L, "/users");
+
+        Field f = UserActivityTracker.class.getDeclaredField("pendingCourseSeconds");
+        f.setAccessible(true);
+        Map<?, AtomicLong> courseMap = (Map<?, AtomicLong>) f.get(tracker);
+        assertThat(courseMap).hasSize(1);
+        assertThat(courseMap.values().iterator().next().get()).isGreaterThanOrEqualTo(240);
+    }
+
     @Test
     void track_apiCoursePath_alsoRecognizedAsCourseActivity() throws Exception {
         tracker.track(1L, "/api/courses/7/chapters");
