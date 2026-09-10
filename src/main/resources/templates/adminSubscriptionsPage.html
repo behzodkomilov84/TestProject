@@ -23,25 +23,48 @@
         <button class="back-btn" onclick="history.back()">← Назад</button>
     </header>
 
-    <!-- To'lov asosida ADMIN (o'qituvchi) huquqini berish paneli -->
+    <!-- To'lov asosida ADMIN (o'qituvchi) huquqini berish paneli — har bir
+         mustaqil bo'lim endi ALOHIDA "quti" (.admin-sub-box) ichida,
+         orasida margin bilan (foydalanuvchi so'rovi, 2026-09-10: "alohida
+         ma'lumotlarni alohida box qilib oralarini ochib joyla — bir-biriga
+         aralashib ketibdi"). Har biri ostida NIMA UCHUN kerakligini
+         tushuntiruvchi qisqa matn (.admin-sub-desc) qo'shildi. -->
     <div class="subscriptions-panel" style="margin-top:0; padding-top:0; border-top:none;">
 
-        <h2>⏳ Tasdiq kutilayotgan to'lovlar</h2>
-        <div class="table-scroll">
-        <table class="subscriptions-table">
-            <thead>
-            <tr>
-                <th>Foydalanuvchi</th>
-                <th>Summa</th>
-                <th>Manba</th>
-                <th>So'rov sanasi</th>
-                <th>Amallar</th>
-            </tr>
-            </thead>
-            <tbody id="pendingTableBody">
-                <tr><td colspan="5" class="empty-row">Kutilayotgan so'rov yo'q</td></tr>
-            </tbody>
-        </table>
+        <div class="admin-sub-box">
+            <h2>⏳ Tasdiq kutilayotgan to'lovlar</h2>
+            <!-- Foydalanuvchi so'rovi, 2026-09-10: "nimaga ishlaydi? Agar
+                 kerak bo'lmasa olib tashlash kerak" — TEKSHIRILDI: hali
+                 ham FAOL va kerakli funksiya, o'chirilmagan. Bu Click
+                 orqali ONLAYN to'lovdan (avtomatik tasdiqlanadi, bu yerga
+                 umuman tushmaydi) FARQLI — Telegram botda "/pay <summa>"
+                 buyrug'i bilan (chek/skrinshot alohida xabar sifatida
+                 yuborilib) qo'lda so'ralgan to'lovlar shu yerda
+                 to'planadi. -->
+            <p class="admin-sub-desc">
+                Bu yerga faqat botda <code>/pay &lt;summa&gt;</code> buyrug'i orqali qo'lda
+                yuborilgan to'lov so'rovlari tushadi (foydalanuvchi chek/skrinshotni botga
+                alohida rasm sifatida yuboradi, siz uni Telegram'da ko'rib tasdiqlaysiz yoki
+                rad etasiz). Click orqali onlayn to'langan obunalar bu yerga TUSHMAYDI —
+                ular avtomatik tasdiqlanib, to'g'ridan-to'g'ri pastdagi "Barcha obunalar"da
+                paydo bo'ladi.
+            </p>
+            <div class="table-scroll">
+            <table class="subscriptions-table">
+                <thead>
+                <tr>
+                    <th>Foydalanuvchi</th>
+                    <th>Summa</th>
+                    <th>Manba</th>
+                    <th>So'rov sanasi</th>
+                    <th>Amallar</th>
+                </tr>
+                </thead>
+                <tbody id="pendingTableBody">
+                    <tr><td colspan="5" class="empty-row">Kutilayotgan so'rov yo'q</td></tr>
+                </tbody>
+            </table>
+            </div>
         </div>
 
         <!-- "Barcha obunalar" — PENDING'dan tashqari, Bekor qilingan/Muddati
@@ -50,46 +73,69 @@
              saqlanadi?" — avval bunday umumiy ro'yxat sahifasi yo'q edi,
              faqat /courses/subscriptions'da kurs obunalari uchun bor edi).
              /courses/subscriptions sahifasidagi bilan bir xil andoza. -->
-        <h2 class="all-subs-header">
-            📋 Barcha obunalar
-            <input type="text" id="allSubsFilter" class="subs-filter-input"
-                   placeholder="🔍 Foydalanuvchi bo'yicha filtr..." oninput="renderAllSubscriptions()">
-        </h2>
-        <div class="table-scroll">
-        <table class="subscriptions-table">
-            <thead>
-            <tr>
-                <th>Foydalanuvchi</th>
-                <th>Summa</th>
-                <th>Manba</th>
-                <th>Holat</th>
-                <th>Muddat</th>
-                <th>Sana</th>
-                <th>Amal</th>
-            </tr>
-            </thead>
-            <tbody id="allSubsTableBody">
-                <tr><td colspan="7" class="empty-row">Yuklanmoqda...</td></tr>
-            </tbody>
-        </table>
+        <div class="admin-sub-box">
+            <h2 class="all-subs-header">
+                📋 Barcha obunalar
+                <input type="text" id="allSubsFilter" class="subs-filter-input"
+                       placeholder="🔍 Foydalanuvchi bo'yicha filtr..." oninput="renderAllSubscriptions()">
+            </h2>
+            <p class="admin-sub-desc">
+                ADMIN-rol obunalarining to'liq tarixi — manbasidan qat'i nazar (qo'lda,
+                Click orqali onlayn, botdagi <code>/pay</code> so'rovi). Shu yerdan tahrirlash
+                (✏️), bekor qilish (❌ — faqat FAOL bo'lsa, ROLE_ADMIN darhol olib tashlanadi)
+                va butunlay o'chirish (🗑️) mumkin.
+            </p>
+            <div class="table-scroll">
+            <table class="subscriptions-table">
+                <thead>
+                <tr>
+                    <th>Foydalanuvchi</th>
+                    <th>Summa</th>
+                    <th>Manba</th>
+                    <th>Holat</th>
+                    <th>Muddat</th>
+                    <th>Sana</th>
+                    <th>Amal</th>
+                </tr>
+                </thead>
+                <tbody id="allSubsTableBody">
+                    <tr><td colspan="7" class="empty-row">Yuklanmoqda...</td></tr>
+                </tbody>
+            </table>
+            </div>
         </div>
 
-        <h2>➕ To'lovni qo'lda qayd qilib, ADMIN berish</h2>
-        <div class="manual-subscription-form">
-            <select id="manualUserSelect"></select>
-            <input type="number" id="manualAmount" placeholder="Summa (so'm)" min="1">
-            <input type="number" id="manualDuration" placeholder="Necha oy" value="1" min="1">
-            <input type="text" id="manualNote" placeholder="Izoh (ixtiyoriy)">
-            <button onclick="createManualSubscription()">✅ Tasdiqlash va ADMIN berish</button>
+        <div class="admin-sub-box">
+            <h2>➕ To'lovni qo'lda qayd qilib, ADMIN berish</h2>
+            <p class="admin-sub-desc">
+                Foydalanuvchi saytdan TASHQARIDA (naqd, bank o'tkazmasi va h.k.) to'lagan
+                bo'lsa — shu yerdan qo'lda qayd qilasiz, ADMIN huquqi DARHOL (tasdiqni
+                kutmasdan) beriladi.
+            </p>
+            <div class="manual-subscription-form">
+                <select id="manualUserSelect"></select>
+                <input type="number" id="manualAmount" placeholder="Summa (so'm)" min="1">
+                <input type="number" id="manualDuration" placeholder="Necha oy" value="1" min="1">
+                <input type="text" id="manualNote" placeholder="Izoh (ixtiyoriy)">
+                <button onclick="createManualSubscription()">✅ Tasdiqlash va ADMIN berish</button>
+            </div>
         </div>
 
         <!-- Click'ning minimal tranzaksiya summasi — .env/redeploy'siz
              shu yerdan o'zgartiriladi (PaymentOrderService.createOrder shu
              chegaradan kam summali buyurtmani rad etadi). -->
-        <h2>⚙️ To'lov sozlamalari</h2>
-        <div class="manual-subscription-form">
-            <input type="number" id="minAmountInput" placeholder="Minimal summa (so'm)" min="1">
-            <button onclick="saveMinAmount()">💾 Saqlash</button>
+        <div class="admin-sub-box">
+            <h2>⚙️ To'lov sozlamalari</h2>
+            <p class="admin-sub-desc">
+                Click to'lov tizimi juda kichik summadagi tranzaksiyalarni qabul qilmaydi.
+                Shu yerda belgilangan summadan KAM bo'lgan har qanday to'lov (ADMIN yoki
+                kurs obunasi, muddatidan qat'i nazar) Click orqali boshlanishidan oldin
+                avtomatik rad etiladi ("To'lov summasi minimal chegaradan kam" xatosi bilan).
+            </p>
+            <div class="manual-subscription-form">
+                <input type="number" id="minAmountInput" placeholder="Minimal summa (so'm)" min="1">
+                <button onclick="saveMinAmount()">💾 Saqlash</button>
+            </div>
         </div>
     </div>
 </div>

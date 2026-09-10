@@ -658,6 +658,47 @@ select.role-select {
     margin-bottom: 12px;
 }
 
+/* Har bir mustaqil bo'lim ("Tasdiq kutilayotgan", "Barcha obunalar",
+   "Qo'lda qayd qilish", "To'lov sozlamalari") o'zining ALOHIDA
+   "qutisi" ichida, orasida bo'shliq bilan — avval hammasi bir-biriga
+   yopishib, chegarasiz aralashib ko'rinardi (foydalanuvchi so'rovi,
+   2026-09-10). */
+.admin-sub-box {
+    background: #fff;
+    border: 1px solid #e5e9f0;
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, .04);
+}
+
+.admin-sub-box:last-child {
+    margin-bottom: 0;
+}
+
+.admin-sub-box h2 {
+    margin-top: 0;
+}
+
+/* Har bo'lim ostidagi "bu nima uchun kerak" izohi. */
+.admin-sub-desc {
+    margin: 0 0 16px;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #64748b;
+    background: #f8fafc;
+    border-left: 3px solid #cbd5e1;
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+}
+
+.admin-sub-desc code {
+    background: #e2e8f0;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+}
+
 /* "📋 Barcha obunalar" sarlavhasi + filtr qatori (foydalanuvchi so'rovi,
    2026-09-09) — /courses/subscriptions'dagi bilan bir xil g'oya, lekin
    bu sahifa courses.css'ni ulamagani uchun shu yerda ham (takrorlangan
