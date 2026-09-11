@@ -62,6 +62,8 @@ class SubscriptionServiceTest {
     private EmailService emailService;
     @Mock
     private PaymentOrderRepository paymentOrderRepository;
+    @Mock
+    private CourseSubscriptionService courseSubscriptionService;
 
     @InjectMocks
     private SubscriptionService subscriptionService;
@@ -545,5 +547,66 @@ class SubscriptionServiceTest {
 
         verify(subscriptionRepository, times(0)).existsByUser_IdAndStatusAndEndDateAfter(any(), any(), any());
         verify(notificationService, never()).create(any(), anyString(), anyString());
+    }
+
+    // ===== emailStatsReport =====
+
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-11: "email ga
+    // jo'natilgan hisobotda umumiy summa 50000 so'm deyapti. Aslida jami
+    // 150000+1000 bo'lishi kerak edi") — email hisoboti ADMIN-rol
+    // obunalari VA kurs obunalari to'lovlarini BIRLASHTIRIB yuborishi
+    // shart, /payments sahifasining o'zi kabi (payments.js#mergeStats).
+    @Test
+    void emailStatsReport_mergesAdminAndCourseStats_sendsCombinedTotals() {
+        owner = User.builder().id(99L).username("owner").email("owner@test.uz")
+                .roles(new HashSet<>(Set.of(roleAdmin))).build();
+
+        Subscription adminSub = Subscription.builder().id(1L).status(SubscriptionStatus.CONFIRMED)
+                .amount(BigDecimal.valueOf(1_000))
+                .createdAt(LocalDateTime.of(2026, 9, 5, 10, 0)).build();
+        when(subscriptionRepository.findByStatusOrderByCreatedAtDesc(SubscriptionStatus.CONFIRMED))
+                .thenReturn(List.of(adminSub));
+        when(subscriptionRepository.countByStatusAndEndDateAfter(eq(SubscriptionStatus.CONFIRMED), any()))
+                .thenReturn(1L);
+        when(subscriptionRepository.countByStatus(SubscriptionStatus.PENDING)).thenReturn(0L);
+
+        behzoddev.testproject.dto.subscription.MonthlyRevenueDto courseMonth =
+                behzoddev.testproject.dto.subscription.MonthlyRevenueDto.builder()
+                        .month("2026-09").amount(BigDecimal.valueOf(150_000)).count(1).build();
+        behzoddev.testproject.dto.subscription.SubscriptionStatsDto courseStats =
+                behzoddev.testproject.dto.subscription.SubscriptionStatsDto.builder()
+                        .totalRevenue(BigDecimal.valueOf(150_000))
+                        .thisMonthRevenue(BigDecimal.valueOf(150_000))
+                        .totalConfirmedCount(1)
+                        .activeSubscribersCount(1)
+                        .pendingCount(0)
+                        .monthlyBreakdown(List.of(courseMonth))
+                        .build();
+        when(courseSubscriptionService.getStats()).thenReturn(courseStats);
+        when(emailService.sendSubscriptionReport(eq("owner@test.uz"), any())).thenReturn(true);
+
+        subscriptionService.emailStatsReport(owner);
+
+        ArgumentCaptor<behzoddev.testproject.dto.subscription.SubscriptionStatsDto> captor =
+                ArgumentCaptor.forClass(behzoddev.testproject.dto.subscription.SubscriptionStatsDto.class);
+        verify(emailService).sendSubscriptionReport(eq("owner@test.uz"), captor.capture());
+
+        behzoddev.testproject.dto.subscription.SubscriptionStatsDto sent = captor.getValue();
+        assertThat(sent.totalRevenue()).isEqualByComparingTo("151000");
+        assertThat(sent.thisMonthRevenue()).isEqualByComparingTo("151000");
+        assertThat(sent.totalConfirmedCount()).isEqualTo(2);
+        assertThat(sent.monthlyBreakdown()).hasSize(1);
+        assertThat(sent.monthlyBreakdown().get(0).amount()).isEqualByComparingTo("151000");
+        assertThat(sent.monthlyBreakdown().get(0).count()).isEqualTo(2);
+    }
+
+    @Test
+    void emailStatsReport_noEmailOnOwner_throws() {
+        owner = User.builder().id(99L).username("owner").email(null)
+                .roles(new HashSet<>(Set.of(roleAdmin))).build();
+
+        assertThatThrownBy(() -> subscriptionService.emailStatsReport(owner))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(emailService, never()).sendSubscriptionReport(anyString(), any());
     }
 }

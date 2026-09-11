@@ -58,6 +58,18 @@ public class SubscriptionService {
     private final RoleAuditService roleAuditService;
     private final EmailService emailService;
     private final PaymentOrderRepository paymentOrderRepository;
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-11: "email ga
+    // jo'natilgan hisobotda umumiy summa 50000 so'm deyapti. Aslida jami
+    // 150000+1000 bo'lishi kerak edi") — "📧 Email orqali yuborish"
+    // (emailStatsReport) FAQAT shu klassning o'z getStats()'ini (ADMIN-rol
+    // obunalari) ishlatardi. /payments SAHIFASINING O'ZI esa 2026-09-09'da
+    // aynan shu turdagi bug (payments.js — "/payments FAQAT umumiy
+    // Subscription... hisoblardi — kurs obunalari... hisobga olinmasdi")
+    // uchun TUZATILGAN edi, lekin faqat FRONTEND (payments.js#mergeStats)
+    // darajasida — email hisobotiga bu tuzatish HECH QACHON ko'chirilmagan
+    // edi. Shu sabab email har doim kurs to'lovlarisiz, kamroq summa
+    // ko'rsatib kelardi.
+    private final CourseSubscriptionService courseSubscriptionService;
 
     @Transactional
     public SubscriptionDto createManual(CreateSubscriptionDto dto, User owner) {
@@ -370,6 +382,10 @@ public class SubscriptionService {
     }
 
     // /payments sahifasidagi hisobotni OWNER'ning o'z emailiga yuboradi.
+    // Sahifaning o'zi kabi — ADMIN-rol obunalari (getStats()) VA kurs
+    // obunalari (courseSubscriptionService.getStats()) BIRLASHTIRILGAN
+    // holda yuboriladi (HAQIQIY TOPILGAN BUG, 2026-09-11 — yuqoridagi
+    // "courseSubscriptionService" izohiga qarang).
     @Transactional(readOnly = true)
     public void emailStatsReport(User owner) {
         if (owner.getEmail() == null || owner.getEmail().isBlank()) {
@@ -377,12 +393,44 @@ public class SubscriptionService {
                     "❌Sizda email manzil ulanmagan. Avval profilda emailingizni kiriting.");
         }
 
-        SubscriptionStatsDto stats = getStats();
+        SubscriptionStatsDto stats = mergeStats(getStats(), courseSubscriptionService.getStats());
         boolean sent = emailService.sendSubscriptionReport(owner.getEmail(), stats);
 
         if (!sent) {
             throw new IllegalStateException("❌Hisobotni email orqali yuborishda xatolik yuz berdi.");
         }
+    }
+
+    // payments.js#mergeStats bilan BIR XIL mantiq (server tomonida) —
+    // ikkala manbadan (ADMIN-rol + kurs) kelgan statistikani bitta umumiy
+    // ko'rsatkichga birlashtiradi, "Oylar bo'yicha tushum" ham oy kaliti
+    // bo'yicha qo'shiladi.
+    private static SubscriptionStatsDto mergeStats(SubscriptionStatsDto admin, SubscriptionStatsDto course) {
+        Map<String, MonthlyAccumulator> byMonth = new TreeMap<>();
+        for (MonthlyRevenueDto m : admin.monthlyBreakdown()) {
+            byMonth.computeIfAbsent(m.month(), k -> new MonthlyAccumulator()).add(m.amount(), m.count());
+        }
+        for (MonthlyRevenueDto m : course.monthlyBreakdown()) {
+            byMonth.computeIfAbsent(m.month(), k -> new MonthlyAccumulator()).add(m.amount(), m.count());
+        }
+
+        List<MonthlyRevenueDto> monthlyBreakdown = byMonth.entrySet().stream()
+                .map(e -> MonthlyRevenueDto.builder()
+                        .month(e.getKey())
+                        .amount(e.getValue().total)
+                        .count(e.getValue().count)
+                        .build())
+                .sorted(Comparator.comparing(MonthlyRevenueDto::month))
+                .toList();
+
+        return SubscriptionStatsDto.builder()
+                .totalRevenue(admin.totalRevenue().add(course.totalRevenue()))
+                .thisMonthRevenue(admin.thisMonthRevenue().add(course.thisMonthRevenue()))
+                .totalConfirmedCount(admin.totalConfirmedCount() + course.totalConfirmedCount())
+                .activeSubscribersCount(admin.activeSubscribersCount() + course.activeSubscribersCount())
+                .pendingCount(admin.pendingCount() + course.pendingCount())
+                .monthlyBreakdown(monthlyBreakdown)
+                .build();
     }
 
     // Oylik yig'indini hisoblash uchun ichki yordamchi (faqat getStats() ichida ishlatiladi).
@@ -393,6 +441,15 @@ public class SubscriptionService {
         void add(BigDecimal amount) {
             total = total.add(amount);
             count++;
+        }
+
+        // mergeStats() uchun — bu yerda "count" ALLAQACHON boshqa joyda
+        // (bitta oy bo'yicha) hisoblab bo'lingan (MonthlyRevenueDto.count()),
+        // shu sabab yuqoridagi add()dan farqli, HAR CHAQIRUVDA 1 EMAS,
+        // aynan shu son qo'shiladi.
+        void add(BigDecimal amount, long extraCount) {
+            total = total.add(amount);
+            count += extraCount;
         }
     }
 
