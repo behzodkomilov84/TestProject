@@ -35,7 +35,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -85,6 +87,22 @@ public class CourseService {
     // orqali import qilish uchun (mavjud, sinovdan o'tgan mexanizm qayta
     // ishlatiladi — o'z ExcelService'ini yozish shart emas).
     private final ExcelService excelService;
+
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-11: "Cannot
+    // invoke Topic.getScience() because topic is null") — bulkImportLessonsWithTests()
+    // ICHIDA this.addSection(...)/resolveLinkedTopic(...) chaqiruvlari
+    // "self-invocation" (bir xil klass ichida), shu sabab ularning O'Z
+    // @Transactional'i Spring'ning proksi-asoslangan AOP'i tomonidan
+    // e'tiborga OLINMAYDI — hammasi bulkImportLessonsWithTests'ning
+    // TASHQI (hali COMMIT bo'lmagan) tranzaksiyasi ichida davom etadi.
+    // Shu tashqi tranzaksiya davomida yaratilgan YANGI Mavzu (Topic)
+    // keyinroq chaqirilgan excelService.importQuestions() -> questionService.
+    // save() (haqiqiy ALOHIDA bean, REQUIRES_NEW) uchun hali KO'RINMAS
+    // bo'lardi (COMMIT bo'lmagani uchun). Yechim — PlatformTransactionManager
+    // orqali DASTURIY (self-invocation muammosidan MUSTAQIL) REQUIRES_NEW
+    // tranzaksiya: dars+Mavzuni yaratish/topish shu YANGI tranzaksiyada
+    // DARHOL commit bo'ladi, shundan keyingina excelService chaqiriladi.
+    private final PlatformTransactionManager transactionManager;
 
     // "🔗 Darsga havola qo'shish" (topicLinkButton.js#buildTopicLinkHtml)
     // tomonidan izohga qo'shilgan havolani topish uchun — "/courses/
@@ -707,6 +725,27 @@ public class CourseService {
     // alohida try/catch bilan o'raladi (ExcelService.importQuestions'dagi
     // "bitta qatordagi xatolik boshqalarga xalaqit bermaydi" bilan bir
     // xil falsafa), natija oxirida statistikasi bilan qaytariladi.
+    //
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-11: "1 та .doc
+    // билан 1 та мос .xlsx импорт қилдим. 1 та дарс яратилди, лекин
+    // тестлар импорт қилинмади" — "Cannot invoke Topic.getScience()
+    // because topic is null"): bu metod @Transactional bo'lgani uchun,
+    // ichkarida this.addSection(...)/resolveLinkedTopic(...) chaqiruvlari
+    // ("self-invocation" — bir xil klass ichida, Spring'ning proksi-
+    // asoslangan AOP'i BUNDAY chaqiruvlarni ushlay olmaydi) haqiqatda shu
+    // TASHQI, hali COMMIT bo'lmagan tranzaksiya ichida davom etardi —
+    // yangi yaratilgan Mavzu (Topic) ham shu ichida edi. Darhol keyin
+    // chaqirilgan excelService.importQuestions() -> questionService.save()
+    // esa ALOHIDA BEAN (chinakam proksi orqali) va REQUIRES_NEW — bu
+    // YANGI, MUSTAQIL tranzaksiya hali tugamagan tashqi tranzaksiyadagi
+    // (hali commit bo'lmagan) Mavzuni umuman KO'RA OLMASDI —
+    // topicRepository.getTopicById(...) shu sabab null qaytarardi.
+    // Yechim — pastda "requiresNewTx" (TransactionTemplate, dasturiy
+    // REQUIRES_NEW): dars+Mavzu yaratish/topish shu bilan DARHOL, alohida
+    // commit qilinadi (self-invocation muammosidan mustaqil — proksiga
+    // emas, to'g'ridan-to'g'ri PlatformTransactionManager'ga tayanadi),
+    // shundan KEYIN excelService chaqiriladi — Mavzu ALLAQACHON
+    // ko'rinadigan (committed) bo'ladi.
     @Transactional
     public BulkLessonImportResultDto bulkImportLessonsWithTests(
             Long courseId, Long chapterId, List<LessonImportItemDto> items,
@@ -754,6 +793,12 @@ public class CourseService {
         List<String> warnings = new ArrayList<>();
         List<String> errors = new ArrayList<>();
 
+        // Dars/Mavzu yaratish (yoki mavjudiga bog'lash) har bir element
+        // uchun shu bilan DARHOL, alohida commit qilinadi — pastdagi
+        // izohga qarang ("HAQIQIY TOPILGAN BUG").
+        TransactionTemplate requiresNewTx = new TransactionTemplate(transactionManager);
+        requiresNewTx.setPropagationBehavior(TransactionTemplate.PROPAGATION_REQUIRES_NEW);
+
         for (LessonImportItemDto item : items) {
             String title = item.title() == null ? "" : item.title().trim();
             if (title.isEmpty()) {
@@ -791,10 +836,19 @@ public class CourseService {
                     if (linkedTopic == null) {
                         // Ehtimoldan yiroq, lekin himoya sifatida — agar
                         // negadir bog'lanmagan bo'lsa, xuddi yangi dars
-                        // yaratilgandagi kabi avtomatik topib/yaratib olinadi.
-                        linkedTopic = resolveLinkedTopic(scienceName, title, chapter);
-                        existingSection.setLinkedTopic(linkedTopic);
-                        courseSectionRepository.save(existingSection);
+                        // yaratilgandagi kabi avtomatik topib/yaratib
+                        // olinadi. requiresNewTx (REQUIRES_NEW) — DARHOL
+                        // commit bo'lishi uchun (pastdagi excelService
+                        // chaqiruviga "ko'rinadigan" bo'lishi shart).
+                        final CourseSection sectionToLink = existingSection;
+                        final String titleForTopic = title;
+                        final CourseChapter chapterForTopic = chapter;
+                        linkedTopic = requiresNewTx.execute(status -> {
+                            Topic t = resolveLinkedTopic(scienceName, titleForTopic, chapterForTopic);
+                            sectionToLink.setLinkedTopic(t);
+                            courseSectionRepository.save(sectionToLink);
+                            return t;
+                        });
                     }
                     ImportResultDto qResultOnly = excelService.importQuestions(xlsxOnly, linkedTopic.getId(), currentUser);
                     if (qResultOnly.imported() != null && qResultOnly.imported() > 0) {
@@ -833,7 +887,14 @@ public class CourseService {
                         scienceName, title, chapter != null ? chapter.getId() : null, null,
                         CourseSectionContentFormat.HTML.name());
 
-                CourseSectionSummaryDto created = addSection(courseId, sectionDto, currentUser);
+                // requiresNewTx (REQUIRES_NEW) — dars VA uning bog'langan
+                // Mavzusi shu bilan DARHOL commit qilinadi, aks holda
+                // pastdagi excelService.importQuestions() (haqiqiy
+                // ALOHIDA bean, o'zining REQUIRES_NEW'i) hali commit
+                // bo'lmagan Mavzuni ko'ra olmay, "Topic topilmadi" (NPE)
+                // xatosiga uchrardi (HAQIQIY TOPILGAN BUG, 2026-09-11).
+                CourseSectionSummaryDto created = requiresNewTx.execute(
+                        status -> addSection(courseId, sectionDto, currentUser));
                 sectionsCreated++;
 
                 MultipartFile xlsx = item.xlsxFileName() != null ? xlsxByName.get(item.xlsxFileName()) : null;

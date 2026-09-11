@@ -86,6 +86,14 @@ class CourseServiceTest {
     private QuestionRepository questionRepository;
     @Mock
     private ExcelService excelService;
+    // bulkImportLessonsWithTests() ichida REQUIRES_NEW (TransactionTemplate)
+    // uchun kerak — HAQIQIY TOPILGAN BUG (2026-09-11, "Cannot invoke
+    // Topic.getScience() because topic is null") tuzatilgandan keyin
+    // qo'shildi. Stub shart emas — Mockito'ning standart xatti-harakati
+    // (getTransaction(...) -> null, commit(...) -> no-op) TransactionTemplate.
+    // execute()'ning callback'ni chaqirib, natijasini qaytarishi uchun yetarli.
+    @Mock
+    private org.springframework.transaction.PlatformTransactionManager transactionManager;
 
     @InjectMocks
     private CourseService courseService;
