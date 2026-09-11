@@ -1968,6 +1968,21 @@ function toggleChapterActions(key) {
     if (el) el.classList.toggle("hidden");
 }
 
+// HAQIQIY TOPILGAN KAMCHILIK (kartochka ko'rinishiga o'tkazilgandan
+// keyin sinovda topilgan, 2026-09-12) — "⋯" popover-menyusi tashqariga
+// bosilganda yopilmay, ochiq qolib ketardi. Endi sahifaning istalgan
+// boshqa joyiga bosilsa — MAHKAMLANMAGAN (pinnedChapterActionKeys'da
+// yo'q) barcha ochiq menyular avtomatik yopiladi. Menyu ICHIDAGI
+// tugmalar "event.stopPropagation()" bilan o'ralgan, shu sabab ular
+// bosilganda bu handler'ga umuman yetib bormaydi.
+document.addEventListener("click", (e) => {
+    if (e.target.closest(".group-card-corner")) return;
+    document.querySelectorAll(".group-card-menu:not(.hidden)").forEach(el => {
+        const key = el.id.replace("chapterActionsExtra-", "");
+        if (!pinnedChapterActionKeys.has(key)) el.classList.add("hidden");
+    });
+});
+
 // "📌" — foydalanuvchi so'rovi, 2026-09-12: bir nechta amalni ketma-ket
 // bajarish kerak bo'lganda, har safar "⋯"ni qayta bosishning o'rniga,
 // shu Mavzuning amallar qatorini "mahkamlab" (pinnedChapterActionKeys)

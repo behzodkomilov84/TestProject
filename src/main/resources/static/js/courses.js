@@ -454,6 +454,16 @@ function toggleFieldActions(key) {
     if (el) el.classList.toggle("hidden");
 }
 
+// courseDetail.js'dagi bilan bir xil — "⋯" popover-menyusi tashqariga
+// bosilganda yopilishi kerak (HAQIQIY TOPILGAN KAMCHILIK, 2026-09-12).
+document.addEventListener("click", (e) => {
+    if (e.target.closest(".group-card-corner")) return;
+    document.querySelectorAll(".group-card-menu:not(.hidden)").forEach(el => {
+        const key = el.id.replace("fieldActionsExtra-", "");
+        if (!pinnedFieldActionKeys.has(key)) el.classList.add("hidden");
+    });
+});
+
 function toggleFieldActionsPin(key) {
     if (pinnedFieldActionKeys.has(key)) {
         pinnedFieldActionKeys.delete(key);
