@@ -39,6 +39,14 @@ let chapterPages = {};
 // boshlanadi (selectCard'dagi avtomatik ochish bundan mustasno).
 let expandedChapterKeys = new Set();
 
+// "⋯" amallar qatori standart holatda har bir qayta chizishda (masalan
+// biror amal bajarilganda) yopiladi (toggleChapterActions'dagi izohga
+// qarang). Foydalanuvchi so'rovi, 2026-09-12: "action lar очилгандан
+// кейин, босса очилган ҳолда қолдирадиган icon қўш" — mana shu Set'da
+// bo'lgan Mavzular uchun bu avtomatik-yopilish BEKOR qilinadi ("mahkamlab
+// qo'yilgan" — pin). FAQAT shu sahifa (sessiya) davomida eslab qolinadi.
+let pinnedChapterActionKeys = new Set();
+
 // "🔍 Mavzu qidirish" (onChapterSearchInput) — mavzu nomi bo'yicha
 // filtr, katta-kichik harfga sezgir emas. Bo'sh bo'lsa — filtr yo'q.
 let chapterSearchQuery = "";
@@ -1602,6 +1610,10 @@ function buildGlobalIndexMap() {
 
 function renderFlatSections() {
     const list = document.getElementById("sectionsList");
+    // renderGroupedSections()'da qo'shilgan bo'lishi mumkin (masalan
+    // foydalanuvchi oxirgi Mavzuni o'chirib, kurs "Mavzusiz" holatiga
+    // qaytsa) — bu yerda hech qanday ma'nosi yo'q, olib tashlanadi.
+    list.classList.remove("group-card-grid");
     const pagination = document.getElementById("sectionsPagination");
 
     if (!allSections.length) {
@@ -1691,6 +1703,13 @@ function getSortedChapterGroups() {
 
 function renderGroupedSections() {
     const list = document.getElementById("sectionsList");
+    // "Mavzular"ni ko'p ustunli KARTOCHKA panjarasida ko'rsatish uchun
+    // (foydalanuvchi so'rovi, 2026-09-12: "мавзуларини ҳам карточка
+    // кўринишига келтир") — .sections-list o'zi standart holatda oddiy
+    // vertikal ustun (flat/mavzusiz kurs uchun); shu klass FAQAT
+    // guruhlangan (Mavzuli) ko'rinishda qo'shiladi (renderFlatSections
+    // bu klassni olib tashlaydi).
+    list.classList.add("group-card-grid");
     document.getElementById("sectionsPagination").style.display = "none";
 
     const sortedGroups = getSortedChapterGroups();
@@ -1727,13 +1746,43 @@ function onChapterSearchInput(value) {
 // Mavzu sarlavhasiga bosilganda — shu mavzuning darslar ro'yxati
 // ochiladi/yopiladi (accordion). Bir nechtasi bir vaqtda ochiq turishi
 // mumkin (faqat bittasi bilan cheklanmagan).
+// Foydalanuvchi so'rovi, 2026-09-12: "карточкани босганда, анимацион
+// ҳолатда ичидагиларни очсин" — CSS'dagi ".group-card-collapse"
+// (grid-template-rows: 0fr <-> 1fr) texnikasi orqali. Ikki bosqichli:
+// OCHISHDA — avval DOM'ga (yopiq holatda) qo'shiladi, KEYINGI freymda
+// "is-open" qo'shiladi (shunda brauzer "0fr -> 1fr" o'tishini animatsiya
+// qiladi). YOPISHDA — avval "is-open" olib tashlanadi (animatsiya
+// DOM'dagi mavjud kontent bilan ijro etiladi), animatsiya tugagach
+// (transitionend) kontent DOM'dan olib tashlanadi (yopiq mavzularda
+// keraksiz DOM/CPU sarflanmasligi uchun, avvalgidek).
 function toggleChapterBox(key) {
-    if (expandedChapterKeys.has(key)) {
-        expandedChapterKeys.delete(key);
+    const isOpen = expandedChapterKeys.has(key);
+    const collapseEl = document.getElementById(`chapterCollapse-${key}`);
+
+    if (isOpen) {
+        if (collapseEl) {
+            collapseEl.classList.remove("is-open");
+            const onEnd = (e) => {
+                if (e.target !== collapseEl || e.propertyName !== "grid-template-rows") return;
+                collapseEl.removeEventListener("transitionend", onEnd);
+                expandedChapterKeys.delete(key);
+                renderGroupedSections();
+            };
+            collapseEl.addEventListener("transitionend", onEnd);
+        } else {
+            expandedChapterKeys.delete(key);
+            renderGroupedSections();
+        }
     } else {
         expandedChapterKeys.add(key);
+        renderGroupedSections();
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const el = document.getElementById(`chapterCollapse-${key}`);
+                if (el) el.classList.add("is-open");
+            });
+        });
     }
-    renderGroupedSections();
 }
 
 function renderChapterBox(group, globalIndexById, realChapterGroups) {
@@ -1867,35 +1916,71 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
     // Amallar ko'payib ketgani sabab (foydalanuvchi so'rovi, 2026-09-10:
     // "actionlar ko'payib ketsa, ularni ham hide/unhide qiladigan qil") —
     // endi HAMMASI "⋯" tugmasi orqali yig'ilib/ochilib turadigan alohida
-    // qatorda (har safar qayta chizilganda yopiq holatga qaytadi — oddiy
-    // va bashorat qilinadigan xulq-atvor).
+    // qatorda (har safar qayta chizilganda, standart holatda, yopiq
+    // holatga qaytadi — tasodifiy ochiq qolib ketmasligi uchun). Lekin
+    // foydalanuvchi buni "📌" bilan MAHKAMLAB qo'ysa (pinnedChapterActionKeys),
+    // qayta chizilganda ham OCHIQ qoladi (foydalanuvchi so'rovi,
+    // 2026-09-12: "actionlar ochilgandan keyin, bossa ochilgan holda
+    // qoldiradigan icon qo'sh").
     const actionsHtml = `${moveBtns}${addTopicBtn}${bulkImportBtn}${exportChapterBtn}${renameBtn}${deleteWithTopicsBtn}`;
     const hasActions = actionsHtml.trim() !== "";
+    const isPinned = pinnedChapterActionKeys.has(group.key);
 
+    // Karto chka ko'rinishi (foydalanuvchi so'rovi, 2026-09-12: "мавзу
+    // ларини ҳам карточка кўринишига келтир. Мавзу номлари сиғмай
+    // қолмасин") — ATAYLAB YANGI klass nomlari ("group-card-*", eski
+    // ".chapter-box"dan FARQLI): "⋯" amallar menyusi endi kartaning
+    // O'NG-YUQORI BURCHAGIDA (mutlaq joylashuv), nomi esa ALOHIDA
+    // ".group-card-name"da — shu ikkalasi bir-biridan MUSTAQIL, shu sabab
+    // uzun nom bir necha qatorga bo'linsa ham (overflow-wrap), boshqa
+    // elementlarni "surib" chalkashtirib yubormaydi (avvalgi HAQIQIY
+    // TOPILGAN BUG: uzun nom qatorga sig'maganda strelka/tugmalar
+    // bir-biridan uzilib, tartibsiz ko'rinardi).
     return `
-        <div class="chapter-box ${isExpanded ? "expanded" : "collapsed"}">
-            <h3 class="chapter-box-title" onclick="toggleChapterBox('${group.key}')" title="${isExpanded ? "Yig'ish" : "Ochish"}">
-                <span class="chapter-box-chevron">▸</span>
-                📂 ${escapeHtml(group.name)}
-                <span class="chapter-box-count">(dars — ${group.items.length} ta, jami testlar — ${totalQuestions} ta)</span>
-                ${hasActions ? `
-                <span class="chapter-box-actions">
-                    <button class="chapter-actions-toggle" onclick="event.stopPropagation(); toggleChapterActions('${group.key}')" title="Amallar">⋯</button>
-                    <span class="chapter-box-actions-extra hidden" id="chapterActionsExtra-${group.key}">${actionsHtml}</span>
-                </span>` : ""}
+        <div class="group-card ${isExpanded ? "expanded" : "collapsed"}">
+            ${hasActions ? `
+            <div class="group-card-corner">
+                <button class="group-card-menu-trigger" onclick="event.stopPropagation(); toggleChapterActions('${group.key}')" title="Amallar">⋯</button>
+                <div class="group-card-menu ${isPinned ? "" : "hidden"}" id="chapterActionsExtra-${group.key}">
+                    <button class="chapter-actions-pin ${isPinned ? "pinned" : ""}" onclick="event.stopPropagation(); toggleChapterActionsPin('${group.key}')" title="${isPinned ? "Mahkamlangan — amal bajarilganda ham ochiq qoladi (bosib bekor qiling)" : "Mahkamlash — amal bajarilganda ham ochiq qolsin"}">📌</button>
+                    ${actionsHtml}
+                </div>
+            </div>` : ""}
+            <h3 class="group-card-title" onclick="toggleChapterBox('${group.key}')" title="${isExpanded ? "Yig'ish" : "Ochish"}">
+                <span class="group-card-chevron">▸</span>
+                <span class="group-card-name">📂 ${escapeHtml(group.name)}</span>
             </h3>
-            ${bodyHtml}
+            <div class="group-card-count">(dars — ${group.items.length} ta, jami testlar — ${totalQuestions} ta)</div>
+            <div class="group-card-collapse ${isExpanded ? "is-open" : ""}" id="chapterCollapse-${group.key}">
+                <div class="group-card-collapse-inner">${bodyHtml}</div>
+            </div>
         </div>
     `;
 }
 
 // "⋯" bosilganda — shu Mavzuning amallar qatorini ochadi/yopadi
-// (foydalanuvchi so'rovi, 2026-09-10). Holat saqlanmaydi — har qayta
-// chizishda (masalan boshqa amal bajarilganda) yopiq holatga qaytadi,
-// bu shunchaki tasodifiy ochiq qolib ketmasligi uchun ataylab shunday.
+// (foydalanuvchi so'rovi, 2026-09-10). Standart holatda saqlanmaydi — har
+// qayta chizishda (masalan boshqa amal bajarilganda) yopiq holatga
+// qaytadi, bu shunchaki tasodifiy ochiq qolib ketmasligi uchun ataylab
+// shunday — FAQAT "📌" bilan mahkamlanmagan bo'lsa (pastga qarang).
 function toggleChapterActions(key) {
     const el = document.getElementById(`chapterActionsExtra-${key}`);
     if (el) el.classList.toggle("hidden");
+}
+
+// "📌" — foydalanuvchi so'rovi, 2026-09-12: bir nechta amalni ketma-ket
+// bajarish kerak bo'lganda, har safar "⋯"ni qayta bosishning o'rniga,
+// shu Mavzuning amallar qatorini "mahkamlab" (pinnedChapterActionKeys)
+// qo'yish mumkin — shunda renderChapterBox() har safar qayta chizilganda
+// (masalan mavzu qo'shilgach) ham OCHIQ holatda qoladi. Qayta bosilsa —
+// mahkamlash bekor qilinadi (keyingi qayta chizishda yana yopiq holatga qaytadi).
+function toggleChapterActionsPin(key) {
+    if (pinnedChapterActionKeys.has(key)) {
+        pinnedChapterActionKeys.delete(key);
+    } else {
+        pinnedChapterActionKeys.add(key);
+    }
+    renderGroupedSections();
 }
 
 // Faqat "chapterKey" mavzusiga (yoki "none" — mavzusiz darslar

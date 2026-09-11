@@ -83,10 +83,12 @@
          toggleQuestionScienceTrash/loadQuestionScienceTrash). -->
     <button onclick="toggleQuestionScienceTrash()">🗑️ Barcha o'chirilgan testlar <span id="questionScienceTrashBadge" class="notif-badge" style="display:none;">0</span></button>
 
-    <!-- Kursga hali bog'lanmagan mavzularni ajratib ko'rsatish (yoqilsa —
-         faqat ular ko'rinadi) — o'quv rejasini kursga to'liq bog'lab
-         chiqishda qaysi mavzular hali "yetim" ekanini topish uchun
-         (toggleUnlinkedFilter, topic.js). -->
+    <!-- Kursga hali bog'lanmagan mavzularni ALOHIDA MODALDA ko'rsatadi
+         (foydalanuvchi so'rovi, 2026-09-12: "Курсга боғланмаган дарсларни
+         босганда модалда очилсин") — ilgari asosiy ro'yxatni joyida
+         filtrlardi, endi checkbox bilan bir yoki bir nechtasini birdaniga
+         tanlab, yakka/umumiy o'chirish imkoni bilan (toggleUnlinkedFilter,
+         topic.js). -->
     <button id="unlinkedFilterBtn" class="unlinked-filter-btn" onclick="toggleUnlinkedFilter()">🔗 Kursga bog'lanmagan darslar <span id="unlinkedTopicBadge" class="notif-badge" style="display:none;">0</span></button>
 
     <!-- Mavzu ustidan (Bo'lim -> Mavzu -> Dars) kelinganda ko'rinadi —
@@ -152,6 +154,21 @@
         <div id="questionScienceTrashList"></div>
         <div class="modal-footer">
             <button type="button" onclick="toggleQuestionScienceTrash()">Yopish</button>
+        </div>
+    </div>
+</div>
+
+<!-- "🔗 Kursga bog'lanmagan darslar" — modal (foydalanuvchi so'rovi,
+     2026-09-12). questionScienceTrashModal bilan bir xil andoza, faqat
+     bu yerdagi o'chirish QAYTARIB BO'LMAYDIGAN (savat/trash emas — Topic
+     to'g'ridan-to'g'ri o'chadi, xuddi removeFromUi() dagi kabi), shu
+     sabab har bir amal ikki bosqichli (danger) tasdiq so'raydi. -->
+<div id="unlinkedTopicsModal" class="modal-overlay">
+    <div class="trash-list-modal">
+        <h2 class="modal-h2">🔗 Kursga bog'lanmagan darslar</h2>
+        <div id="unlinkedTopicsList"></div>
+        <div class="modal-footer">
+            <button type="button" onclick="toggleUnlinkedTopicsModal()">Yopish</button>
         </div>
     </div>
 </div>

@@ -1655,9 +1655,192 @@ body {
     }
 }
 
+/* ========================================================================
+   "GROUP CARD" — Mavzular (courseDetail.js#renderChapterBox) VA
+   Yo'nalishlar (courses.js#renderFieldBox) uchun UMUMIY karto chka
+   ko'rinishi (foydalanuvchi so'rovi, 2026-09-12: "мавзуларини ҳам
+   карточка кўринишига келтир... Йўналиш номлари сиғмай қолмасин...
+   Йўналишда ҳам, мавзуларда ҳам карточкани босганда, анимацион ҳолатда
+   ичидагиларни очсин"). ATAYLAB YANGI klass nomlari (pastdagi eski
+   ".chapter-box"dan BUTUNLAY MUSTAQIL) — Test boshqaruvi sahifasi
+   (science.js) ham ".chapter-box"ni ishlatadi, bu so'rovga kiritilmagan,
+   shu sabab uni tegmasdan qoldirish uchun ikkita alohida klass to'plami
+   saqlanadi.
+   ======================================================================== */
+
+/* Konteyner — .sections-list'ga QO'SHIMCHA klass sifatida qo'yiladi
+   (courseDetail.js#renderGroupedSections / coursesCatalog.html), shu
+   sabab compound selektor: oddiy ".sections-list" (flat/mavzusiz kurs)
+   o'zining flex-column tartibida qolaveradi. "auto-fill, minmax(300px,
+   1fr)" — aniq breakpoint kerak emas, ekran kengligiga qarab ustunlar
+   soni o'zi moslashadi. */
+.sections-list.group-card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 18px;
+    align-items: start;
+}
+
+.group-card {
+    position: relative;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 18px 44px 18px 20px; /* o'ngda "⋯" burchak menyusiga joy */
+    box-shadow: 0 2px 10px rgba(15, 23, 42, .05);
+    transition: box-shadow .2s ease, border-color .2s ease;
+}
+
+.group-card:hover {
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .1);
+    border-color: #cbd5e1;
+}
+
+/* Ochilgan karta BUTUN qator kengligini egallaydi — ichidagi kurs/dars
+   kartalari (.courses-grid/.sections-grid) tor bitta ustunga emas, keng
+   panjaraga sig'ishi uchun. */
+.group-card.expanded {
+    grid-column: 1 / -1;
+}
+
+.group-card-title {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+}
+
+.group-card-chevron {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    color: #334155;
+    font-size: 19px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: transform .15s ease, background .15s ease;
+}
+
+.group-card:hover .group-card-chevron {
+    background: #cbd5e1;
+}
+
+.group-card.expanded .group-card-chevron {
+    transform: rotate(90deg);
+}
+
+/* ASOSIY tuzatish (foydalanuvchi so'rovi: "Мавзу номлари сиғмай
+   қолмасин") — nomi endi strelka/hisoblagich/amallardan MUSTAQIL,
+   o'zining butun kengligida erkin necha qatorga bo'linishi mumkin
+   (overflow-wrap), boshqa elementlarni surib chalkashtirmaydi. */
+.group-card-name {
+    flex: 1;
+    min-width: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.35;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.group-card-count {
+    margin: 6px 0 0 36px;
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+/* "⋯" — kartaning O'NG-YUQORI BURCHAGIDA (mutlaq joylashuv), sarlavha
+   qanchalik uzun/ko'p qatorli bo'lmasin, doim BIR XIL joyda turadi. */
+.group-card-corner {
+    position: absolute;
+    top: 16px;
+    right: 14px;
+}
+
+.group-card-menu-trigger {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #64748b;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .15s ease, border-color .15s ease;
+}
+
+.group-card-menu-trigger:hover {
+    background: #eef2f7;
+    border-color: #cbd5e1;
+}
+
+/* Amallar — kichik popover-menyu sifatida (burchak tugmasi ostida),
+   qatorga sig'maydigan ko'p ikonka endi kartani "yorib chiqmaydi". */
+.group-card-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 12px 28px rgba(15, 23, 42, .15);
+    padding: 8px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    width: max-content;
+    max-width: 200px;
+    z-index: 6;
+}
+
+.group-card-menu.hidden {
+    display: none;
+}
+
+/* Animatsion ochilish/yopilish (foydalanuvchi so'rovi, 2026-09-12:
+   "анимацион ҳолатда ичидагиларни очсин") — "grid-template-rows: 0fr
+   <-> 1fr" texnikasi: JS'da balandlikni o'lchashsiz, haqiqiy "auto"
+   balandlikkacha silliq animatsiya qiladi (courseDetail.js#toggleChapterBox
+   / courses.js#toggleFieldBox — ikki bosqichli: avval DOM'ga qo'shiladi,
+   keyingi freymda "is-open" qo'shiladi). ".group-card-collapse-inner"dagi
+   "min-height:0" MUHIM — aks holda grid item o'z ichidagi kontent
+   balandligini "1fr" hisoblashda majburlab, animatsiyani buzadi. */
+.group-card-collapse {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows .3s ease;
+}
+
+.group-card-collapse.is-open {
+    grid-template-rows: 1fr;
+}
+
+.group-card-collapse-inner {
+    overflow: hidden;
+    min-height: 0;
+}
+
+.group-card-collapse.is-open .group-card-collapse-inner {
+    margin-top: 14px;
+}
+
 /* Bo'lim (bob) "box"i — guruhlangan ko'rinishda (renderGroupedSections,
    courseDetail.js) har bir Bo'lim shu qutida, boshqalaridan ajralib
-   turadigan fon/chegara bilan. */
+   turadigan fon/chegara bilan. FAQAT Test boshqaruvi sahifasi
+   (science.js) ishlatadi endi — Mavzular/Yo'nalishlar yuqoridagi
+   ".group-card"ga o'tkazildi (2026-09-12). */
 .chapter-box {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
@@ -1804,6 +1987,47 @@ body {
 
 .chapter-box-actions-extra.hidden {
     display: none;
+}
+
+/* "📌" — amallar qatorini "mahkamlash" (foydalanuvchi so'rovi,
+   2026-09-12: "actionlar ochilgandan keyin, bossa ochilgan holda
+   qoldiradigan icon qo'sh") — standart holatda amallar qatori har bir
+   qayta chizilganda (masalan biror amal bajarilganda) avtomatik
+   yopiladi; bu tugma bosilsa, o'sha Mavzu uchun shu avtomatik-yopilish
+   BEKOR qilinadi (ketma-ket bir nechta amal bajarish osonroq bo'lishi
+   uchun). Bosilmagan holatda xira, bosilgan (pinned) holatda to'q sariq
+   fon bilan ajralib turadi — holat aniq ko'rinishi uchun. */
+.chapter-actions-pin {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+    color: #94a3b8;
+    font-size: 13px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background .15s ease, border-color .15s ease, color .15s ease, transform .15s ease;
+}
+
+.chapter-actions-pin:hover {
+    background: #eef2f7;
+    border-color: #cbd5e1;
+    color: #475569;
+}
+
+.chapter-actions-pin.pinned {
+    background: #fff7ed;
+    border-color: #fb923c;
+    color: #ea580c;
+    transform: rotate(-35deg);
+}
+
+.chapter-actions-pin.pinned:hover {
+    background: #ffedd5;
 }
 
 /* "✏️" — bo'lim nomini tahrirlash (renameChapterPrompt, courseDetail.js).

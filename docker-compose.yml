@@ -43,7 +43,9 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/test_project?createDatabaseIfNotExist=true
+      # docker-compose.prod.yml'dagi bilan bir xil ("rewriteBatchedStatements=true"
+      # — Hibernate batch yozuvlarini haqiqiy tarmoq darajasida birlashtirish uchun).
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/test_project?createDatabaseIfNotExist=true&rewriteBatchedStatements=true
       SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-root}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-root}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?TELEGRAM_BOT_TOKEN env var kiritilishi shart (.env fayliga qarang)}

@@ -37,6 +37,17 @@ function formatSum(amount) {
     return Number(amount).toLocaleString("uz-UZ") + " so'm";
 }
 
+// "dd.mm.yyyy hh.mm.ss" — ANIQ shu formatda, brauzer/OS tili sozlamasiga
+// qarab o'zgarib turadigan toLocaleString()'dan farqli (foydalanuvchi
+// so'rovi, 2026-09-12: "sanalarni dd.mm.yyyy hh.mm.ss formatida qil").
+function formatDateTime(dateStr) {
+    if (!dateStr) return "—";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "—";
+    const p = n => String(n).padStart(2, "0");
+    return `${p(d.getDate())}.${p(d.getMonth() + 1)}.${d.getFullYear()} ${p(d.getHours())}.${p(d.getMinutes())}.${p(d.getSeconds())}`;
+}
+
 // "2026-08" -> "Avgust 2026"
 function formatMonth(monthKey) {
     const [year, month] = monthKey.split("-").map(Number);
@@ -93,7 +104,10 @@ function renderStats(stats) {
     document.getElementById("statThisMonth").textContent = formatSum(stats.thisMonthRevenue);
     document.getElementById("statActiveSubscribers").textContent = stats.activeSubscribersCount;
     document.getElementById("statTotalCount").textContent = stats.totalConfirmedCount;
-    document.getElementById("statPending").textContent = stats.pendingCount;
+    // "Tasdiq kutmoqda" katakchasi olib tashlandi (foydalanuvchi so'rovi,
+    // 2026-09-12) — qo'lda tasdiqlanadigan PENDING to'lov so'rovi
+    // mexanizmi butunlay olib tashlangan edi, shu sabab stats.pendingCount
+    // endi ko'rsatilmaydi.
 
     renderMonthlyBreakdown(stats.monthlyBreakdown);
 }
@@ -167,8 +181,8 @@ function renderHistory(subscriptions) {
             <td>${formatSum(s.amount)}</td>
             <td>${SOURCE_LABELS_UZ[s.source] || s.source}</td>
             <td><span class="status-badge ${s.status}">${STATUS_LABELS_UZ[s.status] || s.status}</span></td>
-            <td>${new Date(s.createdAt).toLocaleString("uz-UZ")}</td>
-            <td>${s.endDate ? new Date(s.endDate).toLocaleDateString("uz-UZ") : "—"}</td>
+            <td>${formatDateTime(s.createdAt)}</td>
+            <td>${formatDateTime(s.endDate)}</td>
             <td>${s.note || "—"}</td>
         </tr>
     `).join("");

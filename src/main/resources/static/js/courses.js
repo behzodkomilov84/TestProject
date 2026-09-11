@@ -23,6 +23,12 @@ function updateFilePickerName(input, spanId) {
 // bilan bir xil g'oya (bir nechtasi bir vaqtda ochiq turishi mumkin).
 const expandedFieldKeys = new Set();
 
+// courseDetail.js#pinnedChapterActionKeys BILAN BIR XIL — "📌" bilan
+// mahkamlangan Yo'nalishlarning amallar menyusi qayta chizilganda ham
+// ochiq qoladi (foydalanuvchi so'rovi, 2026-09-12: ikkala sahifada ham
+// bir xil, izchil xatti-harakat).
+const pinnedFieldActionKeys = new Set();
+
 // Kurs sahifasidan (courseDetail.html) "← Kurs yo'nalishlari" bosilganda "?focus=<id>"
 // beriladi — shu Kursning Yo'nalish qutisi avtomatik ochiladi va o'sha
 // kartaga skroll qilinadi (science.js#focusId bilan bir xil g'oya — aks
@@ -182,13 +188,39 @@ function renderGroupedCourses() {
     // butunlay OLIB TASHLANGAN edi (2026-09-08) — endi bu yerda ham.
 }
 
+// courseDetail.js#toggleChapterBox BILAN BIR XIL animatsiya mantig'i
+// (foydalanuvchi so'rovi, 2026-09-12: "карточкани босганда, анимацион
+// ҳолатда ичидагиларни очсин") — ".group-card-collapse" CSS klassi
+// (grid-template-rows: 0fr <-> 1fr) ikkala sahifada (bu yerda —
+// Yo'nalishlar, courseDetail.js'da — Mavzular) UMUMIY (courses.css).
 function toggleFieldBox(key) {
-    if (expandedFieldKeys.has(key)) {
-        expandedFieldKeys.delete(key);
+    const isOpen = expandedFieldKeys.has(key);
+    const collapseEl = document.getElementById(`fieldCollapse-${key}`);
+
+    if (isOpen) {
+        if (collapseEl) {
+            collapseEl.classList.remove("is-open");
+            const onEnd = (e) => {
+                if (e.target !== collapseEl || e.propertyName !== "grid-template-rows") return;
+                collapseEl.removeEventListener("transitionend", onEnd);
+                expandedFieldKeys.delete(key);
+                renderGroupedCourses();
+            };
+            collapseEl.addEventListener("transitionend", onEnd);
+        } else {
+            expandedFieldKeys.delete(key);
+            renderGroupedCourses();
+        }
     } else {
         expandedFieldKeys.add(key);
+        renderGroupedCourses();
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                const el = document.getElementById(`fieldCollapse-${key}`);
+                if (el) el.classList.add("is-open");
+            });
+        });
     }
-    renderGroupedCourses();
 }
 
 // Kartani "tanlangan" deb belgilaydi — courseDetail.js#selectCard bilan
@@ -379,20 +411,56 @@ function renderFieldBox(group, realFieldGroups) {
         `;
     }
 
+    // Karto chka ko'rinishi (foydalanuvchi so'rovi, 2026-09-12: "курс
+    // йўналишларини ҳам карточка кўринишига келтир. Йўналиш номлари
+    // сиғмай қолмасин... CSS ини чиройли қил иккаласини ҳам") —
+    // courseDetail.js#renderChapterBox BILAN AYNAN bir xil ".group-card-*"
+    // klasslari (courses.css'da umumiy) — ikkala sahifa ham bir xil
+    // ko'rinish/xatti-harakatga ega bo'lishi uchun.
+    const actionsHtml = `${addBtn}${moveBtns}${renameBtn}${deleteBtn}`;
+    const hasActions = actionsHtml.trim() !== "";
+    const isPinned = pinnedFieldActionKeys.has(group.key);
+
     return `
-        <div class="chapter-box ${isExpanded ? "expanded" : "collapsed"}">
-            <h3 class="chapter-box-title" onclick="toggleFieldBox('${group.key}')" title="${isExpanded ? "Yig'ish" : "Ochish"}">
-                <span class="chapter-box-chevron">▸</span>
-                🧭 ${escapeHtml(group.name)}
-                <!-- Ilgari "(bo'lim — N ta)" edi — bu NOTO'G'RI edi, chunki
-                     bu yerda sanalayotgan narsa KURS (Course), Bo'lim
-                     (CourseChapter) emas — foydalanuvchi so'rovi, 2026-09-05. -->
-                <span class="chapter-box-count">(kurs — ${group.items.length} ta)</span>
-                <span class="chapter-box-actions">${addBtn}${moveBtns}${renameBtn}${deleteBtn}</span>
+        <div class="group-card ${isExpanded ? "expanded" : "collapsed"}">
+            ${hasActions ? `
+            <div class="group-card-corner">
+                <button class="group-card-menu-trigger" onclick="event.stopPropagation(); toggleFieldActions('${group.key}')" title="Amallar">⋯</button>
+                <div class="group-card-menu ${isPinned ? "" : "hidden"}" id="fieldActionsExtra-${group.key}">
+                    <button class="chapter-actions-pin ${isPinned ? "pinned" : ""}" onclick="event.stopPropagation(); toggleFieldActionsPin('${group.key}')" title="${isPinned ? "Mahkamlangan — amal bajarilganda ham ochiq qoladi (bosib bekor qiling)" : "Mahkamlash — amal bajarilganda ham ochiq qolsin"}">📌</button>
+                    ${actionsHtml}
+                </div>
+            </div>` : ""}
+            <h3 class="group-card-title" onclick="toggleFieldBox('${group.key}')" title="${isExpanded ? "Yig'ish" : "Ochish"}">
+                <span class="group-card-chevron">▸</span>
+                <span class="group-card-name">🧭 ${escapeHtml(group.name)}</span>
             </h3>
-            ${bodyHtml}
+            <!-- Ilgari "(bo'lim — N ta)" edi — bu NOTO'G'RI edi, chunki
+                 bu yerda sanalayotgan narsa KURS (Course), Bo'lim
+                 (CourseChapter) emas — foydalanuvchi so'rovi, 2026-09-05. -->
+            <div class="group-card-count">(kurs — ${group.items.length} ta)</div>
+            <div class="group-card-collapse ${isExpanded ? "is-open" : ""}" id="fieldCollapse-${group.key}">
+                <div class="group-card-collapse-inner">${bodyHtml}</div>
+            </div>
         </div>
     `;
+}
+
+// courseDetail.js#toggleChapterActions/toggleChapterActionsPin BILAN BIR
+// XIL — "⋯" amallar menyusini ochadi/yopadi, "📌" esa qayta chizishda ham
+// ochiq qolishini mahkamlaydi (foydalanuvchi so'rovi, 2026-09-12).
+function toggleFieldActions(key) {
+    const el = document.getElementById(`fieldActionsExtra-${key}`);
+    if (el) el.classList.toggle("hidden");
+}
+
+function toggleFieldActionsPin(key) {
+    if (pinnedFieldActionKeys.has(key)) {
+        pinnedFieldActionKeys.delete(key);
+    } else {
+        pinnedFieldActionKeys.add(key);
+    }
+    renderGroupedCourses();
 }
 
 // "⬆⬇" — shu Yo'nalish ICHIDA kurs kartochkasini surish (foydalanuvchi

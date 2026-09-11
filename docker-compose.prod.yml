@@ -53,7 +53,16 @@ services:
       clamav:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/test_project?createDatabaseIfNotExist=true
+      # "rewriteBatchedStatements=true" — HAQIQIY TOPILGAN BUG (foydalanuvchi
+      # so'rovi, 2026-09-12: "Takroriy havolalarni tozalash"ni bossam,
+      # tozalashda xatolik deyapti" — katta kursda (masalan Bakteriologiya,
+      # 1490+ test) bu amal minglab savolning javobini birma-bir, alohida
+      # UPDATE so'rovi bilan yangilardi (MySQL Connector/J'ning bu bayrog'i
+      # yo'qligi sabab, application.yaml'dagi hibernate.jdbc.batch_size
+      # sozlamasi HAQIQIY tarmoq darajasida guruhlanmasdi) — natijada
+      # so'rov nginx/brauzer timeout'idan oshib ketardi. Endi batch
+      # yozuvlar HAQIQATDA bitta so'rovga birlashtiriladi.
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/test_project?createDatabaseIfNotExist=true&rewriteBatchedStatements=true
       SPRING_DATASOURCE_USERNAME: ${DB_USERNAME:-root}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-root}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?TELEGRAM_BOT_TOKEN env var kiritilishi shart (.env fayliga qarang)}

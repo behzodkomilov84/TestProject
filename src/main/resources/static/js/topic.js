@@ -41,9 +41,12 @@ const filterSectionId = new URLSearchParams(window.location.search).get("section
 const pageFieldId = new URLSearchParams(window.location.search).get("fieldId");
 const fieldQuery = pageFieldId != null ? `&fieldId=${pageFieldId}` : "";
 
-// "🔗 Kursga bog'lanmagan mavzular" filtri (toggleUnlinkedFilter) — yoqilsa
-// faqat linkedCourseTitle'i YO'Q qatorlar ko'rsatiladi (render()).
-let showOnlyUnlinkedTopics = false;
+// "🔗 Kursga bog'lanmagan darslar" — ENDI asosiy ro'yxatni joyida
+// filtrlamaydi, alohida MODALDA ko'rsatadi (checkbox bilan tanlab,
+// yakka/umumiy o'chirish imkoni bilan — foydalanuvchi so'rovi,
+// 2026-09-12: "Курсга боғланмаган дарсларни босганда модалда очилсин").
+let unlinkedTopicsModalOpen = false;
+let selectedUnlinkedTopicIds = new Set();
 
 // question.html'dagi "← DARSGA QAYTISH" tugmasi (question.js#goBack)
 // aynan qaysi darsdan kelingani "?focus=" orqali beradi — sahifa
@@ -137,13 +140,140 @@ function refreshQuestionScienceTrashBadge() {
         .catch(err => console.error(err));
 }
 
-// "🔗 Kursga bog'lanmagan mavzular" filtri — yoqilganda tugma "faol"
-// ko'rinishga o'tadi (unlinked-filter-btn.active, science.css) va faqat
-// linkedCourseTitle'i yo'q qatorlar qoladi (render()).
+// "🔗 Kursga bog'lanmagan darslar" — modalni ochadi/yopadi (foydalanuvchi
+// so'rovi, 2026-09-12). itemBlock ALLAQACHON frontendda (linkedCourseTitle
+// bilan birga) yuklangan — alohida fetch shart emas, oddiy filtr yetarli.
 function toggleUnlinkedFilter() {
-    showOnlyUnlinkedTopics = !showOnlyUnlinkedTopics;
-    document.getElementById("unlinkedFilterBtn").classList.toggle("active", showOnlyUnlinkedTopics);
-    render();
+    toggleUnlinkedTopicsModal();
+}
+
+function toggleUnlinkedTopicsModal() {
+    unlinkedTopicsModalOpen = !unlinkedTopicsModalOpen;
+    document.getElementById("unlinkedTopicsModal").classList.toggle("show", unlinkedTopicsModalOpen);
+    if (unlinkedTopicsModalOpen) {
+        renderUnlinkedTopicsModal();
+    }
+}
+
+function renderUnlinkedTopicsModal() {
+    const list = document.getElementById("unlinkedTopicsList");
+    selectedUnlinkedTopicIds.clear();
+
+    const unlinked = itemBlock.filter(s => s.id > 0 && !s.linkedCourseTitle);
+    setTrashBadgeCount("unlinkedTopicBadge", unlinked.length);
+
+    if (!unlinked.length) {
+        list.innerHTML = "<p>Kursga bog'lanmagan dars yo'q — hammasi bog'langan.</p>";
+        return;
+    }
+
+    list.innerHTML = `
+        <div class="trash-bulk-actions">
+            <label><input type="checkbox" id="selectAllUnlinkedTopicsCheckbox" onchange="toggleSelectAllUnlinkedTopics(this)"> Hammasini belgilash</label>
+            <button id="bulkDeleteUnlinkedTopicsBtn" class="bulk-delete-btn hidden" onclick="deleteSelectedUnlinkedTopics()">🗑️ Tanlanganlarni o'chirish (<span id="bulkDeleteUnlinkedTopicsCount">0</span>)</button>
+        </div>
+        ${unlinked.map(s => `
+            <div class="trash-row">
+                <input type="checkbox" class="unlinked-topic-select-checkbox" data-topic-id="${s.id}" onchange="onUnlinkedTopicCheckboxChange(${s.id}, this)">
+                <div class="trash-row-info">
+                    ${escapeHtml(s.name)}
+                    <span class="item-count-badge">${s.questionCount || 0} ta test</span>
+                </div>
+                <div class="trash-row-actions">
+                    <button class="danger-btn" onclick="deleteUnlinkedTopic(${s.id}, ${JSON.stringify(s.name).replace(/"/g, "&quot;")})">🗑️ O'chirish</button>
+                </div>
+            </div>
+        `).join("")}`;
+}
+
+function onUnlinkedTopicCheckboxChange(topicId, checkbox) {
+    if (checkbox.checked) {
+        selectedUnlinkedTopicIds.add(topicId);
+    } else {
+        selectedUnlinkedTopicIds.delete(topicId);
+        const selectAll = document.getElementById("selectAllUnlinkedTopicsCheckbox");
+        if (selectAll) selectAll.checked = false;
+    }
+    updateUnlinkedTopicsBulkButton();
+}
+
+function toggleSelectAllUnlinkedTopics(selectAllCheckbox) {
+    document.querySelectorAll("#unlinkedTopicsList .unlinked-topic-select-checkbox").forEach((cb) => {
+        cb.checked = selectAllCheckbox.checked;
+        const topicId = Number(cb.dataset.topicId);
+        if (selectAllCheckbox.checked) {
+            selectedUnlinkedTopicIds.add(topicId);
+        } else {
+            selectedUnlinkedTopicIds.delete(topicId);
+        }
+    });
+    updateUnlinkedTopicsBulkButton();
+}
+
+function updateUnlinkedTopicsBulkButton() {
+    const count = selectedUnlinkedTopicIds.size;
+    const btn = document.getElementById("bulkDeleteUnlinkedTopicsBtn");
+    if (!btn) return;
+    document.getElementById("bulkDeleteUnlinkedTopicsCount").textContent = String(count);
+    btn.classList.toggle("hidden", count === 0);
+}
+
+// Yakka o'chirish — removeFromUi() bilan bir xil endpoint (/api/topic/save
+// + deletedIds), faqat modal ichidan, ro'yxatni qayta yuklab (butun
+// sahifani emas) chaqiriladi.
+async function deleteUnlinkedTopic(topicId, name) {
+    if (!await showConfirmModal(`⚠️ "${name}"ni o'chirishni tasdiqlaysizmi?\n\nKeyin bu amalni bekor qilib bo'lmaydi.`, { danger: true })) return;
+
+    try {
+        const res = await fetch("/api/topic/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ new: [], updated: [], deletedIds: [topicId] })
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlertModal(data.error || "O'chirishda xatolik");
+            return;
+        }
+        await reloadFromDb(`/api/topic?scienceId=${scienceId}`);
+        render();
+        renderUnlinkedTopicsModal();
+        refreshTopicTrashBadge();
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
+    }
+}
+
+// Umumiy (bitta so'rovda) o'chirish — /api/topic/save'ning deletedIds'i
+// BIR NECHTA id'ni birdaniga qabul qiladi (removeFromUi()dagi bilan bir
+// xil endpoint, alohida "bulk" endpoint yaratishning hojati yo'q).
+async function deleteSelectedUnlinkedTopics() {
+    const ids = [...selectedUnlinkedTopicIds];
+    if (!ids.length) return;
+
+    if (!await showConfirmModal(`⚠️ ${ids.length} ta darsni o'chirmoqchimisiz?\n\nKeyin bu amalni bekor qilib bo'lmaydi.`, { danger: true })) return;
+    if (!await showConfirmModal("Haqiqatan ham ishonchingiz komilmi?", { danger: true })) return;
+
+    try {
+        const res = await fetch("/api/topic/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ new: [], updated: [], deletedIds: ids })
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || "O'chirishda xatolik");
+        }
+        selectedUnlinkedTopicIds.clear();
+        await reloadFromDb(`/api/topic?scienceId=${scienceId}`);
+        render();
+        renderUnlinkedTopicsModal();
+        refreshTopicTrashBadge();
+    } catch (err) {
+        console.error(err);
+        showAlertModal(err.message || "Tarmoq xatoligi");
+    }
 }
 
 // Nechta mavzu hali kursga bog'lanmaganini ko'rsatadi — itemBlock
@@ -158,10 +288,7 @@ function refreshUnlinkedTopicBadge() {
 // bog'langan, nechtasi bog'lanmagan (render()'da chaqiriladi). Bo'lim
 // ustidan (filterSectionId) kelingan bo'lsa — faqat SHU bo'lim mavzulari
 // bo'yicha hisoblaydi (ro'yxatda haqiqatan ko'rinayotgan qatorlarga mos
-// bo'lishi uchun) — "🔗 Kursga bog'lanmagan mavzular" filtrining o'zi
-// (showOnlyUnlinkedTopics) esa E'TIBORGA OLINMAYDI, aks holda filtr
-// yoqilganda sarlavha ham har doim "0 ta bog'langan" deb ko'rsatib
-// chalg'itardi.
+// bo'lishi uchun).
 function updateTopicsSummary() {
     const el = document.getElementById("topicsSummary");
     if (!el) return;
@@ -884,18 +1011,10 @@ function render() {
     list.innerHTML = "";
 
     itemBlock.forEach((s, i) => {
-        // "🔗 Kursga bog'lanmagan mavzular" filtri YOQILGANDA — butun FAN
-        // bo'yicha qidiradi, bo'lim filtrini (filterSectionId) E'TIBORGA
-        // OLMAYDI. Aks holda: "yetim" mavzu joriy filtrlangan bo'limdan
-        // BOSHQA bo'limda (yoki bo'limsiz) bo'lsa, hisoblagichda (badge)
-        // soni ko'rinib turib, ro'yxatning o'zi bo'sh chiqib qolardi —
-        // haqiqiy topilgan bug (foydalanuvchi "ajratib bermadi" deb
-        // xabar berdi).
-        if (showOnlyUnlinkedTopics) {
-            if (s.mode === "VIEW" && s.linkedCourseTitle) {
-                return;
-            }
-        } else if (filterSectionId && s.mode === "VIEW" && Number(s.sectionId) !== Number(filterSectionId)) {
+        // "🔗 Kursga bog'lanmagan darslar" ENDI alohida modalda ko'rsatiladi
+        // (renderUnlinkedTopicsModal) — bu yerdagi asosiy ro'yxat endi
+        // FAQAT bo'lim filtriga qarab qisqaradi.
+        if (filterSectionId && s.mode === "VIEW" && Number(s.sectionId) !== Number(filterSectionId)) {
             // Bo'lim ustidan kelingan bo'lsa — faqat shu bo'limga tegishli
             // (yoki hali saqlanmagan NEW) qatorlar ko'rsatiladi. itemBlock'ning
             // o'zi to'liq qoladi (dublikat nom tekshiruvi butun fan bo'yicha

@@ -1,6 +1,12 @@
 spring:
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/test_project?createDatabaseIfNotExist=true}
+    # "&rewriteBatchedStatements=true" — HAQIQIY TOPILGAN BUG (2026-09-12:
+    # "Takroriy havolalarni tozalash"ni bossam, xatolik deyapti" — pastdagi
+    # hibernate.jdbc.batch_size uni QOG'OZDA guruhlaydi, lekin MySQL
+    # Connector/J shu bayrog'isiz baribir HAR BIR yozuvni ALOHIDA tarmoq
+    # so'rovi sifatida yuboradi — katta kursda (minglab savol) shu sabab
+    # so'rov nginx/brauzer timeout'idan oshib, "xatolik" ko'rinardi.
+    url: ${DB_URL:jdbc:mysql://localhost:3306/test_project?createDatabaseIfNotExist=true&rewriteBatchedStatements=true}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:root}
     hikari:
@@ -13,6 +19,14 @@ spring:
     properties:
       hibernate:
         default_batch_fetch_size: 50 #n+1 xatoliklarni oldini oladi
+        # Yuqoridagi "rewriteBatchedStatements=true" bilan BIRGA ishlaydi —
+        # bittalab emas, guruh-guruh (50 tadan) INSERT/UPDATE yuborish
+        # uchun. "order_updates/order_inserts" — bir xil jadvalga tegishli
+        # yozuvlar ketma-ket kelishini kafolatlaydi, aks holda boshqa
+        # jadval bilan "aralashib" ketsa, Hibernate guruhlashni to'xtatadi.
+        jdbc.batch_size: 50
+        order_updates: true
+        order_inserts: true
     open-in-view: false #Har bir proyektni boshlaganda shuni qo'shish kerak
   liquibase:
     change-log: classpath:db/changelog/master.xml
