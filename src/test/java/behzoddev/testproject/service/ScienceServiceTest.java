@@ -1,6 +1,7 @@
 package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.CourseFieldRepository;
+import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
@@ -43,6 +44,8 @@ class ScienceServiceTest {
     @Mock
     private CourseFieldRepository courseFieldRepository;
     @Mock
+    private QuestionRepository questionRepository;
+    @Mock
     private ScienceMapper scienceMapper;
     @Mock
     private AnswerService answerService;
@@ -57,7 +60,7 @@ class ScienceServiceTest {
     void setUp() {
         Validation validation = new Validation(answerService);
         scienceService = new ScienceService(scienceRepository, topicRepository, topicSectionRepository,
-                courseFieldRepository, scienceMapper, validation);
+                courseFieldRepository, questionRepository, scienceMapper, validation);
 
         owner = User.builder().id(99L).username("owner").roles(new HashSet<>(Set.of(
                 Role.builder().id(1L).roleName("ROLE_OWNER").build()))).build();
@@ -306,6 +309,35 @@ class ScienceServiceTest {
 
         scienceService.permanentlyDeleteScience(1L, admin);
 
+        verify(scienceRepository).delete(science);
+    }
+
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "Test
+    // boshqaruvida o'chirib bo'lmayapti" — "Bu amalni bajarib bo'lmadi —
+    // bog'liq ma'lumotlar mavjud" xatosi bilan, ekran surati bilan) —
+    // "topics.science_id" FK'si "NO ACTION"/RESTRICT bo'lgani uchun
+    // fanida BIRON BIR mavzu (hatto savatga o'tkazilgan bo'lsa ham)
+    // qolib ketsa, oddiy "scienceRepository.delete()" DOIM muvaffaqiyatsiz
+    // tugardi. Bu test — TopicService.permanentlyDeleteTopic'dagi bilan
+    // bir xil andozada — fanning BARCHA mavzulari (o'chirilgan/
+    // o'chirilmagan farqisiz) va ularning savollari ham birga
+    // o'chirilishini tasdiqlaydi.
+    @Test
+    void permanentlyDeleteScience_withRemainingTopics_cascadesDeleteOfTopicsAndQuestions() {
+        Science science = Science.builder().id(1L).name("Kimyo").createdBy(admin)
+                .deletedAt(java.time.LocalDateTime.now()).build();
+        Topic t1 = Topic.builder().id(10L).name("1-mavzu").science(science).build();
+        Topic t2 = Topic.builder().id(20L).name("2-mavzu").science(science)
+                .deletedAt(java.time.LocalDateTime.now()).build();
+
+        when(scienceRepository.findById(1L)).thenReturn(Optional.of(science));
+        when(topicRepository.findByScience_Id(1L)).thenReturn(List.of(t1, t2));
+
+        scienceService.permanentlyDeleteScience(1L, admin);
+
+        verify(questionRepository).deleteByTopic_Id(10L);
+        verify(questionRepository).deleteByTopic_Id(20L);
+        verify(topicRepository).deleteAll(List.of(t1, t2));
         verify(scienceRepository).delete(science);
     }
 

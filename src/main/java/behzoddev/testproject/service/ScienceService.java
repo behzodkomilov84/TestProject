@@ -1,6 +1,7 @@
 package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.CourseFieldRepository;
+import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
@@ -36,6 +37,7 @@ public class ScienceService {
     private final TopicRepository topicRepository;
     private final TopicSectionRepository topicSectionRepository;
     private final CourseFieldRepository courseFieldRepository;
+    private final QuestionRepository questionRepository;
     private final ScienceMapper scienceMapper;
     private final Validation validation;
 
@@ -303,10 +305,23 @@ public class ScienceService {
     }
 
     // "🗑️ Butunlay o'chirish" — FAQAT allaqachon savatda turgan fanga
-    // nisbatan. QAYTARIB BO'LMAYDI. Bo'lim/mavzular hali mavjud bo'lsa —
-    // FK RESTRICT (topics.science_id) tufayli xato beradi (foydalanuvchi
-    // avval ularni o'chirishi kerak) — GlobalRestExceptionHandler buni
-    // tushunarli "bog'liq ma'lumotlar mavjud" xabariga aylantiradi.
+    // nisbatan. QAYTARIB BO'LMAYDI.
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "Test
+    // boshqaruvida o'chirib bo'lmayapti", ekran surati bilan: "Bu amalni
+    // bajarib bo'lmadi — bog'liq ma'lumotlar mavjud") — ilgari bu yerda
+    // shunchaki "scienceRepository.delete(science)" chaqirilardi, izohda
+    // esa "FK RESTRICT tufayli xato beradi, foydalanuvchi avval ularni
+    // o'chirishi kerak" deb yozilgan edi — lekin FOYDALANUVCHIGA buning
+    // uchun HECH QANDAY yo'l (masalan "avval N ta mavzuni o'chiring"
+    // degan xabar yoki tugma) berilmagan edi, shu sabab bu funksiya
+    // AMALDA HECH QACHON ishlamas edi (fanida birorta ham mavzu qolgan
+    // ekan — hatto o'sha mavzu ALLAQACHON savatga o'tkazilgan bo'lsa
+    // ham, chunki "topics.science_id" FK'si "NO ACTION"/RESTRICT,
+    // deletedAt holatidan qat'iy nazar). Endi TopicService.
+    // permanentlyDeleteTopic'dagi BILAN BIR XIL andoza — "Butunlay
+    // o'chirish" nomiga mos ravishda, fanning BARCHA mavzulari (savatda
+    // turganlari HAM) va ularning savollari ham birga, chindan ham
+    // BUTUNLAY o'chiriladi.
     @Transactional
     public void permanentlyDeleteScience(Long scienceId, User currentUser) {
         Science science = getAnyScienceOrThrow(scienceId);
@@ -315,6 +330,13 @@ public class ScienceService {
             throw new IllegalArgumentException(
                     "❌ Bu fanni butunlay o'chirishdan oldin, avval oddiy \"O'chirish\" orqali savatga o'tkazish kerak.");
         }
+
+        List<Topic> topics = topicRepository.findByScience_Id(scienceId);
+        for (Topic topic : topics) {
+            questionRepository.deleteByTopic_Id(topic.getId());
+        }
+        topicRepository.deleteAll(topics);
+
         scienceRepository.delete(science);
     }
 

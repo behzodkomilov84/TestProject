@@ -58,6 +58,15 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     // mavzuni topish uchun (CourseService.resolveLinkedTopic).
     Optional<Topic> findByScience_IdAndName(Long scienceId, String name);
 
+    // ScienceService.permanentlyDeleteScience uchun — ATAYLAB deletedAt
+    // bo'yicha FILTRLANMAYDI (o'chirilgan HAM, o'chirilmagan HAM barcha
+    // mavzular) — HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi,
+    // 2026-09-12: "Test boshqaruvida o'chirib bo'lmayapti", "topics.
+    // science_id" FK "NO ACTION"/RESTRICT bo'lgani uchun fanni butunlay
+    // o'chirish undagi BIRON BIR mavzu (hatto savatga o'tkazilgan bo'lsa
+    // ham) qolib ketsa, doim muvaffaqiyatsiz tugardi).
+    List<Topic> findByScience_Id(Long scienceId);
+
     @Query("select t.science.id from Topic t where t.id = :topicId")
     Long getScienceIdByTopicId(@Param("topicId") Long topicId);
 
