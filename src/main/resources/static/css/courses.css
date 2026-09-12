@@ -261,9 +261,12 @@ body {
     outline: none;
 }
 
+/* .section-item.selected'dagi bilan AYNAN BIR XIL tuzatish (HAQIQIY
+   TOPILGAN BUG, 2026-09-12: "chap tomoni qisilib sig'may qolgan") —
+   "outline" o'rniga ICHKI (inset) soya, konteyner cheti bilan hech
+   qachon to'qnashmaydi. */
 .course-card.selected {
-    outline: 3px solid #1976d2;
-    outline-offset: 2px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.08), 0 0 0 3px #1976d2 inset;
 }
 
 /* Kurs sahifasidan "← Kurs yo'nalishlari" bosib qaytilganda (courses.js#
@@ -274,9 +277,16 @@ body {
     animation: courseCardFocusPulse 1s ease-in-out;
 }
 
+/* HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "chap tomoni
+   qisilib sig'may qolgan" tuzatishining YON TA'SIRINI oldini olish) —
+   ".selected" endi outline emas, box-shadow (inset halqa) orqali
+   chizilgani sabab, bu animatsiya HAM o'z keyframe'larida shu ICHKI
+   halqani ("0 0 0 3px #1976d2 inset") saqlab qolishi SHART — aks holda
+   pulslash paytida (animatsiya box-shadow'ni VAQTINCHA ustidan bosib
+   ketadi) tanlangan karta ramkasi bir soniyaga g'oyib bo'lib qolardi. */
 @keyframes courseCardFocusPulse {
-    0%, 100% { box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
-    50% { box-shadow: 0 4px 22px rgba(25, 118, 210, 0.45); }
+    0%, 100% { box-shadow: 0 4px 14px rgba(0,0,0,0.08), 0 0 0 3px #1976d2 inset; }
+    50% { box-shadow: 0 4px 22px rgba(25, 118, 210, 0.45), 0 0 0 3px #1976d2 inset; }
 }
 
 .course-card-cover {
@@ -2301,6 +2311,25 @@ body {
     transform: translate(-50%, 0);
 }
 
+/* HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "yo'nalish
+   yorliqlari haliyam ko'rinmayapti", ekran surati bilan) — karta
+   sahifaning yuqori qismida (masalan ro'yxatning birinchi qatorida)
+   bo'lsa, tepaga ochiladigan pufakcha OYNADAN tashqariga chiqib
+   ketardi. "kbd-hint-flip-down" (courseDetail.js#toggleKbdHint —
+   getBoundingClientRect() orqali yetarli joy yo'qligi aniqlansa
+   qo'shiladi) pufakchani kartaning OSTIGA (tepasi o'rniga) ochadi. */
+.section-item.kbd-hint-flip-down::after {
+    bottom: auto;
+    top: 100%;
+    margin-bottom: 0;
+    margin-top: 8px;
+    transform: translate(-50%, -6px);
+}
+
+.section-item.kbd-hint-flip-down.kbd-hint-open::after {
+    transform: translate(-50%, 0);
+}
+
 /* Kurs kartochkalari (coursesCatalog.html) uchun — ".section-item::after"
    bilan BIR XIL andoza, faqat Yo'nalish darajasidagi navigatsiya matni
    bilan (courses.js#onCourseCardKeyDown/toggleCourseKbdHint, foydalanuvchi
@@ -2336,6 +2365,20 @@ body {
     transform: translate(-50%, 0);
 }
 
+/* ".section-item.kbd-hint-flip-down" BILAN AYNAN BIR XIL (yuqorida) —
+   courses.js#toggleCourseKbdHint tomonidan qo'shiladi. */
+.course-card.kbd-hint-flip-down::after {
+    bottom: auto;
+    top: 100%;
+    margin-bottom: 0;
+    margin-top: 8px;
+    transform: translate(-50%, -6px);
+}
+
+.course-card.kbd-hint-flip-down.kbd-hint-open::after {
+    transform: translate(-50%, 0);
+}
+
 .section-item:not(.locked) {
     cursor: pointer;
 }
@@ -2365,9 +2408,18 @@ body {
     outline: none;
 }
 
+/* HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "dars
+   kartochkasini chap tomoni qisilib sig'may qolgan", ekran surati
+   bilan) — "outline" (+ "outline-offset:2px") kartaning chegarasidan
+   TASHQARIGA (5px) chizilardi; qatordagi BIRINCHI kartada (chapida
+   qo'shni yo'q, faqat konteyner cheti) bu tashqi chiziq konteynerning
+   o'zi bilan "to'qnashib", kartaning chap tomoni siqilib qolganday
+   ko'rinishga olib kelardi. Endi ICHKI (inset) soya — hech qachon
+   kartaning o'z chegarasidan tashqariga chiqmaydi, konteyner bilan
+   HECH QACHON to'qnashmaydi. Kartaning odatdagi soyasi (box-shadow)
+   bilan BIRGA (vergul bilan) — ikkalasi ham saqlanadi. */
 .section-item.selected {
-    outline: 3px solid #1976d2;
-    outline-offset: 2px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 0 0 3px #1976d2 inset;
 }
 
 .section-item-top {

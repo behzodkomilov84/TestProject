@@ -2396,15 +2396,29 @@ function toggleKbdHint(badgeEl) {
     const card = badgeEl.closest(".section-item");
     if (!card) return;
     const wasOpen = card.classList.contains("kbd-hint-open");
-    document.querySelectorAll(".section-item.kbd-hint-open").forEach(el => el.classList.remove("kbd-hint-open"));
-    if (!wasOpen) card.classList.add("kbd-hint-open");
+    document.querySelectorAll(".section-item.kbd-hint-open").forEach(el => el.classList.remove("kbd-hint-open", "kbd-hint-flip-down"));
+    if (!wasOpen) {
+        card.classList.add("kbd-hint-open");
+        // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "yo'nalish
+        // yorliqlari haliyam ko'rinmayapti", ekran surati bilan) — pufakcha
+        // odatda kartaning TEPASIDA (bottom:100%) ochiladi, lekin karta
+        // sahifaning yuqori qismida (masalan ro'yxatning birinchi qatorida)
+        // bo'lsa, brauzer OYNASINING o'zidan tashqariga (yuqoriga) chiqib
+        // ketardi — bu CSS overflow emas, VIEWPORT chegarasi edi (avvalgi
+        // "settled"/overflow tuzatishi faqat ICHKI konteyner klipланишини
+        // hal qilgan, oynadan tashqariga chiqishni EMAS). Endi: kartaning
+        // tepasida pufakcha uchun yetarli joy (~200px) bo'lmasa, pufakcha
+        // PASTGA (kartaning ostiga) ochiladi (courses.css#kbd-hint-flip-down).
+        const rect = card.getBoundingClientRect();
+        card.classList.toggle("kbd-hint-flip-down", rect.top < 200);
+    }
 }
 
 // Kartadan tashqariga (yoki boshqa joyga) bosilsa — ochiq turgan
 // yo'riqnoma yopiladi.
 document.addEventListener("click", (e) => {
     if (!e.target.closest(".kbd-hint-badge")) {
-        document.querySelectorAll(".section-item.kbd-hint-open").forEach(el => el.classList.remove("kbd-hint-open"));
+        document.querySelectorAll(".section-item.kbd-hint-open").forEach(el => el.classList.remove("kbd-hint-open", "kbd-hint-flip-down"));
     }
 });
 

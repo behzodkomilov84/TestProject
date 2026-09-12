@@ -448,13 +448,21 @@ function toggleCourseKbdHint(badgeEl) {
     const card = badgeEl.closest(".course-card");
     if (!card) return;
     const wasOpen = card.classList.contains("kbd-hint-open");
-    document.querySelectorAll(".course-card.kbd-hint-open").forEach(el => el.classList.remove("kbd-hint-open"));
-    if (!wasOpen) card.classList.add("kbd-hint-open");
+    document.querySelectorAll(".course-card.kbd-hint-open").forEach(el => el.classList.remove("kbd-hint-open", "kbd-hint-flip-down"));
+    if (!wasOpen) {
+        card.classList.add("kbd-hint-open");
+        // courseDetail.js#toggleKbdHint BILAN AYNAN BIR XIL — HAQIQIY
+        // TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "yo'nalish
+        // yorliqlari haliyam ko'rinmayapti") — karta sahifaning yuqori
+        // qismida bo'lsa, pufakcha OYNADAN tashqariga chiqib ketardi.
+        const rect = card.getBoundingClientRect();
+        card.classList.toggle("kbd-hint-flip-down", rect.top < 200);
+    }
 }
 
 document.addEventListener("click", (e) => {
     if (!e.target.closest(".kbd-hint-badge")) {
-        document.querySelectorAll(".course-card.kbd-hint-open").forEach(el => el.classList.remove("kbd-hint-open"));
+        document.querySelectorAll(".course-card.kbd-hint-open").forEach(el => el.classList.remove("kbd-hint-open", "kbd-hint-flip-down"));
     }
 });
 
