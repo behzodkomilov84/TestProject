@@ -854,8 +854,8 @@ class CourseServiceTest {
         Question q3AlreadyLinked = Question.builder().id(3L).questionText("3-savol (allaqachon bog'langan)").topic(topic2).answers(List.of(a3Linked)).build();
 
         when(courseSectionRepository.findByCourse_IdAndLinkedTopicIsNotNull(1L)).thenReturn(List.of(section1, section2));
-        when(questionRepository.getQuestionsByTopicId(10L)).thenReturn(List.of(q1));
-        when(questionRepository.getQuestionsByTopicId(20L)).thenReturn(List.of(q2NoTrueAnswer, q3AlreadyLinked));
+        when(questionRepository.findRandomQuestionsByTopicIds(List.of(10L, 20L)))
+                .thenReturn(List.of(q1, q2NoTrueAnswer, q3AlreadyLinked));
 
         int added = courseService.addAllMissingTopicLinksInCourse(1L);
 
@@ -1698,11 +1698,11 @@ class CourseServiceTest {
 
         Answer trueAnswer = Answer.builder().id(1L).answerText("To'g'ri").isTrue(true).commentary(corrupted).build();
         Answer wrongAnswer = Answer.builder().id(2L).answerText("Noto'g'ri").isTrue(false).build();
-        Question question = Question.builder().id(100L).questionText("Savol")
+        Question question = Question.builder().id(100L).questionText("Savol").topic(topic)
                 .answers(List.of(trueAnswer, wrongAnswer)).build();
 
         when(courseSectionRepository.findByCourse_IdAndLinkedTopicIsNotNull(2L)).thenReturn(List.of(section));
-        when(questionRepository.getQuestionsByTopicId(3L)).thenReturn(List.of(question));
+        when(questionRepository.findRandomQuestionsByTopicIds(List.of(3L))).thenReturn(List.of(question));
 
         int fixed = courseService.dedupeTopicLinksInCourse(2L);
 

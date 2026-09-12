@@ -1753,14 +1753,57 @@ public class CourseService {
     // bilan bir xil andoza (haqiqiy holat: yangi qo'shilgan yuzlab
     // dars/savolda havola umuman yo'q edi, birma-bir "➕ Havola
     // qo'shish"ni bosib chiqish o'ninchi darsdan keyin amaliy emas).
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "Takroriy
+    // havolalarni tozalashni bosganda tozalashda xatolik deyapti" — nginx
+    // 504 Gateway Timeout) — quyidagi ikkita ("fixAllWrongTopicLinksInCourse",
+    // "dedupeTopicLinksInCourse") BILAN AYNAN BIR XIL sabab bo'lgani uchun
+    // bu metod ham bulk-so'rovga (`findRandomQuestionsByTopicIds`)
+    // o'tkazildi — aks holda xuddi shu 504 xatosi ERTAMI-KECHMI shu
+    // tugma ("➕ Barchasiga havola qo'shish") bosilganda ham chiqishi
+    // muqarrar edi.
     @Transactional
     public int addAllMissingTopicLinksInCourse(Long courseId) {
         List<CourseSection> linkedSections = courseSectionRepository.findByCourse_IdAndLinkedTopicIsNotNull(courseId);
+        if (linkedSections.isEmpty()) return 0;
+
+        Map<Long, CourseSection> sectionByTopicId = sectionsByTopicId(linkedSections);
+        List<Question> questions = questionRepository.findRandomQuestionsByTopicIds(
+                new ArrayList<>(sectionByTopicId.keySet()));
+
         int total = 0;
-        for (CourseSection section : linkedSections) {
-            total += addMissingLinksForSection(courseId, section);
+        for (Question q : questions) {
+            CourseSection section = sectionByTopicId.get(q.getTopic().getId());
+            if (section == null) continue;
+
+            Answer trueAnswer = findTrueAnswer(q);
+            if (trueAnswer == null) continue;
+
+            String commentary = trueAnswer.getCommentary();
+            boolean hasLink = commentary != null && TOPIC_LINK_HREF_PATTERN.matcher(commentary).find();
+            if (hasLink) continue;
+
+            // applyCorrectLink (strip+qo'shish) ATAYLAB ishlatilgan — oddiy
+            // qo'shish (append) o'rniga: agar izohda TOPIC_LINK_HREF_PATTERN
+            // aniqlay olmaydigan, lekin qisman/buzuq havola qoldig'i bo'lsa
+            // ham (masalan eski formatdagi), shu yerda tozalanadi — ikkita
+            // havola bir joyda qolib ketmasligi uchun (haqiqiy topilgan bug).
+            applyCorrectLink(trueAnswer, courseId, section);
+            total++;
         }
         return total;
+    }
+
+    // fixAllWrongTopicLinksInCourse/dedupeTopicLinksInCourse/
+    // addAllMissingTopicLinksInCourse — uchalasi ham BUTUN kurs bo'ylab
+    // (bitta darsga emas) ishlaganda topicId -> CourseSection xaritasini
+    // bir xil tarzda quradi (bulk so'rov natijasini tegishli darsga
+    // qaytadan bog'lash uchun).
+    private Map<Long, CourseSection> sectionsByTopicId(List<CourseSection> linkedSections) {
+        Map<Long, CourseSection> map = new LinkedHashMap<>();
+        for (CourseSection section : linkedSections) {
+            map.put(section.getLinkedTopic().getId(), section);
+        }
+        return map;
     }
 
     private int addMissingLinksForSection(Long courseId, CourseSection section) {
@@ -1822,12 +1865,51 @@ public class CourseService {
     // kurslarda yuzlab xato havola bir yo'la topilishi mumkin (real holat:
     // Bakteriologiya kursida 51 ta darsda 780 ta xato havola topilgan edi) —
     // shu sabab alohida (per-topic emas, butun kurs) tugma qo'shilgan.
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "Takroriy
+    // havolalarni tozalashni bosganda tozalashda xatolik deyapti" — nginx
+    // 504 Gateway Timeout) — ilgari bu metod `fixAllWrongLinksForSection`ni
+    // HAR BIR bog'langan dars uchun ALOHIDA chaqirar edi, u esa o'z ichida
+    // `questionRepository.getQuestionsByTopicId(...)` (1 so'rov/dars) VA
+    // har bir savol uchun `question.getAnswers()` (LAZY, 1 so'rov/savol)
+    // chaqirardi — katta kursda (masalan 51 ta dars, yuzlab savol) bu
+    // MINGLAB alohida SELECT so'roviga aylanib, so'rov nginx'ning
+    // proxy_read_timeout'idan OSHIB ketardi (avvalgi "rewriteBatchedStatements"
+    // tuzatishi faqat YOZISH (UPDATE) tomonini tezlashtirgan edi, bu yerdagi
+    // asosiy sekinlik esa O'QISH (SELECT) tomonida edi). Endi BARCHA
+    // bog'langan darslarning savol+javoblari BITTA so'rovda (bulk,
+    // `findRandomQuestionsByTopicIds` — TestSessionService'da allaqachon
+    // ishlatiladigan, `left join fetch answers` bilan) olinadi, shu sabab
+    // dars soni qancha ko'p bo'lmasin, so'rovlar soni DOIM bitta bo'lib
+    // qoladi.
     @Transactional
     public int fixAllWrongTopicLinksInCourse(Long courseId) {
         List<CourseSection> linkedSections = courseSectionRepository.findByCourse_IdAndLinkedTopicIsNotNull(courseId);
+        if (linkedSections.isEmpty()) return 0;
+
+        Map<Long, CourseSection> sectionByTopicId = sectionsByTopicId(linkedSections);
+        List<Question> questions = questionRepository.findRandomQuestionsByTopicIds(
+                new ArrayList<>(sectionByTopicId.keySet()));
+
         int total = 0;
-        for (CourseSection section : linkedSections) {
-            total += fixAllWrongLinksForSection(courseId, section);
+        for (Question q : questions) {
+            CourseSection section = sectionByTopicId.get(q.getTopic().getId());
+            if (section == null) continue;
+
+            Answer trueAnswer = findTrueAnswer(q);
+            if (trueAnswer == null) continue;
+
+            String commentary = trueAnswer.getCommentary();
+            if (commentary == null) continue;
+
+            Matcher m = TOPIC_LINK_HREF_PATTERN.matcher(commentary);
+            if (!m.find()) continue; // havola umuman yo'q — bu yerga tegishli emas
+
+            String expectedHref = "/courses/" + courseId + "/sections/" + section.getId();
+            String actualHref = "/courses/" + m.group(1) + "/sections/" + m.group(2);
+            if (actualHref.equals(expectedHref)) continue; // allaqachon to'g'ri
+
+            applyCorrectLink(trueAnswer, courseId, section);
+            total++;
         }
         return total;
     }
@@ -1847,24 +1929,37 @@ public class CourseService {
     // tozalaydi — count>=1 shart, faqat >1 emas, chunki buzuq
     // qoldiqlarda ba'zan bitta haqiqiy href qolib, qolgani "yetim"
     // bo'lib turishi mumkin.
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "Takroriy
+    // havolalarni tozalashni bosganda tozalashda xatolik deyapti" — nginx
+    // 504 Gateway Timeout, fixAllWrongTopicLinksInCourse'dagi bilan AYNAN
+    // BIR XIL sabab: har bir dars uchun alohida `getQuestionsByTopicId`
+    // so'rovi + har bir savol uchun LAZY `getAnswers()`, katta kursda
+    // minglab so'rovga aylanib ketardi). Endi yuqoridagi bilan bir xil
+    // bulk-so'rov (`findRandomQuestionsByTopicIds`) ishlatiladi.
     @Transactional
     public int dedupeTopicLinksInCourse(Long courseId) {
         List<CourseSection> linkedSections = courseSectionRepository.findByCourse_IdAndLinkedTopicIsNotNull(courseId);
+        if (linkedSections.isEmpty()) return 0;
+
+        Map<Long, CourseSection> sectionByTopicId = sectionsByTopicId(linkedSections);
+        List<Question> questions = questionRepository.findRandomQuestionsByTopicIds(
+                new ArrayList<>(sectionByTopicId.keySet()));
+
         int total = 0;
-        for (CourseSection section : linkedSections) {
-            List<Question> questions = questionRepository.getQuestionsByTopicId(section.getLinkedTopic().getId());
-            for (Question q : questions) {
-                Answer trueAnswer = findTrueAnswer(q);
-                if (trueAnswer == null) continue;
+        for (Question q : questions) {
+            CourseSection section = sectionByTopicId.get(q.getTopic().getId());
+            if (section == null) continue;
 
-                String commentary = trueAnswer.getCommentary();
-                if (commentary == null) continue;
+            Answer trueAnswer = findTrueAnswer(q);
+            if (trueAnswer == null) continue;
 
-                if (!TOPIC_LINK_HREF_PATTERN.matcher(commentary).find()) continue;
+            String commentary = trueAnswer.getCommentary();
+            if (commentary == null) continue;
 
-                applyCorrectLink(trueAnswer, courseId, section);
-                total++;
-            }
+            if (!TOPIC_LINK_HREF_PATTERN.matcher(commentary).find()) continue;
+
+            applyCorrectLink(trueAnswer, courseId, section);
+            total++;
         }
         return total;
     }
