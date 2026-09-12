@@ -18,6 +18,7 @@ import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
@@ -141,5 +142,52 @@ class TopicSectionServiceTest {
         assertThatThrownBy(() -> topicSectionService.permanentlyDeleteSection(1L, admin))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("savatga o'tkazish");
+    }
+
+    // ===== getSectionsByScienceId / deleteEmptySections (HAQIQIY
+    // TOPILGAN BUG, 2026-09-12: "TEST BOSHQARUVI dagi barcha N+1 so'rov
+    // muammolarini ko'rib chiq") — korrelyatsiyalangan subso'rov o'rniga
+    // bulk (GROUP BY) so'rovlarga o'tkazilgandan keyin ham to'g'ri
+    // ishlashini tasdiqlaydi. =====
+
+    @Test
+    void getSectionsByScienceId_mergesGroupedTopicCountsAndCourseTitles() {
+        behzoddev.testproject.dto.section.TopicSectionIdAndNameDto s1 =
+                new behzoddev.testproject.dto.section.TopicSectionIdAndNameDto(1L, "Bo'lim 1", 1);
+        behzoddev.testproject.dto.section.TopicSectionIdAndNameDto s2 =
+                new behzoddev.testproject.dto.section.TopicSectionIdAndNameDto(2L, "Bo'lim 2", 2);
+        when(topicSectionRepository.findSectionBasicsByScienceId(5L)).thenReturn(List.of(s1, s2));
+        when(topicRepository.countBySectionIdsGrouped(List.of(1L, 2L)))
+                .thenReturn(List.of(new behzoddev.testproject.dto.section.SectionTopicCountDto(1L, 4L)));
+        when(courseSectionRepository.findLinkedCourseTitlesBySectionScienceId(5L))
+                .thenReturn(List.of(new behzoddev.testproject.dto.section.TopicSectionCourseTitleDto(2L, "Bakteriologiya")));
+
+        List<behzoddev.testproject.dto.section.TopicSectionIdAndNameDto> result =
+                topicSectionService.getSectionsByScienceId(5L);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).topicCount()).isEqualTo(4);
+        assertThat(result.get(0).linkedCourseTitle()).isNull();
+        assertThat(result.get(1).topicCount()).isEqualTo(0);
+        assertThat(result.get(1).linkedCourseTitle()).isEqualTo("Bakteriologiya");
+    }
+
+    @Test
+    void deleteEmptySections_deletesOnlySectionsWithNoTopics() {
+        behzoddev.testproject.dto.section.TopicSectionIdAndNameDto empty =
+                new behzoddev.testproject.dto.section.TopicSectionIdAndNameDto(1L, "Bo'sh bo'lim", 1);
+        behzoddev.testproject.dto.section.TopicSectionIdAndNameDto withTopics =
+                new behzoddev.testproject.dto.section.TopicSectionIdAndNameDto(2L, "To'la bo'lim", 2);
+        when(topicSectionRepository.findSectionBasicsByScienceId(5L)).thenReturn(List.of(empty, withTopics));
+        when(topicRepository.countBySectionIdsGrouped(List.of(1L, 2L)))
+                .thenReturn(List.of(new behzoddev.testproject.dto.section.SectionTopicCountDto(2L, 3L)));
+        TopicSection emptySection = TopicSection.builder().id(1L).name("Bo'sh bo'lim").build();
+        when(topicSectionRepository.findAllById(List.of(1L))).thenReturn(List.of(emptySection));
+
+        int deleted = topicSectionService.deleteEmptySections(5L, admin);
+
+        assertThat(deleted).isEqualTo(1);
+        assertThat(emptySection.getDeletedAt()).isNotNull();
+        verify(topicSectionRepository).saveAll(List.of(emptySection));
     }
 }

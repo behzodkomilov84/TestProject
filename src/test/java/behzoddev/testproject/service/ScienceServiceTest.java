@@ -395,7 +395,7 @@ class ScienceServiceTest {
         // qolish emas).
         Science owned = Science.builder().id(1L).name("Kimyo").createdBy(admin).build();
         Science notOwned = Science.builder().id(2L).name("Fizika").createdBy(otherAdmin).build();
-        when(scienceRepository.findAllScienceNames()).thenReturn(Set.of(
+        when(scienceRepository.findAllScienceBasics()).thenReturn(List.of(
                 new ScienceIdAndNameDto(1L, "Kimyo", 0),
                 new ScienceIdAndNameDto(2L, "Fizika", 0)
         ));
@@ -411,12 +411,30 @@ class ScienceServiceTest {
     @Test
     void getAllScienceIdAndNameDto_owner_alwaysCanManage() {
         Science notOwned = Science.builder().id(2L).name("Fizika").createdBy(admin).build();
-        when(scienceRepository.findAllScienceNames()).thenReturn(Set.of(new ScienceIdAndNameDto(2L, "Fizika", 0)));
+        when(scienceRepository.findAllScienceBasics()).thenReturn(List.of(new ScienceIdAndNameDto(2L, "Fizika", 0)));
         when(scienceRepository.findAllByDeletedAtIsNullOrderByOrderIndex()).thenReturn(List.of(notOwned));
 
         Set<ScienceIdAndNameDto> result = scienceService.getAllScienceIdAndNameDto(owner);
 
         assertThat(result).extracting(ScienceIdAndNameDto::canManage).containsExactly(true);
+    }
+
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "TEST
+    // BOSHQARUVI dagi barcha N+1 so'rov muammolarini ko'rib chiq") —
+    // sectionCount endi ALOHIDA, BULK (GROUP BY) so'rov bilan to'g'ri
+    // birlashtirilishini tasdiqlaydi (korrelyatsiyalangan subso'rov o'rniga).
+    @Test
+    void getAllScienceIdAndNameDto_mergesGroupedSectionCounts() {
+        Science science = Science.builder().id(1L).name("Kimyo").createdBy(owner).build();
+        when(scienceRepository.findAllScienceBasics())
+                .thenReturn(List.of(new ScienceIdAndNameDto(1L, "Kimyo", 0)));
+        when(scienceRepository.findAllByDeletedAtIsNullOrderByOrderIndex()).thenReturn(List.of(science));
+        when(topicSectionRepository.countByScienceIdsGrouped(List.of(1L)))
+                .thenReturn(List.of(new behzoddev.testproject.dto.science.ScienceSectionCountDto(1L, 7L)));
+
+        Set<ScienceIdAndNameDto> result = scienceService.getAllScienceIdAndNameDto(owner);
+
+        assertThat(result).extracting(ScienceIdAndNameDto::sectionCount).containsExactly(7L);
     }
 
     // ===== getScienceNameById(Long, User) =====

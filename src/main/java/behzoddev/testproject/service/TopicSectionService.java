@@ -3,6 +3,7 @@ package behzoddev.testproject.service;
 import behzoddev.testproject.dao.CourseSectionRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
+import behzoddev.testproject.dto.section.SectionTopicCountDto;
 import behzoddev.testproject.dto.section.TopicSectionCourseTitleDto;
 import behzoddev.testproject.dto.section.TopicSectionIdAndNameDto;
 import behzoddev.testproject.dto.section.TopicSectionNameDto;
@@ -23,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 // "Bo'lim" (TopicSection) CRUD — Fan ichida mavzularni guruhlash uchun.
@@ -40,9 +42,24 @@ public class TopicSectionService {
     private final Validation validation;
     private final ScienceService scienceService;
 
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "TEST
+    // BOSHQARUVI dagi barcha N+1 so'rov muammolarini ko'rib chiq") —
+    // ilgari topicSectionRepository.findByScienceIdOrderByOrderIndex()
+    // ishlatilardi, u HAR BIR Bo'lim uchun korrelyatsiyalangan subso'rov
+    // bajarardi (mavzular soni). TopicService.getTopicsByScienceId'dagi
+    // bilan bir xil yechim: yengil (subso'rovsiz) so'rov + ALOHIDA, BULK
+    // (GROUP BY) mavzular soni.
     @Transactional(readOnly = true)
     public List<TopicSectionIdAndNameDto> getSectionsByScienceId(Long scienceId) {
-        List<TopicSectionIdAndNameDto> sections = topicSectionRepository.findByScienceIdOrderByOrderIndex(scienceId);
+        List<TopicSectionIdAndNameDto> sections = topicSectionRepository.findSectionBasicsByScienceId(scienceId);
+        if (sections.isEmpty()) {
+            return sections;
+        }
+
+        Map<Long, Long> topicCounts = topicRepository
+                .countBySectionIdsGrouped(sections.stream().map(TopicSectionIdAndNameDto::id).toList())
+                .stream()
+                .collect(Collectors.toMap(SectionTopicCountDto::sectionId, SectionTopicCountDto::count));
 
         // Qaysi bo'limlar biror kursga bog'langanini BULK olib, "🔗 Kurs:
         // ..." belgisi uchun nomni qo'shib qo'yamiz (topic-sections
@@ -52,13 +69,9 @@ public class TopicSectionService {
                 .stream()
                 .collect(Collectors.toMap(TopicSectionCourseTitleDto::sectionId, TopicSectionCourseTitleDto::courseTitle, (a, b) -> a));
 
-        if (courseTitleBySectionId.isEmpty()) {
-            return sections;
-        }
-
         return sections.stream()
                 .map(s -> new TopicSectionIdAndNameDto(s.id(), s.name(), s.orderIndex(),
-                        courseTitleBySectionId.get(s.id()), s.topicCount()))
+                        courseTitleBySectionId.get(s.id()), topicCounts.getOrDefault(s.id(), 0L)))
                 .toList();
     }
 
@@ -186,8 +199,21 @@ public class TopicSectionService {
     public int deleteEmptySections(Long scienceId, User currentUser) {
         scienceService.requireManageableScience(scienceId, currentUser);
 
-        List<Long> emptyIds = topicSectionRepository.findByScienceIdOrderByOrderIndex(scienceId).stream()
-                .filter(s -> s.topicCount() == 0)
+        // findByScienceIdOrderByOrderIndex() o'rniga findSectionBasicsByScienceId()
+        // + bulk (GROUP BY) mavzular soni — getSectionsByScienceId()
+        // bilan bir xil sabab (HAQIQIY TOPILGAN BUG, 2026-09-12). GROUP
+        // BY natijasida FAQAT kamida 1 ta mavzusi bor bo'limlar qaytadi
+        // — shu sabab "topicCount == 0" endi "sectionIdsWithTopics'da
+        // UMUMAN yo'q" bilan tengma-teng.
+        List<TopicSectionIdAndNameDto> basics = topicSectionRepository.findSectionBasicsByScienceId(scienceId);
+        Set<Long> sectionIdsWithTopics = basics.isEmpty() ? Set.of() : topicRepository
+                .countBySectionIdsGrouped(basics.stream().map(TopicSectionIdAndNameDto::id).toList())
+                .stream()
+                .map(SectionTopicCountDto::sectionId)
+                .collect(Collectors.toSet());
+
+        List<Long> emptyIds = basics.stream()
+                .filter(s -> !sectionIdsWithTopics.contains(s.id()))
                 .map(TopicSectionIdAndNameDto::id)
                 .toList();
 

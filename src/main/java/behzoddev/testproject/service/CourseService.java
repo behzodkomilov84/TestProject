@@ -1429,6 +1429,32 @@ public class CourseService {
         courseChapterRepository.delete(chapter);
     }
 
+    // "🗑️ Barchasini o'chirish" — "— Mavzusiz darslar —" psevdo-guruhi
+    // uchun (foydalanuvchi so'rovi, 2026-09-10, keyinroq bajarilgan:
+    // "Kurs/Mavzusiz darslarga barcha darslarni o'chirish tugmasi/icon
+    // qo'shilsin") — chapter==null bo'lgan BARCHA kurs darslarini bir
+    // yo'la savatga o'tkazadi. deleteChapterWithLinkedTopics'dan farqli,
+    // bu yerda HAQIQIY CourseChapter yo'q (psevdo-guruh, hech narsa
+    // hard-delete qilinmaydi) — shu sabab shunchaki soft-delete, TEST
+    // BOSHQARUVIdagi bog'lanish (agar bo'lsa) xuddi shu yerdagi kabi
+    // avtomatik "uziladi" (deletedAt IS NULL filtri orqali).
+    @Transactional
+    public int deleteAllUnlinkedSections(Long courseId, User currentUser) {
+        Course course = getCourseOrThrow(courseId);
+        checkCanManage(course, currentUser);
+
+        List<CourseSection> unlinkedSections = courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(courseId).stream()
+                .filter(s -> s.getChapter() == null)
+                .toList();
+
+        if (!unlinkedSections.isEmpty()) {
+            LocalDateTime now = LocalDateTime.now();
+            unlinkedSections.forEach(s -> s.setDeletedAt(now));
+            courseSectionRepository.saveAll(unlinkedSections);
+        }
+        return unlinkedSections.size();
+    }
+
     // "🗑️ Bo'sh mavzularni o'chirish" — shu kursda hech qanday darsga
     // biriktirilmagan (sectionCount==0) BARCHA Mavzularni bir yo'la
     // o'chiradi (deleteChapter'dagi bilan bir xil xavfsizlik qoidasi —

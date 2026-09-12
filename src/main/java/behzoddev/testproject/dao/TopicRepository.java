@@ -1,5 +1,6 @@
 package behzoddev.testproject.dao;
 
+import behzoddev.testproject.dto.section.SectionTopicCountDto;
 import behzoddev.testproject.dto.topic.TestHierarchyRowDto;
 import behzoddev.testproject.dto.topic.TopicIdAndNameDto;
 import behzoddev.testproject.dto.topic.TopicTrashDto;
@@ -23,19 +24,29 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     // butunlay chiqarib tashlashi mumkin edi (aynan shu xato turi
     // yuqoridagi t.id workaround'iga sabab bo'lgan edi) — shu sabab
     // ataylab aniq LEFT JOIN ishlatilgan.
-    // questionCount — shu mavzudagi FAOL (o'chirilmagan) savollar soni
-    // (topics.html'da "(N ta test)" ko'rsatish uchun) — "q.deletedAt is
-    // null" ATAYLAB qo'shilgan, aks holda "O'chirilganlar savati"ga
-    // o'tkazilgan savollar ham "faol test" sifatida hisoblanib ketardi
-    // (haqiqiy topilgan bug). trashedQuestionCount — aynan shu savatdagi
-    // savollar soni, ALOHIDA ko'rsatish uchun. Ikkalasi ham
-    // korrelyatsiyalangan subso'rov — count() doim aniq bitta qatorli,
-    // fan-out xavfi yo'q.
-    @Query("select new behzoddev.testproject.dto.topic.TopicIdAndNameDto(t.id, t.name, s.id, " +
-            "(select count(q) from Question q where q.topic = t and q.deletedAt is null), " +
-            "(select count(q) from Question q where q.topic = t and q.deletedAt is not null)) " +
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "/topics
+    // sahifa juda sekin yuklanyapti" — bu yerda ILGARI har bir mavzu
+    // uchun IKKITA korrelyatsiyalangan subso'rov (savollar soni + savatdagi
+    // savollar soni) ishlatuvchi so'rov bor edi — ko'p mavzuli Fanlarda
+    // (masalan Bakteriologiya, 500+ mavzu) bu minglab subso'rovga yetib,
+    // sahifani sekinlashtirar edi. Endi bu yengil versiya HECH QANDAY
+    // subso'rovsiz — savollar soni TopicService.getTopicsByScienceId'da
+    // ALOHIDA, BULK (GROUP BY) so'rov bilan (QuestionRepository.
+    // countByTopicIdsGrouped/countDeletedByTopicIdsGrouped) to'ldiriladi,
+    // xuddi linkedCourseTitle allaqachon qilinayotgani kabi.
+    @Query("select new behzoddev.testproject.dto.topic.TopicIdAndNameDto(t.id, t.name, s.id) " +
             "from Topic t LEFT JOIN t.section s where t.science.id = :id and t.deletedAt is null order by t.orderIndex")
-    List<TopicIdAndNameDto> findTopicsByScienceId(@Param("id") Long id);
+    List<TopicIdAndNameDto> findTopicBasicsByScienceId(@Param("id") Long id);
+
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "TEST
+    // BOSHQARUVI dagi barcha N+1 so'rov muammolarini ko'rib chiq") —
+    // TopicSectionRepository.findByScienceIdOrderByOrderIndex() HAR BIR
+    // Bo'lim uchun korrelyatsiyalangan subso'rov ishlatardi (topicCount).
+    // Bu — countByTopicIdsGrouped (QuestionRepository) bilan bir xil
+    // g'oya, faqat Bo'lim->Mavzu darajasida: BULK, GROUP BY.
+    @Query("select new behzoddev.testproject.dto.section.SectionTopicCountDto(t.section.id, count(t)) " +
+            "from Topic t where t.section.id in :sectionIds and t.deletedAt is null group by t.section.id")
+    List<SectionTopicCountDto> countBySectionIdsGrouped(@Param("sectionIds") List<Long> sectionIds);
 
     @Query("select new behzoddev.testproject.dto.topic.TopicIdAndNameDto(t.id, t.name, s.id, " +
             "(select count(q) from Question q where q.topic = t and q.deletedAt is null), " +

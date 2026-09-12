@@ -11,6 +11,7 @@ import behzoddev.testproject.dto.topic.TopicLocationDto;
 import behzoddev.testproject.dto.topic.TopicNameDto;
 import behzoddev.testproject.dto.topic.TopicTrashDto;
 import behzoddev.testproject.dto.topic.TopicWithQuestionCountDto;
+import behzoddev.testproject.dto.question.TopicQuestionCountDto;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
@@ -42,8 +43,29 @@ public class TopicService {
     private final Validation validation;
     private final ScienceService scienceService;
 
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "/topics
+    // sahifa juda sekin yuklanyapti. Boshqa shu kabi sahifalar ham") —
+    // ilgari topicRepository.findTopicsByScienceId() ishlatilardi, u HAR
+    // BIR mavzu uchun IKKITA korrelyatsiyalangan subso'rov bajarardi
+    // (savollar soni + savatdagi savollar soni) — ko'p mavzuli Fanlarda
+    // (masalan 500+ mavzu) bu minglab subso'rovga yetib, sahifani
+    // sekinlashtirar edi. Endi — findLinkedCourseTitlesByScienceId bilan
+    // BIR XIL, allaqachon sinovdan o'tgan naqsh: mavzular ENGIL so'rov
+    // bilan (hech qanday subso'rovsiz) olinadi, savollar soni esa IKKITA
+    // ALOHIDA, BULK (GROUP BY) so'rov bilan — jami sahifa uchun so'rovlar
+    // soni Fandagi mavzular sonidan MUSTAQIL, doim bir xil (4 ta) qoladi.
     public List<TopicIdAndNameDto> getTopicsByScienceId(Long scienceId) {
-        List<TopicIdAndNameDto> topics = topicRepository.findTopicsByScienceId(scienceId);
+        List<TopicIdAndNameDto> topics = topicRepository.findTopicBasicsByScienceId(scienceId);
+        if (topics.isEmpty()) {
+            return topics;
+        }
+
+        List<Long> topicIds = topics.stream().map(TopicIdAndNameDto::id).toList();
+
+        Map<Long, Long> activeCounts = questionRepository.countByTopicIdsGrouped(topicIds).stream()
+                .collect(Collectors.toMap(TopicQuestionCountDto::topicId, TopicQuestionCountDto::count));
+        Map<Long, Long> trashedCounts = questionRepository.countDeletedByTopicIdsGrouped(topicIds).stream()
+                .collect(Collectors.toMap(TopicQuestionCountDto::topicId, TopicQuestionCountDto::count));
 
         // Shu fandagi qaysi mavzular kurs bo'limiga bog'langanini BULK
         // olib, har bir mavzuga mos "🔗 Kurs: ..." belgisi uchun nomni
@@ -54,13 +76,11 @@ public class TopicService {
                 .stream()
                 .collect(Collectors.toMap(TopicCourseTitleDto::topicId, TopicCourseTitleDto::courseTitle, (a, b) -> a));
 
-        if (courseTitleByTopicId.isEmpty()) {
-            return topics;
-        }
-
         return topics.stream()
                 .map(t -> new TopicIdAndNameDto(t.id(), t.name(), t.sectionId(),
-                        courseTitleByTopicId.get(t.id()), t.questionCount(), t.trashedQuestionCount()))
+                        courseTitleByTopicId.get(t.id()),
+                        activeCounts.getOrDefault(t.id(), 0L),
+                        trashedCounts.getOrDefault(t.id(), 0L)))
                 .toList();
     }
 
@@ -130,8 +150,23 @@ public class TopicService {
                 .map(TopicCourseTitleDto::topicId)
                 .collect(Collectors.toSet());
 
-        List<Long> deletableIds = topicRepository.findTopicsByScienceId(scienceId).stream()
-                .filter(t -> t.questionCount() == 0 && !linkedTopicIds.contains(t.id()))
+        // findTopicsByScienceId() o'rniga findTopicBasicsByScienceId() +
+        // bulk (GROUP BY) savol soni — yuqoridagi getTopicsByScienceId()
+        // bilan bir xil sabab (HAQIQIY TOPILGAN BUG, 2026-09-12: "Boshqa
+        // shu kabi sahifalar ham [sekin]" — bu metod "🧹 Testi yo'q
+        // darslar" tugmasi orqali chaqiriladi). GROUP BY natijasida FAQAT
+        // kamida 1 ta faol savoli bor mavzular qaytadi — shu sabab
+        // "questionCount == 0" endi "activeTopicIds'da UMUMAN yo'q" bilan
+        // tengma-teng.
+        List<TopicIdAndNameDto> basics = topicRepository.findTopicBasicsByScienceId(scienceId);
+        Set<Long> topicIdsWithActiveQuestions = basics.isEmpty() ? Set.of() : questionRepository
+                .countByTopicIdsGrouped(basics.stream().map(TopicIdAndNameDto::id).toList())
+                .stream()
+                .map(TopicQuestionCountDto::topicId)
+                .collect(Collectors.toSet());
+
+        List<Long> deletableIds = basics.stream()
+                .filter(t -> !topicIdsWithActiveQuestions.contains(t.id()) && !linkedTopicIds.contains(t.id()))
                 .map(TopicIdAndNameDto::id)
                 .toList();
 

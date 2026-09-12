@@ -1067,6 +1067,47 @@ class CourseServiceTest {
         org.mockito.Mockito.verifyNoInteractions(topicRepository, topicSectionRepository, questionRepository);
     }
 
+    // ===== deleteAllUnlinkedSections — "— Mavzusiz darslar —" psevdo-
+    // guruhidagi BARCHA darslarni bir yo'la o'chirish (foydalanuvchi
+    // so'rovi: "Kurs/Mavzusiz darslarga barcha darslarni o'chirish
+    // tugmasi/icon qo'shilsin"). =====
+
+    @Test
+    void deleteAllUnlinkedSections_softDeletesOnlyUnlinkedSections() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter chapter = CourseChapter.builder().id(10L).course(course).name("Bo'lim").orderIndex(1).build();
+        CourseSection linked = CourseSection.builder().id(5L).course(course).chapter(chapter).orderIndex(1).build();
+        CourseSection unlinked1 = CourseSection.builder().id(6L).course(course).chapter(null).orderIndex(2).build();
+        CourseSection unlinked2 = CourseSection.builder().id(7L).course(course).chapter(null).orderIndex(3).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L))
+                .thenReturn(List.of(linked, unlinked1, unlinked2));
+
+        int deleted = courseService.deleteAllUnlinkedSections(1L, owner());
+
+        assertThat(deleted).isEqualTo(2);
+        assertThat(unlinked1.getDeletedAt()).isNotNull();
+        assertThat(unlinked2.getDeletedAt()).isNotNull();
+        assertThat(linked.getDeletedAt()).isNull();
+        org.mockito.Mockito.verify(courseSectionRepository).saveAll(List.of(unlinked1, unlinked2));
+    }
+
+    @Test
+    void deleteAllUnlinkedSections_noUnlinkedSections_returnsZeroAndSavesNothing() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter chapter = CourseChapter.builder().id(10L).course(course).name("Bo'lim").orderIndex(1).build();
+        CourseSection linked = CourseSection.builder().id(5L).course(course).chapter(chapter).orderIndex(1).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findByCourse_IdOrderByOrderIndexAsc(1L)).thenReturn(List.of(linked));
+
+        int deleted = courseService.deleteAllUnlinkedSections(1L, owner());
+
+        assertThat(deleted).isEqualTo(0);
+        org.mockito.Mockito.verify(courseSectionRepository, org.mockito.Mockito.never()).saveAll(any());
+    }
+
     // ===== TEST BOSHQARUVI bilan bog'lash: Bo'lim/Dars autocreate =====
 
     @Test

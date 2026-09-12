@@ -4,6 +4,9 @@ import behzoddev.testproject.dao.CourseSectionRepository;
 import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
+import behzoddev.testproject.dto.question.TopicQuestionCountDto;
+import behzoddev.testproject.dto.topic.TopicCourseTitleDto;
+import behzoddev.testproject.dto.topic.TopicIdAndNameDto;
 import behzoddev.testproject.dto.topic.TopicNameDto;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Role;
@@ -20,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -244,5 +248,66 @@ class TopicServiceTest {
                 .hasMessageContaining("savatga o'tkazish");
 
         verify(topicRepository, never()).delete(any());
+    }
+
+    // ===== getTopicsByScienceId (HAQIQIY TOPILGAN BUG, 2026-09-12:
+    // "/topics sahifa juda sekin yuklanyapti") — endi HAR BIR mavzu uchun
+    // korrelyatsiyalangan subso'rov o'rniga, bulk (GROUP BY) so'rovlar
+    // bilan birlashtiriladi. =====
+
+    @Test
+    void getTopicsByScienceId_mergesGroupedCountsAndCourseTitles_notPerTopicSubqueries() {
+        TopicIdAndNameDto t1 = new TopicIdAndNameDto(1L, "Mavzu 1", 10L);
+        TopicIdAndNameDto t2 = new TopicIdAndNameDto(2L, "Mavzu 2", 10L);
+        when(topicRepository.findTopicBasicsByScienceId(5L)).thenReturn(List.of(t1, t2));
+        when(questionRepository.countByTopicIdsGrouped(List.of(1L, 2L)))
+                .thenReturn(List.of(new TopicQuestionCountDto(1L, 3L)));
+        when(questionRepository.countDeletedByTopicIdsGrouped(List.of(1L, 2L)))
+                .thenReturn(List.of(new TopicQuestionCountDto(2L, 1L)));
+        when(courseSectionRepository.findLinkedCourseTitlesByScienceId(5L))
+                .thenReturn(List.of(new TopicCourseTitleDto(1L, "Bakteriologiya")));
+
+        List<TopicIdAndNameDto> result = topicService.getTopicsByScienceId(5L);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).questionCount()).isEqualTo(3);
+        assertThat(result.get(0).trashedQuestionCount()).isEqualTo(0);
+        assertThat(result.get(0).linkedCourseTitle()).isEqualTo("Bakteriologiya");
+        assertThat(result.get(1).questionCount()).isEqualTo(0);
+        assertThat(result.get(1).trashedQuestionCount()).isEqualTo(1);
+        assertThat(result.get(1).linkedCourseTitle()).isNull();
+    }
+
+    @Test
+    void getTopicsByScienceId_noTopics_returnsEmptyWithoutFurtherQueries() {
+        when(topicRepository.findTopicBasicsByScienceId(5L)).thenReturn(List.of());
+
+        List<TopicIdAndNameDto> result = topicService.getTopicsByScienceId(5L);
+
+        assertThat(result).isEmpty();
+        verify(questionRepository, never()).countByTopicIdsGrouped(any());
+    }
+
+    // ===== deleteQuestionlessTopics — bulk (GROUP BY) so'rovga
+    // o'tkazilgandan keyin ham to'g'ri ishlashini tasdiqlaydi. =====
+
+    @Test
+    void deleteQuestionlessTopics_deletesOnlyUnlinkedTopicsWithNoActiveQuestions() {
+        TopicIdAndNameDto empty = new TopicIdAndNameDto(1L, "Bo'sh mavzu", null);
+        TopicIdAndNameDto withQuestions = new TopicIdAndNameDto(2L, "Savolli mavzu", null);
+        TopicIdAndNameDto linkedEmpty = new TopicIdAndNameDto(3L, "Kursga bog'langan bo'sh mavzu", null);
+        when(topicRepository.findTopicBasicsByScienceId(5L)).thenReturn(List.of(empty, withQuestions, linkedEmpty));
+        when(questionRepository.countByTopicIdsGrouped(List.of(1L, 2L, 3L)))
+                .thenReturn(List.of(new TopicQuestionCountDto(2L, 5L)));
+        when(courseSectionRepository.findLinkedCourseTitlesByScienceId(5L))
+                .thenReturn(List.of(new TopicCourseTitleDto(3L, "Bakteriologiya")));
+        Topic emptyTopic = Topic.builder().id(1L).name("Bo'sh mavzu").build();
+        when(topicRepository.findAllById(List.of(1L))).thenReturn(List.of(emptyTopic));
+
+        int deleted = topicService.deleteQuestionlessTopics(5L, admin);
+
+        assertThat(deleted).isEqualTo(1);
+        assertThat(emptyTopic.getDeletedAt()).isNotNull();
+        verify(topicRepository).saveAll(List.of(emptyTopic));
     }
 }

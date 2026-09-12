@@ -391,14 +391,17 @@ h1 {
         color: #475569;
     }
 
-    /* MUHIM: "#questionScienceTrashModal" bilan ANIQ scope qilingan —
-       aks holda ".wrapper button" (specificity 0,1,1) oddiy
-       ".bulk-delete-btn" klassidan (0,1,0) KUCHLIROQ bo'lib, fonni
-       "aquamarine"ga qaytarib yuborardi (haqiqiy topilgan bug —
-       question.css'dagi ".container button" bilan bir xil turdagi
-       muammo). Qora ramka + qora shrift — yonidagi (♻️ Tiklash) oddiy
-       tugmalarga o'xshab ko'rinishi uchun. */
-    #questionScienceTrashModal .bulk-delete-btn {
+    /* MUHIM: modal ID'lari bilan ANIQ scope qilingan — aks holda
+       ".wrapper button" (specificity 0,1,1) oddiy ".bulk-delete-btn"
+       klassidan (0,1,0) KUCHLIROQ bo'lib, fonni "aquamarine"ga qaytarib
+       yuborardi (haqiqiy topilgan bug — question.css'dagi ".container
+       button" bilan bir xil turdagi muammo). Qora ramka + qora shrift —
+       yonidagi (♻️ Tiklash) oddiy tugmalarga o'xshab ko'rinishi uchun.
+       "#unlinkedTopicsModal" — foydalanuvchi so'rovi, 2026-09-12: "🔗
+       Kursga bog'lanmagan darslar" modali ham xuddi shu ".bulk-delete-btn"
+       klassini ishlatadi (topic.js#deleteSelectedUnlinkedTopics). */
+    #questionScienceTrashModal .bulk-delete-btn,
+    #unlinkedTopicsModal .bulk-delete-btn {
         background: #dc2626;
         color: #000;
         border: 2px solid #000;
@@ -409,7 +412,8 @@ h1 {
         font-size: 13px;
     }
 
-    #questionScienceTrashModal .bulk-delete-btn:hover {
+    #questionScienceTrashModal .bulk-delete-btn:hover,
+    #unlinkedTopicsModal .bulk-delete-btn:hover {
         background: #b91c1c;
     }
 
@@ -990,6 +994,41 @@ h1 {
    "input{flex:1}" qoidasi) tufayli butun balandlikka cho'zib, noto'g'ri
    joyga (yuqori-o'ngga) surib qo'yardi (haqiqiy topilgan bug, foydalanuvchi
    skrinshoti, 2026-09-05). Checkbox endi ENG BOSHIDA (matndan OLDIN). */
+/* "🔗 Kursga bog'lanmagan darslar" modalida — darslar o'z Bo'limiga
+   ko'ra guruhlanadi (foydalanuvchi so'rovi, 2026-09-12: "darslar
+   mavzulariga ko'ra guruhlanib chiqsin"). Har bir guruh — yengil
+   fon + chap chegara bilan ajratilgan, ichidagi ".trash-row"lar
+   (pastda) o'zgarishsiz qoladi. */
+.unlinked-topic-group {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-left: 4px solid #94a3b8;
+    border-radius: 10px;
+    padding: 12px;
+    margin-bottom: 14px;
+}
+
+.unlinked-topic-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #334155;
+}
+
+.unlinked-topic-group-header input[type="checkbox"] {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.unlinked-topic-row {
+    margin-left: 4px;
+}
+
 .trash-row {
     display: flex;
     align-items: center;

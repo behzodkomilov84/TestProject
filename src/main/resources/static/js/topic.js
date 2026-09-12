@@ -155,6 +155,15 @@ function toggleUnlinkedTopicsModal() {
     }
 }
 
+// Foydalanuvchi so'rovi, 2026-09-12: "darslar mavzulariga ko'ra
+// guruhlanib chiqsin. Guruhni belgilab, ichidagilarni ham o'chirish
+// mumkin bo'lsin. Hozirgi funksiyalari ham saqlanib qolsin" — har bir
+// dars (Topic) o'zining Bo'limi (TopicSection, sectionNameById —
+// sectionList allaqachon sahifa yuklanganda olingan) bo'yicha
+// guruhlanadi. Bo'limsiz darslar alohida "— Bo'limsiz —" guruhida,
+// ro'yxat OXIRIDA. Yakka o'chirish, "Hammasini belgilash" va umumiy
+// bulk o'chirish — hammasi ILGARIGIDEK ishlayveradi, ustiga endi har
+// bir guruhning O'ZINING "hammasini belgilash" checkbox'i qo'shildi.
 function renderUnlinkedTopicsModal() {
     const list = document.getElementById("unlinkedTopicsList");
     selectedUnlinkedTopicIds.clear();
@@ -167,23 +176,70 @@ function renderUnlinkedTopicsModal() {
         return;
     }
 
+    const groupsByKey = new Map();
+    for (const s of unlinked) {
+        const key = s.sectionId != null ? String(s.sectionId) : "none";
+        if (!groupsByKey.has(key)) {
+            groupsByKey.set(key, {
+                key,
+                name: s.sectionId != null ? (sectionNameById(s.sectionId) || "Noma'lum bo'lim") : "— Bo'limsiz —",
+                items: []
+            });
+        }
+        groupsByKey.get(key).items.push(s);
+    }
+    // "— Bo'limsiz —" har doim OXIRIDA, qolganlari nomi bo'yicha A-Z.
+    const groups = [...groupsByKey.values()].sort((a, b) => {
+        if (a.key === "none") return 1;
+        if (b.key === "none") return -1;
+        return a.name.localeCompare(b.name, "uz");
+    });
+
     list.innerHTML = `
         <div class="trash-bulk-actions">
             <label><input type="checkbox" id="selectAllUnlinkedTopicsCheckbox" onchange="toggleSelectAllUnlinkedTopics(this)"> Hammasini belgilash</label>
             <button id="bulkDeleteUnlinkedTopicsBtn" class="bulk-delete-btn hidden" onclick="deleteSelectedUnlinkedTopics()">🗑️ Tanlanganlarni o'chirish (<span id="bulkDeleteUnlinkedTopicsCount">0</span>)</button>
         </div>
-        ${unlinked.map(s => `
-            <div class="trash-row">
-                <input type="checkbox" class="unlinked-topic-select-checkbox" data-topic-id="${s.id}" onchange="onUnlinkedTopicCheckboxChange(${s.id}, this)">
-                <div class="trash-row-info">
-                    ${escapeHtml(s.name)}
-                    <span class="item-count-badge">${s.questionCount || 0} ta test</span>
-                </div>
-                <div class="trash-row-actions">
-                    <button class="danger-btn" onclick="deleteUnlinkedTopic(${s.id}, ${JSON.stringify(s.name).replace(/"/g, "&quot;")})">🗑️ O'chirish</button>
-                </div>
+        ${groups.map(g => `
+            <div class="unlinked-topic-group">
+                <label class="unlinked-topic-group-header">
+                    <input type="checkbox" class="unlinked-group-select-checkbox" data-group-key="${g.key}" onchange="toggleSelectUnlinkedGroup('${g.key}', this)">
+                    <strong>${escapeHtml(g.name)}</strong>
+                    <span class="item-count-badge">${g.items.length} ta dars</span>
+                </label>
+                ${g.items.map(s => `
+                    <div class="trash-row unlinked-topic-row">
+                        <input type="checkbox" class="unlinked-topic-select-checkbox" data-topic-id="${s.id}" data-group-key="${g.key}" onchange="onUnlinkedTopicCheckboxChange(${s.id}, this)">
+                        <div class="trash-row-info">
+                            ${escapeHtml(s.name)}
+                            <span class="item-count-badge">${s.questionCount || 0} ta test</span>
+                        </div>
+                        <div class="trash-row-actions">
+                            <button class="danger-btn" onclick="deleteUnlinkedTopic(${s.id}, ${JSON.stringify(s.name).replace(/"/g, "&quot;")})">🗑️ O'chirish</button>
+                        </div>
+                    </div>
+                `).join("")}
             </div>
         `).join("")}`;
+}
+
+// Guruh sarlavhasidagi checkbox — shu Bo'limdagi BARCHA darslarni
+// birdaniga belgilaydi/bekor qiladi (foydalanuvchi so'rovi, 2026-09-12).
+function toggleSelectUnlinkedGroup(groupKey, checkbox) {
+    document.querySelectorAll(`#unlinkedTopicsList .unlinked-topic-select-checkbox[data-group-key="${groupKey}"]`).forEach(cb => {
+        cb.checked = checkbox.checked;
+        const topicId = Number(cb.dataset.topicId);
+        if (checkbox.checked) {
+            selectedUnlinkedTopicIds.add(topicId);
+        } else {
+            selectedUnlinkedTopicIds.delete(topicId);
+        }
+    });
+    if (!checkbox.checked) {
+        const selectAll = document.getElementById("selectAllUnlinkedTopicsCheckbox");
+        if (selectAll) selectAll.checked = false;
+    }
+    updateUnlinkedTopicsBulkButton();
 }
 
 function onUnlinkedTopicCheckboxChange(topicId, checkbox) {
@@ -194,6 +250,19 @@ function onUnlinkedTopicCheckboxChange(topicId, checkbox) {
         const selectAll = document.getElementById("selectAllUnlinkedTopicsCheckbox");
         if (selectAll) selectAll.checked = false;
     }
+
+    // Guruh sarlavhasidagi checkbox'ni yangilaymiz — guruhdagi BARCHA
+    // darslar belgilangandagina u ham belgilangan ko'rinadi.
+    const groupKey = checkbox.dataset.groupKey;
+    if (groupKey) {
+        const groupCheckboxes = document.querySelectorAll(
+            `#unlinkedTopicsList .unlinked-topic-select-checkbox[data-group-key="${groupKey}"]`);
+        const allChecked = [...groupCheckboxes].every(cb => cb.checked);
+        const groupCheckbox = document.querySelector(
+            `.unlinked-group-select-checkbox[data-group-key="${groupKey}"]`);
+        if (groupCheckbox) groupCheckbox.checked = allChecked;
+    }
+
     updateUnlinkedTopicsBulkButton();
 }
 
@@ -206,6 +275,10 @@ function toggleSelectAllUnlinkedTopics(selectAllCheckbox) {
         } else {
             selectedUnlinkedTopicIds.delete(topicId);
         }
+    });
+    // Har bir guruh sarlavhasidagi checkbox ham "Hammasini belgilash"ga mos.
+    document.querySelectorAll("#unlinkedTopicsList .unlinked-group-select-checkbox").forEach((cb) => {
+        cb.checked = selectAllCheckbox.checked;
     });
     updateUnlinkedTopicsBulkButton();
 }

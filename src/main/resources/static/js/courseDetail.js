@@ -39,13 +39,15 @@ let chapterPages = {};
 // boshlanadi (selectCard'dagi avtomatik ochish bundan mustasno).
 let expandedChapterKeys = new Set();
 
-// "⋯" amallar qatori standart holatda har bir qayta chizishda (masalan
-// biror amal bajarilganda) yopiladi (toggleChapterActions'dagi izohga
-// qarang). Foydalanuvchi so'rovi, 2026-09-12: "action lar очилгандан
-// кейин, босса очилган ҳолда қолдирадиган icon қўш" — mana shu Set'da
-// bo'lgan Mavzular uchun bu avtomatik-yopilish BEKOR qilinadi ("mahkamlab
-// qo'yilgan" — pin). FAQAT shu sahifa (sessiya) davomida eslab qolinadi.
-let pinnedChapterActionKeys = new Set();
+// "⋯" amallar qatori — foydalanuvchi so'rovi, 2026-09-12: "icon
+// defaultda ochiq tursin. istasa yopib qo'yadi" — ILGARI standart
+// holatda YOPIQ edi (📌 bilan "mahkamlash" kerak edi, ochiq qolishi
+// uchun); ENDI aksincha — HAR BIR karta uchun DEFAULT holat OCHIQ,
+// foydalanuvchi "⋯" (yoki tashqariga bosib) ANIQ YOPGANDA GINA shu
+// Mavzu/Yo'nalish uchun yopiq holat eslab qolinadi (qayta chizilganda
+// ham). 📌 tugmasi endi keraksiz (default allaqachon ochiq) — olib
+// tashlandi.
+let closedChapterActionKeys = new Set();
 
 // "🔍 Mavzu qidirish" (onChapterSearchInput) — mavzu nomi bo'yicha
 // filtr, katta-kichik harfga sezgir emas. Bo'sh bo'lsa — filtr yo'q.
@@ -1722,14 +1724,28 @@ function renderGroupedSections() {
     const realChapterGroups = sortedGroups.filter(g => g.chapterId != null);
 
     const query = chapterSearchQuery.trim().toLowerCase();
-    const visibleGroups = query
+    const filteredGroups = query
         ? sortedGroups.filter(g => g.name.toLowerCase().includes(query))
         : sortedGroups;
 
-    if (query && visibleGroups.length === 0) {
+    if (query && filteredGroups.length === 0) {
         list.innerHTML = `<div class="courses-empty">"${escapeHtml(chapterSearchQuery)}" bo'yicha mavzu topilmadi</div>`;
         return;
     }
+
+    // Foydalanuvchi so'rovi, 2026-09-12: "Har safar mavzu ochilganda,
+    // ochiq mavzu tepaga render bo'lsin, hali ochilmaganlar uni pastiga.
+    // Mavzuni yopsa, qaytib joyiga kelib qolsin o'zini tartibiga." —
+    // FAQAT KO'RSATISH (render) tartibi o'zgaradi: ochiq Mavzular
+    // birinchi (o'z aralaridagi nisbiy tartib — orderIndex — saqlangan
+    // holda), keyin yopiqlar. "realChapterGroups" (⬆⬇ tugmalari uchun)
+    // ATAYLAB haqiqiy (o'zgarmagan) tartibdan hisoblanadi — aks holda
+    // "yuqoriga/pastga surish" tugmalari mavzu ochiq/yopiqligiga qarab
+    // chalkash ishlab qolardi.
+    const visibleGroups = [
+        ...filteredGroups.filter(g => expandedChapterKeys.has(g.key)),
+        ...filteredGroups.filter(g => !expandedChapterKeys.has(g.key))
+    ];
 
     list.innerHTML = visibleGroups.map(group => renderChapterBox(group, globalIndexById, realChapterGroups)).join("");
 }
@@ -1761,7 +1777,10 @@ function toggleChapterBox(key) {
 
     if (isOpen) {
         if (collapseEl) {
-            collapseEl.classList.remove("is-open");
+            // "settled" DARHOL olib tashlanadi — yopilish animatsiyasi
+            // qaytadan "overflow:hidden" bilan ijro etilishi kerak
+            // (pastdagi "settled" izohiga qarang).
+            collapseEl.classList.remove("is-open", "settled");
             const onEnd = (e) => {
                 if (e.target !== collapseEl || e.propertyName !== "grid-template-rows") return;
                 collapseEl.removeEventListener("transitionend", onEnd);
@@ -1779,7 +1798,26 @@ function toggleChapterBox(key) {
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 const el = document.getElementById(`chapterCollapse-${key}`);
-                if (el) el.classList.add("is-open");
+                if (!el) return;
+                el.classList.add("is-open");
+                // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12:
+                // "klavish yorliqlari yarmi ko'rinmayapti") — animatsiya
+                // ("grid-template-rows: 0fr->1fr") ishlashi uchun
+                // ".group-card-collapse-inner"da "overflow:hidden" SHART,
+                // lekin bu ICHIDAGI dars kartalarining "⌨️" tugmasi
+                // (klaviatura-yorliqnoma popover'i) YUQORIGA chiqib,
+                // konteyner chegarasidan tashqariga chiqsa — shu
+                // "overflow:hidden" uni KESIB tashlardi. Yechim: animatsiya
+                // TUGAGANDAN KEYIN ("settled") overflow cheklovi olib
+                // tashlanadi (CSS'da) — endi popover'lar erkin chiqadi,
+                // yopilish paytida esa (yuqorida "settled" olib
+                // tashlanadi) animatsiya baribir to'g'ri kesilib ijro etiladi.
+                const onOpenEnd = (e) => {
+                    if (e.target !== el || e.propertyName !== "grid-template-rows") return;
+                    el.removeEventListener("transitionend", onOpenEnd);
+                    el.classList.add("settled");
+                };
+                el.addEventListener("transitionend", onOpenEnd);
             });
         });
     }
@@ -1913,18 +1951,24 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
         ? `<button class="chapter-rename-btn" onclick="event.stopPropagation(); openBulkImportModal(${group.chapterId != null ? group.chapterId : "null"}, ${JSON.stringify(group.name).replace(/"/g, "&quot;")})" title="Darslar + testlarni paketli import qilish">📥</button>`
         : "";
 
+    // "🗑️ Barchasini o'chirish" — FAQAT "— Mavzusiz darslar —"
+    // psevdo-guruhida (foydalanuvchi so'rovi: "Kurs/Mavzusiz darslarga
+    // barcha darslarni o'chirish tugmasi/icon qo'shilsin") — haqiqiy
+    // Mavzularda buning o'rnini allaqachon "🗑️ Mavzu + darslar"
+    // (deleteWithTopicsBtn, pastda) bosadi.
+    const deleteAllUnlinkedBtn = (cachedCourse && cachedCourse.canManage && group.chapterId == null)
+        ? `<button class="chapter-rename-btn danger-btn" onclick="event.stopPropagation(); deleteAllUnlinkedSections()" title="Mavzusiz BARCHA darslarni o'chirish">🗑️</button>`
+        : "";
+
     // Amallar ko'payib ketgani sabab (foydalanuvchi so'rovi, 2026-09-10:
     // "actionlar ko'payib ketsa, ularni ham hide/unhide qiladigan qil") —
-    // endi HAMMASI "⋯" tugmasi orqali yig'ilib/ochilib turadigan alohida
-    // qatorda (har safar qayta chizilganda, standart holatda, yopiq
-    // holatga qaytadi — tasodifiy ochiq qolib ketmasligi uchun). Lekin
-    // foydalanuvchi buni "📌" bilan MAHKAMLAB qo'ysa (pinnedChapterActionKeys),
-    // qayta chizilganda ham OCHIQ qoladi (foydalanuvchi so'rovi,
-    // 2026-09-12: "actionlar ochilgandan keyin, bossa ochilgan holda
-    // qoldiradigan icon qo'sh").
-    const actionsHtml = `${moveBtns}${addTopicBtn}${bulkImportBtn}${exportChapterBtn}${renameBtn}${deleteWithTopicsBtn}`;
+    // HAMMASI "⋯" tugmasi orqali yig'ilib/ochilib turadigan alohida
+    // qatorda. Foydalanuvchi so'rovi, 2026-09-12: "icon defaultda ochiq
+    // tursin. istasa yopib qo'yadi" — endi DEFAULT holat OCHIQ, faqat
+    // ANIQ YOPILGAN (closedChapterActionKeys) Mavzular yopiq boshlanadi.
+    const actionsHtml = `${moveBtns}${addTopicBtn}${bulkImportBtn}${exportChapterBtn}${renameBtn}${deleteWithTopicsBtn}${deleteAllUnlinkedBtn}`;
     const hasActions = actionsHtml.trim() !== "";
-    const isPinned = pinnedChapterActionKeys.has(group.key);
+    const isMenuOpen = !closedChapterActionKeys.has(group.key);
 
     // Karto chka ko'rinishi (foydalanuvchi so'rovi, 2026-09-12: "мавзу
     // ларини ҳам карточка кўринишига келтир. Мавзу номлари сиғмай
@@ -1941,8 +1985,7 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
             ${hasActions ? `
             <div class="group-card-corner">
                 <button class="group-card-menu-trigger" onclick="event.stopPropagation(); toggleChapterActions('${group.key}')" title="Amallar">⋯</button>
-                <div class="group-card-menu ${isPinned ? "" : "hidden"}" id="chapterActionsExtra-${group.key}">
-                    <button class="chapter-actions-pin ${isPinned ? "pinned" : ""}" onclick="event.stopPropagation(); toggleChapterActionsPin('${group.key}')" title="${isPinned ? "Mahkamlangan — amal bajarilganda ham ochiq qoladi (bosib bekor qiling)" : "Mahkamlash — amal bajarilganda ham ochiq qolsin"}">📌</button>
+                <div class="group-card-menu ${isMenuOpen ? "" : "hidden"}" id="chapterActionsExtra-${group.key}">
                     ${actionsHtml}
                 </div>
             </div>` : ""}
@@ -1959,44 +2002,33 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
 }
 
 // "⋯" bosilganda — shu Mavzuning amallar qatorini ochadi/yopadi
-// (foydalanuvchi so'rovi, 2026-09-10). Standart holatda saqlanmaydi — har
-// qayta chizishda (masalan boshqa amal bajarilganda) yopiq holatga
-// qaytadi, bu shunchaki tasodifiy ochiq qolib ketmasligi uchun ataylab
-// shunday — FAQAT "📌" bilan mahkamlanmagan bo'lsa (pastga qarang).
+// (foydalanuvchi so'rovi, 2026-09-10). Default holat OCHIQ (2026-09-12:
+// "icon defaultda ochiq tursin"), shu sabab bu yerda faqat YOPISH
+// closedChapterActionKeys'ga YOZILADI — qayta chizilganda ham (masalan
+// boshqa amal bajarilganda) ANIQ shu holat (ochiq/yopiq) saqlanadi.
 function toggleChapterActions(key) {
     const el = document.getElementById(`chapterActionsExtra-${key}`);
-    if (el) el.classList.toggle("hidden");
+    if (!el) return;
+    const willBeHidden = !el.classList.contains("hidden");
+    el.classList.toggle("hidden");
+    if (willBeHidden) {
+        closedChapterActionKeys.add(key);
+    } else {
+        closedChapterActionKeys.delete(key);
+    }
 }
 
-// HAQIQIY TOPILGAN KAMCHILIK (kartochka ko'rinishiga o'tkazilgandan
-// keyin sinovda topilgan, 2026-09-12) — "⋯" popover-menyusi tashqariga
-// bosilganda yopilmay, ochiq qolib ketardi. Endi sahifaning istalgan
-// boshqa joyiga bosilsa — MAHKAMLANMAGAN (pinnedChapterActionKeys'da
-// yo'q) barcha ochiq menyular avtomatik yopiladi. Menyu ICHIDAGI
-// tugmalar "event.stopPropagation()" bilan o'ralgan, shu sabab ular
-// bosilganda bu handler'ga umuman yetib bormaydi.
+// Sahifaning istalgan boshqa joyiga bosilsa — ochiq turgan menyular
+// yopiladi (foydalanuvchi tasodifan ochiq qoldirib ketmasligi uchun).
+// Menyu ICHIDAGI tugmalar "event.stopPropagation()" bilan o'ralgan,
+// shu sabab ular bosilganda bu handler'ga umuman yetib bormaydi.
 document.addEventListener("click", (e) => {
     if (e.target.closest(".group-card-corner")) return;
     document.querySelectorAll(".group-card-menu:not(.hidden)").forEach(el => {
-        const key = el.id.replace("chapterActionsExtra-", "");
-        if (!pinnedChapterActionKeys.has(key)) el.classList.add("hidden");
+        el.classList.add("hidden");
+        closedChapterActionKeys.add(el.id.replace("chapterActionsExtra-", ""));
     });
 });
-
-// "📌" — foydalanuvchi so'rovi, 2026-09-12: bir nechta amalni ketma-ket
-// bajarish kerak bo'lganda, har safar "⋯"ni qayta bosishning o'rniga,
-// shu Mavzuning amallar qatorini "mahkamlab" (pinnedChapterActionKeys)
-// qo'yish mumkin — shunda renderChapterBox() har safar qayta chizilganda
-// (masalan mavzu qo'shilgach) ham OCHIQ holatda qoladi. Qayta bosilsa —
-// mahkamlash bekor qilinadi (keyingi qayta chizishda yana yopiq holatga qaytadi).
-function toggleChapterActionsPin(key) {
-    if (pinnedChapterActionKeys.has(key)) {
-        pinnedChapterActionKeys.delete(key);
-    } else {
-        pinnedChapterActionKeys.add(key);
-    }
-    renderGroupedSections();
-}
 
 // Faqat "chapterKey" mavzusiga (yoki "none" — mavzusiz darslar
 // psevdo-guruhiga) tegishli darslarni A-Z/Z-A tartibga soladi — boshqa
@@ -2666,6 +2698,30 @@ async function deleteChapterWithLinkedTopics(chapterId, chapterName) {
 
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/chapters/${chapterId}/with-topics`, { method: "DELETE" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlertModal(data.error || "O'chirishda xatolik");
+            return;
+        }
+        loadCourse();
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
+    }
+}
+
+// "🗑️ Barchasini o'chirish" — "— Mavzusiz darslar —" psevdo-guruhidagi
+// BARCHA darslarni bir yo'la savatga o'tkazadi (foydalanuvchi so'rovi:
+// "Kurs/Mavzusiz darslarga barcha darslarni o'chirish tugmasi/icon
+// qo'shilsin") — deleteChapterWithLinkedTopics bilan bir xil xavfsizlik
+// darajasi (bitta "danger" tasdiq, savatdan qaytarish mumkin).
+async function deleteAllUnlinkedSections() {
+    if (!await showConfirmModal(`"— Mavzusiz darslar —" guruhidagi BARCHA darslarni o'chirmoqchimisiz?\n\n(Butunlay o'chmaydi — "🗑️ O'chirilgan darslar" panelidan qaytarish mumkin. TEST BOSHQARUVIdagi savollarga tegilmaydi.)`, { danger: true })) {
+        return;
+    }
+
+    try {
+        const res = await fetch(`/api/courses/${COURSE_ID}/sections/unlinked`, { method: "DELETE" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
             showAlertModal(data.error || "O'chirishda xatolik");

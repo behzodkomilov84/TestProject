@@ -23,11 +23,11 @@ function updateFilePickerName(input, spanId) {
 // bilan bir xil g'oya (bir nechtasi bir vaqtda ochiq turishi mumkin).
 const expandedFieldKeys = new Set();
 
-// courseDetail.js#pinnedChapterActionKeys BILAN BIR XIL — "📌" bilan
-// mahkamlangan Yo'nalishlarning amallar menyusi qayta chizilganda ham
-// ochiq qoladi (foydalanuvchi so'rovi, 2026-09-12: ikkala sahifada ham
-// bir xil, izchil xatti-harakat).
-const pinnedFieldActionKeys = new Set();
+// courseDetail.js#closedChapterActionKeys BILAN BIR XIL — "⋯" amallar
+// menyusi endi DEFAULT holatda OCHIQ (foydalanuvchi so'rovi, 2026-09-12:
+// "icon defaultda ochiq tursin. istasa yopib qo'yadi"), faqat ANIQ
+// YOPILGAN Yo'nalishlar shu Set'da eslab qolinadi.
+const closedFieldActionKeys = new Set();
 
 // Kurs sahifasidan (courseDetail.html) "← Kurs yo'nalishlari" bosilganda "?focus=<id>"
 // beriladi — shu Kursning Yo'nalish qutisi avtomatik ochiladi va o'sha
@@ -161,7 +161,16 @@ function renderGroupedCourses() {
     }
 
     const realFieldGroups = groups.filter(g => g.fieldId != null);
-    grid.innerHTML = groups.map(g => renderFieldBox(g, realFieldGroups)).join("");
+    // courseDetail.js#renderGroupedSections BILAN BIR XIL — foydalanuvchi
+    // so'rovi, 2026-09-12: "ochiq mavzu tepaga render bo'lsin... Mavzuni
+    // yopsa, qaytib joyiga kelib qolsin". FAQAT KO'RSATISH tartibi
+    // o'zgaradi — "realFieldGroups" (⬆⬇ tugmalari uchun) haqiqiy
+    // (o'zgarmagan) tartibdan hisoblanadi.
+    const orderedGroups = [
+        ...groups.filter(g => expandedFieldKeys.has(g.key)),
+        ...groups.filter(g => !expandedFieldKeys.has(g.key))
+    ];
+    grid.innerHTML = orderedGroups.map(g => renderFieldBox(g, realFieldGroups)).join("");
 
     if (focusCourseId != null) {
         const targetId = focusCourseId;
@@ -199,7 +208,9 @@ function toggleFieldBox(key) {
 
     if (isOpen) {
         if (collapseEl) {
-            collapseEl.classList.remove("is-open");
+            // courseDetail.js#toggleChapterBox BILAN BIR XIL — "settled"
+            // darhol olib tashlanadi (pastga qarang).
+            collapseEl.classList.remove("is-open", "settled");
             const onEnd = (e) => {
                 if (e.target !== collapseEl || e.propertyName !== "grid-template-rows") return;
                 collapseEl.removeEventListener("transitionend", onEnd);
@@ -217,7 +228,21 @@ function toggleFieldBox(key) {
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 const el = document.getElementById(`fieldCollapse-${key}`);
-                if (el) el.classList.add("is-open");
+                if (!el) return;
+                el.classList.add("is-open");
+                // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12:
+                // "klavish yorliqlari yarmi ko'rinmayapti") — kurs
+                // kartalarining "⌨️" popover'i konteyner chegarasidan
+                // tashqariga chiqsa, animatsiya uchun shart bo'lgan
+                // "overflow:hidden" uni kesib tashlardi. Ochilish
+                // animatsiyasi TUGAGANDAN KEYIN ("settled") cheklov
+                // olib tashlanadi (courses.css).
+                const onOpenEnd = (e) => {
+                    if (e.target !== el || e.propertyName !== "grid-template-rows") return;
+                    el.removeEventListener("transitionend", onOpenEnd);
+                    el.classList.add("settled");
+                };
+                el.addEventListener("transitionend", onOpenEnd);
             });
         });
     }
@@ -419,15 +444,14 @@ function renderFieldBox(group, realFieldGroups) {
     // ko'rinish/xatti-harakatga ega bo'lishi uchun.
     const actionsHtml = `${addBtn}${moveBtns}${renameBtn}${deleteBtn}`;
     const hasActions = actionsHtml.trim() !== "";
-    const isPinned = pinnedFieldActionKeys.has(group.key);
+    const isMenuOpen = !closedFieldActionKeys.has(group.key);
 
     return `
         <div class="group-card ${isExpanded ? "expanded" : "collapsed"}">
             ${hasActions ? `
             <div class="group-card-corner">
                 <button class="group-card-menu-trigger" onclick="event.stopPropagation(); toggleFieldActions('${group.key}')" title="Amallar">⋯</button>
-                <div class="group-card-menu ${isPinned ? "" : "hidden"}" id="fieldActionsExtra-${group.key}">
-                    <button class="chapter-actions-pin ${isPinned ? "pinned" : ""}" onclick="event.stopPropagation(); toggleFieldActionsPin('${group.key}')" title="${isPinned ? "Mahkamlangan — amal bajarilganda ham ochiq qoladi (bosib bekor qiling)" : "Mahkamlash — amal bajarilganda ham ochiq qolsin"}">📌</button>
+                <div class="group-card-menu ${isMenuOpen ? "" : "hidden"}" id="fieldActionsExtra-${group.key}">
                     ${actionsHtml}
                 </div>
             </div>` : ""}
@@ -446,12 +470,19 @@ function renderFieldBox(group, realFieldGroups) {
     `;
 }
 
-// courseDetail.js#toggleChapterActions/toggleChapterActionsPin BILAN BIR
-// XIL — "⋯" amallar menyusini ochadi/yopadi, "📌" esa qayta chizishda ham
-// ochiq qolishini mahkamlaydi (foydalanuvchi so'rovi, 2026-09-12).
+// courseDetail.js#toggleChapterActions BILAN BIR XIL — default OCHIQ,
+// bu yerda faqat YOPISH closedFieldActionKeys'ga yoziladi (foydalanuvchi
+// so'rovi, 2026-09-12: "icon defaultda ochiq tursin. istasa yopib qo'yadi").
 function toggleFieldActions(key) {
     const el = document.getElementById(`fieldActionsExtra-${key}`);
-    if (el) el.classList.toggle("hidden");
+    if (!el) return;
+    const willBeHidden = !el.classList.contains("hidden");
+    el.classList.toggle("hidden");
+    if (willBeHidden) {
+        closedFieldActionKeys.add(key);
+    } else {
+        closedFieldActionKeys.delete(key);
+    }
 }
 
 // courseDetail.js'dagi bilan bir xil — "⋯" popover-menyusi tashqariga
@@ -459,19 +490,10 @@ function toggleFieldActions(key) {
 document.addEventListener("click", (e) => {
     if (e.target.closest(".group-card-corner")) return;
     document.querySelectorAll(".group-card-menu:not(.hidden)").forEach(el => {
-        const key = el.id.replace("fieldActionsExtra-", "");
-        if (!pinnedFieldActionKeys.has(key)) el.classList.add("hidden");
+        el.classList.add("hidden");
+        closedFieldActionKeys.add(el.id.replace("fieldActionsExtra-", ""));
     });
 });
-
-function toggleFieldActionsPin(key) {
-    if (pinnedFieldActionKeys.has(key)) {
-        pinnedFieldActionKeys.delete(key);
-    } else {
-        pinnedFieldActionKeys.add(key);
-    }
-    renderGroupedCourses();
-}
 
 // "⬆⬇" — shu Yo'nalish ICHIDA kurs kartochkasini surish (foydalanuvchi
 // so'rovi, 2026-09-05: "bo'limlarni o'rnini almashtirish funksiyasini

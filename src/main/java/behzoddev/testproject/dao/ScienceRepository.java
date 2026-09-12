@@ -34,22 +34,24 @@ public interface ScienceRepository extends JpaRepository<Science, Long> {
     Optional<Science> findByIdWithTopics(Long id);
 
 
-    // sectionCount — shu fandagi Bo'limlar (TopicSection, UI'da "Mavzu")
-    // soni, science.html qatorida ko'rsatish uchun ("(N ta mavzu)").
-    // Korrelyatsiyalangan subso'rov (har bir fan uchun bitta son
-    // qaytaradi — count() doim aniq bitta qatorli, fan-out xavfi yo'q).
     // fieldId/fieldName — science.js#renderFieldBox Yo'nalish bo'yicha
     // guruhlashi uchun. MUHIM: "left join s.field f" ATAYLAB — agar
     // "s.field.id" to'g'ridan-to'g'ri SELECT'da yozilsa, JPQL buni
     // IMPLICIT INNER JOIN deb talqin qiladi, natijada Yo'nalishga hali
     // tayinlanmagan (field=NULL) fanlar BUTUNLAY natijadan tushib qolar
     // edi (haqiqiy topilgan bug — "Ona tili" ro'yxatdan g'oyib bo'lgan edi).
-    @Query("select new behzoddev.testproject.dto.science.ScienceIdAndNameDto(s.id, s.name, " +
-            "(select count(ts) from TopicSection ts where ts.science = s and ts.deletedAt is null), " +
-            "f.id, f.name) " +
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "TEST
+    // BOSHQARUVI dagi barcha N+1 so'rov muammolarini ko'rib chiq") — bu
+    // yerda ILGARI har bir Fan uchun korrelyatsiyalangan subso'rov
+    // (Bo'lim soni) bor edi. Endi bu yengil versiya subso'rovsiz — Bo'lim
+    // soni ScienceService.getAllScienceIdAndNameDto'da ALOHIDA, BULK
+    // (GROUP BY) so'rov bilan (TopicSectionRepository.countByScienceIdsGrouped)
+    // to'ldiriladi. "0L" — sectionCount uchun vaqtinchalik joy tutuvchi
+    // (keyin merge qilinadi).
+    @Query("select new behzoddev.testproject.dto.science.ScienceIdAndNameDto(s.id, s.name, 0L, f.id, f.name) " +
             "from Science s left join s.field f " +
             "where s.deletedAt is null order by s.orderIndex")
-    Set<ScienceIdAndNameDto> findAllScienceNames();
+    List<ScienceIdAndNameDto> findAllScienceBasics();
 
     // Reorder (⬆⬇, A-Z/Z-A) uchun — ScienceService.reorderSciences.
     @Query("select s from Science s where s.deletedAt is null order by s.orderIndex")

@@ -62,18 +62,32 @@ public class ScienceService {
     // ham (faqat canManage=true bo'lganlar qoladi), shunchaki belgilab
     // qo'yilmaydi. OWNER uchun canManageScience har doim true bo'lgani
     // uchun bu filtr OWNER'ga hech qanday ta'sir qilmaydi.
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "TEST
+    // BOSHQARUVI dagi barcha N+1 so'rov muammolarini ko'rib chiq") —
+    // ilgari scienceRepository.findAllScienceNames() ishlatilardi, u HAR
+    // BIR Fan uchun korrelyatsiyalangan subso'rov bajarardi (Bo'lim
+    // soni). Endi TopicService.getTopicsByScienceId'dagi bilan bir xil
+    // yechim: yengil (subso'rovsiz) so'rov + ALOHIDA, BULK (GROUP BY)
+    // Bo'lim soni.
     @Transactional(readOnly = true)
     public Set<ScienceIdAndNameDto> getAllScienceIdAndNameDto(User currentUser) {
-        Set<ScienceIdAndNameDto> base = scienceRepository.findAllScienceNames();
+        List<ScienceIdAndNameDto> basics = scienceRepository.findAllScienceBasics();
+        Map<Long, Long> sectionCounts = basics.isEmpty() ? Map.of() : topicSectionRepository
+                .countByScienceIdsGrouped(basics.stream().map(ScienceIdAndNameDto::id).toList())
+                .stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        behzoddev.testproject.dto.science.ScienceSectionCountDto::scienceId,
+                        behzoddev.testproject.dto.science.ScienceSectionCountDto::count));
+
         Map<Long, Science> byId = scienceRepository.findAllByDeletedAtIsNullOrderByOrderIndex()
                 .stream()
                 .collect(java.util.stream.Collectors.toMap(Science::getId, s -> s));
 
-        return base.stream()
+        return basics.stream()
                 .map(dto -> {
                     Science science = byId.get(dto.id());
                     return new ScienceIdAndNameDto(
-                            dto.id(), dto.name(), dto.sectionCount(), dto.fieldId(), dto.fieldName(),
+                            dto.id(), dto.name(), sectionCounts.getOrDefault(dto.id(), 0L), dto.fieldId(), dto.fieldName(),
                             science != null && canManageScience(science, currentUser));
                 })
                 .filter(ScienceIdAndNameDto::canManage)

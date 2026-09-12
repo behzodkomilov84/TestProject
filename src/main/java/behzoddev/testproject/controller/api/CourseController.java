@@ -291,6 +291,18 @@ public class CourseController {
         courseService.deleteChapterWithLinkedTopics(courseId, chapterId, user);
     }
 
+    // "🗑️ Barchasini o'chirish" — "— Mavzusiz darslar —" psevdo-guruhi
+    // uchun (foydalanuvchi so'rovi: "Kurs/Mavzusiz darslarga barcha
+    // darslarni o'chirish tugmasi/icon qo'shilsin"). "/sections/unlinked"
+    // — Spring bu literal segmentni {chapterId} path-variable'lardan
+    // ustun qo'yadi, chalkashmaydi.
+    @DeleteMapping("/{courseId}/sections/unlinked")
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public Map<String, Integer> deleteAllUnlinkedSections(@PathVariable Long courseId,
+                                                            @AuthenticationPrincipal User user) {
+        return Map.of("deleted", courseService.deleteAllUnlinkedSections(courseId, user));
+    }
+
     // "🔗 Havolalarni tekshirish" — shu kursga bog'langan har bir mavzuning
     // savollari to'g'ri javob izohida O'ZINING mavzusiga havola bor-yo'qligini,
     // bor bo'lsa TO'G'RI ekanini tekshiradi (courseDetail.js).

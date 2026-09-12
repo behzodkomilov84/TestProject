@@ -79,6 +79,16 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             "from Question q where q.topic.id in :topicIds and q.deletedAt is null group by q.topic.id")
     List<TopicQuestionCountDto> countByTopicIdsGrouped(@Param("topicIds") List<Long> topicIds);
 
+    // countByTopicIdsGrouped bilan bir xil, faqat "O'chirilganlar
+    // savati"dagi (trashed) savollar uchun — TopicService.getTopicsByScienceId
+    // endi shu ikkalasini (bulk, GROUP BY) ishlatadi, TopicRepository.
+    // findTopicsByScienceId'dagi (eski, sekin) korrelyatsiyalangan
+    // subso'rovlar o'rniga (HAQIQIY TOPILGAN BUG, 2026-09-12: "/topics
+    // sahifa juda sekin yuklanyapti").
+    @Query("select new behzoddev.testproject.dto.question.TopicQuestionCountDto(q.topic.id, count(q)) " +
+            "from Question q where q.topic.id in :topicIds and q.deletedAt is not null group by q.topic.id")
+    List<TopicQuestionCountDto> countDeletedByTopicIdsGrouped(@Param("topicIds") List<Long> topicIds);
+
     @Query("""
             select q from Question q
             where q.topic.id = :topicId and q.deletedAt is null

@@ -1,5 +1,6 @@
 package behzoddev.testproject.dao;
 
+import behzoddev.testproject.dto.science.ScienceSectionCountDto;
 import behzoddev.testproject.dto.section.TopicSectionIdAndNameDto;
 import behzoddev.testproject.dto.section.TopicSectionTrashDto;
 import behzoddev.testproject.entity.TopicSection;
@@ -17,13 +18,25 @@ import java.util.Optional;
 // cheklovi, "allaqachon mavjud" xabari, tiklashni taklif qilish).
 public interface TopicSectionRepository extends JpaRepository<TopicSection, Long> {
 
-    // topicCount — shu Bo'limdagi mavzular soni (topic-sections.html'da
-    // "(N ta mavzu)" ko'rsatish uchun). Korrelyatsiyalangan subso'rov —
-    // count() doim aniq bitta qatorli, fan-out xavfi yo'q.
-    @Query("select new behzoddev.testproject.dto.section.TopicSectionIdAndNameDto(s.id, s.name, s.orderIndex, " +
-            "(select count(t) from Topic t where t.section = s and t.deletedAt is null)) " +
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "TEST
+    // BOSHQARUVI dagi barcha N+1 so'rov muammolarini ko'rib chiq") — bu
+    // yerda ILGARI har bir Bo'lim uchun korrelyatsiyalangan subso'rov
+    // (topicCount) ishlatuvchi bitta katta so'rov bor edi. Endi bu yengil
+    // versiya subso'rovsiz, mavzular soni TopicSectionService'da ALOHIDA,
+    // BULK (GROUP BY) so'rov bilan (TopicRepository.countBySectionIdsGrouped)
+    // to'ldiriladi (QuestionRepository.countByTopicIdsGrouped bilan bir
+    // xil g'oya).
+    @Query("select new behzoddev.testproject.dto.section.TopicSectionIdAndNameDto(s.id, s.name, s.orderIndex) " +
             "from TopicSection s where s.science.id = :scienceId and s.deletedAt is null order by s.orderIndex")
-    List<TopicSectionIdAndNameDto> findByScienceIdOrderByOrderIndex(@Param("scienceId") Long scienceId);
+    List<TopicSectionIdAndNameDto> findSectionBasicsByScienceId(@Param("scienceId") Long scienceId);
+
+    // /science/fields sahifasidagi (Fanlar ro'yxati, ScienceRepository.
+    // findAllScienceNames() bilan bir xil, HAQIQIY TOPILGAN BUG,
+    // 2026-09-12) Bo'lim soni endi shu BULK (GROUP BY) so'rov bilan
+    // — har bir Fan uchun korrelyatsiyalangan subso'rov o'rniga.
+    @Query("select new behzoddev.testproject.dto.science.ScienceSectionCountDto(s.science.id, count(s)) " +
+            "from TopicSection s where s.science.id in :scienceIds and s.deletedAt is null group by s.science.id")
+    List<ScienceSectionCountDto> countByScienceIdsGrouped(@Param("scienceIds") List<Long> scienceIds);
 
     @Query("select s from TopicSection s where s.science.id = :scienceId and s.deletedAt is null order by s.orderIndex asc")
     List<TopicSection> findByScience_IdOrderByOrderIndexAsc(@Param("scienceId") Long scienceId);

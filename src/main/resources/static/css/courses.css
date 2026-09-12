@@ -1272,6 +1272,35 @@ body {
 
 /* Fayl tanlash tugmasi — chiroyli, ko'zga tashlanadigan (foydalanuvchi
    so'rovi: "Knopkalarga chiroyli css qo'sh"). */
+/* "📥 Test shabloni" — bulk-import-modal ichidagi shablon yuklab olish
+   havolasi (foydalanuvchi so'rovi, 2026-09-12: "янги шаблон учун иконка
+   ҳам қўш") — .bulk-import-file-picker'dan FARQLI rangda (yashil, chunki
+   bu "yuklab olish", u esa "yuklash"), ikkalasi bir-biridan aniq
+   ajralib turishi uchun. */
+.bulk-import-template-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 16px;
+    margin-bottom: 12px;
+    border: 1.5px solid #86efac;
+    border-radius: 10px;
+    background: #f0fdf4;
+    color: #15803d;
+    font-weight: 600;
+    font-size: 13px;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+}
+
+.bulk-import-template-link:hover {
+    background: #dcfce7;
+    border-color: #4ade80;
+}
+
 .bulk-import-file-picker {
     display: flex;
     align-items: center;
@@ -1671,29 +1700,64 @@ body {
 /* Konteyner — .sections-list'ga QO'SHIMCHA klass sifatida qo'yiladi
    (courseDetail.js#renderGroupedSections / coursesCatalog.html), shu
    sabab compound selektor: oddiy ".sections-list" (flat/mavzusiz kurs)
-   o'zining flex-column tartibida qolaveradi. "auto-fill, minmax(300px,
+   o'zining flex-column tartibida qolaveradi. "auto-fill, minmax(340px,
    1fr)" — aniq breakpoint kerak emas, ekran kengligiga qarab ustunlar
-   soni o'zi moslashadi. */
+   soni o'zi moslashadi. "align-items: stretch" (grid standarti, ATAYLAB
+   qayta yozilgan — ilgari "start" edi) — foydalanuvchi so'rovi,
+   2026-09-12: "кичкартма ва йонидаги билан width va height'да бир хил
+   бўлсин" — bitta qatordagi kartalar (masalan uzun nomli va qisqa nomli)
+   endi BIR XIL balandlikda (qisqasi cho'zilib, uzuniga tenglashadi). */
 .sections-list.group-card-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 18px;
-    align-items: start;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 20px;
+    align-items: stretch;
 }
 
+/* HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi, 2026-09-12: "номлар
+   тепасида битта сатр қолдиркi, actionlar ochilganda tekstlar ko'rinmay
+   qolmasin yoki surilib ketmasin") — "⋯" tugmasi ilgari nom bilan BIR
+   XIL balandlikda ("o'ngda joy" — faqat gorizontal bo'shliq) edi, shu
+   sabab popover-menyu OCHILGANDA (kartaning yuqori qismida, position:
+   absolute) nomning O'ZI ustiga tushib, matnni bir zumga yashirib
+   qo'yardi. Endi tepada ALOHIDA, MATNSIZ qator (padding-top) ajratilgan —
+   "⋯" VA uning popover-menyusi shu qatorda, nomga UMUMAN tegmasdan
+   ochiladi. */
 .group-card {
     position: relative;
     background: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 16px;
-    padding: 18px 44px 18px 20px; /* o'ngda "⋯" burchak menyusiga joy */
+    padding: 48px 24px 22px 24px;
     box-shadow: 0 2px 10px rgba(15, 23, 42, .05);
     transition: box-shadow .2s ease, border-color .2s ease;
+}
+
+/* "Kattaroq bo'lsin" (foydalanuvchi so'rovi, 2026-09-12) — yig'ilgan
+   (hali ochilmagan) kartaga eng kichik balandlik, hatto nomi bitta
+   qisqa qatorda tursa ham karta "torg'in" ko'rinmasligi uchun. Ochilgan
+   (expanded) kartaga (butun qator kengligini egallaydi) tegilmaydi. */
+.group-card.collapsed {
+    min-height: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .group-card:hover {
     box-shadow: 0 8px 24px rgba(15, 23, 42, .1);
     border-color: #cbd5e1;
+}
+
+/* "Always on top" (foydalanuvchi so'rovi, 2026-09-12: "Always on top
+   ҳолатда очилсин") — ":has()" orqali, menyusi OCHIQ turgan karta
+   o'zining stacking-kontekstini QO'SHNI kartalardan YUQORIGA ko'taradi.
+   Sabab: ".group-card"ning o'zi (position:relative, lekin z-index'siz)
+   alohida stacking-kontekst YARATMAYDI, shu sabab uning ICHIDAGI
+   popover-menyu (z-index) keyin DOM'da keladigan QO'SHNI kartaning ORQASIDA
+   qolib ketishi mumkin edi (haqiqiy topilgan bug, ekran surati bilan). */
+.group-card:has(.group-card-menu:not(.hidden)) {
+    z-index: 50;
 }
 
 /* Ochilgan karta BUTUN qator kengligini egallaydi — ichidagi kurs/dars
@@ -1788,6 +1852,11 @@ body {
 
 /* Amallar — kichik popover-menyu sifatida (burchak tugmasi ostida),
    qatorga sig'maydigan ko'p ikonka endi kartani "yorib chiqmaydi". */
+/* Foydalanuvchi so'rovi, 2026-09-12: "actionlar bir qatorda gorizontal
+   ochilsin" — "flex-wrap:wrap"dan "nowrap"ga (ATAYLAB), "max-width"
+   olib tashlandi ("width:max-content" o'zi tugmalarga mos keladigan
+   eng kichik kenglikni tanlaydi, gorizontal ochilib ketishiga to'sqinlik
+   qilmasin deb). */
 .group-card-menu {
     position: absolute;
     top: calc(100% + 6px);
@@ -1798,10 +1867,9 @@ body {
     box-shadow: 0 12px 28px rgba(15, 23, 42, .15);
     padding: 8px;
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 6px;
     width: max-content;
-    max-width: 200px;
     z-index: 6;
 }
 
@@ -1834,6 +1902,20 @@ body {
 
 .group-card-collapse.is-open .group-card-collapse-inner {
     margin-top: 14px;
+}
+
+/* HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "klavish
+   yorliqlari yarmi ko'rinmayapti") — yuqoridagi "overflow:hidden"
+   animatsiya (0fr->1fr) uchun SHART, lekin ICHIDAGI dars kartalarining
+   "⌨️" klaviatura-yorliqnoma popover'i YUQORIGA chiqib, shu chegaradan
+   tashqariga chiqsa — kesilib qolardi. "settled" — ochilish animatsiyasi
+   TUGAGANDAN KEYIN qo'shiladi (courseDetail.js#toggleChapterBox /
+   courses.js#toggleFieldBox) — shundan keyin cheklov olib tashlanadi,
+   popover'lar erkin chiqadi. Yopish boshlanishi bilan "settled" DARHOL
+   olib tashlanadi, shu sabab yopilish animatsiyasi baribir to'g'ri
+   kesiladi. */
+.group-card-collapse.is-open.settled .group-card-collapse-inner {
+    overflow: visible;
 }
 
 /* Bo'lim (bob) "box"i — guruhlangan ko'rinishda (renderGroupedSections,
@@ -1987,47 +2069,6 @@ body {
 
 .chapter-box-actions-extra.hidden {
     display: none;
-}
-
-/* "📌" — amallar qatorini "mahkamlash" (foydalanuvchi so'rovi,
-   2026-09-12: "actionlar ochilgandan keyin, bossa ochilgan holda
-   qoldiradigan icon qo'sh") — standart holatda amallar qatori har bir
-   qayta chizilganda (masalan biror amal bajarilganda) avtomatik
-   yopiladi; bu tugma bosilsa, o'sha Mavzu uchun shu avtomatik-yopilish
-   BEKOR qilinadi (ketma-ket bir nechta amal bajarish osonroq bo'lishi
-   uchun). Bosilmagan holatda xira, bosilgan (pinned) holatda to'q sariq
-   fon bilan ajralib turadi — holat aniq ko'rinishi uchun. */
-.chapter-actions-pin {
-    width: 26px;
-    height: 26px;
-    border-radius: 6px;
-    border: 1px solid #e2e8f0;
-    background: #fff;
-    color: #94a3b8;
-    font-size: 13px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: background .15s ease, border-color .15s ease, color .15s ease, transform .15s ease;
-}
-
-.chapter-actions-pin:hover {
-    background: #eef2f7;
-    border-color: #cbd5e1;
-    color: #475569;
-}
-
-.chapter-actions-pin.pinned {
-    background: #fff7ed;
-    border-color: #fb923c;
-    color: #ea580c;
-    transform: rotate(-35deg);
-}
-
-.chapter-actions-pin.pinned:hover {
-    background: #ffedd5;
 }
 
 /* "✏️" — bo'lim nomini tahrirlash (renameChapterPrompt, courseDetail.js).
