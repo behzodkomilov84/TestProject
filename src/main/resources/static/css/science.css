@@ -1339,6 +1339,88 @@ h1 {
     box-shadow: none;
 }
 
+/* "➕ Yangi dars" — endi modalda (foydalanuvchi so'rovi, 2026-09-12: "+
+   Yangi dars funksiyasi modalda ochilsin"). Qobiq ".word-export-modal"
+   bilan bir xil (o'lcham/soya/animatsiya) — faqat o'ziga xos maydonlar
+   (nom + Bo'lim tanlovi) va "Yaratish" tugmasi (#wordExportConfirmBtn
+   bilan bir xil primary-tugma uslubi). */
+.create-topic-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.create-topic-fields label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 13px;
+    color: #475569;
+    font-weight: 600;
+}
+
+.create-topic-fields textarea,
+.create-topic-fields select {
+    padding: 9px 12px;
+    border: 1px solid #d5dde8;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    font-family: inherit;
+    background: #fff;
+    resize: vertical;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.create-topic-fields textarea:focus,
+.create-topic-fields select:focus {
+    outline: none;
+    border-color: #185ABD;
+    box-shadow: 0 0 0 3px rgba(24, 90, 189, .15);
+}
+
+#createTopicModal .modal-footer button:first-child {
+    background: #fff;
+    color: #475569;
+    border: 1px solid #d5dde8;
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+}
+
+#createTopicModal .modal-footer button:first-child:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+
+#createTopicConfirmBtn {
+    background: linear-gradient(135deg, #185ABD, #103F91);
+    color: #fff;
+    border: none;
+    border-radius: 999px;
+    padding: 10px 22px;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: .2px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(16, 63, 145, .35);
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+
+#createTopicConfirmBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(16, 63, 145, .45);
+}
+
+#createTopicConfirmBtn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(16, 63, 145, .35);
+}
+
 /* ========================================================================
    "Yo'nalish" — Bo'limlar (Science) ro'yxatini kattaroq guruhga bo'ladi
    (kurslar katalogidagi bilan bir xil, UMUMIY Yo'nalish — foydalanuvchi

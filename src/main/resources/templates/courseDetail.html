@@ -672,16 +672,74 @@
 
         <p class="word-export-hint bulk-import-intro" style="border-top:none;padding-top:0;">
             Bitta darsga oid <strong>ikkita fayl</strong>ni BIR XIL nom bilan tanlang:
-            <code>.docx</code> — dars matni (formatlash va rasmlari bilan SAQLANADI),
-            <code>.xlsx</code> — o'sha darsning test savollari (ixtiyoriy — bo'lmasa,
-            dars baribir testsiz yaratiladi). Masalan: <code>01-dars.docx</code> +
-            <code>01-dars.xlsx</code> — ikkalasi ham "01-dars" nomli dars sifatida
-            birlashtiriladi. Bir martada ko'pi bilan <strong>200 ta fayl</strong>
-            tanlash mumkin. <strong>Xavfsiz qayta import:</strong> agar shu nomdagi
-            dars KURSDA (istalgan Mavzuda) allaqachon mavjud bo'lsa — qayta
-            yaratilmaydi (o'tkazib yuboriladi), takrorlangan test savollari ham
-            qayta qo'shilmaydi.
+            <code>.docx</code> — dars matni, <code>.xlsx</code> — o'sha darsning
+            test savollari (ixtiyoriy). Bir martada ko'pi bilan
+            <strong>200 ta fayl</strong> tanlash mumkin. Fayllarni tanlashning
+            BOSHQA usullari ham bor — pastdagi to'liq yo'riqnomani o'qing.
         </p>
+
+        <!-- "📖 To'liq yo'riqnoma" — barcha import USULLARINI alohida-alohida
+             tushuntiradi (foydalanuvchi so'rovi, 2026-09-12: "ворд + иксел
+             файлларни импорт қилиш бўйича йўриқнома жойла ... тўлиқ
+             вариантларни тушунтир, айри-айри қилиб"). Standart holatda
+             YIG'ILGAN (hidden) — modal juda uzun bo'lib ketmasligi uchun,
+             faqat kerak bo'lsa ochiladi (courseDetail.js#toggleBulkImportGuide). -->
+        <button type="button" class="bulk-import-guide-toggle" id="bulkImportGuideToggle" onclick="toggleBulkImportGuide()">
+            <span>📖 To'liq yo'riqnoma — fayllarni qanday tanlash kerak?</span>
+            <span class="bulk-import-guide-chevron" id="bulkImportGuideChevron">▾</span>
+        </button>
+        <div id="bulkImportGuide" class="bulk-import-guide hidden">
+            <div class="bulk-import-guide-item">
+                <h4>1️⃣ Dars + test BIRGA (eng tezkor usul)</h4>
+                <p>Bitta darsga oid ikkita faylni BIR XIL nom bilan tanlang:
+                    <code>.docx</code> (dars matni — formatlash va rasmlari bilan
+                    SAQLANADI) va <code>.xlsx</code> (o'sha darsning test savollari).
+                    Masalan: <code>01-dars.docx</code> + <code>01-dars.xlsx</code> —
+                    ikkalasi ham "01-dars" nomli BITTA dars sifatida birlashtiriladi,
+                    dars ham, testlar ham darhol tayyor bo'ladi.</p>
+            </div>
+            <div class="bulk-import-guide-item">
+                <h4>2️⃣ Faqat darslar (testlar keyinroq)</h4>
+                <p>Faqat <code>.docx</code> fayllarni tanlasangiz — darslar TESTSIZ
+                    yaratiladi. Testlarni istalgan vaqt keyinroq, alohida (3-band)
+                    qo'shishingiz mumkin.</p>
+            </div>
+            <div class="bulk-import-guide-item">
+                <h4>3️⃣ Faqat testlar (dars allaqachon bor)</h4>
+                <p>Darsni avval (<code>.docx</code> bilan) import qilib bo'lgan
+                    bo'lsangiz, keyinroq FAQAT <code>.xlsx</code> faylni (bir xil
+                    nom bilan) tanlasangiz — tizim kursdan SHU NOMDAGI (yoki shu
+                    nom bilan boshlangan — 4-bandga qarang) darsni topib, testlarni
+                    to'g'ridan-to'g'ri O'SHA darsga biriktiradi. Dars qayta
+                    yaratilmaydi.</p>
+            </div>
+            <div class="bulk-import-guide-item">
+                <h4>4️⃣ Dars nomi uzun bo'lsa (300+ belgi)</h4>
+                <p>Fayl nomi (Windows/Word/Excel) atigi ~255 belgi bilan
+                    cheklangan, lekin dars nomi 500 belgigacha bo'lishi mumkin.
+                    Shu sabab: fayllarga QISQA kod nom bering (masalan
+                    <code>0002.docx</code> + <code>0002.xlsx</code>), TO'LIQ
+                    sarlavhani esa Word hujjatining ICHIGA, ENG BIRINCHI qatoriga
+                    yozing — tizim shu qatorni avtomatik dars nomi qilib oladi
+                    (va uni tanadan olib tashlaydi, ikki marta chiqib
+                    qolmasligi uchun).</p>
+            </div>
+            <div class="bulk-import-guide-item warn">
+                <h4>⚠️ Bir nechta dars bir xil kodga mos kelsa</h4>
+                <p>4-band bo'yicha faqat <code>.xlsx</code> import qilganingizda,
+                    bir nechta dars bir xil kod bilan boshlansa — tizim TAXMIN
+                    QILMAYDI: natija oynasida nomzod darslar RO'YXATI chiqadi,
+                    siz to'g'risini tanlab "✅ Tanlanganiga bog'lash"ni
+                    bosasiz.</p>
+            </div>
+            <div class="bulk-import-guide-item safe">
+                <h4>✅ Xavfsiz qayta import</h4>
+                <p>Xatolikdan keyin yoki bilmasdan bir xil fayllarni ikkinchi
+                    marta yuklasangiz — allaqachon mavjud (bir xil nomli) darslar
+                    va ularning testlari QAYTA yaratilmaydi/qo'shilmaydi
+                    (o'tkazib yuboriladi).</p>
+            </div>
+        </div>
 
         <!-- ".xlsx" test savollari ANIQ shu ustun tartibida bo'lishi kerak
              (ExcelService.importQuestions — bitta faylli import bilan

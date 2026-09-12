@@ -3081,6 +3081,14 @@ function closeBulkImportModal() {
     }
 }
 
+// "📖 To'liq yo'riqnoma" — standart holatda yig'ilgan (foydalanuvchi
+// so'rovi, 2026-09-12: "ворд + иксел файлларни импорт қилиш бўйича
+// йўриқнома жойла ... тўлиқ вариантларни тушунтир, айри-айри қилиб").
+function toggleBulkImportGuide() {
+    document.getElementById("bulkImportGuide").classList.toggle("hidden");
+    document.getElementById("bulkImportGuideToggle").classList.toggle("open");
+}
+
 // "001. Fan nomi..docx" -> "001. Fan nomi." (faqat OXIRGI kengaytma
 // olib tashlanadi — sarlavhaning o'zida nuqta bo'lishi mumkin).
 function stripFileExtension(filename) {

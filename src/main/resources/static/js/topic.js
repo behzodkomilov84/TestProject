@@ -1817,7 +1817,14 @@ function showToast(type, message, duration = 4000) {
     return toast;
 } //DONE
 
-function add() {
+// "➕ Yangi dars" — endi modalda ochiladi (foydalanuvchi so'rovi,
+// 2026-09-12: "+Yangi dars funksiyasi modalda ochilsin"). Ilgari
+// to'g'ridan-to'g'ri ro'yxatning OXIRIGA yangi tahrirlanadigan qator
+// sifatida qo'shilardi (eski add()) — ko'p darsli fanlarda foydalanuvchi
+// uni topish uchun pastga skroll qilishi kerak edi. Bo'lim ustidan
+// kelingan bo'lsa (filterSectionId) — select avtomatik o'sha Bo'limga
+// tanlangan holda ochiladi (eski xulq-atvor bilan bir xil).
+function openCreateTopicModal() {
     if (itemBlock.some(s => s.mode === "NEW" || s.mode === "EDIT")) {
         showToast('warning', 'Avval saqlash tugmasini bosing!');
         focusIndex = itemBlock.findIndex(s => s.mode !== "VIEW");
@@ -1825,23 +1832,70 @@ function add() {
         return;
     }
 
-    // ИЗМЕНЕНИЕ: Увеличиваем временный ID
-    const tempId = Date.now() * -1; // Отрицательный ID для временных записей
+    document.getElementById("createTopicName").value = "";
+    document.getElementById("createTopicSection").innerHTML =
+        sectionOptionsHtml(filterSectionId ? Number(filterSectionId) : null);
+    document.getElementById("createTopicModal").classList.add("show");
+    document.getElementById("createTopicName").focus();
+}
 
-    // Bo'lim ustidan kelingan bo'lsa (filterSectionId) — yangi mavzu
-    // avtomatik o'sha bo'limga tanlangan holda ochiladi (teacher har safar
-    // qo'lda tanlamasin uchun).
-    itemBlock.push({
-        id: tempId, // Временный ID
-        name: "",
-        original: "",
-        sectionId: filterSectionId ? Number(filterSectionId) : null,
-        originalSectionId: null,
-        mode: "NEW"
-    });
+function closeCreateTopicModal() {
+    document.getElementById("createTopicModal").classList.remove("show");
+}
 
-    focusIndex = itemBlock.length - 1;
-    render();
+// Oddiy Enter — saqlaydi (eski inline-tahrirlash qatoridagi bilan bir
+// xil xulq-atvor), Shift+Enter — matnda yangi qatorga o'tadi.
+function onCreateTopicNameKeyDown(event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        submitCreateTopic();
+    }
+}
+
+async function submitCreateTopic() {
+    const nameInput = document.getElementById("createTopicName");
+    const sectionSelect = document.getElementById("createTopicSection");
+    const newNameVal = nameInput.value.trim();
+
+    if (newNameVal === "") {
+        showAlertModal('❌ Dars nomi bo\'sh bo\'lishi mumkin emas!');
+        return;
+    }
+    if (hasDuplicate(-1, newNameVal)) {
+        showAlertModal('❌ Bu dars nomi allaqachon mavjud!');
+        return;
+    }
+
+    const sectionId = sectionSelect.value ? Number(sectionSelect.value) : null;
+    const btn = document.getElementById("createTopicConfirmBtn");
+    btn.disabled = true;
+
+    try {
+        const res = await fetch("/api/topic/save", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({
+                new: [{science_id: scienceId, name: newNameVal, sectionId: sectionId}],
+                updated: [],
+                deletedIds: []
+            })
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlertModal(data.error || "Saqlashda xatolik");
+            return;
+        }
+        showToast('success', `"${newNameVal}" saqlandi`, 2000);
+        closeCreateTopicModal();
+        await reloadFromDb(`/api/topic?scienceId=${scienceId}`);
+        focusIndex = itemBlock.findIndex(x => x.name === newNameVal);
+        render();
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
+    } finally {
+        btn.disabled = false;
+    }
 } //DONE
 
 // Foydalanuvchi so'rovi, 2026-09-05: "Save to DB" tugmasi olib
