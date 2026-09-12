@@ -59,6 +59,7 @@
     <include file="/db/changelog/user-last-seen-at.sql"/>
     <include file="/db/changelog/user-created-at-backfill.sql"/>
     <include file="/db/changelog/user-activity-totals.sql"/>
+    <include file="/db/changelog/course-chapter-field-name-length.sql"/>
 
 
 </databaseChangeLog>

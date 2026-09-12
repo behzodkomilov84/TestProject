@@ -399,9 +399,13 @@ h1 {
        yonidagi (♻️ Tiklash) oddiy tugmalarga o'xshab ko'rinishi uchun.
        "#unlinkedTopicsModal" — foydalanuvchi so'rovi, 2026-09-12: "🔗
        Kursga bog'lanmagan darslar" modali ham xuddi shu ".bulk-delete-btn"
-       klassini ishlatadi (topic.js#deleteSelectedUnlinkedTopics). */
+       klassini ishlatadi (topic.js#deleteSelectedUnlinkedTopics).
+       "#topicTrashModal" — foydalanuvchi so'rovi, 2026-09-12: "TEST
+       BOSHQARUVI dagi 'O'chirilgan darslar' panelini ham kursga
+       bog'lanmagan darslar kabi qil" (topic.js#loadTopicTrash). */
     #questionScienceTrashModal .bulk-delete-btn,
-    #unlinkedTopicsModal .bulk-delete-btn {
+    #unlinkedTopicsModal .bulk-delete-btn,
+    #topicTrashModal .bulk-delete-btn {
         background: #dc2626;
         color: #000;
         border: 2px solid #000;
@@ -413,11 +417,13 @@ h1 {
     }
 
     #questionScienceTrashModal .bulk-delete-btn:hover,
-    #unlinkedTopicsModal .bulk-delete-btn:hover {
+    #unlinkedTopicsModal .bulk-delete-btn:hover,
+    #topicTrashModal .bulk-delete-btn:hover {
         background: #b91c1c;
     }
 
-    #questionScienceTrashModal .restore-bulk-btn {
+    #questionScienceTrashModal .restore-bulk-btn,
+    #topicTrashModal .restore-bulk-btn {
         background: #16a34a;
         color: #000;
         border: 2px solid #000;
@@ -428,7 +434,8 @@ h1 {
         font-size: 13px;
     }
 
-    #questionScienceTrashModal .restore-bulk-btn:hover {
+    #questionScienceTrashModal .restore-bulk-btn:hover,
+    #topicTrashModal .restore-bulk-btn:hover {
         background: #15803d;
     }
 

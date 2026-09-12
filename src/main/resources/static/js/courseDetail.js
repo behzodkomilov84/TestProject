@@ -1901,14 +1901,31 @@ function toggleChapterBox(key) {
                 // "settled" holatini YO'QOTMASLIGI uchun (HAQIQIY
                 // TOPILGAN BUG, 2026-09-12: "tuzalmabdi" — sababi aynan
                 // shu edi).
-                const onOpenEnd = (e) => {
-                    if (e.target !== el || e.propertyName !== "grid-template-rows") return;
+                let settledAlready = false;
+                const settleNow = () => {
+                    if (settledAlready) return;
+                    settledAlready = true;
                     el.removeEventListener("transitionend", onOpenEnd);
                     el.classList.add("settled");
                     settledChapterKeys.add(key);
                     chapterKeyBeingAnimated = null;
                 };
+                const onOpenEnd = (e) => {
+                    if (e.target !== el || e.propertyName !== "grid-template-rows") return;
+                    settleNow();
+                };
                 el.addEventListener("transitionend", onOpenEnd);
+                // XAVFSIZLIK TO'RI (foydalanuvchi so'rovi, 2026-09-12: jonli
+                // tekshiruvda topilgan HAQIQIY ILDIZ SABAB — "transitionend"
+                // BA'ZI holatlarda (masalan brauzer/OS'da "kamaytirilgan
+                // animatsiya" yoqilgan bo'lsa — transition umuman ijro
+                // etilmaydi) hech qachon otilmasligi mumkin, bu esa
+                // "chapterKeyBeingAnimated"ni ABADIY "band" holatda
+                // qoldirib, "settled" hech qachon qo'shilmasligiga (demak
+                // "⌨️" tooltip'i abadiy kesilib qolishiga) olib kelardi.
+                // Endi 400ms'dan keyin (CSS'dagi 300ms o'tishdan safe
+                // buferi bilan) baribir "settled" qilinadi.
+                setTimeout(settleNow, 400);
             });
         });
     }
@@ -1920,6 +1937,26 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
     // avtomatik OCHIQ ko'rsatiladi (natijani ko'rish uchun qo'shimcha
     // bosish shart emas).
     const isExpanded = expandedChapterKeys.has(group.key) || chapterSearchQuery.trim() !== "";
+    // HAQIQIY ILDIZ SABAB TOPILDI (foydalanuvchi so'rovi, 2026-09-12:
+    // "shuni tekshirib ber... klaviatura yorliqlarini aytdim" — jonli
+    // tekshiruvda aniqlandi) — "toggleChapterBox" ochish tarmog'ida
+    // "expandedChapterKeys.add(key)" render'dan OLDIN chaqirilardi, shu
+    // sabab BIRINCHI render'ning O'ZIDA "isExpanded" allaqachon true
+    // bo'lib, "is-open" klassi ELEMENT YARATILGAN ONDAYOQ qo'shilib
+    // qolardi. Natijada grid-template-rows HECH QACHON haqiqiy "0fr ->
+    // 1fr" o'tishini boshdan kechirmasdi (yangi elementda "avvalgi"
+    // qiymat umuman yo'q edi) — demak "transitionend" HECH QACHON
+    // otilmasdi, "settled" HECH QACHON qo'shilmasdi, "chapterKeyBeing
+    // Animated" abadiy "band" bo'lib qolardi — "⌨️" tooltip'i UCHUN
+    // "overflow:hidden" ham ABADIY olib tashlanmasdi (aynan shu
+    // muammoning HAQIQIY ILDIZI). Endi: aynan HOZIR ochilish
+    // animatsiyasi boshlanayotgan Mavzu uchun (group.key ===
+    // chapterKeyBeingAnimated) "is-open" ATAYLAB shablonda QO'YILMAYDI
+    // (kontent — bodyHtml — baribir ko'rinadi, chunki "isExpanded"ning
+    // o'zi true), faqat KEYINGI freymda (pastda, toggleChapterBox)
+    // JS orqali qo'shiladi — shu ENDI HAQIQIY, kuzatiladigan
+    // (transitionend beradigan) o'tish hosil qiladi.
+    const isCurrentlyAnimatingOpen = group.key === chapterKeyBeingAnimated;
 
     // Shu Mavzudagi BARCHA darslarning (TEST BOSHQARUVIga bog'langanlari)
     // testlari yig'indisi — mavzu sarlavhasida "jami testlar" sifatida
@@ -2085,7 +2122,7 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
                 <span class="group-card-name">📂 ${escapeHtml(group.name)}</span>
             </h3>
             <div class="group-card-count">(dars — ${group.items.length} ta, jami testlar — ${totalQuestions} ta)</div>
-            <div class="group-card-collapse ${isExpanded ? "is-open" : ""} ${settledChapterKeys.has(group.key) ? "settled" : ""}" id="chapterCollapse-${group.key}">
+            <div class="group-card-collapse ${isExpanded && !isCurrentlyAnimatingOpen ? "is-open" : ""} ${settledChapterKeys.has(group.key) ? "settled" : ""}" id="chapterCollapse-${group.key}">
                 <div class="group-card-collapse-inner">${bodyHtml}</div>
             </div>
         </div>
@@ -4110,9 +4147,14 @@ let sectionTrashItems = [];
 // muvaffaqiyatsiz bo'lsa ham, qolganlari davom etadi).
 let selectedSectionTrashIds = new Set();
 
+// HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi, 2026-09-12:
+// "kursdagi o'chirilgan darslarni modalda ochsin") — ilgari
+// "style.display" bilan oddiy inline panel sifatida ochilardi (sahifa
+// joylashuvini pastga surib yuborardi). Endi topics.html#topicTrashModal
+// bilan bir xil — ".modal-overlay"ning "show" klassi orqali.
 function toggleSectionTrash() {
     sectionTrashOpen = !sectionTrashOpen;
-    document.getElementById("sectionTrashPanel").style.display = sectionTrashOpen ? "block" : "none";
+    document.getElementById("sectionTrashPanel").classList.toggle("show", sectionTrashOpen);
     if (sectionTrashOpen) {
         loadSectionTrash();
     }

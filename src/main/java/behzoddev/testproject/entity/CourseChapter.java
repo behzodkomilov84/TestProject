@@ -26,7 +26,14 @@ public class CourseChapter {
     @JoinColumn(name = "course_id", nullable = false)
     private Course course;
 
-    @Column(nullable = false, length = 255)
+    // 255 emas — uzun mavzu nomi (masalan to'liq kasb-toifa tavsifi,
+    // foydalanuvchi so'rovi 2026-09-12: "Дарс номлари, мавзу номларини
+    // чекловини текшир... 300+ қилиб") "Data too long" xatosiga olib
+    // kelmasligi uchun (question-text-length.sql/course-section-title-
+    // length.sql'dagi bilan bir xil sinf muammo). DB'dagi haqiqiy ustun
+    // kengligi ham course-chapter-field-name-length.sql orqali mos
+    // ravishda oshirilgan.
+    @Column(nullable = false, length = 500)
     private String name;
 
     // Kurs ichidagi tartib raqami — bo'lim "box"lari shu bo'yicha ketma-ket

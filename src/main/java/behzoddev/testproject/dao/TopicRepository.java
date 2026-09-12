@@ -90,9 +90,15 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     Integer findMaxOrderIndexByScienceId(@Param("scienceId") Long scienceId);
 
     // "O'chirilganlar savati" (Fan ichida) — TopicService.getDeletedTopics.
+    // "left join t.section s" — foydalanuvchi so'rovi, 2026-09-12: "TEST
+    // BOSHQARUVI dagi 'O'chirilgan darslar' panelini ham kursga
+    // bog'lanmagan darslar kabi qil" (guruhlash uchun). ATAYLAB "left"
+    // join — oddiy "t.section.id" (implicit join) "section"i NULL
+    // (Bo'limsiz) mavzularni natijadan BUTUNLAY olib tashlagan bo'lardi.
     @Query("select new behzoddev.testproject.dto.topic.TopicTrashDto(t.id, t.name, t.deletedAt, " +
-            "(select count(q) from Question q where q.topic = t)) " +
-            "from Topic t where t.science.id = :scienceId and t.deletedAt is not null order by t.deletedAt desc")
+            "(select count(q) from Question q where q.topic = t), s.id, s.name) " +
+            "from Topic t left join t.section s " +
+            "where t.science.id = :scienceId and t.deletedAt is not null order by t.deletedAt desc")
     List<TopicTrashDto> findDeletedByScienceId(@Param("scienceId") Long scienceId);
 
     // testConfigPage.html uchun TO'LIQ to'rt darajali ierarxiya (Yo'nalish

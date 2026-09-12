@@ -216,15 +216,33 @@ function fieldKeyOf(field) {
 // belgilangan holda boshlanardi, endi foydalanuvchi o'zi kerakli
 // dars(lar)ni tanlaydi; "☑️ Barchasini belgilash" tugmasi bir zumda
 // hammasini belgilash imkonini beradi).
+// HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12, ekran surati
+// bilan: "Йўналишни босганда ичидагилари очилмаяпти. Кичкина стрелкани
+// босса очилаяпти... Белгилаш квадратни босганда бўлсин") — checkbox VA
+// nomi ILGARI bitta <label> ichida edi. HTML standarti bo'yicha <label>
+// ("interactive content") ICHIDAGI istalgan joyga (checkbox HAM, nomi
+// HAM) bosilsa — faqat checkbox'ning holati almashadi, <summary>ning
+// o'zining "ochilish/yopilish" standart xatti-harakati esa BOSILMAYDI
+// (checkbox/label "interactive" bo'lgani uchun brauzer ularni alohida
+// deb hisoblaydi). Natijada: nomga bosilganda checkbox tasodifan
+// belgilanib (cascadeDown orqali BARCHA ichidagilar ham belgilanib)
+// ketardi, lekin daraxt OCHILMAS edi — faqat <summary>ning o'zidagi
+// (label'dan TASHQARIDAGI, ::before pseudo-element) kichkina "▸"
+// uchburchagi ochardi. Yechim: <label>ni OLIB TASHLASH — checkbox va
+// nomi endi <summary> ICHIDA ALOHIDA-ALOHIDA (bir-biriga bog'lanmagan)
+// elementlar: checkbox'ga bosish FAQAT belgilaydi (checkbox — o'zi ham
+// "interactive content", shu sabab baribir daraxtni ochmaydi), nomi
+// (oddiy <span>, endi HECH QANDAY interactive konteynerda emas)ga
+// bosish esa endi <summary>ning STANDART ochilish/yopilish xatti-
+// harakatiga to'g'ridan-to'g'ri (hech qanday qo'shimcha JS'siz) ega
+// bo'ladi.
 function renderFieldNode(field) {
     const sciencesHtml = field.sciences.map(renderScienceNode).join("");
     return `
         <details class="hierarchy-field" data-field-id="${field.id ?? ""}">
             <summary>
-                <label onclick="event.stopPropagation()">
-                    <input type="checkbox" class="field-checkbox">
-                    <span class="hierarchy-name">${escapeHierarchyHtml(field.name)}</span>
-                </label>
+                <input type="checkbox" class="field-checkbox" onclick="event.stopPropagation()">
+                <span class="hierarchy-name">${escapeHierarchyHtml(field.name)}</span>
             </summary>
             <div class="hierarchy-children hierarchy-sciences">${sciencesHtml}</div>
         </details>
@@ -236,10 +254,8 @@ function renderScienceNode(science) {
     return `
         <details class="hierarchy-science" data-science-id="${science.id}">
             <summary>
-                <label onclick="event.stopPropagation()">
-                    <input type="checkbox" class="science-checkbox">
-                    <span class="hierarchy-name">${escapeHierarchyHtml(science.name)}</span>
-                </label>
+                <input type="checkbox" class="science-checkbox" onclick="event.stopPropagation()">
+                <span class="hierarchy-name">${escapeHierarchyHtml(science.name)}</span>
             </summary>
             <div class="hierarchy-children hierarchy-sections">${sectionsHtml}</div>
         </details>
@@ -251,10 +267,8 @@ function renderSectionNode(section) {
     return `
         <details class="hierarchy-section" data-section-id="${section.id ?? ""}">
             <summary>
-                <label onclick="event.stopPropagation()">
-                    <input type="checkbox" class="section-checkbox">
-                    <span class="hierarchy-name">${escapeHierarchyHtml(section.name)}</span>
-                </label>
+                <input type="checkbox" class="section-checkbox" onclick="event.stopPropagation()">
+                <span class="hierarchy-name">${escapeHierarchyHtml(section.name)}</span>
             </summary>
             <div class="hierarchy-children hierarchy-topics">${topicsHtml}</div>
         </details>

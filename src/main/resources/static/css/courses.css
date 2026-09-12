@@ -3516,6 +3516,32 @@ body {
     gap: 10px;
 }
 
+/* science.css'dagi ".trash-list-modal" BILAN AYNAN BIR XIL (bu sahifa
+   o'sha faylni ulamagani uchun shu yerda ham takrorlangan) — "🗑️
+   O'chirilgan darslar" (sectionTrashPanel, foydalanuvchi so'rovi,
+   2026-09-12: "kursdagi o'chirilgan darslarni modalda ochsin") uchun —
+   ".word-export-modal"dan farqli, KENGROQ (guruhlangan ro'yxat ko'p
+   qator egallashi mumkin) va o'zi skroll qiladi (max-height). */
+.trash-list-modal {
+    width: min(820px, 94vw);
+    max-height: 80vh;
+    overflow-y: auto;
+    background: #fff;
+    padding: 24px 28px;
+    border-radius: 16px;
+    box-shadow: 0 25px 60px rgba(15, 23, 42, .35);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    animation: modalPopIn .2s cubic-bezier(.2, .9, .3, 1.2);
+}
+
+.trash-list-modal .modal-h2 {
+    font-size: 20px;
+    color: #103F91;
+    letter-spacing: .2px;
+}
+
 .word-export-modal {
     width: min(480px, 90vw);
     background: #fff;

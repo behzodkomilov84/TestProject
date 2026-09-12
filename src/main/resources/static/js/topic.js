@@ -611,6 +611,12 @@ async function deleteQuestionlessTopics() {
 // ro'yxati (bir zumda "♻️ Tiklash" qilinadigan). Panel yopiq holatda
 // boshlanadi, bosilganda ochilib ro'yxatni yuklaydi.
 let topicTrashOpen = false;
+let topicTrashItems = [];
+// Checkbox orqali TANLANGAN darslar (foydalanuvchi so'rovi, 2026-09-12:
+// "TEST BOSHQARUVI dagi 'O'chirilgan darslar' panelini ham kursga
+// bog'lanmagan darslar kabi qil") — selectedUnlinkedTopicIds BILAN BIR
+// XIL g'oya, faqat "restore" ham qo'shilgan (bu yerda tiklash ham kerak).
+let selectedTopicTrashIds = new Set();
 
 function toggleTopicTrash() {
     topicTrashOpen = !topicTrashOpen;
@@ -620,9 +626,14 @@ function toggleTopicTrash() {
     }
 }
 
+// Guruhlash (foydalanuvchi so'rovi, 2026-09-12) — har bir o'chirilgan
+// dars ASL Bo'limi (sectionId — o'chirilgandan keyin ham Topic'da
+// TEGILMAY qoladi) bo'yicha, renderUnlinkedTopicsModal BILAN BIR XIL
+// g'oyada: "— Bo'limsiz —" guruhi har doim OXIRIDA.
 async function loadTopicTrash() {
     const list = document.getElementById("topicTrashList");
     list.innerHTML = "<p>Yuklanmoqda...</p>";
+    selectedTopicTrashIds.clear();
 
     try {
         const res = await fetch(`/api/topic/deleted?scienceId=${getScienceId()}`);
@@ -631,24 +642,183 @@ async function loadTopicTrash() {
             return;
         }
         const items = await res.json();
+        topicTrashItems = items;
         setTrashBadgeCount("topicTrashBadge", items.length);
         if (!items.length) {
             list.innerHTML = "<p>O'chirilgan dars yo'q</p>";
             return;
         }
-        list.innerHTML = items.map(t => `
-            <div class="trash-row">
-                <div class="trash-row-info">${escapeHtml(t.name)} (${t.questionCount} ta test) — ${formatTopicTrashDate(t.deletedAt)}da o'chirilgan</div>
-                <div class="trash-row-actions">
-                    <button class="restore-btn" onclick="restoreTopic(${t.id})">♻️ Tiklash</button>
-                    <button class="danger-btn" onclick="permanentlyDeleteTopic(${t.id}, ${JSON.stringify(t.name).replace(/"/g, "&quot;")})">🗑️ Butunlay o'chirish</button>
-                </div>
+
+        const groupsByKey = new Map();
+        for (const t of items) {
+            const key = t.sectionId != null ? String(t.sectionId) : "none";
+            if (!groupsByKey.has(key)) {
+                groupsByKey.set(key, {
+                    key,
+                    name: t.sectionId != null ? (t.sectionName || "Noma'lum bo'lim") : "— Bo'limsiz —",
+                    items: []
+                });
+            }
+            groupsByKey.get(key).items.push(t);
+        }
+        const groups = [...groupsByKey.values()].sort((a, b) => {
+            if (a.key === "none") return 1;
+            if (b.key === "none") return -1;
+            return a.name.localeCompare(b.name, "uz");
+        });
+
+        list.innerHTML = `
+            <div class="trash-bulk-actions">
+                <label><input type="checkbox" id="selectAllTopicTrashCheckbox" onchange="toggleSelectAllTopicTrash(this)"> Hammasini belgilash</label>
+                <button id="bulkRestoreTopicTrashBtn" class="restore-bulk-btn hidden" onclick="restoreSelectedTopicTrash()">♻️ Tanlanganlarni tiklash (<span id="bulkRestoreTopicTrashCount">0</span>)</button>
+                <button id="bulkDeleteTopicTrashBtn" class="bulk-delete-btn hidden" onclick="permanentlyDeleteSelectedTopicTrash()">🗑️ Tanlanganlarni BUTUNLAY o'chirish (<span id="bulkDeleteTopicTrashCount">0</span>)</button>
             </div>
-        `).join("");
+            ${groups.map(g => `
+                <div class="unlinked-topic-group">
+                    <label class="unlinked-topic-group-header">
+                        <input type="checkbox" class="topic-trash-group-checkbox" data-group-key="${g.key}" onchange="toggleSelectTopicTrashGroup('${g.key}', this)">
+                        <strong>${escapeHtml(g.name)}</strong>
+                        <span class="item-count-badge">${g.items.length} ta dars</span>
+                    </label>
+                    ${g.items.map(t => `
+                        <div class="trash-row unlinked-topic-row">
+                            <input type="checkbox" class="topic-trash-select-checkbox" data-topic-id="${t.id}" data-group-key="${g.key}" onchange="onTopicTrashCheckboxChange(${t.id}, this)">
+                            <div class="trash-row-info">${escapeHtml(t.name)} (${t.questionCount} ta test) — ${formatTopicTrashDate(t.deletedAt)}da o'chirilgan</div>
+                            <div class="trash-row-actions">
+                                <button class="restore-btn" onclick="restoreTopic(${t.id})">♻️ Tiklash</button>
+                                <button class="danger-btn" onclick="permanentlyDeleteTopic(${t.id}, ${JSON.stringify(t.name).replace(/"/g, "&quot;")})">🗑️ Butunlay o'chirish</button>
+                            </div>
+                        </div>
+                    `).join("")}
+                </div>
+            `).join("")}`;
+        updateTopicTrashBulkButtons();
     } catch (err) {
         console.error(err);
         list.innerHTML = "<p>Tarmoq xatoligi</p>";
     }
+}
+
+// Guruh sarlavhasidagi checkbox — shu Bo'limdagi BARCHA o'chirilgan
+// darslarni birdaniga belgilaydi/bekor qiladi.
+function toggleSelectTopicTrashGroup(groupKey, checkbox) {
+    document.querySelectorAll(`#topicTrashList .topic-trash-select-checkbox[data-group-key="${groupKey}"]`).forEach(cb => {
+        cb.checked = checkbox.checked;
+        const id = Number(cb.dataset.topicId);
+        if (checkbox.checked) {
+            selectedTopicTrashIds.add(id);
+        } else {
+            selectedTopicTrashIds.delete(id);
+        }
+    });
+    if (!checkbox.checked) {
+        const selectAll = document.getElementById("selectAllTopicTrashCheckbox");
+        if (selectAll) selectAll.checked = false;
+    }
+    updateTopicTrashBulkButtons();
+}
+
+function onTopicTrashCheckboxChange(topicId, checkbox) {
+    if (checkbox.checked) {
+        selectedTopicTrashIds.add(topicId);
+    } else {
+        selectedTopicTrashIds.delete(topicId);
+        const selectAll = document.getElementById("selectAllTopicTrashCheckbox");
+        if (selectAll) selectAll.checked = false;
+    }
+
+    const groupKey = checkbox.dataset.groupKey;
+    if (groupKey) {
+        const groupCheckboxes = document.querySelectorAll(
+            `#topicTrashList .topic-trash-select-checkbox[data-group-key="${groupKey}"]`);
+        const allChecked = [...groupCheckboxes].every(cb => cb.checked);
+        const groupCheckbox = document.querySelector(
+            `.topic-trash-group-checkbox[data-group-key="${groupKey}"]`);
+        if (groupCheckbox) groupCheckbox.checked = allChecked;
+    }
+
+    updateTopicTrashBulkButtons();
+}
+
+function toggleSelectAllTopicTrash(selectAllCheckbox) {
+    document.querySelectorAll("#topicTrashList .topic-trash-select-checkbox").forEach(cb => {
+        cb.checked = selectAllCheckbox.checked;
+        const id = Number(cb.dataset.topicId);
+        if (selectAllCheckbox.checked) {
+            selectedTopicTrashIds.add(id);
+        } else {
+            selectedTopicTrashIds.delete(id);
+        }
+    });
+    document.querySelectorAll("#topicTrashList .topic-trash-group-checkbox").forEach(cb => {
+        cb.checked = selectAllCheckbox.checked;
+    });
+    updateTopicTrashBulkButtons();
+}
+
+function updateTopicTrashBulkButtons() {
+    const count = selectedTopicTrashIds.size;
+    const restoreBtn = document.getElementById("bulkRestoreTopicTrashBtn");
+    const deleteBtn = document.getElementById("bulkDeleteTopicTrashBtn");
+    if (restoreBtn) {
+        document.getElementById("bulkRestoreTopicTrashCount").textContent = String(count);
+        restoreBtn.classList.toggle("hidden", count === 0);
+    }
+    if (deleteBtn) {
+        document.getElementById("bulkDeleteTopicTrashCount").textContent = String(count);
+        deleteBtn.classList.toggle("hidden", count === 0);
+    }
+}
+
+// "♻️ Tanlanganlarni tiklash" / "🗑️ Tanlanganlarni BUTUNLAY o'chirish" —
+// courseDetail.js#restoreSelectedSections/permanentlyDeleteSelectedSections
+// BILAN BIR XIL andoza: mavjud bitta-elementli endpoint'lar orqali
+// KETMA-KET (alohida "bulk" backend endpoint yaratishning hojati yo'q).
+async function restoreSelectedTopicTrash() {
+    const ids = [...selectedTopicTrashIds];
+    if (!ids.length) return;
+    if (!await showConfirmModal(`${ids.length} ta darsni tiklamoqchimisiz?`)) return;
+
+    const btn = document.getElementById("bulkRestoreTopicTrashBtn");
+    btn.disabled = true;
+    let okCount = 0;
+    for (const id of ids) {
+        try {
+            const res = await fetch(`/api/topic/${id}/restore`, { method: "POST" });
+            if (res.ok) okCount++;
+        } catch (err) {
+            console.error(err);
+        }
+    }
+    btn.disabled = false;
+
+    loadTopicTrash();
+    await reloadFromDb(`/api/topic?scienceId=${scienceId}`);
+    render();
+    showAlertModal(`✅ ${okCount}/${ids.length} ta dars tiklandi.`);
+}
+
+async function permanentlyDeleteSelectedTopicTrash() {
+    const ids = [...selectedTopicTrashIds];
+    if (!ids.length) return;
+    if (!await showConfirmModal(`⚠️ Tanlangan ${ids.length} ta darsni BUTUNLAY (savollari bilan birga) o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`, { danger: true })) return;
+    if (!await showConfirmModal("Haqiqatan ham ishonchingiz komilmi?", { danger: true })) return;
+
+    const btn = document.getElementById("bulkDeleteTopicTrashBtn");
+    btn.disabled = true;
+    let okCount = 0;
+    for (const id of ids) {
+        try {
+            const res = await fetch(`/api/topic/${id}/permanent`, { method: "DELETE" });
+            if (res.ok) okCount++;
+        } catch (err) {
+            console.error(err);
+        }
+    }
+    btn.disabled = false;
+
+    loadTopicTrash();
+    showAlertModal(`✅ ${okCount}/${ids.length} ta dars butunlay o'chirildi.`);
 }
 
 function formatTopicTrashDate(isoString) {

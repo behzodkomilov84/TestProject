@@ -25,7 +25,11 @@ public class CourseField {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 255)
+    // CourseChapter.name'dagi bilan bir xil sabab (foydalanuvchi so'rovi,
+    // 2026-09-12: "Дарс номлари, мавзу номларини чекловини текшир...
+    // 300+ қилиб") — 255 o'rniga 500, uzun Yo'nalish nomi "Data too
+    // long" xatosiga olib kelmasligi uchun.
+    @Column(nullable = false, length = 500)
     private String name;
 
     // Katalogda ketma-ket ko'rsatish uchun tartib raqami — yangi Yo'nalish

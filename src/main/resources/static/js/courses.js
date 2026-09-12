@@ -300,14 +300,25 @@ function toggleFieldBox(key) {
                 // yoziladi — ro'yxat KEYINROQ qayta chizilsa ham, bu
                 // Yo'nalish "settled" holatini yo'qotmasligi uchun
                 // (HAQIQIY TOPILGAN BUG, 2026-09-12: "tuzalmabdi").
-                const onOpenEnd = (e) => {
-                    if (e.target !== el || e.propertyName !== "grid-template-rows") return;
+                let settledAlready = false;
+                const settleNow = () => {
+                    if (settledAlready) return;
+                    settledAlready = true;
                     el.removeEventListener("transitionend", onOpenEnd);
                     el.classList.add("settled");
                     settledFieldKeys.add(key);
                     fieldKeyBeingAnimated = null;
                 };
+                const onOpenEnd = (e) => {
+                    if (e.target !== el || e.propertyName !== "grid-template-rows") return;
+                    settleNow();
+                };
                 el.addEventListener("transitionend", onOpenEnd);
+                // courseDetail.js#toggleChapterBox BILAN AYNAN BIR XIL
+                // xavfsizlik to'ri — "transitionend" ba'zan (masalan
+                // "kamaytirilgan animatsiya" yoqilgan bo'lsa) hech qachon
+                // otilmasligi mumkin edi.
+                setTimeout(settleNow, 400);
             });
         });
     }
@@ -468,6 +479,18 @@ document.addEventListener("click", (e) => {
 
 function renderFieldBox(group, realFieldGroups) {
     const isExpanded = expandedFieldKeys.has(group.key);
+    // courseDetail.js#renderChapterBox BILAN AYNAN BIR XIL — HAQIQIY
+    // ILDIZ SABAB (foydalanuvchi so'rovi, 2026-09-12, jonli tekshiruvda
+    // topilgan): "toggleFieldBox" ochish tarmog'ida "expandedFieldKeys.
+    // add(key)" render'dan OLDIN chaqirilardi, shu sabab "is-open"
+    // BIRINCHI render'ning O'ZIDA (element yaratilgan ONDAYOQ) qo'shilib
+    // qolardi — grid-template-rows HECH QACHON haqiqiy o'tishni
+    // boshdan kechirmasdi, "transitionend" HECH QACHON otilmasdi,
+    // "settled" HECH QACHON qo'shilmasdi ("⌨️" tooltip'i abadiy
+    // kesilib qolardi). Endi aynan HOZIR ochilayotgan Yo'nalish uchun
+    // "is-open" ATAYLAB shablonda qo'yilmaydi — faqat toggleFieldBox
+    // ichida, KEYINGI freymda JS orqali.
+    const isCurrentlyAnimatingOpen = group.key === fieldKeyBeingAnimated;
 
     let bodyHtml = "";
     if (isExpanded) {
@@ -536,7 +559,7 @@ function renderFieldBox(group, realFieldGroups) {
                  bu yerda sanalayotgan narsa KURS (Course), Bo'lim
                  (CourseChapter) emas — foydalanuvchi so'rovi, 2026-09-05. -->
             <div class="group-card-count">(kurs — ${group.items.length} ta)</div>
-            <div class="group-card-collapse ${isExpanded ? "is-open" : ""} ${settledFieldKeys.has(group.key) ? "settled" : ""}" id="fieldCollapse-${group.key}">
+            <div class="group-card-collapse ${isExpanded && !isCurrentlyAnimatingOpen ? "is-open" : ""} ${settledFieldKeys.has(group.key) ? "settled" : ""}" id="fieldCollapse-${group.key}">
                 <div class="group-card-collapse-inner">${bodyHtml}</div>
             </div>
         </div>

@@ -217,6 +217,7 @@ body[data-mode="practice"] #timeSection {
     border-radius: 8px;
     display: flex;
     align-items: center;
+    gap: 8px;
 }
 
 .hierarchy-tree summary::-webkit-details-marker {
@@ -239,12 +240,17 @@ details[open] > summary::before {
     transform: rotate(90deg);
 }
 
-.hierarchy-tree summary label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+/* HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "Йўналишни
+   босганда ичидагилари очилмаяпти. Кичкина стрелкани босса очилаяпти...
+   Белгилаш квадратни босганда бўлсин") — checkbox VA nomi ILGARI bitta
+   <label> ichida edi. HTML standarti bo'yicha <label> ("interactive
+   content") ICHIDAGI istalgan joyga bosilsa — FAQAT checkbox holati
+   almashardi, <summary>ning o'zining standart ochilish/yopilish
+   xatti-harakati esa BOSILMASDI. Endi checkbox va nomi <summary> ICHIDA
+   ALOHIDA-ALOHIDA elementlar (JS'da <label> olib tashlandi) — bu qator
+   endi keraksiz, gap "summary"ning o'ziga ko'chirildi (yuqorida). */
+.hierarchy-name {
     flex: 1;
-    cursor: pointer;
 }
 
 .hierarchy-tree input[type=checkbox] {

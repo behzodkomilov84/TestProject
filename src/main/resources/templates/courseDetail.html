@@ -116,27 +116,42 @@
                 <button class="danger-btn" onclick="deleteCourse()">🗑️ O'chirish</button>
             </div>
 
-            <div id="sectionTrashPanel" style="display:none;">
-                <!-- Guruhlash + checkbox orqali tanlash (foydalanuvchi so'rovi,
-                     2026-09-12: "o'chirilgan darslar modalida darslarni ham
-                     gruppalashtir, bittalab belgilash, barchasini bittada
-                     belgilash, bittada tiklash, bittada o'chirish") —
-                     "Hammasini belgilash" + tanlangan sonini ko'rsatib
-                     turadigan ikkita bulk tugma (courseDetail.js —
-                     restoreSelectedSections / permanentlyDeleteSelectedSections).
-                     Tanlanmagan holatda (0 ta) ikkalasi ham yashirin — bittalab
-                     "♻️ Tiklash"/"🗑️ Butunlay o'chirish" har bir qatorda
-                     ILGARIGIDEK ishlayveradi. Ro'yxat bo'sh bo'lsa butun
-                     panel yashirin turadi. -->
-                <div id="sectionTrashBulkActions" class="section-trash-bulk-actions hidden">
-                    <label class="section-trash-select-all">
-                        <input type="checkbox" id="selectAllSectionTrashCheckbox" onchange="toggleSelectAllSectionTrash(this)"> Hammasini belgilash
-                    </label>
-                    <span class="section-trash-bulk-count"><span id="sectionTrashCount">0</span> ta o'chirilgan dars</span>
-                    <button id="sectionTrashRestoreSelectedBtn" class="trash-restore-all-btn hidden" onclick="restoreSelectedSections()">♻️ Tanlanganlarni tiklash (<span id="sectionTrashRestoreSelectedCount">0</span>)</button>
-                    <button id="sectionTrashDeleteSelectedBtn" class="trash-delete-all-btn hidden" onclick="permanentlyDeleteSelectedSections()">🗑️ Tanlanganlarni butunlay o'chirish (<span id="sectionTrashDeleteSelectedCount">0</span>)</button>
+            <!-- HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi, 2026-09-12:
+                 "kursdagi o'chirilgan darslarni modalda ochsin") — ilgari
+                 oddiy inline panel edi (style="display:none", sahifa
+                 joylashuvini pastga surib yuborardi) — topics.html'dagi
+                 "#topicTrashModal" bilan BIR XIL sabab tufayli allaqachon
+                 modalga o'tkazilgan edi, bu sahifada esa unutilgan ekan.
+                 Endi ".modal-overlay" + ".trash-list-modal" — boshqa
+                 modallar (masalan "#bulkRestoreModal") bilan bir xil
+                 andoza. -->
+            <div id="sectionTrashPanel" class="modal-overlay">
+                <div class="trash-list-modal">
+                    <h2 class="modal-h2">🗑️ O'chirilgan darslar</h2>
+                    <!-- Guruhlash + checkbox orqali tanlash (foydalanuvchi so'rovi,
+                         2026-09-12: "o'chirilgan darslar modalida darslarni ham
+                         gruppalashtir, bittalab belgilash, barchasini bittada
+                         belgilash, bittada tiklash, bittada o'chirish") —
+                         "Hammasini belgilash" + tanlangan sonini ko'rsatib
+                         turadigan ikkita bulk tugma (courseDetail.js —
+                         restoreSelectedSections / permanentlyDeleteSelectedSections).
+                         Tanlanmagan holatda (0 ta) ikkalasi ham yashirin — bittalab
+                         "♻️ Tiklash"/"🗑️ Butunlay o'chirish" har bir qatorda
+                         ILGARIGIDEK ishlayveradi. Ro'yxat bo'sh bo'lsa butun
+                         panel yashirin turadi. -->
+                    <div id="sectionTrashBulkActions" class="section-trash-bulk-actions hidden">
+                        <label class="section-trash-select-all">
+                            <input type="checkbox" id="selectAllSectionTrashCheckbox" onchange="toggleSelectAllSectionTrash(this)"> Hammasini belgilash
+                        </label>
+                        <span class="section-trash-bulk-count"><span id="sectionTrashCount">0</span> ta o'chirilgan dars</span>
+                        <button id="sectionTrashRestoreSelectedBtn" class="trash-restore-all-btn hidden" onclick="restoreSelectedSections()">♻️ Tanlanganlarni tiklash (<span id="sectionTrashRestoreSelectedCount">0</span>)</button>
+                        <button id="sectionTrashDeleteSelectedBtn" class="trash-delete-all-btn hidden" onclick="permanentlyDeleteSelectedSections()">🗑️ Tanlanganlarni butunlay o'chirish (<span id="sectionTrashDeleteSelectedCount">0</span>)</button>
+                    </div>
+                    <div id="sectionTrashList"></div>
+                    <div class="modal-footer">
+                        <button type="button" onclick="toggleSectionTrash()">Yopish</button>
+                    </div>
                 </div>
-                <div id="sectionTrashList"></div>
             </div>
 
             <div id="topicLinkAuditPanel" style="display:none;">
