@@ -58,14 +58,28 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     // mavzuni topish uchun (CourseService.resolveLinkedTopic).
     Optional<Topic> findByScience_IdAndName(Long scienceId, String name);
 
-    // ScienceService.permanentlyDeleteScience uchun — ATAYLAB deletedAt
-    // bo'yicha FILTRLANMAYDI (o'chirilgan HAM, o'chirilmagan HAM barcha
+    // ScienceService.permanentlyDeleteScience uchun (nechta mavzu
+    // to'sqinlik qilayotganini SANASH) — ATAYLAB deletedAt bo'yicha
+    // FILTRLANMAYDI (o'chirilgan HAM, o'chirilmagan HAM barcha
     // mavzular) — HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi,
     // 2026-09-12: "Test boshqaruvida o'chirib bo'lmayapti", "topics.
     // science_id" FK "NO ACTION"/RESTRICT bo'lgani uchun fanni butunlay
     // o'chirish undagi BIRON BIR mavzu (hatto savatga o'tkazilgan bo'lsa
     // ham) qolib ketsa, doim muvaffaqiyatsiz tugardi).
     List<Topic> findByScience_Id(Long scienceId);
+
+    // ScienceService.getTopicsBlockingDeletion uchun — "Ko'rish" tugmasi
+    // (foydalanuvchi so'rovi, 2026-09-12) fanni o'chirishga to'sqinlik
+    // qilayotgan BARCHA mavzularni (faol VA savatdagi, alohida-alohida
+    // guruhlash uchun "deletedAt" maydoni bilan birga) ko'rsatadigan
+    // modalga to'liq ma'lumot beradi — TopicTrashDto qayta ishlatiladi
+    // (questionCount HAM kerak, foydalanuvchiga qaysi mavzuda nechta
+    // test borligini ko'rsatish uchun).
+    @Query("select new behzoddev.testproject.dto.topic.TopicTrashDto(t.id, t.name, t.deletedAt, " +
+            "(select count(q) from Question q where q.topic = t), s.id, s.name) " +
+            "from Topic t left join t.section s " +
+            "where t.science.id = :scienceId order by t.deletedAt asc, s.orderIndex, t.orderIndex")
+    List<TopicTrashDto> findAllByScienceIdIncludingDeleted(@Param("scienceId") Long scienceId);
 
     @Query("select t.science.id from Topic t where t.id = :topicId")
     Long getScienceIdByTopicId(@Param("topicId") Long topicId);

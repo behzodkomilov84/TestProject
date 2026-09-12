@@ -116,6 +116,26 @@
     </div>
 </div>
 
+<!-- "🔗 Bog'liq mavzular" — foydalanuvchi so'rovi, 2026-09-12: "Test
+     boshqaruvida o'chirib bo'lmayapti"ning HAQIQIY sababi — "topics.
+     science_id" FK RESTRICT, fanida BIRON BIR mavzu qolsa (faol yoki
+     savatdagi — farqi yo'q) fanni butunlay o'chirish bloklanadi.
+     Avtomatik kaskad (ommaviy o'chirish) ATAYLAB YO'Q — xavfsizroq:
+     "🗑️ Butunlay o'chirish" muvaffaqiyatsiz bo'lganda shu modal
+     ochiladigan "Ko'rish" tugmasi taklif qilinadi (science.js#
+     permanentlyDeleteScienceFromTrash), foydalanuvchi O'ZI qaysi
+     mavzularni (Faol — savatga tashlab, Savatdagi — butunlay o'chirib)
+     tozalashni tanlaydi. -->
+<div id="scienceBlockingTopicsModal" class="modal-overlay">
+    <div class="trash-list-modal">
+        <h2 class="modal-h2" id="scienceBlockingTopicsTitle">🔗 Bog'liq mavzular</h2>
+        <div id="scienceBlockingTopicsList"></div>
+        <div class="modal-footer">
+            <button type="button" onclick="closeScienceBlockingTopicsModal()">Yopish</button>
+        </div>
+    </div>
+</div>
+
 <!-- "📝 Word'ga eksport" oynasi — ichida "🎲 Variantlar yaratish" checkbox'i
      (galochka qo'yilmasa oddiy bitta faylli eksport, qo'yilsa har biri
      boshqa savollardan iborat bir nechta variant + javoblar kaliti, ZIP

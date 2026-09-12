@@ -7,6 +7,7 @@ import behzoddev.testproject.dto.science.ScienceNameDto;
 import behzoddev.testproject.dto.science.ScienceTrashDto;
 import behzoddev.testproject.dto.topic.TopicIdAndNameDto;
 import behzoddev.testproject.dto.topic.TopicNameDto;
+import behzoddev.testproject.dto.topic.TopicTrashDto;
 import behzoddev.testproject.entity.Question;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
@@ -267,6 +268,18 @@ public class ScienceController {
     public ResponseEntity<Void> permanentDeleteScience(@PathVariable Long scienceId, @AuthenticationPrincipal User user) {
         scienceService.permanentlyDeleteScience(scienceId, user);
         return ResponseEntity.ok().build();
+    }
+
+    // "Ko'rish" tugmasi (foydalanuvchi so'rovi, 2026-09-12: "Test
+    // boshqaruvida o'chirib bo'lmayapti" — "qaysi mavzu ... sabab
+    // o'chirilmayotgan bo'lsa, o'shalarga ro'yxatiga boradigan tugma
+    // qo'shilsin") — permanentDeleteScience 409/400 bilan yiqilganda,
+    // frontend shu endpoint orqali TO'LIQ ro'yxatni modalda ko'rsatadi.
+    @GetMapping("/api/science/{scienceId}/blocking-topics")
+    @ResponseBody
+    @PreAuthorize("hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')")
+    public ResponseEntity<List<TopicTrashDto>> getTopicsBlockingDeletion(@PathVariable Long scienceId, @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(scienceService.getTopicsBlockingDeletion(scienceId, user));
     }
 
     // DIQQAT: bu ikkala endpoint ilgari @PreAuthorize'siz edi (istalgan

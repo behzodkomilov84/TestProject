@@ -402,10 +402,14 @@ h1 {
        klassini ishlatadi (topic.js#deleteSelectedUnlinkedTopics).
        "#topicTrashModal" — foydalanuvchi so'rovi, 2026-09-12: "TEST
        BOSHQARUVI dagi 'O'chirilgan darslar' panelini ham kursga
-       bog'lanmagan darslar kabi qil" (topic.js#loadTopicTrash). */
+       bog'lanmagan darslar kabi qil" (topic.js#loadTopicTrash).
+       "#scienceBlockingTopicsModal" — foydalanuvchi so'rovi, 2026-09-12:
+       "Qaysi mavzu ... sabab o'chirilmayotgan bo'lsa ... ro'yxatini
+       modalda create qilib bersin" (science.js#loadScienceBlockingTopics). */
     #questionScienceTrashModal .bulk-delete-btn,
     #unlinkedTopicsModal .bulk-delete-btn,
-    #topicTrashModal .bulk-delete-btn {
+    #topicTrashModal .bulk-delete-btn,
+    #scienceBlockingTopicsModal .bulk-delete-btn {
         background: #dc2626;
         color: #000;
         border: 2px solid #000;
@@ -418,7 +422,8 @@ h1 {
 
     #questionScienceTrashModal .bulk-delete-btn:hover,
     #unlinkedTopicsModal .bulk-delete-btn:hover,
-    #topicTrashModal .bulk-delete-btn:hover {
+    #topicTrashModal .bulk-delete-btn:hover,
+    #scienceBlockingTopicsModal .bulk-delete-btn:hover {
         background: #b91c1c;
     }
 

@@ -161,7 +161,16 @@ async function permanentlyDeleteScienceFromTrash(scienceId, name) {
         const res = await fetch(`/api/science/${scienceId}/permanent`, { method: "DELETE" });
         if (!res.ok) {
             const data = await res.json().catch(() => ({}));
-            showAlertModal(data.error || "O'chirishda xatolik");
+            // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12:
+            // "Test boshqaruvida o'chirib bo'lmayapti" — sababi "topics.
+            // science_id" FK RESTRICT). Avtomatik ommaviy o'chirish
+            // ATAYLAB YO'Q (foydalanuvchi so'rovi: "ichidagilarini
+            // o'chirmasdan bitta yuqori ierarxiyani o'chirib bo'lmasin")
+            // — o'rniga aniq xabar + "Ko'rish" taklif qilinadi, bosilsa
+            // to'sqinlik qilayotgan mavzular ro'yxati modalda ochiladi.
+            if (await showConfirmModal(`${data.error || "O'chirishda xatolik"}\n\nBog'liq mavzularni ko'rib chiqmoqchimisiz?`)) {
+                openScienceBlockingTopicsModal(scienceId, name);
+            }
             return;
         }
         loadScienceTrash();
@@ -169,6 +178,218 @@ async function permanentlyDeleteScienceFromTrash(scienceId, name) {
         console.error(err);
         showAlertModal("Tarmoq xatoligi");
     }
+}
+
+// ========================================================================
+//     "🔗 Bog'liq mavzular" modali — foydalanuvchi so'rovi, 2026-09-12:
+//     "Qaysi mavzu ... sabab o'chirilmayotgan bo'lsa, o'shalarga
+//     ro'yxatiga boradigan tugma qo'shilsin ... ro'yxatini modalda
+//     create qilib bersin". Foydalanuvchining ANIQ so'rovi bo'yicha:
+//     FAOL va SAVATDAGI mavzular ALOHIDA-ALOHIDA guruhlangan, har biri
+//     O'ZINING amaliga mos bulk tugmasiga ega — Faol guruh "Savatga
+//     tashlash", Savatdagi guruh "Butunlay o'chirish" (chunki
+//     TopicService.permanentlyDeleteTopic FAQAT ALLAQACHON savatdagi
+//     mavzuni butunlay o'chira oladi).
+// ========================================================================
+let scienceBlockingTopicsScienceId = null;
+let selectedActiveBlockingTopicIds = new Set();
+let selectedTrashedBlockingTopicIds = new Set();
+
+async function openScienceBlockingTopicsModal(scienceId, scienceName) {
+    scienceBlockingTopicsScienceId = scienceId;
+    document.getElementById("scienceBlockingTopicsTitle").textContent = `🔗 "${scienceName}" — bog'liq mavzular`;
+    document.getElementById("scienceBlockingTopicsModal").classList.add("show");
+    await loadScienceBlockingTopics();
+}
+
+function closeScienceBlockingTopicsModal() {
+    document.getElementById("scienceBlockingTopicsModal").classList.remove("show");
+}
+
+async function loadScienceBlockingTopics() {
+    const list = document.getElementById("scienceBlockingTopicsList");
+    list.innerHTML = "<p>Yuklanmoqda...</p>";
+    selectedActiveBlockingTopicIds.clear();
+    selectedTrashedBlockingTopicIds.clear();
+
+    try {
+        const res = await fetch(`/api/science/${scienceBlockingTopicsScienceId}/blocking-topics`);
+        if (!res.ok) {
+            list.innerHTML = "<p>Yuklashda xatolik</p>";
+            return;
+        }
+        const items = await res.json();
+        if (!items.length) {
+            list.innerHTML = "<p>✅ Endi bog'liq mavzu yo'q — bo'limni butunlay o'chirishni qayta urinib ko'ring.</p>";
+            return;
+        }
+
+        const activeTopics = items.filter(t => !t.deletedAt);
+        const trashedTopics = items.filter(t => !!t.deletedAt);
+
+        list.innerHTML = `
+            ${activeTopics.length ? `
+                <div class="unlinked-topic-group">
+                    <label class="unlinked-topic-group-header">
+                        <input type="checkbox" id="selectAllActiveBlockingTopics" onchange="toggleSelectAllBlockingTopics('active', this)">
+                        <strong>🟢 Faol mavzular</strong>
+                        <span class="item-count-badge">${activeTopics.length} ta</span>
+                    </label>
+                    <div class="trash-bulk-actions">
+                        <button id="bulkTrashActiveBlockingTopicsBtn" class="bulk-delete-btn hidden" onclick="trashSelectedBlockingTopics()">🗑️ Tanlanganlarni savatga tashlash (<span id="bulkTrashActiveBlockingTopicsCount">0</span>)</button>
+                    </div>
+                    ${activeTopics.map(t => `
+                        <div class="trash-row unlinked-topic-row">
+                            <input type="checkbox" class="active-blocking-topic-checkbox" data-topic-id="${t.id}" onchange="onBlockingTopicCheckboxChange('active', ${t.id}, this)">
+                            <div class="trash-row-info">${escapeHtml(t.name)} <span class="item-count-badge">${t.questionCount} ta test</span></div>
+                            <div class="trash-row-actions">
+                                <button class="danger-btn" onclick="trashBlockingTopic(${t.id}, ${JSON.stringify(t.name).replace(/"/g, "&quot;")})">🗑️ Savatga tashlash</button>
+                            </div>
+                        </div>
+                    `).join("")}
+                </div>
+            ` : ""}
+            ${trashedTopics.length ? `
+                <div class="unlinked-topic-group">
+                    <label class="unlinked-topic-group-header">
+                        <input type="checkbox" id="selectAllTrashedBlockingTopics" onchange="toggleSelectAllBlockingTopics('trashed', this)">
+                        <strong>🗑️ Savatdagi mavzular</strong>
+                        <span class="item-count-badge">${trashedTopics.length} ta</span>
+                    </label>
+                    <div class="trash-bulk-actions">
+                        <button id="bulkDeleteTrashedBlockingTopicsBtn" class="bulk-delete-btn hidden" onclick="permanentlyDeleteSelectedBlockingTopics()">🗑️ Tanlanganlarni butunlay o'chirish (<span id="bulkDeleteTrashedBlockingTopicsCount">0</span>)</button>
+                    </div>
+                    ${trashedTopics.map(t => `
+                        <div class="trash-row unlinked-topic-row">
+                            <input type="checkbox" class="trashed-blocking-topic-checkbox" data-topic-id="${t.id}" onchange="onBlockingTopicCheckboxChange('trashed', ${t.id}, this)">
+                            <div class="trash-row-info">${escapeHtml(t.name)} <span class="item-count-badge">${t.questionCount} ta test</span></div>
+                            <div class="trash-row-actions">
+                                <button class="danger-btn" onclick="permanentlyDeleteBlockingTopic(${t.id}, ${JSON.stringify(t.name).replace(/"/g, "&quot;")})">🗑️ Butunlay o'chirish</button>
+                            </div>
+                        </div>
+                    `).join("")}
+                </div>
+            ` : ""}
+        `;
+    } catch (err) {
+        console.error(err);
+        list.innerHTML = "<p>Tarmoq xatoligi</p>";
+    }
+}
+
+function toggleSelectAllBlockingTopics(kind, selectAllCheckbox) {
+    const selector = kind === "active" ? ".active-blocking-topic-checkbox" : ".trashed-blocking-topic-checkbox";
+    const idSet = kind === "active" ? selectedActiveBlockingTopicIds : selectedTrashedBlockingTopicIds;
+    document.querySelectorAll(`#scienceBlockingTopicsList ${selector}`).forEach(cb => {
+        cb.checked = selectAllCheckbox.checked;
+        const id = Number(cb.dataset.topicId);
+        if (selectAllCheckbox.checked) idSet.add(id);
+        else idSet.delete(id);
+    });
+    updateBlockingTopicsBulkButtons();
+}
+
+function onBlockingTopicCheckboxChange(kind, topicId, checkbox) {
+    const idSet = kind === "active" ? selectedActiveBlockingTopicIds : selectedTrashedBlockingTopicIds;
+    if (checkbox.checked) {
+        idSet.add(topicId);
+    } else {
+        idSet.delete(topicId);
+        const selectAll = document.getElementById(kind === "active" ? "selectAllActiveBlockingTopics" : "selectAllTrashedBlockingTopics");
+        if (selectAll) selectAll.checked = false;
+    }
+    updateBlockingTopicsBulkButtons();
+}
+
+function updateBlockingTopicsBulkButtons() {
+    const activeBtn = document.getElementById("bulkTrashActiveBlockingTopicsBtn");
+    if (activeBtn) {
+        document.getElementById("bulkTrashActiveBlockingTopicsCount").textContent = String(selectedActiveBlockingTopicIds.size);
+        activeBtn.classList.toggle("hidden", selectedActiveBlockingTopicIds.size === 0);
+    }
+    const trashedBtn = document.getElementById("bulkDeleteTrashedBlockingTopicsBtn");
+    if (trashedBtn) {
+        document.getElementById("bulkDeleteTrashedBlockingTopicsCount").textContent = String(selectedTrashedBlockingTopicIds.size);
+        trashedBtn.classList.toggle("hidden", selectedTrashedBlockingTopicIds.size === 0);
+    }
+}
+
+// "🗑️ Savatga tashlash" (FAOL mavzu uchun) — soft-delete, mavjud
+// "/api/topic/save" (deletedIds) endpoint'i orqali (topic.js#
+// deleteSelectedUnlinkedTopics BILAN BIR XIL mexanizm).
+async function trashBlockingTopic(topicId, name) {
+    if (!await showConfirmModal(`"${name}" mavzusini savatga tashlamoqchimisiz?`)) return;
+    await trashBlockingTopicIds([topicId]);
+}
+
+async function trashSelectedBlockingTopics() {
+    const ids = [...selectedActiveBlockingTopicIds];
+    if (!ids.length) return;
+    if (!await showConfirmModal(`${ids.length} ta mavzuni savatga tashlamoqchimisiz?`)) return;
+    await trashBlockingTopicIds(ids);
+}
+
+async function trashBlockingTopicIds(ids) {
+    try {
+        const res = await fetch("/api/topic/save", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ new: [], updated: [], deletedIds: ids })
+        });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlertModal(data.error || "Savatga tashlashda xatolik");
+            return;
+        }
+        loadScienceBlockingTopics();
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
+    }
+}
+
+// "🗑️ Butunlay o'chirish" (SAVATDAGI mavzu uchun) — mavjud
+// "/api/topic/{id}/permanent" (bitta-elementli) endpoint'i orqali,
+// tanlanganlar uchun KETMA-KET (courseDetail.js#permanentlyDeleteSelected
+// Sections BILAN BIR XIL andoza — alohida "bulk" endpoint shart emas).
+async function permanentlyDeleteBlockingTopic(topicId, name) {
+    if (!await showConfirmModal(`⚠️ "${name}" mavzusini BUTUNLAY (savollari bilan birga) o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`, { danger: true })) return;
+
+    try {
+        const res = await fetch(`/api/topic/${topicId}/permanent`, { method: "DELETE" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlertModal(data.error || "O'chirishda xatolik");
+            return;
+        }
+        loadScienceBlockingTopics();
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
+    }
+}
+
+async function permanentlyDeleteSelectedBlockingTopics() {
+    const ids = [...selectedTrashedBlockingTopicIds];
+    if (!ids.length) return;
+    if (!await showConfirmModal(`⚠️ Tanlangan ${ids.length} ta mavzuni BUTUNLAY (savollari bilan birga) o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`, { danger: true })) return;
+    if (!await showConfirmModal("Haqiqatan ham ishonchingiz komilmi?", { danger: true })) return;
+
+    const btn = document.getElementById("bulkDeleteTrashedBlockingTopicsBtn");
+    btn.disabled = true;
+    let okCount = 0;
+    for (const id of ids) {
+        try {
+            const res = await fetch(`/api/topic/${id}/permanent`, { method: "DELETE" });
+            if (res.ok) okCount++;
+        } catch (err) {
+            console.error(err);
+        }
+    }
+    btn.disabled = false;
+
+    loadScienceBlockingTopics();
+    showAlertModal(`✅ ${okCount}/${ids.length} ta mavzu butunlay o'chirildi.`);
 }
 
 

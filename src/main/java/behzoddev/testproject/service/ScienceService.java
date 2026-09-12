@@ -1,7 +1,6 @@
 package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.CourseFieldRepository;
-import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
@@ -9,6 +8,7 @@ import behzoddev.testproject.dto.science.ScienceDto;
 import behzoddev.testproject.dto.science.ScienceIdAndNameDto;
 import behzoddev.testproject.dto.science.ScienceNameDto;
 import behzoddev.testproject.dto.science.ScienceTrashDto;
+import behzoddev.testproject.dto.topic.TopicTrashDto;
 import behzoddev.testproject.entity.CourseField;
 import behzoddev.testproject.entity.Science;
 import behzoddev.testproject.entity.Topic;
@@ -37,7 +37,6 @@ public class ScienceService {
     private final TopicRepository topicRepository;
     private final TopicSectionRepository topicSectionRepository;
     private final CourseFieldRepository courseFieldRepository;
-    private final QuestionRepository questionRepository;
     private final ScienceMapper scienceMapper;
     private final Validation validation;
 
@@ -308,20 +307,19 @@ public class ScienceService {
     // nisbatan. QAYTARIB BO'LMAYDI.
     // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "Test
     // boshqaruvida o'chirib bo'lmayapti", ekran surati bilan: "Bu amalni
-    // bajarib bo'lmadi — bog'liq ma'lumotlar mavjud") — ilgari bu yerda
-    // shunchaki "scienceRepository.delete(science)" chaqirilardi, izohda
-    // esa "FK RESTRICT tufayli xato beradi, foydalanuvchi avval ularni
-    // o'chirishi kerak" deb yozilgan edi — lekin FOYDALANUVCHIGA buning
-    // uchun HECH QANDAY yo'l (masalan "avval N ta mavzuni o'chiring"
-    // degan xabar yoki tugma) berilmagan edi, shu sabab bu funksiya
-    // AMALDA HECH QACHON ishlamas edi (fanida birorta ham mavzu qolgan
-    // ekan — hatto o'sha mavzu ALLAQACHON savatga o'tkazilgan bo'lsa
-    // ham, chunki "topics.science_id" FK'si "NO ACTION"/RESTRICT,
-    // deletedAt holatidan qat'iy nazar). Endi TopicService.
-    // permanentlyDeleteTopic'dagi BILAN BIR XIL andoza — "Butunlay
-    // o'chirish" nomiga mos ravishda, fanning BARCHA mavzulari (savatda
-    // turganlari HAM) va ularning savollari ham birga, chindan ham
-    // BUTUNLAY o'chiriladi.
+    // bajarib bo'lmadi — bog'liq ma'lumotlar mavjud") — "topics.
+    // science_id" FK'si "NO ACTION"/RESTRICT, shu sabab fanda birorta
+    // ham mavzu (faol YOKI savatdagi — farqi yo'q) qolsa, delete DOIM
+    // shu xatoga uchraydi. AVVAL bu yerda avtomatik kaskad (barcha
+    // mavzu+savollarni o'zi o'chirib yuborish) sinovdan o'tkazilgan edi,
+    // LEKIN foydalanuvchi ATAYLAB buni BEKOR qildi (2026-09-12: "ichidagi
+    // larini o'chirmasdan bitta yuqori ierarxiyani o'chirib bo'lmasin") —
+    // xavfsizroq: avtomatik ommaviy o'chirish o'rniga, ANIQ nechta mavzu
+    // to'sqinlik qilayotgani ko'rsatiladi (frontend shu sonni ko'rib,
+    // "Ko'rish" tugmasini taklif qiladi — getTopicsBlockingDeletion()
+    // orqali to'liq ro'yxatni ochadigan modalga olib boradi, u yerda
+    // foydalanuvchi O'ZI qaysi mavzularni savatga tashlash/butunlay
+    // o'chirishni tanlaydi).
     @Transactional
     public void permanentlyDeleteScience(Long scienceId, User currentUser) {
         Science science = getAnyScienceOrThrow(scienceId);
@@ -331,13 +329,24 @@ public class ScienceService {
                     "❌ Bu fanni butunlay o'chirishdan oldin, avval oddiy \"O'chirish\" orqali savatga o'tkazish kerak.");
         }
 
-        List<Topic> topics = topicRepository.findByScience_Id(scienceId);
-        for (Topic topic : topics) {
-            questionRepository.deleteByTopic_Id(topic.getId());
+        long remainingTopics = topicRepository.findByScience_Id(scienceId).size();
+        if (remainingTopics > 0) {
+            throw new IllegalArgumentException(
+                    "❌ Bu fanda hali " + remainingTopics + " ta mavzu bor — avval ularni o'chiring.");
         }
-        topicRepository.deleteAll(topics);
 
         scienceRepository.delete(science);
+    }
+
+    // "Ko'rish" tugmasi (foydalanuvchi so'rovi, 2026-09-12) — fanni
+    // butunlay o'chirishga TO'SQINLIK qilayotgan (faol YOKI savatdagi)
+    // barcha mavzular ro'yxati — TopicTrashDto qayta ishlatiladi
+    // (deletedAt bo'yicha frontend "Faol"/"Savatdagi" guruhlarga ajratadi).
+    @Transactional(readOnly = true)
+    public List<TopicTrashDto> getTopicsBlockingDeletion(Long scienceId, User currentUser) {
+        Science science = getAnyScienceOrThrow(scienceId);
+        checkCanManage(science, currentUser);
+        return topicRepository.findAllByScienceIdIncludingDeleted(scienceId);
     }
 
     private Science getScienceOrThrow(Long scienceId) {

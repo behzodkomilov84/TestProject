@@ -3542,6 +3542,33 @@ body {
     letter-spacing: .2px;
 }
 
+/* HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi, 2026-09-12:
+   "sahifasidagi class='modal-footer' dagi buttonga chiroyli css qo'sh")
+   — "Yopish" tugmasi ilgari HECH QANDAY CSS'ga ega emas edi
+   (brauzerning standart kulrang ko'rinishi) — science.css'dagi
+   ".trash-list-modal .modal-footer button" bilan AYNAN BIR XIL. */
+.trash-list-modal .modal-footer {
+    border-top: 1px solid #f1f5f9;
+    padding-top: 14px;
+}
+
+.trash-list-modal .modal-footer button {
+    background: #fff;
+    color: #475569;
+    border: 1px solid #d5dde8;
+    border-radius: 999px;
+    padding: 8px 18px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background .15s ease, border-color .15s ease;
+}
+
+.trash-list-modal .modal-footer button:hover {
+    background: #f1f5f9;
+    border-color: #94a3b8;
+}
+
 .word-export-modal {
     width: min(480px, 90vw);
     background: #fff;

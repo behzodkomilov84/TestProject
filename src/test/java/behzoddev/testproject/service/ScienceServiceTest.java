@@ -1,7 +1,6 @@
 package behzoddev.testproject.service;
 
 import behzoddev.testproject.dao.CourseFieldRepository;
-import behzoddev.testproject.dao.QuestionRepository;
 import behzoddev.testproject.dao.ScienceRepository;
 import behzoddev.testproject.dao.TopicRepository;
 import behzoddev.testproject.dao.TopicSectionRepository;
@@ -44,8 +43,6 @@ class ScienceServiceTest {
     @Mock
     private CourseFieldRepository courseFieldRepository;
     @Mock
-    private QuestionRepository questionRepository;
-    @Mock
     private ScienceMapper scienceMapper;
     @Mock
     private AnswerService answerService;
@@ -60,7 +57,7 @@ class ScienceServiceTest {
     void setUp() {
         Validation validation = new Validation(answerService);
         scienceService = new ScienceService(scienceRepository, topicRepository, topicSectionRepository,
-                courseFieldRepository, questionRepository, scienceMapper, validation);
+                courseFieldRepository, scienceMapper, validation);
 
         owner = User.builder().id(99L).username("owner").roles(new HashSet<>(Set.of(
                 Role.builder().id(1L).roleName("ROLE_OWNER").build()))).build();
@@ -317,13 +314,13 @@ class ScienceServiceTest {
     // bog'liq ma'lumotlar mavjud" xatosi bilan, ekran surati bilan) —
     // "topics.science_id" FK'si "NO ACTION"/RESTRICT bo'lgani uchun
     // fanida BIRON BIR mavzu (hatto savatga o'tkazilgan bo'lsa ham)
-    // qolib ketsa, oddiy "scienceRepository.delete()" DOIM muvaffaqiyatsiz
-    // tugardi. Bu test — TopicService.permanentlyDeleteTopic'dagi bilan
-    // bir xil andozada — fanning BARCHA mavzulari (o'chirilgan/
-    // o'chirilmagan farqisiz) va ularning savollari ham birga
-    // o'chirilishini tasdiqlaydi.
+    // qolib ketsa, oddiy "scienceRepository.delete()" DOIM shu umumiy,
+    // tushunarsiz xatoga uchrardi. Foydalanuvchi ATAYLAB avtomatik
+    // ommaviy o'chirishni (kaskad) BEKOR qildi — xavfsizroq: o'rniga
+    // ANIQ, sonli xabar (frontend shu asosda "Ko'rish" tugmasini
+    // ko'rsatadi — getTopicsBlockingDeletion() orqali).
     @Test
-    void permanentlyDeleteScience_withRemainingTopics_cascadesDeleteOfTopicsAndQuestions() {
+    void permanentlyDeleteScience_withRemainingTopics_throwsWithCount() {
         Science science = Science.builder().id(1L).name("Kimyo").createdBy(admin)
                 .deletedAt(java.time.LocalDateTime.now()).build();
         Topic t1 = Topic.builder().id(10L).name("1-mavzu").science(science).build();
@@ -333,12 +330,29 @@ class ScienceServiceTest {
         when(scienceRepository.findById(1L)).thenReturn(Optional.of(science));
         when(topicRepository.findByScience_Id(1L)).thenReturn(List.of(t1, t2));
 
-        scienceService.permanentlyDeleteScience(1L, admin);
+        assertThatThrownBy(() -> scienceService.permanentlyDeleteScience(1L, admin))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("2");
 
-        verify(questionRepository).deleteByTopic_Id(10L);
-        verify(questionRepository).deleteByTopic_Id(20L);
-        verify(topicRepository).deleteAll(List.of(t1, t2));
-        verify(scienceRepository).delete(science);
+        verify(scienceRepository, org.mockito.Mockito.never()).delete(any());
+    }
+
+    // "Ko'rish" tugmasi (foydalanuvchi so'rovi, 2026-09-12) — fanni
+    // o'chirishga to'sqinlik qilayotgan mavzular ro'yxatini (faol VA
+    // savatdagi — ikkalasi ham) qaytarishini tasdiqlaydi.
+    @Test
+    void getTopicsBlockingDeletion_returnsAllTopicsRegardlessOfDeletedState() {
+        Science science = Science.builder().id(1L).name("Kimyo").createdBy(admin)
+                .deletedAt(java.time.LocalDateTime.now()).build();
+        when(scienceRepository.findById(1L)).thenReturn(Optional.of(science));
+        List<behzoddev.testproject.dto.topic.TopicTrashDto> expected = List.of(
+                new behzoddev.testproject.dto.topic.TopicTrashDto(10L, "1-mavzu", null, 3L, null, null));
+        when(topicRepository.findAllByScienceIdIncludingDeleted(1L)).thenReturn(expected);
+
+        List<behzoddev.testproject.dto.topic.TopicTrashDto> result =
+                scienceService.getTopicsBlockingDeletion(1L, admin);
+
+        assertThat(result).isEqualTo(expected);
     }
 
     @Test
