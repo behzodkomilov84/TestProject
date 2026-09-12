@@ -109,16 +109,24 @@
             </div>
 
             <div id="sectionTrashPanel" style="display:none;">
-                <!-- "Bittada tiklaydigan va o'chiradigan knopka" (foydalanuvchi
-                     so'rovi, 2026-09-10) — panelda ko'rinayotgan HAMMA
-                     o'chirilgan darslarni bir bosishda tiklaydi/butunlay
-                     o'chiradi (courseDetail.js — restoreAllSections /
-                     permanentlyDeleteAllSections). Ro'yxat bo'sh bo'lsa
-                     yashirin turadi. -->
+                <!-- Guruhlash + checkbox orqali tanlash (foydalanuvchi so'rovi,
+                     2026-09-12: "o'chirilgan darslar modalida darslarni ham
+                     gruppalashtir, bittalab belgilash, barchasini bittada
+                     belgilash, bittada tiklash, bittada o'chirish") —
+                     "Hammasini belgilash" + tanlangan sonini ko'rsatib
+                     turadigan ikkita bulk tugma (courseDetail.js —
+                     restoreSelectedSections / permanentlyDeleteSelectedSections).
+                     Tanlanmagan holatda (0 ta) ikkalasi ham yashirin — bittalab
+                     "♻️ Tiklash"/"🗑️ Butunlay o'chirish" har bir qatorda
+                     ILGARIGIDEK ishlayveradi. Ro'yxat bo'sh bo'lsa butun
+                     panel yashirin turadi. -->
                 <div id="sectionTrashBulkActions" class="section-trash-bulk-actions hidden">
+                    <label class="section-trash-select-all">
+                        <input type="checkbox" id="selectAllSectionTrashCheckbox" onchange="toggleSelectAllSectionTrash(this)"> Hammasini belgilash
+                    </label>
                     <span class="section-trash-bulk-count"><span id="sectionTrashCount">0</span> ta o'chirilgan dars</span>
-                    <button id="sectionTrashRestoreAllBtn" class="trash-restore-all-btn" onclick="restoreAllSections()">♻️ Barchasini tiklash</button>
-                    <button id="sectionTrashDeleteAllBtn" class="trash-delete-all-btn" onclick="permanentlyDeleteAllSections()">🗑️ Barchasini butunlay o'chirish</button>
+                    <button id="sectionTrashRestoreSelectedBtn" class="trash-restore-all-btn hidden" onclick="restoreSelectedSections()">♻️ Tanlanganlarni tiklash (<span id="sectionTrashRestoreSelectedCount">0</span>)</button>
+                    <button id="sectionTrashDeleteSelectedBtn" class="trash-delete-all-btn hidden" onclick="permanentlyDeleteSelectedSections()">🗑️ Tanlanganlarni butunlay o'chirish (<span id="sectionTrashDeleteSelectedCount">0</span>)</button>
                 </div>
                 <div id="sectionTrashList"></div>
             </div>
@@ -658,7 +666,7 @@
              tugmasi — test-form.js#downloadTemplate — bilan bir xil
              manba). Foydalanuvchi so'rovi: "янги шаблон учун иконка ҳам
              қўш". -->
-        <a href="/export/template" class="bulk-import-template-link" title="Test savollari (.xlsx) uchun to'g'ri ustun tartibidagi bo'sh shablon faylni yuklab oladi">
+        <a href="/api/export/template" class="bulk-import-template-link" title="Test savollari (.xlsx) uchun to'g'ri ustun tartibidagi bo'sh shablon faylni yuklab oladi">
             📥 Test shabloni (.xlsx) — ustunlar tartibini bilish uchun yuklab oling
         </a>
 

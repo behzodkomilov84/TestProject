@@ -1745,23 +1745,20 @@ body {
     transition: box-shadow .2s ease, border-color .2s ease;
 }
 
-/* "Kattaroq bo'lsin" (foydalanuvchi so'rovi, 2026-09-12) — yig'ilgan
-   (hali ochilmagan) kartaga eng kichik balandlik, hatto nomi bitta
-   qisqa qatorda tursa ham karta "torg'in" ko'rinmasligi uchun. Ochilgan
-   (expanded) kartaga (butun qator kengligini egallaydi) tegilmaydi.
-   FOYDALANUVCHI SO'ROVI (2026-09-12: "height'ini kattalashtirmabsan.
-   Widthning 1.5 barobari bo'lsin height'i") — oldingi "min-height:180px"
-   FIKS qiymat edi, karta kengligi grid'da (auto-fill, minmax(340px,1fr))
-   ekran o'lchamiga qarab O'ZGARIB turgani uchun "kattaroq" tuyulmasligi
-   mumkin edi. Endi "aspect-ratio: 1 / 1.5" — karta balandligi DOIM
-   o'zining KENGLIGIGA nisbatan 1.5 baravar bo'ladi (kengroq ekranda
-   ham, torroq ekranda ham). "min-height" QOLDIRILDI — aspect-ratio
-   faqat AFZAL ko'rilgan o'lcham, agar kontent (masalan juda uzun
-   nom) undan ko'proq joy talab qilsa, karta baribir cho'zilib
-   ketaveradi (matn kesilib qolmasligi uchun ATAYLAB shunday). */
+/* FOYDALANUVCHI SO'ROVI (2026-09-12: "height'ini dinamik qil ichidagi
+   tekstlarini sig'adigan qilib. Lekin barcha kartochkalar eni va bo'yi
+   bir xil bo'lsin") — avval "aspect-ratio:1/1.5" (fiks nisbat) va undan
+   oldin "min-height:180px" (fiks qiymat) sinovdan o'tgan edi, ikkalasi
+   ham kontentga (nom uzunligiga) moslashmaydi. Endi karta balandligi
+   TABIIY (kontentga qarab, "auto") — CSS'da BOSHQA cheklov YO'Q. "Barcha
+   kartalar bir xil bo'lsin" qismi esa CSS Grid'ning o'zi bilan TO'LIQ
+   yechilmaydi (u faqat BIR QATOR ICHIDAGI kartalarni tenglashtiradi,
+   "align-items:stretch" orqali — pastda), turli QATORLAR orasida
+   balandlik baribir farq qilishi mumkin — shu sabab courseDetail.js#
+   equalizeGroupCardHeights / courses.js#equalizeGroupCardHeights (JS)
+   BARCHA (necha qatorda bo'lishidan qat'iy nazar) kartalarning eng
+   balandini o'lchab, HAMMASIGA shu balandlikni qo'llaydi. */
 .group-card.collapsed {
-    aspect-ratio: 1 / 1.5;
-    min-height: 180px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -3182,6 +3179,75 @@ body {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
+}
+
+/* "Hammasini belgilash" checkbox — bulk-amallar panelining ENG
+   chapida (foydalanuvchi so'rovi, 2026-09-12: "barchasini bittada
+   belgilash"). topic.js#unlinkedTopicsModal'dagi bilan bir xil g'oya. */
+.section-trash-select-all {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+/* "O'chirilgan darslar" ro'yxatini Mavzu bo'yicha guruhlash (foydalanuvchi
+   so'rovi, 2026-09-12: "o'chirilgan darslar modalida darslarni ham
+   gruppalashtir") — topic.js#unlinked-topic-group BILAN BIR XIL
+   g'oya, faqat shu sahifa (courseDetail.html) science.css'ni
+   ULAMAGANI uchun ALOHIDA (yangi klass nomlari bilan) qayta yozilgan. */
+.section-trash-group {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.section-trash-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    color: #1e293b;
+}
+
+.section-trash-group-header input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.section-trash-item-count {
+    display: inline-block;
+    background: #eef2f7;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+}
+
+/* Guruh ICHIDAGI qatorlar — mavjud "#sectionTrashList .row" bilan bir
+   xil karta ko'rinishi, faqat chapida checkbox qo'shilgan (indent bilan,
+   guruh ichida ekanini ko'rsatish uchun). */
+.section-trash-row {
+    margin-left: 6px;
+}
+
+.section-trash-row input[type="checkbox"] {
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.section-trash-row-title {
+    flex: 1;
+    min-width: 0;
 }
 
 /* "🔗 Havolalarni tekshirish" paneli (courseDetail.js — topicLinkAuditList).

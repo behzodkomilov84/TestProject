@@ -128,8 +128,14 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     Optional<CourseSection> findFirstByLinkedTopic_Section_Id(@Param("sectionId") Long sectionId);
 
     // "O'chirilganlar savati" ro'yxati (kurs ichida) — CourseService.getDeletedSections.
-    @Query("select new behzoddev.testproject.dto.course.CourseSectionTrashDto(cs.id, cs.title, cs.deletedAt) " +
-            "from CourseSection cs where cs.course.id = :courseId and cs.deletedAt is not null order by cs.deletedAt desc")
+    // "left join cs.chapter c" ATAYLAB — oddiy "cs.chapter.id" (implicit
+    // join) NULL "chapter"li (Mavzusiz) darslarni natijadan BUTUNLAY olib
+    // tashlagan bo'lardi (ichki JOIN semantikasi), "left join" esa ularni
+    // ham (chapterId=null bilan) qaytaradi — foydalanuvchi so'rovi,
+    // 2026-09-12: "o'chirilgan darslar modalida darslarni ham gruppalashtir".
+    @Query("select new behzoddev.testproject.dto.course.CourseSectionTrashDto(cs.id, cs.title, cs.deletedAt, c.id, c.name) " +
+            "from CourseSection cs left join cs.chapter c " +
+            "where cs.course.id = :courseId and cs.deletedAt is not null order by cs.deletedAt desc")
     List<CourseSectionTrashDto> findDeletedByCourse_Id(@Param("courseId") Long courseId);
 
     // "Kurs ichidan mavzu yoritmasi bo'yicha qidiruv" — 1-bosqich:

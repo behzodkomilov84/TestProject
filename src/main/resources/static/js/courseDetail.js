@@ -39,6 +39,27 @@ let chapterPages = {};
 // boshlanadi (selectCard'dagi avtomatik ochish bundan mustasno).
 let expandedChapterKeys = new Set();
 
+// HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "Klaviatura
+// yorlig'i tooltip'i kesilib qolish bugi tuzatildi debsan, lekin
+// tuzalmabdi") — avvalgi "settled" klassi FAQAT o'sha aniq DOM elementiga
+// (JS orqali, transitionend'dan keyin) qo'shilardi, "renderGroupedSections()"
+// shablonida esa UMUMAN yo'q edi. Ro'yxat har QANDAY boshqa sabab bilan
+// qayta chizilganda (masalan boshqa Mavzuni ochish/yopish, dars
+// qo'shish/o'chirish, ⬆⬇ bilan surish — BARCHASI "list.innerHTML"ni
+// TO'LIQ almashtiradi) — allaqachon OCHIQ va "settled" bo'lgan Mavzu ham
+// YANGI DOM elementiga aylanardi, "settled" klassisiz (faqat "is-open"
+// shablondan kelardi) — natijada "⌨️" popover'i yana kesilib qolardi,
+// FAQAT o'sha bitta Mavzuni yana yopib-ochguncha. "settledChapterKeys" —
+// qaysi Mavzular ALLAQACHON o'z ochilish animatsiyasini tugatganini
+// ESLAB QOLADI (renderChapterBox shablonida ham ishlatiladi — pastga
+// qarang), "chapterKeyBeingAnimated" esa AYNAN HOZIR (fresh toggle
+// bosilib) animatsiya o'ynayotgan bitta Mavzuni belgilaydi — shu birgina
+// Mavzu avtomatik-settle mantig'idan (renderGroupedSections) ATAYLAB
+// chetlab o'tiladi, aks holda uning haqiqiy "ochilish" animatsiyasi
+// (grid-template-rows 0fr->1fr paytida kontent klipланиши) buzilardi.
+let settledChapterKeys = new Set();
+let chapterKeyBeingAnimated = null;
+
 // "⋯" amallar qatori — foydalanuvchi so'rovi, 2026-09-12: "icon
 // defaultda ochiq tursin. istasa yopib qo'yadi" — ILGARI standart
 // holatda YOPIQ edi (📌 bilan "mahkamlash" kerak edi, ochiq qolishi
@@ -1748,7 +1769,60 @@ function renderGroupedSections() {
     ];
 
     list.innerHTML = visibleGroups.map(group => renderChapterBox(group, globalIndexById, realChapterGroups)).join("");
+    equalizeGroupCardHeights("sectionsList");
+
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "Klaviatura
+    // yorlig'i tooltip'i ... tuzalmabdi") — yuqoridagi izohga qarang.
+    // Bu yerda: HOZIR ochiq ko'rinayotgan, lekin hali "settled"
+    // qilinmagan (va aynan HOZIR animatsiya o'ynamayotgan) har bir
+    // Mavzuni DARHOL settle qilamiz — ular uchun hech qanday animatsiya
+    // ketmayapti (masalan qidiruv orqali avtomatik ochilgan, yoki boshqa
+    // sabab bilan qayta chizilgan, ILGARI ham ochiq bo'lgan Mavzu), shu
+    // sabab overflow'ni darhol "visible"ga o'tkazish
+    // xavfsiz — faqat "chapterKeyBeingAnimated" (aynan hozir haqiqiy
+    // ochilish animatsiyasi o'ynayotgan bitta Mavzu) BUNDAN MUSTASNO —
+    // uning o'z "settled"ligini toggleChapterBox o'zi (transitionend'dan
+    // keyin) belgilaydi.
+    visibleGroups.forEach(group => {
+        const isExpandedNow = expandedChapterKeys.has(group.key) || chapterSearchQuery.trim() !== "";
+        if (!isExpandedNow) return;
+        if (group.key === chapterKeyBeingAnimated) return;
+        if (settledChapterKeys.has(group.key)) return;
+        settledChapterKeys.add(group.key);
+        const el = document.getElementById(`chapterCollapse-${group.key}`);
+        if (el) el.classList.add("settled");
+    });
 }
+
+// FOYDALANUVCHI SO'ROVI (2026-09-12: "height'ini dinamik qil ichidagi
+// tekstlarini sig'adigan qilib. Lekin barcha kartochkalar eni va bo'yi
+// bir xil bo'lsin") — CSS Grid o'zi faqat BIR QATOR ICHIDAGI kartalarni
+// tenglashtiradi (align-items:stretch, courses.css), turli QATORLAR
+// (masalan 4-ustunli panjarada 1-qatordagi va 2-qatordagi kartalar)
+// orasida balandlik baribir farq qilishi mumkin edi. Shu sabab BARCHA
+// (necha qatorda bo'lishidan qat'iy nazar) yig'ilgan (.collapsed)
+// kartalarning ENG BALANDINI o'lchab, HAMMASIGA shu balandlik
+// qo'llaniladi. Avval "auto"ga qaytarish SHART — aks holda oldingi
+// chaqiruvda o'rnatilgan fiks balandlik o'lchovga aralashib, kartalar
+// vaqt o'tishi bilan faqat KATTALASHIB boraveradi (hech qachon
+// qisqarmaydi). Ekran o'lchami o'zgarganda ham qayta chaqiriladi
+// (pastda, debounce bilan) — matn boshqacha o'ralishi mumkin.
+function equalizeGroupCardHeights(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const cards = [...container.querySelectorAll(":scope > .group-card.collapsed")];
+    if (cards.length < 2) return; // 0/1 ta kartani tenglashtirishning hojati yo'q
+
+    cards.forEach(c => { c.style.height = "auto"; });
+    const maxHeight = Math.max(...cards.map(c => c.offsetHeight));
+    cards.forEach(c => { c.style.height = maxHeight + "px"; });
+}
+
+let chapterCardResizeTimeout = null;
+window.addEventListener("resize", () => {
+    clearTimeout(chapterCardResizeTimeout);
+    chapterCardResizeTimeout = setTimeout(() => equalizeGroupCardHeights("sectionsList"), 200);
+});
 
 // "🔍 Mavzu qidirish" — teriladigan har harfda chaqiriladi (input
 // statik, qayta chizilmaydi — shu sabab fokus/kursor yo'qolmaydi).
@@ -1777,10 +1851,13 @@ function toggleChapterBox(key) {
 
     if (isOpen) {
         if (collapseEl) {
-            // "settled" DARHOL olib tashlanadi — yopilish animatsiyasi
-            // qaytadan "overflow:hidden" bilan ijro etilishi kerak
-            // (pastdagi "settled" izohiga qarang).
+            // "settled" DARHOL olib tashlanadi (klass HAM, "settledChapterKeys"
+            // to'plamidan HAM — foydalanuvchi so'rovi, 2026-09-12: qayta
+            // ochilganda animatsiya yana TO'G'RI o'ynashi uchun) — yopilish
+            // animatsiyasi qaytadan "overflow:hidden" bilan ijro etilishi
+            // kerak (pastdagi "settled" izohiga qarang).
             collapseEl.classList.remove("is-open", "settled");
+            settledChapterKeys.delete(key);
             const onEnd = (e) => {
                 if (e.target !== collapseEl || e.propertyName !== "grid-template-rows") return;
                 collapseEl.removeEventListener("transitionend", onEnd);
@@ -1790,15 +1867,22 @@ function toggleChapterBox(key) {
             collapseEl.addEventListener("transitionend", onEnd);
         } else {
             expandedChapterKeys.delete(key);
+            settledChapterKeys.delete(key);
             renderGroupedSections();
         }
     } else {
         expandedChapterKeys.add(key);
+        // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "...
+        // tuzalmabdi") — "chapterKeyBeingAnimated" shu Mavzuni
+        // renderGroupedSections()dagi AVTOMATIK-settle mantig'idan
+        // ATAYLAB chetlab o'tadi, aks holda pastdagi HAQIQIY (bosqichma-
+        // bosqich) ochilish animatsiyasi ishlamay qolardi.
+        chapterKeyBeingAnimated = key;
         renderGroupedSections();
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 const el = document.getElementById(`chapterCollapse-${key}`);
-                if (!el) return;
+                if (!el) { chapterKeyBeingAnimated = null; return; }
                 el.classList.add("is-open");
                 // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12:
                 // "klavish yorliqlari yarmi ko'rinmayapti") — animatsiya
@@ -1812,10 +1896,17 @@ function toggleChapterBox(key) {
                 // tashlanadi (CSS'da) — endi popover'lar erkin chiqadi,
                 // yopilish paytida esa (yuqorida "settled" olib
                 // tashlanadi) animatsiya baribir to'g'ri kesilib ijro etiladi.
+                // "settledChapterKeys"ga HAM yoziladi — ro'yxat KEYINROQ
+                // (boshqa sabab bilan) qayta chizilsa ham, bu Mavzu
+                // "settled" holatini YO'QOTMASLIGI uchun (HAQIQIY
+                // TOPILGAN BUG, 2026-09-12: "tuzalmabdi" — sababi aynan
+                // shu edi).
                 const onOpenEnd = (e) => {
                     if (e.target !== el || e.propertyName !== "grid-template-rows") return;
                     el.removeEventListener("transitionend", onOpenEnd);
                     el.classList.add("settled");
+                    settledChapterKeys.add(key);
+                    chapterKeyBeingAnimated = null;
                 };
                 el.addEventListener("transitionend", onOpenEnd);
             });
@@ -1994,7 +2085,7 @@ function renderChapterBox(group, globalIndexById, realChapterGroups) {
                 <span class="group-card-name">📂 ${escapeHtml(group.name)}</span>
             </h3>
             <div class="group-card-count">(dars — ${group.items.length} ta, jami testlar — ${totalQuestions} ta)</div>
-            <div class="group-card-collapse ${isExpanded ? "is-open" : ""}" id="chapterCollapse-${group.key}">
+            <div class="group-card-collapse ${isExpanded ? "is-open" : ""} ${settledChapterKeys.has(group.key) ? "settled" : ""}" id="chapterCollapse-${group.key}">
                 <div class="group-card-collapse-inner">${bodyHtml}</div>
             </div>
         </div>
@@ -2022,8 +2113,23 @@ function toggleChapterActions(key) {
 // yopiladi (foydalanuvchi tasodifan ochiq qoldirib ketmasligi uchun).
 // Menyu ICHIDAGI tugmalar "event.stopPropagation()" bilan o'ralgan,
 // shu sabab ular bosilganda bu handler'ga umuman yetib bormaydi.
+// HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "Мавзуларда
+// по умолчанию да очиқ турсин actionlar" — ekran surati bilan, "⋯"
+// popover'i default OCHIQ bo'lishi kerak bo'lsa ham YOPIQ ko'rinardi) —
+// bu tekshiruv ilgari ".group-card-corner" (faqat "⋯" + uning menyusi)
+// bilan cheklangan edi. Mavzu SARLAVHASIGA (".group-card-title") bosish
+// (toggleChapterBox) "event.stopPropagation()"siz — renderGroupedSections()
+// SINXRON qayta chaqiriladi (yangi kartalar, closedChapterActionKeys'da
+// yo'q barcha mavzular DEFAULT OCHIQ popover bilan render bo'ladi), SHU
+// BIR XIL bosish (click) hodisasi keyin "document"gacha ko'tarilib
+// (bubble), sarlavha ".group-card-corner" ICHIDA emasligi sabab, ENDIGINA
+// render bo'lgan (hali hech kim ko'rmagan) "default ochiq" popover'larni
+// DARHOL yopib qo'yardi. Endi tekshiruv butun ".group-card" (nafaqat
+// uning burchagi) bilan — sarlavhaga (yoki kartaning boshqa qismiga)
+// bosish endi popover'ni yopmaydi, faqat HAQIQATAN boshqa kartaga yoki
+// sahifaning butunlay boshqa qismiga bosilganda yopiladi.
 document.addEventListener("click", (e) => {
-    if (e.target.closest(".group-card-corner")) return;
+    if (e.target.closest(".group-card")) return;
     document.querySelectorAll(".group-card-menu:not(.hidden)").forEach(el => {
         el.classList.add("hidden");
         closedChapterActionKeys.add(el.id.replace("chapterActionsExtra-", ""));
@@ -3967,14 +4073,17 @@ async function deleteSection(sectionId) {
 // ro'yxati (bir zumda "♻️ Tiklash" qilinadigan). Panel yopiq holatda
 // boshlanadi, bosilganda ochilib ro'yxatni yuklaydi.
 let sectionTrashOpen = false;
-// Panelda hozir ko'rsatilayotgan elementlar — "♻️ Barchasini tiklash" /
-// "🗑️ Barchasini butunlay o'chirish" (foydalanuvchi so'rovi, 2026-09-10:
-// "Bittada tiklaydigan va o'chiradigan knopka qo'sh") shu ro'yxat bo'yicha
-// KETMA-KET (bittalab, mavjud bitta-elementli endpoint'lar orqali) ishlaydi
-// — alohida "bulk" backend endpoint yaratishning hojati yo'q, chunki har
-// bir chaqiruv baribir o'zi try/catch bilan himoyalangan (bittasi
-// muvaffaqiyatsiz bo'lsa ham, qolganlari davom etadi).
 let sectionTrashItems = [];
+// Checkbox orqali TANLANGAN darslar (foydalanuvchi so'rovi, 2026-09-12:
+// "o'chirilgan darslar modalida darslarni ham gruppalashtir, bittalab
+// belgilash, barchasini bittada belgilash, bittada tiklash, bittada
+// o'chirish") — topic.js#selectedUnlinkedTopicIds BILAN BIR XIL g'oya.
+// "♻️ Tanlanganlarni tiklash" / "🗑️ Tanlanganlarni butunlay o'chirish"
+// shu to'plam bo'yicha KETMA-KET (mavjud bitta-elementli endpoint'lar
+// orqali) ishlaydi — alohida "bulk" backend endpoint shart emas, har
+// bir chaqiruv o'zi try/catch bilan himoyalangan (bittasi
+// muvaffaqiyatsiz bo'lsa ham, qolganlari davom etadi).
+let selectedSectionTrashIds = new Set();
 
 function toggleSectionTrash() {
     sectionTrashOpen = !sectionTrashOpen;
@@ -3984,10 +4093,16 @@ function toggleSectionTrash() {
     }
 }
 
+// Guruhlash (foydalanuvchi so'rovi, 2026-09-12) — har bir o'chirilgan
+// dars ASL Mavzusi (chapterId — o'chirilgandan keyin ham CourseSection'da
+// TEGILMAY qoladi, faqat deletedAt o'rnatiladi) bo'yicha, topic.js#
+// renderUnlinkedTopicsModal BILAN BIR XIL g'oyada: "— Mavzusiz —" guruhi
+// har doim OXIRIDA, qolganlari nomi bo'yicha A-Z.
 async function loadSectionTrash() {
     const list = document.getElementById("sectionTrashList");
     list.innerHTML = "<p>Yuklanmoqda...</p>";
     document.getElementById("sectionTrashBulkActions").classList.add("hidden");
+    selectedSectionTrashIds.clear();
 
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/sections/deleted`);
@@ -4004,13 +4119,44 @@ async function loadSectionTrash() {
         }
         document.getElementById("sectionTrashCount").textContent = items.length;
         document.getElementById("sectionTrashBulkActions").classList.remove("hidden");
-        list.innerHTML = items.map(s => `
-            <div class="row">
-                <div>${escapeHtml(s.title)} — ${formatSectionTrashDate(s.deletedAt)}da o'chirilgan</div>
-                <div class="row-actions">
-                    <button class="trash-restore-btn" onclick="restoreSection(${s.id})">♻️ Tiklash</button>
-                    <button class="trash-delete-btn" onclick="permanentlyDeleteSection(${s.id}, ${JSON.stringify(s.title).replace(/"/g, "&quot;")})">🗑️ Butunlay o'chirish</button>
-                </div>
+        document.getElementById("selectAllSectionTrashCheckbox").checked = false;
+        updateSectionTrashBulkButtons();
+
+        const groupsByKey = new Map();
+        for (const s of items) {
+            const key = s.chapterId != null ? String(s.chapterId) : "none";
+            if (!groupsByKey.has(key)) {
+                groupsByKey.set(key, {
+                    key,
+                    name: s.chapterId != null ? s.chapterName : "— Mavzusiz —",
+                    items: []
+                });
+            }
+            groupsByKey.get(key).items.push(s);
+        }
+        const groups = [...groupsByKey.values()].sort((a, b) => {
+            if (a.key === "none") return 1;
+            if (b.key === "none") return -1;
+            return a.name.localeCompare(b.name, "uz");
+        });
+
+        list.innerHTML = groups.map(g => `
+            <div class="section-trash-group">
+                <label class="section-trash-group-header">
+                    <input type="checkbox" class="section-trash-group-checkbox" data-group-key="${g.key}" onchange="toggleSelectSectionTrashGroup('${g.key}', this)">
+                    <strong>${escapeHtml(g.name)}</strong>
+                    <span class="section-trash-item-count">${g.items.length} ta dars</span>
+                </label>
+                ${g.items.map(s => `
+                    <div class="row section-trash-row">
+                        <input type="checkbox" class="section-trash-checkbox" data-section-id="${s.id}" data-group-key="${g.key}" onchange="onSectionTrashCheckboxChange(${s.id}, this)">
+                        <div class="section-trash-row-title">${escapeHtml(s.title)} — ${formatSectionTrashDate(s.deletedAt)}da o'chirilgan</div>
+                        <div class="row-actions">
+                            <button class="trash-restore-btn" onclick="restoreSection(${s.id})">♻️ Tiklash</button>
+                            <button class="trash-delete-btn" onclick="permanentlyDeleteSection(${s.id}, ${JSON.stringify(s.title).replace(/"/g, "&quot;")})">🗑️ Butunlay o'chirish</button>
+                        </div>
+                    </div>
+                `).join("")}
             </div>
         `).join("");
     } catch (err) {
@@ -4019,14 +4165,93 @@ async function loadSectionTrash() {
     }
 }
 
-// "♻️ Barchasini tiklash" — panelda ko'rinayotgan HAMMA o'chirilgan
-// darslarni bittada qaytaradi (foydalanuvchi so'rovi, 2026-09-10). Endi
-// darhol tiklamaydi — avval mavzu tanlash oynasini ochadi ("barchasini
-// tiklashni bosganda mavzuni tanlash chiqshin — barchasi uchun bitta va
-// barchasiga alohida"), chunki agar darsning ASL mavzusi o'chirilgan
-// bo'lsa, tiklangan dars "— Mavzusiz darslar —"ga tushib qoladi.
-async function restoreAllSections() {
-    if (!sectionTrashItems.length) return;
+// Guruh sarlavhasidagi checkbox — shu Mavzudagi BARCHA o'chirilgan
+// darslarni birdaniga belgilaydi/bekor qiladi.
+function toggleSelectSectionTrashGroup(groupKey, checkbox) {
+    document.querySelectorAll(`#sectionTrashList .section-trash-checkbox[data-group-key="${groupKey}"]`).forEach(cb => {
+        cb.checked = checkbox.checked;
+        const id = Number(cb.dataset.sectionId);
+        if (checkbox.checked) {
+            selectedSectionTrashIds.add(id);
+        } else {
+            selectedSectionTrashIds.delete(id);
+        }
+    });
+    if (!checkbox.checked) {
+        const selectAll = document.getElementById("selectAllSectionTrashCheckbox");
+        if (selectAll) selectAll.checked = false;
+    }
+    updateSectionTrashBulkButtons();
+}
+
+function onSectionTrashCheckboxChange(sectionId, checkbox) {
+    if (checkbox.checked) {
+        selectedSectionTrashIds.add(sectionId);
+    } else {
+        selectedSectionTrashIds.delete(sectionId);
+        const selectAll = document.getElementById("selectAllSectionTrashCheckbox");
+        if (selectAll) selectAll.checked = false;
+    }
+
+    // Guruh sarlavhasidagi checkbox'ni yangilaymiz — guruhdagi BARCHA
+    // darslar belgilangandagina u ham belgilangan ko'rinadi.
+    const groupKey = checkbox.dataset.groupKey;
+    if (groupKey) {
+        const groupCheckboxes = document.querySelectorAll(
+            `#sectionTrashList .section-trash-checkbox[data-group-key="${groupKey}"]`);
+        const allChecked = [...groupCheckboxes].every(cb => cb.checked);
+        const groupCheckbox = document.querySelector(
+            `.section-trash-group-checkbox[data-group-key="${groupKey}"]`);
+        if (groupCheckbox) groupCheckbox.checked = allChecked;
+    }
+
+    updateSectionTrashBulkButtons();
+}
+
+function toggleSelectAllSectionTrash(selectAllCheckbox) {
+    document.querySelectorAll("#sectionTrashList .section-trash-checkbox").forEach(cb => {
+        cb.checked = selectAllCheckbox.checked;
+        const id = Number(cb.dataset.sectionId);
+        if (selectAllCheckbox.checked) {
+            selectedSectionTrashIds.add(id);
+        } else {
+            selectedSectionTrashIds.delete(id);
+        }
+    });
+    document.querySelectorAll("#sectionTrashList .section-trash-group-checkbox").forEach(cb => {
+        cb.checked = selectAllCheckbox.checked;
+    });
+    updateSectionTrashBulkButtons();
+}
+
+function updateSectionTrashBulkButtons() {
+    const count = selectedSectionTrashIds.size;
+    const restoreBtn = document.getElementById("sectionTrashRestoreSelectedBtn");
+    const deleteBtn = document.getElementById("sectionTrashDeleteSelectedBtn");
+    if (restoreBtn) {
+        document.getElementById("sectionTrashRestoreSelectedCount").textContent = String(count);
+        restoreBtn.classList.toggle("hidden", count === 0);
+    }
+    if (deleteBtn) {
+        document.getElementById("sectionTrashDeleteSelectedCount").textContent = String(count);
+        deleteBtn.classList.toggle("hidden", count === 0);
+    }
+}
+
+// "♻️ Tanlanganlarni tiklash" — checkbox orqali TANLANGAN darslarni
+// bittada qaytaradi (foydalanuvchi so'rovi, 2026-09-12). Avval mavzu
+// tanlash oynasini ochadi ("mavzuni tanlash chiqshin — barchasi uchun
+// bitta va barchasiga alohida"), chunki agar darsning ASL mavzusi
+// o'chirilgan bo'lsa, tiklangan dars "— Mavzusiz darslar —"ga tushib
+// qoladi. "sectionTrashRestoreTargets" — TANLANGANLAR bilan cheklangan
+// pastki to'plam (openBulkRestoreModal/confirmBulkRestoreWithChapters
+// ENDI shu to'plam bo'yicha ishlaydi, "sectionTrashItems" — TO'LIQ
+// ro'yxat — o'rniga).
+let sectionTrashRestoreTargets = [];
+
+async function restoreSelectedSections() {
+    if (!selectedSectionTrashIds.size) return;
+    sectionTrashRestoreTargets = sectionTrashItems.filter(s => selectedSectionTrashIds.has(s.id));
     await openBulkRestoreModal();
 }
 
@@ -4036,7 +4261,7 @@ async function restoreAllSections() {
 let bulkRestoreChapters = [];
 
 async function openBulkRestoreModal() {
-    document.getElementById("bulkRestoreCount").textContent = sectionTrashItems.length;
+    document.getElementById("bulkRestoreCount").textContent = sectionTrashRestoreTargets.length;
 
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/chapters`);
@@ -4053,7 +4278,7 @@ async function openBulkRestoreModal() {
 
     // "Har biriga alohida" ro'yxati — har bir o'chirilgan darsning nomi
     // + o'zining ALOHIDA mavzu tanlovi (standart holatda "— Mavzusiz —").
-    document.getElementById("bulkRestoreIndividualList").innerHTML = sectionTrashItems.map(s => `
+    document.getElementById("bulkRestoreIndividualList").innerHTML = sectionTrashRestoreTargets.map(s => `
         <div class="restore-individual-row">
             <span class="restore-individual-title">${escapeHtml(s.title)}</span>
             <select class="restore-chapter-select restore-individual-select" data-section-id="${s.id}">${optionsHtml}</select>
@@ -4098,7 +4323,7 @@ async function confirmBulkRestoreWithChapters() {
     btn.disabled = true;
 
     let okCount = 0;
-    for (const s of sectionTrashItems) {
+    for (const s of sectionTrashRestoreTargets) {
         const chapterId = chapterFor(s.id);
         const url = `/api/courses/${COURSE_ID}/sections/${s.id}/restore?setChapter=true` +
             (chapterId ? `&chapterId=${chapterId}` : "");
@@ -4114,23 +4339,26 @@ async function confirmBulkRestoreWithChapters() {
     closeBulkRestoreModal();
     loadSectionTrash();
     loadCourse();
-    showAlertModal(`✅ ${okCount}/${sectionTrashItems.length} ta dars tiklandi.`);
+    showAlertModal(`✅ ${okCount}/${sectionTrashRestoreTargets.length} ta dars tiklandi.`);
 }
 
-// "🗑️ Barchasini butunlay o'chirish" — QAYTARIB BO'LMAYDIGAN amal, shu
-// sabab ikki marta (danger) tasdiq so'raladi — bitta elementni butunlay
-// o'chirishdagi bilan bir xil ehtiyotkorlik darajasi.
-async function permanentlyDeleteAllSections() {
-    if (!sectionTrashItems.length) return;
-    if (!await showConfirmModal(`⚠️ "O'chirilganlar savati"dagi ${sectionTrashItems.length} ta darsning HAMMASINI BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`, { danger: true })) return;
+// "🗑️ Tanlanganlarni butunlay o'chirish" — checkbox orqali TANLANGAN
+// darslarni bittada BUTUNLAY o'chiradi (foydalanuvchi so'rovi,
+// 2026-09-12). QAYTARIB BO'LMAYDIGAN amal, shu sabab ikki marta (danger)
+// tasdiq so'raladi — bitta elementni butunlay o'chirishdagi bilan bir
+// xil ehtiyotkorlik darajasi.
+async function permanentlyDeleteSelectedSections() {
+    const ids = [...selectedSectionTrashIds];
+    if (!ids.length) return;
+    if (!await showConfirmModal(`⚠️ Tanlangan ${ids.length} ta darsni HAMMASINI BUTUNLAY o'chirmoqchimisiz?\n\nBu amalni HECH QANDAY tarzda bekor qilib bo'lmaydi.`, { danger: true })) return;
     if (!await showConfirmModal("Haqiqatan ham ishonchingiz komilmi?", { danger: true })) return;
 
-    const btn = document.getElementById("sectionTrashDeleteAllBtn");
+    const btn = document.getElementById("sectionTrashDeleteSelectedBtn");
     btn.disabled = true;
     let okCount = 0;
-    for (const s of sectionTrashItems) {
+    for (const id of ids) {
         try {
-            const res = await fetch(`/api/courses/${COURSE_ID}/sections/${s.id}/permanent`, { method: "DELETE" });
+            const res = await fetch(`/api/courses/${COURSE_ID}/sections/${id}/permanent`, { method: "DELETE" });
             if (res.ok) okCount++;
         } catch (err) {
             console.error(err);
@@ -4139,7 +4367,7 @@ async function permanentlyDeleteAllSections() {
     btn.disabled = false;
 
     loadSectionTrash();
-    showAlertModal(`✅ ${okCount}/${sectionTrashItems.length} ta dars butunlay o'chirildi.`);
+    showAlertModal(`✅ ${okCount}/${ids.length} ta dars butunlay o'chirildi.`);
 }
 
 function formatSectionTrashDate(isoString) {

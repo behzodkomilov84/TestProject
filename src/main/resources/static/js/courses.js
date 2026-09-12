@@ -23,6 +23,17 @@ function updateFilePickerName(input, spanId) {
 // bilan bir xil g'oya (bir nechtasi bir vaqtda ochiq turishi mumkin).
 const expandedFieldKeys = new Set();
 
+// courseDetail.js#settledChapterKeys/chapterKeyBeingAnimated BILAN AYNAN
+// BIR XIL — HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12:
+// "Klaviatura yorlig'i tooltip'i ... tuzalmabdi") — "settled" klassi
+// ilgari faqat JS orqali (transitionend'dan keyin) o'sha bitta DOM
+// elementiga qo'shilardi, shablonda esa yo'q edi — ro'yxat boshqa sabab
+// bilan qayta chizilganda (masalan boshqa Yo'nalishni ochish/yopish)
+// allaqachon ochiq Yo'nalish ham YANGI (settled'siz) elementga aylanib,
+// "⌨️" popover'i yana kesilib qolardi.
+const settledFieldKeys = new Set();
+let fieldKeyBeingAnimated = null;
+
 // courseDetail.js#closedChapterActionKeys BILAN BIR XIL — "⋯" amallar
 // menyusi endi DEFAULT holatda OCHIQ (foydalanuvchi so'rovi, 2026-09-12:
 // "icon defaultda ochiq tursin. istasa yopib qo'yadi"), faqat ANIQ
@@ -171,6 +182,22 @@ function renderGroupedCourses() {
         ...groups.filter(g => !expandedFieldKeys.has(g.key))
     ];
     grid.innerHTML = orderedGroups.map(g => renderFieldBox(g, realFieldGroups)).join("");
+    equalizeGroupCardHeights("coursesGrid");
+
+    // courseDetail.js#renderGroupedSections BILAN AYNAN BIR XIL —
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "...
+    // tuzalmabdi"). Hech qanday animatsiya ketmayotgan (aynan HOZIR
+    // toggleFieldBox orqali ochilayotgan bittasidan tashqari), lekin
+    // ALLAQACHON ochiq Yo'nalishlarni darhol "settled" qilamiz — aks
+    // holda ular ham qayta chizilganda "⌨️" popover'i kesilib qolaveradi.
+    orderedGroups.forEach(group => {
+        if (!expandedFieldKeys.has(group.key)) return;
+        if (group.key === fieldKeyBeingAnimated) return;
+        if (settledFieldKeys.has(group.key)) return;
+        settledFieldKeys.add(group.key);
+        const el = document.getElementById(`fieldCollapse-${group.key}`);
+        if (el) el.classList.add("settled");
+    });
 
     if (focusCourseId != null) {
         const targetId = focusCourseId;
@@ -197,6 +224,30 @@ function renderGroupedCourses() {
     // butunlay OLIB TASHLANGAN edi (2026-09-08) — endi bu yerda ham.
 }
 
+// courseDetail.js#equalizeGroupCardHeights BILAN AYNAN BIR XIL — foydalanuvchi
+// so'rovi, 2026-09-12: "height'ini dinamik qil ichidagi tekstlarini
+// sig'adigan qilib. Lekin barcha kartochkalar eni va bo'yi bir xil
+// bo'lsin". CSS Grid faqat BIR QATOR ICHIDAGI kartalarni tenglashtiradi
+// (align-items:stretch), shu sabab BARCHA (necha qatorda bo'lishidan
+// qat'iy nazar) kartalarning eng balandini o'lchab, hammasiga shu
+// balandlik JS orqali qo'llaniladi.
+function equalizeGroupCardHeights(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const cards = [...container.querySelectorAll(":scope > .group-card.collapsed")];
+    if (cards.length < 2) return;
+
+    cards.forEach(c => { c.style.height = "auto"; });
+    const maxHeight = Math.max(...cards.map(c => c.offsetHeight));
+    cards.forEach(c => { c.style.height = maxHeight + "px"; });
+}
+
+let fieldCardResizeTimeout = null;
+window.addEventListener("resize", () => {
+    clearTimeout(fieldCardResizeTimeout);
+    fieldCardResizeTimeout = setTimeout(() => equalizeGroupCardHeights("coursesGrid"), 200);
+});
+
 // courseDetail.js#toggleChapterBox BILAN BIR XIL animatsiya mantig'i
 // (foydalanuvchi so'rovi, 2026-09-12: "карточкани босганда, анимацион
 // ҳолатда ичидагиларни очсин") — ".group-card-collapse" CSS klassi
@@ -209,8 +260,11 @@ function toggleFieldBox(key) {
     if (isOpen) {
         if (collapseEl) {
             // courseDetail.js#toggleChapterBox BILAN BIR XIL — "settled"
-            // darhol olib tashlanadi (pastga qarang).
+            // darhol olib tashlanadi (klass HAM, to'plamdan HAM — pastga
+            // qarang) — qayta ochilganda animatsiya yana to'g'ri o'ynashi
+            // uchun.
             collapseEl.classList.remove("is-open", "settled");
+            settledFieldKeys.delete(key);
             const onEnd = (e) => {
                 if (e.target !== collapseEl || e.propertyName !== "grid-template-rows") return;
                 collapseEl.removeEventListener("transitionend", onEnd);
@@ -220,15 +274,21 @@ function toggleFieldBox(key) {
             collapseEl.addEventListener("transitionend", onEnd);
         } else {
             expandedFieldKeys.delete(key);
+            settledFieldKeys.delete(key);
             renderGroupedCourses();
         }
     } else {
         expandedFieldKeys.add(key);
+        // courseDetail.js#toggleChapterBox BILAN BIR XIL — shu Yo'nalishni
+        // renderGroupedCourses()dagi avtomatik-settle mantig'idan ATAYLAB
+        // chetlab o'tadi (haqiqiy, bosqichma-bosqich ochilish animatsiyasi
+        // buzilmasligi uchun).
+        fieldKeyBeingAnimated = key;
         renderGroupedCourses();
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 const el = document.getElementById(`fieldCollapse-${key}`);
-                if (!el) return;
+                if (!el) { fieldKeyBeingAnimated = null; return; }
                 el.classList.add("is-open");
                 // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12:
                 // "klavish yorliqlari yarmi ko'rinmayapti") — kurs
@@ -236,11 +296,16 @@ function toggleFieldBox(key) {
                 // tashqariga chiqsa, animatsiya uchun shart bo'lgan
                 // "overflow:hidden" uni kesib tashlardi. Ochilish
                 // animatsiyasi TUGAGANDAN KEYIN ("settled") cheklov
-                // olib tashlanadi (courses.css).
+                // olib tashlanadi (courses.css). "settledFieldKeys"ga HAM
+                // yoziladi — ro'yxat KEYINROQ qayta chizilsa ham, bu
+                // Yo'nalish "settled" holatini yo'qotmasligi uchun
+                // (HAQIQIY TOPILGAN BUG, 2026-09-12: "tuzalmabdi").
                 const onOpenEnd = (e) => {
                     if (e.target !== el || e.propertyName !== "grid-template-rows") return;
                     el.removeEventListener("transitionend", onOpenEnd);
                     el.classList.add("settled");
+                    settledFieldKeys.add(key);
+                    fieldKeyBeingAnimated = null;
                 };
                 el.addEventListener("transitionend", onOpenEnd);
             });
@@ -463,7 +528,7 @@ function renderFieldBox(group, realFieldGroups) {
                  bu yerda sanalayotgan narsa KURS (Course), Bo'lim
                  (CourseChapter) emas — foydalanuvchi so'rovi, 2026-09-05. -->
             <div class="group-card-count">(kurs — ${group.items.length} ta)</div>
-            <div class="group-card-collapse ${isExpanded ? "is-open" : ""}" id="fieldCollapse-${group.key}">
+            <div class="group-card-collapse ${isExpanded ? "is-open" : ""} ${settledFieldKeys.has(group.key) ? "settled" : ""}" id="fieldCollapse-${group.key}">
                 <div class="group-card-collapse-inner">${bodyHtml}</div>
             </div>
         </div>
@@ -485,10 +550,15 @@ function toggleFieldActions(key) {
     }
 }
 
-// courseDetail.js'dagi bilan bir xil — "⋯" popover-menyusi tashqariga
-// bosilganda yopilishi kerak (HAQIQIY TOPILGAN KAMCHILIK, 2026-09-12).
+// courseDetail.js'dagi bilan AYNAN BIR XIL — HAQIQIY TOPILGAN BUG
+// (foydalanuvchi so'rovi, 2026-09-12: "Мавзуларда по умолчанию да очиқ
+// турсин actionlar") — tekshiruv ilgari ".group-card-corner" bilan
+// cheklangani sabab, Yo'nalish SARLAVHASIGA bosish (toggleFieldBox,
+// "event.stopPropagation()"siz) SINXRON qayta render qilib, YANGI
+// (default OCHIQ) popover'larni O'SHA BIR XIL bosish document'gacha
+// ko'tarilganda DARHOL yopib qo'yardi. Endi butun ".group-card" bilan.
 document.addEventListener("click", (e) => {
-    if (e.target.closest(".group-card-corner")) return;
+    if (e.target.closest(".group-card")) return;
     document.querySelectorAll(".group-card-menu:not(.hidden)").forEach(el => {
         el.classList.add("hidden");
         closedFieldActionKeys.add(el.id.replace("fieldActionsExtra-", ""));
