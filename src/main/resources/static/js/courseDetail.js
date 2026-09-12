@@ -2176,8 +2176,16 @@ function toggleChapterActions(key) {
 // boshqa kartalardagi ham) ochiq popoverlarni yopib qo'yardi. Endi
 // ".modal-overlay"/".prompt-modal-overlay" ICHIDAGI bosishlar HAM
 // e'tiborga olinmaydi.
+// HAQIQIY TOPILGAN BUG #3 (foydalanuvchi so'rovi, 2026-09-12: "kursni
+// boshqarishdagi har qaysi knopkani bosib ish qilinganda '...' yopilib
+// qolyapti") — yuqoridagi ikkalasi kabi, "⚙️ Kursni boshqarish" paneli
+// (Dars/Mavzu qo'shish, Havolalarni tekshirish, Takroriy havolalarni
+// tozalash va h.k. — barchasi ".course-manage-panel" ichida) HAM
+// ".group-card" ICHIDA EMAS, shu sabab bu paneldagi istalgan tugmani
+// bosish ham "tashqariga bosildi" deb hisoblanib, ochiq popover'larni
+// yopib qo'yardi.
 document.addEventListener("click", (e) => {
-    if (e.target.closest(".group-card, .modal-overlay, .prompt-modal-overlay")) return;
+    if (e.target.closest(".group-card, .modal-overlay, .prompt-modal-overlay, .course-manage-panel")) return;
     document.querySelectorAll(".group-card-menu:not(.hidden)").forEach(el => {
         el.classList.add("hidden");
         closedChapterActionKeys.add(el.id.replace("chapterActionsExtra-", ""));

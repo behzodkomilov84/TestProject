@@ -595,8 +595,14 @@ function toggleFieldActions(key) {
 // EMAS, shu sabab modaldagi "Ha"/"OK" tugmasini bosish "tashqariga
 // bosildi" deb hisoblanib, BARCHA (shu amalga aloqasi yo'q boshqalarni
 // ham) ochiq popoverlarni yopib qo'yardi.
+// HAQIQIY TOPILGAN BUG #3 (courseDetail.js'dagi bilan AYNAN BIR XIL,
+// foydalanuvchi so'rovi 2026-09-12: "kursni boshqarishdagi har qaysi
+// knopkani bosib ish qilinganda '...' yopilib qolyapti") — bu sahifadagi
+// yuqori panel (".courses-top-bar" — "➕ Yangi Yo'nalish", "🗑️
+// O'chirilganlar") ham ".group-card" ICHIDA EMAS, xuddi shu sabab bilan
+// popover'larni yopib qo'yardi.
 document.addEventListener("click", (e) => {
-    if (e.target.closest(".group-card, .modal-overlay, .prompt-modal-overlay")) return;
+    if (e.target.closest(".group-card, .modal-overlay, .prompt-modal-overlay, .courses-top-bar")) return;
     document.querySelectorAll(".group-card-menu:not(.hidden)").forEach(el => {
         el.classList.add("hidden");
         closedFieldActionKeys.add(el.id.replace("fieldActionsExtra-", ""));
