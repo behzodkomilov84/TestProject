@@ -47,6 +47,18 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     @Query("select cs from CourseSection cs where cs.course.id = :courseId and lower(cs.title) = lower(:title) and cs.deletedAt is null")
     Optional<CourseSection> findByCourse_IdAndTitleIgnoreCase(@Param("courseId") Long courseId, @Param("title") String title);
 
+    // Aniq (=) moslik topilmaganda ISHLATILADIGAN ZAXIRA qidiruv
+    // (CourseService.bulkImportLessonsWithTests) — foydalanuvchi so'rovi,
+    // 2026-09-12: dars nomi endi fayl nomidan EMAS, balki hujjat
+    // matnining birinchi qatoridan olinadi (masalan fayl "0002.xlsx",
+    // lekin dars nomi "0002. Epidemik jarayonga..."). Fayl nomi odatda
+    // sarlavhaning boshidagi QISQA KOD bo'lgani uchun, shu kod bilan
+    // BOSHLANGAN darslarni qidiramiz — aniq "kod + chegara belgisi"
+    // tekshiruvi (masalan "0002" "00025..."ga mos kelib qolmasligi
+    // uchun) Java tomonida (CourseService) qilinadi.
+    @Query("select cs from CourseSection cs where cs.course.id = :courseId and lower(cs.title) like lower(concat(:codePrefix, '%')) and cs.deletedAt is null")
+    List<CourseSection> findByCourse_IdAndTitleStartingWithIgnoreCase(@Param("courseId") Long courseId, @Param("codePrefix") String codePrefix);
+
     @Query("select cs from CourseSection cs where cs.course.id = :courseId and cs.orderIndex = :orderIndex and cs.deletedAt is null")
     Optional<CourseSection> findByCourse_IdAndOrderIndex(@Param("courseId") Long courseId, @Param("orderIndex") int orderIndex);
 

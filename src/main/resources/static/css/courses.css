@@ -1500,6 +1500,83 @@ body {
     font-size: 13px;
 }
 
+/* "Qaysi darsga tegishli? Tanlang" — fayl nomi (kod) bir nechta darsga
+   mos kelib qolganda, foydalanuvchi to'g'risini tanlashi uchun
+   (foydalanuvchi so'rovi, 2026-09-12; showBulkImportResult/
+   resolveAmbiguousXlsx, courseDetail.js). */
+.bulk-import-ambiguous h4 {
+    margin: 0 0 6px;
+    font-size: 13px;
+}
+
+.bulk-import-ambiguous {
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.bulk-import-ambiguous-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #bfdbfe;
+}
+
+.bulk-import-ambiguous-item:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+}
+
+.bulk-import-ambiguous-code {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1e3a8a;
+    word-break: break-word;
+}
+
+.bulk-import-ambiguous-option {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #334155;
+    cursor: pointer;
+    word-break: break-word;
+}
+
+.bulk-import-ambiguous-item button {
+    align-self: flex-start;
+    background: #103F91;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.bulk-import-ambiguous-item button:hover {
+    background: #0c2f6e;
+}
+
+.bulk-import-ambiguous-item button:disabled {
+    background: #94a3b8;
+    cursor: default;
+}
+
+.bulk-import-ambiguous-status {
+    font-size: 12px;
+    font-weight: 600;
+    word-break: break-word;
+}
+
 .course-manage-panel {
     background: white;
     border-radius: 12px;

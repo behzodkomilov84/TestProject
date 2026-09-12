@@ -20,6 +20,12 @@ public record BulkLessonImportResultDto(
         int sectionsWithTests,
         long questionsImported,
         List<String> warnings,
-        List<String> errors
+        List<String> errors,
+        // Fayl nomi ("kod") bir nechta darsga mos kelib qolgan hollar —
+        // frontend shu ro'yxat asosida "to'g'risini tanlang" oynasini
+        // ko'rsatadi (foydalanuvchi so'rovi, 2026-09-12). Eski frontend
+        // buni e'tiborsiz qoldirsa ham, "errors" ro'yxatida odatdagi
+        // tushunarli xabar sifatida allaqachon bor.
+        List<AmbiguousTestFileDto> ambiguousXlsx
 ) {
 }

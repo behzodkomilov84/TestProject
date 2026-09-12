@@ -3032,6 +3032,10 @@ let bulkImportChapterId = null;
 let bulkImportModalOpen = false;
 let bulkImportPairs = []; // [{title, docxFile, xlsxFile}]
 let bulkImportNeedsReload = false;
+// Fayl nomi (kod) bir nechta darsga mos kelib qolgan hollar — backend
+// qaytargan "ambiguousXlsx" ro'yxati, resolveAmbiguousXlsx() shundan
+// o'qiydi (showBulkImportResult to'ldiradi).
+let bulkImportAmbiguousItems = [];
 
 function openBulkImportModal(chapterId, chapterName) {
     bulkImportChapterId = chapterId;
@@ -3189,6 +3193,9 @@ async function runBulkImport() {
     const progressText = document.getElementById("bulkImportProgressText");
     const items = [];
     const xlsxFiles = [];
+    // Fayl nomidan emas, DOCX MATNINING O'ZIDAN olingan sarlavhalar uchun —
+    // qisqartirilganda foydalanuvchiga bildirish (pastga qarang).
+    const clientWarnings = [];
 
     try {
         // .docx -> HTML konvertatsiyasi BRAUZERDA (mammoth.js) — bitta
@@ -3203,19 +3210,48 @@ async function runBulkImport() {
             // kerak). "html: null" backend'ga "bu yangi dars EMAS, faqat
             // mavjud darsga test biriktir" degan signal beradi.
             let html = null;
+            let docxParsedOk = false;
             if (pair.docxFile != null) {
                 try {
                     const arrayBuffer = await pair.docxFile.arrayBuffer();
                     const result = await mammoth.convertToHtml({ arrayBuffer });
                     html = result.value.replace(/<br\s*\/?>/gi, " ");
+                    docxParsedOk = true;
                 } catch (err) {
                     console.error(err);
                     html = `<p>⚠️ Bu darsning matnini o'qib bo'lmadi: ${escapeHtml(err.message)}</p>`;
                 }
             }
 
+            // HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi, 2026-09-12:
+            // "dars nomi 300+ belgi, lekin Word/Excel faylini bunaqa uzun
+            // nom bilan saqlab bo'lmaydi") — fayl nomi (pair.title) OS
+            // darajasida ~255 belgi bilan cheklangan, dars nomi
+            // (course_sections.title) esa endi 500 belgigacha ruxsat
+            // etilgan (course-section-title-length.sql). Shu sabab: agar
+            // .docx muvaffaqiyatli o'qilgan bo'lsa, dars nomi FAYL NOMIDAN
+            // EMAS, balki HUJJAT MATNINING BIRINCHI QATORI/paragrafidan
+            // olinadi — fayllarga endi qisqa nom (masalan "0001.docx" +
+            // "0001.xlsx") berish kifoya, TO'LIQ sarlavha esa hujjatning
+            // o'zida (birinchi qatorda) yoziladi. Fayl nomi faqat .docx/
+            // .xlsx juftligini bir-biriga BOG'LASH uchun ishlatilishda
+            // davom etadi. Agar hujjatdan birinchi qator topilmasa (bo'sh
+            // hujjat) — eski xulq-atvorga (fayl nomi) qaytiladi.
+            let title = pair.title;
+            if (docxParsedOk) {
+                const extractedTitle = extractFirstParagraphText(html);
+                if (extractedTitle) {
+                    if (extractedTitle.length > 500) {
+                        clientWarnings.push(`"${pair.title}" — hujjat matnidan olingan sarlavha 500 belgidan uzun edi, qisqartirib saqlandi.`);
+                        title = extractedTitle.slice(0, 500);
+                    } else {
+                        title = extractedTitle;
+                    }
+                }
+            }
+
             items.push({
-                title: pair.title,
+                title: title,
                 html: html,
                 xlsxFileName: pair.xlsxFile ? pair.xlsxFile.name : null
             });
@@ -3250,6 +3286,13 @@ async function runBulkImport() {
             return;
         }
 
+        // Fayl nomidan emas, hujjat matnidan olingan sarlavha 500 belgidan
+        // uzun bo'lgani uchun qisqartirilgan hollar (yuqoriga qarang) —
+        // backend natijasidagi ogohlantirishlar ro'yxatiga qo'shiladi.
+        if (clientWarnings.length) {
+            data.warnings = [...(data.warnings || []), ...clientWarnings];
+        }
+
         bulkImportNeedsReload = true;
         showBulkImportResult(data, null);
     } catch (err) {
@@ -3257,6 +3300,21 @@ async function runBulkImport() {
         document.getElementById("bulkImportProgressStep").classList.add("hidden");
         showBulkImportResult(null, "Tarmoq xatoligi: " + err.message);
     }
+}
+
+// Mammoth'dan kelgan HTML'dagi BIRINCHI matnli paragraf/sarlavha/ro'yxat
+// bandining oddiy (teglarsiz) matnini qaytaradi — runBulkImport'da dars
+// nomini FAYL NOMI o'rniga HUJJAT MATNIDAN olish uchun ishlatiladi
+// (yuqoridagi izohga qarang). Topilmasa (bo'sh hujjat) — null.
+function extractFirstParagraphText(html) {
+    const container = document.createElement("div");
+    container.innerHTML = html;
+    const candidates = container.querySelectorAll("p, h1, h2, h3, h4, h5, h6, li");
+    for (const el of candidates) {
+        const text = el.textContent.replace(/\s+/g, " ").trim();
+        if (text) return text;
+    }
+    return null;
 }
 
 function showBulkImportResult(data, fatalError) {
@@ -3281,11 +3339,87 @@ function showBulkImportResult(data, fatalError) {
                 data.errors.map(e => `<div class="bulk-import-warning-line">${escapeHtml(e)}</div>`).join("") + `</div>`;
         }
 
+        // Fayl nomi (kod) bir nechta darsga mos kelib qolgan hollar —
+        // foydalanuvchi so'rovi (2026-09-12): oddiy xato matni o'rniga,
+        // nomzod darslar RO'YXATINI ko'rsatib, to'g'risini tanlash imkonini
+        // berish, tanlanganidan keyin testni O'SHA darsga bog'lash.
+        bulkImportAmbiguousItems = (data.ambiguousXlsx && data.ambiguousXlsx.length) ? data.ambiguousXlsx : [];
+        if (bulkImportAmbiguousItems.length) {
+            html += `<div class="bulk-import-ambiguous"><h4>❓ Qaysi darsga tegishli? Tanlang</h4>` +
+                bulkImportAmbiguousItems.map((item, idx) => `
+                    <div class="bulk-import-ambiguous-item" id="bulkImportAmbiguous_${idx}">
+                        <div class="bulk-import-ambiguous-code">"${escapeHtml(item.code)}"${item.xlsxFileName ? " (" + escapeHtml(item.xlsxFileName) + ")" : ""} — mos darslar:</div>
+                        ${item.candidates.map((c, cIdx) => `
+                            <label class="bulk-import-ambiguous-option">
+                                <input type="radio" name="bulkImportAmbiguousChoice_${idx}" value="${cIdx}"${cIdx === 0 ? " checked" : ""}>
+                                ${escapeHtml(c.title)}
+                            </label>
+                        `).join("")}
+                        <button type="button" onclick="resolveAmbiguousXlsx(${idx})">✅ Tanlanganiga bog'lash</button>
+                        <span class="bulk-import-ambiguous-status" id="bulkImportAmbiguousStatus_${idx}"></span>
+                    </div>
+                `).join("") + `</div>`;
+        }
+
         resultEl.innerHTML = html;
     }
 
     resultEl.classList.remove("hidden");
     document.getElementById("bulkImportCloseBtn").classList.remove("hidden");
+}
+
+// Foydalanuvchi "❓ Qaysi darsga tegishli? Tanlang" ro'yxatidan bittasini
+// belgilab, "✅ Tanlanganiga bog'lash"ni bosganda — xlsx fayl (hali
+// brauzer xotirasida, "bulkImportPairs" ichida) TANLANGAN darsning ANIQ
+// (to'liq) nomi bilan qayta yuboriladi — bu safar backend'dagi ANIQ
+// moslik (findByCourse_IdAndTitleIgnoreCase) darhol topadi (foydalanuvchi
+// so'rovi, 2026-09-12).
+async function resolveAmbiguousXlsx(idx) {
+    const item = bulkImportAmbiguousItems[idx];
+    const statusEl = document.getElementById(`bulkImportAmbiguousStatus_${idx}`);
+    if (!item || !statusEl) return;
+
+    const selectedRadio = document.querySelector(`input[name="bulkImportAmbiguousChoice_${idx}"]:checked`);
+    if (!selectedRadio) return;
+    const candidate = item.candidates[Number(selectedRadio.value)];
+
+    // "pair.title" — shu elementning ASL (qisqa) nomi, xuddi shu nom
+    // bilan yuborilgani uchun ("item.code") aniq moslashadi.
+    const pair = bulkImportPairs.find(p => p.title === item.code && p.xlsxFile);
+    if (!pair) {
+        statusEl.textContent = "❌ Fayl topilmadi — oyna yopilgan/qayta ochilgan bo'lishi mumkin, qaytadan import qiling.";
+        return;
+    }
+
+    const itemEl = document.getElementById(`bulkImportAmbiguous_${idx}`);
+    itemEl.querySelectorAll("button, input").forEach(el => el.disabled = true);
+    statusEl.textContent = "⏳ Bog'lanmoqda...";
+
+    try {
+        const formData = new FormData();
+        formData.append("items", new Blob([JSON.stringify([
+            { title: candidate.title, html: null, xlsxFileName: item.xlsxFileName }
+        ])], { type: "application/json" }));
+        formData.append("xlsxFiles", pair.xlsxFile, item.xlsxFileName);
+
+        const bulkImportUrl = `/api/courses/${COURSE_ID}/sections/bulk-import` +
+            (bulkImportChapterId != null ? `?chapterId=${bulkImportChapterId}` : "");
+
+        const res = await fetch(bulkImportUrl, { method: "POST", body: formData });
+        const result = await res.json().catch(() => ({}));
+
+        if (res.ok && result.questionsImported > 0) {
+            statusEl.textContent = `✅ "${candidate.title}" darsiga bog'landi (${result.questionsImported} ta savol import qilindi).`;
+            bulkImportNeedsReload = true;
+        } else {
+            const msg = (result.errors && result.errors[0]) || (result.warnings && result.warnings[0]) || result.error || "Noma'lum xatolik.";
+            statusEl.textContent = "❌ " + msg;
+            itemEl.querySelectorAll("button, input").forEach(el => el.disabled = false);
+        }
+    } catch (err) {
+        statusEl.textContent = "❌ Tarmoq xatoligi: " + err.message;
+        itemEl.querySelectorAll("button, input").forEach(el => el.disabled = false);
+    }
 }
 
 // "Testlar" o'chirilsa — "Test javoblari" ma'nosiz bo'lib qoladi

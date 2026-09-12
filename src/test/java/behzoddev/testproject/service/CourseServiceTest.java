@@ -1382,6 +1382,120 @@ class CourseServiceTest {
         assertThat(result.errors()).hasSize(1);
     }
 
+    // HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi, 2026-09-12: "aytaylik
+    // faqat ... excel fayllarni o'zini yuklash kerak bo'lib qoladi") — dars
+    // nomi endi FAYL NOMIDAN emas, balki hujjat matnining birinchi
+    // qatoridan olinadi (courseDetail.js#extractFirstParagraphText). Ya'ni
+    // yolg'iz .xlsx (fayl nomi — masalan "0002") yuborilganda ANIQ moslik
+    // topilmaydi, chunki haqiqiy dars nomi "0002. Epidemik jarayonga..."
+    // kabi ancha uzunroq. Fayl nomi shu uzun nomning BOSHIDAGI qisqa kodi
+    // bo'lgani uchun, bu holatda prefiks (kod bilan boshlanuvchi) bo'yicha
+    // topib, testni O'SHA darsga biriktirishi kerak.
+    @Test
+    void bulkImportLessonsWithTests_xlsxOnlyWithShortCodeTitle_matchesExistingLongTitleByPrefix_importsTests() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter chapter = testChapter(course);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findById(7L)).thenReturn(Optional.of(chapter));
+
+        behzoddev.testproject.entity.Science science =
+                behzoddev.testproject.entity.Science.builder().id(10L).name("Kurs").build();
+        behzoddev.testproject.entity.Topic topic = behzoddev.testproject.entity.Topic.builder()
+                .id(20L).name("0002. Epidemik jarayonga oid uzun sarlavha matni").science(science).build();
+        CourseSection existingSection = CourseSection.builder()
+                .id(100L).course(course)
+                .title("0002. Epidemik jarayonga oid uzun sarlavha matni")
+                .linkedTopic(topic).build();
+
+        // "0002" bo'yicha ANIQ moslik yo'q (findByCourse_IdAndTitleIgnoreCase —
+        // Mockito standart bo'yicha Optional.empty() qaytaradi) — faqat shu
+        // kod bilan BOSHLANGAN, ancha uzunroq nomli dars mavjud.
+        when(courseSectionRepository.findByCourse_IdAndTitleStartingWithIgnoreCase(1L, "0002"))
+                .thenReturn(List.of(existingSection));
+
+        MockMultipartFile xlsx = new MockMultipartFile("xlsxFiles", "0002.xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new byte[]{1, 2, 3});
+        User currentUser = owner();
+        when(excelService.importQuestions(xlsx, 20L, currentUser))
+                .thenReturn(new ImportResultDto(true, 5L, List.of()));
+
+        // "html: null" — bu FAQAT test (.xlsx) elementi, fayl nomi "0002"
+        // (mos .docx SHU importda yo'q).
+        List<LessonImportItemDto> items = List.of(new LessonImportItemDto("0002", null, "0002.xlsx"));
+
+        BulkLessonImportResultDto result = courseService.bulkImportLessonsWithTests(
+                1L, 7L, items, List.of(xlsx), currentUser);
+
+        assertThat(result.sectionsCreated()).isZero();
+        assertThat(result.sectionsWithTests()).isEqualTo(1);
+        assertThat(result.questionsImported()).isEqualTo(5L);
+        assertThat(result.errors()).isEmpty();
+    }
+
+    // Ikki (yoki undan ko'p) dars bir xil kod bilan boshlansa — tizim
+    // TAXMIN QILMAYDI, aniq xato bilan o'tkazib yuboradi (foydalanuvchi
+    // dars nomini aniqroq qilishi kerakligini bildiradi).
+    @Test
+    void bulkImportLessonsWithTests_xlsxOnlyWithAmbiguousCodePrefix_reportsErrorWithoutGuessing() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter chapter = testChapter(course);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findById(7L)).thenReturn(Optional.of(chapter));
+
+        CourseSection match1 = CourseSection.builder().id(101L).course(course)
+                .title("0002. Birinchi savol matni").build();
+        CourseSection match2 = CourseSection.builder().id(102L).course(course)
+                .title("0002. Ikkinchi savol matni").build();
+        when(courseSectionRepository.findByCourse_IdAndTitleStartingWithIgnoreCase(1L, "0002"))
+                .thenReturn(List.of(match1, match2));
+
+        List<LessonImportItemDto> items = List.of(new LessonImportItemDto("0002", null, "0002.xlsx"));
+
+        BulkLessonImportResultDto result = courseService.bulkImportLessonsWithTests(
+                1L, 7L, items, List.of(), owner());
+
+        assertThat(result.errors()).hasSize(1);
+        assertThat(result.errors().get(0)).contains("0002").contains("noaniq");
+        org.mockito.Mockito.verifyNoInteractions(excelService);
+
+        // Foydalanuvchi so'rovi (2026-09-12): oddiy xato matni bilan bir
+        // qatorda, nomzod darslar RO'YXATI ham qaytishi kerak — frontend
+        // shu asosda "to'g'risini tanlang" oynasini ko'rsatadi.
+        assertThat(result.ambiguousXlsx()).hasSize(1);
+        behzoddev.testproject.dto.course.AmbiguousTestFileDto ambiguous = result.ambiguousXlsx().get(0);
+        assertThat(ambiguous.code()).isEqualTo("0002");
+        assertThat(ambiguous.xlsxFileName()).isEqualTo("0002.xlsx");
+        assertThat(ambiguous.candidates()).extracting("sectionId", "title")
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple(101L, "0002. Birinchi savol matni"),
+                        org.assertj.core.groups.Tuple.tuple(102L, "0002. Ikkinchi savol matni"));
+    }
+
+    // "0002" kodi "00025-dars" kabi ALOQASIZ, faqat raqamlari mos keladigan
+    // nomga NOTO'G'RI mos kelib qolmasligi kerak (kod darhol harf/raqam
+    // BO'LMAGAN belgi bilan davom etishi shart).
+    @Test
+    void bulkImportLessonsWithTests_xlsxOnlyCodeNotFollowedByDelimiter_doesNotFalselyMatch() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter chapter = testChapter(course);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findById(7L)).thenReturn(Optional.of(chapter));
+
+        CourseSection unrelated = CourseSection.builder().id(103L).course(course)
+                .title("00025-dars uchun savol").build();
+        when(courseSectionRepository.findByCourse_IdAndTitleStartingWithIgnoreCase(1L, "0002"))
+                .thenReturn(List.of(unrelated));
+
+        List<LessonImportItemDto> items = List.of(new LessonImportItemDto("0002", null, "0002.xlsx"));
+
+        BulkLessonImportResultDto result = courseService.bulkImportLessonsWithTests(
+                1L, 7L, items, List.of(), owner());
+
+        assertThat(result.errors()).hasSize(1);
+        assertThat(result.errors().get(0)).contains("topilmadi");
+        org.mockito.Mockito.verifyNoInteractions(excelService);
+    }
+
     // ===== reorderSections: yuqoriga/pastga ko'chirish va A-Z/Z-A saralash =====
 
     @Test

@@ -822,6 +822,7 @@ public class CourseService {
         long questionsImported = 0;
         List<String> warnings = new ArrayList<>();
         List<String> errors = new ArrayList<>();
+        List<AmbiguousTestFileDto> ambiguousXlsx = new ArrayList<>();
 
         // Dars/Mavzu yaratish (yoki mavjudiga bog'lash) har bir element
         // uchun shu bilan DARHOL, alohida commit qilinadi — pastdagi
@@ -851,10 +852,50 @@ public class CourseService {
             if (!hasDocxContent) {
                 Optional<CourseSection> existingForTests = courseSectionRepository
                         .findByCourse_IdAndTitleIgnoreCase(courseId, title);
+
+                // HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi,
+                // 2026-09-12): dars nomi endi FAYL NOMIDAN emas, balki
+                // hujjat matnining birinchi qatoridan olinadi (courseDetail.js
+                // #extractFirstParagraphText) — ya'ni faqat .xlsx (fayl nomi,
+                // masalan "0002") yuborilganda ANIQ moslik topilmay qoladi,
+                // chunki haqiqiy dars nomi "0002. Epidemik jarayonga..." kabi
+                // ancha uzunroq. Fayl nomi odatda shu uzun nomning BOSHIDAGI
+                // qisqa kodi bo'lgani uchun, aniq moslik topilmasa — kod
+                // bilan BOSHLANGAN (va undan keyin harf/raqam kelmaydigan —
+                // "0002" "00025..."ga mos kelib qolmasligi uchun) bitta
+                // darsni qidiramiz.
+                if (existingForTests.isEmpty()) {
+                    final String code = title;
+                    List<CourseSection> prefixMatches = courseSectionRepository
+                            .findByCourse_IdAndTitleStartingWithIgnoreCase(courseId, code).stream()
+                            .filter(cs -> isTitlePrefixedByCode(cs.getTitle(), code))
+                            .toList();
+                    if (prefixMatches.size() == 1) {
+                        existingForTests = Optional.of(prefixMatches.get(0));
+                    } else if (prefixMatches.size() > 1) {
+                        errors.add("\"" + title + "\" bilan boshlanadigan " + prefixMatches.size() +
+                                " ta dars topildi — qaysi biriga tegishli ekani noaniq, test o'tkazib yuborildi (pastdagi ro'yxatdan to'g'risini tanlang).");
+                        // Foydalanuvchi so'rovi (2026-09-12): oddiy xato
+                        // matni o'rniga — nomzodlar RO'YXATINI qaytarish,
+                        // frontend shu asosda tanlov oynasini ko'rsatadi
+                        // (courseDetail.js#showBulkImportResult).
+                        ambiguousXlsx.add(new AmbiguousTestFileDto(
+                                title,
+                                item.xlsxFileName(),
+                                prefixMatches.stream()
+                                        .map(cs -> new SectionCandidateDto(cs.getId(), cs.getTitle()))
+                                        .toList()));
+                        continue;
+                    }
+                }
+
                 if (existingForTests.isEmpty()) {
                     errors.add("\"" + title + "\" — bu nomdagi dars kursda topilmadi (avval shu nomdagi .docx faylni import qiling), test o'tkazib yuborildi.");
                     continue;
                 }
+                // Xabarlarda TO'LIQ (topilgan) nom ko'rinishi uchun — "0002"
+                // o'rniga "0002. Epidemik jarayonga..." kabi.
+                title = existingForTests.get().getTitle();
                 MultipartFile xlsxOnly = item.xlsxFileName() != null ? xlsxByName.get(item.xlsxFileName()) : null;
                 if (xlsxOnly == null || xlsxOnly.isEmpty()) {
                     warnings.add("\"" + title + "\" — test fayli topilmadi, o'tkazib yuborildi.");
@@ -957,6 +998,7 @@ public class CourseService {
                 .questionsImported(questionsImported)
                 .warnings(warnings)
                 .errors(errors)
+                .ambiguousXlsx(ambiguousXlsx)
                 .build();
     }
 
@@ -1136,6 +1178,27 @@ public class CourseService {
     // TEST BOSHQARUVIdagi dars ham "Mavzusiz"ga qaytariladi — ikki
     // tomon HAR DOIM to'liq mos kelishi kerak (foydalanuvchi so'rovi
     // bo'yicha: "kursdagi holatga qarab TEST BOSHQARUVI to'g'rilansin").
+    // "code" (masalan fayl nomidan olingan "0002") "fullTitle"ning ("0002.
+    // Epidemik jarayonga...") ANIQ boshi ekanini, va undan keyingi belgi
+    // harf/raqam EMASLIGINI tekshiradi — bulkImportLessonsWithTests'dagi
+    // yolg'iz .xlsx (mos .docx SHU importda yo'q) elementini ALLAQACHON
+    // mavjud, uzunroq nomli darsga bog'lash uchun (2026-09-12, yuqoridagi
+    // izohga qarang). Bu tekshiruv "0002" kodi "00025-dars" kabi boshqa,
+    // aloqasiz nomga NOTO'G'RI mos kelib qolishining oldini oladi.
+    private boolean isTitlePrefixedByCode(String fullTitle, String code) {
+        if (fullTitle == null || code == null || code.isEmpty()) {
+            return false;
+        }
+        if (!fullTitle.toLowerCase().startsWith(code.toLowerCase())) {
+            return false;
+        }
+        if (fullTitle.length() == code.length()) {
+            return true;
+        }
+        char next = fullTitle.charAt(code.length());
+        return !Character.isLetterOrDigit(next);
+    }
+
     private Topic resolveLinkedTopic(String scienceName, String topicName, CourseChapter chapter) {
         if (scienceName == null || scienceName.isBlank() || topicName == null || topicName.isBlank()) {
             return null;
