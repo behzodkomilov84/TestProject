@@ -18,8 +18,11 @@ import behzoddev.testproject.dto.course.CourseSaveDto;
 import behzoddev.testproject.dto.course.CourseSectionContentDto;
 import behzoddev.testproject.dto.course.CourseSectionSaveDto;
 import behzoddev.testproject.dto.course.CourseSectionSummaryDto;
+import behzoddev.testproject.dto.course.CourseQuestionDto;
 import behzoddev.testproject.dto.course.LessonImportItemDto;
+import behzoddev.testproject.dto.course.TopicLinkAuditDto;
 import behzoddev.testproject.dto.excel.ImportResultDto;
+import behzoddev.testproject.dto.question.QuestionDto;
 import behzoddev.testproject.entity.Answer;
 import behzoddev.testproject.entity.Course;
 import behzoddev.testproject.entity.CourseChapter;
@@ -33,6 +36,7 @@ import behzoddev.testproject.entity.TopicSection;
 import behzoddev.testproject.entity.User;
 import behzoddev.testproject.entity.enums.CourseSectionType;
 import behzoddev.testproject.entity.enums.CourseSubscriptionStatus;
+import behzoddev.testproject.mapper.QuestionMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -84,6 +88,8 @@ class CourseServiceTest {
     private TopicSectionRepository topicSectionRepository;
     @Mock
     private QuestionRepository questionRepository;
+    @Mock
+    private QuestionMapper questionMapper;
     @Mock
     private ExcelService excelService;
     // bulkImportLessonsWithTests() ichida REQUIRES_NEW (TransactionTemplate)
@@ -1719,5 +1725,81 @@ class CourseServiceTest {
         assertThat(result).contains("href=\"/courses/2/sections/2\"");
         assertThat(result).contains("Kislorod elementi haqida.");
         assertThat(result).doesNotContain("📖  <span");
+    }
+
+    // ===== getQuestionsForCourse / auditTopicLinks — o'z-o'zini audit,
+    // 2026-09-12: "qolib ketgan ishlar bormi?" so'roviga javoban topilgan
+    // HAQIQIY BUG — dedupeTopicLinksInCourse'dagi BILAN AYNAN BIR XIL N+1
+    // (har dars uchun alohida getQuestionsByTopicId + har savol uchun LAZY
+    // getAnswers()) katta kursda nginx 504 xatosiga olib kelishi muqarrar
+    // edi, lekin bu ikkala metod uchun hech qanday test yo'q edi. Endi
+    // bulk so'rov (findRandomQuestionsByTopicIds) ishlatilishini VA
+    // natija to'g'ri dars/mavzuga bog'lanishini tasdiqlaydi. =====
+
+    @Test
+    void getQuestionsForCourse_mergesQuestionsAcrossSections_usingBulkQuery() {
+        User owner = owner();
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner).build();
+
+        Topic topic1 = Topic.builder().id(10L).name("1-mavzu").build();
+        CourseSection section1 = CourseSection.builder().id(100L).course(course).linkedTopic(topic1).orderIndex(1).title("1-dars").build();
+
+        Topic topic2 = Topic.builder().id(20L).name("2-mavzu").build();
+        CourseSection section2 = CourseSection.builder().id(200L).course(course).linkedTopic(topic2).orderIndex(2).title("2-dars").build();
+
+        Question q1 = Question.builder().id(1L).questionText("1-savol").topic(topic1).build();
+        Question q2 = Question.builder().id(2L).questionText("2-savol").topic(topic2).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findByCourse_IdAndLinkedTopicIsNotNull(1L)).thenReturn(List.of(section1, section2));
+        when(questionRepository.findRandomQuestionsByTopicIds(List.of(10L, 20L))).thenReturn(List.of(q1, q2));
+        when(questionMapper.mapQuestiontoQuestionDto(q1)).thenReturn(QuestionDto.builder().id(1L).questionText("1-savol").build());
+        when(questionMapper.mapQuestiontoQuestionDto(q2)).thenReturn(QuestionDto.builder().id(2L).questionText("2-savol").build());
+
+        List<CourseQuestionDto> result = courseService.getQuestionsForCourse(1L, owner);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).courseSectionId()).isEqualTo(100L);
+        assertThat(result.get(0).courseSectionTitle()).isEqualTo("1-dars");
+        assertThat(result.get(0).topicId()).isEqualTo(10L);
+        assertThat(result.get(1).courseSectionId()).isEqualTo(200L);
+        assertThat(result.get(1).topicId()).isEqualTo(20L);
+        org.mockito.Mockito.verify(questionRepository, org.mockito.Mockito.never()).getQuestionsByTopicId(org.mockito.ArgumentMatchers.anyLong());
+    }
+
+    @Test
+    void auditTopicLinks_mergesGroupedQuestionsAcrossSections_usingBulkQuery() {
+        User owner = owner();
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner).build();
+
+        Topic topic1 = Topic.builder().id(10L).name("1-mavzu").build();
+        CourseSection section1 = CourseSection.builder().id(100L).course(course).linkedTopic(topic1).orderIndex(1).build();
+
+        Topic topic2 = Topic.builder().id(20L).name("2-mavzu").build();
+        CourseSection section2 = CourseSection.builder().id(200L).course(course).linkedTopic(topic2).orderIndex(2).build();
+
+        // 1-darsning to'g'ri javobi ALLAQACHON to'g'ri bog'langan — "ok".
+        Answer a1 = Answer.builder().id(1L).answerText("Ha").isTrue(true)
+                .commentary(" <span>...<a href=\"/courses/1/sections/100\">...</a></span>").build();
+        Question q1 = Question.builder().id(1L).questionText("1-savol").topic(topic1).answers(List.of(a1)).build();
+
+        // 2-darsning to'g'ri javobida HECH QANDAY havola yo'q — "missing".
+        Answer a2 = Answer.builder().id(2L).answerText("Ha").isTrue(true).commentary(null).build();
+        Question q2 = Question.builder().id(2L).questionText("2-savol").topic(topic2).answers(List.of(a2)).build();
+
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseSectionRepository.findByCourse_IdAndLinkedTopicIsNotNull(1L)).thenReturn(List.of(section1, section2));
+        when(questionRepository.findRandomQuestionsByTopicIds(List.of(10L, 20L))).thenReturn(List.of(q1, q2));
+
+        List<TopicLinkAuditDto> result = courseService.auditTopicLinks(1L, owner);
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).topicId()).isEqualTo(10L);
+        assertThat(result.get(0).okCount()).isEqualTo(1);
+        assertThat(result.get(0).missingCount()).isEqualTo(0);
+        assertThat(result.get(1).topicId()).isEqualTo(20L);
+        assertThat(result.get(1).okCount()).isEqualTo(0);
+        assertThat(result.get(1).missingCount()).isEqualTo(1);
+        org.mockito.Mockito.verify(questionRepository, org.mockito.Mockito.never()).getQuestionsByTopicId(org.mockito.ArgumentMatchers.anyLong());
     }
 }

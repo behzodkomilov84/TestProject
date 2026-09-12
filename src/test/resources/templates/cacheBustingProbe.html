@@ -1,0 +1,9 @@
+<!-- FAQAT TEST UCHUN — TestApplicationTests#cacheBustedAssetExpression_evaluatesToNumericTimestamp.
+     courseDetail.html/coursesCatalog.html'dagi bilan AYNAN BIR XIL SpringEL
+     ifodasini (config/AppBuildInfo.java) ANIQ shu ikkita atributda ishlatadi
+     — navbar fragment (Spring Security dialekti) kabi bog'liqliklarsiz,
+     FAQAT ifodaning o'zi to'g'ri (xatosiz) ekanini tekshirish uchun. -->
+<div th:fragment="probe">
+    <link rel="stylesheet" th:href="@{/css/courses.css(v=${T(behzoddev.testproject.config.AppBuildInfo).STARTED_AT})}"/>
+    <script th:src="@{/js/courseDetail.js(v=${T(behzoddev.testproject.config.AppBuildInfo).STARTED_AT})}"></script>
+</div>

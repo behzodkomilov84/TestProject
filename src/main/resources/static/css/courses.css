@@ -2311,6 +2311,19 @@ body {
     transform: translate(-50%, 0);
 }
 
+/* "Always on top" (foydalanuvchi so'rovi, 2026-09-12: "to'liq
+   ko'rinmayapti, balki always on top qilsang ko'rinar") — .group-card-
+   menu'dagi bilan bir xil sabab: ".section-item"ning o'zida z-index
+   YO'Q edi (faqat position:relative), shu sabab uning "::after"
+   pufakchasi (z-index:30 bo'lsa ham) DOM'da KEYINROQ keladigan QO'SHNI
+   kartaning (o'zi z-index'siz, lekin oddiy oqim tartibida "ustida"
+   qoladigan) ustiga chiqa olmasligi mumkin edi. Endi pufakcha OCHIQ
+   turgan kartaning O'ZI ham z-index bilan ko'tariladi — butun karta
+   (pufakchasi bilan birga) qo'shnilaridan albatta USTUN turadi. */
+.section-item.kbd-hint-open {
+    z-index: 40;
+}
+
 /* HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "yo'nalish
    yorliqlari haliyam ko'rinmayapti", ekran surati bilan) — karta
    sahifaning yuqori qismida (masalan ro'yxatning birinchi qatorida)
@@ -2363,6 +2376,13 @@ body {
 .course-card.kbd-hint-open::after {
     opacity: 1;
     transform: translate(-50%, 0);
+}
+
+/* ".section-item.kbd-hint-open" BILAN AYNAN BIR XIL (yuqorida) — "Always
+   on top" (foydalanuvchi so'rovi, 2026-09-12: "always on top qilsang
+   ko'rinar"). */
+.course-card.kbd-hint-open {
+    z-index: 40;
 }
 
 /* ".section-item.kbd-hint-flip-down" BILAN AYNAN BIR XIL (yuqorida) —

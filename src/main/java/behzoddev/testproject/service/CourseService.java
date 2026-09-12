@@ -647,6 +647,19 @@ public class CourseService {
     // o'zi yaratgani) qo'llaniladi, xuddi CourseWordExportService'dagi
     // kabi. Har bir savol qaysi DARSGA (CourseSection) tegishli ekanini
     // ham qaytaradi, tartib — dars tartib raqami bo'yicha.
+    // HAQIQIY TOPILGAN BUG (o'z-o'zini audit, 2026-09-12: "qolib ketgan
+    // ishlar bormi?" so'roviga javoban topilgan — auditTopicLinks/
+    // dedupeTopicLinksInCourse'dagi BILAN AYNAN BIR XIL sabab, lekin
+    // hali HECH KIM shikoyat qilmagan, chunki katta kursda "📊 Barcha
+    // savollarni ko'rish" hali sinalmagan bo'lishi mumkin) — ilgari har
+    // bir bog'langan dars uchun ALOHIDA `getQuestionsByTopicId` so'rovi
+    // + har bir savol uchun `questionMapper` orqali LAZY `getAnswers()`
+    // chaqirilardi (QuestionDto'da "answers" maydoni bor). Katta kursda
+    // (masalan 149 ta dars, 1490 ta savol) bu MINGLAB so'rovga aylanib,
+    // "Takroriy havolalarni tozalash"dagi bilan bir xil nginx 504
+    // xatosini berishi MUQARRAR edi. Endi BARCHA savollar BITTA bulk
+    // so'rovda (`findRandomQuestionsByTopicIds`, "left join fetch
+    // answers" bilan) olinadi.
     @Transactional(readOnly = true)
     public List<CourseQuestionDto> getQuestionsForCourse(Long courseId, User currentUser) {
         requireManageableCourse(courseId, currentUser);
@@ -657,12 +670,16 @@ public class CourseService {
                 .sorted(Comparator.comparingInt(CourseSection::getOrderIndex))
                 .toList();
 
+        if (linkedSections.isEmpty()) return List.of();
+
+        Map<Long, CourseSection> sectionByTopicId = sectionsByTopicId(linkedSections);
+        Map<Long, List<Question>> questionsByTopicId = groupQuestionsByTopicId(
+                questionRepository.findRandomQuestionsByTopicIds(new ArrayList<>(sectionByTopicId.keySet())));
+
         List<CourseQuestionDto> result = new ArrayList<>();
         for (CourseSection section : linkedSections) {
             Topic topic = section.getLinkedTopic();
-            List<Question> questions = questionRepository.getQuestionsByTopicId(topic.getId());
-
-            for (Question question : questions) {
+            for (Question question : questionsByTopicId.getOrDefault(topic.getId(), List.of())) {
                 result.add(new CourseQuestionDto(
                         questionMapper.mapQuestiontoQuestionDto(question),
                         section.getId(),
@@ -673,6 +690,19 @@ public class CourseService {
         }
 
         return result;
+    }
+
+    // fixAllWrongTopicLinksInCourse/dedupeTopicLinksInCourse/
+    // addAllMissingTopicLinksInCourse/auditTopicLinks/getQuestionsForCourse
+    // — barchasi BULK olingan savollarni (findRandomQuestionsByTopicIds)
+    // qaytadan topicId bo'yicha guruhlash uchun shu umumiy yordamchidan
+    // foydalanadi.
+    private Map<Long, List<Question>> groupQuestionsByTopicId(List<Question> questions) {
+        Map<Long, List<Question>> map = new LinkedHashMap<>();
+        for (Question q : questions) {
+            map.computeIfAbsent(q.getTopic().getId(), k -> new ArrayList<>()).add(q);
+        }
+        return map;
     }
 
     @Transactional
@@ -1689,18 +1719,31 @@ public class CourseService {
     // so'rovi, 2026-09-08: "ROLE_ADMIN o'zi yaratmagan hech qaysi joyda...
     // o'zgartirish qila olmasin" — bu yerda haqiqiy topilgan bo'shliq edi,
     // boshqa BARCHA kurs endpoint'lari allaqachon shu tekshiruvni qo'llardi).
+    // HAQIQIY TOPILGAN BUG (o'z-o'zini audit, 2026-09-12: "qolib ketgan
+    // ishlar bormi?" so'roviga javoban topilgan) — bu metod aslida ENG
+    // KO'P chaqiriladigan (har safar "🔗 Havolalarni tekshirish" paneli
+    // ochilganda, "🧹 Takroriy havolalarni tozalash"dan OLDIN ham) va
+    // dedupeTopicLinksInCourse/fixAllWrongTopicLinksInCourse'dagi BILAN
+    // AYNAN BIR XIL N+1 xatosiga ega edi (har dars uchun alohida
+    // getQuestionsByTopicId + har savol uchun LAZY getAnswers()). Endi
+    // BARCHA savollar bulk olinadi (findRandomQuestionsByTopicIds).
     @Transactional(readOnly = true)
     public List<TopicLinkAuditDto> auditTopicLinks(Long courseId, User currentUser) {
         requireManageableCourse(courseId, currentUser);
 
         List<CourseSection> linkedSections = courseSectionRepository.findByCourse_IdAndLinkedTopicIsNotNull(courseId);
+        if (linkedSections.isEmpty()) return List.of();
+
+        Map<Long, CourseSection> sectionByTopicId = sectionsByTopicId(linkedSections);
+        Map<Long, List<Question>> questionsByTopicId = groupQuestionsByTopicId(
+                questionRepository.findRandomQuestionsByTopicIds(new ArrayList<>(sectionByTopicId.keySet())));
 
         List<TopicLinkAuditDto> result = new ArrayList<>();
         for (CourseSection section : linkedSections) {
             Topic topic = section.getLinkedTopic();
             String expectedHref = "/courses/" + courseId + "/sections/" + section.getId();
 
-            List<Question> questions = questionRepository.getQuestionsByTopicId(topic.getId());
+            List<Question> questions = questionsByTopicId.getOrDefault(topic.getId(), List.of());
 
             int ok = 0;
             int missing = 0;

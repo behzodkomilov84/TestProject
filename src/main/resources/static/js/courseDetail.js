@@ -2128,8 +2128,19 @@ function toggleChapterActions(key) {
 // uning burchagi) bilan — sarlavhaga (yoki kartaning boshqa qismiga)
 // bosish endi popover'ni yopmaydi, faqat HAQIQATAN boshqa kartaga yoki
 // sahifaning butunlay boshqa qismiga bosilganda yopiladi.
+// HAQIQIY TOPILGAN BUG #2 (foydalanuvchi so'rovi, 2026-09-12: "action
+// bo'yicha har qanday ish qilgandan keyin hammasi yopilib qolyapti") —
+// deyarli har bir amal (✏️ nomini o'zgartirish, 🗑️ o'chirish, ⬆⬇ surish)
+// "showConfirmModal"/"showPromptModal" (promptModal.js, ".prompt-modal-
+// overlay") orqali tasdiq so'raydi — bu modal ".group-card" ICHIDA EMAS
+// (butunlay boshqa, sahifa ustidagi overlay), shu sabab foydalanuvchi
+// modaldagi "Ha"/"OK" tugmasini bosganda, bu handler buni "tashqariga
+// bosildi" deb hisoblab, SAHIFADAGI BARCHA (shu amalga aloqasi yo'q
+// boshqa kartalardagi ham) ochiq popoverlarni yopib qo'yardi. Endi
+// ".modal-overlay"/".prompt-modal-overlay" ICHIDAGI bosishlar HAM
+// e'tiborga olinmaydi.
 document.addEventListener("click", (e) => {
-    if (e.target.closest(".group-card")) return;
+    if (e.target.closest(".group-card, .modal-overlay, .prompt-modal-overlay")) return;
     document.querySelectorAll(".group-card-menu:not(.hidden)").forEach(el => {
         el.classList.add("hidden");
         closedChapterActionKeys.add(el.id.replace("chapterActionsExtra-", ""));

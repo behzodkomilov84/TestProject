@@ -7,7 +7,13 @@
 
     <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="/css/navbar.css">
-    <link rel="stylesheet" href="/css/courses.css">
+    <!-- "th:href" + "?v=" — HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi,
+         2026-09-12: "guruhlash + checkbox qo'shildi debsan, lekin frontda
+         ko'rinmayapti") — brauzer versiyalanmagan statik faylni ESKI
+         holatda keshdan ishlatib turardi (config/AppBuildInfo.java'ga
+         qarang). Har bir deploy'da (JVM qayta ishga tushganda) YANGI
+         qiymat — brauzer albatta yangi faylni yuklaydi. -->
+    <link rel="stylesheet" th:href="@{/css/courses.css(v=${T(behzoddev.testproject.config.AppBuildInfo).STARTED_AT})}">
     <link rel="stylesheet" href="/css/topic-explanation-search.css">
     <!-- country-picker.css/js va profile-gate.js ENDI navbar.html
          fragment'ining o'zida ulanadi (barcha sahifada, faqat shu yerda
@@ -23,7 +29,9 @@
          qalin/kursiv, sarlavhalar, ro'yxatlar — saqlangan holda), dars
          matnini fayldan import qilishda ishlatiladi. -->
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script>
-    <script src="/js/courseDetail.js" defer></script>
+    <!-- "th:src" + "?v=" — yuqoridagi "courses.css"dagi bilan bir xil
+         cache-busting sabab. -->
+    <script th:src="@{/js/courseDetail.js(v=${T(behzoddev.testproject.config.AppBuildInfo).STARTED_AT})}" defer></script>
     <script src="/js/navbar.js" defer></script>
 </head>
 

@@ -565,8 +565,15 @@ function toggleFieldActions(key) {
 // "event.stopPropagation()"siz) SINXRON qayta render qilib, YANGI
 // (default OCHIQ) popover'larni O'SHA BIR XIL bosish document'gacha
 // ko'tarilganda DARHOL yopib qo'yardi. Endi butun ".group-card" bilan.
+// HAQIQIY TOPILGAN BUG #2 (foydalanuvchi so'rovi, 2026-09-12: "action
+// bo'yicha har qanday ish qilgandan keyin hammasi yopilib qolyapti") —
+// deyarli har bir amal tasdiq uchun ".modal-overlay"/".prompt-modal-
+// overlay" (promptModal.js) ochadi — bu overlay ".group-card" ICHIDA
+// EMAS, shu sabab modaldagi "Ha"/"OK" tugmasini bosish "tashqariga
+// bosildi" deb hisoblanib, BARCHA (shu amalga aloqasi yo'q boshqalarni
+// ham) ochiq popoverlarni yopib qo'yardi.
 document.addEventListener("click", (e) => {
-    if (e.target.closest(".group-card")) return;
+    if (e.target.closest(".group-card, .modal-overlay, .prompt-modal-overlay")) return;
     document.querySelectorAll(".group-card-menu:not(.hidden)").forEach(el => {
         el.classList.add("hidden");
         closedFieldActionKeys.add(el.id.replace("fieldActionsExtra-", ""));

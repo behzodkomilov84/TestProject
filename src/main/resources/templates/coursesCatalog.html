@@ -7,9 +7,13 @@
 
     <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="/css/navbar.css">
-    <link rel="stylesheet" href="/css/courses.css">
+    <!-- "th:href"/"th:src" + "?v=" — HAQIQIY TOPILGAN BUG (foydalanuvchi
+         so'rovi, 2026-09-12, courseDetail.html'dagi bilan bir xil sabab):
+         brauzer versiyalanmagan statik faylni ESKI holatda keshdan
+         ishlatib turardi (config/AppBuildInfo.java'ga qarang). -->
+    <link rel="stylesheet" th:href="@{/css/courses.css(v=${T(behzoddev.testproject.config.AppBuildInfo).STARTED_AT})}">
 
-    <script src="/js/courses.js" defer></script>
+    <script th:src="@{/js/courses.js(v=${T(behzoddev.testproject.config.AppBuildInfo).STARTED_AT})}" defer></script>
     <script src="/js/navbar.js" defer></script>
 </head>
 
