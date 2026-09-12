@@ -3231,16 +3231,20 @@ async function runBulkImport() {
             // etilgan (course-section-title-length.sql). Shu sabab: agar
             // .docx muvaffaqiyatli o'qilgan bo'lsa, dars nomi FAYL NOMIDAN
             // EMAS, balki HUJJAT MATNINING BIRINCHI QATORI/paragrafidan
-            // olinadi — fayllarga endi qisqa nom (masalan "0001.docx" +
-            // "0001.xlsx") berish kifoya, TO'LIQ sarlavha esa hujjatning
-            // o'zida (birinchi qatorda) yoziladi. Fayl nomi faqat .docx/
-            // .xlsx juftligini bir-biriga BOG'LASH uchun ishlatilishda
-            // davom etadi. Agar hujjatdan birinchi qator topilmasa (bo'sh
-            // hujjat) — eski xulq-atvorga (fayl nomi) qaytiladi.
+            // olinadi (VA o'sha qator tanadan OLIB TASHLANADI — aks holda
+            // sarlavha ikki marta, ham nom, ham tananing birinchi qatori
+            // sifatida chiqib qolardi) — fayllarga endi qisqa nom (masalan
+            // "0001.docx" + "0001.xlsx") berish kifoya, TO'LIQ sarlavha esa
+            // hujjatning o'zida (birinchi qatorda) yoziladi. Fayl nomi
+            // faqat .docx/.xlsx juftligini bir-biriga BOG'LASH uchun
+            // ishlatilishda davom etadi. Agar hujjatdan birinchi qator
+            // topilmasa (bo'sh hujjat) — eski xulq-atvorga (fayl nomi)
+            // qaytiladi, tana o'zgarishsiz qoladi.
             let title = pair.title;
             if (docxParsedOk) {
-                const extractedTitle = extractFirstParagraphText(html);
+                const { title: extractedTitle, html: strippedHtml } = extractAndStripTitleParagraph(html);
                 if (extractedTitle) {
+                    html = strippedHtml;
                     if (extractedTitle.length > 500) {
                         clientWarnings.push(`"${pair.title}" — hujjat matnidan olingan sarlavha 500 belgidan uzun edi, qisqartirib saqlandi.`);
                         title = extractedTitle.slice(0, 500);
@@ -3303,18 +3307,25 @@ async function runBulkImport() {
 }
 
 // Mammoth'dan kelgan HTML'dagi BIRINCHI matnli paragraf/sarlavha/ro'yxat
-// bandining oddiy (teglarsiz) matnini qaytaradi — runBulkImport'da dars
-// nomini FAYL NOMI o'rniga HUJJAT MATNIDAN olish uchun ishlatiladi
-// (yuqoridagi izohga qarang). Topilmasa (bo'sh hujjat) — null.
-function extractFirstParagraphText(html) {
+// bandining oddiy (teglarsiz) matnini DARS NOMI sifatida olib chiqadi va
+// O'SHA ELEMENTNI TANADAN OLIB TASHLAYDI (foydalanuvchi so'rovi,
+// 2026-09-12: "номни тагидагини олиб ташлаш керак, 2 та бўлиб қоляпти" —
+// sarlavha bir marta dars nomi sifatida, yana bir marta tananing birinchi
+// qatori sifatida chiqib, ikki marta ko'rinib qolardi). Natija:
+// { title, html } — "html" endi shu birinchi elementsiz. Sarlavha
+// topilmasa (bo'sh hujjat) — { title: null, html: asl html }.
+function extractAndStripTitleParagraph(html) {
     const container = document.createElement("div");
     container.innerHTML = html;
     const candidates = container.querySelectorAll("p, h1, h2, h3, h4, h5, h6, li");
     for (const el of candidates) {
         const text = el.textContent.replace(/\s+/g, " ").trim();
-        if (text) return text;
+        if (text) {
+            el.remove();
+            return { title: text, html: container.innerHTML };
+        }
     }
-    return null;
+    return { title: null, html };
 }
 
 function showBulkImportResult(data, fatalError) {
