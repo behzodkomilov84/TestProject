@@ -1749,10 +1749,18 @@ body {
    (hali ochilmagan) kartaga eng kichik balandlik, hatto nomi bitta
    qisqa qatorda tursa ham karta "torg'in" ko'rinmasligi uchun. Ochilgan
    (expanded) kartaga (butun qator kengligini egallaydi) tegilmaydi.
-   150px'dan 180px'ga oshirildi (foydalanuvchi so'rovi, 2026-09-12:
-   "height'ini kattalashtir", yuqoridagi padding-top oshishi bilan
-   birga — karta umuman kattaroq va bo'sh joyga ega ko'rinishi uchun). */
+   FOYDALANUVCHI SO'ROVI (2026-09-12: "height'ini kattalashtirmabsan.
+   Widthning 1.5 barobari bo'lsin height'i") — oldingi "min-height:180px"
+   FIKS qiymat edi, karta kengligi grid'da (auto-fill, minmax(340px,1fr))
+   ekran o'lchamiga qarab O'ZGARIB turgani uchun "kattaroq" tuyulmasligi
+   mumkin edi. Endi "aspect-ratio: 1 / 1.5" — karta balandligi DOIM
+   o'zining KENGLIGIGA nisbatan 1.5 baravar bo'ladi (kengroq ekranda
+   ham, torroq ekranda ham). "min-height" QOLDIRILDI — aspect-ratio
+   faqat AFZAL ko'rilgan o'lcham, agar kontent (masalan juda uzun
+   nom) undan ko'proq joy talab qilsa, karta baribir cho'zilib
+   ketaveradi (matn kesilib qolmasligi uchun ATAYLAB shunday). */
 .group-card.collapsed {
+    aspect-ratio: 1 / 1.5;
     min-height: 180px;
     display: flex;
     flex-direction: column;
