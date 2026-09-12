@@ -25,7 +25,7 @@ public class Topic {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 500)
     private String name;
 
     @OneToMany(mappedBy = "topic", cascade = CascadeType.PERSIST)

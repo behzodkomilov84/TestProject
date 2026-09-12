@@ -35,7 +35,7 @@ public class TopicSection {
     @ToString.Exclude
     private Science science;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, length = 500)
     private String name;
 
     // Fan ichidagi tartib raqami (1, 2, 3, ...) — CourseSection.orderIndex

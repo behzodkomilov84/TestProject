@@ -25,7 +25,7 @@ public class Science {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, length = 500)
     private String name;
 
     @OneToMany(mappedBy = "science", cascade = CascadeType.PERSIST)
