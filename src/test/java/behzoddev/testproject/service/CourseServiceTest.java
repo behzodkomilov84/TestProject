@@ -1130,7 +1130,10 @@ class CourseServiceTest {
 
         behzoddev.testproject.entity.Topic newTopic =
                 behzoddev.testproject.entity.Topic.builder().id(20L).name("Atom tuzilishi").science(newScience).build();
-        when(topicRepository.findByScience_IdAndName(10L, "Atom tuzilishi")).thenReturn(Optional.empty());
+        // "chapterId" berilmagan (dto'da null) — dars "Mavzusiz", shu
+        // sabab qidiruv "section is null" bo'yicha (2026-09-13'dan —
+        // resolveLinkedTopic endi BO'LIM darajasida qidiradi).
+        when(topicRepository.findByScience_IdAndSectionIsNullAndName(10L, "Atom tuzilishi")).thenReturn(Optional.empty());
         when(topicRepository.save(any())).thenReturn(newTopic);
 
         CourseSectionSaveDto dto = new CourseSectionSaveDto(
@@ -1157,7 +1160,10 @@ class CourseServiceTest {
 
         behzoddev.testproject.entity.Topic existingTopic =
                 behzoddev.testproject.entity.Topic.builder().id(20L).name("Atom tuzilishi").science(existingScience).build();
-        when(topicRepository.findByScience_IdAndName(10L, "Atom tuzilishi")).thenReturn(Optional.of(existingTopic));
+        // "chapterId" berilmagan (dto'da null) — dars "Mavzusiz", shu
+        // sabab qidiruv "section is null" bo'yicha (2026-09-13'dan —
+        // resolveLinkedTopic endi BO'LIM darajasida qidiradi).
+        when(topicRepository.findByScience_IdAndSectionIsNullAndName(10L, "Atom tuzilishi")).thenReturn(Optional.of(existingTopic));
 
         CourseSectionSaveDto dto = new CourseSectionSaveDto(
                 "1-bo'lim", "TEXT", "matn", null, null, null, "Kimyo", "Atom tuzilishi", null, null, null);
@@ -1165,14 +1171,16 @@ class CourseServiceTest {
 
         org.mockito.Mockito.verify(scienceRepository, org.mockito.Mockito.never()).save(any());
 
-        // Mavjud dars qayta ishlatiladi (YANGI yaratilmaydi) — lekin
-        // Mavzu holati (bu yerda — kurs darsi Mavzusiz, chapter=null)
-        // HAR DOIM sinxronlanadi (kurs — "haqiqiy manba"), shuning uchun
-        // save() chaqiriladi (section=null qilib qo'yish uchun).
-        var topicCaptor = org.mockito.ArgumentCaptor.forClass(behzoddev.testproject.entity.Topic.class);
-        org.mockito.Mockito.verify(topicRepository).save(topicCaptor.capture());
-        assertThat(topicCaptor.getValue().getId()).isEqualTo(20L);
-        assertThat(topicCaptor.getValue().getSection()).isNull();
+        // Mavjud Mavzu (bir xil Bo'lim/section doirasida topilgan)
+        // AYNAN O'ZI qaytariladi — endi qayta save() qilinmaydi
+        // (2026-09-13'dan: "section"ni qayta o'rnatib "ko'chirish" olib
+        // tashlandi, chunki qidiruvning o'zi ALLAQACHON to'g'ri Bo'lim
+        // bo'yicha — boshqa Bo'limga "ko'chirish" ehtiyoji yo'q).
+        org.mockito.Mockito.verify(topicRepository, org.mockito.Mockito.never()).save(any());
+
+        var sectionCaptor = org.mockito.ArgumentCaptor.forClass(CourseSection.class);
+        org.mockito.Mockito.verify(courseSectionRepository).save(sectionCaptor.capture());
+        assertThat(sectionCaptor.getValue().getLinkedTopic()).isEqualTo(existingTopic);
     }
 
     @Test
@@ -1248,21 +1256,19 @@ class CourseServiceTest {
                 .isInstanceOf(AccessDeniedException.class);
     }
 
-    // HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi, 2026-09-10: "агар
-    // бу дарслар мавжуд бўлса, қайта юклаб қўймаслигини ҳам, тестлар ҳам
-    // қайта юкланмаслигини ҳам текшир. Бутун курс бўйича текшириши
-    // керак") — qayta import bir xil nomli darsni (BOSHQA Mavzuda bo'lsa
-    // ham) ikkinchi marta yaratmasligi, testlarini ham qayta
-    // yuklamasligi kerak.
+    // 2026-09-10'da bu tekshiruv ATAYLAB BUTUN KURS bo'yicha edi. Endi
+    // (2026-09-13'dan — "Тестлар базасидаги айрим тестлар 1 дан ортиқ
+    // мавзуларга тушиши керак" so'roviga javoban) FAQAT bitta Bo'lim
+    // (chapter) doirasida ishlaydi — shu testda ANIQ SHU Bo'limda
+    // (chapterId=7) allaqachon mavjudligi tekshiriladi.
     @Test
-    void bulkImportLessonsWithTests_titleAlreadyExistsAnywhereInCourse_skipsWithoutCreatingOrImportingTests() {
+    void bulkImportLessonsWithTests_titleAlreadyExistsInSameChapter_skipsWithoutCreatingOrImportingTests() {
         Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
         CourseChapter chapter = testChapter(course);
         when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
         when(courseChapterRepository.findById(7L)).thenReturn(Optional.of(chapter));
-        // Boshqa (istalgan) Mavzuda shu nomli dars ALLAQACHON mavjud —
-        // kurs darajasida tekshiriladi, joriy Mavzuga bog'liq emas.
-        when(courseSectionRepository.existsByCourse_IdAndTitleIgnoreCase(1L, "001. Dars")).thenReturn(true);
+        // Shu (joriy, chapterId=7) Bo'limda shu nomli dars ALLAQACHON mavjud.
+        when(courseSectionRepository.existsByCourse_IdAndChapterAndTitleIgnoreCase(1L, 7L, "001. Dars")).thenReturn(true);
 
         MockMultipartFile xlsx = new MockMultipartFile("xlsxFiles", "001. Dars.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new byte[]{1, 2, 3});
@@ -1286,6 +1292,46 @@ class CourseServiceTest {
         org.mockito.Mockito.verifyNoInteractions(excelService);
     }
 
+    // HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi, 2026-09-13:
+    // "Тестлар базасидаги айрим тестлар 1 дан ортиқ мавзуларга тушиши
+    // керак ... аслида бу дарслар ёки тестлар шу мавзуга алоқадор ...
+    // аллақачон мавжуд деб импорт қилмай қолиши мумкин") — bir xil nomli
+    // dars/test materiali BOSHQA Bo'limga import qilinsa (joriy Bo'limda
+    // emas, boshqa birida allaqachon bor bo'lsa ham) — ENDI o'tkazib
+    // yuborilmaydi, mustaqil nusxa sifatida import qilinadi.
+    @Test
+    void bulkImportLessonsWithTests_titleExistsInDifferentChapter_importsAsIndependentCopy() {
+        Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
+        CourseChapter chapter = testChapter(course);
+        when(courseRepository.findById(1L)).thenReturn(Optional.of(course));
+        when(courseChapterRepository.findById(7L)).thenReturn(Optional.of(chapter));
+        when(courseSectionRepository.findTopByCourse_IdOrderByOrderIndexDesc(1L)).thenReturn(Optional.empty());
+        when(courseSectionRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        // Joriy (chapterId=7) Bo'limda bu nom YO'Q — boshqa Bo'limda
+        // bo'lishi mumkin, lekin bu tekshiruvga aloqasi yo'q.
+        when(courseSectionRepository.existsByCourse_IdAndChapterAndTitleIgnoreCase(1L, 7L, "001. Dars")).thenReturn(false);
+
+        behzoddev.testproject.entity.Science science =
+                behzoddev.testproject.entity.Science.builder().id(10L).name("Kurs").build();
+        when(scienceRepository.findByName("Kurs")).thenReturn(Optional.of(science));
+        // "001. Dars" nomli Mavzu boshqa Bo'limda ALLAQACHON bo'lishi
+        // mumkin, lekin qidiruv endi BO'LIM darajasida (section is null —
+        // topicSectionRepository stub qilinmagani uchun) — shu Bo'lim
+        // uchun topilmaydi, YANGI (mustaqil) Mavzu yaratiladi.
+        when(topicRepository.findByScience_IdAndSectionIsNullAndName(10L, "001. Dars")).thenReturn(Optional.empty());
+        behzoddev.testproject.entity.Topic newTopic =
+                behzoddev.testproject.entity.Topic.builder().id(21L).name("001. Dars").science(science).build();
+        when(topicRepository.save(any())).thenReturn(newTopic);
+
+        List<LessonImportItemDto> items = List.of(new LessonImportItemDto("001. Dars", "<p>matn</p>", null));
+
+        BulkLessonImportResultDto result = courseService.bulkImportLessonsWithTests(1L, 7L, items, List.of(), owner());
+
+        assertThat(result.sectionsCreated()).isEqualTo(1);
+        assertThat(result.sectionsSkipped()).isZero();
+        org.mockito.Mockito.verify(topicRepository).save(any());
+    }
+
     @Test
     void bulkImportLessonsWithTests_withoutMatchingXlsx_createsSectionAndWarns() {
         Course course = Course.builder().id(1L).title("Kurs").createdBy(owner()).build();
@@ -1303,7 +1349,11 @@ class CourseServiceTest {
         when(scienceRepository.findByName("Kurs")).thenReturn(Optional.of(science));
         behzoddev.testproject.entity.Topic topic =
                 behzoddev.testproject.entity.Topic.builder().id(20L).name("001. Dars").science(science).build();
-        when(topicRepository.findByScience_IdAndName(10L, "001. Dars")).thenReturn(Optional.of(topic));
+        // "topicSectionRepository" bu testda stub qilinmagan — resolveTopicSection
+        // shu sabab "null" Bo'lim bilan tugaydi (Mockito standart bo'yicha
+        // stub qilinmagan .save() "null" qaytaradi), shu sabab qidiruv
+        // "section is null" bo'yicha (2026-09-13'dan).
+        when(topicRepository.findByScience_IdAndSectionIsNullAndName(10L, "001. Dars")).thenReturn(Optional.of(topic));
 
         List<LessonImportItemDto> items = List.of(new LessonImportItemDto("001. Dars", "<p>matn</p>", null));
 
@@ -1331,7 +1381,10 @@ class CourseServiceTest {
 
         behzoddev.testproject.entity.Topic topic =
                 behzoddev.testproject.entity.Topic.builder().id(20L).name("001. Dars").science(science).build();
-        when(topicRepository.findByScience_IdAndName(10L, "001. Dars")).thenReturn(Optional.of(topic));
+        // "topicSectionRepository" bu testda stub qilinmagan — resolveTopicSection
+        // shu sabab "null" Bo'lim bilan tugaydi, shu sabab qidiruv
+        // "section is null" bo'yicha (2026-09-13'dan).
+        when(topicRepository.findByScience_IdAndSectionIsNullAndName(10L, "001. Dars")).thenReturn(Optional.of(topic));
 
         MockMultipartFile xlsx = new MockMultipartFile("xlsxFiles", "001. Dars.xlsx",
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", new byte[]{1, 2, 3});
@@ -1370,7 +1423,10 @@ class CourseServiceTest {
         when(scienceRepository.findByName("Kurs")).thenReturn(Optional.of(science));
         behzoddev.testproject.entity.Topic topic =
                 behzoddev.testproject.entity.Topic.builder().id(20L).name("Yaxshi dars").science(science).build();
-        when(topicRepository.findByScience_IdAndName(10L, "Yaxshi dars")).thenReturn(Optional.of(topic));
+        // "topicSectionRepository" bu testda stub qilinmagan — resolveTopicSection
+        // shu sabab "null" Bo'lim bilan tugaydi, shu sabab qidiruv
+        // "section is null" bo'yicha (2026-09-13'dan).
+        when(topicRepository.findByScience_IdAndSectionIsNullAndName(10L, "Yaxshi dars")).thenReturn(Optional.of(topic));
 
         List<LessonImportItemDto> items = List.of(
                 new LessonImportItemDto("   ", "<p>matn</p>", null),
@@ -1410,7 +1466,7 @@ class CourseServiceTest {
         // "0002" bo'yicha ANIQ moslik yo'q (findByCourse_IdAndTitleIgnoreCase —
         // Mockito standart bo'yicha Optional.empty() qaytaradi) — faqat shu
         // kod bilan BOSHLANGAN, ancha uzunroq nomli dars mavjud.
-        when(courseSectionRepository.findByCourse_IdAndTitleStartingWithIgnoreCase(1L, "0002"))
+        when(courseSectionRepository.findByCourse_IdAndChapterAndTitleStartingWithIgnoreCase(1L, 7L, "0002"))
                 .thenReturn(List.of(existingSection));
 
         MockMultipartFile xlsx = new MockMultipartFile("xlsxFiles", "0002.xlsx",
@@ -1446,7 +1502,7 @@ class CourseServiceTest {
                 .title("0002. Birinchi savol matni").build();
         CourseSection match2 = CourseSection.builder().id(102L).course(course)
                 .title("0002. Ikkinchi savol matni").build();
-        when(courseSectionRepository.findByCourse_IdAndTitleStartingWithIgnoreCase(1L, "0002"))
+        when(courseSectionRepository.findByCourse_IdAndChapterAndTitleStartingWithIgnoreCase(1L, 7L, "0002"))
                 .thenReturn(List.of(match1, match2));
 
         List<LessonImportItemDto> items = List.of(new LessonImportItemDto("0002", null, "0002.xlsx"));
@@ -1483,7 +1539,7 @@ class CourseServiceTest {
 
         CourseSection unrelated = CourseSection.builder().id(103L).course(course)
                 .title("00025-dars uchun savol").build();
-        when(courseSectionRepository.findByCourse_IdAndTitleStartingWithIgnoreCase(1L, "0002"))
+        when(courseSectionRepository.findByCourse_IdAndChapterAndTitleStartingWithIgnoreCase(1L, 7L, "0002"))
                 .thenReturn(List.of(unrelated));
 
         List<LessonImportItemDto> items = List.of(new LessonImportItemDto("0002", null, "0002.xlsx"));

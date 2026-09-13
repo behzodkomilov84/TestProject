@@ -61,6 +61,7 @@
     <include file="/db/changelog/user-activity-totals.sql"/>
     <include file="/db/changelog/course-chapter-field-name-length.sql"/>
     <include file="/db/changelog/topic-science-name-length.sql"/>
+    <include file="/db/changelog/topic-unique-per-section.sql"/>
 
 
 </databaseChangeLog>

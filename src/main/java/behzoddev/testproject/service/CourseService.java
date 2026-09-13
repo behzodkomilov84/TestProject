@@ -851,7 +851,7 @@ public class CourseService {
             // bog'langan Mavzusiga to'g'ridan-to'g'ri testlar qo'shiladi.
             if (!hasDocxContent) {
                 Optional<CourseSection> existingForTests = courseSectionRepository
-                        .findByCourse_IdAndTitleIgnoreCase(courseId, title);
+                        .findByCourse_IdAndChapterAndTitleIgnoreCase(courseId, chapterId, title);
 
                 // HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi,
                 // 2026-09-12): dars nomi endi FAYL NOMIDAN emas, balki
@@ -867,7 +867,7 @@ public class CourseService {
                 if (existingForTests.isEmpty()) {
                     final String code = title;
                     List<CourseSection> prefixMatches = courseSectionRepository
-                            .findByCourse_IdAndTitleStartingWithIgnoreCase(courseId, code).stream()
+                            .findByCourse_IdAndChapterAndTitleStartingWithIgnoreCase(courseId, chapterId, code).stream()
                             .filter(cs -> isTitlePrefixedByCode(cs.getTitle(), code))
                             .toList();
                     if (prefixMatches.size() == 1) {
@@ -935,17 +935,21 @@ public class CourseService {
                 continue;
             }
 
-            // HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi, 2026-09-10:
-            // "агар бу дарслар мавжуд бўлса, қайта юклаб қўймаслигини ҳам,
-            // тестлар ҳам қайта юкланмаслигини ҳам текшир. Бутун курс бўйича
-            // текшириши керак") — import qayta ishga tushirilsa (masalan
-            // xatolikdan keyin yoki tasodifan ikki marta bosilsa), bir xil
-            // nomli dars boshqa Mavzuda ham bo'lsa — BUTUN KURS bo'yicha
-            // tekshiriladi (faqat joriy Mavzu EMAS), topilsa esa bu element
-            // BUTUNLAY o'tkazib yuboriladi (na dars, na testlar qayta
-            // yaratilmaydi — ExcelService'ning o'zidagi savol-darajasidagi
-            // dublikat tekshiruvi bilan ikki bosqichli himoya).
-            if (courseSectionRepository.existsByCourse_IdAndTitleIgnoreCase(courseId, title)) {
+            // 2026-09-10'da bu tekshiruv ATAYLAB BUTUN KURS bo'yicha
+            // qilingan edi ("qayta import qilinsa ikki nusxa yaratmasin").
+            // HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi, 2026-09-13:
+            // "Тестлар базасидаги айрим тестлар 1 дан ортиқ мавзуларга
+            // тушиши керак ... аслида бу дарслар ёки тестлар шу мавзуга
+            // алоқадор ... аллақачон мавжуд деб импорт қилмай қолиши
+            // мумкин") — bu esa bir xil dars/test materialini BOSHQA
+            // Mavzuga (mustaqil nusxa sifatida) import qilishni butunlay
+            // bloklab qo'ygan ekan. Endi tekshiruv BO'LIM (chapter)
+            // darajasida — "qayta import ikki nusxa yaratmasin" himoyasi
+            // FAQAT bitta Bo'lim doirasida ishlaydi, boshqa Bo'limga esa
+            // xohlagancha (mustaqil nusxa sifatida) import qilish mumkin
+            // (topics.uk_science_section_topic bilan mos —
+            // CourseService#resolveLinkedTopic).
+            if (courseSectionRepository.existsByCourse_IdAndChapterAndTitleIgnoreCase(courseId, chapterId, title)) {
                 sectionsSkipped++;
                 warnings.add("\"" + title + "\" — bu nomdagi dars kursda ALLAQACHON mavjud, o'tkazib yuborildi (qayta yuklanmadi).");
                 continue;
@@ -1212,12 +1216,22 @@ public class CourseService {
 
         TopicSection resolvedSection = chapter != null ? resolveTopicSection(science, chapter.getName()) : null;
 
-        Optional<Topic> existing = topicRepository.findByScience_IdAndName(science.getId(), trimmedTopic);
+        // HAQIQIY TOPILGAN CHEKLOV (foydalanuvchi so'rovi, 2026-09-13:
+        // "Тестлар базасидаги айрим тестлар 1 дан ортиқ мавзуларга тушиши
+        // керак") — ilgari qidiruv FAQAT (Fan, nom) bo'yicha edi, ya'ni
+        // bir xil nomli Mavzu BOSHQA Bo'limda mavjud bo'lsa ham topilib,
+        // savollari bilan birga o'sha YANGI Bo'limga "ko'chirilardi" —
+        // haqiqiy mustaqil nusxa yaratish imkonsiz edi. Endi qidiruv
+        // BO'LIM darajasida (topics.uk_science_section_topic bilan mos) —
+        // turli Bo'limlardagi bir xil nomli Mavzular endi bir-biriga
+        // bog'liq bo'lmagan, mustaqil nusxa sifatida yashaydi (masalan
+        // bir xil dars+test materiali ikkita turli Mavzuga tegishli
+        // bo'lsa, endi ikkalasiga ham ALOHIDA import qilinishi mumkin).
+        Optional<Topic> existing = resolvedSection != null
+                ? topicRepository.findByScience_IdAndSection_IdAndName(science.getId(), resolvedSection.getId(), trimmedTopic)
+                : topicRepository.findByScience_IdAndSectionIsNullAndName(science.getId(), trimmedTopic);
         if (existing.isPresent()) {
-            Topic topic = existing.get();
-            topic.setSection(resolvedSection);
-            topicRepository.save(topic);
-            return topic;
+            return existing.get();
         }
 
         Topic topic = Topic.builder().name(trimmedTopic).science(science).section(resolvedSection).build();

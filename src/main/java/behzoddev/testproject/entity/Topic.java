@@ -6,11 +6,26 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+// HAQIQIY TOPILGAN CHEKLOV (foydalanuvchi so'rovi, 2026-09-13: "Тестлар
+// базасидаги айрим тестлар 1 дан ортиқ мавзуларга тушиши керак") — ilgari
+// noyoblik (science_id, name) edi, ya'ni bitta Mavzu nomi BUTUN FAN
+// (kurs) bo'yicha faqat BITTA marta bo'lishi mumkin edi, u qaysi Bo'limga
+// (TopicSection) tegishli bo'lishidan qat'iy nazar —
+// CourseService#resolveLinkedTopic shu sabab bir xil nomli Mavzuni
+// (savollari bilan) YANGI Bo'limga "ko'chirib" qo'yardi, HAQIQIY
+// MUSTAQIL NUSXA yaratish imkonsiz edi. Endi noyoblik BO'LIM darajasida
+// (science_id, section_id, name) — bir xil nomli Mavzu turli Bo'limlarda
+// mustaqil (bir-biriga bog'liq bo'lmagan) nusxa sifatida yashashi mumkin.
+// DIQQAT: MySQL'da UNIQUE cheklovda NULL qiymatlar bir-biriga TENG
+// hisoblanmaydi — ya'ni "section_id" NULL (hali Bo'limga ajratilmagan,
+// "Mavzusiz") Mavzular bu cheklovdan MUSTASNO (bir xil nomli bir nechta
+// "Mavzusiz" Mavzu ham bo'lishi mumkin) — bu ataylab shunday, chunki
+// "Mavzusiz" holat allaqachon aniq guruhlanmagan.
 @Entity
 @Table(name = "topics",
         schema = "test_project",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"science_id", "name"})
+                @UniqueConstraint(name = "uk_science_section_topic", columnNames = {"science_id", "section_id", "name"})
         }
 )
 @AllArgsConstructor

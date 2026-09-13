@@ -58,6 +58,21 @@ public interface TopicRepository extends JpaRepository<Topic, Long> {
     // mavzuni topish uchun (CourseService.resolveLinkedTopic).
     Optional<Topic> findByScience_IdAndName(Long scienceId, String name);
 
+    // HAQIQIY TOPILGAN CHEKLOV (foydalanuvchi so'rovi, 2026-09-13: "Тестлар
+    // базасидаги айрим тестлар 1 дан ортиқ мавзуларга тушиши керак") —
+    // yuqoridagi "findByScience_IdAndName" FAQAT Fan darajasida qidirardi,
+    // ya'ni bir xil nomli Mavzu boshqa Bo'limda (TopicSection) mavjud
+    // bo'lsa ham topilib, o'sha "ko'chirilardi" — mustaqil nusxa yaratish
+    // imkonsiz edi. Endi CourseService#resolveLinkedTopic BO'LIM darajasida
+    // qidiradi (topics.uk_science_section_topic bilan mos) — turli
+    // Bo'limlardagi bir xil nomli Mavzular endi mustaqil nusxa sifatida
+    // yashaydi. Ikkita metod — biri haqiqiy Bo'lim uchun, ikkinchisi
+    // "Mavzusiz" (section = null) holat uchun (Spring Data "AndSectionIsNull"
+    // orqali NULL'ni to'g'ri solishtiradi — oddiy "=" NULL bilan ishlamaydi).
+    Optional<Topic> findByScience_IdAndSection_IdAndName(Long scienceId, Long sectionId, String name);
+
+    Optional<Topic> findByScience_IdAndSectionIsNullAndName(Long scienceId, String name);
+
     // ScienceService.permanentlyDeleteScience uchun (nechta mavzu
     // to'sqinlik qilayotganini SANASH) — ATAYLAB deletedAt bo'yicha
     // FILTRLANMAYDI (o'chirilgan HAM, o'chirilmagan HAM barcha

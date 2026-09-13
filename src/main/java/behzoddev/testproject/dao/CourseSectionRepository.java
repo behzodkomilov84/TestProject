@@ -25,16 +25,22 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     @Query("select cs from CourseSection cs where cs.course.id = :courseId and cs.deletedAt is null order by cs.orderIndex asc")
     List<CourseSection> findByCourse_IdOrderByOrderIndexAsc(@Param("courseId") Long courseId);
 
-    // Butun KURS bo'yicha (istalgan Mavzuda, faqat joriy Mavzuda emas) shu
-    // nomli dars ALLAQACHON mavjudmi — paketli import
-    // (CourseService.bulkImportLessonsWithTests) qayta ishga tushirilganda
-    // bir xil darsni (va uning testlarini) ikki marta yaratib qo'ymaslik
-    // uchun (foydalanuvchi so'rovi, 2026-09-10: "агар бу дарслар мавжуд
-    // бўлса, қайта юклаб қўймаслигини... Бутун курс бўйича текшириши
-    // керак").
+    // HAQIQIY TOPILGAN KAMCHILIK (foydalanuvchi so'rovi, 2026-09-13:
+    // "Тестлар базасидаги айрим тестлар 1 дан ортиқ мавзуларга тушиши
+    // керак ... аслида бу дарслар ёки тестлар шу мавзуга алоқадор бўлиши
+    // шарт ... аллақачон мавжуд деб импорт қилмай қолиши мумкин") —
+    // ilgari tekshiruv BUTUN KURS bo'yicha edi (istalgan Mavzuda shu
+    // nomli dars bo'lsa — o'tkazib yuborilardi), bu esa bir xil dars/test
+    // materialini BOSHQA Mavzuga ham (mustaqil nusxa sifatida) import
+    // qilishni imkonsiz qilardi. Endi tekshiruv BO'LIM (chapter) darajasida —
+    // bir xil nomli dars turli Bo'limlarga ALOHIDA-ALOHIDA import
+    // qilinishi mumkin, "qayta import ikki nusxa yaratmasin" himoyasi esa
+    // FAQAT bitta Bo'lim doirasida ishlaydi (topics.uk_science_section_topic
+    // bilan mos — CourseService#resolveLinkedTopic).
     @Query("select case when count(cs) > 0 then true else false end from CourseSection cs " +
-            "where cs.course.id = :courseId and lower(cs.title) = lower(:title) and cs.deletedAt is null")
-    boolean existsByCourse_IdAndTitleIgnoreCase(@Param("courseId") Long courseId, @Param("title") String title);
+            "where cs.course.id = :courseId and lower(cs.title) = lower(:title) and cs.deletedAt is null " +
+            "and ((:chapterId is null and cs.chapter is null) or cs.chapter.id = :chapterId)")
+    boolean existsByCourse_IdAndChapterAndTitleIgnoreCase(@Param("courseId") Long courseId, @Param("chapterId") Long chapterId, @Param("title") String title);
 
     // Xuddi shu tekshiruv, lekin natijaning O'ZINI (faqat bor/yo'qligini
     // emas) qaytaradi — paketli importda FAQAT .xlsx (test) fayl
@@ -43,9 +49,11 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     // ALLAQACHON mavjud darsni (va uning TEST BOSHQARUVIga bog'langan
     // Mavzusini) topib, testlarni O'SHA darsga biriktirish uchun
     // (foydalanuvchi so'rovi, 2026-09-10: "10 ta test fayllarni import
-    // qilsam, darslarini topib qo'shilmayapti").
-    @Query("select cs from CourseSection cs where cs.course.id = :courseId and lower(cs.title) = lower(:title) and cs.deletedAt is null")
-    Optional<CourseSection> findByCourse_IdAndTitleIgnoreCase(@Param("courseId") Long courseId, @Param("title") String title);
+    // qilsam, darslarini topib qo'shilmayapti"). BO'LIM darajasida
+    // (2026-09-13'dagi izohga qarang — yuqorida).
+    @Query("select cs from CourseSection cs where cs.course.id = :courseId and lower(cs.title) = lower(:title) and cs.deletedAt is null " +
+            "and ((:chapterId is null and cs.chapter is null) or cs.chapter.id = :chapterId)")
+    Optional<CourseSection> findByCourse_IdAndChapterAndTitleIgnoreCase(@Param("courseId") Long courseId, @Param("chapterId") Long chapterId, @Param("title") String title);
 
     // Aniq (=) moslik topilmaganda ISHLATILADIGAN ZAXIRA qidiruv
     // (CourseService.bulkImportLessonsWithTests) — foydalanuvchi so'rovi,
@@ -55,9 +63,11 @@ public interface CourseSectionRepository extends JpaRepository<CourseSection, Lo
     // sarlavhaning boshidagi QISQA KOD bo'lgani uchun, shu kod bilan
     // BOSHLANGAN darslarni qidiramiz — aniq "kod + chegara belgisi"
     // tekshiruvi (masalan "0002" "00025..."ga mos kelib qolmasligi
-    // uchun) Java tomonida (CourseService) qilinadi.
-    @Query("select cs from CourseSection cs where cs.course.id = :courseId and lower(cs.title) like lower(concat(:codePrefix, '%')) and cs.deletedAt is null")
-    List<CourseSection> findByCourse_IdAndTitleStartingWithIgnoreCase(@Param("courseId") Long courseId, @Param("codePrefix") String codePrefix);
+    // uchun) Java tomonida (CourseService) qilinadi. BO'LIM darajasida
+    // (2026-09-13'dagi izohga qarang — yuqorida).
+    @Query("select cs from CourseSection cs where cs.course.id = :courseId and lower(cs.title) like lower(concat(:codePrefix, '%')) and cs.deletedAt is null " +
+            "and ((:chapterId is null and cs.chapter is null) or cs.chapter.id = :chapterId)")
+    List<CourseSection> findByCourse_IdAndChapterAndTitleStartingWithIgnoreCase(@Param("courseId") Long courseId, @Param("chapterId") Long chapterId, @Param("codePrefix") String codePrefix);
 
     @Query("select cs from CourseSection cs where cs.course.id = :courseId and cs.orderIndex = :orderIndex and cs.deletedAt is null")
     Optional<CourseSection> findByCourse_IdAndOrderIndex(@Param("courseId") Long courseId, @Param("orderIndex") int orderIndex);
