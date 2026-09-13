@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="uz" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Foydalanuvchilar statistikasi</title>
+
+    <link rel="stylesheet" href="/css/navbar.css">
+    <link rel="stylesheet" href="/css/userSessionStatistics.css">
+    <link rel="icon" href="/images/favicon.ico" type="image/x-icon">
+
+    <script src="/js/navbar.js" defer></script>
+    <script src="/js/userSessionStatistics.js" defer></script>
+</head>
+<body>
+
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="page-title-row">
+    <h1>👤 Foydalanuvchilar bo'yicha test statistikasi</h1>
+</div>
+
+<div class="wrapper">
+    <!-- Umumiy ko'rsatkichlar — sahifa yuklanishi bilan darhol
+         (yuklanmagan holatda "—", statistics.js#renderSummary to'ldiradi). -->
+    <div class="stats-summary-row" id="statsSummaryRow">
+        <div class="stats-summary-chip">
+            <span class="stats-summary-num" id="summaryTotalUsers">—</span>
+            <span class="stats-summary-label">Jami foydalanuvchi</span>
+        </div>
+        <div class="stats-summary-chip">
+            <span class="stats-summary-num" id="summaryActiveUsers">—</span>
+            <span class="stats-summary-label">Kamida 1 ta test yechgan</span>
+        </div>
+        <div class="stats-summary-chip">
+            <span class="stats-summary-num" id="summaryTotalSessions">—</span>
+            <span class="stats-summary-label">Jami test sessiyasi</span>
+        </div>
+        <div class="stats-summary-chip">
+            <span class="stats-summary-num" id="summaryTotalQuestions">—</span>
+            <span class="stats-summary-label">Jami yechilgan savol</span>
+        </div>
+        <div class="stats-summary-chip">
+            <span class="stats-summary-num" id="summaryAvgPercent">—</span>
+            <span class="stats-summary-label">O'rtacha ball (faollar)</span>
+        </div>
+    </div>
+
+    <!-- Qidiruv + saralash + filtr — barchasi frontendda (statistics.js),
+         foydalanuvchi so'rovi, 2026-09-13: "sahifa mukammal bo'lsin,
+         qidiruv, saralash funksiyalari bo'lsin". -->
+    <div class="stats-toolbar">
+        <input
+            type="text"
+            id="statsSearchInput"
+            class="stats-search-input"
+            placeholder="🔍 Username, ism, familiya yoki guruh bo'yicha qidirish..."
+            oninput="onStatsSearchInput()"
+            autocomplete="off"
+        >
+        <label class="stats-filter-checkbox">
+            <input type="checkbox" id="statsOnlyActiveCheckbox" onchange="onStatsFilterChange()">
+            Faqat kamida 1 ta test yechganlar
+        </label>
+        <span class="stats-visible-count" id="statsVisibleCount"></span>
+    </div>
+
+    <div class="stats-table-wrap">
+        <table class="stats-table" id="statsTable">
+            <thead>
+            <tr>
+                <th data-sort="username" onclick="onSortHeaderClick('username')">Username <span class="sort-arrow" id="sortArrow-username"></span></th>
+                <th data-sort="fullName" onclick="onSortHeaderClick('fullName')">Ism Familiya <span class="sort-arrow" id="sortArrow-fullName"></span></th>
+                <th data-sort="groupName" onclick="onSortHeaderClick('groupName')">Guruh <span class="sort-arrow" id="sortArrow-groupName"></span></th>
+                <th data-sort="sessionCount" onclick="onSortHeaderClick('sessionCount')" class="stats-col-num">Testlar soni <span class="sort-arrow" id="sortArrow-sessionCount"></span></th>
+                <th data-sort="totalQuestions" onclick="onSortHeaderClick('totalQuestions')" class="stats-col-num">Savollar soni <span class="sort-arrow" id="sortArrow-totalQuestions"></span></th>
+                <th data-sort="totalCorrect" onclick="onSortHeaderClick('totalCorrect')" class="stats-col-num">To'g'ri javob <span class="sort-arrow" id="sortArrow-totalCorrect"></span></th>
+                <th data-sort="avgPercent" onclick="onSortHeaderClick('avgPercent')" class="stats-col-num">O'rtacha % <span class="sort-arrow" id="sortArrow-avgPercent"></span></th>
+                <th data-sort="bestPercent" onclick="onSortHeaderClick('bestPercent')" class="stats-col-num">Eng yaxshi % <span class="sort-arrow" id="sortArrow-bestPercent"></span></th>
+                <th data-sort="totalDurationSec" onclick="onSortHeaderClick('totalDurationSec')" class="stats-col-num">Jami vaqt <span class="sort-arrow" id="sortArrow-totalDurationSec"></span></th>
+                <th data-sort="lastSessionAt" onclick="onSortHeaderClick('lastSessionAt')">Oxirgi test <span class="sort-arrow" id="sortArrow-lastSessionAt"></span></th>
+            </tr>
+            </thead>
+            <tbody id="statsTableBody">
+            <!-- userSessionStatistics.js#renderTable to'ldiradi -->
+            </tbody>
+        </table>
+        <p class="stats-empty hidden" id="statsEmptyMessage">Hech narsa topilmadi.</p>
+        <p class="stats-loading" id="statsLoadingMessage">⏳ Yuklanmoqda...</p>
+    </div>
+</div>
+
+<div id="toast-container"></div>
+
+</body>
+</html>

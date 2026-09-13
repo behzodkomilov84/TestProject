@@ -112,6 +112,12 @@
                 <button class="dropbtn">📊 Statistika ▾</button>
                 <div class="dropdown-content">
                     <a href="/history">📈 Umumiy statistika</a>
+                    <!-- Foydalanuvchi so'rovi, 2026-09-13: "foydalanuvchilar
+                         kesimida test sessiyasi bo'yicha statistika ...
+                         Statistika menyusiga qo'sh" — faqat OWNER/ADMIN
+                         (o'qituvchi) ko'radi, oddiy o'quvchiga BOSHQA
+                         foydalanuvchilarning natijalari ko'rinmasligi kerak. -->
+                    <a href="/statistics/user-sessions" sec:authorize="hasAnyAuthority('ROLE_OWNER','ROLE_ADMIN')">👤 Foydalanuvchilar statistikasi</a>
                     <a href="/payments" sec:authorize="hasAuthority('ROLE_OWNER')">💳 To'lov tarixi</a>
                     <a href="/role-audit-log" sec:authorize="hasAuthority('ROLE_OWNER')">📜 Rol tarixi</a>
                 </div>

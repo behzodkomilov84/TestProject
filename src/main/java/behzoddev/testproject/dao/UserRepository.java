@@ -1,5 +1,6 @@
 package behzoddev.testproject.dao;
 
+import behzoddev.testproject.dto.testsession.UserTestSessionStatsDto;
 import behzoddev.testproject.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -71,5 +72,32 @@ public interface UserRepository extends JpaRepository<User, Long> {
     @Modifying
     @Query("UPDATE User u SET u.lastSeenAt = :time WHERE u.id = :id")
     void updateLastSeenAt(@Param("id") Long id, @Param("time") LocalDateTime time);
+
+    // "📊 Statistika" -> "👤 Foydalanuvchilar kesimida test statistikasi"
+    // (foydalanuvchi so'rovi, 2026-09-13) — HAR BIR foydalanuvchi uchun
+    // BITTA qator, hali birorta ham test yechmagan foydalanuvchilar HAM
+    // (0 qiymatlar bilan) ko'rinishi uchun "left join ... on" ATAYLAB
+    // ishlatilgan (oddiy "join t.testSessions" kabi mapped bog'lanish
+    // o'rniga — User entity'da TestSession'ga to'g'ridan-to'g'ri
+    // @OneToMany mavjud emas). Faqat TUGATILGAN (finishedAt != null)
+    // sessiyalar hisoblanadi — boshqa test-tarixi so'rovlari bilan bir
+    // xil qoida (TestSessionRepository#findByUserId va h.k.).
+    @Query("""
+            select new behzoddev.testproject.dto.testsession.UserTestSessionStatsDto(
+                u.id, u.username, u.firstName, u.lastName, g.name,
+                count(t.id),
+                sum(t.totalQuestions),
+                sum(t.correctAnswers),
+                avg(t.percent),
+                max(t.percent),
+                sum(t.durationSec),
+                max(t.finishedAt)
+            )
+            from User u
+            left join u.group g
+            left join TestSession t on t.user = u and t.finishedAt is not null
+            group by u.id, u.username, u.firstName, u.lastName, g.name
+            """)
+    List<UserTestSessionStatsDto> findAllUserTestSessionStats();
 
 }

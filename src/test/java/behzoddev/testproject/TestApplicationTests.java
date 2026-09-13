@@ -1,5 +1,7 @@
 package behzoddev.testproject;
 
+import behzoddev.testproject.dao.UserRepository;
+import behzoddev.testproject.dto.testsession.UserTestSessionStatsDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -11,6 +13,7 @@ import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
 
+import java.util.List;
 import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,8 +35,35 @@ class TestApplicationTests {
     @Autowired
     private TemplateEngine templateEngine;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @Test
     void contextLoads() {
+    }
+
+    // "📊 Statistika" -> "👤 Foydalanuvchilar kesimida test statistikasi"
+    // (foydalanuvchi so'rovi, 2026-09-13) — Mockito bilan test qilib
+    // bo'lmaydi (repository o'zi mocklanadi, JPQL sintaksisi tekshirilmay
+    // qoladi). Bu yerda HAQIQIY Hibernate/JPQL dvigateli, HAQIQIY lokal
+    // MySQL'ga qarshi ishga tushiriladi — "left join TestSession t on
+    // t.user = u" (bog'lanmagan/ad-hoc entity join), agregat
+    // funksiyalar (count/sum/avg/max) va DTO konstruktor ifodasidagi
+    // TUR MOSLIGI (masalan avg() Double qaytaradi, sum(Integer) esa
+    // Long) — bularning har biri JPQL sintaksis xatosi yoki
+    // "NoSuchMethodException" (konstruktorga mos kelmagan tur) tarzida
+    // FAQAT ishga tushirilganda ko'rinadi, compile vaqtida emas.
+    @Test
+    void findAllUserTestSessionStats_runsAgainstRealDatabaseWithoutError() {
+        List<UserTestSessionStatsDto> stats = userRepository.findAllUserTestSessionStats();
+
+        assertThat(stats).isNotNull();
+        stats.forEach(row -> {
+            assertThat(row.userId()).isNotNull();
+            assertThat(row.username()).isNotNull();
+            assertThat(row.sessionCount()).isNotNull().isGreaterThanOrEqualTo(0L);
+            assertThat(row.avgPercent()).isNotNull();
+        });
     }
 
     // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-12: "guruhlash

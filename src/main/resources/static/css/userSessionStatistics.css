@@ -1,0 +1,194 @@
+* {
+    box-sizing: border-box;
+    font-family: "Segoe UI", system-ui, sans-serif;
+}
+
+body {
+    margin-top: 85px;
+    min-height: 90vh;
+    padding-bottom: 40px;
+    background: #f4f6f9;
+    color: #1e293b;
+}
+
+.page-title-row {
+    width: min(1400px, 92vw);
+    margin: 0 auto 20px;
+}
+
+.page-title-row h1 {
+    margin: 0;
+    font-size: 26px;
+    color: #103F91;
+}
+
+.wrapper {
+    width: min(1400px, 92vw);
+    margin: 0 auto 24px;
+}
+
+/* ===== Umumiy ko'rsatkichlar (yuqori kartochkalar) ===== */
+
+.stats-summary-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.stats-summary-chip {
+    flex: 1;
+    min-width: 160px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, .05);
+}
+
+.stats-summary-num {
+    font-size: 26px;
+    font-weight: 800;
+    color: #103F91;
+}
+
+.stats-summary-label {
+    font-size: 12.5px;
+    color: #64748b;
+    font-weight: 600;
+}
+
+/* ===== Qidiruv + filtr paneli ===== */
+
+.stats-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.stats-search-input {
+    flex: 1;
+    min-width: 240px;
+    padding: 10px 14px;
+    border: 1px solid #d5dde8;
+    border-radius: 10px;
+    font-size: 14px;
+    background: #fff;
+    transition: border-color .15s ease, box-shadow .15s ease;
+}
+
+.stats-search-input:focus {
+    outline: none;
+    border-color: #185ABD;
+    box-shadow: 0 0 0 3px rgba(24, 90, 189, .15);
+}
+
+.stats-filter-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.stats-visible-count {
+    font-size: 12.5px;
+    color: #64748b;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* ===== Jadval ===== */
+
+.stats-table-wrap {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    overflow-x: auto;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, .05);
+}
+
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+    min-width: 900px;
+}
+
+.stats-table thead th {
+    position: sticky;
+    top: 0;
+    background: #f8fafc;
+    color: #334155;
+    font-weight: 700;
+    text-align: left;
+    padding: 12px 14px;
+    border-bottom: 2px solid #e2e8f0;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    transition: background .15s ease;
+}
+
+.stats-table thead th:hover {
+    background: #eef2f7;
+}
+
+.sort-arrow {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 10px;
+    color: #103F91;
+}
+
+.stats-table tbody td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    white-space: nowrap;
+}
+
+.stats-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.stats-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.stats-col-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.stats-empty,
+.stats-loading {
+    text-align: center;
+    padding: 30px 14px;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ===== Kichik ekranlar ===== */
+
+@media (max-width: 640px) {
+    .stats-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .stats-search-input {
+        min-width: 0;
+    }
+}
