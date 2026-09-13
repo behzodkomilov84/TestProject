@@ -113,7 +113,7 @@ function extractYouTubeId(input) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    loadCourse();
+    loadCourse().then(maybeAutoOpenEditFromQuery);
     loadScienceNamesList();
     fetch("/api/payments/config")
         .then(r => r.ok ? r.json() : { clickEnabled: false })
@@ -1136,6 +1136,25 @@ function renderCourse(course) {
     }
 
     renderSections(course.sections);
+}
+
+// Dars o'qish sahifasidagi "✏️ Tahrirlash" tugmasi shu yerga
+// "?editSection=<id>" bilan yo'naltiradi (courseSectionView.js) — kurs
+// to'liq yuklangandan (loadCourse) keyin, agar ushbu foydalanuvchi
+// haqiqatan ham shu kursni boshqara olsa (canManage — aks holda darsni
+// ko'ra oladigan, lekin tahrirlay olmaydigan foydalanuvchi to'g'ridan-to'g'ri
+// URL yozib qo'ysa ham hech narsa ochilmaydi), tahrirlash formasini
+// avtomatik ochadi. URL'dan parametr olib tashlanadi — sahifani
+// yangilashda (F5) forma qayta-qayta ochilib qolmasligi uchun.
+function maybeAutoOpenEditFromQuery() {
+    const params = new URLSearchParams(location.search);
+    const sectionId = params.get("editSection");
+    if (!sectionId) return;
+
+    history.replaceState(null, "", location.pathname);
+
+    if (!cachedCourse || !cachedCourse.canManage) return;
+    openEditSectionForm(Number(sectionId));
 }
 
 // Badge'ni (".notif-badge" — navbar.js#refreshUnreadCount bilan bir xil

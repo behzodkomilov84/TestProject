@@ -316,6 +316,7 @@ public class CourseService {
                 .prevSectionId(prev != null ? prev.getId() : null)
                 .nextSectionId(next != null ? next.getId() : null)
                 .nextUnlocked(nextUnlocked)
+                .canManage(canManage)
                 .build();
     }
 

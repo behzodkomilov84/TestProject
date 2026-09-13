@@ -38,6 +38,14 @@ document.getElementById("backToCourseBtn").onclick = () => {
     location.href = `/courses/${COURSE_ID}?focus=${SECTION_ID}`;
 };
 
+// "✏️ Tahrirlash" — kurs sahifasiga ?editSection= bilan o'tkazadi;
+// courseDetail.js sahifa yuklanishida shu query'ni o'qib,
+// openEditSectionForm()ni avtomatik chaqiradi (renderSection() ichida
+// canManage=true bo'lsagina ko'rinadi — pastda).
+document.getElementById("editSectionBtn").onclick = () => {
+    location.href = `/courses/${COURSE_ID}?editSection=${SECTION_ID}`;
+};
+
 // searchNavContext — bir marta, sahifa yuklanganda o'qiladi (loadSearchNavContext),
 // keyin HAM "Oldingi/Keyingi natija" paneli (setupSearchNav), HAM dars
 // matni ichidagi qidiruv so'zini fonini o'zgartirish (highlightSearchQuery,
@@ -159,6 +167,7 @@ function renderSection(data) {
     sectionData = data;
 
     document.getElementById("sectionTitle").textContent = data.title;
+    document.getElementById("editSectionBtn").classList.toggle("hidden", !data.canManage);
 
     const content = document.getElementById("sectionContent");
     // HTML — .docx'dan mammoth.js orqali import qilingan, formatlash

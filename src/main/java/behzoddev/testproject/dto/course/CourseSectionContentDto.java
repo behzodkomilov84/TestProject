@@ -34,6 +34,11 @@ public record CourseSectionContentDto(
         boolean completed,
         Long prevSectionId, // null bo'lsa — bu birinchi bo'lim
         Long nextSectionId, // null bo'lsa — bu oxirgi bo'lim
-        boolean nextUnlocked
+        boolean nextUnlocked,
+        // Dars o'qish sahifasida (courseSectionView) "✏️ Tahrirlash" tugmasini
+        // ko'rsatish uchun (foydalanuvchi so'rovi, 2026-09-13) — bosilganda
+        // kurs sahifasiga ?editSection= bilan o'tkazadi (courseDetail.js
+        // shu query'ni o'qib, openEditSectionForm() avtomatik chaqiradi).
+        boolean canManage
 ) {
 }

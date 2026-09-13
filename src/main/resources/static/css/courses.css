@@ -191,6 +191,35 @@ body {
     background: #1d4ed8;
 }
 
+/* "✏️ Tahrirlash" — dars o'qish sahifasida (courseSectionView), faqat shu
+   kursni boshqara oladigan OWNER/ADMIN'ga ko'rinadi (foydalanuvchi so'rovi,
+   2026-09-13). Amber — ".forum-btn" (ko'k, hammaga) va ".back-btn" (neytral,
+   navigatsiya)dan ataylab farqli, "tahrirlash" bilan bog'liq amal ekanini
+   ajratib turadi. */
+.edit-section-btn {
+    padding: 8px 18px;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(217, 119, 6, .3);
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+.edit-section-btn:hover {
+    background: linear-gradient(135deg, #d97706, #b45309);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(217, 119, 6, .4);
+}
+
+.edit-section-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(217, 119, 6, .35);
+}
+
 #createCourseBtn {
     padding: 10px 18px;
     border-radius: 10px;

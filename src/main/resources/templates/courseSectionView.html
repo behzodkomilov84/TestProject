@@ -27,7 +27,16 @@
 <div class="courses-container">
     <header class="courses-top-bar">
         <h1 id="sectionTitle">Yuklanmoqda...</h1>
-        <button class="back-btn" id="backToCourseBtn">← Kursga qaytish</button>
+        <div class="courses-top-bar-actions">
+            <!-- Faqat OWNER/ADMIN VA shu kursni boshqara oladigan bo'lsa ko'rinadi
+                 (canManage — CourseSectionContentDto, loadSection() ichida
+                 tekshiriladi). Bosilganda kurs sahifasiga ?editSection= bilan
+                 o'tkazadi — o'sha yerdagi tahrirlash formasi (openEditSectionForm)
+                 avtomatik ochiladi, shu sababli bu yerda alohida forma
+                 takrorlanmaydi. -->
+            <button class="edit-section-btn hidden" id="editSectionBtn" title="Darsni tahrirlash">✏️ Tahrirlash</button>
+            <button class="back-btn" id="backToCourseBtn">← Kursga qaytish</button>
+        </div>
     </header>
 
     <!-- Faqat shu sahifaga qidiruv natijasidan kelingan bo'lsa ko'rinadi
