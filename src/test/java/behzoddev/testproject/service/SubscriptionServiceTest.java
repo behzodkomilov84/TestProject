@@ -556,6 +556,36 @@ class SubscriptionServiceTest {
     // 150000+1000 bo'lishi kerak edi") — email hisoboti ADMIN-rol
     // obunalari VA kurs obunalari to'lovlarini BIRLASHTIRIB yuborishi
     // shart, /payments sahifasining o'zi kabi (payments.js#mergeStats).
+    // Foydalanuvchi so'rovi, 2026-09-15: "/payments'да qo'lda berilgan
+    // obunalar bor. Summasi 0 (nol) so'm qiymatda. Agar qiymati nol so'm
+    // bo'lsa, to'lovlar soniga sanamasligi kerak".
+    @Test
+    void getStats_zeroAmountConfirmedSubscription_excludedFromPaymentCount() {
+        Subscription paid = Subscription.builder().id(1L).status(SubscriptionStatus.CONFIRMED)
+                .amount(BigDecimal.valueOf(50_000))
+                .createdAt(LocalDateTime.of(2026, 9, 5, 10, 0)).build();
+        Subscription manualFree = Subscription.builder().id(2L).status(SubscriptionStatus.CONFIRMED)
+                .amount(BigDecimal.ZERO)
+                .createdAt(LocalDateTime.of(2026, 9, 6, 10, 0)).build();
+        when(subscriptionRepository.findByStatusOrderByCreatedAtDesc(SubscriptionStatus.CONFIRMED))
+                .thenReturn(List.of(paid, manualFree));
+        when(subscriptionRepository.countByStatusAndEndDateAfter(eq(SubscriptionStatus.CONFIRMED), any()))
+                .thenReturn(2L);
+        when(subscriptionRepository.countByStatus(SubscriptionStatus.PENDING)).thenReturn(0L);
+
+        behzoddev.testproject.dto.subscription.SubscriptionStatsDto stats = subscriptionService.getStats();
+
+        // Faqat 1 ta haqiqiy (>0 so'm) to'lov — 0 so'mlik qo'lda berilgan
+        // obuna "to'lovlar soni"ga kirmaydi, lekin "faol obunachilar"
+        // (activeSubscribersCount) sonini KAMAYTIRMAYDI — u haqiqatan
+        // faol obunachi, shunchaki to'lov emas.
+        assertThat(stats.totalConfirmedCount()).isEqualTo(1);
+        assertThat(stats.totalRevenue()).isEqualByComparingTo("50000");
+        assertThat(stats.activeSubscribersCount()).isEqualTo(2);
+        assertThat(stats.monthlyBreakdown()).hasSize(1);
+        assertThat(stats.monthlyBreakdown().get(0).count()).isEqualTo(1);
+    }
+
     @Test
     void emailStatsReport_mergesAdminAndCourseStats_sendsCombinedTotals() {
         owner = User.builder().id(99L).username("owner").email("owner@test.uz")

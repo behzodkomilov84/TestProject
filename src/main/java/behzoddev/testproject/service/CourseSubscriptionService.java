@@ -507,13 +507,19 @@ public class CourseSubscriptionService {
                 .filter(s -> s.getStatus() == CourseSubscriptionStatus.CONFIRMED)
                 .toList();
 
-        // "🎁 Bepul sinov" — bonus, HAQIQIY TO'LOV EMAS (amount=0), shuning
-        // uchun "to'lovlar soni" statistikasidan chiqarib tashlanadi
-        // (foydalanuvchi so'rovi, 2026-09-09: "bonuslarni to'lovlar soniga
-        // qo'shma"). Tushum (revenue) hisobiga ta'siri yo'q — trial'ning
+        // Summasi 0 so'm bo'lgan obunalar — "🎁 Bepul sinov" (trial) ham,
+        // OWNER tomonidan qo'lda bepul berilgan boshqa hollar ham — HAQIQIY
+        // TO'LOV EMAS, shuning uchun "to'lovlar soni" statistikasidan
+        // chiqarib tashlanadi (foydalanuvchi so'rovi, 2026-09-09: "bonuslarni
+        // to'lovlar soniga qo'shma"; 2026-09-15: "qo'lda berilgan 0 so'mlik
+        // obunalar ham sanalmasin" — avvalgi "!isTrial()" filtri FAQAT
+        // trial-belgili yozuvlarni ushlardi, qo'lda 0 so'mga berilgan,
+        // trial-belgisiz obunalarni o'tkazib yuborardi; endi to'g'ridan-to'g'ri
+        // summaga qarab tekshiriladi — ikkala holatni ham qamrab oladi).
+        // Tushum (revenue) hisobiga ta'siri yo'q — bunday yozuvlarning
         // summasi baribir 0, faqat SON noto'g'ri shishib ko'rinardi.
         List<CourseSubscription> paidConfirmed = confirmed.stream()
-                .filter(s -> !s.isTrial())
+                .filter(s -> isPaidAmount(s.getAmount()))
                 .toList();
 
         BigDecimal totalRevenue = paidConfirmed.stream()
@@ -559,6 +565,12 @@ public class CourseSubscriptionService {
                 .pendingCount(pendingCount)
                 .monthlyBreakdown(monthlyBreakdown)
                 .build();
+    }
+
+    // SubscriptionService.isPaidAmount bilan bir xil — summasi 0 (yoki
+    // null) bo'lgan obuna haqiqiy TO'LOV emas (getStats() ichida ishlatiladi).
+    private static boolean isPaidAmount(BigDecimal amount) {
+        return amount != null && amount.signum() > 0;
     }
 
     // SubscriptionService.MonthlyAccumulator bilan bir xil — oylik

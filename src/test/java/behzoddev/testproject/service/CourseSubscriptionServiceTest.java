@@ -601,6 +601,31 @@ class CourseSubscriptionServiceTest {
         assertThat(stats.activeSubscribersCount()).isEqualTo(3);
     }
 
+    // Foydalanuvchi so'rovi, 2026-09-15: "/payments'da qo'lda berilgan
+    // obunalar bor. Summasi 0 (nol) so'm qiymatda. Agar qiymati nol so'm
+    // bo'lsa, to'lovlar soniga sanamasligi kerak" — bu holat "trial"
+    // belgisidan MUSTAQIL: OWNER trial-oqimidan tashqari ham qo'lda 0
+    // so'mga obuna berishi mumkin, shuning uchun filtr to'g'ridan-to'g'ri
+    // summaga (trial bayrog'iga emas) qarashi kerak.
+    @Test
+    void getStats_manuallyGrantedZeroAmountSubscription_excludedFromPaymentCount() {
+        CourseSubscription paid = CourseSubscription.builder().id(1L).user(student).course(course)
+                .amount(BigDecimal.valueOf(50_000)).status(CourseSubscriptionStatus.CONFIRMED).trial(false)
+                .endDate(LocalDateTime.now().plusMonths(1)).createdAt(LocalDateTime.now()).build();
+        CourseSubscription manualFree = CourseSubscription.builder().id(2L).user(student).course(course)
+                .amount(BigDecimal.ZERO).status(CourseSubscriptionStatus.CONFIRMED).trial(false)
+                .endDate(LocalDateTime.now().plusMonths(1)).createdAt(LocalDateTime.now()).build();
+        when(courseSubscriptionRepository.findAllByOrderByCreatedAtDesc())
+                .thenReturn(List.of(paid, manualFree));
+
+        SubscriptionStatsDto stats = courseSubscriptionService.getStats();
+
+        assertThat(stats.totalConfirmedCount()).isEqualTo(1);
+        assertThat(stats.totalRevenue()).isEqualByComparingTo("50000");
+        // "Faol obunachilar" — ikkalasi ham hozir haqiqatan faol.
+        assertThat(stats.activeSubscribersCount()).isEqualTo(2);
+    }
+
     // ===== listAll (foydalanuvchi so'rovi, 2026-09-07: ROLE_ADMIN faqat
     // o'zi yaratgan kurslarning obunalarini ko'rishi kerak) =====
 

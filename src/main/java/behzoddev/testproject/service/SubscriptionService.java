@@ -349,10 +349,17 @@ public class SubscriptionService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         // Oy bo'yicha guruhlash — TreeMap avtomatik xronologik tartibda saqlaydi.
+        // Summasi 0 so'm bo'lgan obunalar (OWNER tomonidan qo'lda, bepul
+        // berilgan) — HAQIQIY TO'LOV EMAS, shuning uchun "to'lovlar soni"ga
+        // sanalmaydi (foydalanuvchi so'rovi, 2026-09-15: "qiymati 0 so'm
+        // bo'lsa, to'lovlar soniga sanamasligi kerak"). Umumiy summaga
+        // qo'shilishi baribir 0, shu sabab uni chiqarib tashlash faqat
+        // "count"ga ta'sir qiladi.
         DateTimeFormatter monthKeyFormat = DateTimeFormatter.ofPattern("yyyy-MM");
         Map<String, MonthlyAccumulator> byMonth = new TreeMap<>();
 
         for (Subscription s : confirmed) {
+            if (!isPaidAmount(s.getAmount())) continue;
             String key = YearMonth.from(s.getCreatedAt()).format(monthKeyFormat);
             byMonth.computeIfAbsent(key, k -> new MonthlyAccumulator())
                     .add(s.getAmount());
@@ -371,14 +378,25 @@ public class SubscriptionService {
                 .countByStatusAndEndDateAfter(SubscriptionStatus.CONFIRMED, now);
         long pendingCount = subscriptionRepository.countByStatus(SubscriptionStatus.PENDING);
 
+        long paidConfirmedCount = confirmed.stream()
+                .filter(s -> isPaidAmount(s.getAmount()))
+                .count();
+
         return SubscriptionStatsDto.builder()
                 .totalRevenue(totalRevenue)
                 .thisMonthRevenue(thisMonthRevenue)
-                .totalConfirmedCount(confirmed.size())
+                .totalConfirmedCount(paidConfirmedCount)
                 .activeSubscribersCount(activeSubscribersCount)
                 .pendingCount(pendingCount)
                 .monthlyBreakdown(monthlyBreakdown)
                 .build();
+    }
+
+    // Summasi 0 (yoki null) bo'lgan obuna — OWNER tomonidan qo'lda, bepul
+    // berilgan, haqiqiy TO'LOV emas ("to'lovlar soni" statistikasidan
+    // chiqarib tashlash uchun — getStats() ichida ishlatiladi).
+    private static boolean isPaidAmount(BigDecimal amount) {
+        return amount != null && amount.signum() > 0;
     }
 
     // /payments sahifasidagi hisobotni OWNER'ning o'z emailiga yuboradi.
