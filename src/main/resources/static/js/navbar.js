@@ -323,4 +323,33 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
+/* ===== "🔄 Serverni qayta ishga tushirish" (Owner Panel) =====
+   (foydalanuvchi so'rovi, 2026-09-15) — /api/system/restart'ga POST
+   yuboradi, server esa 1 soniyadan so'ng System.exit(0) chaqiradi;
+   Docker'ning "restart: unless-stopped" siyosati konteynerni xuddi shu
+   image bilan avtomatik qayta ko'taradi (~30-60 soniya). Bu YANGI KOD
+   OLIB KELMAYDI — faqat qayta ishga tushiradi (to'liq deploy uchun
+   scripts/deploy.ps1 ishlatiladi, foydalanuvchining o'zi tomonidan). */
+async function confirmServerRestart() {
+    const ok = await showConfirmModal(
+        "⚠️ Server qayta ishga tushiriladi. Barcha foydalanuvchilarning sessiyasi uziladi (qaytadan login qilishlari kerak bo'ladi). Bu YANGI kod olib kelmaydi — faqat qayta ishga tushiradi. Davom etasizmi?",
+        { danger: true, okText: "Ha, qayta ishga tushir" }
+    );
+    if (!ok) return;
+
+    try {
+        const res = await fetch("/api/system/restart", { method: "POST" });
+        if (!res.ok) {
+            showAlertModal(`❌ Xatolik: server javob bermadi (${res.status}).`);
+            return;
+        }
+    } catch (err) {
+        // So'rov davomida ulanish uzilishi kutilgan holat bo'lishi mumkin
+        // (server javobni jo'natishga ulgurib, keyin darhol o'chgan) — xato
+        // sifatida ko'rsatilmaydi, xabar baribir muvaffaqiyatli deb hisoblanadi.
+        console.warn("restart so'rovi davomida ulanish uzildi (kutilgan bo'lishi mumkin):", err);
+    }
+    showAlertModal("🔄 Server qayta ishga tushirilmoqda. Taxminan 30–60 soniyadan so'ng sahifani yangilang va qaytadan login qiling.");
+}
+
 
