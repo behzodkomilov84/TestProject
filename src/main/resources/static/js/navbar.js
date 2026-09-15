@@ -361,14 +361,47 @@ async function confirmServerRestart() {
     pollRestartHealth();
 }
 
+// Kutish paytidagi ko'rsatkich — MODAL EMAS (foydalanuvchi so'rovi,
+// 2026-09-15: "bu oyna avtomatik yopiladi deyilyapti, lekin avtomatik
+// yopilmayapti" — showAlertModal() hech qachon o'zi yopilmaydi, faqat
+// OK bosilganda). Shu sabab bu — o'zi qo'shadigan/olib tashlaydigan
+// sodda, harakatsiz "toast" (OK tugmasi yo'q, qaror talab qilmaydi).
+let restartToastEl = null;
+
+function showRestartToast(text) {
+    hideRestartToast();
+    const el = document.createElement("div");
+    el.textContent = text;
+    el.style.cssText =
+        "position:fixed;top:16px;left:50%;transform:translateX(-50%);" +
+        "background:#103F91;color:#fff;padding:10px 20px;border-radius:10px;" +
+        "font-size:14px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.25);" +
+        "z-index:10001;max-width:90vw;text-align:center;";
+    document.body.appendChild(el);
+    restartToastEl = el;
+}
+
+function hideRestartToast() {
+    if (restartToastEl) {
+        restartToastEl.remove();
+        restartToastEl = null;
+    }
+}
+
 // Restart'dan keyin "server qaytdi, DB/ClamAV yaxshi ishlayaptimi" hisoboti
 // (foydalanuvchi so'rovi, 2026-09-15) — /api/system/health autentifikatsiyasiz
 // (permitAll, SecurityConfig) chaqiriladi, chunki restart sessiyani tozalaydi.
 // Server o'chib-yonayotgan bir necha soniya davomida so'rov muvaffaqiyatsiz
 // tugashi kutilgan holat — shu sabab xato emas, shunchaki keyingi urinishgacha
 // kutiladi. ~3 daqiqa ichida javob kelmasa — qo'lda tekshirish tavsiya etiladi.
+//
+// Yakuniy xabar (muvaffaqiyat/vaqt tugashi) — HAR DOIM showAlertModal orqali,
+// foydalanuvchi O'ZI "OK" bosguncha ochiq turadi (foydalanuvchi so'rovi:
+// "bu modal yopilmasin, foydalanuvchi o'zi OK ni bosib yopadi"). Faqat OK
+// bosilgandan KEYIN (await orqali) login sahifasiga o'tkaziladi — sessiya
+// baribir yo'qolgan, shu sahifada qolishning ma'nosi yo'q.
 async function pollRestartHealth() {
-    showAlertModal("🔄 Server qayta ishga tushirilmoqda — holati kuzatilmoqda (bu oyna avtomatik yopiladi)...");
+    showRestartToast("🔄 Server qayta ishga tushirilmoqda — holati kuzatilmoqda...");
 
     const maxAttempts = 45; // ~45 * 4s = 3 daqiqa
     const intervalMs = 4000;
@@ -379,6 +412,7 @@ async function pollRestartHealth() {
             const res = await fetch("/api/system/health", { cache: "no-store" });
             if (!res.ok) continue;
             const data = await res.json();
+            hideRestartToast();
 
             const dbLine = data.database === "UP" ? "✅ Ma'lumotlar bazasi: ishlayapti"
                 : "❌ Ma'lumotlar bazasi: javob bermayapti";
@@ -386,18 +420,21 @@ async function pollRestartHealth() {
                 : data.clamav === "DISABLED" ? "➖ Virus skaneri (ClamAV): o'chirilgan"
                 : "❌ Virus skaneri (ClamAV): javob bermayapti";
 
-            showAlertModal(
-                `✅ Server muvaffaqiyatli qayta yuklandi!\n\n${dbLine}\n${clamavLine}\n\nEndi sahifani yangilab, qaytadan login qiling.`
+            await showAlertModal(
+                `✅ Server muvaffaqiyatli qayta yuklandi!\n\n${dbLine}\n${clamavLine}\n\n"OK" bosilgach, login sahifasiga o'tkazasiz.`
             );
+            location.href = "/login";
             return;
         } catch (err) {
             // Server hali o'chib-yonayotgan payt — kutilgan, keyingi urinishga o'tiladi.
         }
     }
 
-    showAlertModal(
-        "⚠️ Server 3 daqiqa ichida javob bermadi. Iltimos, sahifani qo'lda yangilang yoki holatni tekshiring."
+    hideRestartToast();
+    await showAlertModal(
+        "⚠️ Server 3 daqiqa ichida javob bermadi. \"OK\" bosilgach, login sahifasiga o'tkazasiz — u yerdan qayta urinib ko'ring."
     );
+    location.href = "/login";
 }
 
 
