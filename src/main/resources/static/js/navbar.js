@@ -331,8 +331,17 @@ document.addEventListener("DOMContentLoaded", () => {
    OLIB KELMAYDI — faqat qayta ishga tushiradi (to'liq deploy uchun
    scripts/deploy.ps1 ishlatiladi, foydalanuvchining o'zi tomonidan). */
 async function confirmServerRestart() {
+    // Sodda, tushunarli tilda — nima bo'lishini OLDINDAN, qadam-baqadam
+    // tushuntiradi (foydalanuvchi so'rovi, 2026-09-15: "shu instruksiyani
+    // ham frontendga qo'sh, oson tushunarli tilda").
     const ok = await showConfirmModal(
-        "⚠️ Server qayta ishga tushiriladi. Barcha foydalanuvchilarning sessiyasi uziladi (qaytadan login qilishlari kerak bo'ladi). Bu YANGI kod olib kelmaydi — faqat qayta ishga tushiradi. Davom etasizmi?",
+        "🔄 Server qayta ishga tushiriladi.\n\n" +
+        "Nima bo'ladi:\n" +
+        "1. Barcha foydalanuvchilar (shu jumladan siz) saytdan chiqarib yuboriladi — qaytadan login qilish kerak bo'ladi.\n" +
+        "2. Server ~30–60 soniya davomida qayta yuklanadi.\n" +
+        "3. Server qaytishi bilan, ma'lumotlar bazasi va virus skaneri (ClamAV) yaxshi ishlayotgani avtomatik tekshirilib, natija shu yerda ko'rsatiladi.\n\n" +
+        "Diqqat: bu YANGI kod olib kelmaydi — faqat serverni qayta ishga tushiradi (xotira/uzilib qolgan ulanishlarni tozalash uchun).\n\n" +
+        "Davom etasizmi?",
         { danger: true, okText: "Ha, qayta ishga tushir" }
     );
     if (!ok) return;
