@@ -175,6 +175,37 @@ body {
     background: #f1f3f5;
 }
 
+/* Saralanadigan ustunlar (foydalanuvchi so'rovi, 2026-09-14: "Foydalanuvchilar
+   jadvaliga sortirovka qo'sh, statistika sahifasidagi kabi") — bosiladigan
+   ustunlar userSessionStatistics.css bilan bir xil uslub: kursor + strelka.
+   Avatar/Role/Obuna holati/Action ustunlari — murakkab/ko'p qiymatli bo'lgani
+   uchun saralanmaydi, shu sabab data-sort'siz qoladi. */
+.users-table th[data-sort] {
+    cursor: pointer;
+    user-select: none;
+    transition: background .15s ease;
+}
+
+.users-table th[data-sort]:hover {
+    background: #e4e7eb;
+}
+
+.sort-arrow {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 10px;
+    color: #103F91;
+}
+
+.table-header-fixed .fx-cell[data-sort] {
+    cursor: pointer;
+    user-select: none;
+}
+
+.table-header-fixed .fx-cell[data-sort]:hover {
+    background: #e4e7eb;
+}
+
 /* Sarlavha qatorini ("zakrepit verx") position:sticky bilan qotirish
    3 marta urinildi (border-collapse:separate, sticky-top+left'ni bitta
    katakchada birlashtirmaslik) — HAMMASI muvaffaqiyatsiz bo'ldi.

@@ -14,6 +14,15 @@ const ALL_ROLES = ["ROLE_OWNER", "ROLE_ADMIN", "ROLE_USER"];
 // to'ldirish uchun qayta so'rov yubormasdan shu yerdan olinadi.
 let usersById = {};
 
+// Oxirgi yuklangan XOM (server tartibidagi) foydalanuvchilar ro'yxati —
+// ustun sarlavhasiga bosib saralaganda qayta so'rov yubormasdan, shu
+// yerdan olib qayta chizish uchun (foydalanuvchi so'rovi, 2026-09-14:
+// "sortirovka qo'sh, statistika sahifasidagi kabi" — userSessionStatistics.js
+// bilan bir xil andoza).
+let lastUsersList = [];
+let usersSortKey = "id";
+let usersSortDir = "asc";
+
 // Oxirgi yuklangan obunalar ro'yxati (ADMIN-rol + kurs) — "Obuna holati"
 // belgisi bosilganda detallarni qayta so'rovsiz ko'rsatish uchun
 // (foydalanuvchi so'rovi, 2026-09-09: "obuna holatiga bosganda detalniy
@@ -293,6 +302,7 @@ function renderUsers(users, subscriptions, courseSubscriptions) {
     tbody.innerHTML = "";
 
     usersById = Object.fromEntries(users.map(u => [u.id, u]));
+    lastUsersList = users;
     lastAdminSubscriptions = subscriptions;
     lastCourseSubscriptions = courseSubscriptions;
 
@@ -301,7 +311,11 @@ function renderUsers(users, subscriptions, courseSubscriptions) {
     document.getElementById("totalUsersStat").textContent =
         `👥 Jami ro'yxatdan o'tgan: ${users.length}`;
 
-    users.forEach(user => {
+    document.querySelectorAll(".users-table .sort-arrow").forEach(el => el.textContent = "");
+    const activeArrow = document.getElementById(`usersSortArrow-${usersSortKey}`);
+    if (activeArrow) activeArrow.textContent = usersSortDir === "asc" ? "▲" : "▼";
+
+    getSortedUsers(users).forEach(user => {
         const tr = document.createElement("tr");
 
         // Har bir rol uchun checkbox — foydalanuvchi bir vaqtning o'zida
@@ -421,6 +435,57 @@ function renderUsers(users, subscriptions, courseSubscriptions) {
     refreshOnlineStatus();
 }
 
+// ===== Ustun sarlavhasiga bosib saralash (foydalanuvchi so'rovi,
+// 2026-09-14: "sortirovka qo'sh, statistika sahifasidagi kabi") =====
+// Server'ga qayta so'rov yubormasdan — oxirgi yuklangan ro'yxat
+// (lastUsersList) shu yerda qayta saralanib, jadval qayta chiziladi
+// (checkbox/obuna holatlari ham renderUsers ichida qayta hisoblanadi,
+// lastAdminSubscriptions/lastCourseSubscriptions allaqachon saqlangan).
+function onUsersSortHeaderClick(key) {
+    const defaultDirDesc = new Set(["createdAt", "lastSeenAt", "telegramId"]);
+    if (usersSortKey === key) {
+        usersSortDir = usersSortDir === "asc" ? "desc" : "asc";
+    } else {
+        usersSortKey = key;
+        usersSortDir = defaultDirDesc.has(key) ? "desc" : "asc";
+    }
+    renderUsers(lastUsersList, lastAdminSubscriptions, lastCourseSubscriptions);
+}
+
+function getSortedUsers(users) {
+    const dir = usersSortDir === "asc" ? 1 : -1;
+    const key = usersSortKey;
+
+    function valueOf(u) {
+        if (key === "fullName") {
+            return [u.firstName, u.lastName].filter(Boolean).join(" ");
+        }
+        return u[key];
+    }
+
+    return [...users].sort((a, b) => {
+        let va = valueOf(a);
+        let vb = valueOf(b);
+
+        // Bo'sh qiymatlar (null/undefined/"—") — yo'nalishidan qat'iy
+        // nazar HAR DOIM oxiriga tushadi (userSessionStatistics.js'dagi
+        // "lastSessionAt" bilan bir xil mantiq).
+        const aEmpty = va === null || va === undefined || va === "";
+        const bEmpty = vb === null || vb === undefined || vb === "";
+        if (aEmpty && bEmpty) return 0;
+        if (aEmpty) return 1;
+        if (bEmpty) return -1;
+
+        if (key === "createdAt" || key === "lastSeenAt") {
+            return dir * (new Date(va) - new Date(vb));
+        }
+        if (typeof va === "number" || typeof vb === "number") {
+            return dir * ((Number(va) || 0) - (Number(vb) || 0));
+        }
+        return dir * String(va).toLowerCase().localeCompare(String(vb).toLowerCase(), "uz");
+    });
+}
+
 // ===== "🟢 Hozir onlayn" (foydalanuvchi so'rovi, 2026-09-09) =====
 // Butun jadvalni qayta yuklamasdan (loadUsers() checkbox/forma holatini
 // buzardi), faqat yengil /api/users/online-status so'ralib, har bir
@@ -529,6 +594,14 @@ function buildFixedHeader() {
         // ustunlar bilan pixel-aniqlikda tekislanadi.
         const width = th.getBoundingClientRect().width;
         div.style.width = width + "px";
+        // Saralash — asl <th>dagi data-sort/onclick'ni nusxaga ham
+        // ko'chiradi, shu bilan sahifa pastga aylantirilganda ("zakrepit
+        // verx" holati) ham ustun sarlavhasiga bosib saralash ishlayveradi.
+        const sortKey = th.dataset.sort;
+        if (sortKey) {
+            div.dataset.sort = sortKey;
+            div.addEventListener("click", () => onUsersSortHeaderClick(sortKey));
+        }
         (i < 3 ? frozenContainer : scrollContainer).appendChild(div);
     });
 }

@@ -167,22 +167,22 @@
     <table class="users-table">
         <thead>
         <tr>
-            <th class="sticky-col-1">ID</th>
+            <th class="sticky-col-1" data-sort="id" onclick="onUsersSortHeaderClick('id')">ID <span class="sort-arrow" id="usersSortArrow-id"></span></th>
             <th class="sticky-col-2">Avatar</th>
-            <th class="sticky-col-3">Username</th>
-            <th>Ism Familiya</th>
-            <th>Email</th>
-            <th>Telefon</th>
-            <th>Telegram ID</th>
-            <th>Telegram @username</th>
-            <th>Google ID</th>
-            <th>Facebook ID</th>
-            <th>Ish/o'qish joyi</th>
-            <th>Lavozim</th>
+            <th class="sticky-col-3" data-sort="username" onclick="onUsersSortHeaderClick('username')">Username <span class="sort-arrow" id="usersSortArrow-username"></span></th>
+            <th data-sort="fullName" onclick="onUsersSortHeaderClick('fullName')">Ism Familiya <span class="sort-arrow" id="usersSortArrow-fullName"></span></th>
+            <th data-sort="email" onclick="onUsersSortHeaderClick('email')">Email <span class="sort-arrow" id="usersSortArrow-email"></span></th>
+            <th data-sort="phoneNumber" onclick="onUsersSortHeaderClick('phoneNumber')">Telefon <span class="sort-arrow" id="usersSortArrow-phoneNumber"></span></th>
+            <th data-sort="telegramId" onclick="onUsersSortHeaderClick('telegramId')">Telegram ID <span class="sort-arrow" id="usersSortArrow-telegramId"></span></th>
+            <th data-sort="telegramUsername" onclick="onUsersSortHeaderClick('telegramUsername')">Telegram @username <span class="sort-arrow" id="usersSortArrow-telegramUsername"></span></th>
+            <th data-sort="googleId" onclick="onUsersSortHeaderClick('googleId')">Google ID <span class="sort-arrow" id="usersSortArrow-googleId"></span></th>
+            <th data-sort="facebookId" onclick="onUsersSortHeaderClick('facebookId')">Facebook ID <span class="sort-arrow" id="usersSortArrow-facebookId"></span></th>
+            <th data-sort="workplace" onclick="onUsersSortHeaderClick('workplace')">Ish/o'qish joyi <span class="sort-arrow" id="usersSortArrow-workplace"></span></th>
+            <th data-sort="jobTitle" onclick="onUsersSortHeaderClick('jobTitle')">Lavozim <span class="sort-arrow" id="usersSortArrow-jobTitle"></span></th>
             <th>Role</th>
             <th>Obuna holati</th>
-            <th>Ro'yxatdan o'tgan</th>
-            <th>Oxirgi tashrif</th>
+            <th data-sort="createdAt" onclick="onUsersSortHeaderClick('createdAt')">Ro'yxatdan o'tgan <span class="sort-arrow" id="usersSortArrow-createdAt"></span></th>
+            <th data-sort="lastSeenAt" onclick="onUsersSortHeaderClick('lastSeenAt')">Oxirgi tashrif <span class="sort-arrow" id="usersSortArrow-lastSeenAt"></span></th>
             <th>Action</th>
         </tr>
         </thead>
