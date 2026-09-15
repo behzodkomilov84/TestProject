@@ -346,10 +346,49 @@ async function confirmServerRestart() {
     } catch (err) {
         // So'rov davomida ulanish uzilishi kutilgan holat bo'lishi mumkin
         // (server javobni jo'natishga ulgurib, keyin darhol o'chgan) — xato
-        // sifatida ko'rsatilmaydi, xabar baribir muvaffaqiyatli deb hisoblanadi.
+        // sifatida ko'rsatilmaydi, kuzatish (pollRestartHealth) baribir davom etadi.
         console.warn("restart so'rovi davomida ulanish uzildi (kutilgan bo'lishi mumkin):", err);
     }
-    showAlertModal("🔄 Server qayta ishga tushirilmoqda. Taxminan 30–60 soniyadan so'ng sahifani yangilang va qaytadan login qiling.");
+    pollRestartHealth();
+}
+
+// Restart'dan keyin "server qaytdi, DB/ClamAV yaxshi ishlayaptimi" hisoboti
+// (foydalanuvchi so'rovi, 2026-09-15) — /api/system/health autentifikatsiyasiz
+// (permitAll, SecurityConfig) chaqiriladi, chunki restart sessiyani tozalaydi.
+// Server o'chib-yonayotgan bir necha soniya davomida so'rov muvaffaqiyatsiz
+// tugashi kutilgan holat — shu sabab xato emas, shunchaki keyingi urinishgacha
+// kutiladi. ~3 daqiqa ichida javob kelmasa — qo'lda tekshirish tavsiya etiladi.
+async function pollRestartHealth() {
+    showAlertModal("🔄 Server qayta ishga tushirilmoqda — holati kuzatilmoqda (bu oyna avtomatik yopiladi)...");
+
+    const maxAttempts = 45; // ~45 * 4s = 3 daqiqa
+    const intervalMs = 4000;
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, intervalMs));
+        try {
+            const res = await fetch("/api/system/health", { cache: "no-store" });
+            if (!res.ok) continue;
+            const data = await res.json();
+
+            const dbLine = data.database === "UP" ? "✅ Ma'lumotlar bazasi: ishlayapti"
+                : "❌ Ma'lumotlar bazasi: javob bermayapti";
+            const clamavLine = data.clamav === "UP" ? "✅ Virus skaneri (ClamAV): ishlayapti"
+                : data.clamav === "DISABLED" ? "➖ Virus skaneri (ClamAV): o'chirilgan"
+                : "❌ Virus skaneri (ClamAV): javob bermayapti";
+
+            showAlertModal(
+                `✅ Server muvaffaqiyatli qayta yuklandi!\n\n${dbLine}\n${clamavLine}\n\nEndi sahifani yangilab, qaytadan login qiling.`
+            );
+            return;
+        } catch (err) {
+            // Server hali o'chib-yonayotgan payt — kutilgan, keyingi urinishga o'tiladi.
+        }
+    }
+
+    showAlertModal(
+        "⚠️ Server 3 daqiqa ichida javob bermadi. Iltimos, sahifani qo'lda yangilang yoki holatni tekshiring."
+    );
 }
 
 

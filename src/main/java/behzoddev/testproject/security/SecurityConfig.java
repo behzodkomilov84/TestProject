@@ -84,7 +84,14 @@ public class SecurityConfig {
                                 // Click'ning o'z serverlari chaqiradi — sessiyasiz,
                                 // o'zining imzo tekshiruvi orqali himoyalangan
                                 // (ClickService.verifySign).
-                                "/api/payments/click/webhook"
+                                "/api/payments/click/webhook",
+                                // "🔄 Serverni qayta ishga tushirish" tugmasidan
+                                // keyingi sog'lomlik hisoboti — restart barcha
+                                // sessiyalarni tozalagani uchun, hali login
+                                // qilinmagan holatda ham chaqirilishi kerak.
+                                // Faqat oddiy UP/DOWN qaytaradi, hech qanday
+                                // maxfiy ma'lumot yo'q (SystemController#health).
+                                "/api/system/health"
                         ).permitAll()
 
                         .requestMatchers("/user/tests/**")

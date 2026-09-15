@@ -106,6 +106,35 @@ public class ClamAvScanService {
         }
     }
 
+    /**
+     * clamd bilan bog'lanib bo'ladimi-yo'qmi — tekshiruv o'chirilgan
+     * (app.upload.clamav.enabled=false) bo'lsa {@code null}, aks holda
+     * PING/PONG orqali bog'lanish holatini qaytaradi (SystemController'dagi
+     * "🔄 Serverni qayta ishga tushirish" tugmasidan keyingi sog'lomlik
+     * hisobotida ishlatiladi — foydalanuvchi so'rovi, 2026-09-15).
+     */
+    public Boolean ping() {
+        if (!enabled) {
+            return null;
+        }
+        try (Socket socket = new Socket()) {
+            socket.connect(new InetSocketAddress(host, port), CONNECT_TIMEOUT_MS);
+            socket.setSoTimeout(CONNECT_TIMEOUT_MS);
+
+            OutputStream out = socket.getOutputStream();
+            out.write("zPING\0".getBytes(StandardCharsets.US_ASCII));
+            out.flush();
+
+            BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(socket.getInputStream(), StandardCharsets.US_ASCII));
+            String response = reader.readLine();
+            return response != null && response.contains("PONG");
+        } catch (IOException e) {
+            log.warn("ClamAV ping muvaffaqiyatsiz: {}", e.getMessage());
+            return false;
+        }
+    }
+
     private static byte[] intToBigEndianBytes(int value) {
         return new byte[]{
                 (byte) (value >>> 24),
