@@ -1,150 +1,407 @@
 <#
 .SYNOPSIS
-    study-grow.uz uchun to'liq deploy: test -> build -> scp -> docker rebuild -> tekshirish.
+    study-grow.uz uchun to'liq avtomatik deploy.
 
 .DESCRIPTION
-    Shu sessiyada Claude qo'llagan pipeline'ning aynan o'zi — endi mustaqil,
-    Claude'siz ham ishlatish uchun (foydalanuvchi so'rovi, 2026-09-15).
+    Pipeline:
+      1. Git add / commit / push
+      2. Testlar
+      3. Maven build
+      4. SCP orqali JAR upload
+      5. MD5 checksum
+      6. Docker rebuild
+      7. Spring Boot startup check
+      8. Error check
 
-    Bosqichlar:
-      1. (ixtiyoriy, -SkipTests bo'lmasa) to'liq test to'plami
-      2. mvn package -DskipTests -> jar quriladi
-      3. jar serverga scp qilinadi
-      4. md5 checksum orqali to'g'ri ko'chganini tekshiradi
-      5. serverda "docker compose up -d --build app"
-      6. konteyner xatosiz ishga tushganini kutib, loglarni ko'rsatadi
+    Windows PowerShell 5.1 va PowerShell 7 bilan mos.
 
 .PARAMETER SkipTests
-    Test bosqichini o'tkazib yuborish (faqat build+deploy). Standart: testlar ishlaydi.
+    Testlarni o'tkazib yuboradi.
 
 .PARAMETER CommitPush
-    Deploy'dan OLDIN "git add -A && git commit && git push" ham bajaradi.
-    Commit xabari -Message parametri bilan beriladi (bo'lmasa so'raladi).
+    Git commit va push qiladi.
 
 .PARAMETER Message
-    -CommitPush bilan birga ishlatiladigan commit xabari.
-
-.EXAMPLE
-    powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1
-
-.EXAMPLE
-    powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1 -SkipTests
-
-.EXAMPLE
-    powershell -ExecutionPolicy Bypass -File scripts\deploy.ps1 -CommitPush -Message "Xato tuzatildi"
+    Commit message.
 #>
+
 param(
-    [switch]$SkipTests,
-    [switch]$CommitPush,
-    [string]$Message
+[switch]$SkipTests,
+[switch]$CommitPush,
+[string]$Message
 )
 
 $ErrorActionPreference = "Stop"
 
-$ProjectRoot = Split-Path -Parent $PSScriptRoot
-$ServerHost = "root@62.238.102.84"
-$RemoteJarPath = "/opt/studygrow/target/TestProject-0.0.1-SNAPSHOT.jar"
-$LocalJarPath = Join-Path $ProjectRoot "target\TestProject-0.0.1-SNAPSHOT.jar"
+# ============================================================
+# CONFIG
+# ============================================================
 
-function Write-Step($text) {
+$ProjectRoot = Split-Path -Parent $PSScriptRoot
+
+$ServerHost = "root@62.238.102.84"
+
+$RemoteJarPath = "/opt/studygrow/target/TestProject-0.0.1-SNAPSHOT.jar"
+
+$LocalJarPath = Join-Path `
+    $ProjectRoot `
+    "target\TestProject-0.0.1-SNAPSHOT.jar"
+
+
+# ============================================================
+# FUNCTIONS
+# ============================================================
+
+function Write-Step {
+    param(
+        [string]$Text
+    )
+
     Write-Host ""
-    Write-Host "==> $text" -ForegroundColor Cyan
+    Write-Host "==================================================" `
+        -ForegroundColor DarkGray
+
+    Write-Host "==> $Text" `
+        -ForegroundColor Cyan
+
+    Write-Host "==================================================" `
+        -ForegroundColor DarkGray
 }
 
-function Fail($text) {
+
+function Fail {
+    param(
+        [string]$Text
+    )
+
     Write-Host ""
-    Write-Host "XATOLIK: $text" -ForegroundColor Red
+    Write-Host "XATOLIK: $Text" `
+        -ForegroundColor Red
+
     exit 1
 }
+
+
+function Check-ExitCode {
+    param(
+        [string]$Operation
+    )
+
+    if ($LASTEXITCODE -ne 0) {
+        Fail "$Operation muvaffaqiyatsiz tugadi. Exit code: $LASTEXITCODE"
+    }
+}
+
+
+# ============================================================
+# PROJECT ROOT
+# ============================================================
 
 Set-Location $ProjectRoot
 
-# ---- 0. (ixtiyoriy) commit + push ----
+Write-Host ""
+Write-Host "Project: $ProjectRoot" -ForegroundColor Gray
+Write-Host "Server : $ServerHost" -ForegroundColor Gray
+Write-Host ""
+
+
+# ============================================================
+# 0. GIT COMMIT + PUSH
+# ============================================================
+
 if ($CommitPush) {
-    Write-Step "Git: o'zgarishlarni commit qilish"
+
+    Write-Step "Git: o'zgarishlarni tekshirish"
+
+    git status --short
+
+    Check-ExitCode "git status"
+
+
+    Write-Step "Git: git add -A"
+
     git add -A
+
+    Check-ExitCode "git add"
+
+
     $staged = git diff --cached --name-only
+
+
     if (-not $staged) {
-        Write-Host "Commit qilinadigan o'zgarish yo'q, o'tkazib yuborilyapti." -ForegroundColor Yellow
-    } else {
+
+        Write-Host ""
+        Write-Host "Commit qilinadigan o'zgarish yo'q." `
+            -ForegroundColor Yellow
+
+        Write-Host "Git push o'tkazib yuboriladi." `
+            -ForegroundColor Yellow
+
+    }
+    else {
+
+        Write-Host ""
+        Write-Host "Commit qilinadigan fayllar:" `
+            -ForegroundColor Green
+
+        Write-Host $staged
+
+
         if (-not $Message) {
+
             $Message = Read-Host "Commit xabarini kiriting"
+
         }
-        $fullMessage = "$Message`n`nCo-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>"
-        git commit -m $fullMessage
-        if ($LASTEXITCODE -ne 0) { Fail "git commit muvaffaqiyatsiz tugadi." }
+
+
+        if (-not $Message) {
+
+            $Message = "Auto deploy"
+
+        }
+
+
+        Write-Step "Git: commit"
+
+        git commit -m $Message
+
+        Check-ExitCode "git commit"
+
 
         Write-Step "Git: push"
+
         git push origin master
-        if ($LASTEXITCODE -ne 0) { Fail "git push muvaffaqiyatsiz tugadi." }
+
+        Check-ExitCode "git push"
+
     }
+
+}
+else {
+
+    Write-Host ""
+    Write-Host "Git commit/push o'tkazib yuborildi." `
+        -ForegroundColor Yellow
+
 }
 
-# ---- 1. Testlar ----
+
+# ============================================================
+# 1. TESTS
+# ============================================================
+
 if (-not $SkipTests) {
-    Write-Step "Testlar ishga tushirilmoqda (ClamAvScanServiceTest chetlab o'tiladi)..."
+
+    Write-Step "Testlar ishga tushirilmoqda"
+
+    Write-Host ""
+    Write-Host "ClamAvScanServiceTest chetlab o'tiladi." `
+        -ForegroundColor Yellow
+
+    Write-Host ""
+
     & .\mvnw.cmd test "-Dtest=!ClamAvScanServiceTest"
-    if ($LASTEXITCODE -ne 0) { Fail "Testlar muvaffaqiyatsiz tugadi — deploy to'xtatildi." }
-    Write-Host "Testlar muvaffaqiyatli o'tdi." -ForegroundColor Green
-} else {
-    Write-Host "(-SkipTests: testlar o'tkazib yuborildi)" -ForegroundColor Yellow
+
+    Check-ExitCode "Testlar"
+
+    Write-Host ""
+    Write-Host "Testlar muvaffaqiyatli o'tdi." `
+        -ForegroundColor Green
+
+}
+else {
+
+    Write-Host ""
+    Write-Host "(-SkipTests) Testlar o'tkazib yuborildi." `
+        -ForegroundColor Yellow
+
 }
 
-# ---- 2. Build ----
-Write-Step "Jar quriladi (mvn package -DskipTests)..."
+
+# ============================================================
+# 2. MAVEN BUILD
+# ============================================================
+
+Write-Step "Maven: JAR qurilmoqda"
+
 & .\mvnw.cmd -q -o package -DskipTests
-if ($LASTEXITCODE -ne 0) { Fail "Build muvaffaqiyatsiz tugadi." }
-if (-not (Test-Path $LocalJarPath)) { Fail "Jar fayl topilmadi: $LocalJarPath" }
-Write-Host "Jar tayyor: $LocalJarPath" -ForegroundColor Green
 
-# ---- 3. SCP ----
-Write-Step "Jar serverga yuklanmoqda (scp)..."
-scp $LocalJarPath "${ServerHost}:${RemoteJarPath}"
-if ($LASTEXITCODE -ne 0) { Fail "scp muvaffaqiyatsiz tugadi." }
+Check-ExitCode "Maven build"
 
-# ---- 4. Checksum tekshiruvi ----
-Write-Step "Checksum tekshirilmoqda..."
-$localHash = (Get-FileHash -Path $LocalJarPath -Algorithm MD5).Hash.ToLower()
-$remoteHash = (ssh $ServerHost "md5sum $RemoteJarPath").Split(" ")[0]
-if ($localHash -ne $remoteHash) {
-    Fail "Checksum mos kelmadi! Lokal: $localHash, Server: $remoteHash. Qayta urinib ko'ring."
-}
-Write-Host "Checksum mos: $localHash" -ForegroundColor Green
 
-# ---- 5. Docker rebuild ----
-Write-Step "Docker konteyner qayta qurilmoqda va ishga tushirilmoqda..."
-ssh $ServerHost "cd /opt/studygrow && docker compose -f docker-compose.prod.yml up -d --build app"
-if ($LASTEXITCODE -ne 0) { Fail "docker compose muvaffaqiyatsiz tugadi." }
+if (-not (Test-Path $LocalJarPath)) {
 
-# ---- 6. Startup tekshiruvi ----
-Write-Step "Server toza ishga tushishini kutilmoqda (bu ~30-60 soniya davom etishi mumkin)..."
-$started = $false
-for ($i = 0; $i -lt 40; $i++) {
-    Start-Sleep -Seconds 3
-    $logLine = ssh $ServerHost "docker logs spring-app --since 3m 2>&1 | grep -i 'started testapplication' | tail -1"
-    if ($logLine) {
-        $started = $true
-        Write-Host $logLine -ForegroundColor Green
-        break
-    }
+    Fail "JAR fayl topilmadi: $LocalJarPath"
+
 }
 
-if (-not $started) {
-    Write-Host "Ogohlantirish: 'Started TestApplication' qatori 2 daqiqa ichida topilmadi." -ForegroundColor Yellow
-    Write-Host "Loglarni qo'lda tekshiring:" -ForegroundColor Yellow
-    Write-Host "  ssh $ServerHost `"docker logs spring-app --since 3m`""
-    exit 1
-}
 
-Write-Step "Xatolarni tekshirish..."
-$errors = ssh $ServerHost "docker logs spring-app --since 3m 2>&1 | grep -iE 'ERROR|Exception' | grep -v 'Hibernate:' | grep -v 'Telegram update error'"
-if ($errors) {
-    Write-Host "Diqqat — loglarda xato(lar) topildi:" -ForegroundColor Yellow
-    Write-Host $errors
-} else {
-    Write-Host "Xato topilmadi." -ForegroundColor Green
-}
+$jarInfo = Get-Item $LocalJarPath
 
 Write-Host ""
-Write-Host "=== DEPLOY TUGADI: https://study-grow.uz ===" -ForegroundColor Cyan
-Write-Host "Eslatma: har bir deploy sessiyalarni tozalaydi — brauzerda qayta login qiling." -ForegroundColor Yellow
+Write-Host "JAR tayyor." -ForegroundColor Green
+Write-Host "Path : $LocalJarPath"
+Write-Host "Size : $([math]::Round($jarInfo.Length / 1MB, 2)) MB"
+
+
+# ============================================================
+# 3. SCP UPLOAD
+# ============================================================
+
+Write-Step "SCP: JAR serverga yuklanmoqda"
+
+scp $LocalJarPath "${ServerHost}:${RemoteJarPath}"
+
+Check-ExitCode "SCP upload"
+
+Write-Host ""
+Write-Host "SCP muvaffaqiyatli tugadi." `
+    -ForegroundColor Green
+
+
+# ============================================================
+# 4. MD5 CHECKSUM
+# ============================================================
+
+Write-Step "MD5 checksum tekshirilmoqda"
+
+
+$localHash = (
+Get-FileHash `
+        -Path $LocalJarPath `
+        -Algorithm MD5
+).Hash.ToLower()
+
+
+$remoteHashOutput = ssh $ServerHost `
+    "md5sum $RemoteJarPath"
+
+
+Check-ExitCode "Remote md5sum"
+
+
+$remoteHash = (
+$remoteHashOutput `
+        -split "\s+"
+)[0].ToLower()
+
+
+Write-Host ""
+Write-Host "Local : $localHash"
+Write-Host "Remote: $remoteHash"
+
+
+if ($localHash -ne $remoteHash) {
+
+    Fail @"
+Checksum mos kelmadi!
+
+Lokal : $localHash
+Server: $remoteHash
+
+Deploy to'xtatildi.
+"@
+
+}
+
+
+Write-Host ""
+Write-Host "Checksum MOS." `
+    -ForegroundColor Green
+
+
+# ============================================================
+# 5. DOCKER REBUILD
+# ============================================================
+
+Write-Step "Docker: app rebuild va restart"
+
+
+$dockerCommand = `
+    "cd /opt/studygrow && " +
+        "docker compose -f docker-compose.prod.yml " +
+        "up -d --build app"
+
+
+ssh $ServerHost $dockerCommand
+
+Check-ExitCode "Docker compose up"
+
+
+Write-Host ""
+Write-Host "Docker app muvaffaqiyatli qayta ishga tushirildi." `
+    -ForegroundColor Green
+
+
+# ============================================================
+# 6. STARTUP CHECK
+# ============================================================
+
+Write-Step "Spring Boot startup kutilmoqda"
+
+Write-Host ""
+Write-Host "Bu taxminan 30-120 soniya davom etishi mumkin..." `
+    -ForegroundColor Yellow
+
+
+$started = $false
+
+
+for ($i = 0; $i -lt 40; $i++) {
+
+    Start-Sleep -Seconds 3
+
+
+    $logLine = ssh $ServerHost `
+        "docker logs spring-app --since 3m 2>&1 | grep -i 'started testapplication' | tail -1"
+
+
+    if ($LASTEXITCODE -eq 0 -and $logLine) {
+
+        $started = $true
+
+        Write-Host ""
+        Write-Host "Spring Boot STARTED:" `
+            -ForegroundColor Green
+
+        Write-Host $logLine `
+            -ForegroundColor Green
+
+        break
+
+    }
+
+
+    Write-Host "." -NoNewline
+
+}
+
+
+Write-Host ""
+
+
+if (-not $started) {
+
+    Write-Host ""
+    Write-Host "OGOHLANTIRISH!" `
+        -ForegroundColor Yellow
+
+    Write-Host "'Started TestApplication' topilmadi." `
+        -ForegroundColor Yellow
+
+    Write-Host ""
+    Write-Host "Server loglarini tekshiring:" `
+        -ForegroundColor Yellow
+
+    Write-Host ""
+    Write-Host "ssh $ServerHost `"docker logs spring-app --since 5m`"" `
+        -ForegroundColor Gray
+
+    exit 1
+
+}
+
+
+# ============================================================
+# 7. ERROR CHECK
+# ============================
