@@ -134,18 +134,24 @@ function renderMonthlyBreakdown(months) {
 // ADMIN-rol obunalari VA kurs obunalari — ikkalasi ham olib, bitta
 // jadvalda (createdAt bo'yicha eng so'nggisi tepada) ko'rsatiladi
 // (foydalanuvchi so'rovi, 2026-09-09: "/payments ma'lumotlari noto'g'ri").
+// Har bir qatorga aniq "type" belgisi qo'yiladi ("admin"/"course") —
+// "✏️ Tahrirlash" tugmasi qaysi API'ga (/api/subscriptions yoki
+// /api/course-subscriptions) murojaat qilishini shu orqali aniqlaydi,
+// courseTitle borligini taxmin qilish o'rniga (foydalanuvchi so'rovi,
+// 2026-09-16: "шу жадвал устунларига саралаш қўш, таҳрирлаш action ҳам қўш").
+let lastHistoryList = [];
+
 function loadHistory() {
     Promise.all([
         fetch("/api/subscriptions").then(r => r.ok ? r.json() : []),
         fetch("/api/course-subscriptions").then(r => r.ok ? r.json() : [])
     ])
         .then(([adminSubs, courseSubs]) => {
-            const tagged = [
-                ...adminSubs.map(s => ({ ...s, service: "🎓 ADMIN huquqi" })),
-                ...courseSubs.map(s => ({ ...s, service: "📚 " + s.courseTitle }))
-            ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-            renderHistory(tagged);
+            lastHistoryList = [
+                ...adminSubs.map(s => ({ ...s, service: "🎓 ADMIN huquqi", type: "admin" })),
+                ...courseSubs.map(s => ({ ...s, service: "📚 " + s.courseTitle, type: "course" }))
+            ];
+            renderHistory(getSortedHistory(lastHistoryList));
         })
         .catch(err => console.error(err));
 }
@@ -165,25 +171,247 @@ const SOURCE_LABELS_UZ = {
     REQUESTED: "📩 So'rov"
 };
 
+// "To'liq to'lov tarixi" jadvali uchun saralash — /users va
+// /statistics/user-sessions sahifalaridagi bilan bir xil andoza
+// (data-sort ustun sarlavhasi bosilganda, xuddi shu ustun qayta
+// bosilsa yo'nalish teskari bo'ladi).
+let historySortKey = "createdAt";
+let historySortDir = "desc";
+const HISTORY_DEFAULT_DESC = new Set(["createdAt", "endDate", "amount"]);
+
+function onHistorySortHeaderClick(key) {
+    if (historySortKey === key) {
+        historySortDir = historySortDir === "asc" ? "desc" : "asc";
+    } else {
+        historySortKey = key;
+        historySortDir = HISTORY_DEFAULT_DESC.has(key) ? "desc" : "asc";
+    }
+    renderHistory(getSortedHistory(lastHistoryList));
+}
+
+function getSortedHistory(list) {
+    const key = historySortKey;
+    const dir = historySortDir === "asc" ? 1 : -1;
+
+    return [...list].sort((a, b) => {
+        let va = a[key];
+        let vb = b[key];
+
+        if (key === "createdAt" || key === "endDate") {
+            va = va ? new Date(va).getTime() : null;
+            vb = vb ? new Date(vb).getTime() : null;
+        } else if (key === "amount") {
+            va = Number(va);
+            vb = Number(vb);
+        } else if (key === "status") {
+            va = STATUS_LABELS_UZ[va] || va || "";
+            vb = STATUS_LABELS_UZ[vb] || vb || "";
+        } else if (key === "source") {
+            va = SOURCE_LABELS_UZ[va] || va || "";
+            vb = SOURCE_LABELS_UZ[vb] || vb || "";
+        } else {
+            va = (va ?? "").toString().toLowerCase();
+            vb = (vb ?? "").toString().toLowerCase();
+        }
+
+        if (va === null || va === undefined || va === "") return vb === null || vb === undefined || vb === "" ? 0 : 1;
+        if (vb === null || vb === undefined || vb === "") return -1;
+
+        if (va < vb) return -1 * dir;
+        if (va > vb) return 1 * dir;
+        return 0;
+    });
+}
+
+function updateHistorySortArrows() {
+    document.querySelectorAll("#historyTable .sort-arrow").forEach(el => el.textContent = "");
+    const arrow = document.getElementById("historySortArrow-" + historySortKey);
+    if (arrow) arrow.textContent = historySortDir === "asc" ? "▲" : "▼";
+}
+
+function escapeHtmlHistory(text) {
+    const div = document.createElement("div");
+    div.textContent = text ?? "";
+    return div.innerHTML;
+}
+
 function renderHistory(subscriptions) {
     const tbody = document.getElementById("historyTableBody");
     if (!tbody) return;
 
     if (!subscriptions.length) {
-        tbody.innerHTML = `<tr><td colspan="8" class="empty-row">Hali to'lov yo'q</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="empty-row">Hali to'lov yo'q</td></tr>`;
+        updateHistorySortArrows();
         return;
     }
 
-    tbody.innerHTML = subscriptions.map(s => `
+    tbody.innerHTML = subscriptions.map(s => {
+        const editBtn = s.status !== "PENDING"
+            ? `<button class="sub-action-btn sub-action-edit" onclick="editHistorySubscription(${s.id}, '${s.type}')">✏️ Tahrirlash</button>`
+            : "—";
+
+        return `
         <tr>
-            <td>${s.username}</td>
-            <td>${s.service}</td>
+            <td>${escapeHtmlHistory(s.username)}</td>
+            <td>${escapeHtmlHistory(s.service)}</td>
             <td>${formatSum(s.amount)}</td>
             <td>${SOURCE_LABELS_UZ[s.source] || s.source}</td>
             <td><span class="status-badge ${s.status}">${STATUS_LABELS_UZ[s.status] || s.status}</span></td>
             <td>${formatDateTime(s.createdAt)}</td>
             <td>${formatDateTime(s.endDate)}</td>
-            <td>${s.note || "—"}</td>
+            <td>${escapeHtmlHistory(s.note) || "—"}</td>
+            <td>${editBtn}</td>
         </tr>
-    `).join("");
+    `;
+    }).join("");
+
+    updateHistorySortArrows();
+    buildHistoryFixedHeader();
+    positionHistoryFixedHeader();
+    initHistoryScrollSync();
+}
+
+// ===== Sarlavhani tepaga qotirish (foydalanuvchi so'rovi, 2026-09-16:
+// "jadvaldagi th ni va chapdan username'gacha fixed qil") — /users
+// sahifasidagi buildFixedHeader()/positionFixedHeader() bilan bir xil
+// ISHONCHLI andoza (users.js), faqat 1ta muzlatilgan ustun (username)
+// bilan va bitta manba scrollbar (bu yerda users.js'dagi kabi alohida
+// tepa/fixed mirror scrollbar shart emas — jadval ancha ingichka). =====
+function buildHistoryFixedHeader() {
+    const ths = [...document.querySelectorAll("#historyTable thead th")];
+    const frozenContainer = document.getElementById("historyTableHeaderFixedFrozen");
+    const scrollContainer = document.getElementById("historyTableHeaderFixedInner");
+    if (!ths.length || !frozenContainer || !scrollContainer) return;
+
+    frozenContainer.innerHTML = "";
+    scrollContainer.innerHTML = "";
+
+    ths.forEach((th, i) => {
+        const div = document.createElement("div");
+        div.className = "fx-cell";
+        div.textContent = th.textContent.trim();
+        // Haqiqiy chizilgan kenglikni o'qib, aynan shu qiymatni qattiq
+        // belgilaymiz — nusxa asl ustunlar bilan pixel-aniq tekislanadi.
+        div.style.width = th.getBoundingClientRect().width + "px";
+
+        const sortKey = th.dataset.sort;
+        if (sortKey) {
+            div.dataset.sort = sortKey;
+            div.addEventListener("click", () => onHistorySortHeaderClick(sortKey));
+        }
+        (i === 0 ? frozenContainer : scrollContainer).appendChild(div);
+    });
+}
+
+function positionHistoryFixedHeader() {
+    const scrollEl = document.getElementById("historyTableScroll");
+    const fixedHeader = document.getElementById("historyTableHeaderFixed");
+    if (!scrollEl || !fixedHeader) return;
+
+    const rect = scrollEl.getBoundingClientRect();
+    fixedHeader.style.left = rect.left + "px";
+    fixedHeader.style.width = rect.width + "px";
+
+    const headerInner = document.getElementById("historyTableHeaderFixedInner");
+    if (headerInner) headerInner.style.transform = `translateX(-${scrollEl.scrollLeft}px)`;
+
+    updateHistoryFixedHeaderVisibility();
+}
+
+// Nusxa FAQAT asl <thead> ekranning (navbar ostidagi, 72px) tepasidan
+// chiqib ketganda ko'rinadi — aks holda ikkita sarlavha bir vaqtda
+// ko'rinib, ortiqcha g'ijimlanish hosil qilardi.
+function updateHistoryFixedHeaderVisibility() {
+    const realThead = document.querySelector("#historyTable thead");
+    const fixedHeader = document.getElementById("historyTableHeaderFixed");
+    if (!realThead || !fixedHeader) return;
+
+    const rect = realThead.getBoundingClientRect();
+    fixedHeader.hidden = !(rect.top < 72);
+}
+
+let historyScrollSyncInitialized = false;
+
+function initHistoryScrollSync() {
+    if (historyScrollSyncInitialized) return;
+    historyScrollSyncInitialized = true;
+
+    const scrollEl = document.getElementById("historyTableScroll");
+    if (scrollEl) scrollEl.addEventListener("scroll", positionHistoryFixedHeader);
+
+    window.addEventListener("resize", () => {
+        buildHistoryFixedHeader();
+        positionHistoryFixedHeader();
+    });
+    window.addEventListener("scroll", updateHistoryFixedHeaderVisibility, { passive: true });
+}
+
+// "✏️ Tahrirlash" — qator turiga ("admin" yoki "course") qarab to'g'ri
+// API'ga yo'naltiradi: ADMIN-rol obunasi /api/subscriptions/{id} (amount,
+// durationMonths, source), kurs obunasi /api/course-subscriptions/{id}
+// (amount, durationMonths — source'siz). adminSubscriptions.js'dagi
+// editAdminSubscription() / courseSubscriptions.js'dagi editSubscription()
+// bilan bir xil showPromptModal andozasi (foydalanuvchi so'rovi, 2026-09-16).
+async function editHistorySubscription(id, type) {
+    const sub = lastHistoryList.find(s => s.id === id && s.type === type);
+    if (!sub) return;
+
+    const amountStr = await showPromptModal(
+        `"${sub.username}" — "${sub.service}": yangi summa (so'm):`,
+        String(Math.round(Number(sub.amount) || 0)));
+    if (amountStr === null) return;
+
+    const amount = Number(amountStr);
+    if (isNaN(amount) || amount < 0) {
+        showAlertModal("❌ Noto'g'ri summa");
+        return;
+    }
+
+    const durationStr = await showPromptModal("Yangi muddat (necha oy, boshlanish sanasidan):", "1");
+    if (durationStr === null) return;
+
+    const durationMonths = Number(durationStr);
+    if (!durationMonths || durationMonths <= 0) {
+        showAlertModal("❌ Noto'g'ri muddat");
+        return;
+    }
+
+    const body = { amount, durationMonths };
+
+    if (type === "admin") {
+        const sourceStr = await showPromptModal(
+            "Manba (MANUAL, ONLINE yoki TELEGRAM — bo'sh qoldirsangiz o'zgarmaydi):",
+            sub.source || "");
+        if (sourceStr === null) return;
+
+        const trimmedSource = sourceStr.trim().toUpperCase();
+        if (trimmedSource && !["MANUAL", "ONLINE", "TELEGRAM"].includes(trimmedSource)) {
+            showAlertModal("❌ Manba noto'g'ri (MANUAL, ONLINE yoki TELEGRAM bo'lishi kerak)");
+            return;
+        }
+        body.source = trimmedSource || null;
+    }
+
+    const url = type === "admin" ? `/api/subscriptions/${id}` : `/api/course-subscriptions/${id}`;
+
+    try {
+        const res = await fetch(url, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            showAlertModal(data.error || "Xatolik yuz berdi");
+            return;
+        }
+
+        showAlertModal("✅ Obuna yangilandi");
+        loadHistory();
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
+    }
 }

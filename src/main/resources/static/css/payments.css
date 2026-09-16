@@ -58,3 +58,45 @@
     background: #e2e8f0;
     color: #475569;
 }
+
+/* Saralanadigan ustunlar — "To'liq to'lov tarixi" jadvalida (foydalanuvchi
+   so'rovi, 2026-09-16: "шу жадвал устунларига саралаш қўш"). .sort-arrow
+   o'zi users.css'da global e'lon qilingan (bu sahifa users.css'ni ham
+   ulaydi) — bu yerda faqat data-sort ustunning kursor/hover uslubi kerak. */
+.subscriptions-table th[data-sort] {
+    cursor: pointer;
+    user-select: none;
+    transition: background .15s ease;
+}
+
+.subscriptions-table th[data-sort]:hover {
+    background: #e4e7eb;
+}
+
+/* "Foydalanuvchi" ustunini chapga qotirish ("zakrepit levo",
+   foydalanuvchi so'rovi, 2026-09-16: "chapdan username'gacha fixed
+   qil"). Sarlavhani TEPAGA qotirish alohida JS-qurilgan position:fixed
+   overlay orqali (buildHistoryFixedHeader/positionHistoryFixedHeader,
+   payments.js) — sticky-top va sticky-left HECH QACHON bitta
+   katakchada birlashtirilmaydi (users.css'da 2026-09-09 topilgan
+   Chromium bug: shu kombinatsiya sarlavhani vizual ravishda birinchi
+   qator ICHIGA "sirg'atib" chizib qo'yadi). border-collapse ham shu
+   sabab "separate"ga o'zgartirildi (collapse + sticky birga bug bergan). */
+#historyTable {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+#historyTable thead th:first-child,
+#historyTable tbody td:first-child {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: #fff;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, .08);
+}
+
+#historyTable thead th:first-child {
+    z-index: 3;
+    background: #f1f3f5;
+}

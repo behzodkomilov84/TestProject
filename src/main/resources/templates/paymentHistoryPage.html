@@ -73,27 +73,45 @@
     <!-- To'liq to'lov tarixi -->
     <div class="subscriptions-panel">
         <h2>📋 To'liq to'lov tarixi</h2>
-        <div class="table-scroll">
-        <table class="subscriptions-table">
+
+        <!-- Sarlavhani ekranga qotirish ("zakrepit verx", foydalanuvchi
+             so'rovi, 2026-09-16) — /users sahifasidagi bilan bir xil
+             ISHONCHLI andoza: ASL <thead> oddiy (static) qoldirilib,
+             uning nusxasi shu yerda position:fixed <div>lar bilan
+             (jadval katakchalari EMAS) alohida quriladi (users.css'da
+             2026-09-09 topilgan Chromium bug — sticky-top jadval
+             katakchalarida ishlatilganda LAYOUT/PAINT uzilishiga olib
+             kelgani sabab). Faqat asl sarlavha ekrandan (navbar ostidan)
+             chiqib ketganda ko'rinadi (payments.js#updateHistoryFixedHeaderVisibility). -->
+        <div class="table-header-fixed" id="historyTableHeaderFixed" hidden>
+            <div class="table-header-fixed-frozen" id="historyTableHeaderFixedFrozen"></div>
+            <div class="table-header-fixed-scroll-clip">
+                <div class="table-header-fixed-inner" id="historyTableHeaderFixedInner"></div>
+            </div>
+        </div>
+
+        <div class="table-scroll" id="historyTableScroll">
+        <table class="subscriptions-table" id="historyTable">
             <thead>
             <tr>
-                <th>Foydalanuvchi</th>
+                <th data-sort="username" onclick="onHistorySortHeaderClick('username')">Foydalanuvchi <span class="sort-arrow" id="historySortArrow-username"></span></th>
                 <!-- "Xizmat" — ADMIN huquqimi yoki qaysi KURS uchun to'lov
                      (foydalanuvchi so'rovi, 2026-09-09: "/payments
                      ma'lumotlari noto'g'ri" — sabab: bu sahifa avval FAQAT
                      ADMIN-rol obunalarini hisoblardi, kurs to'lovlari
                      butunlay tushib qolgan edi). -->
-                <th>Xizmat</th>
-                <th>Summa</th>
-                <th>Manba</th>
-                <th>Holat</th>
-                <th>Sana</th>
-                <th>Muddat</th>
-                <th>Izoh</th>
+                <th data-sort="service" onclick="onHistorySortHeaderClick('service')">Xizmat <span class="sort-arrow" id="historySortArrow-service"></span></th>
+                <th data-sort="amount" onclick="onHistorySortHeaderClick('amount')">Summa <span class="sort-arrow" id="historySortArrow-amount"></span></th>
+                <th data-sort="source" onclick="onHistorySortHeaderClick('source')">Manba <span class="sort-arrow" id="historySortArrow-source"></span></th>
+                <th data-sort="status" onclick="onHistorySortHeaderClick('status')">Holat <span class="sort-arrow" id="historySortArrow-status"></span></th>
+                <th data-sort="createdAt" onclick="onHistorySortHeaderClick('createdAt')">Sana <span class="sort-arrow" id="historySortArrow-createdAt"></span></th>
+                <th data-sort="endDate" onclick="onHistorySortHeaderClick('endDate')">Muddat <span class="sort-arrow" id="historySortArrow-endDate"></span></th>
+                <th data-sort="note" onclick="onHistorySortHeaderClick('note')">Izoh <span class="sort-arrow" id="historySortArrow-note"></span></th>
+                <th>Amal</th>
             </tr>
             </thead>
             <tbody id="historyTableBody">
-                <tr><td colspan="8" class="empty-row">Yuklanmoqda...</td></tr>
+                <tr><td colspan="9" class="empty-row">Yuklanmoqda...</td></tr>
             </tbody>
         </table>
         </div>
