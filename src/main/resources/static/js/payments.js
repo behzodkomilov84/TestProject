@@ -246,9 +246,13 @@ function renderHistory(subscriptions) {
     }
 
     tbody.innerHTML = subscriptions.map(s => {
-        const editBtn = s.status !== "PENDING"
+        // "🗑️ O'chirish" — HAR DOIM (statusdan qat'iy nazar), "✏️
+        // Tahrirlash"dan farqli (adminSubscriptions.js/courseSubscriptions.js
+        // bilan bir xil g'oya — foydalanuvchi so'rovi, 2026-09-16).
+        let actions = s.status !== "PENDING"
             ? `<button class="sub-action-btn sub-action-edit" onclick="editHistorySubscription(${s.id}, '${s.type}')">✏️ Tahrirlash</button>`
-            : "—";
+            : "";
+        actions += `<button class="sub-action-btn sub-action-delete" onclick="deleteHistorySubscription(${s.id}, '${s.type}')">🗑️ O'chirish</button>`;
 
         return `
         <tr>
@@ -260,7 +264,7 @@ function renderHistory(subscriptions) {
             <td>${formatDateTime(s.createdAt)}</td>
             <td>${formatDateTime(s.endDate)}</td>
             <td>${escapeHtmlHistory(s.note) || "—"}</td>
-            <td>${editBtn}</td>
+            <td>${actions}</td>
         </tr>
     `;
     }).join("");
@@ -409,6 +413,32 @@ async function editHistorySubscription(id, type) {
         }
 
         showAlertModal("✅ Obuna yangilandi");
+        loadHistory();
+    } catch (err) {
+        console.error(err);
+        showAlertModal("Tarmoq xatoligi");
+    }
+}
+
+// "🗑️ O'chirish" — "Bekor qilish"dan farqli, yozuvni BUTUNLAY o'chiradi
+// (adminSubscriptions.js#deleteAdminSubscriptionPermanently /
+// courseSubscriptions.js#deleteSubscriptionPermanently bilan bir xil,
+// foydalanuvchi so'rovi, 2026-09-16: "satrlarni delete qilishni ham qo'sh").
+async function deleteHistorySubscription(id, type) {
+    const warning = type === "admin"
+        ? "Bu obuna yozuvini BUTUNLAY o'chirmoqchimisiz? Agar hali faol bo'lsa, ADMIN huquqi ham darhol olib tashlanadi. Bu amalni ortga qaytarib bo'lmaydi."
+        : "Bu obuna yozuvini BUTUNLAY o'chirmoqchimisiz? Bu amalni ortga qaytarib bo'lmaydi.";
+    if (!await showConfirmModal(warning, { danger: true })) return;
+
+    const url = type === "admin" ? `/api/subscriptions/${id}` : `/api/course-subscriptions/${id}`;
+
+    try {
+        const res = await fetch(url, { method: "DELETE" });
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            showAlertModal(data.error || "Xatolik yuz berdi");
+            return;
+        }
         loadHistory();
     } catch (err) {
         console.error(err);
