@@ -3880,9 +3880,15 @@ body {
    sifatida hech qanday qoida yo'q edi, shu sabab tugma brauzer
    standart (stilllanmagan) ko'rinishida chiqib qolgan. #courseWordExportConfirmBtn
    bilan bir xil uslub, shu ID'larga qo'llanildi. */
+/* "To'lovga o'tish" — payment-modal'dagi ASOSIY (primary) amal, xuddi
+   yuqoridagi kabi "export-excel-btn" klassi bilan belgilangan edi-yu,
+   lekin haqiqiy uslub yo'q edi (foydalanuvchi so'rovi, 2026-09-17:
+   "чиройли css қўш"). Yuqoridagi tugmalar bilan bir xil guruhga
+   qo'shildi — vizual jihatdan bir xil. */
 #bulkImportConfirmBtn,
 #bulkImportCloseBtn,
-#bulkRestoreConfirmBtn {
+#bulkRestoreConfirmBtn,
+#coursePaymentConfirmBtn {
     background: linear-gradient(135deg, #185ABD, #103F91);
     color: #fff;
     border: none;
@@ -3898,14 +3904,16 @@ body {
 
 #bulkImportConfirmBtn:hover,
 #bulkImportCloseBtn:hover,
-#bulkRestoreConfirmBtn:hover {
+#bulkRestoreConfirmBtn:hover,
+#coursePaymentConfirmBtn:hover {
     transform: translateY(-1px);
     box-shadow: 0 6px 18px rgba(16, 63, 145, .45);
 }
 
 #bulkImportConfirmBtn:active,
 #bulkImportCloseBtn:active,
-#bulkRestoreConfirmBtn:active {
+#bulkRestoreConfirmBtn:active,
+#coursePaymentConfirmBtn:active {
     transform: translateY(0);
     box-shadow: 0 2px 8px rgba(16, 63, 145, .35);
 }
