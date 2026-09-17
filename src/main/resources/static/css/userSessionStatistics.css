@@ -123,9 +123,18 @@ body {
     min-width: 900px;
 }
 
+/* "position: sticky" bu yerda HAQIQIY TOPILGAN BUG orqali aniqlandi
+   (jonli tekshiruvda, 2026-09-18): getBoundingClientRect() thead'ni
+   TO'G'RI joyda (birinchi qatordan yuqorida) deb hisoblasa-da, haqiqiy
+   PAINT natijasi sarlavhani birinchi tbody qatoridan PASTGA chizib
+   qo'yardi — users.css'da 2026-09-09 aynan shu nuqson (LAYOUT/PAINT
+   uzilishi) allaqachon topilgan va u yerda ham "position:sticky jadval
+   katakchalarida UMUMAN ishlatilmaydi" degan xulosaga kelingan edi. Shu
+   sabab bu yerda ham xuddi shu (ISHONCHLI) yechim qo'llanildi: ASL
+   <thead> oddiy (static) qoldirilib, uning nusxasi pastda alohida
+   position:fixed <div>lar bilan quriladi (qarang: .table-header-fixed,
+   userSessionStatistics.js#buildStatsFixedHeader). */
 .stats-table thead th {
-    position: sticky;
-    top: 0;
     background: #f8fafc;
     color: #334155;
     font-weight: 700;
@@ -139,6 +148,61 @@ body {
 }
 
 .stats-table thead th:hover {
+    background: #eef2f7;
+}
+
+/* Ekranga qotirilgan (fixed) jadval sarlavhasi — /users va /payments
+   sahifalaridagi .table-header-fixed bilan bir xil andoza (bu sahifa
+   o'sha css'larni ulamagani uchun shu yerda ham takrorlangan). Faqat
+   asl sarlavha ekrandan (navbar ostidan) chiqib ketganda ko'rinadi
+   (userSessionStatistics.js#updateStatsFixedHeaderVisibility). */
+.table-header-fixed {
+    position: fixed;
+    top: 72px;
+    display: flex;
+    overflow: hidden;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    border-bottom: 2px solid #e2e8f0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, .08);
+    z-index: 600;
+}
+
+.table-header-fixed[hidden] {
+    display: none;
+}
+
+/* Muzlatilgan (Username) sarlavha katakchasi — DOIM ko'rinadi, gorizontal
+   aylantirish transform'idan mustasno. */
+.table-header-fixed-frozen {
+    display: flex;
+    flex-shrink: 0;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, .08);
+}
+
+.table-header-fixed-scroll-clip {
+    overflow: hidden;
+    flex: 1;
+}
+
+.table-header-fixed-inner {
+    display: flex;
+}
+
+.table-header-fixed .fx-cell {
+    padding: 12px 14px;
+    font-weight: 700;
+    font-size: 13.5px;
+    color: #334155;
+    white-space: nowrap;
+    box-sizing: border-box;
+    flex-shrink: 0;
+    background: #f8fafc;
+    cursor: pointer;
+    user-select: none;
+}
+
+.table-header-fixed .fx-cell:hover {
     background: #eef2f7;
 }
 
@@ -168,6 +232,24 @@ body {
     font-variant-numeric: tabular-nums;
 }
 
+/* "Username" ustunini chapga qotirish ("zakrepit levo", foydalanuvchi
+   so'rovi, 2026-09-18: "usernameni ham fixed qil") — FAQAT tbody
+   katakchalariga (sarlavhaning o'zi EMAS — yuqoridagi izohga qarang,
+   users.css'da topilgan sticky-top+left kombinatsiyasi nuqsoni). Fon
+   ATAYLAB TO'LIQ (opak) — aks holda gorizontal aylantirilgan qolgan
+   ustunlar tagidan ko'rinib turardi. */
+.stats-sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: #fff;
+    box-shadow: 2px 0 4px rgba(0, 0, 0, .08);
+}
+
+.stats-table tbody tr:hover .stats-sticky-col {
+    background: #f8fafc;
+}
+
 .stats-empty,
 .stats-loading {
     text-align: center;
@@ -178,6 +260,36 @@ body {
 
 .hidden {
     display: none !important;
+}
+
+/* Ekranga qotirilgan (fixed) gorizontal scroll — /users sahifasidagi
+   .table-scroll-fixed bilan bir xil andoza (bu sahifa users.css'ni
+   ulamagani uchun shu yerda ham takrorlangan), faqat "position: fixed"
+   orqali sahifa vertikal aylantirilganda ham DOIM ko'rinib turadi
+   (foydalanuvchi so'rovi, 2026-09-18: "horizontal scroll qo'sh. Ekranga
+   fixed bo'lsin"). Joylashuvi (left/width) JS orqali jadval
+   konteynerining haqiqiy chegarasiga moslanadi — default holatda
+   "hidden" (faqat jadval haqiqatan gorizontal aylantirilishi kerak
+   bo'lganda va sahifaning o'z scrollbar'i ko'rinmayotganda ko'rsatiladi,
+   userSessionStatistics.js). */
+.table-scroll-fixed {
+    position: fixed;
+    bottom: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: 17px;
+    background: #fff;
+    border-top: 1px solid #d0d5dd;
+    box-shadow: 0 -2px 6px rgba(0, 0, 0, .08);
+    z-index: 500;
+}
+
+.table-scroll-fixed[hidden] {
+    display: none;
+}
+
+.table-scroll-top-inner {
+    height: 1px;
 }
 
 /* ===== Kichik ekranlar ===== */

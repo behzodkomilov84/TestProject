@@ -65,7 +65,33 @@
         <span class="stats-visible-count" id="statsVisibleCount"></span>
     </div>
 
-    <div class="stats-table-wrap">
+    <!-- Ekranga qotirilgan (fixed) gorizontal scroll — sahifani pastga
+         aylantirganda ham (jadval ko'p qatorli bo'lgani uchun) doim
+         ko'rinib turadi, /users sahifasidagi bilan bir xil andoza
+         (foydalanuvchi so'rovi, 2026-09-18: "horizontal scroll qo'sh.
+         Ekranga fixed bo'lsin"). Kengligi/joylashuvi
+         userSessionStatistics.js orqali jadval konteyneriga aniq
+         moslanadi, faqat jadval haqiqatan gorizontal aylantirilishi kerak
+         bo'lgandagina ko'rinadi. -->
+    <div class="table-scroll-fixed" id="statsTableScrollFixed" hidden>
+        <div class="table-scroll-top-inner" id="statsTableScrollFixedInner"></div>
+    </div>
+
+    <!-- Sarlavhani ekranga qotirish ("zakrepit verx", foydalanuvchi
+         so'rovi, 2026-09-18: "jadval sarlavhasini ... fixed qil") — ASL
+         <thead> oddiy (static) qoldirilib, nusxasi shu yerda position:fixed
+         <div>lar bilan alohida quriladi (jonli tekshiruvda topilgan bug
+         sabab — position:sticky jadval katakchalarida ishlatib bo'lmaydi,
+         qarang: userSessionStatistics.css). Faqat asl sarlavha ekrandan
+         chiqib ketganda ko'rinadi. -->
+    <div class="table-header-fixed" id="statsTableHeaderFixed" hidden>
+        <div class="table-header-fixed-frozen" id="statsTableHeaderFixedFrozen"></div>
+        <div class="table-header-fixed-scroll-clip">
+            <div class="table-header-fixed-inner" id="statsTableHeaderFixedInner"></div>
+        </div>
+    </div>
+
+    <div class="stats-table-wrap" id="statsTableScroll">
         <table class="stats-table" id="statsTable">
             <thead>
             <tr>

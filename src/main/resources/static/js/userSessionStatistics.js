@@ -38,10 +38,150 @@ async function loadUserSessionStats() {
         document.getElementById("statsLoadingMessage").classList.add("hidden");
         renderSummary();
         renderTable();
+        initStatsScrollSync();
     } catch (err) {
         console.error(err);
         document.getElementById("statsLoadingMessage").textContent = "❌ Tarmoq xatoligi.";
     }
+}
+
+// ===== Ekranga qotirilgan (fixed) gorizontal scroll (foydalanuvchi
+// so'rovi, 2026-09-18: "horizontal scroll qo'sh. Ekranga fixed bo'lsin")
+// — /users sahifasidagi (.table-scroll-fixed) bilan bir xil andoza: sahifa
+// pastga aylantirilganda, jadvalning o'z (native) scrollbar'i ekrandan
+// tashqarida qolsa, uning nusxasi ekranning pastiga qotirib ko'rsatiladi. =====
+let statsScrollSyncInitialized = false;
+
+function initStatsScrollSync() {
+    positionFixedScrollBar();
+    buildStatsFixedHeader();
+    positionStatsFixedHeader();
+
+    if (statsScrollSyncInitialized) return;
+    statsScrollSyncInitialized = true;
+
+    const bottomScroll = document.getElementById("statsTableScroll");
+    const fixedScroll = document.getElementById("statsTableScrollFixed");
+    const bars = [bottomScroll, fixedScroll];
+    let syncing = false;
+
+    bars.forEach(bar => {
+        bar.addEventListener("scroll", () => {
+            if (syncing) return;
+            syncing = true;
+            bars.forEach(other => {
+                if (other !== bar) other.scrollLeft = bar.scrollLeft;
+            });
+            // Qotirilgan sarlavhaning aylanadigan qismini (muzlatilgan
+            // "Username"dan tashqari ustunlar) ham xuddi shu gorizontal
+            // siljishga sinxronlaydi.
+            const headerInner = document.getElementById("statsTableHeaderFixedInner");
+            if (headerInner) headerInner.style.transform = `translateX(-${bottomScroll.scrollLeft}px)`;
+            syncing = false;
+        });
+    });
+
+    window.addEventListener("resize", () => {
+        positionFixedScrollBar();
+        buildStatsFixedHeader();
+        positionStatsFixedHeader();
+    });
+    window.addEventListener("scroll", () => {
+        updateFixedScrollBarVisibility();
+        updateStatsFixedHeaderVisibility();
+    }, { passive: true });
+}
+
+// ===== Sarlavhani tepaga qotirish (foydalanuvchi so'rovi, 2026-09-18:
+// "jadval sarlavhasini ... fixed qil") — /users va /payments
+// sahifalaridagi bilan bir xil ISHONCHLI andoza: ASL <thead> oddiy
+// (static) qoldirilib, uning nusxasi position:fixed <div>lar bilan
+// alohida quriladi (jonli tekshiruvda topilgan bug sabab —
+// position:sticky jadval katakchalarida ishlatib bo'lmaydi, qarang:
+// userSessionStatistics.css). "Username" — muzlatilgan (frozen) ustun,
+// gorizontal aylantirishdan mustasno. =====
+function buildStatsFixedHeader() {
+    const ths = [...document.querySelectorAll("#statsTable thead th")];
+    const frozenContainer = document.getElementById("statsTableHeaderFixedFrozen");
+    const scrollContainer = document.getElementById("statsTableHeaderFixedInner");
+    if (!ths.length || !frozenContainer || !scrollContainer) return;
+
+    frozenContainer.innerHTML = "";
+    scrollContainer.innerHTML = "";
+
+    ths.forEach((th, i) => {
+        const div = document.createElement("div");
+        div.className = "fx-cell" + (th.classList.contains("stats-col-num") ? " stats-col-num" : "");
+        div.textContent = th.textContent.trim();
+        // Haqiqiy chizilgan kenglikni o'qib, aynan shu qiymatni qattiq
+        // belgilaymiz — nusxa asl ustunlar bilan pixel-aniq tekislanadi.
+        div.style.width = th.getBoundingClientRect().width + "px";
+
+        const sortKey = th.dataset.sort;
+        if (sortKey) {
+            div.addEventListener("click", () => onSortHeaderClick(sortKey));
+        }
+        (i === 0 ? frozenContainer : scrollContainer).appendChild(div);
+    });
+}
+
+function positionStatsFixedHeader() {
+    const scrollEl = document.getElementById("statsTableScroll");
+    const fixedHeader = document.getElementById("statsTableHeaderFixed");
+    if (!scrollEl || !fixedHeader) return;
+
+    const rect = scrollEl.getBoundingClientRect();
+    fixedHeader.style.left = rect.left + "px";
+    fixedHeader.style.width = rect.width + "px";
+
+    const headerInner = document.getElementById("statsTableHeaderFixedInner");
+    if (headerInner) headerInner.style.transform = `translateX(-${scrollEl.scrollLeft}px)`;
+
+    updateStatsFixedHeaderVisibility();
+}
+
+// Nusxa FAQAT asl <thead> ekranning (navbar ostidagi, 72px) tepasidan
+// chiqib ketganda ko'rinadi — aks holda ikkita sarlavha bir vaqtda
+// ko'rinib, ortiqcha g'ijimlanish hosil qilardi.
+function updateStatsFixedHeaderVisibility() {
+    const realThead = document.querySelector("#statsTable thead");
+    const fixedHeader = document.getElementById("statsTableHeaderFixed");
+    if (!realThead || !fixedHeader) return;
+
+    const rect = realThead.getBoundingClientRect();
+    fixedHeader.hidden = !(rect.top < 72);
+}
+
+function positionFixedScrollBar() {
+    const bottomScroll = document.getElementById("statsTableScroll");
+    const fixedScroll = document.getElementById("statsTableScrollFixed");
+    const fixedInner = document.getElementById("statsTableScrollFixedInner");
+    const table = document.getElementById("statsTable");
+    if (!bottomScroll || !fixedScroll || !fixedInner || !table) return;
+
+    const rect = bottomScroll.getBoundingClientRect();
+    fixedScroll.style.left = rect.left + "px";
+    fixedScroll.style.width = rect.width + "px";
+    fixedInner.style.width = table.scrollWidth + "px";
+
+    updateFixedScrollBarVisibility();
+}
+
+// Qotirilgan scrollbar FAQAT jadval haqiqatan gorizontal aylantirilishi
+// kerak bo'lganda VA jadvalning o'z (native) pastki scrollbar'i hozir
+// ekrandan tashqarida (ko'rinmayotgan) bo'lsa ko'rsatiladi — aks holda
+// ikkita scrollbar bir vaqtda ko'rinib, ortiqcha g'ijimlanish hosil qilardi.
+function updateFixedScrollBarVisibility() {
+    const bottomScroll = document.getElementById("statsTableScroll");
+    const fixedScroll = document.getElementById("statsTableScrollFixed");
+    if (!bottomScroll || !fixedScroll) return;
+
+    const rect = bottomScroll.getBoundingClientRect();
+    const isScrollable = bottomScroll.scrollWidth > bottomScroll.clientWidth + 1;
+    const nativeScrollbarOffscreen = rect.bottom > window.innerHeight;
+    const tableStillVisible = rect.top < window.innerHeight;
+
+    fixedScroll.hidden = !(isScrollable && nativeScrollbarOffscreen && tableStillVisible);
 }
 
 function renderSummary() {
@@ -131,6 +271,8 @@ function renderTable() {
     document.querySelectorAll(".sort-arrow").forEach(el => el.textContent = "");
     const activeArrow = document.getElementById(`sortArrow-${statsSortKey}`);
     if (activeArrow) activeArrow.textContent = statsSortDir === "asc" ? "▲" : "▼";
+    buildStatsFixedHeader();
+    positionStatsFixedHeader();
 
     if (!rows.length) {
         tbody.innerHTML = "";
@@ -147,7 +289,7 @@ function renderTable() {
 
     tbody.innerHTML = rows.map(r => `
         <tr>
-            <td>${escapeHtml(r.username)}</td>
+            <td class="stats-sticky-col">${escapeHtml(r.username)}</td>
             <td>${escapeHtml(r.fullName)}</td>
             <td>${escapeHtml(r.groupName)}</td>
             <td class="stats-col-num">${r.sessionCount}</td>
@@ -159,6 +301,8 @@ function renderTable() {
             <td>${formatDate(r.lastSessionAt)}</td>
         </tr>
     `).join("");
+
+    positionFixedScrollBar();
 }
 
 function formatDuration(totalSec) {
