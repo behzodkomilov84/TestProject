@@ -73,11 +73,12 @@
                 <input type="tel" name="phoneNumber" placeholder="Telefon raqamingiz" autocomplete="tel" required>
             </div>
 
-            <!-- Email — ixtiyoriy, shu sabab eng pastda (foydalanuvchi
-                 so'rovi, 2026-09-07: ko'pchilik foydalanuvchida email yo'q
-                 yoki o'zi login/parolini bilmaydi). Kiritilmasa hisob
-                 tasdiqlashsiz darhol faollashadi (UserServiceImpl#register). -->
-            <input type="email" name="email" placeholder="Email (ixtiyoriy)" autocomplete="email">
+            <!-- Email maydoni formadan OLIB TASHLANDI (foydalanuvchi so'rovi,
+                 2026-09-17: "email поляни олиб ташла регистрациядан") — email
+                 tasdiqlash bosqichi allaqachon olib tashlangan edi, shu sabab
+                 endi email so'ralmaydi ham (RegisterDto.email() bo'sh
+                 yuboriladi, UserServiceImpl#register buni to'liq qo'llab-
+                 quvvatlaydi — akkaunt darhol faollashadi). -->
 
             <label style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:normal;">
                 <input type="checkbox" required style="width:auto;">
