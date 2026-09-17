@@ -220,17 +220,16 @@ public class TelegramRegistrationService {
         user.setTelegramId(chatId);
         userRepository.save(user);
 
-        sessionService.setState(chatId, BotState.AWAITING_REG_EMAIL_CODE);
+        // Email tasdiqlash kodi bosqichi OLIB TASHLANDI (foydalanuvchi
+        // so'rovi, 2026-09-17: "Ko'p foydalanuvchilar bunga qiynalyapti") —
+        // akkaunt endi har doim darhol faollashtirilgan (UserServiceImpl.
+        // register), shu sabab to'g'ridan-to'g'ri xush kelibsiz xabari.
+        sessionService.clear(chatId);
 
         SendMessage msg = new SendMessage();
         msg.setChatId(chatId.toString());
-        msg.setText("✅ Ro'yxatdan o'tdingiz!\n\n📧 Emailingizga (" + maskEmail(email) +
-                ") 6 xonali tasdiqlash kodi yuborildi. Kodni shu yerga yozing:");
-
-        InlineKeyboardButton resend = button("🔁 Kodni qayta yuborish", "reg_resend_code");
-        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        markup.setKeyboard(List.of(List.of(resend)));
-        msg.setReplyMarkup(markup);
+        msg.setText("✅ Ro'yxatdan o'tdingiz!\n\n" + menuService.welcomeText(user));
+        msg.setReplyMarkup(menuService.buildMainMenu(user));
         return msg;
     }
 

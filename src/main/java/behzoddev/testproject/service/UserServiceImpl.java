@@ -53,7 +53,6 @@ public class UserServiceImpl implements UserDetailsService, UserService {
     private final PasswordEncoder passwordEncoder;
     private final NotificationService notificationService;
     private final RoleAuditService roleAuditService;
-    private final EmailVerificationService emailVerificationService;
     private final PhoneNumberService phoneNumberService;
 
     // Saytning haqiqiy egasi (Behzod Komilov) — ID orqali, username/ism
@@ -186,22 +185,15 @@ public class UserServiceImpl implements UserDetailsService, UserService {
                 .phoneNumber(normalizedPhone)
                 .password(passwordEncoder.encode(dto.password()))
                 .roles(roles)
-                // Email bor bo'lsa — tasdiqlash kodi kiritilmaguncha kirish
-                // mumkin emas (isEnabled()). Email YO'Q bo'lsa — tasdiqlash
-                // kanali yo'q (SMS hali ulanmagan), shuning uchun akkaunt
-                // DARHOL faollashtiriladi (vaqtinchalik yechim).
-                .emailVerified(!hasEmail)
+                // Email tasdiqlash kodi bosqichi OLIB TASHLANDI (foydalanuvchi
+                // so'rovi, 2026-09-17: "Ko'p foydalanuvchilar bunga
+                // qiynalyapti") — endi email bor-yo'qligidan qat'iy nazar
+                // akkaunt DARHOL faollashtiriladi.
+                .emailVerified(true)
                 .build();
 
         // 5. Сохраняем
         userRepository.save(user);
-
-        // 6. Email kiritilgan bo'lsagina tasdiqlash kodi yuboriladi — user
-        // login qilishdan oldin shu kodni /verify-email sahifasida kiritishi
-        // kerak. Email yo'q bo'lsa — akkaunt yuqorida allaqachon faollashtirildi.
-        if (hasEmail) {
-            emailVerificationService.sendVerificationCode(user);
-        }
     }
 
     @Override

@@ -265,8 +265,12 @@ class TelegramRegistrationServiceTest {
 
     // ===== Shartlarga rozilik -> ro'yxatdan o'tish =====
 
+    // Email tasdiqlash kodi bosqichi OLIB TASHLANDI (foydalanuvchi so'rovi,
+    // 2026-09-17: "Ko'p foydalanuvchilar bunga qiynalyapti") — ro'yxatdan
+    // o'tgach endi to'g'ridan-to'g'ri xush kelibsiz xabari (bosh menyu bilan)
+    // ko'rsatiladi, kod kutilmaydi.
     @Test
-    void confirmTerms_success_registersAndLinksTelegramIdThenAsksForEmailCode() {
+    void confirmTerms_success_registersAndLinksTelegramIdThenShowsWelcome() {
         when(sessionService.getTempData(CHAT_ID)).thenReturn(Map.of(
                 "reg_username", "newstudent", "reg_email", "new@example.com", "reg_password", "secret1"));
 
@@ -278,7 +282,8 @@ class TelegramRegistrationServiceTest {
         verify(userServiceImpl).register(any(RegisterDto.class));
         assertThat(created.getTelegramId()).isEqualTo(CHAT_ID);
         verify(userRepository).save(created);
-        verify(sessionService).setState(CHAT_ID, BotState.AWAITING_REG_EMAIL_CODE);
+        verify(sessionService).clear(CHAT_ID);
+        verify(sessionService, never()).setState(eq(CHAT_ID), eq(BotState.AWAITING_REG_EMAIL_CODE));
         assertThat(msg.getText()).contains("Ro'yxatdan o'tdingiz");
     }
 

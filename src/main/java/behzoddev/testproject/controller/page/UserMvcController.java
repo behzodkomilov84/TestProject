@@ -55,26 +55,16 @@ public class UserMvcController {
             return "redirect:/registration";
         }
 
-        // Email kiritilmagan bo'lsa — akkaunt darhol faollashtirilgan
-        // (UserServiceImpl.register), tasdiqlash bosqichi shart emas —
-        // to'g'ridan-to'g'ri /login'ga. Email kiritilgan bo'lsa — hozirgidek
-        // /verify-email'ga (tasdiqlash kodi kutiladi).
-        boolean hasEmail = dto.email() != null && !dto.email().isBlank();
-        if (!hasEmail) {
-            redirectAttributes.addFlashAttribute(
-                    "successMessage",
-                    "✅ Ro'yxatdan o'tish muvaffaqiyatli! Endi tizimga kirishingiz mumkin."
-            );
-            return "redirect:/login";
-        }
-
+        // Email tasdiqlash kodi bosqichi OLIB TASHLANDI (foydalanuvchi
+        // so'rovi, 2026-09-17: "Ko'p foydalanuvchilar bunga qiynalyapti") —
+        // akkaunt (email bor-yo'qligidan qat'iy nazar, UserServiceImpl.register)
+        // endi har doim darhol faollashtirilgan, shu sabab to'g'ridan-to'g'ri
+        // /login'ga.
         redirectAttributes.addFlashAttribute(
-                "infoMessage",
-                "✅ Ro'yxatdan o'tish muvaffaqiyatli! Emailingizga yuborilgan tasdiqlash kodini kiriting."
+                "successMessage",
+                "✅ Ro'yxatdan o'tish muvaffaqiyatli! Endi tizimga kirishingiz mumkin."
         );
-        redirectAttributes.addAttribute("username", dto.username());
-
-        return "redirect:/verify-email";
+        return "redirect:/login";
     }
 
     @GetMapping("/login")

@@ -63,8 +63,6 @@ class UserServiceImplTest {
     @Mock
     private RoleAuditService roleAuditService;
     @Mock
-    private EmailVerificationService emailVerificationService;
-    @Mock
     private PhoneNumberService phoneNumberService;
     @Mock
     private RoleAuditLogRepository roleAuditLogRepository;
@@ -118,7 +116,7 @@ class UserServiceImplTest {
     // ===== register =====
 
     @Test
-    void register_success_createsUserWithRoleUserAndSendsVerification() {
+    void register_success_createsUserWithRoleUserImmediatelyVerified() {
         RegisterDto dto = registerDto("UZ", "901234567");
         when(userRepository.existsByUsername("newuser")).thenReturn(false);
         when(userRepository.existsByEmail("new@mail.com")).thenReturn(false);
@@ -138,10 +136,11 @@ class UserServiceImplTest {
         assertThat(saved.getPhoneNumber()).isEqualTo("+998901234567");
         assertThat(saved.getWorkplace()).isEqualTo("Ish joyi");
         assertThat(saved.getPosition()).isEqualTo("Lavozim");
-        assertThat(saved.isEmailVerified()).isFalse();
+        // Email tasdiqlash bosqichi OLIB TASHLANDI (foydalanuvchi so'rovi,
+        // 2026-09-17: "Ko'p foydalanuvchilar bunga qiynalyapti") — email
+        // bor-yo'qligidan qat'iy nazar akkaunt DARHOL faollashtiriladi.
+        assertThat(saved.isEmailVerified()).isTrue();
         assertThat(saved.getRoles()).containsExactly(roleUser);
-
-        verify(emailVerificationService).sendVerificationCode(saved);
     }
 
     @Test
@@ -187,11 +186,12 @@ class UserServiceImplTest {
         verify(userRepository, never()).save(any());
     }
 
-    // Email ENDI IXTIYORIY — bo'sh qoldirilsa endi XATO tashlanMAYDI, aksincha
-    // akkaunt tasdiqlashsiz (emailVerified=true) darhol yaratiladi, email
-    // NULL saqlanadi (bo'sh qator emas) va tasdiqlash kodi umuman yuborilmaydi.
+    // Email IXTIYORIY — bo'sh qoldirilsa XATO tashlanmaydi, akkaunt
+    // (email bor-yo'qligidan qat'iy nazar, endi har doim) tasdiqlashsiz
+    // (emailVerified=true) darhol yaratiladi, email NULL saqlanadi (bo'sh
+    // qator emas).
     @Test
-    void register_emailBlank_createsUserImmediatelyVerifiedWithoutSendingCode() {
+    void register_emailBlank_createsUserImmediatelyVerified() {
         RegisterDto dto = new RegisterDto("newuser", "Ism", "Familiya", "Ish joyi", "Lavozim",
                 "  ", "UZ", "901234567", "secret1", "secret1");
         when(userRepository.existsByUsername("newuser")).thenReturn(false);
@@ -208,7 +208,6 @@ class UserServiceImplTest {
         assertThat(saved.isEmailVerified()).isTrue();
 
         verify(userRepository, never()).existsByEmail(anyString());
-        verify(emailVerificationService, never()).sendVerificationCode(any());
     }
 
     @Test
