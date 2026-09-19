@@ -431,6 +431,21 @@ DB o'zgarishi kerak bo'lmadi.
   (ikkala obuna turida ham bir xil).
 - ⚠️ **YANGILANDI — Email tasdiqlash bosqichi olib tashlandi** — batafsil:
   3-band.
+- ✅ **BAJARILDI — ClamAV tufayli deploy bloklanish bugi**: ClamAV har
+  soatlab virus bazasini avtomatik yangilaydi, shu payt `clamd` qayta
+  yuklanadi va qisqa vaqtga (tor xotirali serverda ba'zan healthcheck
+  chegarasidan uzoqroq) javob bermay qoladi — Docker uni vaqtincha
+  "unhealthy" deb belgilardi. `docker-compose.prod.yml`da `spring-app`
+  `depends_on: clamav: condition: service_healthy` orqali ClamAV sog'lom
+  bo'lishini KUTAR edi — aynan shu daqiqada deploy qilinsa, ishga
+  tushmay qolardi (production'da bir necha marta yuz berdi). Yechim:
+  `condition: service_started`ga o'zgartirildi — ilova ClamAV'ga ishga
+  tushganda ULANMAYDI (faqat fayl yuklanganda, kerak bo'lganda), shu
+  sabab uning health-status'ini kutish shart emas (`ClamAvScanService`
+  allaqachon "fail closed" siyosatiga ega). Haqiqiy stsenariyda
+  sinaldi (ClamAV'ni ataylab "unhealthy" holatiga keltirib, deploy
+  darhol muvaffaqiyatli o'tishi tasdiqlandi). Xuddi shu tuzatish lokal
+  dev `docker-compose.yml`da ham qo'llanildi (ikkala muhit ham bir xil).
 
 ## Ustuvorlik bo'yicha tavsiya
 
@@ -452,7 +467,8 @@ mustaqil testlarni ham ko'rsatish~~, ~~Test natijasi hisoblash bugi~~,
 ~~Timezone (UTC → Asia/Tashkent)~~, ~~Server restart tugmasi +
 health-check~~, ~~Jadvallarga saralash/qotirilgan sarlavha-ustun
 (/users, /payments, /statistics/user-sessions)~~, ~~0 so'mlik obuna
-statistika bugi~~, ~~To'lov qaytarish (refund) siyosati~~ — bajarildi.
+statistika bugi~~, ~~To'lov qaytarish (refund) siyosati~~, ~~ClamAV
+tufayli deploy bloklanish bugi~~ — bajarildi.
 
 Qolgan (tarif rejalar, keng qamrovli integration testlar, Telegram
 to'lov chekini avtomatik tekshirish) — kattaroq va alohida
@@ -488,8 +504,10 @@ health-check, `/users`/`/payments`/`/statistics/user-sessions`
 jadvallariga saralash va ekranga qotirilgan sarlavha/ustun (qarang:
 9-band), `/payments` jadvaliga tahrirlash/o'chirish amallari, 0 so'mlik
 obuna statistika bugi tuzatildi, **email tasdiqlash bosqichi butunlay
-olib tashlandi** (3-band), va **to'lov qaytarish (refund) siyosati
-belgilandi** (`/terms`, 3.1-bo'lim — 5-band).
+olib tashlandi** (3-band), **to'lov qaytarish (refund) siyosati
+belgilandi** (`/terms`, 3.1-bo'lim — 5-band), va **ClamAV tufayli
+qaytalanuvchi deploy bloklanish bugi** tuzatildi (9-band, ikkala
+docker-compose muhitida ham).
 
 Ochiq qolgan bandlar, ustuvorlik tartibida (yuqoridagi tahlil asosida):
 
