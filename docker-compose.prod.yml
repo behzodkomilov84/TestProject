@@ -50,8 +50,18 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      # "service_healthy" EMAS — "service_started" (foydalanuvchi so'rovi,
+      # 2026-09-19: "ClamAV yana buzilib qolmasligi uchun doimiy yechim").
+      # HAQIQIY TOPILGAN MUAMMO: ClamAV har soatlab virus bazasini avtomatik
+      # yangilaydi, shu payt clamd qayta yuklanadi va qisqa vaqtga (tor
+      # xotirali serverda ba'zan healthcheck chegarasidan uzoqroq) javob
+      # bermay qoladi — Docker uni "unhealthy" deb belgilaydi. "service_healthy"
+      # bilan spring-app aynan shu daqiqada deploy qilinsa ishga tushmay
+      # qolardi. Ilova ClamAV'ga ishga tushganda ULANMAYDI (faqat fayl
+      # yuklanganda, kerak bo'lganda) — shu sabab "started" yetarli;
+      # ClamAvScanService allaqachon "fail closed" siyosatiga ega.
       clamav:
-        condition: service_healthy
+        condition: service_started
     environment:
       # "rewriteBatchedStatements=true" — HAQIQIY TOPILGAN BUG (foydalanuvchi
       # so'rovi, 2026-09-12: "Takroriy havolalarni tozalash"ni bossam,
