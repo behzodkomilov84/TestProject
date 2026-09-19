@@ -2,10 +2,12 @@ package behzoddev.testproject.controller.advice;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -65,6 +67,20 @@ class GlobalRestExceptionHandlerTest {
     @Test
     void handleNotFound_returns404WithEmptyBody() {
         ResponseEntity<Void> response = handler.handleNotFound(new NoSuchElementException("topilmadi"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+    }
+
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-19): oldin bu
+    // pastdagi umumiy Exception.class handleriga tushib, 404 o'rniga
+    // noto'g'ri 400 qaytarardi va ERROR darajasida (Sentry'ga yuboriladigan)
+    // log yozardi — brauzerning avtomatik /favicon.ico so'rovi kabi oddiy
+    // holatlar uchun ham.
+    @Test
+    void handleNoResourceFound_returns404() {
+        NoResourceFoundException ex = new NoResourceFoundException(HttpMethod.GET, "favicon.ico", "/favicon.ico");
+
+        ResponseEntity<Void> response = handler.handleNoResourceFound(ex);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }

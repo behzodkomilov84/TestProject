@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.MultipartException;
 import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -46,6 +47,17 @@ public class GlobalRestExceptionHandler {
     // Topilmadi — 404
     @ExceptionHandler(NoSuchElementException.class)
     public ResponseEntity<Void> handleNotFound(NoSuchElementException ex) {
+        return ResponseEntity.notFound().build();
+    }
+
+    // Mavjud bo'lmagan statik fayl (masalan brauzer avtomatik so'raydigan
+    // /favicon.ico) — HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi,
+    // 2026-09-19): bu xato oldin pastdagi umumiy Exception.class handleriga
+    // tushib ketardi — 404 o'rniga noto'g'ri 400 qaytarardi VA ERROR
+    // darajasida log yozardi, bu esa Sentry'ga HAR bir tashrifchining
+    // brauzeri yuborgan /favicon.ico so'rovini "xato" sifatida yuborardi.
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Void> handleNoResourceFound(NoResourceFoundException ex) {
         return ResponseEntity.notFound().build();
     }
 
