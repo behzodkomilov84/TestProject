@@ -1597,6 +1597,8 @@ public class CourseService {
                 continue; // Bo'lim/Darsga umuman bog'lanmagan — sinxronlanadigan narsa yo'q.
             }
 
+            boolean changed = false;
+
             // chapter == null (kurs darsi "Mavzusiz darslar"da) bo'lsa —
             // "to'g'ri" holat ham aynan shu: dars TEST BOSHQARUVIDA ham
             // Mavzusiz bo'lishi kerak (null). resolveLinkedTopic bilan
@@ -1607,11 +1609,53 @@ public class CourseService {
                     : null;
             TopicSection currentSection = topic.getSection();
 
-            boolean mismatch = (correctSection == null) != (currentSection == null)
+            boolean sectionMismatch = (correctSection == null) != (currentSection == null)
                     || (correctSection != null && !correctSection.getId().equals(currentSection.getId()));
 
-            if (mismatch) {
+            if (sectionMismatch) {
                 topic.setSection(correctSection);
+                changed = true;
+            }
+
+            // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-19:
+            // "курсга боғланган ТЕСТ БОШҚАРУВИдаги ном ҳам автоматик
+            // тарзда таҳрирланиб қолиши керак") — ilgari bu metod FAQAT
+            // Topic qaysi TopicSection'ga tegishli ekanini to'g'rilardi,
+            // Topic'ning O'ZINING NOMINI hech qachon kurs darsi
+            // sarlavhasiga moslamasdi — shu sabab dars sarlavhasi
+            // o'zgartirilib, "Mavzu nomi" maydoni qo'lda tegilmasa (odatiy
+            // holat — edit forma uni ESKI bog'langan nom bilan
+            // to'ldiradi), TEST BOSHQARUVIDAGI nom abadiy eski holicha
+            // qolib ketardi. Foydalanuvchi tanlovi bo'yicha — kurs HAR
+            // DOIM "haqiqiy manba": tugma bosilganda Topic nomi kurs
+            // darsi sarlavhasiga QAYTA YOZILADI, hatto oldin TEST
+            // BOSHQARUVI tomonida qo'lda boshqacha nomlangan bo'lsa ham.
+            String desiredName = cs.getTitle() == null ? null : cs.getTitle().trim();
+            if (desiredName != null && !desiredName.isEmpty() && !desiredName.equals(topic.getName())) {
+                // topics.uk_science_section_topic — UNIQUE(science, section, name).
+                // Agar shu maqsad (Fan, TopicSection, nom) bilan BOSHQA bir
+                // Topic allaqachon mavjud bo'lsa, qayta nomlash DB cheklovini
+                // buzadi — bu holatda (juda kam uchraydigan ziddiyat) shu
+                // bitta darsni o'tkazib yuboramiz, qolganlarini davom
+                // ettiramiz.
+                TopicSection targetSection = sectionMismatch ? correctSection : currentSection;
+                boolean nameTaken = targetSection != null
+                        ? topicRepository.findByScience_IdAndSection_IdAndName(
+                                topic.getScience().getId(), targetSection.getId(), desiredName)
+                            .filter(other -> !other.getId().equals(topic.getId()))
+                            .isPresent()
+                        : topicRepository.findByScience_IdAndSectionIsNullAndName(
+                                topic.getScience().getId(), desiredName)
+                            .filter(other -> !other.getId().equals(topic.getId()))
+                            .isPresent();
+
+                if (!nameTaken) {
+                    topic.setName(desiredName);
+                    changed = true;
+                }
+            }
+
+            if (changed) {
                 topicRepository.save(topic);
                 updated++;
             }

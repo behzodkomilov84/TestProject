@@ -10,6 +10,17 @@ let focusIndex = null;//для курсора
 // Yo'nalish kurslar VA TEST BOSHQARUVI uchun UMUMIY (foydalanuvchi
 // so'rovi, 2026-09-05).
 let allFields = [];
+// "Yo'nalishsiz bo'limlar" psevdo-guruhida (pageFieldId === null) yoki
+// bitta Yo'nalish ko'lamida (pageFieldId — son) `allFields` pastda
+// filtrlanadi (faqat shu ko'lamdagi guruhlar accordion'da chiqishi
+// uchun) — lekin bo'lim tahrirlash/yaratish select'i (fieldSelectHtml,
+// "Yangi bo'lim" modali) HAR DOIM to'liq Yo'nalishlar ro'yxatini
+// ko'rsatishi kerak (haqiqiy topilgan bug, foydalanuvchi so'rovi,
+// 2026-09-19: "Yo'nalishsiz" bo'limlarni tahrirlaganda Yo'nalish
+// tanlash select'ida faqat "— Yo'nalishsiz —" ko'rinib, boshqa hech
+// qanday Yo'nalish tanlab bo'lmasdi) — shu sabab filtrlanmagan holati
+// alohida saqlanadi.
+let allFieldsUnfiltered = [];
 const expandedFieldKeys = new Set();
 
 // ?fieldId=<id> — /science/fields sahifasidan bitta Yo'nalishni bosib
@@ -428,6 +439,9 @@ async function loadFields() {
         console.error(err);
         allFields = [];
     }
+    // Select'lar (fieldSelectHtml, "Yangi bo'lim" modali) uchun — pastdagi
+    // ko'lam bo'yicha filtrlashdan TA'SIRLANMAYDIGAN to'liq ro'yxat.
+    allFieldsUnfiltered = allFields;
     // pageFieldId bilan (bitta Yo'nalish ichida) ko'rsatilganda —
     // getSortedFieldGroups() faqat SHU Yo'nalishni (yoki hech qaysini,
     // "Yo'nalishsiz" rejimida) ko'rsin, boshqa Yo'nalishlar accordion'da
@@ -771,7 +785,7 @@ function renderRowHtml(s, i) {
 // (saveOnClientSide — bazaga DARHOL yoziladi).
 function fieldSelectHtml(s, i) {
     const options = [`<option value="">— Yo'nalishsiz —</option>`]
-        .concat([...allFields].sort((a, b) => a.orderIndex - b.orderIndex)
+        .concat([...allFieldsUnfiltered].sort((a, b) => a.orderIndex - b.orderIndex)
             .map(f => `<option value="${f.id}" ${s.fieldId === f.id ? "selected" : ""}>${escapeHtml(f.name)}</option>`));
     return `<select class="field-select" onchange="itemBlock[${i}].fieldId = this.value ? Number(this.value) : null" title="Yo'nalish">${options.join("")}</select>`;
 }
@@ -1419,7 +1433,7 @@ function showAddBolimModal(defaultFieldId) {
         select.className = "field-select";
         select.title = "Yo'nalish";
         const options = [`<option value="">— Yo'nalishsiz —</option>`]
-            .concat([...allFields].sort((a, b) => a.orderIndex - b.orderIndex)
+            .concat([...allFieldsUnfiltered].sort((a, b) => a.orderIndex - b.orderIndex)
                 .map(f => `<option value="${f.id}" ${defaultFieldId === f.id ? "selected" : ""}>${escapeHtml(f.name)}</option>`));
         select.innerHTML = options.join("");
 

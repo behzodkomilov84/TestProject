@@ -2961,12 +2961,16 @@ async function moveChapter(chapterId, direction) {
     }
 }
 
-// "🔄 Mavzu nomlarini TEST BOSHQARUVI bilan sinxronlash" — kurs Mavzusi
-// (CourseChapter) nomi bilan TEST BOSHQARUVIdagi Mavzu (TopicSection)
-// nomi odatda avtomatik sinxron turadi (dars saqlanganda), lekin vaqt
-// o'tishi bilan farq (drift) paydo bo'lib qolishi mumkin — shu tugma
-// BARCHA darslarni joriy Mavzu holatiga qarab qayta to'g'rilaydi (kurs —
-// "haqiqiy manba", TEST BOSHQARUVI shunga moslashtiriladi).
+// "🔄 Mavzu nomlarini TEST BOSHQARUVI bilan sinxronlash" — ikki narsani
+// to'g'rilaydi: 1) kurs Mavzusi (CourseChapter) bilan TEST BOSHQARUVIdagi
+// Mavzu (TopicSection) bog'lanishi (odatda avtomatik sinxron turadi,
+// lekin vaqt o'tishi bilan farq/drift paydo bo'lishi mumkin); 2) har bir
+// darsning TEST BOSHQARUVIdagi Topic NOMINING O'ZI — dars sarlavhasi
+// o'zgartirilganda "Mavzu nomi" maydoni qo'lda tegilmasa, bu nom eski
+// holicha qolib ketishi mumkin edi (haqiqiy topilgan bug, foydalanuvchi
+// so'rovi, 2026-09-19). Kurs HAR DOIM "haqiqiy manba" — tugma bosilganda
+// Topic nomi dars sarlavhasiga qayta yoziladi, hatto oldin TEST
+// BOSHQARUVI tomonida qo'lda boshqacha nomlangan bo'lsa ham.
 async function syncChapterTopics() {
     try {
         const res = await fetch(`/api/courses/${COURSE_ID}/chapters/sync-topics`, { method: "POST" });
