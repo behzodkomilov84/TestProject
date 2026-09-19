@@ -1897,6 +1897,42 @@ class CourseServiceTest {
         assertThat(result).doesNotContain("📖  <span");
     }
 
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-19: "1733 ta
+    // savolda takroriy havola tozalandi" deb chiqdi, lekin aslida hech
+    // qanday takroriy havola yo'q edi) — ilgari metod "kamida BITTA
+    // havola bormi" tekshirardi, shu sabab ALLAQACHON toza (bitta
+    // havolali) savol ham "tozalandi" deb hisoblanardi. Bu test bitta
+    // toza havolali savol HECH QANDAY o'zgartirilmasligini va
+    // hisoblanmasligini tasdiqlaydi.
+    @Test
+    void dedupeTopicLinksInCourse_singleCleanLink_leftUntouchedAndNotCounted() {
+        Course course = Course.builder().id(2L).title("Kimyo").build();
+        Topic topic = Topic.builder().id(3L).name("2. Prokariotlarning tasnifi").build();
+        CourseSection section = CourseSection.builder().id(2L).course(course).linkedTopic(topic).build();
+
+        // buildTopicLinkBadge() bilan AYNAN bir xil (harfma-harf) — aks holda
+        // bu test o'zi ham "o'zgarish bor" deb noto'g'ri signal berardi.
+        String alreadyClean = "Kislorod elementi haqida." +
+                " <span style=\"display:inline-block;margin-top:6px;padding:4px 10px 4px 8px;" +
+                "background:#e8f5f3;border-left:3px solid #00796b;border-radius:4px;" +
+                "color:#00695c;font-weight:600;font-style:normal;text-decoration:none\">" +
+                "📖 <a href=\"/courses/2/sections/2\" style=\"color:#00695c;text-decoration:underline\">\"" +
+                "2. Prokariotlarning tasnifi\" darsini kursda o'qish</a></span>";
+
+        Answer trueAnswer = Answer.builder().id(1L).answerText("To'g'ri").isTrue(true).commentary(alreadyClean).build();
+        Answer wrongAnswer = Answer.builder().id(2L).answerText("Noto'g'ri").isTrue(false).build();
+        Question question = Question.builder().id(100L).questionText("Savol").topic(topic)
+                .answers(List.of(trueAnswer, wrongAnswer)).build();
+
+        when(courseSectionRepository.findByCourse_IdAndLinkedTopicIsNotNull(2L)).thenReturn(List.of(section));
+        when(questionRepository.findRandomQuestionsByTopicIds(List.of(3L))).thenReturn(List.of(question));
+
+        int fixed = courseService.dedupeTopicLinksInCourse(2L);
+
+        assertThat(fixed).isEqualTo(0);
+        assertThat(trueAnswer.getCommentary()).isSameAs(alreadyClean);
+    }
+
     // ===== getQuestionsForCourse / auditTopicLinks — o'z-o'zini audit,
     // 2026-09-12: "qolib ketgan ishlar bormi?" so'roviga javoban topilgan
     // HAQIQIY BUG — dedupeTopicLinksInCourse'dagi BILAN AYNAN BIR XIL N+1

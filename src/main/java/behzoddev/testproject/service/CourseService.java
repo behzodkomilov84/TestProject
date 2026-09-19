@@ -2123,7 +2123,40 @@ public class CourseService {
 
             if (!TOPIC_LINK_HREF_PATTERN.matcher(commentary).find()) continue;
 
-            applyCorrectLink(trueAnswer, courseId, section);
+            // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-19:
+            // "1733 ta savolda takroriy havola tozalandi" deb chiqdi,
+            // lekin aslida hech qanday takroriy havola yo'q edi) — ilgari
+            // applyCorrectLink() shu yerda SHARTSIZ chaqirilardi, shu
+            // sabab ALLAQACHON toza (bitta havolali) BARCHA savollar ham
+            // "tozalandi" deb hisoblanardi. Buni oddiy href-sonini sanash
+            // bilan aniqlab bo'lmaydi — chunki haqiqiy korruptsiya (2026-
+            // 08-31'dagi test holatidagi kabi) bitta HAQIQIY href atrofida
+            // bir nechta ICHMA-ICH, yopilmagan <span> qatlamlaridan iborat
+            // bo'lishi ham mumkin (href soni baribir 1). Shu sabab eng
+            // ishonchli tekshiruv — natijani OLDIN bilan SOLISHTIRISH:
+            // agar tozalash+qayta belgilashdan keyin matn AYNAN bir xil
+            // qolsa, demak hech narsa buzuq/takroriy emas edi — bunday
+            // holatda savol o'zgartirilmaydi (ortiqcha DB yozuvi ham
+            // bo'lmaydi) va hisoblanmaydi.
+            String correctBadge = buildTopicLinkBadge(courseId, section.getId(), section.getLinkedTopic().getName());
+            String cleaned = TOPIC_LINK_BADGE_PATTERN.matcher(commentary).replaceAll("");
+            // buildTopicLinkBadge() natijasi doim BO'SH JOY bilan
+            // boshlanadi (matnni belgidan ajratish uchun) — agar
+            // strip qilingandan keyin "cleaned" ham o'zining ESKI
+            // belgisidan oldin turgan bo'sh joyni saqlab qolgan bo'lsa
+            // (chunki TOPIC_LINK_BADGE_PATTERN "<span..." dan boshlab
+            // moslashadi, undan OLDINGI bo'sh joyga tegmaydi), ikkalasi
+            // qo'shilganda IKKITA bo'sh joy hosil bo'lib, aslida hech
+            // narsa o'zgarmagan bo'lsa ham "farq bor" deb noto'g'ri
+            // aniqlanardi — shu bitta ortiqcha bo'sh joy shu yerda olib
+            // tashlanadi.
+            if (cleaned.endsWith(" ") && correctBadge.startsWith(" ")) {
+                cleaned = cleaned.substring(0, cleaned.length() - 1);
+            }
+            String recomposed = cleaned + correctBadge;
+            if (recomposed.equals(commentary)) continue;
+
+            trueAnswer.setCommentary(recomposed);
             total++;
         }
         return total;
