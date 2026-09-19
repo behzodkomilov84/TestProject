@@ -33,6 +33,15 @@ body {
     color: #0f172a;
 }
 
+/* "3.1. To'lovni qaytarish (refund) siyosati" — h2 (bo'lim) ICHIDagi
+   kichikroq sarlavha uchun (foydalanuvchi so'rovi, 2026-09-19), oldin
+   sahifada h3 umuman ishlatilmagan edi. */
+.legal-card h3 {
+    margin-top: 20px;
+    font-size: 16px;
+    color: #0f172a;
+}
+
 .legal-updated {
     color: #64748b;
     font-size: 13px;

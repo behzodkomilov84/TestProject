@@ -19,10 +19,11 @@ qamrab oladi.
   mumkin. To'liq Prepare/Complete protokoli, idempotentlik, chargeback/qaytarish
   (avtomatik ADMIN'ni bekor qilish) — batafsil: `docs/PAYMENTS.md`. Click
   merchant kabinetida faollashtirilgan, imzo tekshiruvi production'da haqiqiy
-  kalitlar bilan tasdiqlangan. **Cheklov**: birinchi haqiqiy to'lov urinishida
-  Click'ning serverlari serverimizga (O'zbekiston hududidan tashqarida)
-  ulana olmadi — Click support bilan IP/domen whitelist masalasi hal
-  qilinmoguncha real to'lov to'liq sinalmagan.
+  kalitlar bilan tasdiqlangan. **Yechildi**: birinchi haqiqiy to'lov
+  urinishida Click'ning serverlari serverimizga (O'zbekiston hududidan
+  tashqarida) ulana olmagan edi — Click support bilan IP/domen whitelist
+  masalasi hal qilindi, production'da haqiqiy to'lov muvaffaqiyatli
+  sinovdan o'tkazildi.
   ~~Payme integratsiyasi~~ olib tashlandi (2026) — Payme "o'zini o'zi band
   qilgan" (SZ) maqomdagilar bilan shartnoma tuzmasligi aniqlandi, eng kami
   yakka tartibdagi tadbirkor (YaTT) bo'lish talab qilinadi.
@@ -59,12 +60,20 @@ qamrab oladi.
   (matn yoki video — YouTube/yuklangan fayl/boshqa manba), ADMIN/USER obuna orqali
   kirish huquqi oladi, bo'limlar ketma-ket ochiladi (`Course`, `CourseSection`,
   `CourseSubscription`, `/courses`).
-- ✅ **BAJARILDI — Email integratsiyasi**: ro'yxatdan o'tishda email tasdiqlash
-  (`EmailVerificationService`, `/verify-email` — kod kiritilmaguncha hisob
-  `isEnabled()=false`, kirish bloklanadi; mavjud userlar `email_verified=TRUE`
-  bilan backfill qilindi, ular login qilishda davom etadi) va OWNER uchun
+- ⚠️ **YANGILANDI (2026-09-17) — Email tasdiqlash bosqichi olib tashlandi**:
+  avval ro'yxatdan o'tishda email kiritilsa, tasdiqlash kodi talab qilinardi
+  (`EmailVerificationService`, `/verify-email`). Ko'p foydalanuvchi bu
+  bosqichga qiynalgani sabab — endi akkaunt HAR DOIM (email kiritilgan-
+  kiritilmaganidan qat'iy nazar) ro'yxatdan o'tgach darhol faollashadi,
+  hech qanday kod so'ralmaydi. Ro'yxatdan o'tish formasidan email
+  maydonining o'zi ham butunlay olib tashlandi (`registration.html`).
+  Bot orqali ro'yxatdan o'tishda ham xuddi shunday (qarang: 6-band,
+  5-bosqich). Eski `EmailVerificationService`/`/verify-email` infratuzilmasi
+  kod bazasida qoldi (faqat eski, hali tasdiqlanmagan hisoblar login qila
+  olishi uchun) — yangi hisoblar uchun endi ishlatilmaydi. OWNER uchun
   `/payments` sahifasidan hisobotni bir tugma bilan o'z emailiga yuborish
-  (`EmailService.sendSubscriptionReport`).
+  (`EmailService.sendSubscriptionReport`) — bu ALOHIDA funksiya, email
+  tasdiqlashga bog'liq emas, o'zgarishsiz ishlayveradi.
 - ✅ **BAJARILDI — To'lov tarixi va hisobot**: OWNER uchun `/payments` sahifasi —
   jami/oylik tushum, faol obunachilar, to'liq to'lov tarixi (`SubscriptionStatsDto`,
   `GET /api/subscriptions/stats`).
@@ -126,8 +135,17 @@ qamrab oladi.
 - ✅ **BAJARILDI — Foydalanish shartlari va maxfiylik siyosati**: `/terms` va
   `/privacy` sahifalari (draft, yuridik ko'rikdan o'tmagan — sahifada shu haqda
   ogohlantirish bor), ro'yxatdan o'tishda majburiy roziliknoma checkbox'i bilan.
-- **To'lov qaytarish (refund) siyosati** aniqlanmagan — agar ADMIN huquqi noto'g'ri
-  berilgan/bekor qilinishi kerak bo'lsa, qanday tartibda pul qaytarilishi hujjatlashtirilmagan.
+- ✅ **BAJARILDI (2026-09-19) — To'lov qaytarish (refund) siyosati**: `/terms`
+  sahifasiga 3.1-bo'lim sifatida qo'shildi. To'liq qaytarish shartlari (texnik
+  xato, yoki xizmatdan hali foydalanilmagan + 3 kun ichida murojaat),
+  qaytarilmaydigan holatlar (faol foydalanilgan, muddat tugagan, hisob
+  bloklangan), va qaytarish MEXANIZMI — mavjud texnik arxitekturaga mos:
+  Click orqali to'langan bo'lsa chargeback AVTOMATIK huquqni bekor qiladi
+  (`PaymentOrderService.reversePaidOrder`/`reverseOnline`, oldindan
+  amalga oshirilgan), qo'lda to'langan bo'lsa — administrator tomonidan
+  qo'lda. Yo'lda topilgan qo'shimcha eskirgan matn ham tuzatildi: 2-bo'lim
+  hali ham "email tasdiqlash majburiy" deb yozilgan edi (3-band bo'yicha
+  2026-09-17'da olib tashlangan).
 
 ## 6. Telegram bot — to'liq funksionallik (rejalashtirilmoqda)
 
@@ -241,12 +259,14 @@ bo'lmaydigan token bilan (raw Telegram ID emas — enumeratsiya xavfi).
 - [x] Botda to'g'ridan-to'g'ri ro'yxatdan o'tish (saytga kirmasdan) —
   username -> email -> telefon (ixtiyoriy) -> parol -> tasdiqlash ->
   shartlarga rozilik -> haqiqiy `UserServiceImpl.register()` (saytdagi
-  bilan bir xil validatsiya). Email tasdiqlash kodi hamon EMAILGA
-  yuboriladi (`EmailVerificationService`, o'zgarishsiz) — bot foydalanuvchidan
-  shu kodni so'raydi. Muvaffaqiyatli tasdiqlangach, Telegram akkaunt
-  DARHOL yangi hisobga ulanadi (qo'shimcha `/link` kodi shart emas,
-  chunki foydalanuvchi aynan shu suhbatda o'z ma'lumotlarini kiritgan).
-  (`TelegramRegistrationService`)
+  bilan bir xil validatsiya). Muvaffaqiyatli ro'yxatdan o'tgach, Telegram
+  akkaunt DARHOL yangi hisobga ulanadi (qo'shimcha `/link` kodi shart
+  emas, chunki foydalanuvchi aynan shu suhbatda o'z ma'lumotlarini
+  kiritgan). (`TelegramRegistrationService`) ~~Email tasdiqlash kodi
+  EMAILGA yuborilib, bot undan shu kodni so'rardi~~ — 2026-09-17'dan
+  buyon bu bosqich olib tashlandi (qarang: 3-band): ro'yxatdan o'tgach
+  akkaunt darhol faollashadi, bot to'g'ridan-to'g'ri xush kelibsiz
+  xabari va bosh menyuni ko'rsatadi.
 
 Test: 27 ta yangi unit test (`TelegramAutoLoginServiceTest`,
 `TelegramRegistrationServiceTest`). Yangi DB o'zgarishi kerak bo'lmadi
@@ -379,26 +399,65 @@ Test: jami ~40 ta yangi/yangilangan unit test (`TokenHasherTest`,
 `TelegramUserServiceTest`, `TestSessionServiceTest` kengaytirildi). Yangi
 DB o'zgarishi kerak bo'lmadi.
 
+## 9. Boshqaruv paneli va jadval UX yaxshilanishlari — 2026-09 yangilanishlari
+
+- ✅ **BAJARILDI — OWNER uchun bitta tugma bilan serverni qayta ishga
+  tushirish**: `/api/system/restart` (OWNER-only, `System.exit(0)` +
+  Docker `restart: unless-stopped` siyosati orqali — Docker socket'ga
+  kirish shart emas), `/api/system/health` (public, sessiyalar
+  tozalangandan keyin ham ishlaydi) — qayta ishga tushgach DB/ClamAV
+  holati avtomatik tekshirilib, natija foydalanuvchiga ko'rsatiladi.
+  Qo'lda deploy qilish uchun alohida `scripts/deploy.ps1` skripti ham
+  qo'shildi.
+- ✅ **BAJARILDI — Jadvallarga ustun bo'yicha saralash**:
+  `/users`, `/payments` (to'liq to'lov tarixi), `/statistics/user-sessions` —
+  barchasida ustun sarlavhasiga bosib saralash (yo'nalishni teskari
+  qilish bilan).
+- ✅ **BAJARILDI — Jadval sarlavhasi va birinchi ustunni ekranga
+  qotirish** (`/users`, `/payments`, `/statistics/user-sessions`):
+  sahifa pastga/gorizontal aylantirilganda ham sarlavha va identifikatsiya
+  ustuni (Username) doim ko'rinib turadi. **Yo'lda haqiqiy bug topildi**:
+  `position: sticky` jadval katakchalarida (`<th>`) Chromium'da
+  LAYOUT/PAINT uzilishiga olib kelib, sarlavhani noto'g'ri joyga chizib
+  qo'yardi — yechim: asl `<thead>` statik qoldirilib, uning nusxasi
+  alohida `position: fixed` `<div>`lar bilan quriladi (barcha uchta
+  sahifada bir xil andoza).
+  - ✅ `/payments` — to'liq to'lov tarixi jadvaliga qator boshiga
+    tahrirlash va butunlay o'chirish amallari ham qo'shildi (ADMIN-rol
+    va kurs obunalari uchun mos API'ga avtomatik yo'naltirilib).
+- ✅ **BAJARILDI — Statistika bugi: 0 so'mlik qo'lda berilgan obunalar
+  endi to'lovlar soniga qo'shilmaydi** — avval faqat `trial` belgisiga
+  qarab filtrlanardi, endi haqiqiy summa (`amount.signum() > 0`) asosida
+  (ikkala obuna turida ham bir xil).
+- ⚠️ **YANGILANDI — Email tasdiqlash bosqichi olib tashlandi** — batafsil:
+  3-band.
+
 ## Ustuvorlik bo'yicha tavsiya
 
 ~~Parolni tiklash~~, ~~Login urinishlarini cheklash~~, ~~Rol audit log~~,
 ~~Bildirishnoma markazi~~, ~~HTTPS/SSL~~, ~~Fayl antivirus tekshiruvi~~,
 ~~To'lov tarixi/hisobot~~, ~~Online kurslar~~, ~~Obuna eslatmasi~~,
-~~Email integratsiyasi~~, ~~Foydalanish shartlari/Maxfiylik siyosati~~,
-~~Click integratsiyasi~~ (production'da faol, real to'lov ham tasdiqlangan —
-IP whitelist muammosi hal qilindi), ~~Avtomatik unit testlar (servis
-qatlami)~~, ~~CI/CD~~, ~~Backup strategiyasi~~, ~~Markazlashtirilgan xato
-kuzatuvi (Sentry)~~, ~~Telegram bot — to'liq funksionallik (0-5 bosqich,
-botda ro'yxatdan o'tish ham, auto-login tuzatildi, savol sonini o'zi
-kiritish)~~, ~~Navbar — Profil menyusini birlashtirish, UPPERCASE~~,
-~~Auto-login xavfsizligi va tozalash~~, ~~Click to'lovi Web App
-tugmasi orqali~~, ~~Mustaqil testda rejim tanlash + Exam/Hard vaqt
-chegarasi (jonli sanoq)~~, ~~Natijalarim — mustaqil testlarni ham
-ko'rsatish~~, ~~Test natijasi hisoblash bugi~~, ~~Timezone (UTC →
-Asia/Tashkent)~~ — bajarildi.
+~~Email tasdiqlash (keyinchalik, 2026-09-17, ataylab OLIB TASHLANDI —
+foydalanuvchilar qiynalgani sabab)~~, ~~Foydalanish shartlari/Maxfiylik
+siyosati~~, ~~Click integratsiyasi~~ (production'da faol, real to'lov ham
+tasdiqlangan — IP whitelist muammosi hal qilindi), ~~Avtomatik unit
+testlar (servis qatlami)~~, ~~CI/CD~~, ~~Backup strategiyasi~~,
+~~Markazlashtirilgan xato kuzatuvi (Sentry)~~, ~~Telegram bot — to'liq
+funksionallik (0-5 bosqich, botda ro'yxatdan o'tish ham, auto-login
+tuzatildi, savol sonini o'zi kiritish)~~, ~~Navbar — Profil menyusini
+birlashtirish, UPPERCASE~~, ~~Auto-login xavfsizligi va tozalash~~,
+~~Click to'lovi Web App tugmasi orqali~~, ~~Mustaqil testda rejim
+tanlash + Exam/Hard vaqt chegarasi (jonli sanoq)~~, ~~Natijalarim —
+mustaqil testlarni ham ko'rsatish~~, ~~Test natijasi hisoblash bugi~~,
+~~Timezone (UTC → Asia/Tashkent)~~, ~~Server restart tugmasi +
+health-check~~, ~~Jadvallarga saralash/qotirilgan sarlavha-ustun
+(/users, /payments, /statistics/user-sessions)~~, ~~0 so'mlik obuna
+statistika bugi~~, ~~To'lov qaytarish (refund) siyosati~~ — bajarildi.
 
-Qolgan (tarif rejalar, refund siyosati, keng qamrovli integration
-testlar) — kattaroq va alohida rejalashtirish talab qiladigan ishlar.
+Qolgan (tarif rejalar, keng qamrovli integration testlar, Telegram
+to'lov chekini avtomatik tekshirish) — kattaroq va alohida
+rejalashtirish talab qiladigan ishlar. Batafsil — pastdagi "Yakuniy
+holat (2026-09-19)" bo'limiga qarang.
 
 ## Yakuniy holat (2026-08-20)
 
@@ -421,3 +480,28 @@ qiladigan ikkita band bor: **to'lov qaytarish (refund) siyosati** va
 **keng qamrovli integration/`@SpringBootTest` testlari** (hozircha
 faqat servis qatlamidagi unit testlar mavjud). Bulardan tashqari,
 loyiha ishlab chiqilishi rejalashtirilgan holatga to'liq mos.
+
+## Yakuniy holat (2026-09-19)
+
+2026-08-20'dan buyon qo'shilgan: OWNER uchun server restart tugmasi +
+health-check, `/users`/`/payments`/`/statistics/user-sessions`
+jadvallariga saralash va ekranga qotirilgan sarlavha/ustun (qarang:
+9-band), `/payments` jadvaliga tahrirlash/o'chirish amallari, 0 so'mlik
+obuna statistika bugi tuzatildi, **email tasdiqlash bosqichi butunlay
+olib tashlandi** (3-band), va **to'lov qaytarish (refund) siyosati
+belgilandi** (`/terms`, 3.1-bo'lim — 5-band).
+
+Ochiq qolgan bandlar, ustuvorlik tartibida (yuqoridagi tahlil asosida):
+
+1. **Telegram orqali yuborilgan to'lov cheki avtomatik tekshirilmaydi**
+   (1-band) — OWNER hozircha qo'lda Telegram chatida ko'rib, saytda
+   tasdiqlaydi. Foydalanuvchilar soni oshgani sari bu OWNER uchun qo'lda
+   bajariladigan ish yukini oshiradi — avtomatlashtirish (rasmni saqlash
+   + admin panelda ko'rsatish) operatsion samaradorlik uchun foydali.
+2. **Keng qamrovli integration/`@SpringBootTest` testlari yo'q**
+   (4-band) — hozircha faqat servis qatlami unit testlari bilan
+   qoplangan (controller/security/web qatlami emas). Kod sifatini
+   oshiradi, lekin foydalanuvchiga bevosita ko'rinadigan ta'siri yo'q.
+3. **Guruh/sinf darajasida chegirma yoki tarif rejalar yo'q** (3-band)
+   — hammaga bir xil erkin summa. Yangi mahsulot/monetizatsiya
+   funksiyasi, aniq talab/so'rov bo'lmaguncha shoshilinch emas.
