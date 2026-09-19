@@ -58,6 +58,14 @@ public class QuestionService {
         scienceService.checkCanManage(question.getTopic().getScience(), currentUser);
     }
 
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-19: savolni
+    // tahrirlash bosilganda "❌ Savolni yuklashda xatolik yuz berdi").
+    // @Transactional yo'q edi — getAnyQuestionOrThrow() Hibernate
+    // sessiyasini yopib qo'yardi, so'ng checkCanManageQuestion() ichida
+    // question.getTopic().getScience() (ikki bosqichli LAZY proxy)
+    // ochilmagan sessiyada chaqirilib, "Could not initialize proxy ...
+    // no session" xatosini berardi.
+    @Transactional(readOnly = true)
     public void checkCanManageQuestionById(Long questionId, User currentUser) {
         checkCanManageQuestion(getAnyQuestionOrThrow(questionId), currentUser);
     }
