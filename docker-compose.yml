@@ -38,8 +38,14 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      # "service_healthy" EMAS — "service_started"
+      # (docker-compose.prod.yml'dagi bilan bir xil, 2026-09-19'da
+      # topilgan sabab uchun ham qarang: ClamAV har soatlab virus bazasini
+      # avtomatik yangilaydi, shu payt clamd qayta yuklanadi va qisqa
+      # vaqtga javob bermay qoladi — "healthy" bo'lishini kutish
+      # ishga tushirishni keraksiz bloklashi mumkin edi).
       clamav:
-        condition: service_healthy
+        condition: service_started
     ports:
       - "8080:8080"
     environment:
