@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="/css/navbar.css">
     <link rel="stylesheet" href="/css/courses.css">
     <link rel="stylesheet" href="/css/topic-explanation-search.css">
+    <link rel="stylesheet" href="/css/periodicTable.css">
 
     <script th:inline="javascript">
         const COURSE_ID = /*[[${courseId}]]*/ 0;
@@ -16,6 +17,7 @@
     </script>
     <!-- YouTube IFrame Player API — video oxirigacha ko'rilganini aniqlash uchun -->
     <script src="https://www.youtube.com/iframe_api"></script>
+    <script src="/js/periodicTable.js" defer></script>
     <script src="/js/courseSectionView.js" defer></script>
     <script src="/js/navbar.js" defer></script>
 </head>
@@ -28,12 +30,13 @@
     <header class="courses-top-bar">
         <h1 id="sectionTitle">Yuklanmoqda...</h1>
         <div class="courses-top-bar-actions">
-            <!-- Faqat OWNER/ADMIN VA shu kursni boshqara oladigan bo'lsa ko'rinadi
-                 (canManage — CourseSectionContentDto, loadSection() ichida
-                 tekshiriladi). Bosilganda kurs sahifasiga ?editSection= bilan
-                 o'tkazadi — o'sha yerdagi tahrirlash formasi (openEditSectionForm)
-                 avtomatik ochiladi, shu sababli bu yerda alohida forma
-                 takrorlanmaydi. -->
+            <!-- Faqat 7-sinf kimyo kursida (COURSE_ID=11) ko'rinadi — boshqa
+                 fanlarning darslarida (Bakteriologiya va h.k.) kimyo darsligi/
+                 davriy jadval o'rinsiz bo'lardi (foydalanuvchi so'rovi,
+                 2026-09-20). Ko'rinishi courseSectionView.js#toggleChemistryTools
+                 orqali boshqariladi. -->
+            <a class="chemistry-tool-btn hidden" id="chemistryTextbookBtn" href="/docs/kimyo_7_uzb.pdf" target="_blank" title="7-sinf kimyo darsligini PDF holida ochish/yuklab olish">📕 Darslik (PDF)</a>
+            <button class="chemistry-tool-btn hidden" id="periodicTableBtn" onclick="openPeriodicTable()" title="Mendeleyev davriy jadvalini ochish">🧬 Mendeleyev jadvali</button>
             <button class="edit-section-btn hidden" id="editSectionBtn" title="Darsni tahrirlash">✏️ Tahrirlash</button>
             <button class="back-btn" id="backToCourseBtn">← Kursga qaytish</button>
         </div>
@@ -59,6 +62,33 @@
         <button id="prevSectionBtn" class="prev-section-btn" disabled>← Oldingi dars</button>
         <button id="nextSectionBtn" disabled>Keyingi dars →</button>
         <span id="nextHint" class="next-hint"></span>
+    </div>
+</div>
+
+<!-- 🧬 "Mendeleyev jadvali" oynasi — periodicTable.js orqali to'ldiriladi
+     va boshqariladi (openPeriodicTable/closePeriodicTable). Faqat
+     "chemistryTools" ko'rinadigan kurslarda ochish tugmasi mavjud. -->
+<div id="periodicTableModal" class="modal-overlay">
+    <div id="periodicTableCard">
+        <div class="pt-header">
+            <h2>🧬 Mendeleyev davriy jadvali</h2>
+            <button class="pt-close-btn" onclick="closePeriodicTable()" title="Yopish">✖</button>
+        </div>
+        <p class="pt-hint">Har bir elementga sichqonni olib boring (yoki mobil qurilmada bosing) — uning xarakteristikasi chiqadi.</p>
+        <div id="periodicTableGrid"></div>
+        <div id="periodicTooltip"></div>
+        <div class="pt-legend">
+            <span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-alkali-metal"></span>Ishqoriy metall</span>
+            <span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-alkaline-earth"></span>Ishqoriy-yer metall</span>
+            <span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-transition-metal"></span>O'tish metali</span>
+            <span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-lanthanide"></span>Lantanoid</span>
+            <span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-actinide"></span>Aktinoid</span>
+            <span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-post-transition"></span>O'tishdan keyingi metall</span>
+            <span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-metalloid"></span>Metalloid</span>
+            <span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-nonmetal"></span>Metallmas</span>
+            <span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-halogen"></span>Galogen</span>
+            <span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-noble-gas"></span>Inert gaz</span>
+        </div>
     </div>
 </div>
 

@@ -57,7 +57,20 @@ document.addEventListener("DOMContentLoaded", () => {
     searchNavContext = loadSearchNavContext();
     loadSection();
     setupSearchNav();
+    toggleChemistryTools();
 });
+
+// 📕 Darslik (PDF) + 🧬 Mendeleyev jadvali tugmalari — FAQAT 7-sinf kimyo
+// kursida (COURSE_ID=11) ko'rinadi (foydalanuvchi so'rovi, 2026-09-20).
+// Boshqa fanlarning (Bakteriologiya va h.k.) darslarida bu tugmalar
+// o'rinsiz bo'lardi, shu sabab kurs ID'iga qarab shartli ko'rsatiladi.
+const CHEMISTRY_COURSE_ID = 11;
+
+function toggleChemistryTools() {
+    const isChemistryCourse = Number(COURSE_ID) === CHEMISTRY_COURSE_ID;
+    document.getElementById("chemistryTextbookBtn").classList.toggle("hidden", !isChemistryCourse);
+    document.getElementById("periodicTableBtn").classList.toggle("hidden", !isChemistryCourse);
+}
 
 // ========================================================================
 //     Qidiruv natijalari orasida navigatsiya
