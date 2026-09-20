@@ -64,11 +64,12 @@ document.addEventListener("DOMContentLoaded", () => {
 // chunki bu aynan shu fanning darsligi (foydalanuvchi so'rovi, 2026-09-20).
 // 🧬 Mendeleyev jadvali — 7-sinf kimyo (11) dan tashqari, kurs 2'da ham
 // ko'rinadi (foydalanuvchi so'rovi, 2026-09-20: "mendeleyev jadvalini
-// https://study-grow.uz/courses/2 kursiga ham qo'sh"). Boshqa kurslarda
-// bu tugmalar o'rinsiz bo'lardi, shu sabab kurs ID'iga qarab shartli
-// ko'rsatiladi.
+// https://study-grow.uz/courses/2 kursiga ham qo'sh"). 8-sinf kimyo (13)
+// ham qo'shildi — 05-§ (Davriy qonun) aynan shu vositaga ishora qiladi.
+// Boshqa kurslarda bu tugmalar o'rinsiz bo'lardi, shu sabab kurs ID'iga
+// qarab shartli ko'rsatiladi.
 const CHEMISTRY_TEXTBOOK_COURSE_ID = 11;
-const PERIODIC_TABLE_COURSE_IDS = [11, 2];
+const PERIODIC_TABLE_COURSE_IDS = [11, 2, 13];
 
 function toggleChemistryTools() {
     const courseId = Number(COURSE_ID);
