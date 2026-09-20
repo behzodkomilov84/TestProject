@@ -30,12 +30,14 @@
     <header class="courses-top-bar">
         <h1 id="sectionTitle">Yuklanmoqda...</h1>
         <div class="courses-top-bar-actions">
-            <!-- 📕 — faqat 7-sinf kimyo kursida (COURSE_ID=11). 🧬 — 11 va
-                 2-kurslarda. Boshqa kurslarda bu tugmalar o'rinsiz bo'lardi,
-                 shu sabab kurs ID'iga qarab shartli ko'rsatiladi (ko'rinishi
-                 courseSectionView.js#toggleChemistryTools orqali
-                 boshqariladi, foydalanuvchi so'rovi, 2026-09-20). -->
-            <a class="chemistry-tool-btn hidden" id="chemistryTextbookBtn" href="/docs/kimyo_7_uzb.pdf" target="_blank" title="7-sinf kimyo darsligini PDF holida ochish/yuklab olish">📕 Darslik (PDF)</a>
+            <!-- 📕 — har bir kimyo kursi o'zining darsligiga bog'lanadi
+                 (href JS orqali CHEMISTRY_TEXTBOOK_BY_COURSE xaritasidan
+                 to'ldiriladi). 🧬 — 11, 2 va 13-kurslarda. Boshqa kurslarda
+                 bu tugmalar o'rinsiz bo'lardi, shu sabab kurs ID'iga qarab
+                 shartli ko'rsatiladi (ko'rinishi courseSectionView.js#
+                 toggleChemistryTools orqali boshqariladi, foydalanuvchi
+                 so'rovi, 2026-09-20). -->
+            <a class="chemistry-tool-btn hidden" id="chemistryTextbookBtn" href="#" target="_blank" title="Kimyo darsligini PDF holida ochish/yuklab olish">📕 Darslik (PDF)</a>
             <button class="chemistry-tool-btn hidden" id="periodicTableBtn" onclick="openPeriodicTable()" title="Mendeleyev davriy jadvalini ochish">🧬 Mendeleyev jadvali</button>
             <button class="edit-section-btn hidden" id="editSectionBtn" title="Darsni tahrirlash">✏️ Tahrirlash</button>
             <button class="back-btn" id="backToCourseBtn">← Kursga qaytish</button>

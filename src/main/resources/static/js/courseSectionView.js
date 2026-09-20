@@ -60,20 +60,27 @@ document.addEventListener("DOMContentLoaded", () => {
     toggleChemistryTools();
 });
 
-// 📕 Darslik (PDF) — FAQAT 7-sinf kimyo kursida (COURSE_ID=11) ko'rinadi,
-// chunki bu aynan shu fanning darsligi (foydalanuvchi so'rovi, 2026-09-20).
-// 🧬 Mendeleyev jadvali — 7-sinf kimyo (11) dan tashqari, kurs 2'da ham
-// ko'rinadi (foydalanuvchi so'rovi, 2026-09-20: "mendeleyev jadvalini
-// https://study-grow.uz/courses/2 kursiga ham qo'sh"). 8-sinf kimyo (13)
-// ham qo'shildi — 05-§ (Davriy qonun) aynan shu vositaga ishora qiladi.
-// Boshqa kurslarda bu tugmalar o'rinsiz bo'lardi, shu sabab kurs ID'iga
-// qarab shartli ko'rsatiladi.
-const CHEMISTRY_TEXTBOOK_COURSE_ID = 11;
+// 📕 Darslik (PDF) — har bir kimyo kursi (7-sinf, 8-sinf, ...) o'zining
+// darsligiga bog'lanadi (foydalanuvchi so'rovi, 2026-09-20: "pdf
+// darslikni yuklab olishni ham bir yo'la qo'shib ket"). 🧬 Mendeleyev
+// jadvali — shu kurslarga qo'shimcha kurs 2'da ham ko'rinadi
+// (foydalanuvchi so'rovi, 2026-09-20: "mendeleyev jadvalini
+// https://study-grow.uz/courses/2 kursiga ham qo'sh"). Boshqa kurslarda
+// bu tugmalar o'rinsiz bo'lardi, shu sabab kurs ID'iga qarab shartli
+// ko'rsatiladi. Kelajakda 9–11-sinf kimyo kurslari qo'shilganda shu
+// xaritaga bittadan qator qo'shish yetarli.
+const CHEMISTRY_TEXTBOOK_BY_COURSE = {
+    11: "/docs/kimyo_7_uzb.pdf",
+    13: "/docs/kimyo_8_uzb.pdf"
+};
 const PERIODIC_TABLE_COURSE_IDS = [11, 2, 13];
 
 function toggleChemistryTools() {
     const courseId = Number(COURSE_ID);
-    document.getElementById("chemistryTextbookBtn").classList.toggle("hidden", courseId !== CHEMISTRY_TEXTBOOK_COURSE_ID);
+    const textbookUrl = CHEMISTRY_TEXTBOOK_BY_COURSE[courseId];
+    const textbookBtn = document.getElementById("chemistryTextbookBtn");
+    textbookBtn.classList.toggle("hidden", !textbookUrl);
+    if (textbookUrl) textbookBtn.href = textbookUrl;
     document.getElementById("periodicTableBtn").classList.toggle("hidden", !PERIODIC_TABLE_COURSE_IDS.includes(courseId));
 }
 
