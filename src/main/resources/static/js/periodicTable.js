@@ -255,13 +255,30 @@ function showPeriodicTooltip(el, cellNode) {
     requestAnimationFrame(() => {
         const tooltipRect = tooltip.getBoundingClientRect();
         const PAD = 8;
-        if (tooltipRect.right > cardRect.right - PAD) {
-            // O'ng chetdan (kartaning o'zidan) chiqib ketsa — chapga suriladi.
-            tooltip.style.left = (left - (tooltipRect.right - (cardRect.right - PAD))) + "px";
-        } else if (tooltipRect.left < cardRect.left + PAD) {
-            // Chap chetdan chiqib ketsa (masalan 1-ustundagi H, Li, Na, K,
-            // Rb, Cs, Fr elementlari) — o'ngga suriladi.
-            tooltip.style.left = (left + ((cardRect.left + PAD) - tooltipRect.left)) + "px";
+        // Gorizontal chegara — kartaning O'ZI (chap/o'ng chetlaridagi
+        // ustunlar uchun) va OYNA (viewport) chegarasining QATTIQROQ
+        // (tor)idan foydalaniladi — karta oynadan kengroq bo'lgan holatda
+        // ham (masalan gorizontal skroll bo'lganda) tooltip ekrandan
+        // chiqib ketmasligi uchun.
+        const boundLeft = Math.max(cardRect.left, 0) + PAD;
+        const boundRight = Math.min(cardRect.right, window.innerWidth) - PAD;
+        if (tooltipRect.right > boundRight) {
+            tooltip.style.left = (left - (tooltipRect.right - boundRight)) + "px";
+        } else if (tooltipRect.left < boundLeft) {
+            tooltip.style.left = (left + (boundLeft - tooltipRect.left)) + "px";
+        }
+
+        // Vertikal chegara — jadvalning PASTKI qatorlaridagi elementlarda
+        // (masalan aktinoidlar: Fm, Md, No, Lr) hujayra OSTIGA joylashtirish
+        // tooltip'ni karta/oyna tagidan chiqarib, kesib qo'yardi
+        // (foydalanuvchi so'rovi, 2026-09-20: "tagida muammo bor" — Lr
+        // elementi misolida). Shunday holatda tooltip HUJAYRA USTIGA
+        // ko'chiriladi.
+        const boundBottom = Math.min(cardRect.bottom, window.innerHeight) - PAD;
+        if (tooltipRect.bottom > boundBottom) {
+            const cellTopInCard = cellRect.top - cardRect.top;
+            top = cellTopInCard - tooltipRect.height - 6;
+            tooltip.style.top = top + "px";
         }
     });
 }
