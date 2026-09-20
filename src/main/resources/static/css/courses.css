@@ -532,6 +532,21 @@ body {
     font-family: inherit;
 }
 
+/* HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-09-20: "tahrirlashni
+   ichidagi polyani o'zgartirmabsanku" — "Tavsif" maydoni "rows" ni 3'dan
+   6'ga oshirilgandan keyin ham o'zgarmagan edi) — sabab: ".course-form-
+   modal" (SHU div'ning o'zi, ".course-form" bilan bir xil element) bir
+   vaqtning o'zida HAM flex konteyner (column), HAM "max-height:90vh;
+   overflow-y:auto"ga ega. Flexbox spetsifikatsiyasiga ko'ra, agar element
+   "overflow"i "visible" bo'lmasa (textarea'ning standart holati —
+   "overflow:auto"), uning "avtomatik minimal balandligi" 0 deb
+   hisoblanadi — shu sabab konteyner torlashganda "rows" atributi
+   butunlay e'tiborsiz qoldirilib, textarea deyarli ko'rinmas darajada
+   siqilib ketaverardi. Aniq "min-height" berish shu muammoni tuzatadi. */
+.course-form textarea, .section-form textarea {
+    min-height: 140px;
+}
+
 .course-form-actions, .manage-actions-row {
     display: flex;
     gap: 8px;
