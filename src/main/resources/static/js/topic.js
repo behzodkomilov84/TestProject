@@ -1124,9 +1124,11 @@ async function runExplanationSearch(query) {
     }
 
     try {
-        const params = new URLSearchParams({ q: query });
-        topicIds.forEach(id => params.append("topicIds", id));
-        const res = await fetch(`/api/course-sections/search-explanations?${params}`);
+        const res = await fetch(`/api/course-sections/search-explanations`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ topicIds, q: query })
+        });
         if (!res.ok) throw new Error("Qidiruvda xatolik");
         const results = await res.json();
         renderExplanationSearchResults(results);

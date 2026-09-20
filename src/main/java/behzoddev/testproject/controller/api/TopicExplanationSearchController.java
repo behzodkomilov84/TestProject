@@ -1,11 +1,12 @@
 package behzoddev.testproject.controller.api;
 
+import behzoddev.testproject.dto.course.TopicExplanationSearchRequestDto;
 import behzoddev.testproject.dto.course.TopicExplanationSearchResultDto;
 import behzoddev.testproject.service.CourseService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -28,11 +29,13 @@ public class TopicExplanationSearchController {
     // YO'Q (SecurityConfig'da "/api/course-sections/search-explanations"
     // istalgan login qilgan foydalanuvchiga — OWNER/ADMIN/USER — ochiq
     // qilib qo'yilgan).
-    @GetMapping("/search-explanations")
-    public List<TopicExplanationSearchResultDto> search(
-            @RequestParam List<Long> topicIds,
-            @RequestParam String q
-    ) {
-        return courseService.searchTopicExplanations(topicIds, q);
+    //
+    // GET + "topicIds" query-parametrlar ro'yxati o'rniga POST + JSON body
+    // (foydalanuvchi xabari, 2026-09-20: katta kurslarda — masalan 897 ta
+    // bog'langan mavzu — GET URL 12000+ belgigacha o'sib, server/brauzer URL
+    // uzunligi chegarasidan oshib "Failed to fetch" bilan yiqilardi).
+    @PostMapping("/search-explanations")
+    public List<TopicExplanationSearchResultDto> search(@RequestBody TopicExplanationSearchRequestDto request) {
+        return courseService.searchTopicExplanations(request.topicIds(), request.q());
     }
 }
