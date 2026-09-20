@@ -372,6 +372,17 @@ body {
     display: -webkit-box;
     -webkit-line-clamp: 3;
     -webkit-box-orient: vertical;
+    /* 3 qatordan uzun tavsif "..." bilan kesilib, davomini o'qish imkoni
+       yo'q edi (foydalanuvchi so'rovi, 2026-09-20). Endi bosilganda
+       to'liq matn ochiladi/yopiladi ("courses.js"/"courseTrash.js"dagi
+       onclick orqali ".expanded" klassi almashtiriladi) — "title"
+       atributi esa katta ekranlarda hover qilinganda ham to'liq matnni
+       ko'rsatadi. */
+    cursor: pointer;
+}
+
+.course-card-desc.expanded {
+    -webkit-line-clamp: unset;
 }
 
 /* Kurs kartochkasida sarlavha ostida "Muallif: ..." (foydalanuvchi so'rovi,

@@ -665,7 +665,7 @@ function renderCourseCard(c, idx, total, fieldId) {
             <div class="course-card-body">
                 <h3 class="course-card-title">${escapeHtml(c.title)}</h3>
                 ${authorHtml}
-                <p class="course-card-desc">${escapeHtml(c.description || "")}</p>
+                <p class="course-card-desc" title="${escapeHtml(c.description || "")}" onclick="event.stopPropagation(); this.classList.toggle('expanded')">${escapeHtml(c.description || "")}</p>
                 <div class="course-card-footer">
                     <span>${c.chapterCount} ta mavzu, ${c.sectionCount} ta dars, ${c.testCount} ta test</span>
                     ${badge}

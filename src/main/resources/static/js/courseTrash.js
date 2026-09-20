@@ -45,7 +45,7 @@ function renderTrash(courses) {
                 ${cover}
                 <div class="course-card-body">
                     <h3 class="course-card-title">${escapeHtml(c.title)}</h3>
-                    <p class="course-card-desc">${escapeHtml(c.description || "")}</p>
+                    <p class="course-card-desc" title="${escapeHtml(c.description || "")}" onclick="this.classList.toggle('expanded')">${escapeHtml(c.description || "")}</p>
                     <div class="course-card-footer">
                         <span>${c.sectionCount} dars • ${formatDate(c.deletedAt)}da o'chirilgan</span>
                     </div>
