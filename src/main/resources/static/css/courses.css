@@ -3014,6 +3014,22 @@ body {
     height: auto;
 }
 
+/* "Namunaviy misol" bloklari (masalan, dars matnida yechilgan masala/
+   misol) — oddiy paragraflardan ajralib tursin deb, kimyo kurslari
+   (8-sinf va undan keyingilari) uchun kiritilgan yengil callout box
+   (foydalanuvchi so'rovi, 2026-09-20: darslarni "hayotiy misollar"
+   bilan tushunarli tahrirlash). Sariq/amber — ogohlantirish emas,
+   "e'tibor bering, bu qadam-baqadam misol" degan neytral urg'u. */
+.section-content.html-content .rich-example-box {
+    background: #fffbeb;
+    border-left: 3px solid #f59e0b;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-size: 15px;
+    line-height: 1.7;
+}
+
 /* Responsive video embed — har qanday manba (YouTube/upload/external) uchun
    16:9 nisbatda, to'liq width/height bilan ko'rinadi. */
 /* MIXED bo'lim — matn video ustida, orasida bo'shliq bilan. */
