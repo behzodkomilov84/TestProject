@@ -219,7 +219,10 @@ function buildQuestionRow(q, index, topicId, query) {
     return `
         <tr>
             <td class="cq-num">${index + 1}</td>
-            <td class="cq-question-text">${highlightText(q.questionText, query)}</td>
+            <td class="cq-question-text">
+                ${highlightText(q.questionText, query)}
+                ${q.imageUrl ? `<br><img class="cq-question-thumb" src="${q.imageUrl}" alt="Savol rasmi">` : ""}
+            </td>
             ${ANSWER_LETTERS.map((_, i) => {
                 const a = answers[i];
                 if (!a) return `<td></td>`;

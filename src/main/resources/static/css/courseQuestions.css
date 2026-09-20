@@ -226,6 +226,20 @@
     font-weight: 500;
 }
 
+/* question.css'dagi ".question-thumb" BILAN BIR XIL (bu sahifa o'sha
+   faylni ulamagani uchun shu yerda takrorlangan) — savolga biriktirilgan
+   rasmning kichik ko'rinishi (foydalanuvchi so'rovi, 2026-09-20: "Barcha
+   savollar" sahifasida rasmli savollarning rasmi ko'rinmayapti). */
+.cq-question-thumb {
+    max-width: 140px;
+    max-height: 100px;
+    object-fit: contain;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    margin-top: 4px;
+    display: block;
+}
+
 .cq-table .cq-correct {
     background: #e6fffa;
     font-weight: 600;

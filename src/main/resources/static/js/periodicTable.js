@@ -236,21 +236,32 @@ function showPeriodicTooltip(el, cellNode) {
 
     tooltip.classList.add("show");
 
-    // Hujayra ustida joylashtirish — modal ichidagi skroll pozitsiyasini
-    // hisobga olib, oynadan tashqariga chiqib ketmasligi uchun chegara
-    // tekshiruvi bilan.
+    // Hujayra ustida joylashtirish — CHEGARA TEKSHIRUVI OYNA (window) ga
+    // emas, balki #periodicTableCard'ning O'ZIGA nisbatan qilinadi: karta
+    // kengroq ekranlarda markazlashtirilib ochiladi (min(1300px, 96vw)),
+    // shu sabab oyna cheti kartaning chap/o'ng chetidan ancha uzoqda
+    // bo'lishi mumkin — faqat oyna chegarasini tekshirish chap/o'ng
+    // ustunlardagi elementlarda tooltip kartadan tashqariga (fon ustiga)
+    // chiqib ketishiga olib kelardi (foydalanuvchi so'rovi, 2026-09-20:
+    // avval chap, keyin o'ng chetda ham "yarmi ko'rinmay qolyapti").
     const cellRect = cellNode.getBoundingClientRect();
-    const modalRect = document.getElementById("periodicTableCard").getBoundingClientRect();
-    let left = cellRect.left - modalRect.left + cellRect.width / 2;
-    let top = cellRect.top - modalRect.top + cellRect.height + 6;
+    const cardRect = document.getElementById("periodicTableCard").getBoundingClientRect();
+    let left = cellRect.left - cardRect.left + cellRect.width / 2;
+    let top = cellRect.top - cardRect.top + cellRect.height + 6;
 
     tooltip.style.left = left + "px";
     tooltip.style.top = top + "px";
 
     requestAnimationFrame(() => {
         const tooltipRect = tooltip.getBoundingClientRect();
-        if (tooltipRect.right > window.innerWidth - 10) {
-            tooltip.style.left = (left - (tooltipRect.right - window.innerWidth + 10)) + "px";
+        const PAD = 8;
+        if (tooltipRect.right > cardRect.right - PAD) {
+            // O'ng chetdan (kartaning o'zidan) chiqib ketsa — chapga suriladi.
+            tooltip.style.left = (left - (tooltipRect.right - (cardRect.right - PAD))) + "px";
+        } else if (tooltipRect.left < cardRect.left + PAD) {
+            // Chap chetdan chiqib ketsa (masalan 1-ustundagi H, Li, Na, K,
+            // Rb, Cs, Fr elementlari) — o'ngga suriladi.
+            tooltip.style.left = (left + ((cardRect.left + PAD) - tooltipRect.left)) + "px";
         }
     });
 }
