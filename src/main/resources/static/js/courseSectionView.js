@@ -60,16 +60,20 @@ document.addEventListener("DOMContentLoaded", () => {
     toggleChemistryTools();
 });
 
-// 📕 Darslik (PDF) + 🧬 Mendeleyev jadvali tugmalari — FAQAT 7-sinf kimyo
-// kursida (COURSE_ID=11) ko'rinadi (foydalanuvchi so'rovi, 2026-09-20).
-// Boshqa fanlarning (Bakteriologiya va h.k.) darslarida bu tugmalar
-// o'rinsiz bo'lardi, shu sabab kurs ID'iga qarab shartli ko'rsatiladi.
-const CHEMISTRY_COURSE_ID = 11;
+// 📕 Darslik (PDF) — FAQAT 7-sinf kimyo kursida (COURSE_ID=11) ko'rinadi,
+// chunki bu aynan shu fanning darsligi (foydalanuvchi so'rovi, 2026-09-20).
+// 🧬 Mendeleyev jadvali — 7-sinf kimyo (11) dan tashqari, kurs 2'da ham
+// ko'rinadi (foydalanuvchi so'rovi, 2026-09-20: "mendeleyev jadvalini
+// https://study-grow.uz/courses/2 kursiga ham qo'sh"). Boshqa kurslarda
+// bu tugmalar o'rinsiz bo'lardi, shu sabab kurs ID'iga qarab shartli
+// ko'rsatiladi.
+const CHEMISTRY_TEXTBOOK_COURSE_ID = 11;
+const PERIODIC_TABLE_COURSE_IDS = [11, 2];
 
 function toggleChemistryTools() {
-    const isChemistryCourse = Number(COURSE_ID) === CHEMISTRY_COURSE_ID;
-    document.getElementById("chemistryTextbookBtn").classList.toggle("hidden", !isChemistryCourse);
-    document.getElementById("periodicTableBtn").classList.toggle("hidden", !isChemistryCourse);
+    const courseId = Number(COURSE_ID);
+    document.getElementById("chemistryTextbookBtn").classList.toggle("hidden", courseId !== CHEMISTRY_TEXTBOOK_COURSE_ID);
+    document.getElementById("periodicTableBtn").classList.toggle("hidden", !PERIODIC_TABLE_COURSE_IDS.includes(courseId));
 }
 
 // ========================================================================
