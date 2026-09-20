@@ -154,8 +154,20 @@
                 </div>
             </div>
 
-            <div id="topicLinkAuditPanel" style="display:none;">
-                <div id="topicLinkAuditList"></div>
+            <!-- Foydalanuvchi so'rovi (2026-09-20: "Havolalarni tekshirish
+                 modalda chiqsin") — "🗑️ O'chirilgan darslar" (sectionTrashPanel,
+                 yuqorida) bilan AYNAN BIR XIL sabab va andoza: ilgari oddiy
+                 inline panel edi (style="display:none", sahifa joylashuvini
+                 pastga surib yuborardi), endi ".modal-overlay" + ".trash-list-
+                 modal" — boshqa modallar bilan bir xil ko'rinish/xatti-harakat. -->
+            <div id="topicLinkAuditPanel" class="modal-overlay">
+                <div class="trash-list-modal">
+                    <h2 class="modal-h2">🔗 Havolalarni tekshirish</h2>
+                    <div id="topicLinkAuditList"></div>
+                    <div class="modal-footer">
+                        <button type="button" onclick="toggleTopicLinkAudit()">Yopish</button>
+                    </div>
+                </div>
             </div>
 
         <!-- "✏️ Tahrirlash" (kursning o'zi) — modal (overlay) sifatida

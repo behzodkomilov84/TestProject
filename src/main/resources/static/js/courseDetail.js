@@ -3514,7 +3514,7 @@ let topicLinkAuditOpen = false;
 
 function toggleTopicLinkAudit() {
     topicLinkAuditOpen = !topicLinkAuditOpen;
-    document.getElementById("topicLinkAuditPanel").style.display = topicLinkAuditOpen ? "block" : "none";
+    document.getElementById("topicLinkAuditPanel").classList.toggle("show", topicLinkAuditOpen);
     if (topicLinkAuditOpen) {
         loadTopicLinkAudit();
     }
