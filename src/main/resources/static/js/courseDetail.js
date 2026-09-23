@@ -70,8 +70,9 @@ let chapterKeyBeingAnimated = null;
 // tashlandi.
 let closedChapterActionKeys = new Set();
 
-// "🔍 Mavzu qidirish" (onChapterSearchInput) — mavzu nomi bo'yicha
-// filtr, katta-kichik harfga sezgir emas. Bo'sh bo'lsa — filtr yo'q.
+// "🔍 Dars qidirish" (onChapterSearchInput) — mavzu (chapter) nomi EMAS,
+// har bir mavzu ICHIDAGI dars (CourseSection) nomi bo'yicha filtr,
+// katta-kichik harfga sezgir emas. Bo'sh bo'lsa — filtr yo'q.
 let chapterSearchQuery = "";
 
 // Klaviatura bilan dars kartochkalari orasida navigatsiya (←/→ — joriy
@@ -1763,13 +1764,21 @@ function renderGroupedSections() {
     // toraytiradi, haqiqiy tartibga ta'sir qilmaydi.
     const realChapterGroups = sortedGroups.filter(g => g.chapterId != null);
 
+    // Mavzu (chapter) nomi EMAS — ichidagi har bir DARS nomi (s.title)
+    // bo'yicha qidiramiz. Mos kelgan mavzu o'zining faqat mos kelgan
+    // darslari bilan (items filtrlangan holda) ko'rsatiladi — shu sabab
+    // har bir guruhdan yangi obyekt yasaymiz, asl "sortedGroups"ni
+    // (⬆⬇ tugmalari "realChapterGroups" orqali ulardan foydalanadi)
+    // o'zgartirmasdan.
     const query = chapterSearchQuery.trim().toLowerCase();
     const filteredGroups = query
-        ? sortedGroups.filter(g => g.name.toLowerCase().includes(query))
+        ? sortedGroups
+            .map(g => ({ ...g, items: g.items.filter(s => (s.title || "").toLowerCase().includes(query)) }))
+            .filter(g => g.items.length > 0)
         : sortedGroups;
 
     if (query && filteredGroups.length === 0) {
-        list.innerHTML = `<div class="courses-empty">"${escapeHtml(chapterSearchQuery)}" bo'yicha mavzu topilmadi</div>`;
+        list.innerHTML = `<div class="courses-empty">"${escapeHtml(chapterSearchQuery)}" nomli dars topilmadi</div>`;
         return;
     }
 
@@ -1843,10 +1852,11 @@ window.addEventListener("resize", () => {
     chapterCardResizeTimeout = setTimeout(() => equalizeGroupCardHeights("sectionsList"), 200);
 });
 
-// "🔍 Mavzu qidirish" — teriladigan har harfda chaqiriladi (input
+// "🔍 Dars qidirish" — teriladigan har harfda chaqiriladi (input
 // statik, qayta chizilmaydi — shu sabab fokus/kursor yo'qolmaydi).
-// Qidiruv FAOL bo'lganda — mos kelgan mavzular avtomatik OCHIQ holda
-// ko'rsatiladi (renderChapterBox), qo'shimcha bosish shart emas.
+// Qidiruv FAOL bo'lganda — mos DARS(lar)ni o'z ichiga olgan mavzu(lar)
+// avtomatik OCHIQ holda ko'rsatiladi (renderChapterBox), qo'shimcha
+// bosish shart emas.
 function onChapterSearchInput(value) {
     chapterSearchQuery = value;
     renderGroupedSections();
@@ -1952,9 +1962,9 @@ function toggleChapterBox(key) {
 
 function renderChapterBox(group, globalIndexById, realChapterGroups) {
     // Endi accordion — sarlavha bosilganda ochiladi/yopiladi (toggleChapterBox).
-    // Qidiruv FAOL bo'lsa (chapterSearchQuery) — mos kelgan mavzular
-    // avtomatik OCHIQ ko'rsatiladi (natijani ko'rish uchun qo'shimcha
-    // bosish shart emas).
+    // Qidiruv FAOL bo'lsa (chapterSearchQuery, DARS nomi bo'yicha) — mos
+    // darsi(lar)i topilgan mavzu avtomatik OCHIQ ko'rsatiladi (natijani
+    // ko'rish uchun qo'shimcha bosish shart emas).
     const isExpanded = expandedChapterKeys.has(group.key) || chapterSearchQuery.trim() !== "";
     // HAQIQIY ILDIZ SABAB TOPILDI (foydalanuvchi so'rovi, 2026-09-12:
     // "shuni tekshirib ber... klaviatura yorliqlarini aytdim" — jonli
@@ -2203,8 +2213,16 @@ function toggleChapterActions(key) {
 // ".group-card" ICHIDA EMAS, shu sabab bu paneldagi istalgan tugmani
 // bosish ham "tashqariga bosildi" deb hisoblanib, ochiq popover'larni
 // yopib qo'yardi.
+// HAQIQIY TOPILGAN BUG #4 (foydalanuvchi so'rovi, 2026-09-23: "action lar
+// default da ochiq turadi, lekin mavzu nomi bo'yicha qidirishga kursorni
+// qo'ysam, avtomat yopilib qolyapti") — xuddi shu sababdan: ikkala qidiruv
+// qutisi ham (".search-boxes-row" — "Kurs ichidan qidirish" VA "Dars nomi
+// bo'yicha qidirish") ".group-card" ICHIDA EMAS, shu sabab qidiruv
+// maydoniga oddiy bosib kursor qo'yish (harf terishga urinishdan OLDIN)
+// ham "tashqariga bosildi" deb hisoblanib, ochiq popover'larni darhol
+// yopib qo'yardi.
 document.addEventListener("click", (e) => {
-    if (e.target.closest(".group-card, .modal-overlay, .prompt-modal-overlay, .course-manage-panel")) return;
+    if (e.target.closest(".group-card, .modal-overlay, .prompt-modal-overlay, .course-manage-panel, .search-boxes-row")) return;
     document.querySelectorAll(".group-card-menu:not(.hidden)").forEach(el => {
         el.classList.add("hidden");
         closedChapterActionKeys.add(el.id.replace("chapterActionsExtra-", ""));

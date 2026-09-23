@@ -579,14 +579,15 @@
             <div id="explanationSearchResults" class="explanation-search-results hidden"></div>
         </div>
 
-        <!-- Guruhlangan (Mavzuli) ko'rinishda GINA ko'rinadi — Mavzu nomi
-             bo'yicha tez qidirish (onChapterSearchInput, courseDetail.js).
-             Statik element sifatida (har safar qayta chizilmaydi) — aks
-             holda har harf terilganda fokus/kursor pozitsiyasi yo'qolib
-             qolardi. -->
+        <!-- Guruhlangan (Mavzuli) ko'rinishda GINA ko'rinadi — DARS nomi
+             bo'yicha tez qidirish, mavzu ichidagi darslar orasidan
+             (onChapterSearchInput, courseDetail.js) — mavzu nomining o'zi
+             bo'yicha EMAS. Statik element sifatida (har safar qayta
+             chizilmaydi) — aks holda har harf terilganda fokus/kursor
+             pozitsiyasi yo'qolib qolardi. -->
         <div id="chapterSearchBox" class="explanation-search-box" style="display:none;">
             <input type="text" id="chapterSearchInput" class="explanation-search-input"
-                   placeholder="🔍 Mavzu nomi bo'yicha qidirish..." oninput="onChapterSearchInput(this.value)">
+                   placeholder="🔍 Dars nomi bo'yicha qidirish..." oninput="onChapterSearchInput(this.value)">
         </div>
     </div>
 
