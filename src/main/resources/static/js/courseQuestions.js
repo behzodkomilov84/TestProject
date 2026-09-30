@@ -226,7 +226,7 @@ function buildQuestionRow(q, index, topicId, query) {
             ${ANSWER_LETTERS.map((_, i) => {
                 const a = answers[i];
                 if (!a) return `<td></td>`;
-                return `<td class="${a.isTrue ? "cq-correct" : ""}">${escapeHtml(a.answerText)}</td>`;
+                return `<td class="${a.isTrue ? "cq-correct" : ""}">${escapeHtmlAllowSub(a.answerText)}</td>`;
             }).join("")}
             <td class="cq-correct-letter"><b>${correctLetters || "-"}</b></td>
             <td class="cq-actions">
@@ -262,6 +262,17 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// escapeHtml() bilan bir xil XSS himoyasi, lekin savol/javob matnidagi
+// kimyoviy formulalar uchun ishlatiladigan <sub>...</sub> teglariga
+// ruxsat beradi (masalan "CO<sub>2</sub>") — faqat shu ikki aniq teg
+// escape qilingandan keyin qaytadan tiklanadi, boshqa hech qanday teg
+// (masalan <script>, <img onerror=...>) o'tkazilmaydi.
+function escapeHtmlAllowSub(text) {
+    return escapeHtml(text)
+        .replace(/&lt;sub&gt;/g, "<sub>")
+        .replace(/&lt;\/sub&gt;/g, "</sub>");
+}
+
 // Qidiruv so'zi topilgan joyni <mark> bilan bo'yaydi (foydalanuvchi
 // so'rovi, 2026-09-06) — HAR BIR uchrashgan joyi (bittasi emas),
 // katta/kichik harfga QARAMASDAN mos keladi. XSS'dan himoya uchun matn
@@ -272,7 +283,7 @@ function escapeHtml(text) {
 function highlightText(text, query) {
     const raw = text ?? "";
     const q = (query ?? "").trim();
-    if (!q) return escapeHtml(raw);
+    if (!q) return escapeHtmlAllowSub(raw);
 
     const lowerRaw = raw.toLowerCase();
     const lowerQuery = q.toLowerCase();
@@ -281,11 +292,11 @@ function highlightText(text, query) {
     let pos = 0;
     let idx = lowerRaw.indexOf(lowerQuery, pos);
     while (idx !== -1) {
-        result += escapeHtml(raw.slice(pos, idx));
-        result += `<mark class="cq-highlight">${escapeHtml(raw.slice(idx, idx + q.length))}</mark>`;
+        result += escapeHtmlAllowSub(raw.slice(pos, idx));
+        result += `<mark class="cq-highlight">${escapeHtmlAllowSub(raw.slice(idx, idx + q.length))}</mark>`;
         pos = idx + q.length;
         idx = lowerRaw.indexOf(lowerQuery, pos);
     }
-    result += escapeHtml(raw.slice(pos));
+    result += escapeHtmlAllowSub(raw.slice(pos));
     return result;
 }
