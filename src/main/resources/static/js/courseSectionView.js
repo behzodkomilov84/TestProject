@@ -72,9 +72,10 @@ document.addEventListener("DOMContentLoaded", () => {
 const CHEMISTRY_TEXTBOOK_BY_COURSE = {
     11: "/docs/kimyo_7_uzb.pdf",
     13: "/docs/kimyo_8_uzb.pdf",
-    14: "/docs/kimyo_9_uzb.pdf"
+    14: "/docs/kimyo_9_uzb.pdf",
+    15: "/docs/kimyo_10_uzb.pdf"
 };
-const PERIODIC_TABLE_COURSE_IDS = [11, 2, 13, 14];
+const PERIODIC_TABLE_COURSE_IDS = [11, 2, 13, 14, 15];
 
 function toggleChemistryTools() {
     const courseId = Number(COURSE_ID);
