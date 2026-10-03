@@ -34,8 +34,16 @@ services:
   clamav:
     image: clamav/clamav:1.4
     container_name: clamav
+    # clamd o'lib qolsa (masalan, kunlik baza yangilanishida OOM) — o'zi qayta
+    # ko'tariladi (clamav/watchdog.sh). Docker boshqaruviga ruxsat kerak emas.
+    entrypoint: ["/sbin/tini", "--", "/bin/sh", "/watchdog.sh"]
+    environment:
+      # Baza yangilanishida eski+yangi baza bir vaqtda xotirada turmasin
+      # (2026-10-03: clamd OOM bilan o'ldirilgan edi).
+      CLAMD_CONF_ConcurrentDatabaseReload: "no"
     volumes:
       - clamav-data:/var/lib/clamav
+      - ./clamav/watchdog.sh:/watchdog.sh:ro
     healthcheck:
       test: ["CMD", "clamdcheck.sh"]
       interval: 30s

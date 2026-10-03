@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -384,6 +385,15 @@ public class ScienceService {
     // kontenti/egaligiga tegmaydi — TopicService.reorderTopics/
     // TopicSectionService.reorderSections/QuestionService.reorderQuestions'dan
     // farqli, ular BITTA fan doirasida bo'lgani uchun tekshiriladi).
+    //
+    // HAQIQIY TOPILGAN BUG (foydalanuvchi so'rovi, 2026-10-03: "/science?
+    // fieldId=2 sahifasida fanlar tartibini o'zgartirib, refresh qilinsa eski
+    // holiga qaytyapti"): bitta Yo'nalish sahifasi (yoki ADMIN uchun faqat o'zi
+    // boshqaradigan fanlar) FAQAT ko'rinib turgan fanlar ro'yxatini yuboradi,
+    // ilgari esa server BUTUN ro'yxatni talab qilib, qisman ro'yxatni rad
+    // etardi (400) — tartib saqlanmasdi. Endi qisman ro'yxat qabul qilinadi:
+    // yuborilgan fanlar umumiy tartibdagi O'Z o'rinlarini yangi nisbiy tartibda
+    // egallaydi, yuborilmagan fanlarning o'rinlari o'zgarmaydi.
     @Transactional
     public void reorderSciences(List<Long> orderedScienceIds) {
         List<Science> sciences = scienceRepository.findAllByDeletedAtIsNullOrderByOrderIndex();
@@ -392,15 +402,31 @@ public class ScienceService {
             byId.put(s.getId(), s);
         }
 
-        if (orderedScienceIds.size() != sciences.size() || !byId.keySet().containsAll(orderedScienceIds)) {
+        if (orderedScienceIds == null
+                || new java.util.HashSet<>(orderedScienceIds).size() != orderedScienceIds.size()
+                || !byId.keySet().containsAll(orderedScienceIds)) {
             throw new IllegalArgumentException("❌Fanlar ro'yxati mos kelmayapti.");
         }
 
-        int index = 1;
-        for (Long id : orderedScienceIds) {
-            byId.get(id).setOrderIndex(index++);
+        // Joriy umumiy tartibda yuborilgan fanlar egallagan o'rinlar (indekslar).
+        java.util.Set<Long> sent = new java.util.HashSet<>(orderedScienceIds);
+        List<Integer> slots = new ArrayList<>();
+        for (int i = 0; i < sciences.size(); i++) {
+            if (sent.contains(sciences.get(i).getId())) {
+                slots.add(i);
+            }
         }
-        scienceRepository.saveAll(sciences);
+
+        List<Science> result = new ArrayList<>(sciences);
+        for (int k = 0; k < slots.size(); k++) {
+            result.set(slots.get(k), byId.get(orderedScienceIds.get(k)));
+        }
+
+        int index = 1;
+        for (Science s : result) {
+            s.setOrderIndex(index++);
+        }
+        scienceRepository.saveAll(result);
     }
 
     @Transactional

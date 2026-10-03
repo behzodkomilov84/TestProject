@@ -576,4 +576,56 @@ class ScienceServiceTest {
 
         assertThat(result).hasSize(2);
     }
+
+    // ===== reorderSciences — tartibni saqlash (to'liq va QISMAN ro'yxat) =====
+
+    private Science sc(long id, int order) {
+        return Science.builder().id(id).name("S" + id).orderIndex(order).build();
+    }
+
+    @Test
+    void reorderSciences_fullList_reassignsOrderFromOne() {
+        Science a = sc(1, 1), b = sc(2, 2), c = sc(3, 3);
+        when(scienceRepository.findAllByDeletedAtIsNullOrderByOrderIndex()).thenReturn(List.of(a, b, c));
+
+        scienceService.reorderSciences(List.of(3L, 1L, 2L));
+
+        assertThat(c.getOrderIndex()).isEqualTo(1);
+        assertThat(a.getOrderIndex()).isEqualTo(2);
+        assertThat(b.getOrderIndex()).isEqualTo(3);
+    }
+
+    @Test
+    void reorderSciences_partialList_reordersOnlySentScienceAndKeepsOthersInPlace() {
+        // Umumiy tartib: 1, 2, 3, 4, 5. Bitta Yo'nalish sahifasi faqat 2, 4, 5 ni
+        // ko'radi va ularni 5, 2, 4 qilib tartiblaydi — 1 va 3 o'z o'rnida qoladi.
+        Science s1 = sc(1, 1), s2 = sc(2, 2), s3 = sc(3, 3), s4 = sc(4, 4), s5 = sc(5, 5);
+        when(scienceRepository.findAllByDeletedAtIsNullOrderByOrderIndex()).thenReturn(List.of(s1, s2, s3, s4, s5));
+
+        scienceService.reorderSciences(List.of(5L, 2L, 4L));
+
+        assertThat(s1.getOrderIndex()).isEqualTo(1);
+        assertThat(s5.getOrderIndex()).isEqualTo(2);
+        assertThat(s3.getOrderIndex()).isEqualTo(3);
+        assertThat(s2.getOrderIndex()).isEqualTo(4);
+        assertThat(s4.getOrderIndex()).isEqualTo(5);
+    }
+
+    @Test
+    void reorderSciences_unknownId_throws() {
+        when(scienceRepository.findAllByDeletedAtIsNullOrderByOrderIndex()).thenReturn(List.of(sc(1, 1), sc(2, 2)));
+
+        assertThatThrownBy(() -> scienceService.reorderSciences(List.of(1L, 99L)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("mos kelmayapti");
+    }
+
+    @Test
+    void reorderSciences_duplicateIds_throws() {
+        when(scienceRepository.findAllByDeletedAtIsNullOrderByOrderIndex()).thenReturn(List.of(sc(1, 1), sc(2, 2)));
+
+        assertThatThrownBy(() -> scienceService.reorderSciences(List.of(1L, 1L)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("mos kelmayapti");
+    }
 }
