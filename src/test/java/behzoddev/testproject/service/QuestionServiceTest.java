@@ -226,6 +226,53 @@ class QuestionServiceTest {
         verify(questionRepository, org.mockito.Mockito.never()).save(any());
     }
 
+    // ===== updateQuestion — noto'g'ri javob izohi =====
+
+    private Question questionWithAnswers(Answer correct, Answer wrong) {
+        Topic topic = Topic.builder().id(1L).name("Mavzu").build();
+        return Question.builder().id(7L).questionText("Savol").topic(topic)
+                .answers(List.of(correct, wrong)).build();
+    }
+
+    private QuestionDto updateDto(String wrongCommentary) {
+        return QuestionDto.builder().id(7L).questionText("Savol yangilandi").answers(List.of(
+                new behzoddev.testproject.dto.answer.AnswerDto(11L, "A", true, "To'g'ri izoh",
+                        null, null, null, null, null),
+                new behzoddev.testproject.dto.answer.AnswerDto(12L, "B", false, wrongCommentary,
+                        null, null, null, null, null))).build();
+    }
+
+    @Test
+    void updateQuestion_wrongAnswerWithCommentary_savesGivenCommentary() {
+        Answer correct = Answer.builder().id(11L).answerText("A").isTrue(true).commentary("eski").build();
+        Answer wrong = Answer.builder().id(12L).answerText("B").isTrue(false).commentary("noto'g'ri javob").build();
+        Question question = questionWithAnswers(correct, wrong);
+        when(questionRepository.findById(7L)).thenReturn(Optional.of(question));
+        when(questionRepository.getQuestionsByTopicId(1L)).thenReturn(List.of());
+        when(answerRepository.findById(11L)).thenReturn(Optional.of(correct));
+        when(answerRepository.findById(12L)).thenReturn(Optional.of(wrong));
+
+        questionService.updateQuestion(updateDto("  B to'g'ri emas, chunki ...  "), admin);
+
+        assertThat(wrong.getCommentary()).isEqualTo("B to'g'ri emas, chunki ...");
+        assertThat(correct.getCommentary()).isEqualTo("To'g'ri izoh");
+    }
+
+    @Test
+    void updateQuestion_wrongAnswerWithoutCommentary_keepsDefaultText() {
+        Answer correct = Answer.builder().id(11L).answerText("A").isTrue(true).commentary("eski").build();
+        Answer wrong = Answer.builder().id(12L).answerText("B").isTrue(false).commentary("eski noto'g'ri").build();
+        Question question = questionWithAnswers(correct, wrong);
+        when(questionRepository.findById(7L)).thenReturn(Optional.of(question));
+        when(questionRepository.getQuestionsByTopicId(1L)).thenReturn(List.of());
+        when(answerRepository.findById(11L)).thenReturn(Optional.of(correct));
+        when(answerRepository.findById(12L)).thenReturn(Optional.of(wrong));
+
+        questionService.updateQuestion(updateDto(null), admin);
+
+        assertThat(wrong.getCommentary()).isEqualTo("noto'g'ri javob");
+    }
+
     // ===== deleteQuestion (soft-delete — "O'chirilganlar savati") =====
 
     @Test

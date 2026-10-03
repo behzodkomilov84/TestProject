@@ -443,6 +443,10 @@ public class QuestionService {
             if (Boolean.TRUE.equals(aDto.isTrue())) {
                 validation.textFieldMustNotBeEmpty(aDto.commentary());
                 answer.setCommentary(aDto.commentary().trim());
+            } else if (aDto.commentary() != null && !aDto.commentary().isBlank()) {
+                // Noto'g'ri javobga alohida izoh berilgan bo'lsa (masalan, API orqali) — saqlanadi.
+                // Admin formasi noto'g'ri javoblar uchun null yuboradi, ular standart izohda qoladi.
+                answer.setCommentary(aDto.commentary().trim());
             }
         }
     }
