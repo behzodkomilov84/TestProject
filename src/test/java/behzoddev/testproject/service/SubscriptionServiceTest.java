@@ -593,7 +593,9 @@ class SubscriptionServiceTest {
 
         Subscription adminSub = Subscription.builder().id(1L).status(SubscriptionStatus.CONFIRMED)
                 .amount(BigDecimal.valueOf(1_000))
-                .createdAt(LocalDateTime.of(2026, 9, 5, 10, 0)).build();
+                // "Shu oy" daromadi YearMonth.now() bo'yicha hisoblanadi — qattiq sana
+                // yozilsa, oy almashganda test yiqiladi (2026-10-01 da shunday bo'lgan).
+                .createdAt(java.time.YearMonth.now().atDay(1).atTime(10, 0)).build();
         when(subscriptionRepository.findByStatusOrderByCreatedAtDesc(SubscriptionStatus.CONFIRMED))
                 .thenReturn(List.of(adminSub));
         when(subscriptionRepository.countByStatusAndEndDateAfter(eq(SubscriptionStatus.CONFIRMED), any()))
@@ -602,7 +604,8 @@ class SubscriptionServiceTest {
 
         behzoddev.testproject.dto.subscription.MonthlyRevenueDto courseMonth =
                 behzoddev.testproject.dto.subscription.MonthlyRevenueDto.builder()
-                        .month("2026-09").amount(BigDecimal.valueOf(150_000)).count(1).build();
+                        .month(java.time.YearMonth.now().toString())
+                        .amount(BigDecimal.valueOf(150_000)).count(1).build();
         behzoddev.testproject.dto.subscription.SubscriptionStatsDto courseStats =
                 behzoddev.testproject.dto.subscription.SubscriptionStatsDto.builder()
                         .totalRevenue(BigDecimal.valueOf(150_000))
