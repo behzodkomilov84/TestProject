@@ -93,7 +93,10 @@ public class ScienceService {
                             science != null && canManageScience(science, currentUser));
                 })
                 .filter(ScienceIdAndNameDto::canManage)
-                .collect(java.util.stream.Collectors.toSet());
+                // LinkedHashSet — findAllScienceBasics() "order by order_index" bilan
+                // tartiblangan; oddiy toSet() (HashSet) tartibni yo'qotib, ⬆⬇ bilan
+                // saqlangan tartib sahifani yangilagach ko'rinmasdi (2026-10-03).
+                .collect(java.util.stream.Collectors.toCollection(java.util.LinkedHashSet::new));
     }
 
     @Transactional(readOnly = true)

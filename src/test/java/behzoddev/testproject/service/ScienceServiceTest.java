@@ -483,6 +483,27 @@ class ScienceServiceTest {
         assertThat(result).extracting(ScienceIdAndNameDto::sectionCount).containsExactly(7L);
     }
 
+    // HAQIQIY TOPILGAN BUG (2026-10-03): natija HashSet'ga yig'ilib, order_index
+    // bo'yicha tartiblangan ro'yxat tartibi yo'qolardi — saqlangan tartib
+    // sahifa yangilangach ko'rinmasdi. Tartib endi saqlanishini tasdiqlaydi.
+    @Test
+    void getAllScienceIdAndNameDto_preservesOrderOfRepositoryResult() {
+        List<Science> sciences = new java.util.ArrayList<>();
+        List<ScienceIdAndNameDto> basics = new java.util.ArrayList<>();
+        long[] ids = {17, 3, 99, 5, 1, 42, 8, 23};
+        for (long id : ids) {
+            sciences.add(Science.builder().id(id).name("S" + id).createdBy(owner).build());
+            basics.add(new ScienceIdAndNameDto(id, "S" + id, 0));
+        }
+        when(scienceRepository.findAllScienceBasics()).thenReturn(basics);
+        when(scienceRepository.findAllByDeletedAtIsNullOrderByOrderIndex()).thenReturn(sciences);
+
+        Set<ScienceIdAndNameDto> result = scienceService.getAllScienceIdAndNameDto(owner);
+
+        assertThat(result).extracting(ScienceIdAndNameDto::id)
+                .containsExactly(17L, 3L, 99L, 5L, 1L, 42L, 8L, 23L);
+    }
+
     // ===== getScienceNameById(Long, User) =====
 
     @Test
